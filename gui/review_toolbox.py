@@ -344,12 +344,13 @@ class UserSelectDialog(simpledialog.Dialog):
     def apply(self):
         self.result = (self.name_var.get().strip(), self.email_entry.get().strip())
 
-class ReviewToolbox(tk.Toplevel):
+class ReviewToolbox(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
-        self.title("Review Toolbox")
         self.app = app
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        if isinstance(master, tk.Toplevel):
+            master.title("Review Toolbox")
+            master.protocol("WM_DELETE_WINDOW", self.on_close)
 
         review_frame = tk.Frame(self)
         review_frame.pack(fill=tk.X)
@@ -666,8 +667,7 @@ class ReviewToolbox(tk.Toplevel):
         if not self.app.review_data:
             messagebox.showwarning("Document", "No review selected")
             return
-        dlg = ReviewDocumentDialog(self, self.app, self.app.review_data)
-        dlg.lift()
+        self.app.open_review_document(self.app.review_data)
 
     def open_comment(self, event):
         selection = self.comment_list.curselection()
@@ -772,7 +772,7 @@ class ReviewToolbox(tk.Toplevel):
         elif target[0] == 'fmea':
             self.app.comment_target = ('fmea', target[1])
 
-class ReviewDocumentDialog(tk.Toplevel):
+class ReviewDocumentDialog(tk.Frame):
     def __init__(self, master, app, review):
         super().__init__(master)
         self.app = app
@@ -780,9 +780,9 @@ class ReviewDocumentDialog(tk.Toplevel):
         # Use the drawing helper provided by the app or fall back to the global
         # helper retrieved from the running program.
         self.dh = getattr(app, 'fta_drawing_helper', None) or fta_drawing_helper
-        self.title(f"Review Document - {review.name}")
-
-        self.resizable(True, True)
+        if isinstance(master, tk.Toplevel):
+            master.title(f"Review Document - {review.name}")
+            master.resizable(True, True)
 
         container = tk.Frame(self)
         container.pack(fill=tk.BOTH, expand=True)
@@ -1500,13 +1500,14 @@ class ReviewDocumentDialog(tk.Toplevel):
 
             row += 1
 
-class VersionCompareDialog(tk.Toplevel):
+class VersionCompareDialog(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
         self.app = app
-        self.title("Compare Versions")
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.resizable(True, True)
+        if isinstance(master, tk.Toplevel):
+            master.title("Compare Versions")
+            master.protocol("WM_DELETE_WINDOW", self.on_close)
+            master.resizable(True, True)
 
         names = [v["name"] for v in self.app.versions]
         tk.Label(self, text="Base version:").pack(padx=5, pady=2)
