@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.models import ReliabilityComponent

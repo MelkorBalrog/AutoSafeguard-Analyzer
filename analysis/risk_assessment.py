@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 # Derived Maturity Table: (avg_confidence, avg_robustness) → maturity level
 DERIVED_MATURITY_TABLE = {
     (1, 1): 1, (1, 2): 1, (1, 3): 1, (1, 4): 2, (1, 5): 2,

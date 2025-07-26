@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 import csv

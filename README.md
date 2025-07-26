@@ -1,3 +1,4 @@
+Author: Miguel Marina <karel.capek.robotics@gmail.com>
 # AutoML
 
 This repository contains a graphical fault tree analysis tool. The latest update adds a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes.

@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 import os
 import sys

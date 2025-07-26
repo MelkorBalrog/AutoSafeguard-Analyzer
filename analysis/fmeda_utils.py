@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, component_fit_map
 
 
