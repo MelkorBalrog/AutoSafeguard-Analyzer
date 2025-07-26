@@ -608,11 +608,18 @@ class SysMLDiagramWindow(tk.Frame):
             obj = self.resizing_obj
             cx = obj.x * self.zoom
             cy = obj.y * self.zoom
+            new_w = obj.width
+            new_h = obj.height
             if "e" in self.resize_edge or "w" in self.resize_edge:
-                obj.width = max(10.0, 2 * abs(x - cx) / self.zoom)
+                new_w = max(10.0, 2 * abs(x - cx) / self.zoom)
             if "n" in self.resize_edge or "s" in self.resize_edge:
                 if obj.obj_type not in ("Fork", "Join"):
-                    obj.height = max(10.0, 2 * abs(y - cy) / self.zoom)
+                    new_h = max(10.0, 2 * abs(y - cy) / self.zoom)
+            if obj.obj_type in ("Initial", "Final"):
+                size = max(new_w, new_h)
+                new_w = new_h = size
+            obj.width = new_w
+            obj.height = new_h
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
