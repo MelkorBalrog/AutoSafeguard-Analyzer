@@ -368,6 +368,7 @@ class ClosableNotebook(ttk.Notebook):
                 })
             ],
         )
+        style.layout("ClosableNotebook", style.layout("TNotebook"))
         kw["style"] = "ClosableNotebook"
         super().__init__(master, **kw)
         self._active = None
