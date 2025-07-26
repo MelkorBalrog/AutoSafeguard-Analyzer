@@ -304,6 +304,112 @@ class SysMLDiagramWindow(tk.Frame):
     # ------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------
+    def validate_connection(self, src: SysMLObject, dst: SysMLObject, conn_type: str) -> tuple[bool, str]:
+        """Return (valid, message) for a potential connection."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        diag_type = diag.diag_type if diag else ""
+
+        if conn_type in ("Association", "Include", "Extend", "Flow", "Connector"):
+            if src == dst:
+                return False, "Cannot connect an element to itself"
+
+        if diag_type == "Use Case Diagram":
+            if conn_type == "Association":
+                actors = {"Actor"}
+                if not ((src.obj_type in actors and dst.obj_type == "Use Case") or (
+                    dst.obj_type in actors and src.obj_type == "Use Case")):
+                    return False, "Associations must connect an Actor and a Use Case"
+            elif conn_type in ("Include", "Extend"):
+                if src.obj_type != "Use Case" or dst.obj_type != "Use Case":
+                    return False, f"{conn_type} relationships must connect two Use Cases"
+
+        elif diag_type == "Block Diagram":
+            if conn_type == "Association":
+                if src.obj_type != "Block" or dst.obj_type != "Block":
+                    return False, "Associations in block diagrams must connect Blocks"
+
+        elif diag_type == "Internal Block Diagram":
+            if conn_type == "Connector":
+                if src.obj_type not in ("Port", "Part") or dst.obj_type not in (
+                    "Port",
+                    "Part",
+                ):
+                    return False, "Connectors must link Parts or Ports"
+
+        elif diag_type == "Activity Diagram":
+            # Basic control flow rules
+            allowed = {
+                "Initial": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                },
+                "Action": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                    "Final",
+                },
+                "CallBehaviorAction": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                    "Final",
+                },
+                "Decision": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                    "Final",
+                },
+                "Merge": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Fork",
+                    "Join",
+                },
+                "Fork": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                },
+                "Join": {
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                },
+                "Final": set(),
+            }
+            if src.obj_type == "Final":
+                return False, "Flows cannot originate from Final nodes"
+            if dst.obj_type == "Initial":
+                return False, "Flows cannot terminate at an Initial node"
+            valid_targets = allowed.get(src.obj_type)
+            if valid_targets and dst.obj_type not in valid_targets:
+                return (
+                    False,
+                    f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
+                )
+
+        return True, ""
+
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -320,15 +426,19 @@ class SysMLDiagramWindow(tk.Frame):
                     self.redraw()
             else:
                 if obj and obj != self.start:
-                    conn = DiagramConnection(self.start.obj_id, obj.obj_id, t)
-                    self.connections.append(conn)
-                    src_id = self.start.element_id
-                    dst_id = obj.element_id
-                    if src_id and dst_id:
-                        rel = self.repo.create_relationship(t, src_id, dst_id)
-                        self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
-                    self._sync_to_repository()
-                    ConnectionDialog(self, conn)
+                    valid, msg = self.validate_connection(self.start, obj, t)
+                    if valid:
+                        conn = DiagramConnection(self.start.obj_id, obj.obj_id, t)
+                        self.connections.append(conn)
+                        src_id = self.start.element_id
+                        dst_id = obj.element_id
+                        if src_id and dst_id:
+                            rel = self.repo.create_relationship(t, src_id, dst_id)
+                            self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                        self._sync_to_repository()
+                        ConnectionDialog(self, conn)
+                    else:
+                        messagebox.showwarning("Invalid Connection", msg)
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None
@@ -538,15 +648,19 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y)
             obj = self.find_object(x, y)
             if obj and obj != self.start:
-                conn = DiagramConnection(self.start.obj_id, obj.obj_id, self.current_tool)
-                self.connections.append(conn)
-                if self.start.element_id and obj.element_id:
-                    rel = self.repo.create_relationship(
-                        self.current_tool, self.start.element_id, obj.element_id
-                    )
-                    self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
-                self._sync_to_repository()
-                ConnectionDialog(self, conn)
+                valid, msg = self.validate_connection(self.start, obj, self.current_tool)
+                if valid:
+                    conn = DiagramConnection(self.start.obj_id, obj.obj_id, self.current_tool)
+                    self.connections.append(conn)
+                    if self.start.element_id and obj.element_id:
+                        rel = self.repo.create_relationship(
+                            self.current_tool, self.start.element_id, obj.element_id
+                        )
+                        self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                    self._sync_to_repository()
+                    ConnectionDialog(self, conn)
+                else:
+                    messagebox.showwarning("Invalid Connection", msg)
         self.start = None
         self.temp_line_end = None
         self.resizing_obj = None
