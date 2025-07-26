@@ -7128,6 +7128,10 @@ class FaultTreeApp:
                 doc = self.tc2fi_docs[idx]
                 self._tc2fi_window.doc_var.set(doc.name)
                 self._tc2fi_window.select_doc()
+        elif kind == "reqs":
+            self.show_requirements_editor()
+        elif kind == "sg":
+            self.show_safety_goals_editor()
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
@@ -7615,6 +7619,8 @@ class FaultTreeApp:
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
                 tree.insert(arch_root, "end", text=name, tags=("arch", str(idx)))
+            tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
+            tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
 
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             if self.page_diagram.canvas.winfo_exists():
@@ -8391,8 +8397,11 @@ class FaultTreeApp:
     def show_requirements_editor(self):
         """Open an editor to manage global requirements and traceability."""
         self.update_requirement_statuses()
-        win = tk.Toplevel(self.root)
-        win.title("Requirements Editor")
+        if hasattr(self, "_req_tab") and self._req_tab.winfo_exists():
+            self.doc_nb.select(self._req_tab)
+            return
+        self._req_tab = self._new_tab("Requirements")
+        win = self._req_tab
 
         columns = ["ID", "ASIL", "Type", "Status", "Parent", "Text"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
@@ -9720,8 +9729,11 @@ class FaultTreeApp:
 
     def show_safety_goals_editor(self):
         """Allow editing of top-level safety goals."""
-        win = tk.Toplevel(self.root)
-        win.title("Safety Goals Editor")
+        if hasattr(self, "_sg_tab") and self._sg_tab.winfo_exists():
+            self.doc_nb.select(self._sg_tab)
+            return
+        self._sg_tab = self._new_tab("Safety Goals")
+        win = self._sg_tab
 
         columns = ["ID", "ASIL", "Safe State", "FTTI", "Acceptance", "Description"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
@@ -12141,7 +12153,7 @@ class FaultTreeApp:
             self.reviews.append(review)
             self.review_data = review
             self.current_user = moderators[0].name if moderators else parts[0].name
-            ReviewDocumentDialog(self.root, self, review)
+            self.open_review_document(review)
             self.send_review_email(review)
             self.open_review_toolbox()
 
@@ -12225,9 +12237,18 @@ class FaultTreeApp:
             self.reviews.append(review)
             self.review_data = review
             self.current_user = moderators[0].name if moderators else participants[0].name
-            ReviewDocumentDialog(self.root, self, review)
+            self.open_review_document(review)
             self.send_review_email(review)
             self.open_review_toolbox()
+
+    def open_review_document(self, review):
+        if hasattr(self, "_review_doc_tab") and self._review_doc_tab.winfo_exists():
+            self.doc_nb.select(self._review_doc_tab)
+            return
+        title = f"Review {review.name}"
+        self._review_doc_tab = self._new_tab(title)
+        self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
+        self._review_doc_window.pack(fill=tk.BOTH, expand=True)
 
     def open_review_toolbox(self):
         if not self.reviews:
@@ -12237,8 +12258,12 @@ class FaultTreeApp:
             self.review_data = self.reviews[0]
         self.update_hara_statuses()
         self.update_requirement_statuses()
-        if self.review_window is None or not self.review_window.winfo_exists():
-            self.review_window = ReviewToolbox(self.root, self)
+        if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
+            self.doc_nb.select(self._review_tab)
+        else:
+            self._review_tab = self._new_tab("Review")
+            self.review_window = ReviewToolbox(self._review_tab, self)
+            self.review_window.pack(fill=tk.BOTH, expand=True)
         self.set_current_user()
 
     def send_review_email(self, review):
@@ -12676,7 +12701,12 @@ class FaultTreeApp:
         if not self.versions:
             messagebox.showinfo("Versions", "No previous versions")
             return
-        VersionCompareDialog(self.root, self)
+        if hasattr(self, "_compare_tab") and self._compare_tab.winfo_exists():
+            self.doc_nb.select(self._compare_tab)
+            return
+        self._compare_tab = self._new_tab("Compare")
+        dlg = VersionCompareDialog(self._compare_tab, self)
+        dlg.pack(fill=tk.BOTH, expand=True)
 
     def merge_review_comments(self):
         path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
