@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 #
 # Copyright (C) 2025 Capek System Safety & Robotic Solutions
 #

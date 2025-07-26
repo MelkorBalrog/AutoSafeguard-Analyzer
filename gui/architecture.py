@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk, simpledialog, messagebox

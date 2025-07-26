@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from dataclasses import dataclass, field
 
 @dataclass

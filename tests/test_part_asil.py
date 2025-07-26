@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from gui.architecture import calculate_allocated_asil
 from analysis.models import global_requirements
