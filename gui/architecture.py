@@ -514,6 +514,7 @@ class SysMLDiagramWindow(tk.Frame):
                         if parent_obj.element_id and parent_obj.element_id in self.repo.elements:
                             self.repo.elements[parent_obj.element_id].properties["ports"] = parent_obj.properties["ports"]
             element.properties.update(new_obj.properties)
+            self.ensure_text_fits(new_obj)
             if t == "System Boundary":
                 self.objects.insert(0, new_obj)
             else:
@@ -1075,6 +1076,41 @@ class SysMLDiagramWindow(tk.Frame):
         self.font.config(size=int(8 * self.zoom))
         self.redraw()
 
+    def ensure_text_fits(self, obj: SysMLObject) -> None:
+        """Expand the object's size so its label is fully visible."""
+        label_lines: list[str] = []
+        if obj.obj_type == "System Boundary":
+            name = obj.properties.get("name", "")
+            if name:
+                label_lines.append(name)
+        else:
+            name = obj.properties.get("name", obj.obj_type)
+            if obj.obj_type == "Part":
+                def_id = obj.properties.get("definition")
+                if def_id and def_id in self.repo.elements:
+                    def_name = self.repo.elements[def_id].name or def_id
+                    name = f"{name} : {def_name}" if name else def_name
+            diag_id = self.repo.get_linked_diagram(obj.element_id)
+            if diag_id and diag_id in self.repo.diagrams:
+                diag = self.repo.diagrams[diag_id]
+                diag_name = diag.name or diag_id
+                label_lines.append(diag_name)
+            label_lines.append(name)
+
+        if not label_lines:
+            return
+
+        text_width = max(self.font.measure(line) for line in label_lines)
+        text_height = self.font.metrics("linespace") * len(label_lines)
+        padding = 10 * self.zoom
+        min_w = (text_width + padding) / self.zoom
+        min_h = (text_height + padding) / self.zoom
+
+        if min_w > obj.width:
+            obj.width = min_w
+        if obj.obj_type not in ("Fork", "Join", "Initial", "Final") and min_h > obj.height:
+            obj.height = min_h
+
     def sort_objects(self) -> None:
         """Ensure System Boundaries are drawn and selected behind others."""
         self.objects.sort(key=lambda o: 0 if o.obj_type == "System Boundary" else 1)
@@ -1086,6 +1122,7 @@ class SysMLDiagramWindow(tk.Frame):
         for obj in list(self.objects):
             if obj.obj_type == "Part":
                 self.sync_ports(obj)
+            self.ensure_text_fits(obj)
             self.draw_object(obj)
         for conn in self.connections:
             src = self.get_object(conn.src)
@@ -2121,6 +2158,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
             self.obj.height = float(self.height_var.get())
         except ValueError:
             pass
+
+        if hasattr(self.master, "ensure_text_fits"):
+            self.master.ensure_text_fits(self.obj)
 
         self._update_asil()
 
