@@ -1702,6 +1702,8 @@ class FaultTreeApp:
         self.active_fi2tc = None
         self.active_tc2fi = None
         self.arch_diagrams = []
+        # Track open diagram tabs to avoid duplicates
+        self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
         self.reviews = []
         self.review_data = None
@@ -10940,6 +10942,7 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
         tab = self._new_tab(diag.name)
+        self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
@@ -10951,6 +10954,7 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
         tab = self._new_tab(diag.name)
+        self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
@@ -10962,6 +10966,7 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
         tab = self._new_tab(diag.name)
+        self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
@@ -10973,6 +10978,7 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
         tab = self._new_tab(diag.name)
+        self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
@@ -10984,7 +10990,12 @@ class FaultTreeApp:
         if idx < 0 or idx >= len(self.arch_diagrams):
             return
         diag = self.arch_diagrams[idx]
+        existing = self.diagram_tabs.get(diag.diag_id)
+        if existing and existing.winfo_exists():
+            self.doc_nb.select(existing)
+            return
         tab = self._new_tab(diag.name)
+        self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
