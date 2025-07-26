@@ -544,6 +544,17 @@ class SysMLDiagramWindow(tk.Frame):
                                 self.dragging_point_index = idx
                                 self.conn_drag_offset = (x - hx, y - hy)
                                 break
+                    elif conn.style == "Squared":
+                        src_obj = self.get_object(conn.src)
+                        dst_obj = self.get_object(conn.dst)
+                        if src_obj and dst_obj:
+                            mx = conn.points[0][0] * self.zoom if conn.points else (
+                                (src_obj.x + dst_obj.x) / 2 * self.zoom
+                            )
+                            my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                            if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                                self.dragging_point_index = 0
+                                self.conn_drag_offset = (x - mx, 0)
                     self.redraw()
                 else:
                     # allow clicking on the resize handle even if outside the object
@@ -580,7 +591,13 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y)
             px = (x - self.conn_drag_offset[0]) / self.zoom
             py = (y - self.conn_drag_offset[1]) / self.zoom
-            self.selected_conn.points[self.dragging_point_index] = (px, py)
+            if self.selected_conn.style == "Squared":
+                if not self.selected_conn.points:
+                    self.selected_conn.points.append((px, 0))
+                else:
+                    self.selected_conn.points[0] = (px, 0)
+            else:
+                self.selected_conn.points[self.dragging_point_index] = (px, py)
             self.redraw()
             return
         if not self.selected_obj:
@@ -736,18 +753,23 @@ class SysMLDiagramWindow(tk.Frame):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         obj = self.find_object(x, y)
+        conn = None
         if not obj:
-            return
+            conn = self.find_connection(x, y)
+            if not conn:
+                return
         self.selected_obj = obj
+        self.selected_conn = conn
         menu = tk.Menu(self, tearoff=0)
-        menu.add_command(label="Properties", command=lambda: self._edit_object(obj))
-        diag_id = self.repo.get_linked_diagram(obj.element_id)
-        if diag_id and diag_id in self.repo.diagrams or obj.properties.get("view"):
-            menu.add_command(label="Open Linked Diagram", command=lambda: self._open_linked_diagram(obj))
-        menu.add_separator()
-        menu.add_command(label="Copy", command=self.copy_selected)
-        menu.add_command(label="Cut", command=self.cut_selected)
-        menu.add_command(label="Paste", command=self.paste_selected)
+        if obj:
+            menu.add_command(label="Properties", command=lambda: self._edit_object(obj))
+            diag_id = self.repo.get_linked_diagram(obj.element_id)
+            if diag_id and diag_id in self.repo.diagrams or obj.properties.get("view"):
+                menu.add_command(label="Open Linked Diagram", command=lambda: self._open_linked_diagram(obj))
+            menu.add_separator()
+            menu.add_command(label="Copy", command=self.copy_selected)
+            menu.add_command(label="Cut", command=self.cut_selected)
+            menu.add_command(label="Paste", command=self.paste_selected)
         menu.add_command(label="Delete", command=self.delete_selected)
         menu.tk_popup(event.x_root, event.y_root)
 
@@ -849,8 +871,11 @@ class SysMLDiagramWindow(tk.Frame):
                 continue
             points = [(src.x * self.zoom, src.y * self.zoom)]
             if conn.style == "Squared":
-                midx = (src.x + dst.x) / 2 * self.zoom
-                points.extend([(midx, points[-1][1]), (midx, dst.y * self.zoom)])
+                if conn.points:
+                    mx = conn.points[0][0] * self.zoom
+                else:
+                    mx = (src.x + dst.x) / 2 * self.zoom
+                points.extend([(mx, points[-1][1]), (mx, dst.y * self.zoom)])
             elif conn.style == "Custom":
                 for px, py in conn.points:
                     xpt = px * self.zoom
@@ -1346,8 +1371,11 @@ class SysMLDiagramWindow(tk.Frame):
             label = f"<<{conn.conn_type.lower()}>>"
         points = [(ax, ay)]
         if conn.style == "Squared":
-            midx = (ax + bx) / 2
-            points.extend([(midx, ay), (midx, by)])
+            if conn.points:
+                mx = conn.points[0][0] * self.zoom
+            else:
+                mx = (ax + bx) / 2
+            points.extend([(mx, ay), (mx, by)])
         elif conn.style == "Custom":
             for px, py in conn.points:
                 x = px * self.zoom
@@ -1359,12 +1387,21 @@ class SysMLDiagramWindow(tk.Frame):
         color = "red" if selected else "black"
         width = 2 if selected else 1
         self.canvas.create_line(*flat, arrow=tk.LAST, dash=dash, fill=color, width=width)
-        if selected and conn.style == "Custom":
-            for px, py in conn.points:
-                hx = px * self.zoom
-                hy = py * self.zoom
+        if selected:
+            if conn.style == "Custom":
+                for px, py in conn.points:
+                    hx = px * self.zoom
+                    hy = py * self.zoom
+                    s = 3
+                    self.canvas.create_rectangle(hx - s, hy - s, hx + s, hy + s, outline="red", fill="white")
+            elif conn.style == "Squared":
+                if conn.points:
+                    mx = conn.points[0][0] * self.zoom
+                else:
+                    mx = (ax + bx) / 2
+                hy = (ay + by) / 2
                 s = 3
-                self.canvas.create_rectangle(hx - s, hy - s, hx + s, hy + s, outline="red", fill="white")
+                self.canvas.create_rectangle(mx - s, hy - s, mx + s, hy + s, outline="red", fill="white")
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
             self.canvas.create_text(
@@ -1437,6 +1474,28 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
+            return
+        if self.selected_conn:
+            if self.selected_conn in self.connections:
+                self.connections.remove(self.selected_conn)
+                # remove matching repository relationship
+                src_elem = self.get_object(self.selected_conn.src)
+                dst_elem = self.get_object(self.selected_conn.dst)
+                if src_elem and dst_elem and src_elem.element_id and dst_elem.element_id:
+                    for rel in list(self.repo.relationships):
+                        if (
+                            rel.source == src_elem.element_id
+                            and rel.target == dst_elem.element_id
+                            and rel.rel_type == self.selected_conn.conn_type
+                        ):
+                            self.repo.relationships.remove(rel)
+                            diag = self.repo.diagrams.get(self.diagram_id)
+                            if diag and rel.rel_id in diag.relationships:
+                                diag.relationships.remove(rel.rel_id)
+                            break
+                self.selected_conn = None
+                self._sync_to_repository()
+                self.redraw()
 
     def remove_object(self, obj: SysMLObject) -> None:
         if obj in self.objects:
