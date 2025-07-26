@@ -330,6 +330,89 @@ from gui.toolboxes import (
     HazardExplorerWindow,
 )
 
+
+class ClosableNotebook(ttk.Notebook):
+    """Notebook widget with an 'x' button on each tab to close it."""
+
+    def __init__(self, master=None, **kw):
+        self._close_img = self._create_close_image()
+        style = ttk.Style()
+        style.element_create(
+            "close",
+            "image",
+            self._close_img,
+            border=8,
+            sticky="",
+        )
+        style.layout(
+            "ClosableNotebook.Tab",
+            [
+                ("Notebook.tab", {
+                    "sticky": "nswe",
+                    "children": [
+                        ("Notebook.padding", {
+                            "side": "top",
+                            "sticky": "nswe",
+                            "children": [
+                                ("Notebook.focus", {
+                                    "side": "top",
+                                    "sticky": "nswe",
+                                    "children": [
+                                        ("Notebook.label", {"side": "left", "sticky": ""}),
+                                        ("close", {"side": "left", "sticky": ""}),
+                                    ],
+                                })
+                            ],
+                        })
+                    ],
+                })
+            ],
+        )
+        style.layout("ClosableNotebook", style.layout("TNotebook"))
+        kw["style"] = "ClosableNotebook"
+        super().__init__(master, **kw)
+        self._active = None
+        self._closing_tab = None
+        self.protected = set()
+        self.bind("<ButtonPress-1>", self._on_close_press, True)
+        self.bind("<ButtonRelease-1>", self._on_close_release)
+
+    def _create_close_image(self, size: int = 10) -> tk.PhotoImage:
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        for i in range(size):
+            img.put("black", (i, i))
+            img.put("black", (size - 1 - i, i))
+        return img
+
+    def _on_close_press(self, event):
+        element = self.identify(event.x, event.y)
+        if "close" in element:
+            index = self.index(f"@{event.x},{event.y}")
+            tab_id = self.tabs()[index]
+            if tab_id in self.protected:
+                return "break"
+            self.state(["pressed"])
+            self._active = index
+            return "break"
+
+    def _on_close_release(self, event):
+        if not self.instate(["pressed"]):
+            return
+        element = self.identify(event.x, event.y)
+        index = self.index(f"@{event.x},{event.y}")
+        if "close" in element and self._active == index:
+            tab_id = self.tabs()[index]
+            if tab_id in self.protected:
+                self.state(["!pressed"])
+                self._active = None
+                return
+            self._closing_tab = tab_id
+            self.event_generate("<<NotebookTabClosed>>")
+            self.forget(tab_id)
+        self.state(["!pressed"])
+        self._active = None
+
 # Target PMHF limits per ASIL level (events per hour)
 PMHF_TARGETS = {
     "D": 1e-8,
@@ -1891,11 +1974,13 @@ class FaultTreeApp:
         self.pmhf_label.pack(side=tk.BOTTOM, fill=tk.X, pady=2)
 
         # Notebook for diagrams and analyses
-        self.doc_nb = ttk.Notebook(self.main_pane)
+        self.doc_nb = ClosableNotebook(self.main_pane)
+        self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.main_pane.add(self.doc_nb, stretch="always")
 
         self.canvas_tab = ttk.Frame(self.doc_nb)
         self.doc_nb.add(self.canvas_tab, text="FTA")
+        self.doc_nb.protected.add(str(self.canvas_tab))
 
         self.canvas_frame = self.canvas_tab
         self.canvas = tk.Canvas(self.canvas_frame, bg="white")
@@ -10926,6 +11011,23 @@ class FaultTreeApp:
                 collection.remove(win)
             win.destroy()
         return _close
+
+    def _on_tab_close(self, event):
+        tab_id = self.doc_nb._closing_tab
+        tab = self.doc_nb.nametowidget(tab_id)
+        if tab is self.canvas_tab:
+            # Prevent closing the main FTA tab
+            self.doc_nb.add(tab, text="FTA")
+            self.doc_nb.protected.add(tab_id)
+            return
+        for child in tab.winfo_children():
+            if hasattr(child, "on_close"):
+                child.on_close()
+        for did, t in list(self.diagram_tabs.items()):
+            if t == tab:
+                del self.diagram_tabs[did]
+                break
+        tab.destroy()
 
     def _new_tab(self, title: str) -> ttk.Frame:
         """Create and select a new tab in the document notebook."""
