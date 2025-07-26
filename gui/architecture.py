@@ -657,6 +657,8 @@ class SysMLDiagramWindow(tk.Frame):
         y = self.canvas.canvasy(event.y)
         if self.resizing_obj:
             obj = self.resizing_obj
+            if obj.obj_type in ("Initial", "Final"):
+                return
             cx = obj.x * self.zoom
             cy = obj.y * self.zoom
             new_w = obj.width
@@ -885,6 +887,8 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def hit_resize_handle(self, obj: SysMLObject, x: float, y: float) -> str | None:
+        if obj.obj_type in ("Initial", "Final"):
+            return None
         margin = 5
         ox = obj.x * self.zoom
         oy = obj.y * self.zoom
@@ -1472,6 +1476,9 @@ class SysMLDiagramWindow(tk.Frame):
                 label_x = x
                 label_y = y + 40 * sy + 10 * self.zoom
                 self.canvas.create_text(label_x, label_y, text="\n".join(label_lines), anchor="n")
+            elif obj.obj_type in ("Initial", "Final"):
+                label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
+                self.canvas.create_text(x, label_y, text="\n".join(label_lines), anchor="n")
             else:
                 self.canvas.create_text(x, y, text="\n".join(label_lines), anchor="center")
 
@@ -1746,12 +1753,14 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row += 1
         ttk.Label(gen_frame, text="Width:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=2)
         self.width_var = tk.StringVar(value=str(self.obj.width))
-        ttk.Entry(gen_frame, textvariable=self.width_var).grid(row=gen_row, column=1, padx=4, pady=2)
+        width_state = "readonly" if self.obj.obj_type in ("Initial", "Final") else "normal"
+        ttk.Entry(gen_frame, textvariable=self.width_var, state=width_state).grid(row=gen_row, column=1, padx=4, pady=2)
         gen_row += 1
         if self.obj.obj_type not in ("Fork", "Join"):
             ttk.Label(gen_frame, text="Height:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=2)
             self.height_var = tk.StringVar(value=str(self.obj.height))
-            ttk.Entry(gen_frame, textvariable=self.height_var).grid(row=gen_row, column=1, padx=4, pady=2)
+            height_state = "readonly" if self.obj.obj_type in ("Initial", "Final") else "normal"
+            ttk.Entry(gen_frame, textvariable=self.height_var, state=height_state).grid(row=gen_row, column=1, padx=4, pady=2)
             gen_row += 1
         else:
             self.height_var = tk.StringVar(value=str(self.obj.height))
@@ -2154,8 +2163,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = joined
         try:
-            self.obj.width = float(self.width_var.get())
-            self.obj.height = float(self.height_var.get())
+            if self.obj.obj_type not in ("Initial", "Final"):
+                self.obj.width = float(self.width_var.get())
+                self.obj.height = float(self.height_var.get())
         except ValueError:
             pass
 
