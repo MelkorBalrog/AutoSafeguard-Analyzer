@@ -201,6 +201,8 @@ class DiagramConnection:
     conn_type: str
     style: str = "Straight"  # Straight, Squared, Custom
     points: List[Tuple[float, float]] = field(default_factory=list)
+    src_pos: Tuple[float, float] | None = None  # relative anchor (x,y)
+    dst_pos: Tuple[float, float] | None = None
 
 
 class SysMLDiagramWindow(tk.Frame):
@@ -244,6 +246,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.selected_conn: DiagramConnection | None = None
         self.drag_offset = (0, 0)
         self.dragging_point_index: int | None = None
+        self.dragging_endpoint: str | None = None  # "src" or "dst"
         self.conn_drag_offset: tuple[float, float] | None = None
         self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
@@ -289,6 +292,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.selected_obj = None
         self.selected_conn = None
         self.dragging_point_index = None
+        self.dragging_endpoint = None
         self.conn_drag_offset = None
         cursor = "arrow"
         if tool != "Select":
@@ -536,6 +540,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.selected_conn = conn
                     self.selected_obj = None
                     self.dragging_point_index = None
+                    self.dragging_endpoint = None
                     if conn.style == "Custom":
                         for idx, (px, py) in enumerate(conn.points):
                             hx = px * self.zoom
@@ -555,6 +560,28 @@ class SysMLDiagramWindow(tk.Frame):
                             if abs(mx - x) <= 4 and abs(my - y) <= 4:
                                 self.dragging_point_index = 0
                                 self.conn_drag_offset = (x - mx, 0)
+                    # check for dragging endpoints
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        sx, sy = self.edge_point(
+                            src_obj,
+                            dst_obj.x * self.zoom,
+                            dst_obj.y * self.zoom,
+                            conn.src_pos,
+                        )
+                        dxp, dyp = self.edge_point(
+                            dst_obj,
+                            src_obj.x * self.zoom,
+                            src_obj.y * self.zoom,
+                            conn.dst_pos,
+                        )
+                        if abs(sx - x) <= 6 and abs(sy - y) <= 6:
+                            self.dragging_endpoint = "src"
+                            self.conn_drag_offset = (x - sx, y - sy)
+                        elif abs(dxp - x) <= 6 and abs(dyp - y) <= 6:
+                            self.dragging_endpoint = "dst"
+                            self.conn_drag_offset = (x - dxp, y - dyp)
                     self.redraw()
                 else:
                     # allow clicking on the resize handle even if outside the object
@@ -580,6 +607,29 @@ class SysMLDiagramWindow(tk.Frame):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
+            self.redraw()
+            return
+        if (
+            self.dragging_endpoint is not None
+            and self.selected_conn
+            and self.current_tool == "Select"
+        ):
+            x = self.canvas.canvasx(event.x) - self.conn_drag_offset[0]
+            y = self.canvas.canvasy(event.y) - self.conn_drag_offset[1]
+            if self.dragging_endpoint == "src":
+                obj = self.get_object(self.selected_conn.src)
+                if obj:
+                    ex, ey = self.edge_point(obj, x, y)
+                    rx = (ex / self.zoom - obj.x) / (obj.width / 2)
+                    ry = (ey / self.zoom - obj.y) / (obj.height / 2)
+                    self.selected_conn.src_pos = (rx, ry)
+            else:
+                obj = self.get_object(self.selected_conn.dst)
+                if obj:
+                    ex, ey = self.edge_point(obj, x, y)
+                    rx = (ex / self.zoom - obj.x) / (obj.width / 2)
+                    ry = (ey / self.zoom - obj.y) / (obj.height / 2)
+                    self.selected_conn.dst_pos = (rx, ry)
             self.redraw()
             return
         if (
@@ -692,6 +742,9 @@ class SysMLDiagramWindow(tk.Frame):
         if self.dragging_point_index is not None and self.selected_conn:
             self._sync_to_repository()
         self.dragging_point_index = None
+        if self.dragging_endpoint is not None and self.selected_conn:
+            self._sync_to_repository()
+        self.dragging_endpoint = None
         self.conn_drag_offset = None
         if self.selected_obj and self.current_tool == "Select":
             if self.selected_obj.obj_type != "System Boundary":
@@ -880,7 +933,13 @@ class SysMLDiagramWindow(tk.Frame):
             dst = self.get_object(conn.dst)
             if not src or not dst:
                 continue
-            points = [(src.x * self.zoom, src.y * self.zoom)]
+            sx, sy = self.edge_point(
+                src,
+                dst.x * self.zoom,
+                dst.y * self.zoom,
+                conn.src_pos,
+            )
+            points = [(sx, sy)]
             if conn.style == "Squared":
                 if conn.points:
                     mx = conn.points[0][0] * self.zoom
@@ -893,9 +952,15 @@ class SysMLDiagramWindow(tk.Frame):
                     ypt = py * self.zoom
                     last = points[-1]
                     points.extend([(xpt, last[1]), (xpt, ypt)])
-            points.append((dst.x * self.zoom, dst.y * self.zoom))
+            ex, ey = self.edge_point(
+                dst,
+                src.x * self.zoom,
+                src.y * self.zoom,
+                conn.dst_pos,
+            )
+            points.append((ex, ey))
             for a, b in zip(points[:-1], points[1:]):
-                if self._dist_to_segment((x, y), a, b) <= 5:
+                if self._dist_to_segment((x, y), a, b) <= 8:
                     return conn
         return None
 
@@ -928,11 +993,23 @@ class SysMLDiagramWindow(tk.Frame):
             port.x = min(max(px, left), right)
             port.properties["side"] = "S"
 
-    def edge_point(self, obj: SysMLObject, tx: float, ty: float) -> Tuple[float, float]:
+    def edge_point(
+        self,
+        obj: SysMLObject,
+        tx: float,
+        ty: float,
+        rel: tuple[float, float] | None = None,
+    ) -> Tuple[float, float]:
         x = obj.x * self.zoom
         y = obj.y * self.zoom
         if obj.obj_type == "Port":
             return x, y
+        if rel is not None:
+            rx, ry = rel
+            return (
+                (obj.x + rx * obj.width / 2) * self.zoom,
+                (obj.y + ry * obj.height / 2) * self.zoom,
+            )
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         dx = tx - x
@@ -1377,8 +1454,8 @@ class SysMLDiagramWindow(tk.Frame):
     ):
         axc, ayc = a.x * self.zoom, a.y * self.zoom
         bxc, byc = b.x * self.zoom, b.y * self.zoom
-        ax, ay = self.edge_point(a, bxc, byc)
-        bx, by = self.edge_point(b, axc, ayc)
+        ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
+        bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         dash = ()
         label = None
         if conn.conn_type in ("Include", "Extend"):
@@ -1417,6 +1494,10 @@ class SysMLDiagramWindow(tk.Frame):
                 hy = (ay + by) / 2
                 s = 3
                 self.canvas.create_rectangle(mx - s, hy - s, mx + s, hy + s, outline="red", fill="white")
+            # draw endpoint handles
+            for hx, hy in [(ax, ay), (bx, by)]:
+                s = 3
+                self.canvas.create_rectangle(hx - s, hy - s, hx + s, hy + s, outline="red", fill="white")
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
             self.canvas.create_text(
