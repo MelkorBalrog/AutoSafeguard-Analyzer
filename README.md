@@ -8,9 +8,14 @@ The diagram below illustrates how information flows through the major work produ
 
 ```mermaid
 flowchart TD
+    subgraph ext [External inputs]
+        X([BOM])
+    end
+    X --> R([Reliability analysis\ninputs: BOM\noutputs: FIT rates & parts])
     A([System functions & architecture]) --> B([HAZOP\ninputs: functions\noutputs: malfunctions])
     B --> C([HARA\ninputs: malfunctions\noutputs: hazards, ASIL, safety goals])
-    A --> D([FMEA / FMEDA\ninputs: architecture, malfunctions\noutputs: failure modes])
+    A --> D([FMEA / FMEDA\ninputs: architecture, malfunctions, reliability\noutputs: failure modes])
+    R --> D
     C --> D
     C --> E([FTA\ninputs: hazards & safety goals\noutputs: fault trees])
     D --> E
@@ -19,7 +24,7 @@ flowchart TD
     G --> H([ASIL propagation to SGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **HAZOP** analysis identifies malfunctions which become inputs to the **HARA** and **FMEA/FMEDA** tables. The HARA assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions which become inputs to the **HARA** and FMEAs. The HARA assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
