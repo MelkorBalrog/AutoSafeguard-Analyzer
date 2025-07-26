@@ -822,7 +822,11 @@ class SysMLDiagramWindow(tk.Frame):
             oy = obj.y * self.zoom
             w = obj.width * self.zoom / 2
             h = obj.height * self.zoom / 2
-            if ox - w <= x <= ox + w and oy - h <= y <= oy + h:
+            if obj.obj_type in ("Initial", "Final"):
+                r = min(w, h)
+                if (x - ox) ** 2 + (y - oy) ** 2 <= r ** 2:
+                    return obj
+            elif ox - w <= x <= ox + w and oy - h <= y <= oy + h:
                 return obj
         return None
 
@@ -933,6 +937,10 @@ class SysMLDiagramWindow(tk.Frame):
         h = obj.height * self.zoom / 2
         dx = tx - x
         dy = ty - y
+        if obj.obj_type in ("Initial", "Final"):
+            r = min(w, h)
+            dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
+            return x + dx / dist * r, y + dy / dist * r
         if abs(dx) > abs(dy):
             if dx > 0:
                 x += w
