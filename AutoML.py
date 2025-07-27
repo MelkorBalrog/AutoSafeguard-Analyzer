@@ -7290,6 +7290,7 @@ class FaultTreeApp:
         if not iid:
             return
         self.analysis_tree.selection_set(iid)
+        self.analysis_tree.focus(iid)
         menu = tk.Menu(self.analysis_tree, tearoff=0)
         menu.add_command(label="Rename", command=self.rename_selected_tree_item)
         menu.tk_popup(event.x_root, event.y_root)
