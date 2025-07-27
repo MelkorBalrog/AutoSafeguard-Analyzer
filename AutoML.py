@@ -968,7 +968,7 @@ class EditNodeDialog(simpledialog.Dialog):
             row_next += 1
 
             ttk.Label(safety_frame, text="Represents FM:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            modes = self.app.get_all_failure_modes()
+            modes = self.app.get_available_failure_modes_for_gates(self.node)
             self.fm_map = {self.app.format_failure_mode_label(m): m.unique_id for m in modes}
             self.fm_var = tk.StringVar()
             current = ''
@@ -976,6 +976,9 @@ class EditNodeDialog(simpledialog.Dialog):
                 n = self.app.find_node_by_id_all(self.node.failure_mode_ref)
                 if n:
                     current = self.app.format_failure_mode_label(n)
+                    # Ensure the current selection is in the map even if it would normally be filtered out
+                    if current not in self.fm_map:
+                        self.fm_map[current] = n.unique_id
             self.fm_var.set(current)
             self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), width=40)
             self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
@@ -1669,18 +1672,16 @@ class EditNodeDialog(simpledialog.Dialog):
     def validate(self):
         if hasattr(self, 'fm_var'):
             label = self.fm_var.get().strip()
-            if self.node.node_type.upper() == 'BASIC EVENT':
-                pass
-            else:
+            if self.node.node_type.upper() != 'BASIC EVENT':
                 ref = self.fm_map.get(label)
                 if ref:
-                    for n in self.app.get_all_nodes_in_model():
+                    for n in self.app.get_all_gates():
                         if n is self.node:
                             continue
                         if not n.is_primary_instance:
                             continue
                         if getattr(n, 'failure_mode_ref', None) == ref:
-                            messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another node')
+                            messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another gate')
                             return False
         return True
 
@@ -7717,6 +7718,30 @@ class FaultTreeApp:
         for m in modes:
             unique[getattr(m, "unique_id", id(m))] = m
         return list(unique.values())
+
+    def get_non_basic_failure_modes(self):
+        """Return failure modes from gate nodes, FMEAs and FMEDAs."""
+        modes = list(self.get_all_gates())
+        for entry in self.fmea_entries:
+            modes.append(entry)
+        for f in self.fmeas:
+            modes.extend(f.get("entries", []))
+        for d in self.fmedas:
+            modes.extend(d.get("entries", []))
+        unique = {}
+        for m in modes:
+            unique[getattr(m, "unique_id", id(m))] = m
+        return list(unique.values())
+
+    def get_available_failure_modes_for_gates(self, current_gate=None):
+        """Return failure modes not already used by other gates."""
+        modes = self.get_non_basic_failure_modes()
+        used = {
+            getattr(g, "failure_mode_ref", None)
+            for g in self.get_all_gates()
+            if g is not current_gate and getattr(g, "failure_mode_ref", None)
+        }
+        return [m for m in modes if getattr(m, "unique_id", None) not in used]
 
     def get_failure_mode_node(self, node):
         ref = getattr(node, "failure_mode_ref", None)
