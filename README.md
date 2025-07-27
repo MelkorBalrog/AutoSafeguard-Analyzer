@@ -136,24 +136,98 @@ SysMLDiagram --> "*" DiagramConnection
     SysMLObject --> "0..1" SysMLElement
 ```
 
-### AutoML Safety Extensions
+### AutoML Safety Extension Metamodel
 
-AutoML builds on this base by introducing domain specific stereotypes for safety
-analysis. Hazards, faults and scenarios are all stored as `SysMLElement` objects
-with dedicated `elem_type` values. Tables like HAZOP or HARA reference these
-elements so analyses remain linked to the architecture.
+AutoML extends SysML with additional element types and attributes to represent
+hazards, operational scenarios and fault-tree structures. These objects are
+stored in the same repository as regular SysML blocks and are therefore
+accessible on diagrams and through the API. Key non‑SysML properties such as
+ASIL ratings, safety requirements and failure probabilities are persisted on the
+elements themselves. Analysis documents like HAZOPs or HARAs refer back to these
+model elements so that architecture, faults and requirements remain connected.
 
 ```mermaid
 classDiagram
+    %% Base extensions
     SysMLElement <|-- SafetyGoal
     SysMLElement <|-- Hazard
     SysMLElement <|-- Scenario
     SysMLElement <|-- Scenery
     SysMLElement <|-- FaultTreeNode
+    class SafetyGoal {
+        asil: str
+        description: str
+    }
+    class Hazard {
+        description: str
+    }
+    class Scenario {
+        behavior: str
+        scenery: str
+        tc: str
+        fi: str
+        description: str
+    }
+    class Scenery {
+        name: str
+    }
+    class FaultTreeNode {
+        node_type: str
+        severity: int
+        controllability: int
+        probability: float
+        safety_requirements: List~dict~
+    }
+    %% Analysis documents
+    class HazopEntry {
+        function: str
+        malfunction: str
+        scenario: str
+        hazard: str
+        safety: bool
+    }
+    class HazopDoc {
+        name: str
+        entries: List~HazopEntry~
+    }
+    class HaraEntry {
+        malfunction: str
+        hazard: str
+        asil: str
+        safety_goal: str
+    }
+    class HaraDoc {
+        name: str
+        hazops: List~HazopDoc~
+        entries: List~HaraEntry~
+    }
+    class ReliabilityComponent {
+        name: str
+        comp_type: str
+        qualification: str
+        fit: float
+    }
+    class MissionProfile {
+        name: str
+        tau_on: float
+        tau_off: float
+    }
+    class ReliabilityAnalysis {
+        name: str
+        standard: str
+        profile: MissionProfile
+        components: List~ReliabilityComponent~
+    }
+    %% Relationships
     SafetyGoal --> "*" Hazard : mitigates
     Scenario --> "*" Hazard : leadsTo
     Scenario --> Scenery : occursIn
     FaultTreeNode --> "*" SafetyGoal : traces
+    HazopDoc --> "*" HazopEntry
+    HaraDoc --> "*" HaraEntry
+    HaraDoc --> "*" HazopDoc : derivesFrom
+    ReliabilityAnalysis --> MissionProfile : uses
+    ReliabilityAnalysis --> "*" ReliabilityComponent
 ```
 
 ## BOM Integration with AutoML Diagrams
