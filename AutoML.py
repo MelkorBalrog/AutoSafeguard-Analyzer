@@ -1990,6 +1990,33 @@ class FaultTreeApp:
         self.analysis_tree.pack(fill=tk.BOTH, expand=True)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
 
+        # --- Tools Section ---
+        self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
+        self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
+        self.tools_list = tk.Listbox(self.tools_group, height=10)
+        self.tools_list.pack(fill=tk.BOTH, expand=True)
+
+        self.tool_actions = {
+            "Mission Profiles": self.manage_mission_profiles,
+            "Mechanism Libraries": self.manage_mechanism_libraries,
+            "Scenario Libraries": self.manage_scenario_libraries,
+            "ODD Libraries": self.manage_odd_libraries,
+            "Reliability Analysis": self.open_reliability_window,
+            "FMEDA Manager": self.show_fmeda_list,
+            "FMEA Manager": self.show_fmea_list,
+            "HAZOP Analysis": self.open_hazop_window,
+            "HARA Analysis": self.open_hara_window,
+            "FI2TC Analysis": self.open_fi2tc_window,
+            "TC2FI Analysis": self.open_tc2fi_window,
+            "AutoML Explorer": self.manage_architecture,
+            "Requirements Editor": self.show_requirements_editor,
+            "Safety Goals Editor": self.show_safety_goals_editor,
+            "Review Toolbox": self.open_review_toolbox,
+        }
+        for name in self.tool_actions:
+            self.tools_list.insert(tk.END, name)
+        self.tools_list.bind("<Double-1>", self.on_tool_list_double_click)
+
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
         self.pmhf_label.pack(side=tk.BOTTOM, fill=tk.X, pady=2)
@@ -7160,6 +7187,15 @@ class FaultTreeApp:
         elif kind == "arch":
             self.open_arch_window(idx)
 
+    def on_tool_list_double_click(self, event):
+        sel = self.tools_list.curselection()
+        if not sel:
+            return
+        name = self.tools_list.get(sel[0])
+        action = self.tool_actions.get(name)
+        if action:
+            action()
+
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
             self.zoom_in()
@@ -8584,8 +8620,11 @@ class FaultTreeApp:
 
 
     def show_fmea_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("FMEA List")
+        if hasattr(self, "_fmea_tab") and self._fmea_tab.winfo_exists():
+            self.doc_nb.select(self._fmea_tab)
+            return
+        self._fmea_tab = self._new_tab("FMEA List")
+        win = self._fmea_tab
         listbox = tk.Listbox(win, height=10, width=40)
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -8598,6 +8637,7 @@ class FaultTreeApp:
                 return
             idx = sel[0]
             win.destroy()
+            self._fmea_tab = None
             self.show_fmea_table(self.fmeas[idx])
 
         def add_fmea():
@@ -8625,8 +8665,11 @@ class FaultTreeApp:
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("FMEDA List")
+        if hasattr(self, "_fmeda_tab") and self._fmeda_tab.winfo_exists():
+            self.doc_nb.select(self._fmeda_tab)
+            return
+        self._fmeda_tab = self._new_tab("FMEDA List")
+        win = self._fmeda_tab
         listbox = tk.Listbox(win, height=10, width=40)
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -8639,6 +8682,7 @@ class FaultTreeApp:
                 return
             idx = sel[0]
             win.destroy()
+            self._fmeda_tab = None
             self.show_fmea_table(self.fmedas[idx], fmeda=True)
 
         def add_fmeda():
@@ -10330,8 +10374,11 @@ class FaultTreeApp:
         ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
 
     def manage_mission_profiles(self):
-        win = tk.Toplevel(self.root)
-        win.title("Mission Profiles")
+        if hasattr(self, "_mp_tab") and self._mp_tab.winfo_exists():
+            self.doc_nb.select(self._mp_tab)
+            return
+        self._mp_tab = self._new_tab("Mission Profiles")
+        win = self._mp_tab
         listbox = tk.Listbox(win, height=8, width=40)
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -10468,8 +10515,11 @@ class FaultTreeApp:
         self.mechanism_libraries.append(lib)
 
     def manage_mechanism_libraries(self):
-        win = tk.Toplevel(self.root)
-        win.title("Mechanism Libraries")
+        if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
+            self.doc_nb.select(self._mech_tab)
+            return
+        self._mech_tab = self._new_tab("Mechanism Libraries")
+        win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
         mech_tree = ttk.Treeview(win, columns=("cov", "desc"), show="headings")
@@ -10603,8 +10653,11 @@ class FaultTreeApp:
         refresh_libs()
 
     def manage_scenario_libraries(self):
-        win = tk.Toplevel(self.root)
-        win.title("Scenario Libraries")
+        if hasattr(self, "_scen_tab") and self._scen_tab.winfo_exists():
+            self.doc_nb.select(self._scen_tab)
+            return
+        self._scen_tab = self._new_tab("Scenario Libraries")
+        win = self._scen_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
         scen_tree = ttk.Treeview(
@@ -10863,8 +10916,11 @@ class FaultTreeApp:
         refresh_libs()
 
     def manage_odd_libraries(self):
-        win = tk.Toplevel(self.root)
-        win.title("ODD Libraries")
+        if hasattr(self, "_odd_tab") and self._odd_tab.winfo_exists():
+            self.doc_nb.select(self._odd_tab)
+            return
+        self._odd_tab = self._new_tab("ODD Libraries")
+        win = self._odd_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
         elem_tree = ttk.Treeview(win, columns=("attrs",), show="tree headings")
@@ -11018,10 +11074,12 @@ class FaultTreeApp:
         refresh_libs()
 
     def open_reliability_window(self):
-        if hasattr(self, "_rel_window") and self._rel_window.winfo_exists():
-            self._rel_window.lift()
+        if hasattr(self, "_rel_tab") and self._rel_tab.winfo_exists():
+            self.doc_nb.select(self._rel_tab)
             return
-        self._rel_window = ReliabilityWindow(self)
+        self._rel_tab = self._new_tab("Reliability")
+        self._rel_window = ReliabilityWindow(self._rel_tab, self)
+        self._rel_window.pack(fill=tk.BOTH, expand=True)
 
     def open_fmeda_window(self):
         self.show_fmeda_list()
@@ -11140,7 +11198,12 @@ class FaultTreeApp:
         self.update_views()
 
     def manage_architecture(self):
-        ArchitectureManagerDialog(self.root, self)
+        if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
+            self.doc_nb.select(self._arch_tab)
+            return
+        self._arch_tab = self._new_tab("AutoML Explorer")
+        self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
+        self._arch_window.pack(fill=tk.BOTH, expand=True)
 
     def open_arch_window(self, idx: int) -> None:
         """Open an existing architecture diagram from the repository."""
