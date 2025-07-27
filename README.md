@@ -1,8 +1,8 @@
-version: 0.1.2
+version: 0.1.3
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
-AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes.
+AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
 
 ## Workflow Overview
 
@@ -308,8 +308,11 @@ quantity and a dictionary of part‑specific parameters. HAZOP and HARA tables u
 `HazopDoc`/`HazopEntry` and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA
 and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
 `FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
-diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
-objects that hold FMEA metrics, FMEDA values and traced requirements.
+diagnostic coverage. Causes now pull from a shared list of **faults** represented
+by FTA basic events while failure modes reference gate nodes so common modes can
+be reused. Top level events hold the malfunction they represent which lets FMEDA
+entries auto-fill the violated safety goal. Fault tree diagrams consist of nested
+`FaultTreeNode` objects that hold FMEA metrics, FMEDA values and traced requirements.
 
 #### Analysis Relationships
 
