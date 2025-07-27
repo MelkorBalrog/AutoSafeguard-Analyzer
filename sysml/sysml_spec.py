@@ -48,14 +48,14 @@ for p in ('labelX', 'labelY'):
 # ----------------------------------------------------------------------
 # Additional properties for reliability annotations
 # ----------------------------------------------------------------------
-# Blocks can represent circuits while parts map to components. Include
-# dedicated attributes to reference BOM items and store FIT, qualification
-# and failure mode details so they can be displayed in diagrams.
+# Blocks can reference reliability analyses while parts map to components.
+# Include dedicated attributes to reference BOM items and store FIT,
+# qualification and failure mode details so they can be displayed in diagrams.
 
 SYSML_PROPERTIES.setdefault('BlockUsage', [])
 SYSML_PROPERTIES.setdefault('PartUsage', [])
 
-for prop in ('circuit', 'fit', 'qualification', 'failureModes'):
+for prop in ('analysis', 'fit', 'qualification', 'failureModes'):
     if prop not in SYSML_PROPERTIES['BlockUsage']:
         SYSML_PROPERTIES['BlockUsage'].append(prop)
 
