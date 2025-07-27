@@ -2440,18 +2440,18 @@ class ConnectionDialog(simpledialog.Dialog):
             self.master._sync_to_repository()
 
 class UseCaseDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Actor",
             "Use Case",
             "System Boundary",
             "Association",
         ]
-        super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app, history=history)
 
 
 class ActivityDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Action",
             "CallBehaviorAction",
@@ -2463,26 +2463,26 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Join",
             "Flow",
         ]
-        super().__init__(master, "Activity Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
 
 
 class BlockDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Block",
             "Association",
         ]
-        super().__init__(master, "Block Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
 
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Part",
             "Port",
             "Connector",
         ]
-        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
         ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
             fill=tk.X, padx=2, pady=2
         )
