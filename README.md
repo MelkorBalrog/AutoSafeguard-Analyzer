@@ -2,6 +2,30 @@
 
 This repository contains a graphical fault tree analysis tool. The latest update adds a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes.
 
+## Workflow Overview
+
+The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL values propagated throughout the model.
+
+```mermaid
+flowchart TD
+    subgraph ext [External inputs]
+        X([BOM])
+    end
+    X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
+    A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
+    B --> C([HARA<br/>inputs: malfunctions<br/>outputs: hazards, ASIL, safety goals])
+    A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
+    R --> D
+    C --> D
+    C --> E([FTA<br/>inputs: hazards & safety goals<br/>outputs: fault trees])
+    D --> E
+    E --> F([Safety requirements<br/>inputs: fault trees & failure modes])
+    F --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
+    G --> H([ASIL propagation to SGs, FMEAs and FTAs])
+```
+
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions which become inputs to the **HARA** and FMEAs. The HARA assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+
 ## HAZOP Analysis
 
 The **HAZOP Analysis** window lets you list system functions with one or more associated malfunctions. Each entry records the malfunction guideword (*No/Not*, *Unintended*, *Excessive*, *Insufficient* or *Reverse*), the related scenario, driving conditions and hazard, and whether it is safety relevant. Covered malfunctions may reference other entries as mitigation. When a function is allocated to an active component in a reliability analysis, its malfunctions become selectable failure modes in the FMEDA table.
