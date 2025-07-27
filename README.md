@@ -222,6 +222,7 @@ classDiagram
     ActionUsage --> "*" ControlFlow : control
     ActionUsage --> "*" ObjectFlow : objects
     UseCase --> "*" Actor : actors
+    UseCase --> ActivityUsage : realizedBy
 ```
 
 ### Detailed Safety and Reliability Metamodel
@@ -268,6 +269,7 @@ classDiagram
     BlockUsage --> ReliabilityAnalysis : analysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
     PartUsage --> ReliabilityComponent : component
+    PartUsage --> "*" FmeaEntry : failureModes
     FmedaDoc --> "*" FmeaEntry
     ReliabilityComponent --> "*" FmeaEntry : modes
     FmeaEntry --> FaultTreeNode : baseEvent
@@ -283,6 +285,7 @@ The next diagram traces how malfunctions detected in a HAZOP flow through the sa
 
 ```mermaid
 classDiagram
+    class UseCase
     class ActivityUsage
     class ActionUsage
     class HazopEntry
@@ -295,11 +298,13 @@ classDiagram
     class FaultTreeDiagram
     class FaultTreeNode
     class Requirement
+    UseCase --> ActivityUsage : realizedBy
     ActivityUsage --> "*" ActionUsage : actions
+    ActivityUsage --> HazopEntry : hazopInput
     ActionUsage --> HazopEntry : malfunction
-    HazopEntry --> Scenario
-    Scenario --> Scenery
-    HazopEntry --> HaraEntry
+    Scenario --> HazopEntry : analyzedIn
+    Scenery --> Scenario : contextFor
+    HazopEntry --> HaraEntry : selected
     HaraEntry --> Hazard
     HaraEntry --> SafetyGoal
     SafetyGoal --> FaultTreeDiagram : topEvent
