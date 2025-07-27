@@ -425,7 +425,11 @@ class ClosableNotebook(ttk.Notebook):
                 return
             self._closing_tab = tab_id
             self.event_generate("<<NotebookTabClosed>>")
-            self.forget(tab_id)
+            if tab_id in self.tabs():
+                try:
+                    self.forget(tab_id)
+                except tk.TclError:
+                    pass
         self.state(["!pressed"])
         self._active = None
 
@@ -7183,6 +7187,7 @@ class FaultTreeApp:
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
+                self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
