@@ -859,6 +859,12 @@ class SysMLDiagramWindow(tk.Frame):
             chosen = diag_id or view_id
         if not chosen or chosen not in self.repo.diagrams:
             return False
+        # Avoid opening duplicate windows for the same diagram within the
+        # current container. If a child frame already displays the chosen
+        # diagram, simply return.
+        for child in self.master.winfo_children():
+            if getattr(child, "diagram_id", None) == chosen:
+                return True
         diag = self.repo.diagrams[chosen]
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen)
