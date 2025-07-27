@@ -83,6 +83,17 @@ class SysMLRepository:
             diag_id = str(uuid.uuid4())
         if package is None:
             package = self.root_package.elem_id
+        if name:
+            existing = {
+                d.name
+                for d in self.diagrams.values()
+                if d.diag_type == diag_type and d.name
+            }
+            base = name
+            suffix = 1
+            while name in existing:
+                name = f"{base}_{suffix}"
+                suffix += 1
         diagram = SysMLDiagram(diag_id, diag_type, name, package, description, color)
         self.diagrams[diag_id] = diagram
         return diagram
