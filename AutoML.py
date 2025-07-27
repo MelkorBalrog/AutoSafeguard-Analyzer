@@ -3096,7 +3096,7 @@ class FaultTreeApp:
         for be in events:
             src = self.get_failure_mode_node(be)
             goals = self.get_top_event_safety_goals(src) or [getattr(src, "fmeda_safety_goal", "")]
-            comp_name = src.parents[0].user_name if src.parents else getattr(src, "fmea_component", "")
+            comp_name = self.get_component_name_for_node(src)
             fit = comp_fit.get(comp_name)
             frac = getattr(src, "fmeda_fault_fraction", 0.0)
             if frac > 1.0:
@@ -6966,13 +6966,10 @@ class FaultTreeApp:
                 Story.append(Paragraph(fmea['name'], pdf_styles["Heading3"]))
                 data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]]
                 for be in fmea['entries']:
-                    parent = be.parents[0] if be.parents else None
-                    if parent:
-                        comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                        parent_name = comp
-                    else:
-                        comp = getattr(be, "fmea_component", "") or "N/A"
-                        parent_name = ""
+                    src = self.get_failure_mode_node(be)
+                    comp = self.get_component_name_for_node(src) or "N/A"
+                    parent = src.parents[0] if src.parents else None
+                    parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                     req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
                     rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                     failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -6995,8 +6992,7 @@ class FaultTreeApp:
             Story.append(Paragraph("FTA-FMEA Traceability", pdf_styles["Heading2"]))
             data = [["Basic Event", "Component"]]
             for be in basic_events:
-                parent = be.parents[0] if be.parents else None
-                comp = parent.user_name if parent and parent.user_name else (f"Node {parent.unique_id}" if parent else "N/A")
+                comp = self.get_component_name_for_node(be) or "N/A"
                 data.append([be.user_name or f"BE {be.unique_id}", comp])
             table = Table(data, repeatRows=1)
             table.setStyle(TableStyle([
@@ -7664,11 +7660,29 @@ class FaultTreeApp:
         return repo.get_activity_actions()
 
     def get_all_component_names(self):
-        """Return unique component names from HAZOP and reliability analyses."""
+        """Return unique component names from analyses, including FTA failure modes."""
         names = set()
         for doc in getattr(self, "hazop_docs", []):
             names.update(e.component for e in doc.entries if getattr(e, "component", ""))
         names.update(c.name for c in self.reliability_components)
+        for be in self.get_all_basic_events():
+            comp = self.get_component_name_for_node(be)
+            if comp:
+                names.add(comp)
+        for entry in self.fmea_entries:
+            comp = getattr(entry, "fmea_component", "")
+            if comp:
+                names.add(comp)
+        for doc in self.fmeas:
+            for e in doc.get("entries", []):
+                comp = getattr(e, "fmea_component", "")
+                if comp:
+                    names.add(comp)
+        for doc in self.fmedas:
+            for e in doc.get("entries", []):
+                comp = getattr(e, "fmea_component", "")
+                if comp:
+                    names.add(comp)
         return sorted(n for n in names if n)
 
     def get_all_malfunction_names(self):
@@ -7692,7 +7706,7 @@ class FaultTreeApp:
 
     def get_all_failure_modes(self):
         """Return list of all failure mode nodes from FTA, FMEAs and FMEDAs."""
-        modes = list(self.get_all_gates())
+        modes = list(self.get_all_basic_events())
         for doc in self.fmea_entries:
             modes.append(doc)
         for f in self.fmeas:
@@ -7712,8 +7726,17 @@ class FaultTreeApp:
                 return n
         return node
 
+    def get_component_name_for_node(self, node):
+        """Return component name for the given failure mode node."""
+        src = self.get_failure_mode_node(node)
+        parent = src.parents[0] if src.parents else None
+        if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES:
+            if getattr(parent, "user_name", ""):
+                return parent.user_name
+        return getattr(src, "fmea_component", "")
+
     def format_failure_mode_label(self, node):
-        comp = node.parents[0].user_name if node.parents else getattr(node, "fmea_component", "")
+        comp = self.get_component_name_for_node(node)
         label = node.description or (node.user_name or f"BE {node.unique_id}")
         return f"{comp}: {label}" if comp else label
 
@@ -8954,18 +8977,19 @@ class FaultTreeApp:
             nb.add(metric_frame, text="Metrics")
 
             ttk.Label(gen_frame, text="Component:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
-            if self.node.parents:
+            if self.node.parents and getattr(self.node.parents[0], "node_type", "").upper() not in GATE_NODE_TYPES:
                 comp = self.node.parents[0].user_name or f"Node {self.node.parents[0].unique_id}"
             else:
                 comp = getattr(self.node, "fmea_component", "")
             comp_names = {c.name for c in self.app.reliability_components}
             basic_events = self.app.get_all_basic_events()
             for be in basic_events + self.fmea_entries:
-                parent = be.parents[0] if be.parents else None
-                if parent and parent.user_name:
+                src = self.app.get_failure_mode_node(be)
+                parent = src.parents[0] if src.parents else None
+                if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES and parent.user_name:
                     comp_names.add(parent.user_name)
                 else:
-                    name = getattr(be, "fmea_component", "")
+                    name = getattr(src, "fmea_component", "")
                     if name:
                         comp_names.add(name)
             self.comp_var = tk.StringVar(value=comp)
@@ -9002,10 +9026,7 @@ class FaultTreeApp:
                 label = self.mode_var.get()
                 src = self.mode_map.get(label)
                 if src:
-                    if src.parents:
-                        comp_name = src.parents[0].user_name or f"Node {src.parents[0].unique_id}"
-                    else:
-                        comp_name = getattr(src, "fmea_component", "")
+                    comp_name = self.app.get_component_name_for_node(src)
                     if comp_name:
                         self.comp_var.set(comp_name)
                         comp_sel()
@@ -9238,7 +9259,7 @@ class FaultTreeApp:
 
         def apply(self):
             comp = self.comp_var.get()
-            if self.node.parents:
+            if self.node.parents and getattr(self.node.parents[0], "node_type", "").upper() not in GATE_NODE_TYPES:
                 self.node.parents[0].user_name = comp
             # Always store the component name so it can be restored on load
             self.node.fmea_component = comp
@@ -9696,9 +9717,7 @@ class FaultTreeApp:
             frac_totals = {}
             for be in events:
                 src = self.get_failure_mode_node(be)
-                comp_name = (
-                    src.parents[0].user_name if src.parents else getattr(src, "fmea_component", "")
-                )
+                comp_name = self.get_component_name_for_node(src)
                 fit = comp_fit.get(comp_name)
                 frac = src.fmeda_fault_fraction
                 if frac > 1.0:
@@ -9730,13 +9749,9 @@ class FaultTreeApp:
 
             for idx, be in enumerate(events):
                 src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
                 parent = src.parents[0] if src.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    parent_name = comp
-                else:
-                    comp = getattr(src, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 if comp not in comp_items:
                     comp_items[comp] = tree.insert(
                         "",
@@ -9829,7 +9844,7 @@ class FaultTreeApp:
                 mechs = []
                 for lib in selected_libs:
                     mechs.extend(lib.mechanisms)
-                comp_name = node.parents[0].user_name if node.parents else getattr(node, "fmea_component", "")
+                comp_name = self.get_component_name_for_node(node)
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
                 self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
                 refresh_tree()
@@ -9874,7 +9889,7 @@ class FaultTreeApp:
                     mechs = []
                     for lib in selected_libs:
                         mechs.extend(lib.mechanisms)
-                    comp_name = be.parents[0].user_name if be.parents else getattr(be, "fmea_component", "")
+                    comp_name = self.get_component_name_for_node(be)
                     is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
                     self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
@@ -9944,15 +9959,10 @@ class FaultTreeApp:
             writer = csv.writer(f)
             writer.writerow(columns)
             for be in fmea['entries']:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -9983,15 +9993,10 @@ class FaultTreeApp:
             writer = csv.writer(f)
             writer.writerow(columns)
             for be in fmeda['entries']:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -10031,14 +10036,7 @@ class FaultTreeApp:
         tree.pack(fill=tk.BOTH, expand=True)
 
         for be in basic_events:
-            parent = be.parents[0] if be.parents else None
-            if parent:
-                if parent.user_name:
-                    comp = parent.user_name
-                else:
-                    comp = "Node {}".format(parent.unique_id)
-            else:
-                comp = "N/A"
+            comp = self.get_component_name_for_node(be) or "N/A"
             tree.insert(
                 "",
                 "end",
@@ -12972,15 +12970,10 @@ class FaultTreeApp:
             ]
             writer.writerow(columns)
             for be in fmea["entries"]:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join(
                     [f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])]
                 )
@@ -13018,13 +13011,10 @@ class FaultTreeApp:
             ]
             writer.writerow(columns)
             for be in fmeda["entries"]:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 row = [
                     comp,
                     parent_name,
