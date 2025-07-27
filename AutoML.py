@@ -7846,6 +7846,13 @@ class FaultTreeApp:
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
 
+    def refresh_model(self):
+        """Propagate changes across analyses when the model updates."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+        self.update_basic_event_probabilities()
+
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
         if not node.parents or node.node_type.upper() == "TOP EVENT" or node.is_page:
