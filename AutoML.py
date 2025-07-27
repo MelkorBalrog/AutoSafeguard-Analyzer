@@ -1990,6 +1990,33 @@ class FaultTreeApp:
         self.analysis_tree.pack(fill=tk.BOTH, expand=True)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
 
+        # --- Configuration Section ---
+        self.config_group = ttk.LabelFrame(self.analysis_tab, text="Configuration")
+        self.config_group.pack(fill=tk.BOTH, expand=False, pady=5)
+        self.config_list = tk.Listbox(self.config_group, height=10)
+        self.config_list.pack(fill=tk.BOTH, expand=True)
+
+        self.config_actions = {
+            "Mission Profiles": self.manage_mission_profiles,
+            "Mechanism Libraries": self.manage_mechanism_libraries,
+            "Scenario Libraries": self.manage_scenario_libraries,
+            "ODD Libraries": self.manage_odd_libraries,
+            "Reliability Analysis": self.open_reliability_window,
+            "FMEDA Manager": self.show_fmeda_list,
+            "FMEA Manager": self.show_fmea_list,
+            "HAZOP Analysis": self.open_hazop_window,
+            "HARA Analysis": self.open_hara_window,
+            "FI2TC Analysis": self.open_fi2tc_window,
+            "TC2FI Analysis": self.open_tc2fi_window,
+            "AutoML Explorer": self.manage_architecture,
+            "Requirements Editor": self.show_requirements_editor,
+            "Safety Goals Editor": self.show_safety_goals_editor,
+            "Review Toolbox": self.open_review_toolbox,
+        }
+        for name in self.config_actions:
+            self.config_list.insert(tk.END, name)
+        self.config_list.bind("<Double-1>", self.on_config_list_double_click)
+
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
         self.pmhf_label.pack(side=tk.BOTTOM, fill=tk.X, pady=2)
@@ -7159,6 +7186,15 @@ class FaultTreeApp:
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
+
+    def on_config_list_double_click(self, event):
+        sel = self.config_list.curselection()
+        if not sel:
+            return
+        name = self.config_list.get(sel[0])
+        action = self.config_actions.get(name)
+        if action:
+            action()
 
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
