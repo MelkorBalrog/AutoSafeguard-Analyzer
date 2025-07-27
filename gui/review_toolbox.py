@@ -26,6 +26,9 @@ import json
 import re
 from PIL import Image, ImageTk
 
+# Node types treated as gates when deriving component names
+GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
 # Access the drawing helper defined in the main application if available.
@@ -1376,8 +1379,12 @@ class ReviewDocumentDialog(tk.Frame):
 
                 parent = entry.get("parents", [{}])
                 parent = parent[0] if parent else {}
-                comp = parent.get("user_name") or entry.get("fmea_component", "") or "N/A"
-                parent_name = parent.get("user_name", f"Node {parent.get('unique_id')}") if parent else ""
+                if parent and parent.get("node_type", "").upper() not in GATE_NODE_TYPES and parent.get("user_name"):
+                    comp = parent.get("user_name")
+                    parent_name = parent.get("user_name")
+                else:
+                    comp = entry.get("fmea_component", "") or "N/A"
+                    parent_name = ""
                 rpn = int(entry.get("fmea_severity", 1)) * int(entry.get("fmea_occurrence", 1)) * int(entry.get("fmea_detection", 1))
                 req_ids = "; ".join(
                     f"{r.get('req_type', '')}:{r.get('text', '')}"
@@ -2280,10 +2287,11 @@ class VersionCompareDialog(tk.Frame):
                 failure = entry.get("description", entry.get("user_name", f"BE {uid}"))
                 parent = entry.get("parents", [{}])
                 parent = parent[0] if parent else {}
-                comp = parent.get("user_name") or entry.get("fmea_component", "") or "N/A"
-                if parent:
-                    parent_name = parent.get("user_name", f"Node {parent.get('unique_id')}")
+                if parent and parent.get("node_type", "").upper() not in GATE_NODE_TYPES and parent.get("user_name"):
+                    comp = parent.get("user_name")
+                    parent_name = parent.get("user_name")
                 else:
+                    comp = entry.get("fmea_component", "") or "N/A"
                     parent_name = ""
                 rpn = (
                     int(entry.get("fmea_severity", 1))
@@ -2355,8 +2363,12 @@ class VersionCompareDialog(tk.Frame):
                         entry = ent2[uid]
                 parent = entry.get("parents", [{}])
                 parent = parent[0] if parent else {}
-                comp = parent.get("user_name") or entry.get("fmea_component", "") or "N/A"
-                parent_name = parent.get("user_name", f"Node {parent.get('unique_id')}") if parent else ""
+                if parent and parent.get("node_type", "").upper() not in GATE_NODE_TYPES and parent.get("user_name"):
+                    comp = parent.get("user_name")
+                    parent_name = parent.get("user_name")
+                else:
+                    comp = entry.get("fmea_component", "") or "N/A"
+                    parent_name = ""
                 row = [
                     name,
                     comp,
