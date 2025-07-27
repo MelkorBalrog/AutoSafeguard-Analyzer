@@ -1831,7 +1831,7 @@ class FaultTreeApp:
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
-            "show_grid": True,
+            "show_grid": False,
             "black_white": False,
         }
         self.mission_profiles = []
@@ -3226,7 +3226,7 @@ class FaultTreeApp:
         chk = tk.Checkbutton(prop_win, text="Show Detailed Formulas in PDF Report", variable=var_detailed, font=dialog_font)
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
-        var_grid = tk.BooleanVar(value=self.project_properties.get("show_grid", True))
+        var_grid = tk.BooleanVar(value=self.project_properties.get("show_grid", False))
         chk_grid = tk.Checkbutton(prop_win, text="Show Grid", variable=var_grid, font=dialog_font)
         chk_grid.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
@@ -7882,7 +7882,7 @@ class FaultTreeApp:
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def draw_grid(self):
-        if not self.project_properties.get("show_grid", True):
+        if not self.project_properties.get("show_grid", False):
             return
         spacing = self.grid_size * self.zoom
         width = self.canvas.winfo_width()
@@ -13936,7 +13936,7 @@ class PageDiagram:
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def draw_grid(self):
-        if not self.project_properties.get("show_grid", True):
+        if not self.project_properties.get("show_grid", False):
             return
         spacing = self.grid_size * self.zoom
         width = self.canvas.winfo_width()
