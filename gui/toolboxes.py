@@ -43,12 +43,18 @@ def _wrap_val(val, width=30):
         return ""
     return textwrap.fill(str(val), width)
 
-class ReliabilityWindow(tk.Toplevel):
-    def __init__(self, app):
-        super().__init__(app.root)
+class ReliabilityWindow(tk.Frame):
+    def __init__(self, master, app):
+        if isinstance(master, tk.Toplevel):
+            container = master
+        else:
+            container = master
+        super().__init__(container)
         self.app = app
-        self.title("Reliability Analysis")
-        self.geometry("600x400")
+        if isinstance(master, tk.Toplevel):
+            master.title("Reliability Analysis")
+            master.geometry("600x400")
+            self.pack(fill=tk.BOTH, expand=True)
         self.components = []
 
         ttk.Label(self, text="Standard:").pack(anchor="w")
