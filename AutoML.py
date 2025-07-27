@@ -1983,7 +1983,7 @@ class FaultTreeApp:
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
 
         # --- Analyses Group ---
-        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses")
+        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
         self.analysis_tree = ttk.Treeview(self.analysis_group)
