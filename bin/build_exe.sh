@@ -6,6 +6,11 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
     exit 1
 fi
 
+# Warn if running a pre-release Python build which may cause PyInstaller errors
+if python -c "import sys, re; v=sys.version; print('pre' if re.search('(alpha|beta|candidate|rc)', v) else '')" | grep -q pre; then
+    echo "Warning: pre-release Python builds can fail with PyInstaller. Use a stable release." >&2
+fi
+
 # Ensure commands run from repository root (parent directory of this script)
 SCRIPT_DIR="$(dirname "$0")"
 cd "$SCRIPT_DIR/.."

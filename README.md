@@ -166,7 +166,9 @@ options are always applied.
 The scripts exclude the `scipy` package, which is not required by AutoML but
 can cause PyInstaller to fail on some Python installations. If you encounter
 errors about ``IndexError`` while building, try upgrading your Python runtime
-or reinstalling SciPy.
+or reinstalling SciPy. This is most common when using a pre-release Python
+interpreter (e.g. ``3.10.0rc2``). Install the latest stable release of Python
+and run the build again if you hit this issue.
 
 
 ## Version History
