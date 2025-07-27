@@ -159,6 +159,10 @@ After building you can launch the application directly or use
 `bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
 Windows.
 
+If a previous build failed and left an `AutoML.spec` file behind, the build
+scripts now delete it before running PyInstaller so your command line
+options are always applied.
+
 The scripts exclude the `scipy` package, which is not required by AutoML but
 can cause PyInstaller to fail on some Python installations. If you encounter
 errors about ``IndexError`` while building, try upgrading your Python runtime

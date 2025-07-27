@@ -10,6 +10,9 @@ fi
 SCRIPT_DIR="$(dirname "$0")"
 cd "$SCRIPT_DIR/.."
 
+# Remove leftover spec file so our options are respected even after a failed build
+rm -f AutoML.spec
+
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
