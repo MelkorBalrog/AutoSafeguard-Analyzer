@@ -7180,9 +7180,10 @@ class FaultTreeApp:
             self.show_requirements_editor()
         elif kind == "sg":
             self.show_safety_goals_editor()
-        elif kind == "fta":
-            te = next((t for t in self.top_events if t.unique_id == idx), None)
-            if te:
+       elif kind == "fta":
+           te = next((t for t in self.top_events if t.unique_id == idx), None)
+           if te:
+                self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
