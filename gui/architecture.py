@@ -273,6 +273,14 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        if not isinstance(self.master, tk.Toplevel):
+            # When a diagram is embedded in another window, add a small
+            # close button over the canvas so the frame can be closed.
+            self.close_btn = ttk.Button(self.canvas, text="x", width=2,
+                                       command=self.on_close)
+            self.close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
+            self.close_btn.lift()
+
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_left_release)
