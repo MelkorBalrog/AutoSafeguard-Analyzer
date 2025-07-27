@@ -9745,7 +9745,10 @@ class FaultTreeApp:
                     fmea['bom'] = bom_var.get()
             win.destroy()
 
-        win.protocol("WM_DELETE_WINDOW", on_close)
+        if hasattr(win, "protocol"):
+            win.protocol("WM_DELETE_WINDOW", on_close)
+        else:
+            win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
         columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]
