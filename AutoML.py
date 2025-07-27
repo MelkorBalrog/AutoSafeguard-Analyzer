@@ -2056,8 +2056,17 @@ class FaultTreeApp:
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_list = tk.Listbox(self.tools_group, height=10)
-        self.tools_list.pack(fill=tk.BOTH, expand=True)
+        tools_frame = ttk.Frame(self.tools_group)
+        tools_frame.pack(fill=tk.BOTH, expand=True)
+        self.tools_list = tk.Listbox(tools_frame, height=10)
+        vsb = ttk.Scrollbar(tools_frame, orient="vertical", command=self.tools_list.yview)
+        hsb = ttk.Scrollbar(tools_frame, orient="horizontal", command=self.tools_list.xview)
+        self.tools_list.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tools_list.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tools_frame.rowconfigure(0, weight=1)
+        tools_frame.columnconfigure(0, weight=1)
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
