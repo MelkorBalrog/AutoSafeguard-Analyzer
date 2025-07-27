@@ -7860,6 +7860,32 @@ class FaultTreeApp:
         self.ensure_asil_consistency()
         for fm in self.get_all_failure_modes():
             self.propagate_failure_mode_attributes(fm)
+
+        def iter_analysis_events():
+            for be in self.get_all_basic_events():
+                yield be
+            for e in self.fmea_entries:
+                yield e
+            for doc in self.fmeas:
+                for e in doc.get("entries", []):
+                    yield e
+            for doc in self.fmedas:
+                for e in doc.get("entries", []):
+                    yield e
+
+        for entry in iter_analysis_events():
+            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
+            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
+            if goals:
+                sg = ", ".join(goals)
+                entry.fmeda_safety_goal = sg
+                first = goals[0]
+                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
+                if te:
+                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
+                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
+                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
+
         self.update_basic_event_probabilities()
 
     def insert_node_in_tree(self, parent_item, node):
