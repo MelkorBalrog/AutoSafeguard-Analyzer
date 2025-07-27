@@ -8963,12 +8963,9 @@ class FaultTreeApp:
                 row_next += 1
 
             ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
-            fault_names = set(self.app.faults)
-            for be in self.app.get_all_basic_events():
-                label = be.description or (be.user_name or f"BE {be.unique_id}")
-                fault_names.add(label)
+            fault_names = sorted(set(self.app.faults))
             self.cause_var = tk.StringVar(value=getattr(self.node, 'fmea_cause', ''))
-            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=sorted(fault_names), width=30)
+            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=fault_names, width=30)
             self.cause_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
