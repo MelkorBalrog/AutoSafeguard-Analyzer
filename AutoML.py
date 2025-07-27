@@ -425,7 +425,11 @@ class ClosableNotebook(ttk.Notebook):
                 return
             self._closing_tab = tab_id
             self.event_generate("<<NotebookTabClosed>>")
-            self.forget(tab_id)
+            if tab_id in self.tabs():
+                try:
+                    self.forget(tab_id)
+                except tk.TclError:
+                    pass
         self.state(["!pressed"])
         self._active = None
 
@@ -909,19 +913,11 @@ class EditNodeDialog(simpledialog.Dialog):
             self.prob_entry.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
-            ttk.Label(safety_frame, text="Represents FM:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            modes = self.app.get_all_failure_modes()
-            self.fm_map = {self.app.format_failure_mode_label(m): m.unique_id for m in modes}
-            self.fm_var = tk.StringVar()
-            current = ''
-            if getattr(self.node, 'failure_mode_ref', None):
-                n = self.app.find_node_by_id_all(self.node.failure_mode_ref)
-                if n:
-                    current = self.app.format_failure_mode_label(n)
-            self.fm_var.set(current)
-            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), state='readonly', width=40)
+            ttk.Label(safety_frame, text="Represents Fault:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+            self.fm_map = {name: name for name in self.app.faults}
+            self.fm_var = tk.StringVar(value=getattr(self.node, 'fault_ref', ''))
+            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), width=40)
             self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
-            self.fm_combo.bind("<<ComboboxSelected>>", self.update_probability)
             row_next += 1
 
 
@@ -967,6 +963,20 @@ class EditNodeDialog(simpledialog.Dialog):
                                            state="readonly", width=10)
             self.gate_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
+
+            ttk.Label(safety_frame, text="Represents FM:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+            modes = self.app.get_all_failure_modes()
+            self.fm_map = {self.app.format_failure_mode_label(m): m.unique_id for m in modes}
+            self.fm_var = tk.StringVar()
+            current = ''
+            if getattr(self.node, 'failure_mode_ref', None):
+                n = self.app.find_node_by_id_all(self.node.failure_mode_ref)
+                if n:
+                    current = self.app.format_failure_mode_label(n)
+            self.fm_var.set(current)
+            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), width=40)
+            self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
+            row_next += 1
             if self.node.node_type.upper() == "TOP EVENT":
                 ttk.Label(safety_frame, text="Severity (1-3):").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.sev_combo = ttk.Combobox(safety_frame, values=["1", "2", "3"],
@@ -1007,6 +1017,12 @@ class EditNodeDialog(simpledialog.Dialog):
                 self.safe_state_entry = tk.Entry(safety_frame, width=40, font=dialog_font)
                 self.safe_state_entry.insert(0, self.node.safe_state)
                 self.safe_state_entry.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                row_next += 1
+
+                ttk.Label(safety_frame, text="Malfunction:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                self.mal_var = tk.StringVar(value=getattr(self.node, 'malfunction', ''))
+                self.mal_combo = ttk.Combobox(safety_frame, textvariable=self.mal_var, values=sorted(self.app.malfunctions), width=30)
+                self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="FTTI:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -1357,6 +1373,13 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_all_requirement_asil()
         self.update_requirement_decomposition()
 
+    def refresh_model(self):
+        """Propagate changes to keep analyses synchronized."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+        self.update_basic_event_probabilities()
+
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
         for r in self.reviews:
@@ -1643,16 +1666,19 @@ class EditNodeDialog(simpledialog.Dialog):
     def validate(self):
         if hasattr(self, 'fm_var'):
             label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            if ref:
-                for n in self.app.get_all_nodes_in_model():
-                    if n is self.node:
-                        continue
-                    if not n.is_primary_instance:
-                        continue
-                    if getattr(n, 'failure_mode_ref', None) == ref:
-                        messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another node')
-                        return False
+            if self.node.node_type.upper() == 'BASIC EVENT':
+                pass
+            else:
+                ref = self.fm_map.get(label)
+                if ref:
+                    for n in self.app.get_all_nodes_in_model():
+                        if n is self.node:
+                            continue
+                        if not n.is_primary_instance:
+                            continue
+                        if getattr(n, 'failure_mode_ref', None) == ref:
+                            messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another node')
+                            return False
         return True
 
     def apply(self):
@@ -1672,8 +1698,9 @@ class EditNodeDialog(simpledialog.Dialog):
                 messagebox.showerror("Invalid Input", "Select a value between 1 and 5.")
         elif self.node.node_type.upper() == "BASIC EVENT":
             label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            target_node.failure_mode_ref = ref
+            target_node.fault_ref = label
+            if label and label not in self.app.faults:
+                self.app.faults.append(label)
             target_node.prob_formula = self.formula_var.get()
             if target_node.prob_formula == "constant":
                 try:
@@ -1682,9 +1709,12 @@ class EditNodeDialog(simpledialog.Dialog):
                     target_node.failure_prob = 0.0
             else:
                 target_node.failure_prob = self.app.compute_failure_prob(
-                    target_node, failure_mode_ref=ref, formula=target_node.prob_formula)
+                    target_node, failure_mode_ref=getattr(target_node, 'failure_mode_ref', None), formula=target_node.prob_formula)
         elif self.node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
             target_node.gate_type = self.gate_var.get().strip().upper()
+            label = self.fm_var.get().strip()
+            ref = self.fm_map.get(label)
+            target_node.failure_mode_ref = ref
             if self.node.node_type.upper() == "TOP EVENT":
                 try:
                     sev = float(self.sev_combo.get().strip())
@@ -1704,6 +1734,20 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safety_goal_description = self.safety_goal_text.get("1.0", "end-1c")
                 target_node.safety_goal_asil = self.sg_asil_var.get().strip()
                 target_node.safe_state = self.safe_state_entry.get().strip()
+                new_mal = self.mal_var.get().strip()
+                if new_mal:
+                    for te in self.app.top_events:
+                        if te is not target_node and getattr(te, "malfunction", "") == new_mal:
+                            messagebox.showerror(
+                                "Duplicate Malfunction",
+                                "This malfunction is already assigned to another top level event.",
+                            )
+                            new_mal = getattr(self.node, "malfunction", "")
+                            self.mal_var.set(new_mal)
+                            break
+                target_node.malfunction = new_mal
+                if target_node.malfunction and target_node.malfunction not in self.app.malfunctions:
+                    self.app.malfunctions.append(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
                     target_node.sg_dc_target = float(self.dc_target_var.get())
@@ -1774,6 +1818,13 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # small icons for diagram types shown in the explorer
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
+        }
         self.clipboard_node = None
         self.cut_mode = False
         self.page_history = []
@@ -1791,6 +1842,9 @@ class FaultTreeApp:
         self.spfm = 0.0
         self.lpfm = 0.0
         self.reliability_dc = 0.0
+        # Lists of user-defined faults and malfunctions
+        self.faults: list[str] = []
+        self.malfunctions: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.active_hazop = None
@@ -1986,8 +2040,17 @@ class FaultTreeApp:
         self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
-        self.analysis_tree = ttk.Treeview(self.analysis_group)
-        self.analysis_tree.pack(fill=tk.BOTH, expand=True)
+        tree_frame = ttk.Frame(self.analysis_group)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        self.analysis_tree = ttk.Treeview(tree_frame)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.analysis_tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.analysis_tree.xview)
+        self.analysis_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.analysis_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
 
         # --- Tools Section ---
@@ -2955,6 +3018,30 @@ class FaultTreeApp:
                 if sg:
                     result.append(sg)
         return result
+
+    def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
+        """Return safety goal names for given malfunctions."""
+        goals = []
+        for te in self.top_events:
+            mal = getattr(te, "malfunction", "")
+            if mal and mal in malfunctions:
+                sg = te.safety_goal_description or te.user_name or ""
+                if sg and sg not in goals:
+                    goals.append(sg)
+        return goals
+
+    def is_malfunction_used(self, name: str) -> bool:
+        """Return True if the malfunction is used in any FTA or analysis."""
+        if not name:
+            return False
+        for te in self.top_events:
+            if getattr(te, "malfunction", "") == name:
+                return True
+        for n in self.get_all_nodes_in_model():
+            mals = [m.strip() for m in getattr(n, "fmeda_malfunction", "").split(";") if m.strip()]
+            if name in mals:
+                return True
+        return False
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -7183,6 +7270,7 @@ class FaultTreeApp:
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
+                self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
@@ -7475,6 +7563,14 @@ class FaultTreeApp:
         """Return a list of all basic events across all top-level trees."""
         return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "BASIC EVENT"]
 
+    def get_all_gates(self):
+        """Return a list of all gate nodes (including top events)."""
+        return [
+            n
+            for n in self.get_all_nodes_in_model()
+            if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]
+        ]
+
     def get_all_triggering_conditions(self):
         """Return all triggering condition nodes."""
         return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "TRIGGERING CONDITION"]
@@ -7581,7 +7677,7 @@ class FaultTreeApp:
 
     def get_all_failure_modes(self):
         """Return list of all failure mode nodes from FTA, FMEAs and FMEDAs."""
-        modes = list(self.get_all_basic_events())
+        modes = list(self.get_all_gates())
         for doc in self.fmea_entries:
             modes.append(doc)
         for f in self.fmeas:
@@ -7610,7 +7706,8 @@ class FaultTreeApp:
         """Return labels of basic events linked to the given malfunction."""
         result = []
         for be in self.get_all_basic_events():
-            if getattr(be, "fmeda_malfunction", "") == malfunction:
+            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
+            if malfunction in mals:
                 result.append(self.format_failure_mode_label(be))
         return result
 
@@ -7639,6 +7736,7 @@ class FaultTreeApp:
         return rec(node)
 
     def update_views(self):
+        self.refresh_model()
         # Compute occurrence counts from the current tree
         self.occurrence_counts = self.compute_occurrence_counts()
 
@@ -7675,7 +7773,14 @@ class FaultTreeApp:
             arch_root = tree.insert("", "end", text="AutoML Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                tree.insert(arch_root, "end", text=name, tags=("arch", str(idx)))
+                icon = self.diagram_icons.get(diag.diag_type)
+                tree.insert(
+                    arch_root,
+                    "end",
+                    text=name,
+                    tags=("arch", str(idx)),
+                    image=icon,
+                )
             tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
             tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
 
@@ -8620,7 +8725,7 @@ class FaultTreeApp:
 
 
     def show_fmea_list(self):
-        if hasattr(self, "_fmea_tab") and self._fmea_tab.winfo_exists():
+        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
             self.doc_nb.select(self._fmea_tab)
             return
         self._fmea_tab = self._new_tab("FMEA List")
@@ -8657,15 +8762,31 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmea():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmeas[idx]['name']
+            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmeas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        if hasattr(self, "_fmeda_tab") and self._fmeda_tab.winfo_exists():
+        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
             self.doc_nb.select(self._fmeda_tab)
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
@@ -8702,11 +8823,27 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmeda():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmedas[idx]['name']
+            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmedas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
@@ -8748,12 +8885,13 @@ class FaultTreeApp:
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
 
     class FMEARowDialog(simpledialog.Dialog):
-        def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False):
+        def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False, is_fmeda=False):
             self.node = node
             self.app = app
             self.fmea_entries = fmea_entries
             self.mechanisms = mechanisms or []
             self.hide_diagnostics = hide_diagnostics
+            self.is_fmeda = is_fmeda
             super().__init__(parent, title="Edit FMEA Entry")
             self.app.selected_node = node
 
@@ -8825,41 +8963,95 @@ class FaultTreeApp:
 
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
-            ttk.Label(gen_frame, text="Failure Effect:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
             self.effect_text = tk.Text(gen_frame, width=30, height=3)
             self.effect_text.insert("1.0", self.node.fmea_effect)
-            self.effect_text.grid(row=2, column=1, padx=5, pady=5)
+            row_next = 2
+            if not self.is_fmeda:
+                ttk.Label(gen_frame, text="Failure Effect:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+                self.effect_text.grid(row=row_next, column=1, padx=5, pady=5)
+                row_next += 1
 
-            ttk.Label(gen_frame, text="Potential Cause:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
-            self.cause_text = tk.Text(gen_frame, width=30, height=3)
-            self.cause_text.insert("1.0", getattr(self.node, 'fmea_cause', ''))
-            self.cause_text.grid(row=3, column=1, padx=5, pady=5)
+            ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+            fault_names = sorted(set(self.app.faults))
+            self.cause_var = tk.StringVar(value=getattr(self.node, 'fmea_cause', ''))
+            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=fault_names, width=30)
+            self.cause_combo.grid(row=row_next, column=1, padx=5, pady=5)
+            row_next += 1
 
-            ttk.Label(gen_frame, text="Related Malfunction:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
-            self.mal_var = tk.StringVar(value=getattr(self.node, 'fmeda_malfunction', ''))
-            ttk.Entry(gen_frame, textvariable=self.mal_var, width=30).grid(row=4, column=1, padx=5, pady=5)
+            ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
+            self.mal_vars = {}
+            sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
+            self.mal_frame = ttk.Frame(gen_frame)
+            self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
 
-            ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
+            def update_sg(*_):
+                selected = [m for m, v in self.mal_vars.items() if v.get()]
+                goals = self.app.get_safety_goals_for_malfunctions(selected)
+                if not goals:
+                    goals = self.app.get_top_event_safety_goals(self.node)
+                self.sg_var.set(", ".join(goals))
+
+            for m in sorted(self.app.malfunctions):
+                var = tk.BooleanVar(value=m in sel_mals)
+                ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
+                self.mal_vars[m] = var
+
+            btn_frame = ttk.Frame(gen_frame)
+            btn_frame.grid(row=row_next + 1, column=1, sticky="w")
+
+            def add_malfunction():
+                name = simpledialog.askstring("New Malfunction", "Name:")
+                if name:
+                    name = name.strip()
+                if not name:
+                    return
+                if name in self.app.malfunctions:
+                    messagebox.showinfo("Malfunction", "Already exists")
+                    return
+                self.app.malfunctions.append(name)
+                var = tk.BooleanVar(value=True)
+                ttk.Checkbutton(self.mal_frame, text=name, variable=var, command=update_sg).pack(anchor="w")
+                self.mal_vars[name] = var
+                update_sg()
+
+            def del_malfunction():
+                options = [m for m in self.app.malfunctions if not self.app.is_malfunction_used(m)]
+                if not options:
+                    messagebox.showinfo("Delete", "No deletable malfunctions")
+                    return
+                dlg = tk.Toplevel(self)
+                dlg.title("Delete Malfunction")
+                lb = tk.Listbox(dlg, selectmode=tk.MULTIPLE)
+                for m in options:
+                    lb.insert(tk.END, m)
+                lb.pack(padx=5, pady=5)
+                def ok():
+                    sel = [lb.get(i) for i in lb.curselection()]
+                    for m in sel:
+                        if m in self.app.malfunctions:
+                            self.app.malfunctions.remove(m)
+                            cb = self.mal_vars.pop(m, None)
+                            for child in list(self.mal_frame.winfo_children()):
+                                if child.cget("text") == m:
+                                    child.destroy()
+                    update_sg()
+                    dlg.destroy()
+                ttk.Button(dlg, text="Delete", command=ok).pack(pady=5)
+                dlg.grab_set()
+                dlg.wait_window()
+
+            ttk.Button(btn_frame, text="Add", command=add_malfunction).pack(side=tk.LEFT, padx=2)
+            ttk.Button(btn_frame, text="Delete", command=del_malfunction).pack(side=tk.LEFT, padx=2)
+            row_next += 2
+
+            ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+            preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
+                self.app.get_top_event_safety_goals(self.node)
             sg_value = ", ".join(preset_goals) if preset_goals else getattr(self.node, 'fmeda_safety_goal', '')
             self.sg_var = tk.StringVar(value=sg_value)
-            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30)
-            if preset_goals:
-                self.sg_entry.config(state='readonly')
-            self.sg_entry.grid(row=5, column=1, padx=5, pady=5)
-            if not preset_goals:
-                def choose_goals():
-                    names = [g.strip() for g in self.sg_var.get().split(',') if g.strip()]
-                    dlg = self.app.SelectSafetyGoalsDialog(self, self.app.top_events, names)
-                    if dlg.result:
-                        self.sg_var.set(
-                            ", ".join(
-                                sg.user_name or sg.safety_goal_description or f"SG {sg.unique_id}"
-                                for sg in dlg.result
-                            )
-                        )
-
-                ttk.Button(gen_frame, text="Select", command=choose_goals).grid(row=5, column=2, padx=5, pady=5)
+            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30, state='readonly')
+            self.sg_entry.grid(row=row_next, column=1, padx=5, pady=5)
+            update_sg()
 
             ttk.Label(metric_frame, text="Severity (1-10):").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.sev_spin = tk.Spinbox(metric_frame, from_=1, to=10, width=5)
@@ -8896,9 +9088,36 @@ class FaultTreeApp:
                     for m in self.mechanisms:
                         if m.name == name:
                             self.dc_var.set(m.coverage)
+                            req_text = getattr(m, "requirement", "")
+                            if req_text:
+                                global global_requirements
+                                req = next(
+                                    (
+                                        r
+                                        for r in global_requirements.values()
+                                        if r.get("text") == req_text
+                                    ),
+                                    None,
+                                )
+                                if req is None:
+                                    rid = str(uuid.uuid4())
+                                    req = {
+                                        "id": rid,
+                                        "req_type": "vehicle",
+                                        "text": req_text,
+                                        "asil": "",
+                                    }
+                                    global_requirements[rid] = req
+                                if not hasattr(self.node, "safety_requirements"):
+                                    self.node.safety_requirements = []
+                                if not any(r.get("id") == req["id"] for r in self.node.safety_requirements):
+                                    self.node.safety_requirements.append(req)
+                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                                    self.req_listbox.insert(tk.END, desc)
                             break
 
                 self.mech_combo.bind("<<ComboboxSelected>>", mech_sel)
+                mech_sel(None)
                 row += 1
             else:
                 self.dc_var = tk.DoubleVar(value=0.0)
@@ -8976,7 +9195,9 @@ class FaultTreeApp:
             self.node.fmea_component = comp
             self.node.description = self.mode_var.get()
             self.node.fmea_effect = self.effect_text.get("1.0", "end-1c")
-            self.node.fmea_cause = self.cause_text.get("1.0", "end-1c")
+            self.node.fmea_cause = self.cause_var.get()
+            if self.node.fmea_cause and self.node.fmea_cause not in self.app.faults:
+                self.app.faults.append(self.node.fmea_cause)
             try:
                 self.node.fmea_severity = int(self.sev_spin.get())
             except ValueError:
@@ -8989,12 +9210,12 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
-            self.node.fmeda_malfunction = self.mal_var.get()
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
-            if preset_goals:
-                self.node.fmeda_safety_goal = ", ".join(preset_goals)
-            else:
-                self.node.fmeda_safety_goal = self.sg_var.get()
+            selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+            self.node.fmeda_malfunction = ";".join(selected_mals)
+            for m in selected_mals:
+                if m and m not in self.app.malfunctions:
+                    self.app.malfunctions.append(m)
+            self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
             except ValueError:
@@ -9561,7 +9782,7 @@ class FaultTreeApp:
                     mechs.extend(lib.mechanisms)
                 comp_name = node.parents[0].user_name if node.parents else getattr(node, "fmea_component", "")
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
                 refresh_tree()
 
         tree.bind("<Double-1>", on_double)
@@ -9577,7 +9798,7 @@ class FaultTreeApp:
                     mechs.extend(lib.mechanisms)
                 comp_name = getattr(node, "fmea_component", "")
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             elif node:
                 # gather all failure modes under the same component/parent
                 if node.parents:
@@ -9606,7 +9827,7 @@ class FaultTreeApp:
                         mechs.extend(lib.mechanisms)
                     comp_name = be.parents[0].user_name if be.parents else getattr(be, "fmea_component", "")
                     is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
 
         add_btn.config(command=add_failure_mode)
@@ -9663,7 +9884,10 @@ class FaultTreeApp:
                     fmea['bom'] = bom_var.get()
             win.destroy()
 
-        win.protocol("WM_DELETE_WINDOW", on_close)
+        if hasattr(win, "protocol"):
+            win.protocol("WM_DELETE_WINDOW", on_close)
+        else:
+            win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
         columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]
@@ -10016,11 +10240,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10119,11 +10352,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10222,11 +10464,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10325,11 +10576,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10528,14 +10788,22 @@ class FaultTreeApp:
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        mech_tree = ttk.Treeview(win, columns=("cov", "desc"), show="headings")
+        mech_tree = ttk.Treeview(
+            win, columns=("cov", "req", "desc", "detail"), show="headings"
+        )
         mech_tree.heading("cov", text="Coverage")
         mech_tree.column("cov", width=80)
+        mech_tree.heading("req", text="Requirement")
+        mech_tree.column("req", width=200)
         mech_tree.heading("desc", text="Description")
         mech_tree.column("desc", width=200)
-        mech_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
+        mech_tree.heading("detail", text="Detail")
+        mech_tree.column("detail", width=300)
+        mech_tree.grid(row=0, column=1, columnspan=4, sticky="nsew")
         win.grid_rowconfigure(0, weight=1)
-        win.grid_columnconfigure(1, weight=1)
+        win.grid_columnconfigure(0, weight=0)
+        for c in range(1, 5):
+            win.grid_columnconfigure(c, weight=1)
 
         def refresh_libs():
             lib_lb.delete(0, tk.END)
@@ -10550,7 +10818,56 @@ class FaultTreeApp:
                 return
             lib = self.mechanism_libraries[sel[0]]
             for mech in lib.mechanisms:
-                mech_tree.insert("", tk.END, values=(f"{mech.coverage:.2f}", mech.description), text=mech.name)
+                mech_tree.insert(
+                    "",
+                    tk.END,
+                    values=(
+                        f"{mech.coverage:.2f}",
+                        getattr(mech, "requirement", ""),
+                        mech.description,
+                        mech.detail,
+                    ),
+                    text=mech.name,
+                )
+
+        tip_win = None
+
+        def hide_tip():
+            nonlocal tip_win
+            if tip_win is not None:
+                tip_win.destroy()
+                tip_win = None
+
+        def show_tip(event, text):
+            nonlocal tip_win
+            hide_tip()
+            if not text:
+                return
+            tip_win = tk.Toplevel(win)
+            tip_win.wm_overrideredirect(True)
+            tip_win.wm_geometry(
+                f"+{win.winfo_rootx()+event.x+20}+{win.winfo_rooty()+event.y+20}"
+            )
+            lbl = tk.Label(
+                tip_win,
+                text=text,
+                justify="left",
+                background="lightyellow",
+                relief="solid",
+                borderwidth=1,
+                wraplength=300,
+            )
+            lbl.pack()
+
+        def on_tree_motion(event):
+            row = mech_tree.identify_row(event.y)
+            col = mech_tree.identify_column(event.x)
+            if row and col in ("#3", "#4"):
+                field = "desc" if col == "#3" else "detail"
+                text = mech_tree.set(row, field)
+                show_tip(event, text)
+            else:
+                hide_tip()
 
         def add_lib():
             name = simpledialog.askstring("New Library", "Library name:")
@@ -10576,35 +10893,79 @@ class FaultTreeApp:
             del self.mechanism_libraries[sel[0]]
             refresh_libs()
 
+        def clone_lib():
+            sel = lib_lb.curselection()
+            if not sel:
+                return
+            lib = self.mechanism_libraries[sel[0]]
+            name = simpledialog.askstring(
+                "Clone Library",
+                "Library name:",
+                initialvalue=f"{lib.name} Copy",
+            )
+            if not name:
+                return
+            existing = {l.name for l in self.mechanism_libraries}
+            base = name
+            idx = 1
+            while name in existing:
+                name = f"{base} ({idx})"
+                idx += 1
+            new_mechs = [
+                DiagnosticMechanism(
+                    m.name,
+                    m.coverage,
+                    m.description,
+                    m.detail,
+                    getattr(m, "requirement", ""),
+                )
+                for m in lib.mechanisms
+            ]
+            self.mechanism_libraries.append(MechanismLibrary(name, new_mechs))
+            refresh_libs()
+
         def add_mech():
             sel = lib_lb.curselection()
             if not sel:
                 return
             lib = self.mechanism_libraries[sel[0]]
-            dlg = simpledialog.Dialog(win, title="Add Mechanism")
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value="1.0")
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar()
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     self.result = (
                         self.name_var.get(),
                         float(self.cov_var.get() or 1.0),
-                        self.desc_var.get(),
+                        self.desc_text.get("1.0", "end-1c"),
+                        self.detail_text.get("1.0", "end-1c"),
+                        self.req_var.get(),
                     )
 
             form = MForm(win)
             if hasattr(form, "result"):
-                name, cov, desc = form.result
-                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc))
+                name, cov, desc, detail, req = form.result
+                lib.mechanisms.append(
+                    DiagnosticMechanism(name, cov, desc, detail, req)
+                )
                 refresh_mechs()
 
         def edit_mech():
@@ -10618,20 +10979,34 @@ class FaultTreeApp:
 
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar(value=mech.name)
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value=str(mech.coverage))
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar(value=mech.description)
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.insert("1.0", mech.description)
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.insert("1.0", mech.detail)
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar(value=getattr(mech, "requirement", ""))
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     mech.name = self.name_var.get()
                     mech.coverage = float(self.cov_var.get() or 1.0)
-                    mech.description = self.desc_var.get()
+                    mech.description = self.desc_text.get("1.0", "end-1c")
+                    mech.detail = self.detail_text.get("1.0", "end-1c")
+                    mech.requirement = self.req_var.get()
 
             MForm(win)
             refresh_mechs()
@@ -10651,11 +11026,16 @@ class FaultTreeApp:
         ttk.Button(btnf, text="Add Lib", command=add_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Edit Lib", command=edit_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Lib", command=del_lib).pack(side=tk.LEFT)
+        ttk.Button(btnf, text="Clone Lib", command=clone_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Add Mech", command=add_mech).pack(side=tk.LEFT, padx=5)
         ttk.Button(btnf, text="Edit Mech", command=edit_mech).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Mech", command=del_mech).pack(side=tk.LEFT)
 
         lib_lb.bind("<<ListboxSelect>>", refresh_mechs)
+        lib_lb.bind("<Double-1>", lambda e: edit_lib())
+        mech_tree.bind("<Double-1>", lambda e: edit_mech())
+        mech_tree.bind("<Motion>", on_tree_motion)
+        mech_tree.bind("<Leave>", lambda e: hide_tip())
         refresh_libs()
 
     def manage_scenario_libraries(self):
@@ -11155,6 +11535,56 @@ class FaultTreeApp:
         self.doc_nb.select(tab)
         return tab
 
+    def _format_diag_title(self, diag) -> str:
+        """Return SysML style title for a diagram tab."""
+        if diag.name:
+            return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
+        return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
+
+    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
+        """Return a simple 16x16 PhotoImage for the given shape and color."""
+        size = 16
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
+        if shape == "circle":
+            r = size // 2 - 2
+            cx = cy = size // 2
+            for y in range(size):
+                for x in range(size):
+                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        img.put(c, (x, y))
+        elif shape == "arrow":
+            mid = size // 2
+            for x in range(2, mid + 1):
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
+            for i in range(4):
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "rect":
+            for x in range(3, size - 3):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for y in range(3, size - 3):
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
+        elif shape == "nested":
+            for x in range(1, size - 1):
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
+            for y in range(1, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(5, size - 5):
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
+            for y in range(5, size - 5):
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
+        else:
+            img.put(c, to=(2, 2, size - 2, size - 2))
+        return img
+
     def open_use_case_diagram(self):
         """Prompt for a diagram name then open a new use case diagram."""
         name = simpledialog.askstring("New Use Case Diagram", "Enter diagram name:")
@@ -11162,7 +11592,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11174,7 +11604,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11186,7 +11616,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11198,7 +11628,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11220,7 +11650,7 @@ class FaultTreeApp:
         if existing and existing.winfo_exists():
             self.doc_nb.select(existing)
             return
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
@@ -11641,6 +12071,8 @@ class FaultTreeApp:
             "tc2fi_entries": self.tc2fi_entries,
             "scenario_libraries": self.scenario_libraries,
             "odd_libraries": self.odd_libraries,
+            "faults": self.faults,
+            "malfunctions": self.malfunctions,
             "project_properties": self.project_properties,
             "global_requirements": global_requirements,
             "reviews": reviews,
@@ -11849,6 +12281,8 @@ class FaultTreeApp:
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
         self.odd_libraries = data.get("odd_libraries", [])
+        self.faults = data.get("faults", [])
+        self.malfunctions = data.get("malfunctions", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
@@ -13070,6 +13504,10 @@ class FaultTreeNode:
         self.fmeda_lpfm_target = 0.0
         # Reference to a unique failure mode this node represents
         self.failure_mode_ref = None
+        # Reference to a fault represented by a basic event
+        self.fault_ref = ""
+        # Malfunction name for top level events
+        self.malfunction = ""
         # Probability values for classical FTA calculations
         self.failure_prob = 0.0
         self.probability = 0.0
@@ -13128,6 +13566,8 @@ class FaultTreeNode:
             "fmeda_spfm_target": self.fmeda_spfm_target,
             "fmeda_lpfm_target": self.fmeda_lpfm_target,
             "failure_mode_ref": self.failure_mode_ref,
+            "fault_ref": self.fault_ref,
+            "malfunction": self.malfunction,
             # Save the safety requirements list (which now includes custom_id)
             "safety_requirements": self.safety_requirements,
             "failure_prob": self.failure_prob,
@@ -13185,6 +13625,8 @@ class FaultTreeNode:
         node.fmeda_spfm_target = data.get("fmeda_spfm_target", 0.0)
         node.fmeda_lpfm_target = data.get("fmeda_lpfm_target", 0.0)
         node.failure_mode_ref = data.get("failure_mode_ref")
+        node.fault_ref = data.get("fault_ref", "")
+        node.malfunction = data.get("malfunction", "")
         # NEW: Load safety_requirements (or default to empty list)
         node.safety_requirements = data.get("safety_requirements", [])
         node.failure_prob = data.get("failure_prob", 0.0)
