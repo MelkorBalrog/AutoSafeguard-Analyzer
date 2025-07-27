@@ -1,3 +1,4 @@
+version: 0.1.0
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -145,3 +146,6 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 ## License
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
+
+## Version History
+- 0.1.0 - Added Help menu and version tracking.
