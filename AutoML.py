@@ -1373,6 +1373,13 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_all_requirement_asil()
         self.update_requirement_decomposition()
 
+    def refresh_model(self):
+        """Propagate changes to keep analyses synchronized."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+        self.update_basic_event_probabilities()
+
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
         for r in self.reviews:
@@ -7720,6 +7727,7 @@ class FaultTreeApp:
         return rec(node)
 
     def update_views(self):
+        self.refresh_model()
         # Compute occurrence counts from the current tree
         self.occurrence_counts = self.compute_occurrence_counts()
 
@@ -8745,11 +8753,27 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmea():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmeas[idx]['name']
+            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmeas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
@@ -8790,11 +8814,27 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmeda():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmedas[idx]['name']
+            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmedas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
