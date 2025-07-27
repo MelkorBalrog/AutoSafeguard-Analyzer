@@ -8,6 +8,7 @@ class DiagnosticMechanism:
     coverage: float
     description: str = ""
     detail: str = ""
+    requirement: str = ""
 
 @dataclass
 class MechanismLibrary:
