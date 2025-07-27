@@ -67,6 +67,322 @@ Elements on a diagram may reference reliability analyses. Choosing an **analysis
 
 Requirements can also be attached to diagram elements to keep architecture and safety analyses synchronized. The same safety goals referenced in HAZOP or HARA tables can therefore be traced directly to the blocks and parts that implement them.
 
+## Metamodel Overview
+
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+
+```mermaid
+classDiagram
+    class SysMLRepository {
+        elements: Dict~str, SysMLElement~
+        relationships: List~SysMLRelationship~
+        diagrams: Dict~str, SysMLDiagram~
+        element_diagrams: Dict~str, str~
+        +create_element()
+        +create_relationship()
+        +create_diagram()
+    }
+    class SysMLElement {
+        elem_id: str
+        elem_type: str
+        name: str
+        properties: Dict~str, str~
+        stereotypes: Dict~str, str~
+        owner: str
+    }
+    class SysMLRelationship {
+        rel_id: str
+        rel_type: str
+        source: str
+        target: str
+        stereotype: str
+        properties: Dict~str, str~
+    }
+    class SysMLDiagram {
+        diag_id: str
+        diag_type: str
+        name: str
+        package: str
+        description: str
+        color: str
+        elements: List~str~
+        relationships: List~str~
+        objects: List~SysMLObject~
+        connections: List~DiagramConnection~
+    }
+    class SysMLObject {
+        obj_id: int
+        obj_type: str
+        x: float
+        y: float
+        element_id: str
+        width: float
+        height: float
+        properties: Dict~str, str~
+        requirements: List~dict~
+    }
+    class DiagramConnection {
+        src: int
+        dst: int
+        conn_type: str
+        style: str
+        points: List~Tuple~float,float~~
+    }
+    class BlockUsage
+    class PartUsage
+    class PortUsage
+    class ActivityUsage
+    class ActionUsage
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class FaultTreeNode
+    SysMLRepository --> "*" BlockUsage
+    SysMLRepository --> "*" PartUsage
+    SysMLRepository --> "*" PortUsage
+    SysMLRepository --> "*" ActivityUsage
+    SysMLRepository --> "*" ActionUsage
+    SysMLRepository --> "*" SafetyGoal
+    SysMLRepository --> "*" Hazard
+    SysMLRepository --> "*" Scenario
+    SysMLRepository --> "*" FaultTreeNode
+    SysMLRepository --> "*" SysMLRelationship
+    SysMLRepository --> "*" SysMLDiagram
+    SysMLDiagram --> "*" SysMLObject
+    SysMLDiagram --> "*" DiagramConnection
+    SysMLObject --> "0..1" BlockUsage
+    SysMLObject --> "0..1" PartUsage
+    SysMLObject --> "0..1" PortUsage
+    SysMLObject --> "0..1" ActivityUsage
+    SysMLObject --> "0..1" ActionUsage
+    SysMLObject --> "0..1" SafetyGoal
+    SysMLObject --> "0..1" Hazard
+    SysMLObject --> "0..1" Scenario
+    SysMLObject --> "0..1" FaultTreeNode
+```
+
+### AutoML Safety Extensions
+
+AutoML builds on this base by introducing domain specific stereotypes for safety
+analysis. Hazards, faults and scenarios are stored using explicit types such as
+`Hazard`, `Scenario`, `Scenery`, `SafetyGoal` and `FaultTreeNode`. Tables like
+HAZOP or HARA reference these elements so analyses remain linked to the
+architecture.
+
+```mermaid
+classDiagram
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class Scenery
+    class FaultTreeNode
+    SafetyGoal --> "*" Hazard : mitigates
+    Scenario --> "*" Hazard : leadsTo
+    Scenario --> Scenery : occursIn
+    FaultTreeNode --> "*" SafetyGoal : traces
+```
+
+### Core SysML Elements
+
+The repository tracks each element by its specific type rather than using the
+generic `SysMLElement` placeholder. Key classes include:
+
+- **BlockUsage** – structural block definition. Properties: `valueProperties`,
+  `partProperties`, `referenceProperties`, `ports`, `constraintProperties`,
+  `operations`, plus reliability attributes `analysis`, `fit`, `qualification`
+  and `failureModes`.
+- **PartUsage** – internal part with `component`, `failureModes` and `asil`
+  fields for BOM links and safety ratings.
+- **PortUsage** – port on a block or part. Provides `direction`, `flow`,
+  `labelX` and `labelY` to specify connector orientation.
+- **ActivityUsage** – container for behaviors with `ownedActions` and
+  `parameters`.
+- **ActionUsage** – atomic step within an activity. Can be specialized as
+  `CallBehaviorAction` to invoke another activity.
+- **ControlFlow** and **ObjectFlow** – edges between actions. Control flows
+  handle sequencing while object flows carry typed data.
+- **Use Case** and **Actor** – high level functional views capturing external
+  interactions.
+
+```mermaid
+classDiagram
+    class BlockUsage
+    class PartUsage
+    class PortUsage
+    class ActivityUsage
+    class ActionUsage
+    class ControlFlow
+    class ObjectFlow
+    class UseCase
+    class Actor
+    BlockUsage "1" o-- "*" PartUsage : parts
+    BlockUsage --> "*" PortUsage : ports
+    BlockUsage --> "*" ActivityUsage : behaviors
+    ActivityUsage --> "*" ActionUsage : actions
+    ActionUsage --> "*" ControlFlow : control
+    ActionUsage --> "*" ObjectFlow : objects
+    UseCase --> "*" Actor : actors
+```
+
+### Detailed Safety and Reliability Metamodel
+
+The tool stores each safety analysis in its own container object alongside the
+SysML repository. These containers track the tables and diagrams loaded in the
+GUI so analyses remain linked to the architecture. Key data classes include:
+
+```mermaid
+classDiagram
+    SysMLRepository --> "*" ReliabilityAnalysis
+    ReliabilityAnalysis --> "*" ReliabilityComponent
+    SysMLRepository --> "*" HazopDoc
+    HazopDoc --> "*" HazopEntry
+    SysMLRepository --> "*" HaraDoc
+    HaraDoc --> "*" HaraEntry
+    SysMLRepository --> "*" FmeaDoc
+    FmeaDoc --> "*" FmeaEntry
+    SysMLRepository --> "*" FmedaDoc
+    FmedaDoc --> "*" FmeaEntry
+    SysMLRepository --> "*" FI2TCDoc
+    SysMLRepository --> "*" TC2FIDoc
+    class FaultTreeNode
+```
+
+`ReliabilityAnalysis` records the selected standard, mission profile and overall
+FIT results. Each `ReliabilityComponent` lists attributes like qualification,
+quantity and a dictionary of part‑specific parameters. HAZOP and HARA tables use
+`HazopDoc`/`HazopEntry` and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA
+and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
+`FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
+diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
+objects that hold FMEA metrics, FMEDA values and traced requirements.
+
+#### Analysis Relationships
+
+The diagram below shows how reliability calculations flow into FMEDA tables and fault trees.
+
+```mermaid
+classDiagram
+    class BlockUsage
+    class PartUsage
+    class FaultTreeDiagram
+    BlockUsage --> ReliabilityAnalysis : analysis
+    ReliabilityAnalysis --> "*" ReliabilityComponent
+    PartUsage --> ReliabilityComponent : component
+    FmedaDoc --> "*" FmeaEntry
+    ReliabilityComponent --> "*" FmeaEntry : modes
+    FmeaEntry --> FaultTreeNode : baseEvent
+    SysMLDiagram <|-- FaultTreeDiagram
+    FaultTreeDiagram --> "*" FaultTreeNode : nodes
+```
+
+Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link directly to the matching `ReliabilityComponent`. FMEDA entries describe failure modes for each component and can spawn `FaultTreeNode` base events inside an FTA diagram so probabilities and coverage stay synced.
+
+#### Hazard Traceability
+
+The next diagram traces how malfunctions detected in a HAZOP flow through the safety analyses. Actions in activity diagrams become `HazopEntry` malfunctions linked to operational `Scenario` objects and their `Scenery` from the ODD. Selected HAZOP rows populate `HaraEntry` items where Severity × Exposure × Controllability determine the ASIL and resulting `SafetyGoal`. Safety goals appear as the top level events in FTAs. FMEDA failure modes and architecture components create `FaultTreeNode` base events that generate safety `Requirement` objects. Requirements may be decomposed into children with reduced ASIL values when ISO 26262 decomposition rules apply.
+
+```mermaid
+classDiagram
+    class ActivityUsage
+    class ActionUsage
+    class HazopEntry
+    class Scenario
+    class Scenery
+    class HaraEntry
+    class Hazard
+    class SafetyGoal
+    class FmeaEntry
+    class FaultTreeDiagram
+    class FaultTreeNode
+    class Requirement
+    ActivityUsage --> "*" ActionUsage : actions
+    ActionUsage --> HazopEntry : malfunction
+    HazopEntry --> Scenario
+    Scenario --> Scenery
+    HazopEntry --> HaraEntry
+    HaraEntry --> Hazard
+    HaraEntry --> SafetyGoal
+    SafetyGoal --> FaultTreeDiagram : topEvent
+    FmeaEntry --> FaultTreeNode : baseEvent
+    FaultTreeDiagram --> "*" FaultTreeNode : nodes
+    FaultTreeNode --> Requirement : requirement
+    Requirement --> "0..*" Requirement : decomposedInto
+```
+
+#### Differences From Standard SysML
+
+- `BlockUsage` elements add the properties `analysis`, `fit`, `qualification` and
+  `failureModes` to reference reliability calculations.
+- `PartUsage` elements add `component`, `failureModes` and `asil` so individual
+  parts can point to BOM entries and SOTIF ratings.
+- Safety specific element types such as `SafetyGoal`, `Hazard`, `Scenario` and
+  `FaultTreeNode` are stored using dedicated `elem_type` values within the
+  repository. These extend the basic `SysMLElement` with fields for ASIL, FMEA
+  ratings, diagnostic coverage and requirement links.
+
+### Extended AutoML Element Attributes
+
+AutoML elements include additional properties beyond the standard SysML fields.
+Key attributes are:
+
+- **SafetyGoal** – textual `description`, assigned `asil` level and quantitative
+  targets `spfm`, `lpfm` and `dc`. Each goal also lists allocated safety
+  `requirements`.
+- **Hazard** – hazard `description`, HARA `severity` and the related
+  `scenarios` that can lead to it.
+- **Scenario** – short `description`, linked `scenery` context and traced
+  `hazards`.
+- **Scenery** – environment properties such as `location`, `weather` and
+  `timeOfDay` used when defining scenarios.
+- **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
+  `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
+  `failure_prob` and a list of `safety_requirements`.
+- **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
+  `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
+- **ReliabilityComponent** – component `name`, qualification certificate,
+  `quantity`, parameter `attributes` and computed `fit` rate.
+
+```mermaid
+classDiagram
+    class BlockUsage
+    class PartUsage
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class Scenery
+    class FaultTreeNode
+    class BlockUsage {
+        analysis
+        fit
+        qualification
+        failureModes
+    }
+    class PartUsage {
+        component
+        failureModes
+        asil
+    }
+    class SafetyGoal {
+        asil
+        spfm
+        lpfm
+        dc
+    }
+    class Hazard {
+        severity
+    }
+    class Scenario {
+        scenery
+    }
+    class Scenery {
+        weather
+    }
+    class FaultTreeNode {
+        fmeda_fit
+        failure_prob
+    }
+```
+
 ## BOM Integration with AutoML Diagrams
 
 Blocks in block diagrams may reference saved reliability analyses via the **analysis** property while parts reference individual components using the **component** property. Both element types also provide **fit**, **qualification** and **failureModes** attributes. Entering values for these fields shows them in a *Reliability* compartment for blocks or as additional lines beneath parts so FIT rates and qualification information remain visible in the AutoML model. When editing a block or part you can now pick from drop-down lists containing all analyses or components from saved reliability analyses. Selecting an item automatically fills in its FIT rate, qualification certificate and any failure modes found in FMEA tables.
