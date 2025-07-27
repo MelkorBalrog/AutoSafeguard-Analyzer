@@ -2627,15 +2627,21 @@ class ElementPropertiesDialog(simpledialog.Dialog):
         for prop, var in self.entries.items():
             self.element.properties[prop] = var.get()
 
-class ArchitectureManagerDialog(tk.Toplevel):
+class ArchitectureManagerDialog(tk.Frame):
     """Manage packages and diagrams in a hierarchical tree."""
 
     def __init__(self, master, app=None):
-        super().__init__(master)
+        if isinstance(master, tk.Toplevel):
+            container = master
+        else:
+            container = master
+        super().__init__(container)
         self.app = app
-        self.title("AutoML Explorer")
+        if isinstance(master, tk.Toplevel):
+            master.title("AutoML Explorer")
+            master.geometry("350x400")
+            self.pack(fill=tk.BOTH, expand=True)
         self.repo = SysMLRepository.get_instance()
-        self.geometry("350x400")
         self.tree = ttk.Treeview(self)
         self.tree.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
