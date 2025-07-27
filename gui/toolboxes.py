@@ -70,6 +70,17 @@ class ReliabilityWindow(tk.Toplevel):
         )
         self.profile_combo.pack(anchor="w", fill="x")
 
+        ttk.Label(self, text="Analysis:").pack(anchor="w")
+        self.analysis_var = tk.StringVar()
+        self.analysis_combo = ttk.Combobox(
+            self,
+            textvariable=self.analysis_var,
+            state="readonly",
+        )
+        self.analysis_combo.pack(anchor="w", fill="x")
+        self.analysis_combo.bind("<<ComboboxSelected>>", self.load_selected_analysis)
+        self.refresh_analysis_list()
+
         self.tree = ttk.Treeview(
             self,
             columns=("name", "type", "qty", "fit", "qualification"),
@@ -103,6 +114,9 @@ class ReliabilityWindow(tk.Toplevel):
             side=tk.LEFT, padx=2, pady=2
         )
         ttk.Button(btn_frame, text="Load Analysis", command=self.load_analysis).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn_frame, text="Delete Analysis", command=self.delete_analysis).pack(
             side=tk.LEFT, padx=2, pady=2
         )
         self.formula_label = ttk.Label(self, text="")
@@ -425,6 +439,8 @@ class ReliabilityWindow(tk.Toplevel):
             self.app.reliability_dc,
         )
         self.app.reliability_analyses.append(ra)
+        self.refresh_analysis_list()
+        self.analysis_var.set(name)
         messagebox.showinfo("Save", "Analysis saved")
 
     def load_analysis(self):
@@ -458,6 +474,44 @@ class ReliabilityWindow(tk.Toplevel):
             )
 
         ttk.Button(win, text="Load", command=do_load).pack(side=tk.RIGHT, padx=5, pady=5)
+
+    def load_selected_analysis(self, *_):
+        """Load analysis chosen from the combo box."""
+        name = self.analysis_var.get()
+        ra = next((r for r in self.app.reliability_analyses if r.name == name), None)
+        if ra:
+            self._populate_from_analysis(ra)
+
+    def delete_analysis(self):
+        name = self.analysis_var.get()
+        if not name:
+            messagebox.showwarning("Delete", "Select an analysis")
+            return
+        if not messagebox.askyesno("Delete", f"Delete analysis '{name}'?"):
+            return
+        self.app.reliability_analyses = [r for r in self.app.reliability_analyses if r.name != name]
+        self.analysis_var.set("")
+        self.refresh_analysis_list()
+        self.components.clear()
+        self.refresh_tree()
+        self.formula_label.config(text="")
+
+    def refresh_analysis_list(self):
+        names = [ra.name for ra in self.app.reliability_analyses]
+        self.analysis_combo.configure(values=names)
+
+    def _populate_from_analysis(self, ra):
+        self.standard_var.set(ra.standard)
+        self.profile_var.set(ra.profile)
+        self.components = copy.deepcopy(ra.components)
+        self.app.reliability_total_fit = ra.total_fit
+        self.app.spfm = ra.spfm
+        self.app.lpfm = ra.lpfm
+        self.app.reliability_dc = ra.dc
+        self.refresh_tree()
+        self.formula_label.config(
+            text=f"Total FIT: {ra.total_fit:.2f}  DC: {ra.dc:.2f}  SPFM: {ra.spfm:.2f}  LPFM: {ra.lpfm:.2f}"
+        )
 
 
 class FI2TCWindow(tk.Frame):
