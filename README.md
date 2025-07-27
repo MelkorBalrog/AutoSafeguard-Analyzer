@@ -277,6 +277,38 @@ classDiagram
 
 Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link directly to the matching `ReliabilityComponent`. FMEDA entries describe failure modes for each component and can spawn `FaultTreeNode` base events inside an FTA diagram so probabilities and coverage stay synced.
 
+#### Hazard Traceability
+
+The next diagram traces how malfunctions detected in a HAZOP flow through the safety analyses. Actions in activity diagrams become `HazopEntry` malfunctions linked to operational `Scenario` objects and their `Scenery` from the ODD. Selected HAZOP rows populate `HaraEntry` items where Severity × Exposure × Controllability determine the ASIL and resulting `SafetyGoal`. Safety goals appear as the top level events in FTAs. FMEDA failure modes and architecture components create `FaultTreeNode` base events that generate safety `Requirement` objects. Requirements may be decomposed into children with reduced ASIL values when ISO 26262 decomposition rules apply.
+
+```mermaid
+classDiagram
+    class ActivityUsage
+    class ActionUsage
+    class HazopEntry
+    class Scenario
+    class Scenery
+    class HaraEntry
+    class Hazard
+    class SafetyGoal
+    class FmeaEntry
+    class FaultTreeDiagram
+    class FaultTreeNode
+    class Requirement
+    ActivityUsage --> "*" ActionUsage : actions
+    ActionUsage --> HazopEntry : malfunction
+    HazopEntry --> Scenario
+    Scenario --> Scenery
+    HazopEntry --> HaraEntry
+    HaraEntry --> Hazard
+    HaraEntry --> SafetyGoal
+    SafetyGoal --> FaultTreeDiagram : topEvent
+    FmeaEntry --> FaultTreeNode : baseEvent
+    FaultTreeDiagram --> "*" FaultTreeNode : nodes
+    FaultTreeNode --> Requirement : requirement
+    Requirement --> "0..*" Requirement : decomposedInto
+```
+
 #### Differences From Standard SysML
 
 - `BlockUsage` elements add the properties `analysis`, `fit`, `qualification` and
