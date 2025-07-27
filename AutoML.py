@@ -8976,9 +8976,36 @@ class FaultTreeApp:
                     for m in self.mechanisms:
                         if m.name == name:
                             self.dc_var.set(m.coverage)
+                            req_text = getattr(m, "requirement", "")
+                            if req_text:
+                                global global_requirements
+                                req = next(
+                                    (
+                                        r
+                                        for r in global_requirements.values()
+                                        if r.get("text") == req_text
+                                    ),
+                                    None,
+                                )
+                                if req is None:
+                                    rid = str(uuid.uuid4())
+                                    req = {
+                                        "id": rid,
+                                        "req_type": "vehicle",
+                                        "text": req_text,
+                                        "asil": "",
+                                    }
+                                    global_requirements[rid] = req
+                                if not hasattr(self.node, "safety_requirements"):
+                                    self.node.safety_requirements = []
+                                if not any(r.get("id") == req["id"] for r in self.node.safety_requirements):
+                                    self.node.safety_requirements.append(req)
+                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                                    self.req_listbox.insert(tk.END, desc)
                             break
 
                 self.mech_combo.bind("<<ComboboxSelected>>", mech_sel)
+                mech_sel(None)
                 row += 1
             else:
                 self.dc_var = tk.DoubleVar(value=0.0)
@@ -10613,17 +10640,21 @@ class FaultTreeApp:
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        mech_tree = ttk.Treeview(win, columns=("cov", "desc", "detail"), show="headings")
+        mech_tree = ttk.Treeview(
+            win, columns=("cov", "req", "desc", "detail"), show="headings"
+        )
         mech_tree.heading("cov", text="Coverage")
         mech_tree.column("cov", width=80)
+        mech_tree.heading("req", text="Requirement")
+        mech_tree.column("req", width=200)
         mech_tree.heading("desc", text="Description")
         mech_tree.column("desc", width=200)
         mech_tree.heading("detail", text="Detail")
         mech_tree.column("detail", width=300)
-        mech_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
+        mech_tree.grid(row=0, column=1, columnspan=4, sticky="nsew")
         win.grid_rowconfigure(0, weight=1)
         win.grid_columnconfigure(0, weight=0)
-        for c in range(1, 4):
+        for c in range(1, 5):
             win.grid_columnconfigure(c, weight=1)
 
         def refresh_libs():
@@ -10642,7 +10673,12 @@ class FaultTreeApp:
                 mech_tree.insert(
                     "",
                     tk.END,
-                    values=(f"{mech.coverage:.2f}", mech.description, mech.detail),
+                    values=(
+                        f"{mech.coverage:.2f}",
+                        getattr(mech, "requirement", ""),
+                        mech.description,
+                        mech.detail,
+                    ),
                     text=mech.name,
                 )
 
@@ -10678,8 +10714,8 @@ class FaultTreeApp:
         def on_tree_motion(event):
             row = mech_tree.identify_row(event.y)
             col = mech_tree.identify_column(event.x)
-            if row and col in ("#2", "#3"):
-                field = "desc" if col == "#2" else "detail"
+            if row and col in ("#3", "#4"):
+                field = "desc" if col == "#3" else "detail"
                 text = mech_tree.set(row, field)
                 show_tip(event, text)
             else:
@@ -10709,6 +10745,37 @@ class FaultTreeApp:
             del self.mechanism_libraries[sel[0]]
             refresh_libs()
 
+        def clone_lib():
+            sel = lib_lb.curselection()
+            if not sel:
+                return
+            lib = self.mechanism_libraries[sel[0]]
+            name = simpledialog.askstring(
+                "Clone Library",
+                "Library name:",
+                initialvalue=f"{lib.name} Copy",
+            )
+            if not name:
+                return
+            existing = {l.name for l in self.mechanism_libraries}
+            base = name
+            idx = 1
+            while name in existing:
+                name = f"{base} ({idx})"
+                idx += 1
+            new_mechs = [
+                DiagnosticMechanism(
+                    m.name,
+                    m.coverage,
+                    m.description,
+                    m.detail,
+                    getattr(m, "requirement", ""),
+                )
+                for m in lib.mechanisms
+            ]
+            self.mechanism_libraries.append(MechanismLibrary(name, new_mechs))
+            refresh_libs()
+
         def add_mech():
             sel = lib_lb.curselection()
             if not sel:
@@ -10732,6 +10799,9 @@ class FaultTreeApp:
                     ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
                     self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
                     self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar()
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     self.result = (
@@ -10739,12 +10809,15 @@ class FaultTreeApp:
                         float(self.cov_var.get() or 1.0),
                         self.desc_text.get("1.0", "end-1c"),
                         self.detail_text.get("1.0", "end-1c"),
+                        self.req_var.get(),
                     )
 
             form = MForm(win)
             if hasattr(form, "result"):
-                name, cov, desc, detail = form.result
-                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc, detail))
+                name, cov, desc, detail, req = form.result
+                lib.mechanisms.append(
+                    DiagnosticMechanism(name, cov, desc, detail, req)
+                )
                 refresh_mechs()
 
         def edit_mech():
@@ -10776,12 +10849,16 @@ class FaultTreeApp:
                     self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
                     self.detail_text.insert("1.0", mech.detail)
                     self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar(value=getattr(mech, "requirement", ""))
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     mech.name = self.name_var.get()
                     mech.coverage = float(self.cov_var.get() or 1.0)
                     mech.description = self.desc_text.get("1.0", "end-1c")
                     mech.detail = self.detail_text.get("1.0", "end-1c")
+                    mech.requirement = self.req_var.get()
 
             MForm(win)
             refresh_mechs()
@@ -10801,6 +10878,7 @@ class FaultTreeApp:
         ttk.Button(btnf, text="Add Lib", command=add_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Edit Lib", command=edit_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Lib", command=del_lib).pack(side=tk.LEFT)
+        ttk.Button(btnf, text="Clone Lib", command=clone_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Add Mech", command=add_mech).pack(side=tk.LEFT, padx=5)
         ttk.Button(btnf, text="Edit Mech", command=edit_mech).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Mech", command=del_mech).pack(side=tk.LEFT)
