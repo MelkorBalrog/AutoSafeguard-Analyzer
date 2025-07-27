@@ -423,13 +423,13 @@ class ReliabilityWindow(tk.Frame):
                 None,
             )
             if ra is None:
-                ra = ReliabilityAnalysis(current, "", "", [])
+                ra = ReliabilityAnalysis(current, "", "", [], 0.0, 0.0, 0.0, 0.0)
                 self.app.reliability_analyses.append(ra)
         else:
             name = simpledialog.askstring("Save Analysis", "Enter analysis name:")
             if not name:
                 return
-            ra = ReliabilityAnalysis(name, "", "", [])
+            ra = ReliabilityAnalysis(name, "", "", [], 0.0, 0.0, 0.0, 0.0)
             self.app.reliability_analyses.append(ra)
             current = name
 
