@@ -218,11 +218,32 @@ classDiagram
     BlockUsage "1" o-- "*" PartUsage : parts
     BlockUsage --> "*" PortUsage : ports
     BlockUsage --> "*" ActivityUsage : behaviors
+    PartUsage --> "*" PortUsage : ports
     ActivityUsage --> "*" ActionUsage : actions
     ActionUsage --> "*" ControlFlow : control
     ActionUsage --> "*" ObjectFlow : objects
     UseCase --> "*" Actor : actors
     UseCase --> ActivityUsage : realizedBy
+```
+
+### Diagram Relationships
+
+Internal block diagrams provide structural views of a block. The diagram displays the block's parts and their ports so connectors can be drawn between them. Actions in activity diagrams may also reference an internal block diagram that explains the hardware interaction for that step.
+
+```mermaid
+classDiagram
+    class BlockUsage
+    class PartUsage
+    class PortUsage
+    class SysMLDiagram
+    class InternalBlockDiagram
+    class ActionUsage
+    SysMLDiagram <|-- InternalBlockDiagram
+    BlockUsage --> InternalBlockDiagram : structureView
+    InternalBlockDiagram --> "*" PartUsage : shows
+    InternalBlockDiagram --> "*" PortUsage : ports
+    PartUsage --> "*" PortUsage : ports
+    ActionUsage --> InternalBlockDiagram : view
 ```
 
 ### Detailed Safety and Reliability Metamodel
