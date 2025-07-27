@@ -1,8 +1,13 @@
 @echo off
 REM Helper to run the AutoML executable
-if not exist bin\AutoML.exe (
+
+setlocal
+
+set "BIN_DIR=%~dp0"
+
+if not exist "%BIN_DIR%AutoML.exe" (
     echo Executable not found. Run bin\build_exe.bat first.
     exit /b 1
 )
 
-bin\AutoML.exe %*
+"%BIN_DIR%AutoML.exe" %*

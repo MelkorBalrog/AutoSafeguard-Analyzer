@@ -6,6 +6,10 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
     exit 1
 fi
 
+# Ensure commands run from repository root (parent directory of this script)
+SCRIPT_DIR="$(dirname "$0")"
+cd "$SCRIPT_DIR/.."
+
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML AutoML.py

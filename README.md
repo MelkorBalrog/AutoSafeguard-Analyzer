@@ -153,9 +153,11 @@ To create a standalone Windows executable with PyInstaller:
 - **Linux/macOS:** run `bin/build_exe.sh`
 - **Windows:** run `bin\build_exe.bat`
 
-Both scripts generate `AutoML.exe` in the `bin` directory. After building you
-can launch the application directly or use `bin/run_automl.sh` on Unix-like
-systems or `bin\run_automl.bat` on Windows.
+You can invoke these scripts from any directory; they locate the repository
+root automatically. Both generate `AutoML.exe` inside the `bin` directory.
+After building you can launch the application directly or use
+`bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
+Windows.
 
 
 ## Version History
