@@ -2056,6 +2056,7 @@ class FaultTreeApp:
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
+        self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
 
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
@@ -7283,6 +7284,64 @@ class FaultTreeApp:
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
+
+    def on_analysis_tree_right_click(self, event):
+        iid = self.analysis_tree.identify_row(event.y)
+        if not iid:
+            return
+        self.analysis_tree.selection_set(iid)
+        menu = tk.Menu(self.analysis_tree, tearoff=0)
+        menu.add_command(label="Rename", command=self.rename_selected_tree_item)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def rename_selected_tree_item(self):
+        item = self.analysis_tree.focus()
+        tags = self.analysis_tree.item(item, "tags")
+        if len(tags) != 2:
+            return
+        kind, idx = tags[0], int(tags[1])
+        current = ""
+        if kind == "fmea":
+            current = self.fmeas[idx]["name"]
+        elif kind == "fmeda":
+            current = self.fmedas[idx]["name"]
+        elif kind == "hazop":
+            current = self.hazop_docs[idx].name
+        elif kind == "hara":
+            current = self.hara_docs[idx].name
+        elif kind == "fi2tc":
+            current = self.fi2tc_docs[idx].name
+        elif kind == "tc2fi":
+            current = self.tc2fi_docs[idx].name
+        elif kind == "arch":
+            current = self.arch_diagrams[idx].name
+        elif kind == "fta":
+            node = next((t for t in self.top_events if t.unique_id == idx), None)
+            current = node.user_name if node else ""
+        else:
+            return
+        new = simpledialog.askstring("Rename", "Enter new name:", initialvalue=current)
+        if not new:
+            return
+        if kind == "fmea":
+            self.fmeas[idx]["name"] = new
+        elif kind == "fmeda":
+            self.fmedas[idx]["name"] = new
+        elif kind == "hazop":
+            self.hazop_docs[idx].name = new
+        elif kind == "hara":
+            self.hara_docs[idx].name = new
+        elif kind == "fi2tc":
+            self.fi2tc_docs[idx].name = new
+        elif kind == "tc2fi":
+            self.tc2fi_docs[idx].name = new
+        elif kind == "arch":
+            self.arch_diagrams[idx].name = new
+        elif kind == "fta" and node:
+            node.user_name = new
+        self.update_views()
+        if hasattr(self, "_arch_window") and self._arch_window.winfo_exists():
+            self._arch_window.populate()
 
     def on_tool_list_double_click(self, event):
         sel = self.tools_list.curselection()
