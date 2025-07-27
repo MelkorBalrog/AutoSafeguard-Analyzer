@@ -425,7 +425,11 @@ class ClosableNotebook(ttk.Notebook):
                 return
             self._closing_tab = tab_id
             self.event_generate("<<NotebookTabClosed>>")
-            self.forget(tab_id)
+            if tab_id in self.tabs():
+                try:
+                    self.forget(tab_id)
+                except tk.TclError:
+                    pass
         self.state(["!pressed"])
         self._active = None
 
@@ -1774,6 +1778,13 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # small icons for diagram types shown in the explorer
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
+        }
         self.clipboard_node = None
         self.cut_mode = False
         self.page_history = []
@@ -7183,6 +7194,7 @@ class FaultTreeApp:
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
+                self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
@@ -7675,7 +7687,14 @@ class FaultTreeApp:
             arch_root = tree.insert("", "end", text="AutoML Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                tree.insert(arch_root, "end", text=name, tags=("arch", str(idx)))
+                icon = self.diagram_icons.get(diag.diag_type)
+                tree.insert(
+                    arch_root,
+                    "end",
+                    text=name,
+                    tags=("arch", str(idx)),
+                    image=icon,
+                )
             tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
             tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
 
@@ -10528,14 +10547,18 @@ class FaultTreeApp:
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        mech_tree = ttk.Treeview(win, columns=("cov", "desc"), show="headings")
+        mech_tree = ttk.Treeview(win, columns=("cov", "desc", "detail"), show="headings")
         mech_tree.heading("cov", text="Coverage")
         mech_tree.column("cov", width=80)
         mech_tree.heading("desc", text="Description")
         mech_tree.column("desc", width=200)
+        mech_tree.heading("detail", text="Detail")
+        mech_tree.column("detail", width=300)
         mech_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
         win.grid_rowconfigure(0, weight=1)
-        win.grid_columnconfigure(1, weight=1)
+        win.grid_columnconfigure(0, weight=0)
+        for c in range(1, 4):
+            win.grid_columnconfigure(c, weight=1)
 
         def refresh_libs():
             lib_lb.delete(0, tk.END)
@@ -10550,7 +10573,51 @@ class FaultTreeApp:
                 return
             lib = self.mechanism_libraries[sel[0]]
             for mech in lib.mechanisms:
-                mech_tree.insert("", tk.END, values=(f"{mech.coverage:.2f}", mech.description), text=mech.name)
+                mech_tree.insert(
+                    "",
+                    tk.END,
+                    values=(f"{mech.coverage:.2f}", mech.description, mech.detail),
+                    text=mech.name,
+                )
+
+        tip_win = None
+
+        def hide_tip():
+            nonlocal tip_win
+            if tip_win is not None:
+                tip_win.destroy()
+                tip_win = None
+
+        def show_tip(event, text):
+            nonlocal tip_win
+            hide_tip()
+            if not text:
+                return
+            tip_win = tk.Toplevel(win)
+            tip_win.wm_overrideredirect(True)
+            tip_win.wm_geometry(
+                f"+{win.winfo_rootx()+event.x+20}+{win.winfo_rooty()+event.y+20}"
+            )
+            lbl = tk.Label(
+                tip_win,
+                text=text,
+                justify="left",
+                background="lightyellow",
+                relief="solid",
+                borderwidth=1,
+                wraplength=300,
+            )
+            lbl.pack()
+
+        def on_tree_motion(event):
+            row = mech_tree.identify_row(event.y)
+            col = mech_tree.identify_column(event.x)
+            if row and col in ("#2", "#3"):
+                field = "desc" if col == "#2" else "detail"
+                text = mech_tree.set(row, field)
+                show_tip(event, text)
+            else:
+                hide_tip()
 
         def add_lib():
             name = simpledialog.askstring("New Library", "Library name:")
@@ -10581,30 +10648,37 @@ class FaultTreeApp:
             if not sel:
                 return
             lib = self.mechanism_libraries[sel[0]]
-            dlg = simpledialog.Dialog(win, title="Add Mechanism")
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value="1.0")
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
 
                 def apply(self):
                     self.result = (
                         self.name_var.get(),
                         float(self.cov_var.get() or 1.0),
-                        self.desc_var.get(),
+                        self.desc_text.get("1.0", "end-1c"),
+                        self.detail_text.get("1.0", "end-1c"),
                     )
 
             form = MForm(win)
             if hasattr(form, "result"):
-                name, cov, desc = form.result
-                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc))
+                name, cov, desc, detail = form.result
+                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc, detail))
                 refresh_mechs()
 
         def edit_mech():
@@ -10618,20 +10692,30 @@ class FaultTreeApp:
 
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar(value=mech.name)
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value=str(mech.coverage))
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar(value=mech.description)
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.insert("1.0", mech.description)
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.insert("1.0", mech.detail)
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
 
                 def apply(self):
                     mech.name = self.name_var.get()
                     mech.coverage = float(self.cov_var.get() or 1.0)
-                    mech.description = self.desc_var.get()
+                    mech.description = self.desc_text.get("1.0", "end-1c")
+                    mech.detail = self.detail_text.get("1.0", "end-1c")
 
             MForm(win)
             refresh_mechs()
@@ -10656,6 +10740,10 @@ class FaultTreeApp:
         ttk.Button(btnf, text="Del Mech", command=del_mech).pack(side=tk.LEFT)
 
         lib_lb.bind("<<ListboxSelect>>", refresh_mechs)
+        lib_lb.bind("<Double-1>", lambda e: edit_lib())
+        mech_tree.bind("<Double-1>", lambda e: edit_mech())
+        mech_tree.bind("<Motion>", on_tree_motion)
+        mech_tree.bind("<Leave>", lambda e: hide_tip())
         refresh_libs()
 
     def manage_scenario_libraries(self):
@@ -11155,6 +11243,56 @@ class FaultTreeApp:
         self.doc_nb.select(tab)
         return tab
 
+    def _format_diag_title(self, diag) -> str:
+        """Return SysML style title for a diagram tab."""
+        if diag.name:
+            return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
+        return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
+
+    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
+        """Return a simple 16x16 PhotoImage for the given shape and color."""
+        size = 16
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
+        if shape == "circle":
+            r = size // 2 - 2
+            cx = cy = size // 2
+            for y in range(size):
+                for x in range(size):
+                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        img.put(c, (x, y))
+        elif shape == "arrow":
+            mid = size // 2
+            for x in range(2, mid + 1):
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
+            for i in range(4):
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "rect":
+            for x in range(3, size - 3):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for y in range(3, size - 3):
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
+        elif shape == "nested":
+            for x in range(1, size - 1):
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
+            for y in range(1, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(5, size - 5):
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
+            for y in range(5, size - 5):
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
+        else:
+            img.put(c, to=(2, 2, size - 2, size - 2))
+        return img
+
     def open_use_case_diagram(self):
         """Prompt for a diagram name then open a new use case diagram."""
         name = simpledialog.askstring("New Use Case Diagram", "Enter diagram name:")
@@ -11162,7 +11300,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11174,7 +11312,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11186,7 +11324,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11198,7 +11336,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11220,7 +11358,7 @@ class FaultTreeApp:
         if existing and existing.winfo_exists():
             self.doc_nb.select(existing)
             return
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
