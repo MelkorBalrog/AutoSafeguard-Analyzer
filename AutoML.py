@@ -10547,11 +10547,13 @@ class FaultTreeApp:
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        mech_tree = ttk.Treeview(win, columns=("cov", "desc"), show="headings")
+        mech_tree = ttk.Treeview(win, columns=("cov", "desc", "detail"), show="headings")
         mech_tree.heading("cov", text="Coverage")
         mech_tree.column("cov", width=80)
         mech_tree.heading("desc", text="Description")
         mech_tree.column("desc", width=200)
+        mech_tree.heading("detail", text="Detail")
+        mech_tree.column("detail", width=300)
         mech_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
         win.grid_rowconfigure(0, weight=1)
         win.grid_columnconfigure(1, weight=1)
@@ -10569,7 +10571,12 @@ class FaultTreeApp:
                 return
             lib = self.mechanism_libraries[sel[0]]
             for mech in lib.mechanisms:
-                mech_tree.insert("", tk.END, values=(f"{mech.coverage:.2f}", mech.description), text=mech.name)
+                mech_tree.insert(
+                    "",
+                    tk.END,
+                    values=(f"{mech.coverage:.2f}", mech.description, mech.detail),
+                    text=mech.name,
+                )
 
         def add_lib():
             name = simpledialog.askstring("New Library", "Library name:")
@@ -10612,18 +10619,22 @@ class FaultTreeApp:
                     ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
                     self.desc_var = tk.StringVar()
                     ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="e")
+                    self.detail_var = tk.StringVar()
+                    ttk.Entry(master, textvariable=self.detail_var).grid(row=3, column=1)
 
                 def apply(self):
                     self.result = (
                         self.name_var.get(),
                         float(self.cov_var.get() or 1.0),
                         self.desc_var.get(),
+                        self.detail_var.get(),
                     )
 
             form = MForm(win)
             if hasattr(form, "result"):
-                name, cov, desc = form.result
-                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc))
+                name, cov, desc, detail = form.result
+                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc, detail))
                 refresh_mechs()
 
         def edit_mech():
@@ -10646,11 +10657,15 @@ class FaultTreeApp:
                     ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
                     self.desc_var = tk.StringVar(value=mech.description)
                     ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="e")
+                    self.detail_var = tk.StringVar(value=mech.detail)
+                    ttk.Entry(master, textvariable=self.detail_var).grid(row=3, column=1)
 
                 def apply(self):
                     mech.name = self.name_var.get()
                     mech.coverage = float(self.cov_var.get() or 1.0)
                     mech.description = self.desc_var.get()
+                    mech.detail = self.detail_var.get()
 
             MForm(win)
             refresh_mechs()
