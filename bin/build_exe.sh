@@ -6,6 +6,18 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
     exit 1
 fi
 
+# Ensure Pillow and other dependencies are installed so PyInstaller bundles them
+python -m pip show pillow >/dev/null 2>&1 || {
+    echo "Missing required package 'pillow'. Install with: pip install pillow" >&2
+    exit 1
+}
+for pkg in openpyxl networkx matplotlib reportlab adjustText; do
+    python -m pip show "$pkg" >/dev/null 2>&1 || {
+        echo "Missing required package '$pkg'. Install with: pip install $pkg" >&2
+        exit 1
+    }
+done
+
 # Warn if running a pre-release Python build which may cause PyInstaller errors
 if python -c "import sys, re; v=sys.version; print('pre' if re.search('(alpha|beta|candidate|rc)', v) else '')" | grep -q pre; then
     echo "Warning: pre-release Python builds can fail with PyInstaller. Use a stable release." >&2
@@ -21,7 +33,8 @@ rm -f AutoML.spec
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
-    --exclude-module scipy AutoML.py
+    --exclude-module scipy \
+    --hidden-import=PIL.ImageTk AutoML.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin

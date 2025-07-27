@@ -143,6 +143,27 @@ Each summary email embeds PNG images showing the differences between the current
 
 If sending fails with a connection error, the dialog will prompt again so you can correct the server address or port.
 
+## Dependencies
+
+AutoML relies on a few third‑party Python packages which must be installed
+before running the tool or creating the executable. Install them with pip:
+
+```
+pip install pillow openpyxl networkx matplotlib reportlab adjustText
+```
+
+PyInstaller requires these packages to be present so they are bundled into
+`AutoML.exe`. Missing dependencies, such as Pillow, will otherwise lead to
+`ModuleNotFoundError` when launching the built executable.
+
+Note that Pillow provides the `PIL` module. The build scripts now verify
+dependencies with `python -m pip show` so the correct interpreter is used and
+pass `--hidden-import=PIL.ImageTk` to PyInstaller to ensure the module is
+bundled correctly.
+
+If double‑clicking `AutoML.py` closes immediately, launch it from a command
+prompt instead so any error messages remain visible.
+
 ## License
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
