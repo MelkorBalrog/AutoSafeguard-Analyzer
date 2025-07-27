@@ -147,6 +147,12 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
 
+## Building the Executable
+To create a standalone Windows executable, run `bin/build_exe.sh`. This script uses
+PyInstaller to generate `AutoML.exe` in the `bin` directory. After building you
+can launch the application using `bin/AutoML.exe` or with `bin/run_automl.sh`.
+
+
 ## Version History
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
