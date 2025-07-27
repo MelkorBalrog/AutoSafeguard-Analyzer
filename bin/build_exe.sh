@@ -12,7 +12,8 @@ cd "$SCRIPT_DIR/.."
 
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
-    --name AutoML AutoML.py
+    --name AutoML \
+    --exclude-module scipy AutoML.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin

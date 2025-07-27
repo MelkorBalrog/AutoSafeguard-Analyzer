@@ -9,7 +9,8 @@ set "REPO_ROOT=%~dp0.."
 
 REM Run PyInstaller from the repository root so it can locate AutoML.py
 cd /d "%REPO_ROOT%"
-pyinstaller --noconfirm --onefile --windowed --name AutoML AutoML.py
+pyinstaller --noconfirm --onefile --windowed --name AutoML ^
+    --exclude-module scipy AutoML.py
 if errorlevel 1 (
     echo Failed to build executable.
     exit /b %errorlevel%

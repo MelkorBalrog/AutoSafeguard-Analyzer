@@ -159,6 +159,11 @@ After building you can launch the application directly or use
 `bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
 Windows.
 
+The scripts exclude the `scipy` package, which is not required by AutoML but
+can cause PyInstaller to fail on some Python installations. If you encounter
+errors about ``IndexError`` while building, try upgrading your Python runtime
+or reinstalling SciPy.
+
 
 ## Version History
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
