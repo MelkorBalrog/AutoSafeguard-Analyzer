@@ -101,9 +101,6 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Button(btn_frame, text="Add Component", command=self.add_component).pack(
             side=tk.LEFT, padx=2, pady=2
         )
-        ttk.Button(btn_frame, text="Add Circuit", command=self.add_circuit).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
         ttk.Button(btn_frame, text="Configure Component", command=self.configure_component).pack(
             side=tk.LEFT, padx=2, pady=2
         )
@@ -187,46 +184,6 @@ class ReliabilityWindow(tk.Toplevel):
         dialog.grab_set()
         dialog.wait_window()
 
-    def add_circuit(self):
-        dlg = tk.Toplevel(self)
-        dlg.title("New Circuit")
-        ttk.Label(dlg, text="Name").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        name_var = tk.StringVar()
-        ttk.Entry(dlg, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Label(dlg, text="BOMs").grid(row=1, column=0, padx=5, pady=5, sticky="ne")
-        lb = tk.Listbox(dlg, selectmode=tk.MULTIPLE, height=6)
-        for ra in self.app.reliability_analyses:
-            lb.insert(tk.END, ra.name)
-        lb.grid(row=1, column=1, padx=5, pady=5)
-        qty_var = tk.IntVar(value=1)
-        ttk.Label(dlg, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        ttk.Entry(dlg, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Label(dlg, text="Qualification").grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        qual_var = tk.StringVar(value="None")
-        ttk.Combobox(dlg, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
-        passive_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(dlg, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
-
-        def ok():
-            bom_idxs = lb.curselection()
-            boms = [self.app.reliability_analyses[i].components for i in bom_idxs]
-            comp = ReliabilityComponent(
-                name_var.get(),
-                "circuit",
-                qty_var.get(),
-                {},
-                qual_var.get(),
-                is_passive=passive_var.get(),
-            )
-            comp.sub_boms = copy.deepcopy(boms)
-            comp.fit = 0.0
-            self.components.append(comp)
-            self.refresh_tree()
-            dlg.destroy()
-
-        ttk.Button(dlg, text="Add", command=ok).grid(row=5, column=0, columnspan=2, pady=5)
-        dlg.grab_set()
-        dlg.wait_window()
 
     def show_formula(self, event=None):
         sel = self.tree.focus()
