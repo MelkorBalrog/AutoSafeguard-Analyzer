@@ -1983,12 +1983,39 @@ class FaultTreeApp:
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
 
         # --- Analyses Group ---
-        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses")
+        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
         self.analysis_tree = ttk.Treeview(self.analysis_group)
         self.analysis_tree.pack(fill=tk.BOTH, expand=True)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
+
+        # --- Configuration Section ---
+        self.config_group = ttk.LabelFrame(self.analysis_tab, text="Configuration")
+        self.config_group.pack(fill=tk.BOTH, expand=False, pady=5)
+        self.config_list = tk.Listbox(self.config_group, height=10)
+        self.config_list.pack(fill=tk.BOTH, expand=True)
+
+        self.config_actions = {
+            "Mission Profiles": self.manage_mission_profiles,
+            "Mechanism Libraries": self.manage_mechanism_libraries,
+            "Scenario Libraries": self.manage_scenario_libraries,
+            "ODD Libraries": self.manage_odd_libraries,
+            "Reliability Analysis": self.open_reliability_window,
+            "FMEDA Manager": self.show_fmeda_list,
+            "FMEA Manager": self.show_fmea_list,
+            "HAZOP Analysis": self.open_hazop_window,
+            "HARA Analysis": self.open_hara_window,
+            "FI2TC Analysis": self.open_fi2tc_window,
+            "TC2FI Analysis": self.open_tc2fi_window,
+            "AutoML Explorer": self.manage_architecture,
+            "Requirements Editor": self.show_requirements_editor,
+            "Safety Goals Editor": self.show_safety_goals_editor,
+            "Review Toolbox": self.open_review_toolbox,
+        }
+        for name in self.config_actions:
+            self.config_list.insert(tk.END, name)
+        self.config_list.bind("<Double-1>", self.on_config_list_double_click)
 
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
@@ -7160,6 +7187,15 @@ class FaultTreeApp:
         elif kind == "arch":
             self.open_arch_window(idx)
 
+    def on_config_list_double_click(self, event):
+        sel = self.config_list.curselection()
+        if not sel:
+            return
+        name = self.config_list.get(sel[0])
+        action = self.config_actions.get(name)
+        if action:
+            action()
+
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
             self.zoom_in()
@@ -9231,12 +9267,13 @@ class FaultTreeApp:
                 ttk.Entry(dlg, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
                 ttk.Label(dlg, text="Type").grid(row=1, column=0, padx=5, pady=5, sticky="e")
                 type_var = tk.StringVar(value="capacitor")
-                ttk.Combobox(
+                type_cb = ttk.Combobox(
                     dlg,
                     textvariable=type_var,
                     values=list(COMPONENT_ATTR_TEMPLATES.keys()),
                     state="readonly",
-                ).grid(row=1, column=1, padx=5, pady=5)
+                )
+                type_cb.grid(row=1, column=1, padx=5, pady=5)
                 ttk.Label(dlg, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
                 qty_var = tk.IntVar(value=1)
                 ttk.Entry(dlg, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
@@ -9245,6 +9282,28 @@ class FaultTreeApp:
                 ttk.Combobox(dlg, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
                 passive_var = tk.BooleanVar(value=False)
                 ttk.Checkbutton(dlg, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
+
+                attr_frame = ttk.Frame(dlg)
+                attr_frame.grid(row=5, column=0, columnspan=2)
+                attr_vars = {}
+
+                def refresh_attr_fields(*_):
+                    for child in attr_frame.winfo_children():
+                        child.destroy()
+                    attr_vars.clear()
+                    template = COMPONENT_ATTR_TEMPLATES.get(type_var.get(), {})
+                    for i, (k, v) in enumerate(template.items()):
+                        ttk.Label(attr_frame, text=k).grid(row=i, column=0, padx=5, pady=5, sticky="e")
+                        if isinstance(v, list):
+                            var = tk.StringVar(value=v[0])
+                            ttk.Combobox(attr_frame, textvariable=var, values=v, state="readonly").grid(row=i, column=1, padx=5, pady=5)
+                        else:
+                            var = tk.StringVar(value=str(v))
+                            ttk.Entry(attr_frame, textvariable=var).grid(row=i, column=1, padx=5, pady=5)
+                        attr_vars[k] = var
+
+                type_cb.bind("<<ComboboxSelected>>", refresh_attr_fields)
+                refresh_attr_fields()
 
                 def ok():
                     comp = ReliabilityComponent(
@@ -9255,14 +9314,13 @@ class FaultTreeApp:
                         qual_var.get(),
                         is_passive=passive_var.get(),
                     )
-                    template = COMPONENT_ATTR_TEMPLATES.get(comp.comp_type, {})
-                    for k, v in template.items():
-                        comp.attributes[k] = v[0] if isinstance(v, list) else v
+                    for k, var in attr_vars.items():
+                        comp.attributes[k] = var.get()
                     self.reliability_components.append(comp)
                     dlg.destroy()
                     refresh_tree()
 
-                ttk.Button(dlg, text="Add", command=ok).grid(row=5, column=0, columnspan=2, pady=5)
+                ttk.Button(dlg, text="Add", command=ok).grid(row=6, column=0, columnspan=2, pady=5)
                 dlg.grab_set()
                 dlg.wait_window()
 
