@@ -7720,6 +7720,7 @@ class FaultTreeApp:
         return rec(node)
 
     def update_views(self):
+        self.refresh_model()
         # Compute occurrence counts from the current tree
         self.occurrence_counts = self.compute_occurrence_counts()
 
@@ -7828,6 +7829,39 @@ class FaultTreeApp:
                 # Always propagate the formula so edits take effect
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
+
+    def refresh_model(self):
+        """Propagate changes across analyses when the model updates."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+
+        def iter_analysis_events():
+            for be in self.get_all_basic_events():
+                yield be
+            for e in self.fmea_entries:
+                yield e
+            for doc in self.fmeas:
+                for e in doc.get("entries", []):
+                    yield e
+            for doc in self.fmedas:
+                for e in doc.get("entries", []):
+                    yield e
+
+        for entry in iter_analysis_events():
+            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
+            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
+            if goals:
+                sg = ", ".join(goals)
+                entry.fmeda_safety_goal = sg
+                first = goals[0]
+                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
+                if te:
+                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
+                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
+                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
+
+        self.update_basic_event_probabilities()
 
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
@@ -8708,7 +8742,7 @@ class FaultTreeApp:
 
 
     def show_fmea_list(self):
-        if hasattr(self, "_fmea_tab") and self._fmea_tab.winfo_exists():
+        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
             self.doc_nb.select(self._fmea_tab)
             return
         self._fmea_tab = self._new_tab("FMEA List")
@@ -8745,15 +8779,31 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmea():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmeas[idx]['name']
+            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmeas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        if hasattr(self, "_fmeda_tab") and self._fmeda_tab.winfo_exists():
+        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
             self.doc_nb.select(self._fmeda_tab)
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
@@ -8790,11 +8840,27 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmeda():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmedas[idx]['name']
+            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmedas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
