@@ -69,7 +69,7 @@ Requirements can also be attached to diagram elements to keep architecture and s
 
 ## Metamodel Overview
 
-Internally, AutoML stores all model elements inside a lightweight SysML repository. Each **element** is represented by a `SysMLElement` while links between elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
 
 ```mermaid
 classDiagram
@@ -128,32 +128,58 @@ classDiagram
         style: str
         points: List~Tuple~float,float~~
     }
-    SysMLRepository --> "*" SysMLElement
+    class BlockUsage
+    class PartUsage
+    class PortUsage
+    class ActivityUsage
+    class ActionUsage
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class FaultTreeNode
+    SysMLRepository --> "*" BlockUsage
+    SysMLRepository --> "*" PartUsage
+    SysMLRepository --> "*" PortUsage
+    SysMLRepository --> "*" ActivityUsage
+    SysMLRepository --> "*" ActionUsage
+    SysMLRepository --> "*" SafetyGoal
+    SysMLRepository --> "*" Hazard
+    SysMLRepository --> "*" Scenario
+    SysMLRepository --> "*" FaultTreeNode
     SysMLRepository --> "*" SysMLRelationship
     SysMLRepository --> "*" SysMLDiagram
     SysMLDiagram --> "*" SysMLObject
-SysMLDiagram --> "*" DiagramConnection
-    SysMLObject --> "0..1" SysMLElement
+    SysMLDiagram --> "*" DiagramConnection
+    SysMLObject --> "0..1" BlockUsage
+    SysMLObject --> "0..1" PartUsage
+    SysMLObject --> "0..1" PortUsage
+    SysMLObject --> "0..1" ActivityUsage
+    SysMLObject --> "0..1" ActionUsage
+    SysMLObject --> "0..1" SafetyGoal
+    SysMLObject --> "0..1" Hazard
+    SysMLObject --> "0..1" Scenario
+    SysMLObject --> "0..1" FaultTreeNode
 ```
 
 ### AutoML Safety Extensions
 
 AutoML builds on this base by introducing domain specific stereotypes for safety
-analysis. Hazards, faults and scenarios are all stored as `SysMLElement` objects
-with dedicated `elem_type` values. Tables like HAZOP or HARA reference these
-elements so analyses remain linked to the architecture.
+analysis. Hazards, faults and scenarios are stored using explicit types such as
+`Hazard`, `Scenario`, `Scenery`, `SafetyGoal` and `FaultTreeNode`. Tables like
+HAZOP or HARA reference these elements so analyses remain linked to the
+architecture.
 
 ```mermaid
 classDiagram
-    SysMLElement <|-- SafetyGoal
-    SysMLElement <|-- Hazard
-    SysMLElement <|-- Scenario
-    SysMLElement <|-- Scenery
-    SysMLElement <|-- FaultTreeNode
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class Scenery
+    class FaultTreeNode
     SafetyGoal --> "*" Hazard : mitigates
     Scenario --> "*" Hazard : leadsTo
     Scenario --> Scenery : occursIn
-FaultTreeNode --> "*" SafetyGoal : traces
+    FaultTreeNode --> "*" SafetyGoal : traces
 ```
 
 ### Core SysML Elements
@@ -180,15 +206,15 @@ generic `SysMLElement` placeholder. Key classes include:
 
 ```mermaid
 classDiagram
-    SysMLElement <|-- BlockUsage
-    SysMLElement <|-- PartUsage
-    SysMLElement <|-- PortUsage
-    SysMLElement <|-- ActivityUsage
-    SysMLElement <|-- ActionUsage
-    SysMLElement <|-- ControlFlow
-    SysMLElement <|-- ObjectFlow
-    SysMLElement <|-- UseCase
-    SysMLElement <|-- Actor
+    class BlockUsage
+    class PartUsage
+    class PortUsage
+    class ActivityUsage
+    class ActionUsage
+    class ControlFlow
+    class ObjectFlow
+    class UseCase
+    class Actor
     BlockUsage "1" o-- "*" PartUsage : parts
     BlockUsage --> "*" PortUsage : ports
     BlockUsage --> "*" ActivityUsage : behaviors
@@ -218,7 +244,7 @@ classDiagram
     FmedaDoc --> "*" FmeaEntry
     SysMLRepository --> "*" FI2TCDoc
     SysMLRepository --> "*" TC2FIDoc
-    SysMLElement <|-- FaultTreeNode
+    class FaultTreeNode
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -236,8 +262,9 @@ The diagram below shows how reliability calculations flow into FMEDA tables and 
 
 ```mermaid
 classDiagram
-    SysMLElement <|-- BlockUsage
-    SysMLElement <|-- PartUsage
+    class BlockUsage
+    class PartUsage
+    class FaultTreeDiagram
     BlockUsage --> ReliabilityAnalysis : analysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
     PartUsage --> ReliabilityComponent : component
@@ -285,13 +312,13 @@ Key attributes are:
 
 ```mermaid
 classDiagram
-    SysMLElement <|-- BlockUsage
-    SysMLElement <|-- PartUsage
-    SysMLElement <|-- SafetyGoal
-    SysMLElement <|-- Hazard
-    SysMLElement <|-- Scenario
-    SysMLElement <|-- Scenery
-    SysMLElement <|-- FaultTreeNode
+    class BlockUsage
+    class PartUsage
+    class SafetyGoal
+    class Hazard
+    class Scenario
+    class Scenery
+    class FaultTreeNode
     class BlockUsage {
         analysis
         fit
