@@ -130,7 +130,13 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Entry(dialog, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(dialog, text="Type").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         type_var = tk.StringVar(value="capacitor")
-        ttk.Combobox(dialog, textvariable=type_var, values=list(COMPONENT_ATTR_TEMPLATES.keys()), state="readonly").grid(row=1, column=1, padx=5, pady=5)
+        type_cb = ttk.Combobox(
+            dialog,
+            textvariable=type_var,
+            values=list(COMPONENT_ATTR_TEMPLATES.keys()),
+            state="readonly",
+        )
+        type_cb.grid(row=1, column=1, padx=5, pady=5)
         ttk.Label(dialog, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         qty_var = tk.IntVar(value=1)
         ttk.Entry(dialog, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
@@ -139,6 +145,28 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Combobox(dialog, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
         passive_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(dialog, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
+
+        attr_frame = ttk.Frame(dialog)
+        attr_frame.grid(row=5, column=0, columnspan=2)
+        attr_vars = {}
+
+        def refresh_attr_fields(*_):
+            for child in attr_frame.winfo_children():
+                child.destroy()
+            attr_vars.clear()
+            template = COMPONENT_ATTR_TEMPLATES.get(type_var.get(), {})
+            for i, (k, v) in enumerate(template.items()):
+                ttk.Label(attr_frame, text=k).grid(row=i, column=0, padx=5, pady=5, sticky="e")
+                if isinstance(v, list):
+                    var = tk.StringVar(value=v[0])
+                    ttk.Combobox(attr_frame, textvariable=var, values=v, state="readonly").grid(row=i, column=1, padx=5, pady=5)
+                else:
+                    var = tk.StringVar(value=str(v))
+                    ttk.Entry(attr_frame, textvariable=var).grid(row=i, column=1, padx=5, pady=5)
+                attr_vars[k] = var
+
+        type_cb.bind("<<ComboboxSelected>>", refresh_attr_fields)
+        refresh_attr_fields()
 
         def ok():
             comp = ReliabilityComponent(
@@ -149,14 +177,13 @@ class ReliabilityWindow(tk.Toplevel):
                 qual_var.get(),
                 is_passive=passive_var.get(),
             )
-            template = COMPONENT_ATTR_TEMPLATES.get(comp.comp_type, {})
-            for k, v in template.items():
-                comp.attributes[k] = v[0] if isinstance(v, list) else v
+            for k, var in attr_vars.items():
+                comp.attributes[k] = var.get()
             self.components.append(comp)
             self.refresh_tree()
             dialog.destroy()
 
-        ttk.Button(dialog, text="Add", command=ok).grid(row=5, column=0, columnspan=2, pady=5)
+        ttk.Button(dialog, text="Add", command=ok).grid(row=6, column=0, columnspan=2, pady=5)
         dialog.grab_set()
         dialog.wait_window()
 
