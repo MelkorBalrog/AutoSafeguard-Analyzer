@@ -209,9 +209,10 @@ class DiagramConnection:
 class SysMLDiagramWindow(tk.Frame):
     """Base frame for AutoML diagrams with zoom and pan support."""
 
-    def __init__(self, master, title, tools, diagram_id: str | None = None, app=None):
+    def __init__(self, master, title, tools, diagram_id: str | None = None, app=None, history=None):
         super().__init__(master)
         self.app = app
+        self.diagram_history: list[str] = list(history) if history else []
         self.master.title(title) if isinstance(self.master, tk.Toplevel) else None
         if isinstance(self.master, tk.Toplevel):
             self.master.geometry("800x600")
@@ -262,6 +263,10 @@ class SysMLDiagramWindow(tk.Frame):
 
         self.toolbox = ttk.Frame(self)
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.back_btn = ttk.Button(self.toolbox, text="Go Back", command=self.go_back)
+        self.back_btn.pack(fill=tk.X, padx=2, pady=2)
+        self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
 
         # Always provide a select tool
         tools = ["Select"] + tools
@@ -879,15 +884,36 @@ class SysMLDiagramWindow(tk.Frame):
             if getattr(child, "diagram_id", None) == chosen:
                 return True
         diag = self.repo.diagrams[chosen]
+        history = self.diagram_history + [self.diagram_id]
         if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen)
+            UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(self.master, self.app, diagram_id=chosen)
+            ActivityDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(self.master, self.app, diagram_id=chosen)
+            BlockDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(self.master, self.app, diagram_id=chosen)
+            InternalBlockDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
+        self._sync_to_repository()
+        self.destroy()
         return True
+
+    def go_back(self):
+        if not self.diagram_history:
+            return
+        prev_id = self.diagram_history.pop()
+        diag = self.repo.diagrams.get(prev_id)
+        if not diag:
+            return
+        if diag.diag_type == "Use Case Diagram":
+            UseCaseDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Activity Diagram":
+            ActivityDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Block Diagram":
+            BlockDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Internal Block Diagram":
+            InternalBlockDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        self._sync_to_repository()
+        self.destroy()
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
             self.zoom_in()
