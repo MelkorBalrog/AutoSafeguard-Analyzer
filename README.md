@@ -67,6 +67,169 @@ Elements on a diagram may reference reliability analyses. Choosing an **analysis
 
 Requirements can also be attached to diagram elements to keep architecture and safety analyses synchronized. The same safety goals referenced in HAZOP or HARA tables can therefore be traced directly to the blocks and parts that implement them.
 
+## Metamodel Overview
+
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each **element** is represented by a `SysMLElement` while links between elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application.
+
+```mermaid
+classDiagram
+    class SysMLRepository {
+        elements: Dict~str, SysMLElement~
+        relationships: List~SysMLRelationship~
+        diagrams: Dict~str, SysMLDiagram~
+        element_diagrams: Dict~str, str~
+        +create_element()
+        +create_relationship()
+        +create_diagram()
+    }
+    class SysMLElement {
+        elem_id: str
+        elem_type: str
+        name: str
+        properties: Dict~str, str~
+        stereotypes: Dict~str, str~
+        owner: str
+    }
+    class SysMLRelationship {
+        rel_id: str
+        rel_type: str
+        source: str
+        target: str
+        stereotype: str
+        properties: Dict~str, str~
+    }
+    class SysMLDiagram {
+        diag_id: str
+        diag_type: str
+        name: str
+        package: str
+        description: str
+        color: str
+        elements: List~str~
+        relationships: List~str~
+        objects: List~SysMLObject~
+        connections: List~DiagramConnection~
+    }
+    class SysMLObject {
+        obj_id: int
+        obj_type: str
+        x: float
+        y: float
+        element_id: str
+        width: float
+        height: float
+        properties: Dict~str, str~
+        requirements: List~dict~
+    }
+    class DiagramConnection {
+        src: int
+        dst: int
+        conn_type: str
+        style: str
+        points: List~Tuple~float,float~~
+    }
+    SysMLRepository --> "*" SysMLElement
+    SysMLRepository --> "*" SysMLRelationship
+    SysMLRepository --> "*" SysMLDiagram
+    SysMLDiagram --> "*" SysMLObject
+SysMLDiagram --> "*" DiagramConnection
+    SysMLObject --> "0..1" SysMLElement
+```
+
+### AutoML Safety Extension Metamodel
+
+AutoML extends SysML with additional element types and attributes to represent
+hazards, operational scenarios and fault-tree structures. These objects are
+stored in the same repository as regular SysML blocks and are therefore
+accessible on diagrams and through the API. Key non‑SysML properties such as
+ASIL ratings, safety requirements and failure probabilities are persisted on the
+elements themselves. Analysis documents like HAZOPs or HARAs refer back to these
+model elements so that architecture, faults and requirements remain connected.
+
+```mermaid
+classDiagram
+    %% Base extensions
+    SysMLElement <|-- SafetyGoal
+    SysMLElement <|-- Hazard
+    SysMLElement <|-- Scenario
+    SysMLElement <|-- Scenery
+    SysMLElement <|-- FaultTreeNode
+    class SafetyGoal {
+        asil: str
+        description: str
+    }
+    class Hazard {
+        description: str
+    }
+    class Scenario {
+        behavior: str
+        scenery: str
+        tc: str
+        fi: str
+        description: str
+    }
+    class Scenery {
+        name: str
+    }
+    class FaultTreeNode {
+        node_type: str
+        severity: int
+        controllability: int
+        probability: float
+        safety_requirements: List~dict~
+    }
+    %% Analysis documents
+    class HazopEntry {
+        function: str
+        malfunction: str
+        scenario: str
+        hazard: str
+        safety: bool
+    }
+    class HazopDoc {
+        name: str
+        entries: List~HazopEntry~
+    }
+    class HaraEntry {
+        malfunction: str
+        hazard: str
+        asil: str
+        safety_goal: str
+    }
+    class HaraDoc {
+        name: str
+        hazops: List~HazopDoc~
+        entries: List~HaraEntry~
+    }
+    class ReliabilityComponent {
+        name: str
+        comp_type: str
+        qualification: str
+        fit: float
+    }
+    class MissionProfile {
+        name: str
+        tau_on: float
+        tau_off: float
+    }
+    class ReliabilityAnalysis {
+        name: str
+        standard: str
+        profile: MissionProfile
+        components: List~ReliabilityComponent~
+    }
+    %% Relationships
+    SafetyGoal --> "*" Hazard : mitigates
+    Scenario --> "*" Hazard : leadsTo
+    Scenario --> Scenery : occursIn
+    FaultTreeNode --> "*" SafetyGoal : traces
+    HazopDoc --> "*" HazopEntry
+    HaraDoc --> "*" HaraEntry
+    HaraDoc --> "*" HazopDoc : derivesFrom
+    ReliabilityAnalysis --> MissionProfile : uses
+    ReliabilityAnalysis --> "*" ReliabilityComponent
+```
+
 ## BOM Integration with AutoML Diagrams
 
 Blocks in block diagrams may reference saved reliability analyses via the **analysis** property while parts reference individual components using the **component** property. Both element types also provide **fit**, **qualification** and **failureModes** attributes. Entering values for these fields shows them in a *Reliability* compartment for blocks or as additional lines beneath parts so FIT rates and qualification information remain visible in the AutoML model. When editing a block or part you can now pick from drop-down lists containing all analyses or components from saved reliability analyses. Selecting an item automatically fills in its FIT rate, qualification certificate and any failure modes found in FMEA tables.
