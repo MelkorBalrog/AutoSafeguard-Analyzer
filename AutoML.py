@@ -60,17 +60,17 @@ yield a low assurance requirement (i.e. “PAL1”).
 
 **Assurance Matrix for Base Inputs (Qualitative Labels)**
 
-|                           | **Confidence: Extra Low** | **Confidence: Low**   | **Confidence: Moderate** | **Confidence: High** | **Confidence: High+** |
+|                           | **Confidence: Level 1** | **Confidence: Level 2**   | **Confidence: Level 3** | **Confidence: Level 4** | **Confidence: Level 5** |
 |---------------------------|---------------------------|-----------------------|--------------------------|----------------------|-----------------------|
-| **Robustness: Extra Low** | PAL5                     | PAL5                 | PAL4                     | PAL4                 | PAL4                  |
-| **Robustness: Low**       | PAL5                     | PAL5                 | PAL4                     | PAL3                 | PAL3                  |
-| **Robustness: Moderate**  | PAL4                      | PAL4                  | PAL3                 | PAL3             | PAL1             |
-| **Robustness: High**      | PAL4                      | PAL3              | PAL3                 | PAL1            | PAL1             |
-| **Robustness: High+**     | PAL4                      | PAL3              | PAL1                | PAL1            | PAL1             |
+| **Robustness: Level 1** | PAL5                     | PAL5                 | PAL4                     | PAL4                 | PAL4                  |
+| **Robustness: Level 2**       | PAL5                     | PAL5                 | PAL4                     | PAL3                 | PAL3                  |
+| **Robustness: Level 3**  | PAL4                      | PAL4                  | PAL3                 | PAL3             | PAL1             |
+| **Robustness: Level 4**      | PAL4                      | PAL3              | PAL3                 | PAL1            | PAL1             |
+| **Robustness: Level 5**     | PAL4                      | PAL3              | PAL1                | PAL1            | PAL1             |
 
 *Interpretation:*
-– Very poor testing and design (i.e. both “Extra Low”) lead to a “PAL5” assurance requirement.
-– Excellent testing and design (i.e. both “High+”) result in an “PAL1” requirement.
+– Very poor testing and design (i.e. both "Level 1") lead to a “PAL5” assurance requirement.
+– Excellent testing and design (i.e. both "Level 5") result in an “PAL1” requirement.
 – Mixed values yield intermediate Prototype Assurance Levels (PAL).
 
 ---
@@ -86,16 +86,16 @@ levels using a reliability-inspired approach. Use the following qualitative guid
 
 **Aggregation Table for AND Gate (Qualitative Labels)**
 
-|                         | **Child 2: Extra Low** | **Child 2: Low**   | **Child 2: Moderate** | **Child 2: High**   | **Child 2: High+**  |
+|                         | **Child 2: Level 1** | **Child 2: Level 2**   | **Child 2: Level 3** | **Child 2: Level 4**   | **Child 2: Level 5**  |
 |-------------------------|------------------------|--------------------|-----------------------|---------------------|---------------------|
-| **Child 1: Extra Low**  | PAL1              | PAL1          | PAL2                   | PAL4                | PAL5               |
-| **Child 1: Low**        | PAL1              | PAL2                | PAL3              | PAL4                | PAL5               |
-| **Child 1: Moderate**   | PAL2                    | PAL3           | PAL4                  | PAL5               | PAL5               |
-| **Child 1: High**       | PAL4                   | PAL4               | PAL5                 | PAL5               | PAL5               |
-| **Child 1: High+**      | PAL5                  | PAL5              | PAL5                 | PAL5               | PAL5               |
+| **Child 1: Level 1**  | PAL1              | PAL1          | PAL2                   | PAL4                | PAL5               |
+| **Child 1: Level 2**        | PAL1              | PAL2                | PAL3              | PAL4                | PAL5               |
+| **Child 1: Level 3**   | PAL2                    | PAL3           | PAL4                  | PAL5               | PAL5               |
+| **Child 1: Level 4**       | PAL4                   | PAL4               | PAL5                 | PAL5               | PAL5               |
+| **Child 1: Level 5**      | PAL5                  | PAL5              | PAL5                 | PAL5               | PAL5               |
 
 *Interpretation:*
-– Combining two “High+” components remains “PAL5.”
+– Combining two "Level 5" components remains “PAL5.”
 – If one component is significantly lower, the overall requirement shifts toward a higher assurance need.
 
 #### For an **OR Gate**:
@@ -6590,36 +6590,36 @@ class FaultTreeApp:
             header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
             base_matrix_data = [
                 [Paragraph("<b>Robustness \\ Confidence</b>", header_style),
-                 Paragraph("<b>1 (Extra Low)</b>", header_style),
-                 Paragraph("<b>2 (Low)</b>", header_style),
-                 Paragraph("<b>3 (Moderate)</b>", header_style),
-                 Paragraph("<b>4 (High)</b>", header_style),
-                 Paragraph("<b>5 (High+)</b>", header_style)],
-                [Paragraph("<b>1 (Extra Low)</b>", header_style),
+                 Paragraph("<b>1 (Level 1)</b>", header_style),
+                 Paragraph("<b>2 (Level 2)</b>", header_style),
+                 Paragraph("<b>3 (Level 3)</b>", header_style),
+                 Paragraph("<b>4 (Level 4)</b>", header_style),
+                 Paragraph("<b>5 (Level 5)</b>", header_style)],
+                [Paragraph("<b>1 (Level 1)</b>", header_style),
                  Paragraph("PAL5", pdf_styles["Normal"]),
                  Paragraph("PAL5", pdf_styles["Normal"]),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL4", pdf_styles["Normal"])],
-                [Paragraph("<b>2 (Low)</b>", header_style),
+                [Paragraph("<b>2 (Level 2)</b>", header_style),
                  Paragraph("PAL5", pdf_styles["Normal"]),
                  Paragraph("PAL5", pdf_styles["Normal"]),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"])],
-                [Paragraph("<b>3 (Moderate)</b>", header_style),
+                [Paragraph("<b>3 (Level 3)</b>", header_style),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL1", pdf_styles["Normal"])],
-                [Paragraph("<b>4 (High)</b>", header_style),
+                [Paragraph("<b>4 (Level 4)</b>", header_style),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL1", pdf_styles["Normal"]),
                  Paragraph("PAL1", pdf_styles["Normal"])],
-                [Paragraph("<b>5 (High+)</b>", header_style),
+                [Paragraph("<b>5 (Level 5)</b>", header_style),
                  Paragraph("PAL4", pdf_styles["Normal"]),
                  Paragraph("PAL3", pdf_styles["Normal"]),
                  Paragraph("PAL1", pdf_styles["Normal"]),
