@@ -14,13 +14,13 @@ if not errorlevel 1 (
     echo Warning: pre-release Python builds can fail with PyInstaller. Use a stable release.
 )
 
-REM Verify required Python packages are installed using their module names
-python -c "import PIL" 2>NUL || (
+REM Verify required Python packages are installed using pip show
+python -m pip show pillow >NUL 2>&1 || (
     echo Missing required package 'pillow'. Install with: pip install pillow
     exit /b 1
 )
 for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
-    python -c "import %%P" 2>NUL || (
+    python -m pip show %%P >NUL 2>&1 || (
         echo Missing required package '%%P'. Install with: pip install %%P
         exit /b 1
     )
@@ -30,7 +30,8 @@ REM Run PyInstaller from the repository root so it can locate AutoML.py
 cd /d "%REPO_ROOT%"
 if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
-    --exclude-module scipy AutoML.py
+    --exclude-module scipy ^
+    --hidden-import=PIL.ImageTk AutoML.py
 if errorlevel 1 (
     echo Failed to build executable.
     exit /b %errorlevel%

@@ -7,12 +7,12 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
 fi
 
 # Ensure Pillow and other dependencies are installed so PyInstaller bundles them
-python -c "import PIL" 2>/dev/null || {
+python -m pip show pillow >/dev/null 2>&1 || {
     echo "Missing required package 'pillow'. Install with: pip install pillow" >&2
     exit 1
 }
 for pkg in openpyxl networkx matplotlib reportlab adjustText; do
-    python -c "import $pkg" 2>/dev/null || {
+    python -m pip show "$pkg" >/dev/null 2>&1 || {
         echo "Missing required package '$pkg'. Install with: pip install $pkg" >&2
         exit 1
     }
@@ -33,7 +33,8 @@ rm -f AutoML.spec
 # Use PyInstaller to create a single-file executable
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
-    --exclude-module scipy AutoML.py
+    --exclude-module scipy \
+    --hidden-import=PIL.ImageTk AutoML.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin
