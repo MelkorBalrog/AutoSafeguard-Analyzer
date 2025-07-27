@@ -177,6 +177,7 @@ classDiagram
     class Scenery
     class FaultTreeNode
     class FmedaDoc
+    class FmeaDoc
     class FaultTreeDiagram
     class TriggeringCondition
     class FunctionalInsufficiency
@@ -191,6 +192,9 @@ classDiagram
     FunctionalInsufficiency --> FunctionalModification : mitigatedBy
     FunctionalModification --> AcceptanceCriteria : verifiedBy
     FaultTreeNode --> "*" SafetyGoal : traces
+    FaultTreeDiagram --> "*" FaultTreeNode : contains
+    FaultTreeDiagram --> FmeaDoc : uses
+    FaultTreeDiagram --> FmedaDoc : uses
 ```
 
 ### Core SysML Elements
