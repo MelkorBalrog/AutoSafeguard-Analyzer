@@ -224,6 +224,11 @@ class SysMLDiagramWindow(tk.Frame):
         self.diagram_id = diagram.diag_id
         if isinstance(self.master, tk.Toplevel):
             self.master.protocol("WM_DELETE_WINDOW", self.on_close)
+        else:
+            # When embedded in another window, provide a small X button so
+            # the user can close the frame.
+            close_btn = ttk.Button(self, text="x", width=2, command=self.on_close)
+            close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
 
         # Load any saved objects and connections for this diagram
         self.objects: List[SysMLObject] = []
@@ -859,6 +864,12 @@ class SysMLDiagramWindow(tk.Frame):
             chosen = diag_id or view_id
         if not chosen or chosen not in self.repo.diagrams:
             return False
+        # Avoid opening duplicate windows for the same diagram within the
+        # current container. If a child frame already displays the chosen
+        # diagram, simply return.
+        for child in self.master.winfo_children():
+            if getattr(child, "diagram_id", None) == chosen:
+                return True
         diag = self.repo.diagrams[chosen]
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen)
