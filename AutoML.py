@@ -7781,13 +7781,14 @@ class FaultTreeApp:
 
     def get_non_basic_failure_modes(self):
         """Return failure modes from gate nodes, FMEAs and FMEDAs."""
-        modes = list(self.get_all_gates())
+        modes = [g for g in self.get_all_gates() if getattr(g, "description", "").strip()]
         for entry in self.fmea_entries:
-            modes.append(entry)
+            if getattr(entry, "description", "").strip():
+                modes.append(entry)
         for f in self.fmeas:
-            modes.extend(f.get("entries", []))
+            modes.extend([e for e in f.get("entries", []) if getattr(e, "description", "").strip()])
         for d in self.fmedas:
-            modes.extend(d.get("entries", []))
+            modes.extend([e for e in d.get("entries", []) if getattr(e, "description", "").strip()])
         unique = {}
         for m in modes:
             unique[getattr(m, "unique_id", id(m))] = m
@@ -7822,7 +7823,7 @@ class FaultTreeApp:
 
     def format_failure_mode_label(self, node):
         comp = self.get_component_name_for_node(node)
-        label = node.description or (node.user_name or f"BE {node.unique_id}")
+        label = node.description if node.description else (node.user_name or f"Node {node.unique_id}")
         return f"{comp}: {label}" if comp else label
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
@@ -9089,8 +9090,9 @@ class FaultTreeApp:
             # Include failure modes from both the FTA and any FMEA specific
             # entries so the combo box always lists all available modes.
             self.mode_map = {
-                be.description or (be.user_name or f"BE {be.unique_id}"): be
+                be.description: be
                 for be in basic_events
+                if getattr(be, "description", "").strip()
             }
             for doc in self.app.hazop_docs:
                 for e in doc.entries:
@@ -9514,9 +9516,13 @@ class FaultTreeApp:
 
         def body(self, master):
             self.listbox = tk.Listbox(master, height=10, width=40)
+            self._visible_events = []
             for be in self.events:
-                label = be.description or (be.user_name or f"BE {be.unique_id}")
-                self.listbox.insert(tk.END, label)
+                desc = getattr(be, "description", "").strip()
+                if not desc:
+                    continue
+                self._visible_events.append(be)
+                self.listbox.insert(tk.END, desc)
             if self.allow_new:
                 self.listbox.insert(tk.END, "<Create New Failure Mode>")
             self.listbox.grid(row=0, column=0, padx=5, pady=5)
@@ -9526,10 +9532,10 @@ class FaultTreeApp:
             sel = self.listbox.curselection()
             if sel:
                 idx = sel[0]
-                if self.allow_new and idx == len(self.events):
+                if self.allow_new and idx == len(self._visible_events):
                     self.selected = "NEW"
                 else:
-                    self.selected = self.events[idx]
+                    self.selected = self._visible_events[idx]
 
     class SelectSafetyGoalsDialog(simpledialog.Dialog):
         def __init__(self, parent, goals, initial=None):
