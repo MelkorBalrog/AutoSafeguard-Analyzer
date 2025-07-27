@@ -11441,8 +11441,8 @@ class FaultTreeApp:
         message = (
             f"{symbol} AutoML Automotive Modeling Language\n\n"
             "Model items, scenarios, functions, structure and interfaces.\n"
-            "Perform safety analyses per ISO 26262, ISO 21448, "
-            "ISO 21434 and ISO 8800.\n\n"
+            "Perform systems safety analyses, including cybersecurity, per ISO 26262, "
+            "ISO 21448, ISO 21434 and ISO 8800.\n\n"
             f"Version: {self.version}"
         )
         messagebox.showinfo("About AutoML", message)
