@@ -11437,10 +11437,12 @@ class FaultTreeApp:
 
     def show_about(self):
         """Display information about the tool."""
-        symbol = "\U0001F6E0"  # hammer and wrench symbol
+        symbol = "\u2699"  # gear symbol
         message = (
-            f"{symbol} AutoML Fault Tree Analysis Tool\n\n"
-            "This tool helps build and analyze safety models.\n\n"
+            f"{symbol} AutoML Automotive Modeling Language\n\n"
+            "Model items, scenarios, functions, structure and interfaces.\n"
+            "Perform safety analyses per ISO 26262, ISO 21448, "
+            "ISO 21434 and ISO 8800.\n\n"
             f"Version: {self.version}"
         )
         messagebox.showinfo("About AutoML", message)
