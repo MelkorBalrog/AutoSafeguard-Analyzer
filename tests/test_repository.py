@@ -183,5 +183,27 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn(diag.diag_id, new_repo.diagrams)
         self.assertIn(actor.elem_id, new_repo.diagrams[diag.diag_id].elements)
 
+    def test_save_load_consistency(self):
+        """Ensure saved JSON matches data reloaded from disk."""
+        pkg = self.repo.create_package("Pkg")
+        blk = self.repo.create_element("Block", name="Engine", owner=pkg.elem_id)
+        diag = self.repo.create_diagram("Block Diagram", name="BD")
+        self.repo.add_element_to_diagram(diag.diag_id, blk.elem_id)
+        rel = self.repo.create_relationship("Association", blk.elem_id, pkg.elem_id)
+        self.repo.add_relationship_to_diagram(diag.diag_id, rel.rel_id)
+        self.repo.link_diagram(blk.elem_id, diag.diag_id)
+
+        original = self.repo.to_dict()
+
+        path = "repo_consistency.json"
+        self.repo.save(path)
+        SysMLRepository._instance = None
+        new_repo = SysMLRepository.get_instance()
+        new_repo.load(path)
+        os.remove(path)
+        loaded = new_repo.to_dict()
+
+        self.assertEqual(original, loaded)
+
 if __name__ == '__main__':
     unittest.main()
