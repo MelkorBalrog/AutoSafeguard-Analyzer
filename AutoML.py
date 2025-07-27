@@ -9066,8 +9066,9 @@ class FaultTreeApp:
             else:
                 comp = getattr(self.node, "fmea_component", "")
             comp_names = {c.name for c in self.app.reliability_components}
-            basic_events = self.app.get_all_basic_events()
-            for be in basic_events + self.fmea_entries:
+            # Gather failure modes from gates and FMEA/FMEDA tables only
+            basic_events = self.app.get_non_basic_failure_modes()
+            for be in basic_events:
                 src = self.app.get_failure_mode_node(be)
                 parent = src.parents[0] if src.parents else None
                 if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES and parent.user_name:
@@ -9088,7 +9089,7 @@ class FaultTreeApp:
             # entries so the combo box always lists all available modes.
             self.mode_map = {
                 be.description or (be.user_name or f"BE {be.unique_id}"): be
-                for be in basic_events + self.fmea_entries
+                for be in basic_events
             }
             for doc in self.app.hazop_docs:
                 for e in doc.entries:
@@ -9551,7 +9552,9 @@ class FaultTreeApp:
 
     def show_fmea_table(self, fmea=None, fmeda=False):
         """Display an editable AIAG-compliant FMEA or FMEDA table."""
-        basic_events = self.get_all_basic_events()
+        # Use failure modes defined on gates or within FMEA/FMEDA documents.
+        # Do not include FTA base events as selectable failure modes.
+        basic_events = self.get_non_basic_failure_modes()
         entries = self.fmea_entries if fmea is None else fmea['entries']
         title = f"FMEA Table - {fmea['name']}" if fmea else "FMEA Table"
         win = self._new_tab(title)
