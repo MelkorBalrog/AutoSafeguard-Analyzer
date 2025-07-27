@@ -425,7 +425,11 @@ class ClosableNotebook(ttk.Notebook):
                 return
             self._closing_tab = tab_id
             self.event_generate("<<NotebookTabClosed>>")
-            self.forget(tab_id)
+            if tab_id in self.tabs():
+                try:
+                    self.forget(tab_id)
+                except tk.TclError:
+                    pass
         self.state(["!pressed"])
         self._active = None
 
