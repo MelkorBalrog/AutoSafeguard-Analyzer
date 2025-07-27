@@ -2791,6 +2791,7 @@ class ArchitectureManagerDialog(tk.Frame):
         ttk.Button(btns, text="Delete", command=self.delete).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Close", command=self.destroy).pack(side=tk.RIGHT, padx=2)
         self.populate()
+        self.tree.bind("<Button-3>", self.on_right_click)
         self.tree.bind("<Double-1>", self.on_double)
         self.tree.bind("<ButtonPress-1>", self.on_drag_start)
         self.tree.bind("<B1-Motion>", self.on_drag_motion)
@@ -2930,6 +2931,8 @@ class ArchitectureManagerDialog(tk.Frame):
                         )
 
         add_pkg(root_pkg.elem_id)
+        if self.app:
+            self.app.update_views()
 
     def selected(self):
         sel = self.tree.selection()
@@ -3038,7 +3041,7 @@ class ArchitectureManagerDialog(tk.Frame):
                         obj.__dict__ if str(o.get("obj_id")) == oid else o
                         for o in diag.objects
                     ]
-                    self.populate()
+                self.populate()
         else:
             elem = self.repo.elements.get(item)
             if elem:
@@ -3047,6 +3050,36 @@ class ArchitectureManagerDialog(tk.Frame):
                 else:
                     ElementPropertiesDialog(self, elem)
                 self.populate()
+
+    def on_right_click(self, event):
+        item = self.tree.identify_row(event.y)
+        if not item:
+            return
+        self.tree.selection_set(item)
+        menu = tk.Menu(self.tree, tearoff=0)
+        menu.add_command(label="Rename", command=lambda: self.rename_item(item))
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def rename_item(self, item=None):
+        item = item or self.selected()
+        if not item:
+            return
+        if item.startswith("diag_"):
+            diag = self.repo.diagrams.get(item[5:])
+            if diag:
+                name = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=diag.name)
+                if name:
+                    diag.name = name
+                    self.populate()
+        elif item.startswith("obj_"):
+            return
+        else:
+            elem = self.repo.elements.get(item)
+            if elem:
+                name = simpledialog.askstring("Rename", "Name:", initialvalue=elem.name)
+                if name:
+                    elem.name = name
+                    self.populate()
 
     # ------------------------------------------------------------------
     # Cut/Paste and Drag & Drop Handling
