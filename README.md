@@ -132,8 +132,28 @@ classDiagram
     SysMLRepository --> "*" SysMLRelationship
     SysMLRepository --> "*" SysMLDiagram
     SysMLDiagram --> "*" SysMLObject
-    SysMLDiagram --> "*" DiagramConnection
+SysMLDiagram --> "*" DiagramConnection
     SysMLObject --> "0..1" SysMLElement
+```
+
+### AutoML Safety Extensions
+
+AutoML builds on this base by introducing domain specific stereotypes for safety
+analysis. Hazards, faults and scenarios are all stored as `SysMLElement` objects
+with dedicated `elem_type` values. Tables like HAZOP or HARA reference these
+elements so analyses remain linked to the architecture.
+
+```mermaid
+classDiagram
+    SysMLElement <|-- SafetyGoal
+    SysMLElement <|-- Hazard
+    SysMLElement <|-- Scenario
+    SysMLElement <|-- Scenery
+    SysMLElement <|-- FaultTreeNode
+    SafetyGoal --> "*" Hazard : mitigates
+    Scenario --> "*" Hazard : leadsTo
+    Scenario --> Scenery : occursIn
+    FaultTreeNode --> "*" SafetyGoal : traces
 ```
 
 ## BOM Integration with AutoML Diagrams
