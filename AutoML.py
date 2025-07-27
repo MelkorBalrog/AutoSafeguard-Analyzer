@@ -8708,7 +8708,7 @@ class FaultTreeApp:
 
 
     def show_fmea_list(self):
-        if hasattr(self, "_fmea_tab") and self._fmea_tab.winfo_exists():
+        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
             self.doc_nb.select(self._fmea_tab)
             return
         self._fmea_tab = self._new_tab("FMEA List")
@@ -8753,7 +8753,7 @@ class FaultTreeApp:
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        if hasattr(self, "_fmeda_tab") and self._fmeda_tab.winfo_exists():
+        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
             self.doc_nb.select(self._fmeda_tab)
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
