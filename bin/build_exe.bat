@@ -7,6 +7,13 @@ REM Determine important paths
 set "BIN_DIR=%~dp0"
 set "REPO_ROOT=%~dp0.."
 
+REM Warn if running a pre-release Python build which may cause PyInstaller errors
+for /f "delims=" %%V in ('python -c "import sys;print(sys.version)"') do set "PYVER=%%V"
+echo %PYVER% | findstr /I "alpha beta candidate rc" >nul
+if not errorlevel 1 (
+    echo Warning: pre-release Python builds can fail with PyInstaller. Use a stable release.
+)
+
 REM Run PyInstaller from the repository root so it can locate AutoML.py
 cd /d "%REPO_ROOT%"
 if exist AutoML.spec del AutoML.spec
