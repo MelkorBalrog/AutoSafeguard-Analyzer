@@ -1373,6 +1373,13 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_all_requirement_asil()
         self.update_requirement_decomposition()
 
+    def refresh_model(self):
+        """Propagate changes to keep analyses synchronized."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+        self.update_basic_event_probabilities()
+
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
         for r in self.reviews:
@@ -2033,15 +2040,33 @@ class FaultTreeApp:
         self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
-        self.analysis_tree = ttk.Treeview(self.analysis_group)
-        self.analysis_tree.pack(fill=tk.BOTH, expand=True)
+        tree_frame = ttk.Frame(self.analysis_group)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        self.analysis_tree = ttk.Treeview(tree_frame)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.analysis_tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.analysis_tree.xview)
+        self.analysis_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.analysis_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
 
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_list = tk.Listbox(self.tools_group, height=10)
-        self.tools_list.pack(fill=tk.BOTH, expand=True)
+        tools_frame = ttk.Frame(self.tools_group)
+        tools_frame.pack(fill=tk.BOTH, expand=True)
+        self.tools_list = tk.Listbox(tools_frame, height=10)
+        vsb = ttk.Scrollbar(tools_frame, orient="vertical", command=self.tools_list.yview)
+        hsb = ttk.Scrollbar(tools_frame, orient="horizontal", command=self.tools_list.xview)
+        self.tools_list.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tools_list.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tools_frame.rowconfigure(0, weight=1)
+        tools_frame.columnconfigure(0, weight=1)
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
@@ -8989,12 +9014,9 @@ class FaultTreeApp:
                 row_next += 1
 
             ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
-            fault_names = set(self.app.faults)
-            for be in self.app.get_all_basic_events():
-                label = be.description or (be.user_name or f"BE {be.unique_id}")
-                fault_names.add(label)
+            fault_names = sorted(set(self.app.faults))
             self.cause_var = tk.StringVar(value=getattr(self.node, 'fmea_cause', ''))
-            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=sorted(fault_names), width=30)
+            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=fault_names, width=30)
             self.cause_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
@@ -10260,11 +10282,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10363,11 +10394,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10466,11 +10506,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10569,11 +10618,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())

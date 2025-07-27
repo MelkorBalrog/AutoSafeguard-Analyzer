@@ -176,6 +176,8 @@ classDiagram
     class Scenario
     class Scenery
     class FaultTreeNode
+    class Fault
+    class Failure
     class FmedaDoc
     class FmeaDoc
     class FaultTreeDiagram
@@ -191,6 +193,10 @@ classDiagram
     TriggeringCondition --> FunctionalInsufficiency : leadsTo
     FunctionalInsufficiency --> FunctionalModification : mitigatedBy
     FunctionalModification --> AcceptanceCriteria : verifiedBy
+    Fault --> Failure : leadsTo
+    FmeaDoc --> Fault : records
+    FmeaDoc --> Failure : records
+    FaultTreeNode --> Failure : baseEvent
     FaultTreeNode --> "*" SafetyGoal : traces
     FaultTreeDiagram --> "*" FaultTreeNode : contains
     FaultTreeDiagram --> FmeaDoc : uses
@@ -279,6 +285,9 @@ classDiagram
     FmeaDoc --> "*" FmeaEntry
     SysMLRepository --> "*" FmedaDoc
     FmedaDoc --> "*" FmeaEntry
+    FmeaEntry --> Fault : cause
+    FmeaEntry --> Failure : effect
+    Failure --> FaultTreeNode : representedBy
     SysMLRepository --> "*" FI2TCDoc
     SysMLRepository --> "*" TC2FIDoc
     FI2TCDoc --> "*" FI2TCEntry
@@ -293,6 +302,8 @@ classDiagram
     SysMLRepository --> "*" AcceptanceCriteria
     SysMLRepository --> "*" TriggeringCondition
     SysMLRepository --> "*" FunctionalInsufficiency
+    SysMLRepository --> "*" Fault
+    SysMLRepository --> "*" Failure
     class FI2TCEntry
     class TC2FIEntry
     class TriggeringCondition
@@ -300,6 +311,8 @@ classDiagram
     class FunctionalModification
     class AcceptanceCriteria
     class FaultTreeNode
+    class Fault
+    class Failure
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -308,11 +321,8 @@ quantity and a dictionary of part‑specific parameters. HAZOP and HARA tables u
 `HazopDoc`/`HazopEntry` and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA
 and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
 `FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
-diagnostic coverage. Causes now pull from a shared list of **faults** represented
-by FTA basic events while failure modes reference gate nodes so common modes can
-be reused. Top level events hold the malfunction they represent which lets FMEDA
-entries auto-fill the violated safety goal. Fault tree diagrams consist of nested
-`FaultTreeNode` objects that hold FMEA metrics, FMEDA values and traced requirements.
+diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
+objects that hold FMEA metrics, FMEDA values and traced requirements.
 
 #### Analysis Relationships
 
@@ -325,6 +335,8 @@ classDiagram
     class HazopEntry
     class FmeaDoc
     class FaultTreeDiagram
+    class Fault
+    class Failure
     class FmeaEntry
     class FmedaDoc
     class ReliabilityAnalysis
@@ -334,6 +346,9 @@ classDiagram
     PartUsage --> ReliabilityComponent : component
     HazopEntry --> FmeaEntry : failureMode
     FmeaDoc --> "*" FmeaEntry : rows
+    FmeaEntry --> Fault : cause
+    FmeaEntry --> Failure : effect
+    Failure --> FaultTreeNode : event
     FmedaDoc --> "*" FmeaEntry : rows
     PartUsage --> "*" FmeaEntry : failureModes
     ReliabilityComponent --> "*" FmeaEntry : modes
@@ -362,6 +377,8 @@ classDiagram
     class FmeaEntry
     class FaultTreeDiagram
     class FaultTreeNode
+    class Fault
+    class Failure
     class Requirement
     UseCase --> ActivityUsage : realizedBy
     ActivityUsage --> "*" ActionUsage : actions
@@ -370,6 +387,11 @@ classDiagram
     Scenario --> HazopEntry : analyzedIn
     Scenery --> Scenario : contextFor
     HazopEntry --> HaraEntry : selected
+    HazopEntry --> Fault : fault
+    Fault --> Failure : resultsIn
+    FmeaEntry --> Fault : cause
+    FmeaEntry --> Failure : effect
+    Failure --> FaultTreeNode : event
     HaraEntry --> Hazard
     HaraEntry --> SafetyGoal
     SafetyGoal --> FaultTreeDiagram : topEvent
@@ -411,6 +433,7 @@ Key attributes are:
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **FmeaDoc** – failure mode table with occurrence and detection ratings.
 - **FmedaDoc** – table-level metrics `spfm`, `lpfm` and `dc` calculated from
   failure mode FIT values.
 - **FaultTreeDiagram** – overall fault tree probability `phmf` and Prototype
@@ -423,6 +446,8 @@ Key attributes are:
   `acceptanceCriteria` used to verify the change.
 - **AcceptanceCriteria** – measurable condition proving a functional
   modification resolves the hazard.
+- **Fault** - underlying cause leading to a failure mode.
+- **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
 
 ```mermaid
 classDiagram
@@ -525,6 +550,37 @@ classDiagram
 
 ```mermaid
 classDiagram
+    class AnalysisDocument {
+        name
+        date
+        description
+    }
+    SysMLElement <|-- AnalysisDocument
+```
+
+```mermaid
+classDiagram
+    class FmeaDoc {
+        rpn_threshold
+    }
+    AnalysisDocument <|-- FmeaDoc
+```
+
+```mermaid
+classDiagram
+    class FmeaEntry {
+        failure_mode
+        cause
+        effect
+        severity
+        occurrence
+        detection
+    }
+    SysMLElement <|-- FmeaEntry
+```
+
+```mermaid
+classDiagram
     class FmedaDoc {
         spfm
         lpfm
@@ -577,6 +633,22 @@ classDiagram
         description
     }
     SysMLElement <|-- AcceptanceCriteria
+```
+```mermaid
+classDiagram
+    class Fault {
+        description
+    }
+    SysMLElement <|-- Fault
+```
+
+```mermaid
+classDiagram
+    class Failure {
+        description
+        severity
+    }
+    SysMLElement <|-- Failure
 ```
 
 ## BOM Integration with AutoML Diagrams
