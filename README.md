@@ -156,6 +156,48 @@ classDiagram
 FaultTreeNode --> "*" SafetyGoal : traces
 ```
 
+### Core SysML Elements
+
+The repository tracks each element by its specific type rather than using the
+generic `SysMLElement` placeholder. Key classes include:
+
+- **BlockUsage** – structural block definition. Properties: `valueProperties`,
+  `partProperties`, `referenceProperties`, `ports`, `constraintProperties`,
+  `operations`, plus reliability attributes `analysis`, `fit`, `qualification`
+  and `failureModes`.
+- **PartUsage** – internal part with `component`, `failureModes` and `asil`
+  fields for BOM links and safety ratings.
+- **PortUsage** – port on a block or part. Provides `direction`, `flow`,
+  `labelX` and `labelY` to specify connector orientation.
+- **ActivityUsage** – container for behaviors with `ownedActions` and
+  `parameters`.
+- **ActionUsage** – atomic step within an activity. Can be specialized as
+  `CallBehaviorAction` to invoke another activity.
+- **ControlFlow** and **ObjectFlow** – edges between actions. Control flows
+  handle sequencing while object flows carry typed data.
+- **Use Case** and **Actor** – high level functional views capturing external
+  interactions.
+
+```mermaid
+classDiagram
+    SysMLElement <|-- BlockUsage
+    SysMLElement <|-- PartUsage
+    SysMLElement <|-- PortUsage
+    SysMLElement <|-- ActivityUsage
+    SysMLElement <|-- ActionUsage
+    SysMLElement <|-- ControlFlow
+    SysMLElement <|-- ObjectFlow
+    SysMLElement <|-- UseCase
+    SysMLElement <|-- Actor
+    BlockUsage "1" o-- "*" PartUsage : parts
+    BlockUsage --> "*" PortUsage : ports
+    BlockUsage --> "*" ActivityUsage : behaviors
+    ActivityUsage --> "*" ActionUsage : actions
+    ActionUsage --> "*" ControlFlow : control
+    ActionUsage --> "*" ObjectFlow : objects
+    UseCase --> "*" Actor : actors
+```
+
 ### Detailed Safety and Reliability Metamodel
 
 The tool stores each safety analysis in its own container object alongside the
@@ -218,6 +260,69 @@ Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link 
   `FaultTreeNode` are stored using dedicated `elem_type` values within the
   repository. These extend the basic `SysMLElement` with fields for ASIL, FMEA
   ratings, diagnostic coverage and requirement links.
+
+### Extended AutoML Element Attributes
+
+AutoML elements include additional properties beyond the standard SysML fields.
+Key attributes are:
+
+- **SafetyGoal** – textual `description`, assigned `asil` level and quantitative
+  targets `spfm`, `lpfm` and `dc`. Each goal also lists allocated safety
+  `requirements`.
+- **Hazard** – hazard `description`, HARA `severity` and the related
+  `scenarios` that can lead to it.
+- **Scenario** – short `description`, linked `scenery` context and traced
+  `hazards`.
+- **Scenery** – environment properties such as `location`, `weather` and
+  `timeOfDay` used when defining scenarios.
+- **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
+  `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
+  `failure_prob` and a list of `safety_requirements`.
+- **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
+  `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
+- **ReliabilityComponent** – component `name`, qualification certificate,
+  `quantity`, parameter `attributes` and computed `fit` rate.
+
+```mermaid
+classDiagram
+    SysMLElement <|-- BlockUsage
+    SysMLElement <|-- PartUsage
+    SysMLElement <|-- SafetyGoal
+    SysMLElement <|-- Hazard
+    SysMLElement <|-- Scenario
+    SysMLElement <|-- Scenery
+    SysMLElement <|-- FaultTreeNode
+    class BlockUsage {
+        analysis
+        fit
+        qualification
+        failureModes
+    }
+    class PartUsage {
+        component
+        failureModes
+        asil
+    }
+    class SafetyGoal {
+        asil
+        spfm
+        lpfm
+        dc
+    }
+    class Hazard {
+        severity
+    }
+    class Scenario {
+        scenery
+    }
+    class Scenery {
+        weather
+    }
+    class FaultTreeNode {
+        fmeda_fit
+        failure_prob
+    }
+```
 
 ## BOM Integration with AutoML Diagrams
 
