@@ -388,8 +388,14 @@ class ReviewToolbox(tk.Frame):
         self.target_combo.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         self.target_combo.bind("<<ComboboxSelected>>", self.on_target_change)
 
-        self.comment_list = tk.Listbox(self, width=50)
-        self.comment_list.pack(fill=tk.BOTH, expand=True)
+        comment_frame = tk.Frame(self)
+        comment_frame.pack(fill=tk.BOTH, expand=True)
+        self.comment_list = tk.Listbox(comment_frame, width=50)
+        c_scroll = tk.Scrollbar(comment_frame, orient=tk.VERTICAL,
+                               command=self.comment_list.yview)
+        self.comment_list.configure(yscrollcommand=c_scroll.set)
+        self.comment_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        c_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.comment_list.bind("<<ListboxSelect>>", self.on_select)
         self.comment_list.bind("<Double-1>", self.open_comment)
 
