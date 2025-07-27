@@ -268,6 +268,14 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        if not isinstance(self.master, tk.Toplevel):
+            # When a diagram is embedded in another window, add a small
+            # close button over the canvas so the frame can be closed.
+            self.close_btn = ttk.Button(self.canvas, text="x", width=2,
+                                       command=self.on_close)
+            self.close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
+            self.close_btn.lift()
+
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_left_release)
@@ -859,6 +867,12 @@ class SysMLDiagramWindow(tk.Frame):
             chosen = diag_id or view_id
         if not chosen or chosen not in self.repo.diagrams:
             return False
+        # Avoid opening duplicate windows for the same diagram within the
+        # current container. If a child frame already displays the chosen
+        # diagram, simply return.
+        for child in self.master.winfo_children():
+            if getattr(child, "diagram_id", None) == chosen:
+                return True
         diag = self.repo.diagrams[chosen]
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen)
