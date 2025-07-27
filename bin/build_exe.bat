@@ -14,8 +14,12 @@ if not errorlevel 1 (
     echo Warning: pre-release Python builds can fail with PyInstaller. Use a stable release.
 )
 
-REM Verify required Python packages are installed
-for %%P in (pillow openpyxl networkx matplotlib reportlab adjustText) do (
+REM Verify required Python packages are installed using their module names
+python -c "import PIL" 2>NUL || (
+    echo Missing required package 'pillow'. Install with: pip install pillow
+    exit /b 1
+)
+for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
     python -c "import %%P" 2>NUL || (
         echo Missing required package '%%P'. Install with: pip install %%P
         exit /b 1

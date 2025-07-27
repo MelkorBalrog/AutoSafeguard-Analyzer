@@ -156,6 +156,9 @@ PyInstaller requires these packages to be present so they are bundled into
 `AutoML.exe`. Missing dependencies, such as Pillow, will otherwise lead to
 `ModuleNotFoundError` when launching the built executable.
 
+Note that Pillow provides the `PIL` module, so the import check in the build
+scripts uses `PIL` rather than `pillow`.
+
 ## License
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.

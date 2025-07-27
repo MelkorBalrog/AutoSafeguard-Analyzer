@@ -7,7 +7,11 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
 fi
 
 # Ensure Pillow and other dependencies are installed so PyInstaller bundles them
-for pkg in pillow openpyxl networkx matplotlib reportlab adjustText; do
+python -c "import PIL" 2>/dev/null || {
+    echo "Missing required package 'pillow'. Install with: pip install pillow" >&2
+    exit 1
+}
+for pkg in openpyxl networkx matplotlib reportlab adjustText; do
     python -c "import $pkg" 2>/dev/null || {
         echo "Missing required package '$pkg'. Install with: pip install $pkg" >&2
         exit 1
