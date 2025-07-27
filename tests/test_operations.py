@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from gui.architecture import (
     parse_operations,

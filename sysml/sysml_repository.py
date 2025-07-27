@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import json
 import uuid
 from dataclasses import dataclass, field, asdict

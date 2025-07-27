@@ -1,3 +1,4 @@
+# Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from gui.architecture import SysMLObject, remove_orphan_ports
 
