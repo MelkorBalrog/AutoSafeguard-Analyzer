@@ -453,6 +453,9 @@ VALID_SUBTYPES = {
     "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
 }
 
+# Node types treated as gates when rendering and editing
+GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+
 ##########################################
 # Global Unique ID Counter for Nodes
 ##########################################
@@ -956,7 +959,7 @@ class EditNodeDialog(simpledialog.Dialog):
             self.update_decomp_button = ttk.Button(self.safety_req_frame, text="Update Scheme", command=self.update_decomposition_scheme)
             self.update_decomp_button.grid(row=1, column=5, padx=2, pady=2)
 
-        elif self.node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        elif self.node.node_type.upper() in GATE_NODE_TYPES:
             ttk.Label(general_frame, text="Gate Type:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
             self.gate_var = tk.StringVar(value=self.node.gate_type if self.node.gate_type else "AND")
             self.gate_combo = ttk.Combobox(general_frame, textvariable=self.gate_var, values=["AND", "OR"],
@@ -1710,7 +1713,7 @@ class EditNodeDialog(simpledialog.Dialog):
             else:
                 target_node.failure_prob = self.app.compute_failure_prob(
                     target_node, failure_mode_ref=getattr(target_node, 'failure_mode_ref', None), formula=target_node.prob_formula)
-        elif self.node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        elif self.node.node_type.upper() in GATE_NODE_TYPES:
             target_node.gate_type = self.gate_var.get().strip().upper()
             label = self.fm_var.get().strip()
             ref = self.fm_map.get(label)
@@ -3551,7 +3554,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -3816,7 +3819,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4081,7 +4084,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4346,7 +4349,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4611,7 +4614,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4865,7 +4868,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5119,7 +5122,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5373,7 +5376,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5638,7 +5641,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5724,7 +5727,7 @@ class FaultTreeApp:
     def calculate_cut_sets(self, node):
         if not node.children:
             return [{node.unique_id}]
-        gate = (node.gate_type or "AND").upper() if node.node_type.upper() in ["TOP EVENT", "GATE", "RIGOR LEVEL"] else "AND"
+        gate = (node.gate_type or "AND").upper() if node.node_type.upper() in GATE_NODE_TYPES else "AND"
         child_cut_sets = [self.calculate_cut_sets(child) for child in node.children]
         if gate == "OR":
             result = []
@@ -6165,7 +6168,7 @@ class FaultTreeApp:
 
     def build_text_report(self, node, indent=0):
         report = "    " * indent + f"{node.name} ({node.node_type}"
-        if node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        if node.node_type.upper() in GATE_NODE_TYPES:
             report += f", {node.gate_type}"
         report += ")"
         if node.display_label:
@@ -6204,7 +6207,7 @@ class FaultTreeApp:
         
         def traverse(node):
             node_type_up = node.node_type.upper()
-            if node_type_up in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if node_type_up in GATE_NODE_TYPES:
                 final_gate_type = node.gate_type  # e.g. "AND" or "OR"
 
                 node_info = {
@@ -6220,7 +6223,7 @@ class FaultTreeApp:
                 # Only traverse children that are also gates or top events
                 for child in node.children:
                     child_type = child.node_type.upper()
-                    if child_type in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+                    if child_type in GATE_NODE_TYPES:
                         edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
                         traverse(child)
 
@@ -7142,7 +7145,7 @@ class FaultTreeApp:
                                                        outline_color="dimgray",
                                                        line_width=1,
                                                        font_obj=self.diagram_font)
-        elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        elif node_type_upper in GATE_NODE_TYPES:
             if node.gate_type.upper() == "OR":
                 fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
                                                                     scale=40 * self.zoom,
@@ -7423,7 +7426,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7451,6 +7454,9 @@ class FaultTreeApp:
         menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
         menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
         menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+        menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+        menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -7458,7 +7464,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7476,7 +7482,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7577,7 +7583,7 @@ class FaultTreeApp:
         return [
             n
             for n in self.get_all_nodes_in_model()
-            if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]
+            if n.node_type.upper() in GATE_NODE_TYPES
         ]
 
     def get_all_triggering_conditions(self):
@@ -8032,7 +8038,7 @@ class FaultTreeApp:
                     fill=fill_color, outline_color=outline_color,
                     line_width=line_width, font_obj=font_obj
                 )
-            elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            elif node_type_upper in GATE_NODE_TYPES:
                 if source.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_clone_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -8063,7 +8069,7 @@ class FaultTreeApp:
                 )
         else:
             # Primary node: use normal drawing routines.
-            if node_type_upper in ["TOP EVENT", "GATE", "RIGOR LEVEL"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if source.is_page and source != self.root_node:
                     fta_drawing_helper.draw_triangle_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -8214,6 +8220,7 @@ class FaultTreeApp:
             new_node = FaultTreeNode("", "Triggering Condition", parent=parent_node)
         elif event_type.upper() == "FUNCTIONAL INSUFFICIENCY":
             new_node = FaultTreeNode("", "Functional Insufficiency", parent=parent_node)
+            new_node.gate_type = "AND"
         else:
             new_node = FaultTreeNode("", event_type, parent=parent_node)
         new_node.x = parent_node.x + 100
@@ -11938,7 +11945,7 @@ class FaultTreeApp:
             messagebox.showwarning("Edit Value", "Select a Confidence or Robustness node.")
 
     def edit_gate_type(self):
-        if self.selected_node and self.selected_node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        if self.selected_node and self.selected_node.node_type.upper() in GATE_NODE_TYPES:
             new_gt = simpledialog.askstring("Edit Gate Type", "Enter new gate type (AND/OR):", initialvalue=self.selected_node.gate_type)
             if new_gt is not None and new_gt.upper() in ["AND", "OR"]:
                 self.selected_node.gate_type = new_gt.upper()
@@ -12450,7 +12457,7 @@ class FaultTreeApp:
     def build_html_report(self):
         def node_to_html(n):
             txt = f"{n.name} ({n.node_type}"
-            if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if n.node_type.upper() in GATE_NODE_TYPES:
                 txt += f", {n.gate_type}"
             txt += ")"
             if n.display_label:
@@ -12602,7 +12609,7 @@ class FaultTreeApp:
             )
         else:
             node_type_upper = node.node_type.upper()
-            if node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if node.gate_type and node.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_shape(
                         self.page_canvas,
@@ -13495,7 +13502,7 @@ class FaultTreeNode:
         if parent is not None:
             self.parents.append(parent)
         self.quant_value = None
-        self.gate_type = "AND" if node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else None
+        self.gate_type = "AND" if node_type.upper() in GATE_NODE_TYPES else None
         self.description = ""
         self.rationale = ""
         self.x = 50
@@ -13782,7 +13789,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 node = n
                 break
@@ -13853,7 +13860,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -13909,7 +13916,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -14055,7 +14062,7 @@ class PageDiagram:
                                                              outline_color=outline_color,
                                                              line_width=1,
                                                              font_obj=self.diagram_font)
-            elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            elif node_type_upper in GATE_NODE_TYPES:
                 if source.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_clone_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -14086,7 +14093,7 @@ class PageDiagram:
                 )
         else:
             # Primary node: use normal drawing routines.
-            if node_type_upper in ["TOP EVENT", "GATE", "RIGOR LEVEL"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if source.is_page and source != self.root_node:
                     fta_drawing_helper.draw_triangle_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
