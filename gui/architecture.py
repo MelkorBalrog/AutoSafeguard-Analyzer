@@ -250,6 +250,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.current_tool = None
         self.start = None
         self.selected_obj: SysMLObject | None = None
+        self.selected_objs: list[SysMLObject] = []
         self.selected_conn: DiagramConnection | None = None
         self.drag_offset = (0, 0)
         self.dragging_point_index: int | None = None
@@ -258,6 +259,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
+        self.select_rect_start: tuple[float, float] | None = None
+        self.select_rect_id: int | None = None
         self.temp_line_end: tuple[float, float] | None = None
         self.rc_dragged = False
 
@@ -309,6 +312,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.start = None
         self.temp_line_end = None
         self.selected_obj = None
+        self.selected_objs = []
         self.selected_conn = None
         self.dragging_point_index = None
         self.dragging_endpoint = None
@@ -545,6 +549,7 @@ class SysMLDiagramWindow(tk.Frame):
         else:
             if obj:
                 self.selected_obj = obj
+                self.selected_objs = [obj]
                 self.drag_offset = (x / self.zoom - obj.x, y / self.zoom - obj.y)
                 self.resizing_obj = None
                 self.resize_edge = self.hit_resize_handle(obj, x, y)
@@ -559,6 +564,7 @@ class SysMLDiagramWindow(tk.Frame):
                         self._sync_to_repository()
                     self.selected_conn = conn
                     self.selected_obj = None
+                    self.selected_objs = []
                     self.dragging_point_index = None
                     self.dragging_endpoint = None
                     if conn.style == "Custom":
@@ -611,9 +617,13 @@ class SysMLDiagramWindow(tk.Frame):
                             self.resizing_obj = self.selected_obj
                             return
                     self.selected_obj = None
+                    self.selected_objs = []
                     self.selected_conn = None
                     self.resizing_obj = None
                     self.resize_edge = None
+                    if self.current_tool == "Select":
+                        self.select_rect_start = (x, y)
+                        self.select_rect_id = self.canvas.create_rectangle(x, y, x, y, dash=(2, 2), outline="blue")
                     self.redraw()
 
     def on_left_drag(self, event):
@@ -628,6 +638,18 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
             self.redraw()
+            return
+        if self.select_rect_start:
+            x = self.canvas.canvasx(event.x)
+            y = self.canvas.canvasy(event.y)
+            self.canvas.coords(
+                self.select_rect_id,
+                self.select_rect_start[0],
+                self.select_rect_start[1],
+                x,
+                y,
+            )
+            self._update_drag_selection(x, y)
             return
         if (
             self.dragging_endpoint is not None
@@ -762,6 +784,20 @@ class SysMLDiagramWindow(tk.Frame):
                     ConnectionDialog(self, conn)
                 else:
                     messagebox.showwarning("Invalid Connection", msg)
+        if self.select_rect_start:
+            x = self.canvas.canvasx(event.x)
+            y = self.canvas.canvasy(event.y)
+            self.canvas.coords(
+                self.select_rect_id,
+                self.select_rect_start[0],
+                self.select_rect_start[1],
+                x,
+                y,
+            )
+            self._update_drag_selection(x, y)
+            self.canvas.delete(self.select_rect_id)
+            self.select_rect_start = None
+            self.select_rect_id = None
         self.start = None
         self.temp_line_end = None
         self.resizing_obj = None
@@ -1579,16 +1615,23 @@ class SysMLDiagramWindow(tk.Frame):
             else:
                 self.canvas.create_text(x, y, text="\n".join(label_lines), anchor="center")
 
-        if obj == self.selected_obj:
+        if obj in self.selected_objs:
             bx = x - w
             by = y - h
             ex = x + w
             ey = y + h
             self.canvas.create_rectangle(bx, by, ex, ey, outline="red", dash=(2, 2))
-            s = 4
-            for hx, hy in [(bx, by), (bx, ey), (ex, by), (ex, ey)]:
-                self.canvas.create_rectangle(hx - s, hy - s, hx + s, hy + s,
-                                             outline="red", fill="white")
+            if obj == self.selected_obj:
+                s = 4
+                for hx, hy in [(bx, by), (bx, ey), (ex, by), (ex, ey)]:
+                    self.canvas.create_rectangle(
+                        hx - s,
+                        hy - s,
+                        hx + s,
+                        hy + s,
+                        outline="red",
+                        fill="white",
+                    )
 
     def draw_connection(
         self, a: SysMLObject, b: SysMLObject, conn: DiagramConnection, selected: bool = False
@@ -1669,6 +1712,24 @@ class SysMLDiagramWindow(tk.Frame):
                 return b
         return None
 
+    def _update_drag_selection(self, x: float, y: float) -> None:
+        if not self.select_rect_start:
+            return
+        x0, y0 = self.select_rect_start
+        left, right = sorted([x0, x])
+        top, bottom = sorted([y0, y])
+        selected: list[SysMLObject] = []
+        for obj in self.objects:
+            ox = obj.x * self.zoom
+            oy = obj.y * self.zoom
+            w = obj.width * self.zoom / 2
+            h = obj.height * self.zoom / 2
+            if left <= ox - w and ox + w <= right and top <= oy - h and oy + h <= bottom:
+                selected.append(obj)
+        self.selected_objs = selected
+        self.selected_obj = selected[0] if len(selected) == 1 else None
+        self.redraw()
+
     # ------------------------------------------------------------
     # Clipboard operations
     # ------------------------------------------------------------
@@ -1706,8 +1767,10 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
 
     def delete_selected(self, _event=None):
-        if self.selected_obj:
-            self.remove_object(self.selected_obj)
+        if self.selected_objs:
+            for obj in list(self.selected_objs):
+                self.remove_object(obj)
+            self.selected_objs = []
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
