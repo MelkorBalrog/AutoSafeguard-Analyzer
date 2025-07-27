@@ -332,6 +332,21 @@ from gui.toolboxes import (
 )
 
 
+def get_version() -> str:
+    """Read the tool version from the first line of README.md."""
+    try:
+        with open("README.md", "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if first_line.lower().startswith("version:"):
+                return first_line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return "Unknown"
+
+
+VERSION = get_version()
+
+
 class ClosableNotebook(ttk.Notebook):
     """Notebook widget with an 'x' button on each tab to close it."""
 
@@ -1750,6 +1765,7 @@ class FaultTreeApp:
         self.selected_node = None
         self.clone_offset_counter = {}
         self.root.title("AutoML-Analyzer")
+        self.version = VERSION
         self.zoom = 1.0
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.style = ttk.Style()
@@ -1928,6 +1944,9 @@ class FaultTreeApp:
         menubar.add_cascade(label="FTA/CTA", menu=fta_menu)
         menubar.add_cascade(label="Process", menu=process_menu)
         menubar.add_cascade(label="Review", menu=review_menu)
+        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(label="About", command=self.show_about)
+        menubar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menubar)
         root.bind("<Control-n>", lambda event: self.new_model())
@@ -1953,6 +1972,7 @@ class FaultTreeApp:
         root.bind("<Control-x>", lambda event: self.cut_node())
         root.bind("<Control-v>", lambda event: self.paste_node())
         root.bind("<Control-p>", lambda event: self.save_diagram_png())
+        root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
         self.main_pane.pack(fill=tk.BOTH, expand=True)
 
@@ -11414,6 +11434,16 @@ class FaultTreeApp:
             if result:
                 self.save_model()
         self.root.destroy()
+
+    def show_about(self):
+        """Display information about the tool."""
+        symbol = "\U0001F6E0"  # hammer and wrench symbol
+        message = (
+            f"{symbol} AutoML Fault Tree Analysis Tool\n\n"
+            "This tool helps build and analyze safety models.\n\n"
+            f"Version: {self.version}"
+        )
+        messagebox.showinfo("About AutoML", message)
 
     def export_model_data(self, include_versions=True):
         # Ensure aggregated ODD elements are up to date
