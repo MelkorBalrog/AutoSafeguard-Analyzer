@@ -1778,6 +1778,13 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # small icons for diagram types shown in the explorer
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
+        }
         self.clipboard_node = None
         self.cut_mode = False
         self.page_history = []
@@ -7680,7 +7687,14 @@ class FaultTreeApp:
             arch_root = tree.insert("", "end", text="AutoML Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                tree.insert(arch_root, "end", text=name, tags=("arch", str(idx)))
+                icon = self.diagram_icons.get(diag.diag_type)
+                tree.insert(
+                    arch_root,
+                    "end",
+                    text=name,
+                    tags=("arch", str(idx)),
+                    image=icon,
+                )
             tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
             tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
 
@@ -11160,6 +11174,56 @@ class FaultTreeApp:
         self.doc_nb.select(tab)
         return tab
 
+    def _format_diag_title(self, diag) -> str:
+        """Return SysML style title for a diagram tab."""
+        if diag.name:
+            return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
+        return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
+
+    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
+        """Return a simple 16x16 PhotoImage for the given shape and color."""
+        size = 16
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
+        if shape == "circle":
+            r = size // 2 - 2
+            cx = cy = size // 2
+            for y in range(size):
+                for x in range(size):
+                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        img.put(c, (x, y))
+        elif shape == "arrow":
+            mid = size // 2
+            for x in range(2, mid + 1):
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
+            for i in range(4):
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "rect":
+            for x in range(3, size - 3):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for y in range(3, size - 3):
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
+        elif shape == "nested":
+            for x in range(1, size - 1):
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
+            for y in range(1, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(5, size - 5):
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
+            for y in range(5, size - 5):
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
+        else:
+            img.put(c, to=(2, 2, size - 2, size - 2))
+        return img
+
     def open_use_case_diagram(self):
         """Prompt for a diagram name then open a new use case diagram."""
         name = simpledialog.askstring("New Use Case Diagram", "Enter diagram name:")
@@ -11167,7 +11231,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11179,7 +11243,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11191,7 +11255,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11203,7 +11267,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11225,7 +11289,7 @@ class FaultTreeApp:
         if existing and existing.winfo_exists():
             self.doc_nb.select(existing)
             return
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
