@@ -176,6 +176,8 @@ classDiagram
     class Scenario
     class Scenery
     class FaultTreeNode
+    class FmedaDoc
+    class FaultTreeDiagram
     class TriggeringCondition
     class FunctionalInsufficiency
     class FunctionalModification
@@ -183,6 +185,11 @@ classDiagram
     SafetyGoal --> "*" Hazard : mitigates
     Scenario --> "*" Hazard : leadsTo
     Scenario --> Scenery : occursIn
+    Scenario --> TriggeringCondition : has
+    Scenario --> FunctionalInsufficiency : reveals
+    TriggeringCondition --> FunctionalInsufficiency : leadsTo
+    FunctionalInsufficiency --> FunctionalModification : mitigatedBy
+    FunctionalModification --> AcceptanceCriteria : verifiedBy
     FaultTreeNode --> "*" SafetyGoal : traces
 ```
 
@@ -397,6 +404,10 @@ Key attributes are:
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **FmedaDoc** – table-level metrics `spfm`, `lpfm` and `dc` calculated from
+  failure mode FIT values.
+- **FaultTreeDiagram** – overall fault tree probability `phmf` and Prototype
+  Assurance Level `pal`.
 - **TriggeringCondition** – `description`, related `scenario` and any allocated
   acceptance criteria.
 - **FunctionalInsufficiency** – description of the missing function,
@@ -445,6 +456,15 @@ classDiagram
     class FaultTreeNode {
         fmeda_fit
         failure_prob
+    }
+    class FmedaDoc {
+        spfm
+        lpfm
+        dc
+    }
+    class FaultTreeDiagram {
+        phmf
+        pal
     }
     class TriggeringCondition {
         scenario
