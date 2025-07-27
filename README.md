@@ -423,66 +423,157 @@ Key attributes are:
 
 ```mermaid
 classDiagram
-    class BlockUsage
-    class PartUsage
-    class SafetyGoal
-    class Hazard
-    class Scenario
-    class Scenery
-    class FaultTreeNode
     class BlockUsage {
         analysis
         fit
         qualification
         failureModes
     }
+    Block <|-- BlockUsage
+```
+
+```mermaid
+classDiagram
     class PartUsage {
         component
         failureModes
         asil
     }
+    PartProperty <|-- PartUsage
+```
+
+```mermaid
+classDiagram
     class SafetyGoal {
         asil
         spfm
         lpfm
         dc
     }
+    Requirement <|-- SafetyGoal
+```
+
+```mermaid
+classDiagram
     class Hazard {
+        description
         severity
     }
+    SysMLElement <|-- Hazard
+```
+
+```mermaid
+classDiagram
     class Scenario {
+        description
         scenery
     }
+    SysMLElement <|-- Scenario
+```
+
+```mermaid
+classDiagram
     class Scenery {
         odd_element
         attributes
     }
+    SysMLElement <|-- Scenery
+```
+
+```mermaid
+classDiagram
     class FaultTreeNode {
+        fmea_effect
+        fmea_cause
         fmeda_fit
+        fmeda_diag_cov
+        fmeda_spfm
+        fmeda_lpfm
         failure_prob
+        safety_requirements
     }
+    SysMLElement <|-- FaultTreeNode
+```
+
+```mermaid
+classDiagram
+    class ReliabilityAnalysis {
+        standard
+        profile
+        total_fit
+        spfm
+        lpfm
+        dc
+    }
+    AnalysisDocument <|-- ReliabilityAnalysis
+```
+
+```mermaid
+classDiagram
+    class ReliabilityComponent {
+        name
+        qualification
+        quantity
+        attributes
+        fit
+    }
+    SysMLElement <|-- ReliabilityComponent
+```
+
+```mermaid
+classDiagram
     class FmedaDoc {
         spfm
         lpfm
         dc
     }
+    AnalysisDocument <|-- FmedaDoc
+```
+
+```mermaid
+classDiagram
     class FaultTreeDiagram {
         phmf
         pal
     }
+    SysMLDiagram <|-- FaultTreeDiagram
+```
+
+```mermaid
+classDiagram
     class TriggeringCondition {
+        description
         scenario
+        acceptanceCriteria
     }
+    SysMLElement <|-- TriggeringCondition
+```
+
+```mermaid
+classDiagram
     class FunctionalInsufficiency {
+        description
         scenario
         safetyGoal
     }
+    SysMLElement <|-- FunctionalInsufficiency
+```
+
+```mermaid
+classDiagram
     class FunctionalModification {
+        text
         acceptanceCriteria
     }
+    SysMLElement <|-- FunctionalModification
+```
+
+```mermaid
+classDiagram
     class AcceptanceCriteria {
         description
     }
+    SysMLElement <|-- AcceptanceCriteria
 ```
 
 ## BOM Integration with AutoML Diagrams
