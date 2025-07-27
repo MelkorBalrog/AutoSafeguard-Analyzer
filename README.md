@@ -388,8 +388,8 @@ Key attributes are:
   `scenarios` that can lead to it.
 - **Scenario** – short `description`, linked `scenery` context and traced
   `hazards`.
-- **Scenery** – environment properties such as `location`, `weather` and
-  `timeOfDay` used when defining scenarios.
+- **Scenery** – stores the `odd_element` name and an open-ended set of
+  context attributes describing that element.
 - **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
   `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
   `failure_prob` and a list of `safety_requirements`.
@@ -439,7 +439,8 @@ classDiagram
         scenery
     }
     class Scenery {
-        weather
+        odd_element
+        attributes
     }
     class FaultTreeNode {
         fmeda_fit
