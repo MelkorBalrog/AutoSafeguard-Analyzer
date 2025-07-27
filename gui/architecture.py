@@ -224,6 +224,11 @@ class SysMLDiagramWindow(tk.Frame):
         self.diagram_id = diagram.diag_id
         if isinstance(self.master, tk.Toplevel):
             self.master.protocol("WM_DELETE_WINDOW", self.on_close)
+        else:
+            # When embedded in another window, provide a small X button so
+            # the user can close the frame.
+            close_btn = ttk.Button(self, text="x", width=2, command=self.on_close)
+            close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
 
         # Load any saved objects and connections for this diagram
         self.objects: List[SysMLObject] = []
