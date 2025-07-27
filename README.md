@@ -147,6 +147,24 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
 
+## Building the Executable
+To create a standalone Windows executable with PyInstaller:
+
+- **Linux/macOS:** run `bin/build_exe.sh`
+- **Windows:** run `bin\build_exe.bat`
+
+You can invoke these scripts from any directory; they locate the repository
+root automatically. Both generate `AutoML.exe` inside the `bin` directory.
+After building you can launch the application directly or use
+`bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
+Windows.
+
+The scripts exclude the `scipy` package, which is not required by AutoML but
+can cause PyInstaller to fail on some Python installations. If you encounter
+errors about ``IndexError`` while building, try upgrading your Python runtime
+or reinstalling SciPy.
+
+
 ## Version History
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
