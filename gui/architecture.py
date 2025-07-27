@@ -2691,12 +2691,12 @@ class ArchitectureManagerDialog(tk.Frame):
         self.tree.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
         # simple icons to visually distinguish packages, diagrams and objects
-        self.pkg_icon = self._create_icon("folder")
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("circle"),
-            "Activity Diagram": self._create_icon("arrow"),
-            "Block Diagram": self._create_icon("rect"),
-            "Internal Block Diagram": self._create_icon("nested"),
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
         self.elem_icons = {
             "Actor": self._create_icon("circle"),
@@ -3079,56 +3079,57 @@ class ArchitectureManagerDialog(tk.Frame):
         else:
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
 
-    def _create_icon(self, shape: str) -> tk.PhotoImage:
+    def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
         """Return a simple 16x16 PhotoImage representing the given shape."""
         size = 16
         img = tk.PhotoImage(width=size, height=size)
         img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
         if shape == "circle":
             r = size // 2 - 2
             cx = cy = size // 2
             for y in range(size):
                 for x in range(size):
                     if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                        img.put("black", (x, y))
+                        img.put(c, (x, y))
         elif shape == "arrow":
             mid = size // 2
             for x in range(2, mid + 1):
-                img.put("black", to=(x, mid - 1, x + 1, mid + 1))
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
             for i in range(4):
-                img.put("black", to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
-                img.put("black", to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
         elif shape == "rect":
             for x in range(3, size - 3):
-                img.put("black", (x, 3))
-                img.put("black", (x, size - 4))
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
             for y in range(3, size - 3):
-                img.put("black", (3, y))
-                img.put("black", (size - 4, y))
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
         elif shape == "nested":
             for x in range(1, size - 1):
-                img.put("black", (x, 1))
-                img.put("black", (x, size - 2))
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
             for y in range(1, size - 1):
-                img.put("black", (1, y))
-                img.put("black", (size - 2, y))
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
             for x in range(5, size - 5):
-                img.put("black", (x, 5))
-                img.put("black", (x, size - 6))
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
             for y in range(5, size - 5):
-                img.put("black", (5, y))
-                img.put("black", (size - 6, y))
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
         elif shape == "folder":
             for x in range(1, size - 1):
-                img.put("black", (x, 4))
-                img.put("black", (x, size - 2))
+                img.put(c, (x, 4))
+                img.put(c, (x, size - 2))
             for y in range(4, size - 1):
-                img.put("black", (1, y))
-                img.put("black", (size - 2, y))
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
             for x in range(3, size - 3):
-                img.put("black", (x, 2))
-            img.put("black", to=(1, 3, size - 2, 4))
+                img.put(c, (x, 2))
+            img.put(c, to=(1, 3, size - 2, 4))
         else:
-            img.put("black", to=(2, 2, size - 2, size - 2))
+            img.put(c, to=(2, 2, size - 2, size - 2))
         return img
 

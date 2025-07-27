@@ -172,6 +172,11 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(len(nd.connections), 1)
         self.assertEqual(nd.connections[0]["conn_type"], "Association")
 
+    def test_unique_diagram_names(self):
+        d1 = self.repo.create_diagram("Use Case Diagram", name="UC")
+        d2 = self.repo.create_diagram("Use Case Diagram", name="UC")
+        self.assertNotEqual(d1.name, d2.name)
+
     def test_to_from_dict(self):
         diag = self.repo.create_diagram("Use Case Diagram", name="UC")
         actor = self.repo.create_element("Actor", name="User")
