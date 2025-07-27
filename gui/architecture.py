@@ -664,11 +664,16 @@ class SysMLDiagramWindow(tk.Frame):
             cy = obj.y * self.zoom
             new_w = obj.width
             new_h = obj.height
+            min_w, min_h = (10.0, 10.0)
+            if obj.obj_type == "Block":
+                min_w, min_h = self._min_block_size(obj)
             if "e" in self.resize_edge or "w" in self.resize_edge:
-                new_w = max(10.0, 2 * abs(x - cx) / self.zoom)
+                desired_w = 2 * abs(x - cx) / self.zoom
+                new_w = max(min_w, desired_w)
             if "n" in self.resize_edge or "s" in self.resize_edge:
                 if obj.obj_type not in ("Fork", "Join"):
-                    new_h = max(10.0, 2 * abs(y - cy) / self.zoom)
+                    desired_h = 2 * abs(y - cy) / self.zoom
+                    new_h = max(min_h, desired_h)
             if obj.obj_type in ("Initial", "Final"):
                 size = max(new_w, new_h)
                 new_w = new_h = size
@@ -1081,6 +1086,47 @@ class SysMLDiagramWindow(tk.Frame):
         self.font.config(size=int(8 * self.zoom))
         self.redraw()
 
+    def _block_compartments(self, obj: SysMLObject) -> list[tuple[str, str]]:
+        """Return the list of compartments displayed for a Block."""
+        return [
+            ("Attributes", obj.properties.get("valueProperties", "")),
+            ("Parts", obj.properties.get("partProperties", "")),
+            ("References", obj.properties.get("referenceProperties", "")),
+            (
+                "Operations",
+                "; ".join(
+                    format_operation(op)
+                    for op in parse_operations(obj.properties.get("operations", ""))
+                ),
+            ),
+            ("Constraints", obj.properties.get("constraintProperties", "")),
+            ("Ports", obj.properties.get("ports", "")),
+            (
+                "Reliability",
+                " ".join(
+                    f"{label}={obj.properties.get(key, '')}"
+                    for label, key in (
+                        ("FIT", "fit"),
+                        ("Qual", "qualification"),
+                        ("FM", "failureModes"),
+                    )
+                    if obj.properties.get(key, "")
+                ),
+            ),
+            ("Requirements", "; ".join(r.get("id") for r in obj.requirements)),
+        ]
+
+    def _min_block_size(self, obj: SysMLObject) -> tuple[float, float]:
+        """Return minimum width and height to display all Block text."""
+        header = f"<<block>> {obj.properties.get('name', '')}".strip()
+        width_px = self.font.measure(header) + 8 * self.zoom
+        compartments = self._block_compartments(obj)
+        for label, text in compartments:
+            display = f"{label}: {text}" if text else f"{label}:"
+            width_px = max(width_px, self.font.measure(display) + 8 * self.zoom)
+        height_px = (1 + len(compartments)) * 20 * self.zoom
+        return width_px / self.zoom, height_px / self.zoom
+
     def ensure_text_fits(self, obj: SysMLObject) -> None:
         """Expand the object's size so its label is fully visible."""
         label_lines: list[str] = []
@@ -1110,6 +1156,11 @@ class SysMLDiagramWindow(tk.Frame):
         padding = 10 * self.zoom
         min_w = (text_width + padding) / self.zoom
         min_h = (text_height + padding) / self.zoom
+
+        if obj.obj_type == "Block":
+            b_w, b_h = self._min_block_size(obj)
+            min_w = max(min_w, b_w)
+            min_h = max(min_h, b_h)
 
         if min_w > obj.width:
             obj.width = min_w
