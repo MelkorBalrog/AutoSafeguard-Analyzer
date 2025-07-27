@@ -1727,7 +1727,18 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safety_goal_description = self.safety_goal_text.get("1.0", "end-1c")
                 target_node.safety_goal_asil = self.sg_asil_var.get().strip()
                 target_node.safe_state = self.safe_state_entry.get().strip()
-                target_node.malfunction = self.mal_var.get().strip()
+                new_mal = self.mal_var.get().strip()
+                if new_mal:
+                    for te in self.app.top_events:
+                        if te is not target_node and getattr(te, "malfunction", "") == new_mal:
+                            messagebox.showerror(
+                                "Duplicate Malfunction",
+                                "This malfunction is already assigned to another top level event.",
+                            )
+                            new_mal = getattr(self.node, "malfunction", "")
+                            self.mal_var.set(new_mal)
+                            break
+                target_node.malfunction = new_mal
                 if target_node.malfunction and target_node.malfunction not in self.app.malfunctions:
                     self.app.malfunctions.append(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
@@ -2991,6 +3002,17 @@ class FaultTreeApp:
                 if sg:
                     result.append(sg)
         return result
+
+    def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
+        """Return safety goal names for given malfunctions."""
+        goals = []
+        for te in self.top_events:
+            mal = getattr(te, "malfunction", "")
+            if mal and mal in malfunctions:
+                sg = te.safety_goal_description or te.user_name or ""
+                if sg and sg not in goals:
+                    goals.append(sg)
+        return goals
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -7655,7 +7677,8 @@ class FaultTreeApp:
         """Return labels of basic events linked to the given malfunction."""
         result = []
         for be in self.get_all_basic_events():
-            if getattr(be, "fmeda_malfunction", "") == malfunction:
+            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
+            if malfunction in mals:
                 result.append(self.format_failure_mode_label(be))
         return result
 
@@ -8891,32 +8914,32 @@ class FaultTreeApp:
             self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=sorted(fault_names), width=30)
             self.cause_combo.grid(row=3, column=1, padx=5, pady=5)
 
-            ttk.Label(gen_frame, text="Related Malfunction:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
-            self.mal_var = tk.StringVar(value=getattr(self.node, 'fmeda_malfunction', ''))
-            self.mal_combo = ttk.Combobox(gen_frame, textvariable=self.mal_var, values=sorted(self.app.malfunctions), width=30)
-            self.mal_combo.grid(row=4, column=1, padx=5, pady=5)
+            ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=4, column=0, sticky="ne", padx=5, pady=5)
+            self.mal_vars = {}
+            sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
+            self.mal_frame = ttk.Frame(gen_frame)
+            self.mal_frame.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+
+            def update_sg(*_):
+                selected = [m for m, v in self.mal_vars.items() if v.get()]
+                goals = self.app.get_safety_goals_for_malfunctions(selected)
+                if not goals:
+                    goals = self.app.get_top_event_safety_goals(self.node)
+                self.sg_var.set(", ".join(goals))
+
+            for m in sorted(self.app.malfunctions):
+                var = tk.BooleanVar(value=m in sel_mals)
+                ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
+                self.mal_vars[m] = var
 
             ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
+            preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
+                self.app.get_top_event_safety_goals(self.node)
             sg_value = ", ".join(preset_goals) if preset_goals else getattr(self.node, 'fmeda_safety_goal', '')
             self.sg_var = tk.StringVar(value=sg_value)
-            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30)
-            if preset_goals:
-                self.sg_entry.config(state='readonly')
+            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30, state='readonly')
             self.sg_entry.grid(row=5, column=1, padx=5, pady=5)
-            if not preset_goals:
-                def choose_goals():
-                    names = [g.strip() for g in self.sg_var.get().split(',') if g.strip()]
-                    dlg = self.app.SelectSafetyGoalsDialog(self, self.app.top_events, names)
-                    if dlg.result:
-                        self.sg_var.set(
-                            ", ".join(
-                                sg.user_name or sg.safety_goal_description or f"SG {sg.unique_id}"
-                                for sg in dlg.result
-                            )
-                        )
-
-                ttk.Button(gen_frame, text="Select", command=choose_goals).grid(row=5, column=2, padx=5, pady=5)
+            update_sg()
 
             ttk.Label(metric_frame, text="Severity (1-10):").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.sev_spin = tk.Spinbox(metric_frame, from_=1, to=10, width=5)
@@ -9048,14 +9071,12 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
-            self.node.fmeda_malfunction = self.mal_var.get()
-            if self.node.fmeda_malfunction and self.node.fmeda_malfunction not in self.app.malfunctions:
-                self.app.malfunctions.append(self.node.fmeda_malfunction)
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
-            if preset_goals:
-                self.node.fmeda_safety_goal = ", ".join(preset_goals)
-            else:
-                self.node.fmeda_safety_goal = self.sg_var.get()
+            selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+            self.node.fmeda_malfunction = ";".join(selected_mals)
+            for m in selected_mals:
+                if m and m not in self.app.malfunctions:
+                    self.app.malfunctions.append(m)
+            self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
             except ValueError:
