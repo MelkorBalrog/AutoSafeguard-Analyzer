@@ -43,12 +43,18 @@ def _wrap_val(val, width=30):
         return ""
     return textwrap.fill(str(val), width)
 
-class ReliabilityWindow(tk.Toplevel):
-    def __init__(self, app):
-        super().__init__(app.root)
+class ReliabilityWindow(tk.Frame):
+    def __init__(self, master, app):
+        if isinstance(master, tk.Toplevel):
+            container = master
+        else:
+            container = master
+        super().__init__(container)
         self.app = app
-        self.title("Reliability Analysis")
-        self.geometry("600x400")
+        if isinstance(master, tk.Toplevel):
+            master.title("Reliability Analysis")
+            master.geometry("600x400")
+            self.pack(fill=tk.BOTH, expand=True)
         self.components = []
 
         ttk.Label(self, text="Standard:").pack(anchor="w")
@@ -101,9 +107,6 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Button(btn_frame, text="Add Component", command=self.add_component).pack(
             side=tk.LEFT, padx=2, pady=2
         )
-        ttk.Button(btn_frame, text="Add Circuit", command=self.add_circuit).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
         ttk.Button(btn_frame, text="Configure Component", command=self.configure_component).pack(
             side=tk.LEFT, padx=2, pady=2
         )
@@ -130,7 +133,13 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Entry(dialog, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(dialog, text="Type").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         type_var = tk.StringVar(value="capacitor")
-        ttk.Combobox(dialog, textvariable=type_var, values=list(COMPONENT_ATTR_TEMPLATES.keys()), state="readonly").grid(row=1, column=1, padx=5, pady=5)
+        type_cb = ttk.Combobox(
+            dialog,
+            textvariable=type_var,
+            values=list(COMPONENT_ATTR_TEMPLATES.keys()),
+            state="readonly",
+        )
+        type_cb.grid(row=1, column=1, padx=5, pady=5)
         ttk.Label(dialog, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         qty_var = tk.IntVar(value=1)
         ttk.Entry(dialog, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
@@ -139,6 +148,28 @@ class ReliabilityWindow(tk.Toplevel):
         ttk.Combobox(dialog, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
         passive_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(dialog, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
+
+        attr_frame = ttk.Frame(dialog)
+        attr_frame.grid(row=5, column=0, columnspan=2)
+        attr_vars = {}
+
+        def refresh_attr_fields(*_):
+            for child in attr_frame.winfo_children():
+                child.destroy()
+            attr_vars.clear()
+            template = COMPONENT_ATTR_TEMPLATES.get(type_var.get(), {})
+            for i, (k, v) in enumerate(template.items()):
+                ttk.Label(attr_frame, text=k).grid(row=i, column=0, padx=5, pady=5, sticky="e")
+                if isinstance(v, list):
+                    var = tk.StringVar(value=v[0])
+                    ttk.Combobox(attr_frame, textvariable=var, values=v, state="readonly").grid(row=i, column=1, padx=5, pady=5)
+                else:
+                    var = tk.StringVar(value=str(v))
+                    ttk.Entry(attr_frame, textvariable=var).grid(row=i, column=1, padx=5, pady=5)
+                attr_vars[k] = var
+
+        type_cb.bind("<<ComboboxSelected>>", refresh_attr_fields)
+        refresh_attr_fields()
 
         def ok():
             comp = ReliabilityComponent(
@@ -149,57 +180,16 @@ class ReliabilityWindow(tk.Toplevel):
                 qual_var.get(),
                 is_passive=passive_var.get(),
             )
-            template = COMPONENT_ATTR_TEMPLATES.get(comp.comp_type, {})
-            for k, v in template.items():
-                comp.attributes[k] = v[0] if isinstance(v, list) else v
+            for k, var in attr_vars.items():
+                comp.attributes[k] = var.get()
             self.components.append(comp)
             self.refresh_tree()
             dialog.destroy()
 
-        ttk.Button(dialog, text="Add", command=ok).grid(row=5, column=0, columnspan=2, pady=5)
+        ttk.Button(dialog, text="Add", command=ok).grid(row=6, column=0, columnspan=2, pady=5)
         dialog.grab_set()
         dialog.wait_window()
 
-    def add_circuit(self):
-        dlg = tk.Toplevel(self)
-        dlg.title("New Circuit")
-        ttk.Label(dlg, text="Name").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        name_var = tk.StringVar()
-        ttk.Entry(dlg, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Label(dlg, text="BOMs").grid(row=1, column=0, padx=5, pady=5, sticky="ne")
-        lb = tk.Listbox(dlg, selectmode=tk.MULTIPLE, height=6)
-        for ra in self.app.reliability_analyses:
-            lb.insert(tk.END, ra.name)
-        lb.grid(row=1, column=1, padx=5, pady=5)
-        qty_var = tk.IntVar(value=1)
-        ttk.Label(dlg, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        ttk.Entry(dlg, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Label(dlg, text="Qualification").grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        qual_var = tk.StringVar(value="None")
-        ttk.Combobox(dlg, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
-        passive_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(dlg, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
-
-        def ok():
-            bom_idxs = lb.curselection()
-            boms = [self.app.reliability_analyses[i].components for i in bom_idxs]
-            comp = ReliabilityComponent(
-                name_var.get(),
-                "circuit",
-                qty_var.get(),
-                {},
-                qual_var.get(),
-                is_passive=passive_var.get(),
-            )
-            comp.sub_boms = copy.deepcopy(boms)
-            comp.fit = 0.0
-            self.components.append(comp)
-            self.refresh_tree()
-            dlg.destroy()
-
-        ttk.Button(dlg, text="Add", command=ok).grid(row=5, column=0, columnspan=2, pady=5)
-        dlg.grab_set()
-        dlg.wait_window()
 
     def show_formula(self, event=None):
         sel = self.tree.focus()

@@ -1833,7 +1833,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             "operations",
             "failureModes",
         }
-        reliability_props = {"circuit", "component", "fit", "qualification", "failureModes", "asil"}
+        reliability_props = {"analysis", "component", "fit", "qualification", "failureModes", "asil"}
         app = getattr(self.master, 'app', None)
         for prop in SYSML_PROPERTIES.get(key, []):
             frame = rel_frame if prop in reliability_props else prop_frame
@@ -1888,56 +1888,36 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     if (t := rel.target) in repo.elements
                 ]
                 ttk.Label(frame, text=", ".join(targets)).grid(row=row, column=1, sticky="w", padx=4, pady=2)
-            elif prop == "circuit" and app:
-                circuits = [
-                    c
-                    for ra in getattr(app, 'reliability_analyses', [])
-                    for c in ra.components
-                    if c.comp_type == "circuit"
-                ]
-                circuits.extend(
-                    c
-                    for c in getattr(app, "reliability_components", [])
-                    if c.comp_type == "circuit"
-                )
-                names = list({c.name for c in circuits})
+            elif prop == "analysis" and app:
+                analyses = getattr(app, 'reliability_analyses', [])
+                names = [ra.name for ra in analyses]
                 var = tk.StringVar(value=self.obj.properties.get(prop, ""))
                 cb = ttk.Combobox(frame, textvariable=var, values=names, state="readonly")
                 cb.grid(row=row, column=1, padx=4, pady=2)
                 self.entries[prop] = var
-                self._circuit_map = {c.name: c for c in circuits}
+                self._analysis_map = {ra.name: ra for ra in analyses}
 
-                def sync_circuit(_):
+                def sync_analysis(_):
                     name = var.get()
-                    comp = self._circuit_map.get(name)
-                    if not comp:
+                    ra = self._analysis_map.get(name)
+                    if not ra:
                         return
                     if 'fit' in self.entries:
-                        self.entries['fit'].set(f"{comp.fit:.2f}")
+                        self.entries['fit'].set(f"{ra.total_fit:.2f}")
                     else:
-                        self.obj.properties['fit'] = f"{comp.fit:.2f}"
-                    if 'qualification' in self.entries:
-                        self.entries['qualification'].set(comp.qualification)
+                        self.obj.properties['fit'] = f"{ra.total_fit:.2f}"
+                    # update part list preview from analysis BOM
+                    names = [c.name for c in ra.components]
+                    joined = ", ".join(names)
+                    if 'partProperties' in self.listboxes:
+                        lb = self.listboxes['partProperties']
+                        lb.delete(0, tk.END)
+                        for n in names:
+                            lb.insert(tk.END, n)
                     else:
-                        self.obj.properties['qualification'] = comp.qualification
-                    modes = self._get_failure_modes(app, comp.name)
-                    if 'failureModes' in self.entries:
-                        self.entries['failureModes'].set(modes)
-                    else:
-                        self.obj.properties['failureModes'] = modes
-                    # update part list preview from circuit BOM
-                    if comp.sub_boms:
-                        names = [c.name for bom in comp.sub_boms for c in bom]
-                        joined = ", ".join(names)
-                        if 'partProperties' in self.listboxes:
-                            lb = self.listboxes['partProperties']
-                            lb.delete(0, tk.END)
-                            for n in names:
-                                lb.insert(tk.END, n)
-                        else:
-                            self.obj.properties['partProperties'] = joined
+                        self.obj.properties['partProperties'] = joined
 
-                cb.bind("<<ComboboxSelected>>", sync_circuit)
+                cb.bind("<<ComboboxSelected>>", sync_analysis)
             elif prop == "component" and app:
                 comps = [
                     c
@@ -2226,16 +2206,16 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         self._update_asil()
 
-        # ensure block shows BOM components as part names when a circuit is set
+        # ensure block shows BOM components as part names when an analysis is set
         if (
             self.obj.obj_type == "Block"
-            and "circuit" in self.obj.properties
-            and hasattr(self, "_circuit_map")
+            and "analysis" in self.obj.properties
+            and hasattr(self, "_analysis_map")
         ):
-            comp = self._circuit_map.get(self.obj.properties["circuit"], None)
-            if comp and comp.sub_boms:
+            ra = self._analysis_map.get(self.obj.properties["analysis"], None)
+            if ra:
                 cur = [p.strip() for p in self.obj.properties.get("partProperties", "").split(",") if p.strip()]
-                names = [c.name for bom in comp.sub_boms for c in bom]
+                names = [c.name for c in ra.components]
                 for n in names:
                     if n not in cur:
                         cur.append(n)
@@ -2281,19 +2261,19 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     repo.elements[self.obj.element_id].properties["useCaseDefinition"] = def_id
 
         # ------------------------------------------------------------
-        # Add parts from selected circuit BOM
+        # Add parts from selected analysis BOM
         # ------------------------------------------------------------
         if (
             self.obj.obj_type == "Block"
-            and "circuit" in self.obj.properties
+            and "analysis" in self.obj.properties
             and hasattr(self, "diag_map")
         ):
             diag_id = repo.get_linked_diagram(self.obj.element_id)
             if diag_id:
-                circuit_name = self.obj.properties.get("circuit", "")
-                comp = getattr(self, "_circuit_map", {}).get(circuit_name)
-                if comp and comp.sub_boms:
-                    comps = [c for bom in comp.sub_boms for c in bom]
+                ra_name = self.obj.properties.get("analysis", "")
+                ra = getattr(self, "_analysis_map", {}).get(ra_name)
+                if ra and ra.components:
+                    comps = list(ra.components)
                     dlg = self.SelectComponentsDialog(self, comps)
                     selected = dlg.result or []
                     if selected:
@@ -2487,27 +2467,17 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             messagebox.showinfo("Add Parts", "No block is linked to this diagram")
             return
         block = repo.elements[block_id]
-        circuit_name = block.properties.get("circuit", "")
-        if not circuit_name:
-            messagebox.showinfo("Add Parts", "Block has no circuit assigned")
+        ra_name = block.properties.get("analysis", "")
+        if not ra_name:
+            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
             return
-        circuits = [
-            c
-            for ra in getattr(self.app, "reliability_analyses", [])
-            for c in ra.components
-            if c.comp_type == "circuit"
-        ]
-        circuits.extend(
-            c
-            for c in getattr(self.app, "reliability_components", [])
-            if c.comp_type == "circuit"
-        )
-        comp_map = {c.name: c for c in circuits}
-        comp = comp_map.get(circuit_name)
-        if not comp or not comp.sub_boms:
-            messagebox.showinfo("Add Parts", "Circuit has no BOM components")
+        analyses = getattr(self.app, "reliability_analyses", [])
+        ra_map = {ra.name: ra for ra in analyses}
+        ra = ra_map.get(ra_name)
+        if not ra or not ra.components:
+            messagebox.showinfo("Add Parts", "Analysis has no components")
             return
-        comps = [c for bom in comp.sub_boms for c in bom]
+        comps = list(ra.components)
         dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
         selected = dlg.result or []
         if not selected:
@@ -2657,15 +2627,21 @@ class ElementPropertiesDialog(simpledialog.Dialog):
         for prop, var in self.entries.items():
             self.element.properties[prop] = var.get()
 
-class ArchitectureManagerDialog(tk.Toplevel):
+class ArchitectureManagerDialog(tk.Frame):
     """Manage packages and diagrams in a hierarchical tree."""
 
     def __init__(self, master, app=None):
-        super().__init__(master)
+        if isinstance(master, tk.Toplevel):
+            container = master
+        else:
+            container = master
+        super().__init__(container)
         self.app = app
-        self.title("AutoML Explorer")
+        if isinstance(master, tk.Toplevel):
+            master.title("AutoML Explorer")
+            master.geometry("350x400")
+            self.pack(fill=tk.BOTH, expand=True)
         self.repo = SysMLRepository.get_instance()
-        self.geometry("350x400")
         self.tree = ttk.Treeview(self)
         self.tree.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
