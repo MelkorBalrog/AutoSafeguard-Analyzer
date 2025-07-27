@@ -176,6 +176,10 @@ classDiagram
     class Scenario
     class Scenery
     class FaultTreeNode
+    class TriggeringCondition
+    class FunctionalInsufficiency
+    class FunctionalModification
+    class AcceptanceCriteria
     SafetyGoal --> "*" Hazard : mitigates
     Scenario --> "*" Hazard : leadsTo
     Scenario --> Scenery : occursIn
@@ -266,6 +270,24 @@ classDiagram
     FmedaDoc --> "*" FmeaEntry
     SysMLRepository --> "*" FI2TCDoc
     SysMLRepository --> "*" TC2FIDoc
+    FI2TCDoc --> "*" FI2TCEntry
+    TC2FIDoc --> "*" TC2FIEntry
+    FI2TCEntry --> FunctionalInsufficiency
+    FI2TCEntry --> TriggeringCondition
+    FI2TCEntry --> Scenario
+    TC2FIEntry --> TriggeringCondition
+    TC2FIEntry --> FunctionalInsufficiency
+    SysMLRepository --> "*" FunctionalModification
+    FunctionalModification --> "*" AcceptanceCriteria
+    SysMLRepository --> "*" AcceptanceCriteria
+    SysMLRepository --> "*" TriggeringCondition
+    SysMLRepository --> "*" FunctionalInsufficiency
+    class FI2TCEntry
+    class TC2FIEntry
+    class TriggeringCondition
+    class FunctionalInsufficiency
+    class FunctionalModification
+    class AcceptanceCriteria
     class FaultTreeNode
 ```
 
@@ -286,19 +308,27 @@ The diagram below shows how reliability calculations flow into FMEDA tables and 
 classDiagram
     class BlockUsage
     class PartUsage
+    class HazopEntry
+    class FmeaDoc
     class FaultTreeDiagram
+    class FmeaEntry
+    class FmedaDoc
+    class ReliabilityAnalysis
+    class ReliabilityComponent
     BlockUsage --> ReliabilityAnalysis : analysis
-    ReliabilityAnalysis --> "*" ReliabilityComponent
+    ReliabilityAnalysis --> "*" ReliabilityComponent : components
     PartUsage --> ReliabilityComponent : component
+    HazopEntry --> FmeaEntry : failureMode
+    FmeaDoc --> "*" FmeaEntry : rows
+    FmedaDoc --> "*" FmeaEntry : rows
     PartUsage --> "*" FmeaEntry : failureModes
-    FmedaDoc --> "*" FmeaEntry
     ReliabilityComponent --> "*" FmeaEntry : modes
     FmeaEntry --> FaultTreeNode : baseEvent
     SysMLDiagram <|-- FaultTreeDiagram
     FaultTreeDiagram --> "*" FaultTreeNode : nodes
 ```
 
-Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link directly to the matching `ReliabilityComponent`. FMEDA entries describe failure modes for each component and can spawn `FaultTreeNode` base events inside an FTA diagram so probabilities and coverage stay synced.
+Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link directly to the matching `ReliabilityComponent`. Malfunctions selected from `HazopEntry` rows become `FmeaEntry` failure modes tied to those components. The base FIT for each `ReliabilityComponent` feeds into FMEDA tables so a separate FIT is calculated for every failure mode. These FMEDA entries can spawn `FaultTreeNode` base events inside an FTA diagram so probabilities and coverage remain synchronized with the reliability analysis.
 
 #### Hazard Traceability
 
@@ -367,6 +397,14 @@ Key attributes are:
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **TriggeringCondition** – `description`, related `scenario` and any allocated
+  acceptance criteria.
+- **FunctionalInsufficiency** – description of the missing function,
+  associated `scenario` and the impacted `safetyGoal`.
+- **FunctionalModification** – mitigation text and link to one or more
+  `acceptanceCriteria` used to verify the change.
+- **AcceptanceCriteria** – measurable condition proving a functional
+  modification resolves the hazard.
 
 ```mermaid
 classDiagram
@@ -407,6 +445,19 @@ classDiagram
         fmeda_fit
         failure_prob
     }
+    class TriggeringCondition {
+        scenario
+    }
+    class FunctionalInsufficiency {
+        scenario
+        safetyGoal
+    }
+    class FunctionalModification {
+        acceptanceCriteria
+    }
+    class AcceptanceCriteria {
+        description
+    }
 ```
 
 ## BOM Integration with AutoML Diagrams
@@ -441,6 +492,36 @@ Two additional tables support tracing between these elements:
 HARA values such as severity and the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
 All FI2TC and TC2FI documents appear under the **Analyses** tab so they can be opened alongside HARA tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
+
+### SOTIF Traceability
+
+The following diagram shows how triggering conditions, functional insufficiencies and functional modifications connect scenarios to safety goals and fault trees. FI2TC and TC2FI tables cross‑reference these elements and record the acceptance criteria for each mitigation.
+
+```mermaid
+classDiagram
+    class Scenario
+    class SafetyGoal
+    class TriggeringCondition
+    class FunctionalInsufficiency
+    class FI2TCDoc
+    class TC2FIDoc
+    class FunctionalModification
+    class AcceptanceCriteria
+    class FaultTreeDiagram
+    class FaultTreeNode
+    Scenario --> TriggeringCondition : triggers
+    Scenario --> FunctionalInsufficiency : reveals
+    TriggeringCondition --> FI2TCDoc : entry
+    FunctionalInsufficiency --> FI2TCDoc : entry
+    TriggeringCondition --> TC2FIDoc : entry
+    FunctionalInsufficiency --> TC2FIDoc : entry
+    FunctionalInsufficiency --> FunctionalModification : mitigatedBy
+    FunctionalModification --> AcceptanceCriteria : validatedBy
+    SafetyGoal --> FaultTreeDiagram : topEvent
+    FaultTreeDiagram --> "*" FaultTreeNode : nodes
+    TriggeringCondition --> FaultTreeNode : cta
+    FunctionalInsufficiency --> FaultTreeNode : cta
+```
 
 ## Review Toolbox
 
