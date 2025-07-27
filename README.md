@@ -12,16 +12,16 @@ flowchart TD
     subgraph ext [External inputs]
         X([BOM])
     end
-    X --> R([Reliability analysis\ninputs: BOM\noutputs: FIT rates & parts])
-    A([System functions & architecture]) --> B([HAZOP\ninputs: functions\noutputs: malfunctions])
-    B --> C([HARA\ninputs: malfunctions\noutputs: hazards, ASIL, safety goals])
-    A --> D([FMEA / FMEDA\ninputs: architecture, malfunctions, reliability\noutputs: failure modes])
+    X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
+    A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
+    B --> C([HARA<br/>inputs: malfunctions<br/>outputs: hazards, ASIL, safety goals])
+    A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
     C --> D
-    C --> E([FTA\ninputs: hazards & safety goals\noutputs: fault trees])
+    C --> E([FTA<br/>inputs: hazards & safety goals<br/>outputs: fault trees])
     D --> E
-    E --> F([Safety requirements\ninputs: fault trees & failure modes])
-    F --> G([Peer/Joint review\ninputs: requirements & analyses\noutputs: approved changes])
+    E --> F([Safety requirements<br/>inputs: fault trees & failure modes])
+    F --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
     G --> H([ASIL propagation to SGs, FMEAs and FTAs])
 ```
 
