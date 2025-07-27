@@ -10438,6 +10438,8 @@ class FaultTreeApp:
             if getattr(dlg, "result", None) is not None:
                 self.mission_profiles.append(dlg.result)
                 refresh()
+                if hasattr(self, "_rel_window") and self._rel_window.winfo_exists():
+                    self._rel_window.refresh_tree()
 
         def edit_profile():
             sel = listbox.curselection()
@@ -10447,6 +10449,8 @@ class FaultTreeApp:
             dlg = MPDialog(win, mp)
             if getattr(dlg, "result", None) is not None:
                 refresh()
+                if hasattr(self, "_rel_window") and self._rel_window.winfo_exists():
+                    self._rel_window.refresh_tree()
 
         def delete_profile():
             sel = listbox.curselection()
@@ -10454,6 +10458,8 @@ class FaultTreeApp:
                 return
             del self.mission_profiles[sel[0]]
             refresh()
+            if hasattr(self, "_rel_window") and self._rel_window.winfo_exists():
+                self._rel_window.refresh_tree()
 
         ttk.Button(btn_frame, text="Add", command=add_profile).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Edit", command=edit_profile).pack(fill=tk.X)
