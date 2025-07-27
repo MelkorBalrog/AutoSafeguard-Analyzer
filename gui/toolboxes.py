@@ -486,6 +486,9 @@ class ReliabilityWindow(tk.Toplevel):
     def refresh_analysis_list(self):
         names = [ra.name for ra in self.app.reliability_analyses]
         self.analysis_combo.configure(values=names)
+        if not self.analysis_var.get() and names:
+            self.analysis_var.set(names[0])
+            self.load_selected_analysis()
 
     def _populate_from_analysis(self, ra):
         self.analysis_var.set(ra.name)
