@@ -9692,6 +9692,9 @@ class FaultTreeApp:
         self._haz_tab = self._new_tab("Hazards")
         win = self._haz_tab
 
+        # Load hazards from existing documents once when the tab is opened.
+        self.update_hazard_list()
+
         tree = ttk.Treeview(win, columns=("Hazard", "Severity"), show="headings")
         tree.heading("Hazard", text="Hazard")
         tree.heading("Severity", text="Severity")
@@ -9701,7 +9704,6 @@ class FaultTreeApp:
 
         def refresh():
             tree.delete(*tree.get_children())
-            self.update_hazard_list()
             for h in self.hazards:
                 tree.insert("", "end", values=(h, self.hazard_severity.get(h, "")))
 
