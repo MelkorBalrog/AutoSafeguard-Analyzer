@@ -73,6 +73,11 @@ def _find_parent_blocks(repo: SysMLRepository, block_id: str) -> set[str]:
             parents.add(rel.target)
         elif rel.target == block_id and rel.source in repo.elements:
             parents.add(rel.source)
+    # include father block from internal block diagram linkage
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if diag and getattr(diag, "father", None) in repo.elements:
+        parents.add(diag.father)
     return parents
 
 
@@ -113,6 +118,52 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
         for o in getattr(d, "objects", []):
             if o.get("element_id") == block_id:
                 o.setdefault("properties", {})["partProperties"] = joined
+
+
+def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
+    """Copy parts from the diagram's father block into the diagram."""
+    father = getattr(diagram, "father", None)
+    if not father:
+        return
+    father_diag_id = repo.get_linked_diagram(father)
+    father_diag = repo.diagrams.get(father_diag_id)
+    if not father_diag:
+        return
+    diagram.objects = getattr(diagram, "objects", [])
+    existing = {
+        o.get("element_id")
+        for o in diagram.objects
+        if o.get("obj_type") == "Part"
+    }
+    for obj in getattr(father_diag, "objects", []):
+        if obj.get("obj_type") != "Part":
+            continue
+        if obj.get("element_id") in existing:
+            continue
+        new_obj = obj.copy()
+        new_obj["obj_id"] = _get_next_id()
+        diagram.objects.append(new_obj)
+        repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
+    # update child block partProperties with inherited names
+    child_id = next(
+        (eid for eid, did in repo.element_diagrams.items() if did == diagram.diag_id),
+        None,
+    )
+    if child_id and father in repo.elements:
+        child = repo.elements[child_id]
+        father_elem = repo.elements[father]
+        names = [p.strip() for p in child.properties.get("partProperties", "").split(",") if p.strip()]
+        father_names = [p.strip() for p in father_elem.properties.get("partProperties", "").split(",") if p.strip()]
+        for n in father_names:
+            if n not in names:
+                names.append(n)
+        joined = ", ".join(names)
+        child.properties["partProperties"] = joined
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == child_id:
+                    o.setdefault("properties", {})["partProperties"] = joined
+        extend_block_parts_with_parents(repo, child_id)
 
 
 @dataclass
@@ -880,6 +931,11 @@ class SysMLDiagramWindow(tk.Frame):
         if not obj:
             conn = self.find_connection(x, y)
             if not conn:
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and diag.diag_type == "Internal Block Diagram":
+                    menu = tk.Menu(self, tearoff=0)
+                    menu.add_command(label="Set Father", command=self._set_diagram_father)
+                    menu.tk_popup(event.x_root, event.y_root)
                 return
         self.selected_obj = obj
         self.selected_conn = conn
@@ -932,6 +988,14 @@ class SysMLDiagramWindow(tk.Frame):
         self._sync_to_repository()
         self.destroy()
         return True
+
+    def _set_diagram_father(self) -> None:
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Internal Block Diagram":
+            return
+        DiagramPropertiesDialog(self, diag)
+        self._sync_to_repository()
+        self.redraw()
 
     def go_back(self):
         if not self.diagram_history:
@@ -2562,6 +2626,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
             fill=tk.X, padx=2, pady=2
         )
+        ttk.Button(self.toolbox, text="Add Parent Parts", command=self.add_parent_parts).pack(
+            fill=tk.X, padx=2, pady=2
+        )
 
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
@@ -2588,22 +2655,24 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             messagebox.showinfo("Add Parts", "No block is linked to this diagram")
             return
         block = repo.elements[block_id]
+        diag = repo.diagrams.get(self.diagram_id)
+        if diag:
+            inherit_father_parts(repo, diag)
         ra_name = block.properties.get("analysis", "")
-        if not ra_name:
-            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
-            return
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
         ra = ra_map.get(ra_name)
-        if not ra or not ra.components:
+        if ra_name and (not ra or not ra.components):
             messagebox.showinfo("Add Parts", "Analysis has no components")
             return
-        comps = list(ra.components)
+        comps = list(ra.components) if ra_name and ra and ra.components else []
+        if not comps and not getattr(diag, "father", None):
+            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
+            return
         dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
         selected = dlg.result or []
         if not selected:
             return
-        diag = repo.diagrams.get(self.diagram_id)
         if diag is None:
             return
         diag.objects = getattr(diag, "objects", [])
@@ -2658,6 +2727,17 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
+    def add_parent_parts(self) -> None:
+        """Add parts from the assigned father block."""
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag or not getattr(diag, "father", None):
+            messagebox.showinfo("Add Parent Parts", "No father block assigned")
+            return
+        inherit_father_parts(repo, diag)
+        self.redraw()
+        self._sync_to_repository()
+
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
 
@@ -2696,11 +2776,28 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         ttk.Label(master, text="Color:").grid(row=2, column=0, sticky="e", padx=4, pady=2)
         self.color_var = tk.StringVar(value=getattr(self.diagram, "color", "#FFFFFF"))
         ttk.Entry(master, textvariable=self.color_var).grid(row=2, column=1, padx=4, pady=2)
+        if self.diagram.diag_type == "Internal Block Diagram":
+            repo = SysMLRepository.get_instance()
+            blocks = [e for e in repo.elements.values() if e.elem_type == "Block"]
+            idmap = {b.name or b.elem_id: b.elem_id for b in blocks}
+            ttk.Label(master, text="Father:").grid(row=3, column=0, sticky="e", padx=4, pady=2)
+            self.father_map = idmap
+            cur_id = getattr(self.diagram, "father", "")
+            cur_name = next((n for n, i in idmap.items() if i == cur_id), "")
+            self.father_var = tk.StringVar(value=cur_name)
+            ttk.Combobox(master, textvariable=self.father_var, values=list(idmap.keys())).grid(row=3, column=1, padx=4, pady=2)
+        else:
+            self.father_map = {}
+            self.father_var = tk.StringVar()
 
     def apply(self):
         self.diagram.name = self.name_var.get()
         self.diagram.description = self.desc_var.get()
         self.diagram.color = self.color_var.get()
+        if self.diagram.diag_type == "Internal Block Diagram":
+            father_id = self.father_map.get(self.father_var.get())
+            self.diagram.father = father_id
+            inherit_father_parts(SysMLRepository.get_instance(), self.diagram)
 
 class PackagePropertiesDialog(simpledialog.Dialog):
     """Dialog to edit a package's name."""
