@@ -687,23 +687,30 @@ The **Qualitative Analysis** menu also provides dedicated SOTIF tools. Selecting
 
 Two additional tables support tracing between these elements:
 
-* **FI2TC Analysis** – analogue of HAZOP for SOTIF. Each row links a functional
-  insufficiency to the triggering conditions, scenarios and mitigation measures
-  that reveal the hazard. The hazard and its **severity** are recorded here. The
-  table includes dedicated **triggering_conditions** and
-  **functional_insufficiencies** columns populated via comboboxes so new items
-  can be added on the fly. The **design_measures** column now offers a
-  multi-select list of all existing requirements labelled as *functional
-  modification* for quick selection. Hold **Ctrl** while clicking to choose
-  multiple items.
-* **TC2FI Analysis** – also mirrors HAZOP concepts for SOTIF. It starts from the
-  triggering condition and lists the impacted functions, architecture elements
-  and related insufficiencies. The identified hazard and its **severity** are
-  noted in each entry. The **triggering_conditions** and
+* **FI2TC Analysis** – links each functional insufficiency to the triggering
+  conditions, scenarios and mitigation measures that reveal the hazard. The
+  table now supports editing directly in the list by double clicking any cell.
+  Dedicated **triggering_conditions** and **functional_insufficiencies**
+  columns remain populated via comboboxes so new items can be added on the fly.
+  The **design_measures** column still offers a multi-select list of all
+  requirements labelled as *functional modification*. Hold **Ctrl** while
+  clicking to choose multiple items.
+* **TC2FI Analysis** – starts from the triggering condition and lists the
+  impacted functions, architecture elements and related insufficiencies. This
+  table also allows in-place editing. The **triggering_conditions** and
   **functional_insufficiencies** fields mirror those in the FI2TC table to keep
   the relationships consistent.
 
-Severity recorded in FI2TC and TC2FI entries is inherited by the HARA so the risk graph reflects the SOTIF findings. Other HARA values such as the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
+The analyses approach the problem from opposite directions:
+
+| Aspect | FI2TC | TC2FI |
+| --- | --- | --- |
+| Start Point | Known functional weakness | Known environmental/operational condition |
+| Goal | Identify triggering conditions | Identify affected functions |
+| Focus | Understanding cause of known issues | Discovering issues from known situations |
+| Role in SOTIF | Verifying known risks are well covered | Expanding coverage for unknown risks |
+
+HARA values such as severity and the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
 All FI2TC and TC2FI documents appear under the **Analyses** tab so they can be opened alongside HARA tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
 
