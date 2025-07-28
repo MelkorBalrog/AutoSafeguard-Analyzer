@@ -940,12 +940,25 @@ class HazopWindow(tk.Frame):
             ToolTip(cond_entry, "Example: rain, snow, gravel road, etc.")
 
             haz_lbl = ttk.Label(master, text="Hazard")
-            haz_lbl.grid(row=5, column=0, sticky="ne", padx=5, pady=5)
+            haz_lbl.grid(row=5, column=0, sticky="e", padx=5, pady=5)
             ToolTip(haz_lbl, "Consequence of the malfunction under the given scenario.")
-            self.haz = tk.Text(master, width=30, height=3)
-            self.haz.insert("1.0", self.row.hazard)
-            self.haz.grid(row=5, column=1, padx=5, pady=5)
-            ToolTip(self.haz, "Describe the hazard that could result from this malfunction.")
+            haz_frame = ttk.Frame(master)
+            haz_frame.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+            self.haz_var = tk.StringVar(value=self.row.hazard)
+            self.haz_cb = ttk.Combobox(
+                haz_frame,
+                textvariable=self.haz_var,
+                values=sorted(self.app.hazards),
+                width=30,
+            )
+            self.haz_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            ToolTip(
+                self.haz_cb,
+                "Select an existing hazard or type a new one.",
+            )
+            new_haz_btn = ttk.Button(haz_frame, text="New", command=self.new_hazard)
+            new_haz_btn.pack(side=tk.LEFT, padx=2)
+            ToolTip(new_haz_btn, "Create a new hazard and select it.")
 
             safety_lbl = ttk.Label(master, text="Safety Relevant")
             safety_lbl.grid(row=6, column=0, sticky="e", padx=5, pady=5)
@@ -980,6 +993,14 @@ class HazopWindow(tk.Frame):
             covby_cb.grid(row=9, column=1, padx=5, pady=5)
             ToolTip(covby_cb, "Choose a malfunction that covers this one if applicable.")
 
+        def new_hazard(self):
+            name = simpledialog.askstring("New Hazard", "Name:")
+            if not name:
+                return
+            self.app.add_hazard(name)
+            self.haz_var.set(name)
+            self.haz_cb.configure(values=sorted(self.app.hazards))
+
         def apply(self):
             self.row.function = self.func.get()
             old_mal = self.row.malfunction
@@ -995,10 +1016,11 @@ class HazopWindow(tk.Frame):
             self.row.scenario = self.scen.get()
             self.row.conditions = self.cond.get()
             old_haz = self.row.hazard
-            self.row.hazard = self.haz.get("1.0", "end-1c")
+            self.row.hazard = self.haz_var.get().strip()
             if old_haz and old_haz != self.row.hazard:
                 self.app.rename_hazard(old_haz, self.row.hazard)
             self.app.add_hazard(self.row.hazard)
+            self.haz_cb.configure(values=sorted(self.app.hazards))
             self.app.update_hazard_list()
             self.row.safety = self.safety.get() == "Yes"
             self.row.rationale = self.rat.get("1.0", "end-1c")
