@@ -1074,38 +1074,9 @@ class EditNodeDialog(simpledialog.Dialog):
                 self.ftti_entry.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
-                ttk.Label(safety_frame, text="DC Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.dc_target_var = tk.DoubleVar(value=getattr(self.node, "sg_dc_target", 0.0))
-                tk.Entry(
-                    safety_frame,
-                    textvariable=self.dc_target_var,
-                    width=8,
-                    validate="key",
-                    validatecommand=(self.register(self.validate_float), "%P"),
-                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-                row_next += 1
-
-                ttk.Label(safety_frame, text="SPFM Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.spfm_target_var = tk.DoubleVar(value=getattr(self.node, "sg_spfm_target", 0.0))
-                tk.Entry(
-                    safety_frame,
-                    textvariable=self.spfm_target_var,
-                    width=8,
-                    validate="key",
-                    validatecommand=(self.register(self.validate_float), "%P"),
-                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-                row_next += 1
-
-                ttk.Label(safety_frame, text="LPFM Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.lpfm_target_var = tk.DoubleVar(value=getattr(self.node, "sg_lpfm_target", 0.0))
-                tk.Entry(
-                    safety_frame,
-                    textvariable=self.lpfm_target_var,
-                    width=8,
-                    validate="key",
-                    validatecommand=(self.register(self.validate_float), "%P"),
-                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-                row_next += 1
+                # Diagnostic coverage and fault metric targets are not exposed in
+                # the safety tab. They remain attributes of the node but are
+                # configured elsewhere.
 
                 ttk.Label(safety_frame, text="Acceptance Probability:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.acc_prob_var = tk.StringVar(value=str(getattr(self.node, "acceptance_prob", 1.0)))
@@ -1773,18 +1744,8 @@ class EditNodeDialog(simpledialog.Dialog):
                     self.app.rename_malfunction(target_node.malfunction, new_mal)
                 target_node.malfunction = new_mal
                 target_node.ftti = self.ftti_entry.get().strip()
-                try:
-                    target_node.sg_dc_target = float(self.dc_target_var.get())
-                except Exception:
-                    target_node.sg_dc_target = 0.0
-                try:
-                    target_node.sg_spfm_target = float(self.spfm_target_var.get())
-                except Exception:
-                    target_node.sg_spfm_target = 0.0
-                try:
-                    target_node.sg_lpfm_target = float(self.lpfm_target_var.get())
-                except Exception:
-                    target_node.sg_lpfm_target = 0.0
+                # Safety metrics targets are no longer edited here. Preserve
+                # existing values on the node.
                 try:
                     target_node.acceptance_prob = float(self.acc_prob_var.get())
                 except Exception:
