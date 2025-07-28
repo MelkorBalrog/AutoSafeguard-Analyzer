@@ -9496,22 +9496,38 @@ class FaultTreeApp:
             row_next += 1
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
-            self.mal_vars = {}
             sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
-            self.mal_frame = ttk.Frame(gen_frame)
-            self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-
             def update_sg(*_):
-                selected = [m for m, v in self.mal_vars.items() if v.get()]
+                if self.is_fmeda:
+                    selected = [m for m, v in self.mal_vars.items() if v.get()]
+                else:
+                    selected = [self.mal_var.get()] if self.mal_var.get() else []
                 goals = self.app.get_safety_goals_for_malfunctions(selected)
                 if not goals:
                     goals = self.app.get_top_event_safety_goals(self.node)
                 self.sg_var.set(", ".join(goals))
 
-            for m in sorted(self.app.malfunctions):
-                var = tk.BooleanVar(value=m in sel_mals)
-                ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
-                self.mal_vars[m] = var
+            if self.is_fmeda:
+                self.mal_vars = {}
+                self.mal_frame = ttk.Frame(gen_frame)
+                self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                for m in sorted(self.app.malfunctions):
+                    var = tk.BooleanVar(value=m in sel_mals)
+                    ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
+                    self.mal_vars[m] = var
+            else:
+                self.mal_var = tk.StringVar(value=sel_mals[0] if sel_mals else "")
+                self.mal_combo = ttk.Combobox(
+                    gen_frame,
+                    textvariable=self.mal_var,
+                    values=sorted(self.app.malfunctions),
+                    state="readonly",
+                    width=30,
+                )
+                self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                self.mal_combo.bind("<<ComboboxSelected>>", update_sg)
+
+            update_sg()
 
             row_next += 1
 
@@ -9684,8 +9700,13 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
-            selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
-            self.node.fmeda_malfunction = ";".join(selected_mals)
+            if self.is_fmeda:
+                selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+                mal_value = ";".join(selected_mals)
+            else:
+                mal_value = self.mal_var.get()
+                selected_mals = [mal_value] if mal_value else []
+            self.node.fmeda_malfunction = mal_value
             for m in selected_mals:
                 if m:
                     self.app.add_malfunction(m)
