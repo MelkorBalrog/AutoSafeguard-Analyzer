@@ -14320,7 +14320,13 @@ class FaultTreeApp:
         self.update_requirement_statuses()
 
     def add_version(self):
-        name = f"v{len(self.versions)+1}"
+        version_num = len(self.versions) + 1
+        name = f"v{version_num}"
+        baseline = simpledialog.askstring(
+            "Baseline Name", "Enter baseline name (optional):"
+        )
+        if baseline:
+            name += f" - {baseline}"
         # Exclude the versions list when capturing a snapshot to avoid
         # recursively embedding previous versions within each saved state.
         data = self.export_model_data(include_versions=False)
