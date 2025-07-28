@@ -120,16 +120,19 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
                 o.setdefault("properties", {})["partProperties"] = joined
 
 
-def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
-    """Copy parts from the diagram's father block into the diagram."""
+def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[dict]:
+    """Copy parts from the diagram's father block into the diagram.
+
+    Returns a list with the inherited part object dictionaries."""
     father = getattr(diagram, "father", None)
     if not father:
-        return
+        return []
     father_diag_id = repo.get_linked_diagram(father)
     father_diag = repo.diagrams.get(father_diag_id)
     if not father_diag:
-        return
+        return []
     diagram.objects = getattr(diagram, "objects", [])
+    added: list[dict] = []
     existing = {
         o.get("element_id")
         for o in diagram.objects
@@ -144,6 +147,7 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
+        added.append(new_obj)
     # update child block partProperties with inherited names
     child_id = next(
         (eid for eid, did in repo.element_diagrams.items() if did == diagram.diag_id),
@@ -164,6 +168,7 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
                 if o.get("element_id") == child_id:
                     o.setdefault("properties", {})["partProperties"] = joined
         extend_block_parts_with_parents(repo, child_id)
+    return added
 
 
 @dataclass
@@ -993,7 +998,9 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         if not diag or diag.diag_type != "Internal Block Diagram":
             return
-        DiagramPropertiesDialog(self, diag)
+        dlg = DiagramPropertiesDialog(self, diag)
+        for data in getattr(dlg, "added_parts", []):
+            self.objects.append(SysMLObject(**data))
         self._sync_to_repository()
         self.redraw()
 
@@ -2657,7 +2664,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         block = repo.elements[block_id]
         diag = repo.diagrams.get(self.diagram_id)
         if diag:
-            inherit_father_parts(repo, diag)
+            added_parent = inherit_father_parts(repo, diag)
+            for data in added_parent:
+                self.objects.append(SysMLObject(**data))
         ra_name = block.properties.get("analysis", "")
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
@@ -2734,7 +2743,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         if not diag or not getattr(diag, "father", None):
             messagebox.showinfo("Add Parent Parts", "No father block assigned")
             return
-        inherit_father_parts(repo, diag)
+        added = inherit_father_parts(repo, diag)
+        for data in added:
+            self.objects.append(SysMLObject(**data))
         self.redraw()
         self._sync_to_repository()
 
@@ -2764,6 +2775,7 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
 
     def __init__(self, master, diagram: SysMLDiagram):
         self.diagram = diagram
+        self.added_parts: list[dict] = []
         super().__init__(master, title="Diagram Properties")
 
     def body(self, master):
@@ -2797,7 +2809,9 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         if self.diagram.diag_type == "Internal Block Diagram":
             father_id = self.father_map.get(self.father_var.get())
             self.diagram.father = father_id
-            inherit_father_parts(SysMLRepository.get_instance(), self.diagram)
+            self.added_parts = inherit_father_parts(
+                SysMLRepository.get_instance(), self.diagram
+            )
 
 class PackagePropertiesDialog(simpledialog.Dialog):
     """Dialog to edit a package's name."""
