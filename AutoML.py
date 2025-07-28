@@ -1892,7 +1892,7 @@ class FaultTreeApp:
         # Lists of user-defined faults and malfunctions
         self.faults: list[str] = []
         self.malfunctions: list[str] = []
-        self.hazards: list[str] = []
+        self.hazards: list[dict] = []  # {"name": str, "severity": int}
         self.failures: list[str] = []
         self.triggering_conditions: list[str] = []
         self.functional_insufficiencies: list[str] = []
@@ -3184,9 +3184,45 @@ class FaultTreeApp:
         """Add a failure to the list if not already present."""
         append_unique_insensitive(self.failures, name)
 
-    def add_hazard(self, name: str) -> None:
-        """Add a hazard to the list if not already present."""
-        append_unique_insensitive(self.hazards, name)
+    def get_hazard_names(self) -> list[str]:
+        """Return the list of hazard names."""
+        return [h.get("name", "") for h in self.hazards]
+
+    def get_hazard_severity(self, name: str) -> int:
+        for h in self.hazards:
+            if h.get("name") == name:
+                return int(h.get("severity", 1))
+        return 1
+
+    def add_hazard(self, name: str, severity: int = 1) -> None:
+        """Add or update a hazard entry."""
+        for h in self.hazards:
+            if h.get("name", "").lower() == name.lower():
+                h["name"] = name
+                if int(h.get("severity", 1)) != int(severity):
+                    self.set_hazard_severity(name, severity)
+                return
+        self.hazards.append({"name": name, "severity": int(severity)})
+
+    def set_hazard_severity(self, name: str, severity: int) -> None:
+        """Update hazard severity and propagate the change."""
+        for h in self.hazards:
+            if h.get("name") == name:
+                if int(h.get("severity", 1)) == int(severity):
+                    break
+                h["severity"] = int(severity)
+                for doc in self.hara_docs:
+                    for e in doc.entries:
+                        if getattr(e, "hazard", "") == name:
+                            e.severity = int(severity)
+                for entry in self.fi2tc_entries:
+                    if entry.get("vehicle_effect", "") == name:
+                        entry["severity"] = str(severity)
+                for entry in self.tc2fi_entries:
+                    if entry.get("vehicle_effect", "") == name:
+                        entry["severity"] = str(severity)
+                self.update_views()
+                break
 
     # --------------------------------------------------------------
     # Rename helpers propagate changes across the entire model
@@ -3243,9 +3279,9 @@ class FaultTreeApp:
     def rename_hazard(self, old: str, new: str) -> None:
         if not old or old == new:
             return
-        for i, h in enumerate(self.hazards):
-            if h == old:
-                self.hazards[i] = new
+        for h in self.hazards:
+            if h.get("name") == old:
+                h["name"] = new
         for doc in self.hazop_docs:
             for e in doc.entries:
                 if getattr(e, "hazard", "") == old:
@@ -8074,18 +8110,19 @@ class FaultTreeApp:
 
     def update_hazard_list(self):
         """Aggregate hazards from HARA and HAZOP documents."""
-        hazards: list[str] = []
+        mapping = {h.get("name"): int(h.get("severity", 1)) for h in self.hazards}
         for doc in self.hara_docs:
             for e in doc.entries:
                 h = getattr(e, "hazard", "").strip()
-                if h and h not in hazards:
-                    hazards.append(h)
+                if not h:
+                    continue
+                mapping.setdefault(h, int(getattr(e, "severity", 1)))
         for doc in self.hazop_docs:
             for e in doc.entries:
                 h = getattr(e, "hazard", "").strip()
-                if h and h not in hazards:
-                    hazards.append(h)
-        self.hazards = hazards
+                if h and h not in mapping:
+                    mapping[h] = 1
+        self.hazards = [{"name": n, "severity": s} for n, s in mapping.items()]
 
     def update_failure_list(self):
         """Aggregate failure effects from FMEA and FMEDA entries."""
@@ -9641,32 +9678,57 @@ class FaultTreeApp:
             lb.delete(0, tk.END)
             self.update_hazard_list()
             for h in self.hazards:
-                lb.insert(tk.END, h)
+                lb.insert(tk.END, f"{h['name']} (S{h.get('severity', 1)})")
 
         def add():
             name = simpledialog.askstring("Add Hazard", "Name:")
-            if name:
-                self.add_hazard(name)
-                refresh()
+            if not name:
+                return
+            sev = simpledialog.askinteger("Severity", "1-3:", minvalue=1, maxvalue=3)
+            if sev is None:
+                return
+            self.add_hazard(name, sev)
+            refresh()
 
         def rename():
             sel = lb.curselection()
             if not sel:
                 return
-            current = lb.get(sel[0])
+            display = lb.get(sel[0])
+            current = display.split(" (S", 1)[0]
+            haz = next((h for h in self.hazards if h["name"] == current), None)
+            if not haz:
+                return
             name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
             if not name:
                 return
+            sev = simpledialog.askinteger(
+                "Severity", "1-3:", initialvalue=haz.get("severity", 1), minvalue=1, maxvalue=3
+            )
+            if sev is None:
+                return
             self.rename_hazard(current, name)
+            self.set_hazard_severity(name, sev)
             refresh()
 
         def delete():
             sel = lb.curselection()
             if not sel:
                 return
-            current = lb.get(sel[0])
+            display = lb.get(sel[0])
+            current = display.split(" (S", 1)[0]
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
-                self.hazards.remove(current)
+                self.hazards = [h for h in self.hazards if h["name"] != current]
+                for doc in self.hara_docs:
+                    for e in list(doc.entries):
+                        if getattr(e, "hazard", "") == current:
+                            e.hazard = ""
+                for row in self.fi2tc_entries:
+                    if row.get("vehicle_effect") == current:
+                        row["vehicle_effect"] = ""
+                for row in self.tc2fi_entries:
+                    if row.get("vehicle_effect") == current:
+                        row["vehicle_effect"] = ""
                 refresh()
 
         btn = ttk.Frame(win)
@@ -13493,7 +13555,11 @@ class FaultTreeApp:
         for m in data.get("malfunctions", []):
             append_unique_insensitive(mals, m)
         self.malfunctions = mals
-        self.hazards = data.get("hazards", [])
+        haz_data = data.get("hazards", [])
+        if haz_data and isinstance(haz_data[0], str):
+            self.hazards = [{"name": h, "severity": 1} for h in haz_data]
+        else:
+            self.hazards = haz_data
         self.failures = data.get("failures", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
