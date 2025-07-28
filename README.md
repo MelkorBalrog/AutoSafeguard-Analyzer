@@ -682,6 +682,8 @@ Two additional tables support tracing between these elements:
   table includes dedicated **triggering_conditions** and
   **functional_insufficiencies** columns populated via comboboxes so new items
   can be added on the fly.
+  The **design_measures** column now offers a drop-down listing all existing
+  requirements labelled as *functional modification* for quick selection.
 * **TC2FI Analysis** – starts from the triggering condition and lists the
   impacted functions, architecture elements and related insufficiencies. The
   **triggering_conditions** and **functional_insufficiencies** fields mirror

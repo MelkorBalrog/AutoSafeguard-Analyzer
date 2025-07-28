@@ -21,6 +21,7 @@ from analysis.models import (
     PASSIVE_QUAL_FACTORS,
     component_fit_map,
     calc_asil,
+    global_requirements,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -703,6 +704,11 @@ class FI2TCWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
+            req_opts = [
+                f"[{r['id']}] {r['text']}"
+                for r in global_requirements.values()
+                if r.get("req_type") == "functional modification"
+            ]
             self.widgets = {}
             r = 0
 
@@ -734,6 +740,11 @@ class FI2TCWindow(tk.Frame):
                 elif col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=fi_names)
+                    cb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = var
+                elif col == "design_measures":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "system_function":
@@ -1707,6 +1718,11 @@ class TC2FIWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
+            req_opts = [
+                f"[{r['id']}] {r['text']}"
+                for r in global_requirements.values()
+                if r.get("req_type") == "functional modification"
+            ]
             self.widgets = {}
             r = 0
 
@@ -1733,6 +1749,11 @@ class TC2FIWindow(tk.Frame):
                 if col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=fi_names)
+                    cb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = var
+                elif col == "design_measures":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "triggering_conditions":
