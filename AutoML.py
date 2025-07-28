@@ -1006,9 +1006,22 @@ class EditNodeDialog(simpledialog.Dialog):
                 row_next += 1
 
                 ttk.Label(safety_frame, text="Malfunction:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.mal_var = tk.StringVar(value=getattr(self.node, 'malfunction', ''))
-                self.mal_combo = ttk.Combobox(safety_frame, textvariable=self.mal_var, values=sorted(self.app.malfunctions), width=30)
+                stored_mal = getattr(self.node, 'malfunction', '')
+                self.mal_var = tk.StringVar(value="")
+                self.mal_combo = ttk.Combobox(
+                    safety_frame,
+                    textvariable=self.mal_var,
+                    values=sorted(self.app.malfunctions),
+                    state="readonly",
+                    width=30,
+                )
                 self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                self.mal_sel_var = tk.StringVar(value=stored_mal)
+                def mal_sel(_):
+                    self.mal_sel_var.set(self.mal_var.get())
+                self.mal_combo.bind("<<ComboboxSelected>>", mal_sel)
+                row_next += 1
+                ttk.Label(safety_frame, textvariable=self.mal_sel_var, foreground="blue").grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="FTTI:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -1716,7 +1729,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safety_goal_description = self.safety_goal_text.get("1.0", "end-1c")
                 target_node.safety_goal_asil = self.sg_asil_var.get().strip()
                 target_node.safe_state = self.safe_state_entry.get().strip()
-                new_mal = self.mal_var.get().strip()
+                new_mal = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 if new_mal:
                     for te in self.app.top_events:
                         if te is not target_node and getattr(te, "malfunction", "") == new_mal:
@@ -1725,11 +1738,9 @@ class EditNodeDialog(simpledialog.Dialog):
                                 "This malfunction is already assigned to another top level event.",
                             )
                             new_mal = getattr(self.node, "malfunction", "")
-                            self.mal_var.set(new_mal)
+                            self.mal_sel_var.set(new_mal)
                             break
                 target_node.malfunction = new_mal
-                if target_node.malfunction:
-                    self.app.add_malfunction(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
                     target_node.sg_dc_target = float(self.dc_target_var.get())
@@ -9615,6 +9626,7 @@ class FaultTreeApp:
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
             sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
+            self.mal_sel_var = tk.StringVar(value=";".join(sel_mals))
             def update_sg(*_):
                 if self.is_fmeda:
                     selected = [m for m, v in self.mal_vars.items() if v.get()]
@@ -9624,17 +9636,24 @@ class FaultTreeApp:
                 if not goals:
                     goals = self.app.get_top_event_safety_goals(self.node)
                 self.sg_var.set(", ".join(goals))
+                if self.is_fmeda:
+                    sel = [m for m, v in self.mal_vars.items() if v.get()]
+                    if sel:
+                        self.mal_sel_var.set(";".join(sel))
+                else:
+                    if self.mal_var.get():
+                        self.mal_sel_var.set(self.mal_var.get())
 
             if self.is_fmeda:
                 self.mal_vars = {}
                 self.mal_frame = ttk.Frame(gen_frame)
                 self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 for m in sorted(self.app.malfunctions):
-                    var = tk.BooleanVar(value=m in sel_mals)
+                    var = tk.BooleanVar(value=False)
                     ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
                     self.mal_vars[m] = var
             else:
-                self.mal_var = tk.StringVar(value=sel_mals[0] if sel_mals else "")
+                self.mal_var = tk.StringVar(value="")
                 self.mal_combo = ttk.Combobox(
                     gen_frame,
                     textvariable=self.mal_var,
@@ -9646,6 +9665,8 @@ class FaultTreeApp:
                 self.mal_combo.bind("<<ComboboxSelected>>", update_sg)
 
             row_next += 1
+            ttk.Label(gen_frame, textvariable=self.mal_sel_var, foreground="blue").grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+            row_next += 1
 
             ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
             preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
@@ -9654,7 +9675,6 @@ class FaultTreeApp:
             self.sg_var = tk.StringVar(value=sg_value)
             self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30, state='readonly')
             self.sg_entry.grid(row=row_next, column=1, padx=5, pady=5)
-            update_sg()
 
             ttk.Label(metric_frame, text="Severity (1-10):").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.sev_spin = tk.Spinbox(metric_frame, from_=1, to=10, width=5)
@@ -9818,14 +9838,13 @@ class FaultTreeApp:
                 self.node.fmea_detection = 1
             if self.is_fmeda:
                 selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+                if not selected_mals:
+                    selected_mals = [m.strip() for m in self.mal_sel_var.get().split(';') if m.strip()]
                 mal_value = ";".join(selected_mals)
             else:
-                mal_value = self.mal_var.get()
+                mal_value = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 selected_mals = [mal_value] if mal_value else []
             self.node.fmeda_malfunction = mal_value
-            for m in selected_mals:
-                if m:
-                    self.app.add_malfunction(m)
             self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
