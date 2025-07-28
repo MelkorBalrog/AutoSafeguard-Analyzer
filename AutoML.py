@@ -1951,7 +1951,7 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards", command=self.show_hazard_list)
-        qualitative_menu.add_command(label="Malfunctions", command=self.show_malfunction_list)
+        qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
         qualitative_menu.add_command(label="Faults", command=self.show_fault_list)
         qualitative_menu.add_command(label="Failures", command=self.show_failure_list)
         qualitative_menu.add_separator()
@@ -2068,7 +2068,7 @@ class FaultTreeApp:
             "HAZOP Analysis": self.open_hazop_window,
             "HARA Analysis": self.open_hara_window,
             "Hazards": self.show_hazard_list,
-            "Malfunctions": self.show_malfunction_list,
+            "Malfunctions Editor": self.show_malfunction_editor,
             "Faults": self.show_fault_list,
             "Failures": self.show_failure_list,
             "FI2TC Analysis": self.open_fi2tc_window,
@@ -9120,19 +9120,27 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
-    def show_malfunction_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Malfunctions")
+    def show_malfunction_editor(self):
+        """Open a tab to manage global malfunctions."""
+        if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
+            self.doc_nb.select(self._mal_tab)
+            return
+        self._mal_tab = self._new_tab("Malfunctions")
+        win = self._mal_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        for m in self.malfunctions:
-            lb.insert(tk.END, m)
+
+        def refresh():
+            lb.delete(0, tk.END)
+            for m in self.malfunctions:
+                lb.insert(tk.END, m)
 
         def add():
             name = simpledialog.askstring("Add Malfunction", "Name:")
             if name:
                 self.add_malfunction(name)
-                lb.insert(tk.END, name)
+                refresh()
 
         def rename():
             sel = lb.curselection()
@@ -9142,25 +9150,32 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Malfunction", "Name:", initialvalue=current)
             if not name:
                 return
+            if any(m.lower() == name.lower() for m in self.malfunctions if m != current):
+                messagebox.showinfo("Malfunction", "Already exists")
+                return
             self.malfunctions.remove(current)
             self.add_malfunction(name)
-            lb.delete(sel[0])
-            lb.insert(sel[0], name)
+            refresh()
 
         def delete():
             sel = lb.curselection()
             if not sel:
                 return
             current = lb.get(sel[0])
+            if self.is_malfunction_used(current):
+                messagebox.showinfo("Delete", "Malfunction is in use")
+                return
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
                 self.malfunctions.remove(current)
-                lb.delete(sel[0])
+                refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+        refresh()
 
     def show_fault_list(self):
         win = tk.Toplevel(self.root)
