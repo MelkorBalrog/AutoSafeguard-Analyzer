@@ -9701,7 +9701,6 @@ class FaultTreeApp:
 
         def refresh():
             tree.delete(*tree.get_children())
-            self.update_hazard_list()
             for h in self.hazards:
                 tree.insert("", "end", values=(h, self.hazard_severity.get(h, "")))
 
@@ -9864,7 +9863,6 @@ class FaultTreeApp:
 
         def refresh():
             lb.delete(0, tk.END)
-            self.update_failure_list()
             for fl in self.failures:
                 lb.insert(tk.END, fl)
 
