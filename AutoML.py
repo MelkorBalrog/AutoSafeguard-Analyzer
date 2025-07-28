@@ -9343,6 +9343,8 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
+        refresh()
+
     def show_failure_list(self):
         """Open a tab to manage the list of failures."""
 
@@ -9393,6 +9395,8 @@ class FaultTreeApp:
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+        refresh()
 
     # ------------------------------------------------------------------
     # Compatibility wrappers
