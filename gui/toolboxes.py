@@ -928,6 +928,8 @@ class HazopWindow(tk.Frame):
             self.row.hazard = self.haz.get("1.0", "end-1c")
             if old_haz and old_haz != self.row.hazard:
                 self.app.rename_hazard(old_haz, self.row.hazard)
+            self.app.add_hazard(self.row.hazard)
+            self.app.update_hazard_list()
             self.row.safety = self.safety.get() == "Yes"
             self.row.rationale = self.rat.get("1.0", "end-1c")
             self.row.covered = self.cov.get() == "Yes"
@@ -1139,6 +1141,7 @@ class HaraWindow(tk.Frame):
             if self.app.active_hara:
                 hazop_names = getattr(self.app.active_hara, "hazops", []) or []
             malfs = set()
+            hazards_map = {}
             if not hazop_names:
                 hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
@@ -1147,11 +1150,14 @@ class HaraWindow(tk.Frame):
                     for e in hz.entries:
                         if getattr(e, "safety", False):
                             malfs.add(e.malfunction)
+                            if e.hazard:
+                                hazards_map.setdefault(e.malfunction, []).append(e.hazard)
             malfs = sorted(malfs)
             goals = [te.safety_goal_description or (te.user_name or f"SG {te.unique_id}") for te in self.app.top_events]
             ttk.Label(master, text="Malfunction").grid(row=0,column=0,sticky="e")
             self.mal_var = tk.StringVar(value=self.row.malfunction)
-            ttk.Combobox(master, textvariable=self.mal_var, values=malfs, state="readonly").grid(row=0,column=1)
+            mal_cb = ttk.Combobox(master, textvariable=self.mal_var, values=malfs, state="readonly")
+            mal_cb.grid(row=0,column=1)
             ttk.Label(master, text="Hazard").grid(row=1,column=0,sticky="ne")
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
@@ -1188,6 +1194,20 @@ class HaraWindow(tk.Frame):
             self.sg_var = tk.StringVar(value=self.row.safety_goal)
             ttk.Combobox(master, textvariable=self.sg_var, values=goals, state="readonly").grid(row=9,column=1)
 
+            def auto_hazard(_=None):
+                mal = self.mal_var.get()
+                if not mal:
+                    return
+                hazard_list = hazards_map.get(mal)
+                if hazard_list:
+                    current = self.haz.get("1.0", "end-1c").strip()
+                    if not current:
+                        self.haz.delete("1.0", "end")
+                        self.haz.insert("1.0", hazard_list[0])
+
+            mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
+            auto_hazard()
+
             def recalc(_=None):
                 try:
                     s = int(self.sev_var.get())
@@ -1212,6 +1232,8 @@ class HaraWindow(tk.Frame):
             self.row.hazard = self.haz.get("1.0", "end-1c")
             if old_haz and old_haz != self.row.hazard:
                 self.app.rename_hazard(old_haz, self.row.hazard)
+            self.app.add_hazard(self.row.hazard)
+            self.app.update_hazard_list()
             self.row.severity = int(self.sev_var.get())
             self.row.sev_rationale = self.sev_rat.get()
             self.row.controllability = int(self.cont_var.get())
