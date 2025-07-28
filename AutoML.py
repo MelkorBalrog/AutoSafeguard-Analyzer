@@ -916,12 +916,6 @@ class EditNodeDialog(simpledialog.Dialog):
             self.prob_entry.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
-            ttk.Label(safety_frame, text="Represents Fault:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            self.fm_map = {name: name for name in self.app.faults}
-            self.fm_var = tk.StringVar(value=getattr(self.node, 'fault_ref', ''))
-            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), width=40)
-            self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
-            row_next += 1
 
 
             ttk.Label(safety_frame, text="Probability Formula:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -967,22 +961,7 @@ class EditNodeDialog(simpledialog.Dialog):
             self.gate_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
-            ttk.Label(safety_frame, text="Represents FM:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            modes = self.app.get_available_failure_modes_for_gates(self.node)
-            self.fm_map = {self.app.format_failure_mode_label(m): m.unique_id for m in modes}
-            self.fm_var = tk.StringVar()
-            current = ''
-            if getattr(self.node, 'failure_mode_ref', None):
-                n = self.app.find_node_by_id_all(self.node.failure_mode_ref)
-                if n:
-                    current = self.app.format_failure_mode_label(n)
-                    # Ensure the current selection is in the map even if it would normally be filtered out
-                    if current not in self.fm_map:
-                        self.fm_map[current] = n.unique_id
-            self.fm_var.set(current)
-            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), width=40)
-            self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
-            row_next += 1
+
             if self.node.node_type.upper() == "TOP EVENT":
                 ttk.Label(safety_frame, text="Severity (1-3):").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.sev_combo = ttk.Combobox(safety_frame, values=["1", "2", "3"],
@@ -1653,7 +1632,7 @@ class EditNodeDialog(simpledialog.Dialog):
         return "break"
 
     def update_probability(self, *_):
-        if hasattr(self, "prob_entry") and hasattr(self, "fm_var"):
+        if hasattr(self, "prob_entry"):
             formula = self.formula_var.get() if hasattr(self, "formula_var") else None
             if str(formula).strip().lower() == "constant":
                 if not self.prob_entry.get().strip():
@@ -1663,26 +1642,11 @@ class EditNodeDialog(simpledialog.Dialog):
                         val = 0.0
                     self.prob_entry.insert(0, str(val))
                 return
-            label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            prob = self.app.compute_failure_prob(self.node, failure_mode_ref=ref, formula=formula)
+            prob = self.app.compute_failure_prob(self.node, formula=formula)
             self.prob_entry.delete(0, tk.END)
             self.prob_entry.insert(0, f"{prob:.10g}")
 
     def validate(self):
-        if hasattr(self, 'fm_var'):
-            label = self.fm_var.get().strip()
-            if self.node.node_type.upper() != 'BASIC EVENT':
-                ref = self.fm_map.get(label)
-                if ref:
-                    for n in self.app.get_all_gates():
-                        if n is self.node:
-                            continue
-                        if not n.is_primary_instance:
-                            continue
-                        if getattr(n, 'failure_mode_ref', None) == ref:
-                            messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another gate')
-                            return False
         return True
 
     def apply(self):
@@ -1701,10 +1665,10 @@ class EditNodeDialog(simpledialog.Dialog):
             except ValueError:
                 messagebox.showerror("Invalid Input", "Select a value between 1 and 5.")
         elif self.node.node_type.upper() == "BASIC EVENT":
-            label = self.fm_var.get().strip()
-            target_node.fault_ref = label
-            if label and label not in self.app.faults:
-                self.app.faults.append(label)
+            target_node.fault_ref = target_node.description
+            desc = target_node.description.strip()
+            if desc and desc not in self.app.faults:
+                self.app.faults.append(desc)
             target_node.prob_formula = self.formula_var.get()
             if target_node.prob_formula == "constant":
                 try:
@@ -1716,9 +1680,7 @@ class EditNodeDialog(simpledialog.Dialog):
                     target_node, failure_mode_ref=getattr(target_node, 'failure_mode_ref', None), formula=target_node.prob_formula)
         elif self.node.node_type.upper() in GATE_NODE_TYPES:
             target_node.gate_type = self.gate_var.get().strip().upper()
-            label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            target_node.failure_mode_ref = ref
+            target_node.failure_mode_ref = None
             if self.node.node_type.upper() == "TOP EVENT":
                 try:
                     sev = float(self.sev_combo.get().strip())
@@ -7845,6 +7807,18 @@ class FaultTreeApp:
                 result.append(self.format_failure_mode_label(be))
         return result
 
+    def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
+        """Return fault names causing the given failure mode."""
+        fm_node = self.get_failure_mode_node(failure_mode_node)
+        fm_id = fm_node.unique_id
+        faults: list[str] = []
+        for be in self.get_all_basic_events():
+            if getattr(be, "failure_mode_ref", None) == fm_id:
+                fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
+                if fault:
+                    faults.append(fault)
+        return sorted(set(faults))
+
 
     def get_all_nodes(self, node=None):
         if node is None:
@@ -9128,6 +9102,9 @@ class FaultTreeApp:
                     if comp_name:
                         self.comp_var.set(comp_name)
                         comp_sel()
+                    faults = self.app.get_faults_for_failure_mode(src)
+                    if faults:
+                        self.cause_var.set(";".join(sorted(faults)))
 
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
@@ -12433,6 +12410,10 @@ class FaultTreeApp:
         self.scenario_libraries = data.get("scenario_libraries", [])
         self.odd_libraries = data.get("odd_libraries", [])
         self.faults = data.get("faults", [])
+        for be in self.get_all_basic_events():
+            desc = be.description.strip()
+            if desc and desc not in self.faults:
+                self.faults.append(desc)
         self.malfunctions = data.get("malfunctions", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
