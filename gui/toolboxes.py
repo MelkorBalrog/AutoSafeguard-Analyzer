@@ -709,11 +709,14 @@ class FI2TCWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = sorted(
+                (
+                    f"[{r['id']}] {r['text']}"
+                    for r in global_requirements.values()
+                    if r.get("req_type") == "functional modification"
+                ),
+                key=str.lower,
+            )
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
@@ -789,7 +792,12 @@ class FI2TCWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(frame, selectmode="extended", height=5)
+                    lb = tk.Listbox(
+                        frame,
+                        selectmode="extended",
+                        height=5,
+                        exportselection=False,
+                    )
                     for opt in req_opts:
                         lb.insert(tk.END, opt)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
@@ -1780,11 +1788,14 @@ class TC2FIWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = sorted(
+                (
+                    f"[{r['id']}] {r['text']}"
+                    for r in global_requirements.values()
+                    if r.get("req_type") == "functional modification"
+                ),
+                key=str.lower,
+            )
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
@@ -1854,7 +1865,12 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(frame, selectmode="extended", height=5)
+                    lb = tk.Listbox(
+                        frame,
+                        selectmode="extended",
+                        height=5,
+                        exportselection=False,
+                    )
                     for opt in req_opts:
                         lb.insert(tk.END, opt)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
