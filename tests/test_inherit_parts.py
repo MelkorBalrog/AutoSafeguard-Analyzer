@@ -72,8 +72,9 @@ class InheritPartsTests(unittest.TestCase):
         dc = repo.create_diagram("Internal Block Diagram", name="Child")
         repo.link_diagram(child.elem_id, dc.diag_id)
         dc.father = father.elem_id
-        inherit_father_parts(repo, dc)
+        added = inherit_father_parts(repo, dc)
         self.assertTrue(any(o.get("element_id") == pf.elem_id for o in dc.objects))
+        self.assertTrue(any(o["element_id"] == pf.elem_id for o in added))
         self.assertIn("p1", repo.elements[child.elem_id].properties.get("partProperties", ""))
 
 if __name__ == "__main__":
