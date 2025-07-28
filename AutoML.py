@@ -284,6 +284,8 @@ from analysis.models import (
     ASIL_DECOMP_SCHEMES,
     calc_asil,
     global_requirements,
+    REQUIREMENT_TYPE_OPTIONS,
+    CAL_LEVEL_OPTIONS,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -930,7 +932,10 @@ class EditNodeDialog(simpledialog.Dialog):
             self.safety_req_listbox.grid(row=0, column=0, columnspan=3, sticky="w")
             # Populate listbox with existing requirements.
             for req in self.node.safety_requirements:
-                self.safety_req_listbox.insert(tk.END, f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}")
+                self.safety_req_listbox.insert(
+                    tk.END,
+                    f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                )
 
             # Buttons for Add, Edit, and Delete.
             self.add_req_button = ttk.Button(self.safety_req_frame, text="Add New", command=self.add_safety_requirement)
@@ -980,7 +985,10 @@ class EditNodeDialog(simpledialog.Dialog):
             self.safety_req_listbox = tk.Listbox(self.safety_req_frame, height=4, width=50)
             self.safety_req_listbox.grid(row=0, column=0, columnspan=3, sticky="w")
             for req in self.node.safety_requirements:
-                self.safety_req_listbox.insert(tk.END, f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}")
+                self.safety_req_listbox.insert(
+                    tk.END,
+                    f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                )
             self.add_req_button = ttk.Button(self.safety_req_frame, text="Add New", command=self.add_safety_requirement)
             self.add_req_button.grid(row=1, column=0, padx=2, pady=2)
             self.edit_req_button = ttk.Button(self.safety_req_frame, text="Edit", command=self.edit_safety_requirement)
@@ -1145,9 +1153,13 @@ class EditNodeDialog(simpledialog.Dialog):
             dialog_font = tk.font.Font(family="Arial", size=10)
             ttk.Label(master, text="Requirement Type:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.type_var = tk.StringVar()
-            self.type_combo = ttk.Combobox(master, textvariable=self.type_var, 
-                                           values=["vehicle", "operational"],
-                                           state="readonly", width=15)
+            self.type_combo = ttk.Combobox(
+                master,
+                textvariable=self.type_var,
+                values=REQUIREMENT_TYPE_OPTIONS,
+                state="readonly",
+                width=20,
+            )
             self.type_combo.grid(row=0, column=1, padx=5, pady=5)
             
             ttk.Label(master, text="Custom Requirement ID:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
@@ -1172,13 +1184,24 @@ class EditNodeDialog(simpledialog.Dialog):
             )
             self.req_asil_combo.grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
-            ttk.Label(master, text="Validation Target:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            ttk.Label(master, text="CAL:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            self.req_cal_var = tk.StringVar()
+            self.req_cal_combo = ttk.Combobox(
+                master,
+                textvariable=self.req_cal_var,
+                values=CAL_LEVEL_OPTIONS,
+                state="readonly",
+                width=8,
+            )
+            self.req_cal_combo.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+            ttk.Label(master, text="Validation Target:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
             self.val_var = tk.StringVar(value=str(self.initial_req.get("validation_criteria", 0.0)))
-            tk.Entry(master, textvariable=self.val_var, state="readonly", width=10).grid(row=4, column=1, padx=5, pady=5, sticky="w")
+            tk.Entry(master, textvariable=self.val_var, state="readonly", width=10).grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
             self.type_var.set(self.initial_req.get("req_type", "vehicle"))
             self.req_entry.insert(0, self.initial_req.get("text", ""))
             self.req_asil_var.set(self.initial_req.get("asil", "QM"))
+            self.req_cal_var.set(self.initial_req.get("cal", CAL_LEVEL_OPTIONS[0]))
             return self.req_entry
 
         def apply(self):
@@ -1186,7 +1209,14 @@ class EditNodeDialog(simpledialog.Dialog):
             req_text = self.req_entry.get().strip()
             custom_id = self.custom_id_entry.get().strip()
             asil = self.req_asil_var.get().strip()
-            self.result = {"req_type": req_type, "text": req_text, "custom_id": custom_id, "asil": asil}
+            cal = self.req_cal_var.get().strip()
+            self.result = {
+                "req_type": req_type,
+                "text": req_text,
+                "custom_id": custom_id,
+                "asil": asil,
+                "cal": cal,
+            }
 
         def validate(self):
             custom_id = self.custom_id_entry.get().strip()
@@ -1242,7 +1272,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 for req_id, req in global_requirements.items():
                     var = tk.BooleanVar(value=False)
                     self.selected_vars[req_id] = var
-                    text = f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                    text = f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
                     ttk.Checkbutton(self.check_frame, text=text, variable=var).pack(anchor="w", padx=2, pady=2)
                 return self.check_frame
     
@@ -1274,21 +1304,33 @@ class EditNodeDialog(simpledialog.Dialog):
                         pass  # ASIL recalculated when joint review closes
                     self.safety_req_listbox.insert(
                         tk.END,
-                        f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}",
+                        f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
                     )
         else:
             messagebox.showinfo("No Selection", "No existing requirements were selected.")
    
-    def add_new_requirement(self,custom_id, req_type, text, asil="QM"):
+    def add_new_requirement(self,custom_id, req_type, text, asil="QM", cal=CAL_LEVEL_OPTIONS[0]):
         # When a requirement is created, register it in the global registry.
-        req = {"id": custom_id, "req_type": req_type, "text": text, "custom_id": custom_id, "asil": asil, "status": "draft", "parent_id": ""}
+        req = {
+            "id": custom_id,
+            "req_type": req_type,
+            "text": text,
+            "custom_id": custom_id,
+            "asil": asil,
+            "cal": cal,
+            "status": "draft",
+            "parent_id": "",
+        }
         global_requirements[custom_id] = req
         print(f"Added new requirement: {req}")
         return req
         
     def list_all_requirements(self):
         # This function returns a list of formatted strings for all requirements
-        return [f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}" for req in global_requirements.values()]
+        return [
+            f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
+            for req in global_requirements.values()
+        ]
 
     # --- Traceability helpers ---
     def get_requirement_allocation_names(self, req_id):
@@ -1448,6 +1490,7 @@ class EditNodeDialog(simpledialog.Dialog):
             req["req_type"] = dialog.result["req_type"]
             req["text"] = dialog.result["text"]
             req["asil"] = asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM")
+            req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
         else:
             req = {
                 "id": custom_id,
@@ -1455,6 +1498,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": dialog.result["text"],
                 "custom_id": custom_id,
                 "asil": asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM"),
+                "cal": dialog.result.get("cal", CAL_LEVEL_OPTIONS[0]),
                 "validation_criteria": 0.0,
                 "status": "draft",
                 "parent_id": ""
@@ -1472,7 +1516,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 pass  # ASIL updated after joint review
             self.safety_req_listbox.insert(
                 tk.END,
-                f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] {req['text']}",
+                f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
             )
 
     def edit_safety_requirement(self):
@@ -1507,6 +1551,7 @@ class EditNodeDialog(simpledialog.Dialog):
             pass
         else:
             current_req["asil"] = dialog.result.get("asil", "QM")
+        current_req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
@@ -1518,7 +1563,7 @@ class EditNodeDialog(simpledialog.Dialog):
             pass  # ASIL updated after joint review completion
         self.safety_req_listbox.insert(
             index,
-            f"[{current_req['id']}] [{current_req['req_type']}] [{current_req.get('asil','')}] {current_req['text']}",
+            f"[{current_req['id']}] [{current_req['req_type']}] [{current_req.get('asil','')}] [{current_req.get('cal','')}] {current_req['text']}",
         )
 
     def delete_safety_requirement(self):
@@ -1553,6 +1598,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (A)",
             "custom_id": req_id_a,
             "asil": asil_a,
+            "cal": req.get("cal", CAL_LEVEL_OPTIONS[0]),
             "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
@@ -1563,6 +1609,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (B)",
             "custom_id": req_id_b,
             "asil": asil_b,
+            "cal": req.get("cal", CAL_LEVEL_OPTIONS[0]),
             "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
@@ -1584,11 +1631,11 @@ class EditNodeDialog(simpledialog.Dialog):
         self.safety_req_listbox.delete(index)
         self.safety_req_listbox.insert(
             index,
-            f"[{r1['id']}] [{r1['req_type']}] [{r1.get('asil','')}] {r1['text']}",
+            f"[{r1['id']}] [{r1['req_type']}] [{r1.get('asil','')}] [{r1.get('cal','')}] {r1['text']}",
         )
         self.safety_req_listbox.insert(
             index + 1,
-            f"[{r2['id']}] [{r2['req_type']}] [{r2.get('asil','')}] {r2['text']}",
+            f"[{r2['id']}] [{r2['req_type']}] [{r2.get('asil','')}] [{r2.get('cal','')}] {r2['text']}",
         )
 
     def update_decomposition_scheme(self):
@@ -8909,6 +8956,7 @@ class FaultTreeApp:
         columns = [
             "Req ID",
             "ASIL",
+            "CAL",
             "Type",
             "Status",
             "Parent",
@@ -8925,6 +8973,7 @@ class FaultTreeApp:
             row = [
                 req.get("id", ""),
                 req.get("asil", ""),
+                req.get("cal", ""),
                 req.get("req_type", ""),
                 req.get("status", "draft"),
                 req.get("parent_id", ""),
@@ -9062,7 +9111,7 @@ class FaultTreeApp:
         self._req_tab = self._new_tab("Requirements")
         win = self._req_tab
 
-        columns = ["ID", "ASIL", "Type", "Status", "Parent", "Text"]
+        columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Text"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for col in columns:
             tree.heading(col, text=col)
@@ -9072,14 +9121,20 @@ class FaultTreeApp:
         def refresh_tree():
             tree.delete(*tree.get_children())
             for req in global_requirements.values():
-                tree.insert("", "end", iid=req.get("id"), values=[
-                    req.get("id", ""),
-                    req.get("asil", ""),
-                    req.get("req_type", ""),
-                    req.get("status", "draft"),
-                    req.get("parent_id", ""),
-                    req.get("text", ""),
-                ])
+                tree.insert(
+                    "",
+                    "end",
+                    iid=req.get("id"),
+                    values=[
+                        req.get("id", ""),
+                        req.get("asil", ""),
+                        req.get("cal", ""),
+                        req.get("req_type", ""),
+                        req.get("status", "draft"),
+                        req.get("parent_id", ""),
+                        req.get("text", ""),
+                    ],
+                )
 
         class ReqDialog(simpledialog.Dialog):
             def __init__(self, parent, title, initial=None):
@@ -9093,25 +9148,35 @@ class FaultTreeApp:
 
                 ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e")
                 self.type_var = tk.StringVar(value=self.initial.get("req_type", "vehicle"))
-                ttk.Combobox(master, textvariable=self.type_var, values=["vehicle", "operational"], state="readonly").grid(row=1, column=1, padx=5, pady=5)
+                ttk.Combobox(
+                    master,
+                    textvariable=self.type_var,
+                    values=REQUIREMENT_TYPE_OPTIONS,
+                    state="readonly",
+                    width=20,
+                ).grid(row=1, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="ASIL:").grid(row=2, column=0, sticky="e")
                 self.asil_var = tk.StringVar(value=self.initial.get("asil", "QM"))
                 ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=2, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Parent ID:").grid(row=3, column=0, sticky="e")
-                self.parent_var = tk.StringVar(value=self.initial.get("parent_id", ""))
-                tk.Entry(master, textvariable=self.parent_var).grid(row=3, column=1, padx=5, pady=5)
+                ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e")
+                self.cal_var = tk.StringVar(value=self.initial.get("cal", CAL_LEVEL_OPTIONS[0]))
+                ttk.Combobox(master, textvariable=self.cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=3, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Status:").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e")
+                self.parent_var = tk.StringVar(value=self.initial.get("parent_id", ""))
+                tk.Entry(master, textvariable=self.parent_var).grid(row=4, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Status:").grid(row=5, column=0, sticky="e")
                 self.status_var = tk.StringVar(value=self.initial.get("status", "draft"))
                 ttk.Combobox(master, textvariable=self.status_var,
                              values=["draft", "in review", "peer reviewed", "pending approval", "approved"],
-                             state="readonly").grid(row=4, column=1, padx=5, pady=5)
+                             state="readonly").grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Text:").grid(row=5, column=0, sticky="e")
+                ttk.Label(master, text="Text:").grid(row=6, column=0, sticky="e")
                 self.text_var = tk.StringVar(value=self.initial.get("text", ""))
-                tk.Entry(master, textvariable=self.text_var, width=40).grid(row=5, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.text_var, width=40).grid(row=6, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -9119,6 +9184,7 @@ class FaultTreeApp:
                     "id": self.id_var.get().strip() or str(uuid.uuid4()),
                     "req_type": self.type_var.get().strip(),
                     "asil": self.asil_var.get().strip(),
+                    "cal": self.cal_var.get().strip(),
                     "parent_id": self.parent_var.get().strip(),
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
@@ -9943,7 +10009,7 @@ class FaultTreeApp:
                                     rid = str(uuid.uuid4())
                                     req = {
                                         "id": rid,
-                                        "req_type": "vehicle",
+                                        "req_type": REQUIREMENT_TYPE_OPTIONS[0],
                                         "text": req_text,
                                         "asil": "",
                                     }
@@ -9952,7 +10018,7 @@ class FaultTreeApp:
                                     self.node.safety_requirements = []
                                 if not any(r.get("id") == req["id"] for r in self.node.safety_requirements):
                                     self.node.safety_requirements.append(req)
-                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
                                     self.req_listbox.insert(tk.END, desc)
                             break
 
