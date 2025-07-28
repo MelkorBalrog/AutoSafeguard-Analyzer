@@ -931,6 +931,11 @@ class SysMLDiagramWindow(tk.Frame):
         if not obj:
             conn = self.find_connection(x, y)
             if not conn:
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and diag.diag_type == "Internal Block Diagram":
+                    menu = tk.Menu(self, tearoff=0)
+                    menu.add_command(label="Set Father", command=self._set_diagram_father)
+                    menu.tk_popup(event.x_root, event.y_root)
                 return
         self.selected_obj = obj
         self.selected_conn = conn
@@ -983,6 +988,14 @@ class SysMLDiagramWindow(tk.Frame):
         self._sync_to_repository()
         self.destroy()
         return True
+
+    def _set_diagram_father(self) -> None:
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Internal Block Diagram":
+            return
+        DiagramPropertiesDialog(self, diag)
+        self._sync_to_repository()
+        self.redraw()
 
     def go_back(self):
         if not self.diagram_history:
