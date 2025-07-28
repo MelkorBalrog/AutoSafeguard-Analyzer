@@ -1507,7 +1507,7 @@ class EditNodeDialog(simpledialog.Dialog):
             }
             global_requirements[custom_id] = req
 
-        self.update_validation_criteria(custom_id)
+        self.app.update_validation_criteria(custom_id)
 
         # Allocate this requirement to the current node if not already present.
         if not hasattr(self.node, "safety_requirements"):
@@ -1557,7 +1557,7 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
-        self.update_validation_criteria(new_custom_id)
+        self.app.update_validation_criteria(new_custom_id)
         self.app.invalidate_reviews_for_requirement(new_custom_id)
         self.node.safety_requirements[index] = current_req
         self.safety_req_listbox.delete(index)
@@ -1620,8 +1620,8 @@ class EditNodeDialog(simpledialog.Dialog):
         global_requirements[req.get("id")] = req
         global_requirements[req_id_a] = r1
         global_requirements[req_id_b] = r2
-        self.update_validation_criteria(req_id_a)
-        self.update_validation_criteria(req_id_b)
+        self.app.update_validation_criteria(req_id_a)
+        self.app.update_validation_criteria(req_id_b)
         del self.node.safety_requirements[index]
         self.node.safety_requirements.insert(index, r2)
         self.node.safety_requirements.insert(index, r1)
