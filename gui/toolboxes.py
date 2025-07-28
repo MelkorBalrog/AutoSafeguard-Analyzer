@@ -657,7 +657,7 @@ class FI2TCWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", lambda e: self.edit_row())
+        self.tree.bind("<Double-1>", self.start_cell_edit)
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         add_row_btn = ttk.Button(btn, text="Add", command=self.add_row)
@@ -682,8 +682,6 @@ class FI2TCWindow(tk.Frame):
         for row in self.app.fi2tc_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
-
-
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -890,20 +888,15 @@ class FI2TCWindow(tk.Frame):
             self.result = True
 
     def add_row(self):
-        dlg = self.RowDialog(self, self.app)
-        if getattr(dlg, "result", None):
-            self.app.fi2tc_entries.append(dlg.data)
-            self.refresh()
+        data = {k: "" for k in self.COLS}
+        self.app.fi2tc_entries.append(data)
+        self.refresh()
 
     def edit_row(self):
         sel = self.tree.focus()
         if not sel:
             return
-        idx = self.tree.index(sel)
-        data = self.app.fi2tc_entries[idx]
-        dlg = self.RowDialog(self, self.app, data)
-        if getattr(dlg, "result", None):
-            self.refresh()
+        self.start_cell_edit(item=sel, column="#1")
 
     def del_row(self):
         sel = self.tree.selection()
@@ -1750,7 +1743,7 @@ class TC2FIWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", lambda e: self.edit_row())
+        self.tree.bind("<Double-1>", self.start_cell_edit)
         btn = ttk.Frame(self)
         btn.pack()
         ttk.Button(btn, text="Add", command=self.add_row).pack(
@@ -1775,7 +1768,6 @@ class TC2FIWindow(tk.Frame):
         for row in self.app.tc2fi_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
-
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -1988,20 +1980,15 @@ class TC2FIWindow(tk.Frame):
             self.result = True
 
     def add_row(self):
-        dlg = self.RowDialog(self, self.app)
-        if getattr(dlg, "result", None):
-            self.app.tc2fi_entries.append(dlg.data)
-            self.refresh()
+        data = {k: "" for k in self.COLS}
+        self.app.tc2fi_entries.append(data)
+        self.refresh()
 
     def edit_row(self):
         sel = self.tree.focus()
         if not sel:
             return
-        idx = self.tree.index(sel)
-        data = self.app.tc2fi_entries[idx]
-        dlg = self.RowDialog(self, self.app, data)
-        if getattr(dlg, "result", None):
-            self.refresh()
+        self.start_cell_edit(item=sel, column="#1")
 
     def del_row(self):
         sel = self.tree.selection()

@@ -15,7 +15,9 @@ flowchart TD
     end
     X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
     A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
-    B --> C([HARA<br/>inputs: malfunctions<br/>outputs: hazards, ASIL, safety goals])
+    A --> S([FI2TC / TC2FI<br/>inputs: functions<br/>outputs: hazards, FIs & TCs, severity])
+    B --> C([HARA<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
+    S --> C
     A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
     C --> D
@@ -26,7 +28,7 @@ flowchart TD
     G --> H([ASIL propagation to SGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions which become inputs to the **HARA** and FMEAs. The HARA assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. The **HARA** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
@@ -38,7 +40,8 @@ The **HARA Analysis** view builds on the safety relevant malfunctions from one o
 
 1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP documents.
 2. **Hazard** – textual description of the resulting hazard.
-3. **Severity** – ISO&nbsp;26262 severity level (1–3).
+3. **Severity** – ISO&nbsp;26262 severity level (1–3). Values from FI2TC and
+   TC2FI analyses are inherited here so the HARA reflects SOTIF hazards.
 4. **Severity Rationale** – free text explanation for the chosen severity.
 5. **Controllability** – ISO&nbsp;26262 controllability level (1–3).
 6. **Controllability Rationale** – free text explanation for the chosen controllability.
@@ -295,8 +298,13 @@ classDiagram
     FI2TCEntry --> FunctionalInsufficiency
     FI2TCEntry --> TriggeringCondition
     FI2TCEntry --> Scenario
+    FI2TCEntry --> Hazard : hazard
+    FI2TCEntry --> HaraEntry : severity
     TC2FIEntry --> TriggeringCondition
     TC2FIEntry --> FunctionalInsufficiency
+    TC2FIEntry --> Hazard : hazard
+    TC2FIEntry --> HaraEntry : severity
+    SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" FunctionalModification
     FunctionalModification --> "*" AcceptanceCriteria
     SysMLRepository --> "*" AcceptanceCriteria
@@ -306,6 +314,8 @@ classDiagram
     SysMLRepository --> "*" Failure
     class FI2TCEntry
     class TC2FIEntry
+    class Hazard
+    class HaraEntry
     class TriggeringCondition
     class FunctionalInsufficiency
     class FunctionalModification
@@ -685,9 +695,19 @@ Two additional tables support tracing between these elements:
   list of all requirements so several may be allocated at once. Hold **Ctrl**
   while clicking to choose multiple items.
 * **TC2FI Analysis** – starts from the triggering condition and lists the
-  impacted functions, architecture elements and related insufficiencies. The
-  **triggering_conditions** and **functional_insufficiencies** fields mirror
-  those in the FI2TC table to keep the relationships consistent.
+  impacted functions, architecture elements and related insufficiencies. This
+  table also allows in-place editing. The **triggering_conditions** and
+  **functional_insufficiencies** fields mirror those in the FI2TC table to keep
+  the relationships consistent.
+
+The analyses approach the problem from opposite directions:
+
+| Aspect | FI2TC | TC2FI |
+| --- | --- | --- |
+| Start Point | Known functional weakness | Known environmental/operational condition |
+| Goal | Identify triggering conditions | Identify affected functions |
+| Focus | Understanding cause of known issues | Discovering issues from known situations |
+| Role in SOTIF | Verifying known risks are well covered | Expanding coverage for unknown risks |
 
 The analyses approach the problem from opposite directions:
 
@@ -714,6 +734,8 @@ classDiagram
     class FunctionalInsufficiency
     class FI2TCDoc
     class TC2FIDoc
+    class Hazard
+    class HaraEntry
     class FunctionalModification
     class AcceptanceCriteria
     class FaultTreeDiagram
@@ -726,6 +748,10 @@ classDiagram
     FunctionalInsufficiency --> TC2FIDoc : entry
     FunctionalInsufficiency --> FunctionalModification : mitigatedBy
     FunctionalModification --> AcceptanceCriteria : validatedBy
+    FI2TCDoc --> Hazard : hazard
+    TC2FIDoc --> Hazard : hazard
+    FI2TCDoc --> HaraEntry : severity
+    TC2FIDoc --> HaraEntry : severity
     SafetyGoal --> FaultTreeDiagram : topEvent
     FaultTreeDiagram --> "*" FaultTreeNode : nodes
     TriggeringCondition --> FaultTreeNode : cta
