@@ -1320,7 +1320,10 @@ class EditNodeDialog(simpledialog.Dialog):
 
     def update_base_event_requirement_asil(self):
         """Update ASIL for requirements allocated to base events."""
-        for node in self.get_all_nodes(self.root_node):
+        nodes_to_check = self.get_all_nodes(self.root_node)
+        nodes_to_check.extend(self.get_all_fmea_entries())
+
+        for node in nodes_to_check:
             if getattr(node, "node_type", "").upper() != "BASIC EVENT":
                 continue
             for req in getattr(node, "safety_requirements", []):
@@ -1652,6 +1655,7 @@ class EditNodeDialog(simpledialog.Dialog):
     def apply(self):
         target_node = self.node if self.node.is_primary_instance else self.node.original
 
+        old_desc = target_node.description
         target_node.user_name = self.user_name_entry.get().strip()
         target_node.description = self.desc_text.get("1.0", "end-1c")
         target_node.rationale = self.rationale_text.get("1.0", "end-1c")
@@ -1667,6 +1671,11 @@ class EditNodeDialog(simpledialog.Dialog):
         elif self.node.node_type.upper() == "BASIC EVENT":
             target_node.fault_ref = target_node.description
             desc = target_node.description.strip()
+            if old_desc != desc and old_desc in self.app.faults:
+                self.app.faults.remove(old_desc)
+                for e in self.app.get_all_fmea_entries():
+                    if getattr(e, 'fmea_cause', '') == old_desc:
+                        e.fmea_cause = desc
             if desc and desc not in self.app.faults:
                 self.app.faults.append(desc)
             target_node.prob_formula = self.formula_var.get()
@@ -1680,6 +1689,12 @@ class EditNodeDialog(simpledialog.Dialog):
                     target_node, failure_mode_ref=getattr(target_node, 'failure_mode_ref', None), formula=target_node.prob_formula)
         elif self.node.node_type.upper() in GATE_NODE_TYPES:
             target_node.gate_type = self.gate_var.get().strip().upper()
+            if old_desc != target_node.description:
+                for e in self.app.get_all_fmea_entries():
+                    src = self.app.get_failure_mode_node(e)
+                    if src.unique_id == target_node.unique_id:
+                        e.description = target_node.description
+                        e.user_name = target_node.user_name
             target_node.failure_mode_ref = None
             if self.node.node_type.upper() == "TOP EVENT":
                 try:
@@ -7742,6 +7757,15 @@ class FaultTreeApp:
             unique[getattr(m, "unique_id", id(m))] = m
         return list(unique.values())
 
+    def get_all_fmea_entries(self):
+        """Return every FMEA and FMEDA entry across the project."""
+        entries = list(self.fmea_entries)
+        for f in self.fmeas:
+            entries.extend(f.get("entries", []))
+        for d in self.fmedas:
+            entries.extend(d.get("entries", []))
+        return entries
+
     def get_non_basic_failure_modes(self):
         """Return failure modes from gate nodes, FMEAs and FMEDAs."""
         modes = [
@@ -9104,9 +9128,13 @@ class FaultTreeApp:
                         comp_sel()
                     faults = self.app.get_faults_for_failure_mode(src)
                     if faults:
-                        self.cause_var.set(";".join(sorted(faults)))
-
+                        self.cause_list.selection_clear(0, tk.END)
+                        for i, name in enumerate(fault_names):
+                            if name in faults:
+                                self.cause_list.select_set(i)
+            
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
+            mode_sel(None)
 
             self.effect_text = tk.Text(gen_frame, width=30, height=3)
             self.effect_text.insert("1.0", self.node.fmea_effect)
@@ -9116,11 +9144,16 @@ class FaultTreeApp:
                 self.effect_text.grid(row=row_next, column=1, padx=5, pady=5)
                 row_next += 1
 
-            ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+            ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
             fault_names = sorted(set(self.app.faults))
-            self.cause_var = tk.StringVar(value=getattr(self.node, 'fmea_cause', ''))
-            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=fault_names, width=30)
-            self.cause_combo.grid(row=row_next, column=1, padx=5, pady=5)
+            self.cause_list = tk.Listbox(gen_frame, selectmode=tk.MULTIPLE, height=4, exportselection=False)
+            for name in fault_names:
+                self.cause_list.insert(tk.END, name)
+            current_causes = [c.strip() for c in getattr(self.node, 'fmea_cause', '').split(';') if c.strip()]
+            for i, name in enumerate(fault_names):
+                if name in current_causes:
+                    self.cause_list.select_set(i)
+            self.cause_list.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
             row_next += 1
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
@@ -9340,9 +9373,11 @@ class FaultTreeApp:
             self.node.fmea_component = comp
             self.node.description = self.mode_var.get()
             self.node.fmea_effect = self.effect_text.get("1.0", "end-1c")
-            self.node.fmea_cause = self.cause_var.get()
-            if self.node.fmea_cause and self.node.fmea_cause not in self.app.faults:
-                self.app.faults.append(self.node.fmea_cause)
+            sel = [self.cause_list.get(i) for i in self.cause_list.curselection()]
+            self.node.fmea_cause = ";".join(sel)
+            for name in sel:
+                if name and name not in self.app.faults:
+                    self.app.faults.append(name)
             try:
                 self.node.fmea_severity = int(self.sev_spin.get())
             except ValueError:
@@ -11912,7 +11947,10 @@ class FaultTreeApp:
             updated_node = updated_node.original
         updated_primary_id = updated_node.unique_id
 
-        for node in self.get_all_nodes(self.root_node):
+        nodes_to_check = self.get_all_nodes(self.root_node)
+        nodes_to_check.extend(self.get_all_fmea_entries())
+
+        for node in nodes_to_check:
             # Skip the updated node itself.
             if node is updated_node:
                 continue
@@ -12286,6 +12324,17 @@ class FaultTreeApp:
                 "entries": entries,
                 "bom": doc.get("bom", ""),
             })
+
+        # Link FMEA entries to the fault tree nodes so edits propagate
+        node_map = {}
+        for te in self.top_events:
+            for n in self.get_all_nodes(te):
+                node_map[n.unique_id] = n
+        for entry in self.get_all_fmea_entries():
+            orig = node_map.get(entry.unique_id)
+            if orig and entry is not orig:
+                entry.is_primary_instance = False
+                entry.original = orig
 
         # Mechanism libraries and selections
         self.mechanism_libraries = []
