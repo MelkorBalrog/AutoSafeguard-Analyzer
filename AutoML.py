@@ -3051,7 +3051,17 @@ class FaultTreeApp:
 
     def add_malfunction(self, name: str) -> None:
         """Add a malfunction to the list if it does not already exist."""
+        if not name:
+            return
+        name = name.strip()
+        if not name:
+            return
+        exists = any(m.lower() == name.lower() for m in self.malfunctions)
         append_unique_insensitive(self.malfunctions, name)
+        if not exists and not any(
+            getattr(te, "malfunction", "") == name for te in self.top_events
+        ):
+            self.create_top_event_for_malfunction(name)
 
     def add_fault(self, name: str) -> None:
         """Add a fault to the list if not already present."""
@@ -9257,7 +9267,6 @@ class FaultTreeApp:
             name = simpledialog.askstring("Add Malfunction", "Name:")
             if name:
                 self.add_malfunction(name)
-                self.create_top_event_for_malfunction(name)
                 refresh()
 
         def rename():
@@ -9454,8 +9463,7 @@ class FaultTreeApp:
                 return
             self.malfunctions.append(name)
             lb.insert(tk.END, name)
-            self.create_top_event_for_malfunction(name)
-
+            
         def edit_mal():
             sel = lb.curselection()
             if not sel:
