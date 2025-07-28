@@ -44,6 +44,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         rowheight=rowheight,
         borderwidth=1,
         relief="solid",
+        bordercolor="black",
     )
     style.configure(
         f"{style_name}.Heading",
@@ -51,6 +52,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         background="#d0d0d0",
         borderwidth=1,
         relief="raised",
+        bordercolor="black",
     )
 
 
@@ -98,6 +100,14 @@ class EditableTreeview(ttk.Treeview):
         widget.bind("<Return>", save)
         widget.bind("<FocusOut>", save)
         self._edit_widget = widget
+
+
+def stripe_rows(tree: ttk.Treeview) -> None:
+    """Apply alternating background colors to rows for visual separation."""
+    tree.tag_configure("even", background="#f0f0f0")
+    tree.tag_configure("odd", background="#ffffff")
+    for i, item in enumerate(tree.get_children("")):
+        tree.item(item, tags=("even" if i % 2 else "odd",))
 
 
 def _total_fit_from_boms(boms):
@@ -904,6 +914,7 @@ class FI2TCWindow(tk.Frame):
         for row in self.app.fi2tc_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -1505,6 +1516,7 @@ class HazopWindow(tk.Frame):
                 row.covered_by,
             ]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
@@ -1946,6 +1958,7 @@ class HaraWindow(tk.Frame):
                 row.safety_goal,
             ]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
         self.app.sync_hara_to_safety_goals()
 
     class RowDialog(simpledialog.Dialog):
@@ -2243,6 +2256,7 @@ class TC2FIWindow(tk.Frame):
         for row in self.app.tc2fi_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
