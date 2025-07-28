@@ -77,5 +77,59 @@ class InheritPartsTests(unittest.TestCase):
         self.assertTrue(any(o["element_id"] == pf.elem_id for o in added))
         self.assertIn("p1", repo.elements[child.elem_id].properties.get("partProperties", ""))
 
+    def test_inherit_father_parts_copies_ports(self):
+        repo = self.repo
+        father = repo.create_element("Block", name="Parent")
+        child = repo.create_element("Block", name="Child")
+        p1 = repo.create_element("Part", name="P1")
+        p2 = repo.create_element("Part", name="P2")
+        df = repo.create_diagram("Internal Block Diagram", name="Father")
+        repo.link_diagram(father.elem_id, df.diag_id)
+        df.objects.extend(
+            [
+                {
+                    "obj_id": 1,
+                    "obj_type": "Part",
+                    "x": 0,
+                    "y": 0,
+                    "element_id": p1.elem_id,
+                    "properties": {"definition": father.elem_id, "ports": "a"},
+                },
+                {
+                    "obj_id": 2,
+                    "obj_type": "Port",
+                    "x": 10,
+                    "y": 0,
+                    "properties": {"parent": "1", "name": "a", "direction": "in"},
+                },
+                {
+                    "obj_id": 3,
+                    "obj_type": "Part",
+                    "x": 40,
+                    "y": 0,
+                    "element_id": p2.elem_id,
+                    "properties": {"definition": father.elem_id, "ports": "b"},
+                },
+                {
+                    "obj_id": 4,
+                    "obj_type": "Port",
+                    "x": 50,
+                    "y": 0,
+                    "properties": {"parent": "3", "name": "b", "direction": "out"},
+                },
+            ]
+        )
+        dc = repo.create_diagram("Internal Block Diagram", name="Child")
+        repo.link_diagram(child.elem_id, dc.diag_id)
+        dc.father = father.elem_id
+        added = inherit_father_parts(repo, dc)
+        ports = [o for o in dc.objects if o.get("obj_type") == "Port"]
+        self.assertEqual(len(ports), 2)
+        dir_map = {p["properties"]["name"]: p["properties"].get("direction") for p in ports}
+        self.assertEqual(dir_map["a"], "in")
+        self.assertEqual(dir_map["b"], "out")
+        port_added = [o for o in added if o.get("obj_type") == "Port"]
+        self.assertEqual(len(port_added), 2)
+
 if __name__ == "__main__":
     unittest.main()

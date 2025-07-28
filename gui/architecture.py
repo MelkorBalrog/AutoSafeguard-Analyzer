@@ -123,7 +123,7 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
 def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[dict]:
     """Copy parts from the diagram's father block into the diagram.
 
-    Returns a list with the inherited part object dictionaries."""
+    Returns a list with the inherited object dictionaries (parts and ports)."""
     father = getattr(diagram, "father", None)
     if not father:
         return []
@@ -133,11 +133,19 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         return []
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
+    # Track existing parts by element id to avoid duplicates
     existing = {
         o.get("element_id")
         for o in diagram.objects
         if o.get("obj_type") == "Part"
     }
+
+    # Map of source part obj_id -> new obj_id so ports can be updated
+    part_map: dict[int, int] = {}
+
+    # ------------------------------------------------------------------
+    # Copy parts from the father diagram
+    # ------------------------------------------------------------------
     for obj in getattr(father_diag, "objects", []):
         if obj.get("obj_type") != "Part":
             continue
@@ -147,6 +155,31 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
+        added.append(new_obj)
+        part_map[obj.get("obj_id")] = new_obj["obj_id"]
+
+    # ------------------------------------------------------------------
+    # Copy ports belonging to the inherited parts so orientation and other
+    # attributes are preserved. Only ports referencing a copied part are
+    # considered.
+    # ------------------------------------------------------------------
+    for obj in getattr(father_diag, "objects", []):
+        if obj.get("obj_type") != "Port":
+            continue
+        parent_id = obj.get("properties", {}).get("parent")
+        if not parent_id:
+            continue
+        try:
+            parent_id_int = int(parent_id)
+        except Exception:
+            continue
+        new_parent = part_map.get(parent_id_int)
+        if not new_parent:
+            continue
+        new_obj = obj.copy()
+        new_obj["obj_id"] = _get_next_id()
+        new_obj.setdefault("properties", {})["parent"] = str(new_parent)
+        diagram.objects.append(new_obj)
         added.append(new_obj)
     # update child block partProperties with inherited names
     child_id = next(
