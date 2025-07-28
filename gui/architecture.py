@@ -209,9 +209,10 @@ class DiagramConnection:
 class SysMLDiagramWindow(tk.Frame):
     """Base frame for AutoML diagrams with zoom and pan support."""
 
-    def __init__(self, master, title, tools, diagram_id: str | None = None, app=None):
+    def __init__(self, master, title, tools, diagram_id: str | None = None, app=None, history=None):
         super().__init__(master)
         self.app = app
+        self.diagram_history: list[str] = list(history) if history else []
         self.master.title(title) if isinstance(self.master, tk.Toplevel) else None
         if isinstance(self.master, tk.Toplevel):
             self.master.geometry("800x600")
@@ -249,6 +250,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.current_tool = None
         self.start = None
         self.selected_obj: SysMLObject | None = None
+        self.selected_objs: list[SysMLObject] = []
         self.selected_conn: DiagramConnection | None = None
         self.drag_offset = (0, 0)
         self.dragging_point_index: int | None = None
@@ -257,11 +259,17 @@ class SysMLDiagramWindow(tk.Frame):
         self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
+        self.select_rect_start: tuple[float, float] | None = None
+        self.select_rect_id: int | None = None
         self.temp_line_end: tuple[float, float] | None = None
         self.rc_dragged = False
 
         self.toolbox = ttk.Frame(self)
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.back_btn = ttk.Button(self.toolbox, text="Go Back", command=self.go_back)
+        self.back_btn.pack(fill=tk.X, padx=2, pady=2)
+        self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
 
         # Always provide a select tool
         tools = ["Select"] + tools
@@ -304,6 +312,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.start = None
         self.temp_line_end = None
         self.selected_obj = None
+        self.selected_objs = []
         self.selected_conn = None
         self.dragging_point_index = None
         self.dragging_endpoint = None
@@ -540,6 +549,7 @@ class SysMLDiagramWindow(tk.Frame):
         else:
             if obj:
                 self.selected_obj = obj
+                self.selected_objs = [obj]
                 self.drag_offset = (x / self.zoom - obj.x, y / self.zoom - obj.y)
                 self.resizing_obj = None
                 self.resize_edge = self.hit_resize_handle(obj, x, y)
@@ -554,6 +564,7 @@ class SysMLDiagramWindow(tk.Frame):
                         self._sync_to_repository()
                     self.selected_conn = conn
                     self.selected_obj = None
+                    self.selected_objs = []
                     self.dragging_point_index = None
                     self.dragging_endpoint = None
                     if conn.style == "Custom":
@@ -606,9 +617,13 @@ class SysMLDiagramWindow(tk.Frame):
                             self.resizing_obj = self.selected_obj
                             return
                     self.selected_obj = None
+                    self.selected_objs = []
                     self.selected_conn = None
                     self.resizing_obj = None
                     self.resize_edge = None
+                    if self.current_tool == "Select":
+                        self.select_rect_start = (x, y)
+                        self.select_rect_id = self.canvas.create_rectangle(x, y, x, y, dash=(2, 2), outline="blue")
                     self.redraw()
 
     def on_left_drag(self, event):
@@ -623,6 +638,18 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
             self.redraw()
+            return
+        if self.select_rect_start:
+            x = self.canvas.canvasx(event.x)
+            y = self.canvas.canvasy(event.y)
+            self.canvas.coords(
+                self.select_rect_id,
+                self.select_rect_start[0],
+                self.select_rect_start[1],
+                x,
+                y,
+            )
+            self._update_drag_selection(x, y)
             return
         if (
             self.dragging_endpoint is not None
@@ -757,6 +784,20 @@ class SysMLDiagramWindow(tk.Frame):
                     ConnectionDialog(self, conn)
                 else:
                     messagebox.showwarning("Invalid Connection", msg)
+        if self.select_rect_start:
+            x = self.canvas.canvasx(event.x)
+            y = self.canvas.canvasy(event.y)
+            self.canvas.coords(
+                self.select_rect_id,
+                self.select_rect_start[0],
+                self.select_rect_start[1],
+                x,
+                y,
+            )
+            self._update_drag_selection(x, y)
+            self.canvas.delete(self.select_rect_id)
+            self.select_rect_start = None
+            self.select_rect_id = None
         self.start = None
         self.temp_line_end = None
         self.resizing_obj = None
@@ -879,15 +920,36 @@ class SysMLDiagramWindow(tk.Frame):
             if getattr(child, "diagram_id", None) == chosen:
                 return True
         diag = self.repo.diagrams[chosen]
+        history = self.diagram_history + [self.diagram_id]
         if diag.diag_type == "Use Case Diagram":
-            UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen)
+            UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Activity Diagram":
-            ActivityDiagramWindow(self.master, self.app, diagram_id=chosen)
+            ActivityDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Block Diagram":
-            BlockDiagramWindow(self.master, self.app, diagram_id=chosen)
+            BlockDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Internal Block Diagram":
-            InternalBlockDiagramWindow(self.master, self.app, diagram_id=chosen)
+            InternalBlockDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
+        self._sync_to_repository()
+        self.destroy()
         return True
+
+    def go_back(self):
+        if not self.diagram_history:
+            return
+        prev_id = self.diagram_history.pop()
+        diag = self.repo.diagrams.get(prev_id)
+        if not diag:
+            return
+        if diag.diag_type == "Use Case Diagram":
+            UseCaseDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Activity Diagram":
+            ActivityDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Block Diagram":
+            BlockDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        elif diag.diag_type == "Internal Block Diagram":
+            InternalBlockDiagramWindow(self.master, self.app, diagram_id=prev_id, history=self.diagram_history)
+        self._sync_to_repository()
+        self.destroy()
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
             self.zoom_in()
@@ -1553,16 +1615,23 @@ class SysMLDiagramWindow(tk.Frame):
             else:
                 self.canvas.create_text(x, y, text="\n".join(label_lines), anchor="center")
 
-        if obj == self.selected_obj:
+        if obj in self.selected_objs:
             bx = x - w
             by = y - h
             ex = x + w
             ey = y + h
             self.canvas.create_rectangle(bx, by, ex, ey, outline="red", dash=(2, 2))
-            s = 4
-            for hx, hy in [(bx, by), (bx, ey), (ex, by), (ex, ey)]:
-                self.canvas.create_rectangle(hx - s, hy - s, hx + s, hy + s,
-                                             outline="red", fill="white")
+            if obj == self.selected_obj:
+                s = 4
+                for hx, hy in [(bx, by), (bx, ey), (ex, by), (ex, ey)]:
+                    self.canvas.create_rectangle(
+                        hx - s,
+                        hy - s,
+                        hx + s,
+                        hy + s,
+                        outline="red",
+                        fill="white",
+                    )
 
     def draw_connection(
         self, a: SysMLObject, b: SysMLObject, conn: DiagramConnection, selected: bool = False
@@ -1643,6 +1712,24 @@ class SysMLDiagramWindow(tk.Frame):
                 return b
         return None
 
+    def _update_drag_selection(self, x: float, y: float) -> None:
+        if not self.select_rect_start:
+            return
+        x0, y0 = self.select_rect_start
+        left, right = sorted([x0, x])
+        top, bottom = sorted([y0, y])
+        selected: list[SysMLObject] = []
+        for obj in self.objects:
+            ox = obj.x * self.zoom
+            oy = obj.y * self.zoom
+            w = obj.width * self.zoom / 2
+            h = obj.height * self.zoom / 2
+            if left <= ox - w and ox + w <= right and top <= oy - h and oy + h <= bottom:
+                selected.append(obj)
+        self.selected_objs = selected
+        self.selected_obj = selected[0] if len(selected) == 1 else None
+        self.redraw()
+
     # ------------------------------------------------------------
     # Clipboard operations
     # ------------------------------------------------------------
@@ -1680,8 +1767,10 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
 
     def delete_selected(self, _event=None):
-        if self.selected_obj:
-            self.remove_object(self.selected_obj)
+        if self.selected_objs:
+            for obj in list(self.selected_objs):
+                self.remove_object(obj)
+            self.selected_objs = []
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
@@ -2414,18 +2503,18 @@ class ConnectionDialog(simpledialog.Dialog):
             self.master._sync_to_repository()
 
 class UseCaseDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Actor",
             "Use Case",
             "System Boundary",
             "Association",
         ]
-        super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app, history=history)
 
 
 class ActivityDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Action",
             "CallBehaviorAction",
@@ -2437,26 +2526,26 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Join",
             "Flow",
         ]
-        super().__init__(master, "Activity Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
 
 
 class BlockDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Block",
             "Association",
         ]
-        super().__init__(master, "Block Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
 
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
-    def __init__(self, master, app, diagram_id: str | None = None):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Part",
             "Port",
             "Connector",
         ]
-        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app)
+        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
         ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
             fill=tk.X, padx=2, pady=2
         )
@@ -2661,16 +2750,26 @@ class ArchitectureManagerDialog(tk.Frame):
             master.geometry("350x400")
             self.pack(fill=tk.BOTH, expand=True)
         self.repo = SysMLRepository.get_instance()
-        self.tree = ttk.Treeview(self)
-        self.tree.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+
+        tree_frame = ttk.Frame(self)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        self.tree = ttk.Treeview(tree_frame)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         # simple icons to visually distinguish packages, diagrams and objects
-        self.pkg_icon = self._create_icon("folder")
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("circle"),
-            "Activity Diagram": self._create_icon("arrow"),
-            "Block Diagram": self._create_icon("rect"),
-            "Internal Block Diagram": self._create_icon("nested"),
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
         self.elem_icons = {
             "Actor": self._create_icon("circle"),
@@ -2692,6 +2791,7 @@ class ArchitectureManagerDialog(tk.Frame):
         ttk.Button(btns, text="Delete", command=self.delete).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Close", command=self.destroy).pack(side=tk.RIGHT, padx=2)
         self.populate()
+        self.tree.bind("<Button-3>", self.on_right_click)
         self.tree.bind("<Double-1>", self.on_double)
         self.tree.bind("<ButtonPress-1>", self.on_drag_start)
         self.tree.bind("<B1-Motion>", self.on_drag_motion)
@@ -2831,6 +2931,8 @@ class ArchitectureManagerDialog(tk.Frame):
                         )
 
         add_pkg(root_pkg.elem_id)
+        if self.app:
+            self.app.update_views()
 
     def selected(self):
         sel = self.tree.selection()
@@ -2939,7 +3041,7 @@ class ArchitectureManagerDialog(tk.Frame):
                         obj.__dict__ if str(o.get("obj_id")) == oid else o
                         for o in diag.objects
                     ]
-                    self.populate()
+                self.populate()
         else:
             elem = self.repo.elements.get(item)
             if elem:
@@ -2948,6 +3050,36 @@ class ArchitectureManagerDialog(tk.Frame):
                 else:
                     ElementPropertiesDialog(self, elem)
                 self.populate()
+
+    def on_right_click(self, event):
+        item = self.tree.identify_row(event.y)
+        if not item:
+            return
+        self.tree.selection_set(item)
+        menu = tk.Menu(self.tree, tearoff=0)
+        menu.add_command(label="Rename", command=lambda: self.rename_item(item))
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def rename_item(self, item=None):
+        item = item or self.selected()
+        if not item:
+            return
+        if item.startswith("diag_"):
+            diag = self.repo.diagrams.get(item[5:])
+            if diag:
+                name = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=diag.name)
+                if name:
+                    diag.name = name
+                    self.populate()
+        elif item.startswith("obj_"):
+            return
+        else:
+            elem = self.repo.elements.get(item)
+            if elem:
+                name = simpledialog.askstring("Rename", "Name:", initialvalue=elem.name)
+                if name:
+                    elem.name = name
+                    self.populate()
 
     # ------------------------------------------------------------------
     # Cut/Paste and Drag & Drop Handling
@@ -3053,56 +3185,57 @@ class ArchitectureManagerDialog(tk.Frame):
         else:
             messagebox.showerror("Drop Error", "This item cannot be dropped on that diagram.")
 
-    def _create_icon(self, shape: str) -> tk.PhotoImage:
+    def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
         """Return a simple 16x16 PhotoImage representing the given shape."""
         size = 16
         img = tk.PhotoImage(width=size, height=size)
         img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
         if shape == "circle":
             r = size // 2 - 2
             cx = cy = size // 2
             for y in range(size):
                 for x in range(size):
                     if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                        img.put("black", (x, y))
+                        img.put(c, (x, y))
         elif shape == "arrow":
             mid = size // 2
             for x in range(2, mid + 1):
-                img.put("black", to=(x, mid - 1, x + 1, mid + 1))
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
             for i in range(4):
-                img.put("black", to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
-                img.put("black", to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
         elif shape == "rect":
             for x in range(3, size - 3):
-                img.put("black", (x, 3))
-                img.put("black", (x, size - 4))
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
             for y in range(3, size - 3):
-                img.put("black", (3, y))
-                img.put("black", (size - 4, y))
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
         elif shape == "nested":
             for x in range(1, size - 1):
-                img.put("black", (x, 1))
-                img.put("black", (x, size - 2))
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
             for y in range(1, size - 1):
-                img.put("black", (1, y))
-                img.put("black", (size - 2, y))
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
             for x in range(5, size - 5):
-                img.put("black", (x, 5))
-                img.put("black", (x, size - 6))
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
             for y in range(5, size - 5):
-                img.put("black", (5, y))
-                img.put("black", (size - 6, y))
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
         elif shape == "folder":
             for x in range(1, size - 1):
-                img.put("black", (x, 4))
-                img.put("black", (x, size - 2))
+                img.put(c, (x, 4))
+                img.put(c, (x, size - 2))
             for y in range(4, size - 1):
-                img.put("black", (1, y))
-                img.put("black", (size - 2, y))
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
             for x in range(3, size - 3):
-                img.put("black", (x, 2))
-            img.put("black", to=(1, 3, size - 2, 4))
+                img.put(c, (x, 2))
+            img.put(c, to=(1, 3, size - 2, 4))
         else:
-            img.put("black", to=(2, 2, size - 2, size - 2))
+            img.put(c, to=(2, 2, size - 2, size - 2))
         return img
 

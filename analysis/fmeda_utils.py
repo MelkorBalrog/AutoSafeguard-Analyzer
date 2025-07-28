@@ -1,6 +1,9 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, component_fit_map
 
+# Node types treated as gates when determining component names
+GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+
 
 def _aggregate_goal_metrics(entries, components, sg_to_asil, sg_targets=None, get_node=lambda x: x):
     """Return metrics per safety goal."""
@@ -18,7 +21,11 @@ def _aggregate_goal_metrics(entries, components, sg_to_asil, sg_targets=None, ge
                 "asil": sg_to_asil(sg),
             },
         )
-        comp_name = src.parents[0].user_name if src.parents else getattr(src, "fmea_component", "")
+        parent = src.parents[0] if src.parents else None
+        if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES:
+            comp_name = getattr(parent, "user_name", "")
+        else:
+            comp_name = getattr(src, "fmea_component", "")
         fit = comp_fit.get(comp_name)
         frac = getattr(src, "fmeda_fault_fraction", 0.0)
         if frac > 1.0:

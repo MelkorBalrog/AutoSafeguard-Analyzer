@@ -425,7 +425,11 @@ class ClosableNotebook(ttk.Notebook):
                 return
             self._closing_tab = tab_id
             self.event_generate("<<NotebookTabClosed>>")
-            self.forget(tab_id)
+            if tab_id in self.tabs():
+                try:
+                    self.forget(tab_id)
+                except tk.TclError:
+                    pass
         self.state(["!pressed"])
         self._active = None
 
@@ -448,6 +452,9 @@ VALID_SUBTYPES = {
     "Rigor": ["Capability", "Safety Mechanism"],
     "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
 }
+
+# Node types treated as gates when rendering and editing
+GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
 
 ##########################################
 # Global Unique ID Counter for Nodes
@@ -909,20 +916,6 @@ class EditNodeDialog(simpledialog.Dialog):
             self.prob_entry.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
-            ttk.Label(safety_frame, text="Represents FM:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            modes = self.app.get_all_failure_modes()
-            self.fm_map = {self.app.format_failure_mode_label(m): m.unique_id for m in modes}
-            self.fm_var = tk.StringVar()
-            current = ''
-            if getattr(self.node, 'failure_mode_ref', None):
-                n = self.app.find_node_by_id_all(self.node.failure_mode_ref)
-                if n:
-                    current = self.app.format_failure_mode_label(n)
-            self.fm_var.set(current)
-            self.fm_combo = ttk.Combobox(safety_frame, textvariable=self.fm_var, values=list(self.fm_map.keys()), state='readonly', width=40)
-            self.fm_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky='w')
-            self.fm_combo.bind("<<ComboboxSelected>>", self.update_probability)
-            row_next += 1
 
 
             ttk.Label(safety_frame, text="Probability Formula:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -960,13 +953,15 @@ class EditNodeDialog(simpledialog.Dialog):
             self.update_decomp_button = ttk.Button(self.safety_req_frame, text="Update Scheme", command=self.update_decomposition_scheme)
             self.update_decomp_button.grid(row=1, column=5, padx=2, pady=2)
 
-        elif self.node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        elif self.node.node_type.upper() in GATE_NODE_TYPES:
             ttk.Label(general_frame, text="Gate Type:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
             self.gate_var = tk.StringVar(value=self.node.gate_type if self.node.gate_type else "AND")
             self.gate_combo = ttk.Combobox(general_frame, textvariable=self.gate_var, values=["AND", "OR"],
                                            state="readonly", width=10)
             self.gate_combo.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
+
+
             if self.node.node_type.upper() == "TOP EVENT":
                 ttk.Label(safety_frame, text="Severity (1-3):").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.sev_combo = ttk.Combobox(safety_frame, values=["1", "2", "3"],
@@ -1007,6 +1002,12 @@ class EditNodeDialog(simpledialog.Dialog):
                 self.safe_state_entry = tk.Entry(safety_frame, width=40, font=dialog_font)
                 self.safe_state_entry.insert(0, self.node.safe_state)
                 self.safe_state_entry.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                row_next += 1
+
+                ttk.Label(safety_frame, text="Malfunction:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                self.mal_var = tk.StringVar(value=getattr(self.node, 'malfunction', ''))
+                self.mal_combo = ttk.Combobox(safety_frame, textvariable=self.mal_var, values=sorted(self.app.malfunctions), width=30)
+                self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="FTTI:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -1357,6 +1358,13 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_all_requirement_asil()
         self.update_requirement_decomposition()
 
+    def refresh_model(self):
+        """Propagate changes to keep analyses synchronized."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+        self.update_basic_event_probabilities()
+
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
         for r in self.reviews:
@@ -1624,7 +1632,7 @@ class EditNodeDialog(simpledialog.Dialog):
         return "break"
 
     def update_probability(self, *_):
-        if hasattr(self, "prob_entry") and hasattr(self, "fm_var"):
+        if hasattr(self, "prob_entry"):
             formula = self.formula_var.get() if hasattr(self, "formula_var") else None
             if str(formula).strip().lower() == "constant":
                 if not self.prob_entry.get().strip():
@@ -1634,25 +1642,11 @@ class EditNodeDialog(simpledialog.Dialog):
                         val = 0.0
                     self.prob_entry.insert(0, str(val))
                 return
-            label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            prob = self.app.compute_failure_prob(self.node, failure_mode_ref=ref, formula=formula)
+            prob = self.app.compute_failure_prob(self.node, formula=formula)
             self.prob_entry.delete(0, tk.END)
             self.prob_entry.insert(0, f"{prob:.10g}")
 
     def validate(self):
-        if hasattr(self, 'fm_var'):
-            label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            if ref:
-                for n in self.app.get_all_nodes_in_model():
-                    if n is self.node:
-                        continue
-                    if not n.is_primary_instance:
-                        continue
-                    if getattr(n, 'failure_mode_ref', None) == ref:
-                        messagebox.showerror('Failure Mode', 'Selected failure mode already assigned to another node')
-                        return False
         return True
 
     def apply(self):
@@ -1671,9 +1665,7 @@ class EditNodeDialog(simpledialog.Dialog):
             except ValueError:
                 messagebox.showerror("Invalid Input", "Select a value between 1 and 5.")
         elif self.node.node_type.upper() == "BASIC EVENT":
-            label = self.fm_var.get().strip()
-            ref = self.fm_map.get(label)
-            target_node.failure_mode_ref = ref
+            target_node.fault_ref = target_node.description
             target_node.prob_formula = self.formula_var.get()
             if target_node.prob_formula == "constant":
                 try:
@@ -1682,9 +1674,10 @@ class EditNodeDialog(simpledialog.Dialog):
                     target_node.failure_prob = 0.0
             else:
                 target_node.failure_prob = self.app.compute_failure_prob(
-                    target_node, failure_mode_ref=ref, formula=target_node.prob_formula)
-        elif self.node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+                    target_node, failure_mode_ref=getattr(target_node, 'failure_mode_ref', None), formula=target_node.prob_formula)
+        elif self.node.node_type.upper() in GATE_NODE_TYPES:
             target_node.gate_type = self.gate_var.get().strip().upper()
+            target_node.failure_mode_ref = None
             if self.node.node_type.upper() == "TOP EVENT":
                 try:
                     sev = float(self.sev_combo.get().strip())
@@ -1704,6 +1697,20 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safety_goal_description = self.safety_goal_text.get("1.0", "end-1c")
                 target_node.safety_goal_asil = self.sg_asil_var.get().strip()
                 target_node.safe_state = self.safe_state_entry.get().strip()
+                new_mal = self.mal_var.get().strip()
+                if new_mal:
+                    for te in self.app.top_events:
+                        if te is not target_node and getattr(te, "malfunction", "") == new_mal:
+                            messagebox.showerror(
+                                "Duplicate Malfunction",
+                                "This malfunction is already assigned to another top level event.",
+                            )
+                            new_mal = getattr(self.node, "malfunction", "")
+                            self.mal_var.set(new_mal)
+                            break
+                target_node.malfunction = new_mal
+                if target_node.malfunction and target_node.malfunction not in self.app.malfunctions:
+                    self.app.malfunctions.append(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
                     target_node.sg_dc_target = float(self.dc_target_var.get())
@@ -1774,13 +1781,20 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # small icons for diagram types shown in the explorer
+        self.diagram_icons = {
+            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Activity Diagram": self._create_icon("arrow", "green"),
+            "Block Diagram": self._create_icon("rect", "orange"),
+            "Internal Block Diagram": self._create_icon("nested", "purple"),
+        }
         self.clipboard_node = None
         self.cut_mode = False
         self.page_history = []
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
-            "show_grid": True,
+            "show_grid": False,
             "black_white": False,
         }
         self.mission_profiles = []
@@ -1791,6 +1805,9 @@ class FaultTreeApp:
         self.spfm = 0.0
         self.lpfm = 0.0
         self.reliability_dc = 0.0
+        # Lists of user-defined faults and malfunctions
+        self.faults: list[str] = []
+        self.malfunctions: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.active_hazop = None
@@ -1986,15 +2003,34 @@ class FaultTreeApp:
         self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
-        self.analysis_tree = ttk.Treeview(self.analysis_group)
-        self.analysis_tree.pack(fill=tk.BOTH, expand=True)
+        tree_frame = ttk.Frame(self.analysis_group)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        self.analysis_tree = ttk.Treeview(tree_frame)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.analysis_tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.analysis_tree.xview)
+        self.analysis_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.analysis_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
+        self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
 
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_list = tk.Listbox(self.tools_group, height=10)
-        self.tools_list.pack(fill=tk.BOTH, expand=True)
+        tools_frame = ttk.Frame(self.tools_group)
+        tools_frame.pack(fill=tk.BOTH, expand=True)
+        self.tools_list = tk.Listbox(tools_frame, height=10)
+        vsb = ttk.Scrollbar(tools_frame, orient="vertical", command=self.tools_list.yview)
+        hsb = ttk.Scrollbar(tools_frame, orient="horizontal", command=self.tools_list.xview)
+        self.tools_list.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tools_list.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tools_frame.rowconfigure(0, weight=1)
+        tools_frame.columnconfigure(0, weight=1)
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
@@ -2956,6 +2992,30 @@ class FaultTreeApp:
                     result.append(sg)
         return result
 
+    def get_safety_goals_for_malfunctions(self, malfunctions: list[str]) -> list[str]:
+        """Return safety goal names for given malfunctions."""
+        goals = []
+        for te in self.top_events:
+            mal = getattr(te, "malfunction", "")
+            if mal and mal in malfunctions:
+                sg = te.safety_goal_description or te.user_name or ""
+                if sg and sg not in goals:
+                    goals.append(sg)
+        return goals
+
+    def is_malfunction_used(self, name: str) -> bool:
+        """Return True if the malfunction is used in any FTA or analysis."""
+        if not name:
+            return False
+        for te in self.top_events:
+            if getattr(te, "malfunction", "") == name:
+                return True
+        for n in self.get_all_nodes_in_model():
+            mals = [m.strip() for m in getattr(n, "fmeda_malfunction", "").split(";") if m.strip()]
+            if name in mals:
+                return True
+        return False
+
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
         total = 0.0
@@ -2997,7 +3057,7 @@ class FaultTreeApp:
         for be in events:
             src = self.get_failure_mode_node(be)
             goals = self.get_top_event_safety_goals(src) or [getattr(src, "fmeda_safety_goal", "")]
-            comp_name = src.parents[0].user_name if src.parents else getattr(src, "fmea_component", "")
+            comp_name = self.get_component_name_for_node(src)
             fit = comp_fit.get(comp_name)
             frac = getattr(src, "fmeda_fault_fraction", 0.0)
             if frac > 1.0:
@@ -3139,7 +3199,7 @@ class FaultTreeApp:
         chk = tk.Checkbutton(prop_win, text="Show Detailed Formulas in PDF Report", variable=var_detailed, font=dialog_font)
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
-        var_grid = tk.BooleanVar(value=self.project_properties.get("show_grid", True))
+        var_grid = tk.BooleanVar(value=self.project_properties.get("show_grid", False))
         chk_grid = tk.Checkbutton(prop_win, text="Show Grid", variable=var_grid, font=dialog_font)
         chk_grid.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
@@ -3455,7 +3515,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -3720,7 +3780,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -3985,7 +4045,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4250,7 +4310,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4515,7 +4575,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -4769,7 +4829,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5023,7 +5083,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5277,7 +5337,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5542,7 +5602,7 @@ class FaultTreeApp:
             eff_x, eff_y = n.x, n.y
             typ = n.node_type.upper()
             items_before = canvas.find_all()
-            if typ in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if typ in GATE_NODE_TYPES:
                 if n.gate_type and n.gate_type.upper() == "OR":
                     if self.fta_drawing_helper:
                         self.fta_drawing_helper.draw_rotated_or_gate_shape(canvas, eff_x, eff_y, scale=40, top_text=top_text, bottom_text=bottom_text, fill=fill, outline_color=color, line_width=2)
@@ -5628,7 +5688,7 @@ class FaultTreeApp:
     def calculate_cut_sets(self, node):
         if not node.children:
             return [{node.unique_id}]
-        gate = (node.gate_type or "AND").upper() if node.node_type.upper() in ["TOP EVENT", "GATE", "RIGOR LEVEL"] else "AND"
+        gate = (node.gate_type or "AND").upper() if node.node_type.upper() in GATE_NODE_TYPES else "AND"
         child_cut_sets = [self.calculate_cut_sets(child) for child in node.children]
         if gate == "OR":
             result = []
@@ -6069,7 +6129,7 @@ class FaultTreeApp:
 
     def build_text_report(self, node, indent=0):
         report = "    " * indent + f"{node.name} ({node.node_type}"
-        if node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        if node.node_type.upper() in GATE_NODE_TYPES:
             report += f", {node.gate_type}"
         report += ")"
         if node.display_label:
@@ -6108,7 +6168,7 @@ class FaultTreeApp:
         
         def traverse(node):
             node_type_up = node.node_type.upper()
-            if node_type_up in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if node_type_up in GATE_NODE_TYPES:
                 final_gate_type = node.gate_type  # e.g. "AND" or "OR"
 
                 node_info = {
@@ -6124,7 +6184,7 @@ class FaultTreeApp:
                 # Only traverse children that are also gates or top events
                 for child in node.children:
                     child_type = child.node_type.upper()
-                    if child_type in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+                    if child_type in GATE_NODE_TYPES:
                         edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
                         traverse(child)
 
@@ -6867,13 +6927,10 @@ class FaultTreeApp:
                 Story.append(Paragraph(fmea['name'], pdf_styles["Heading3"]))
                 data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]]
                 for be in fmea['entries']:
-                    parent = be.parents[0] if be.parents else None
-                    if parent:
-                        comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                        parent_name = comp
-                    else:
-                        comp = getattr(be, "fmea_component", "") or "N/A"
-                        parent_name = ""
+                    src = self.get_failure_mode_node(be)
+                    comp = self.get_component_name_for_node(src) or "N/A"
+                    parent = src.parents[0] if src.parents else None
+                    parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                     req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
                     rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                     failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -6896,8 +6953,7 @@ class FaultTreeApp:
             Story.append(Paragraph("FTA-FMEA Traceability", pdf_styles["Heading2"]))
             data = [["Basic Event", "Component"]]
             for be in basic_events:
-                parent = be.parents[0] if be.parents else None
-                comp = parent.user_name if parent and parent.user_name else (f"Node {parent.unique_id}" if parent else "N/A")
+                comp = self.get_component_name_for_node(be) or "N/A"
                 data.append([be.user_name or f"BE {be.unique_id}", comp])
             table = Table(data, repeatRows=1)
             table.setStyle(TableStyle([
@@ -7046,7 +7102,7 @@ class FaultTreeApp:
                                                        outline_color="dimgray",
                                                        line_width=1,
                                                        font_obj=self.diagram_font)
-        elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        elif node_type_upper in GATE_NODE_TYPES:
             if node.gate_type.upper() == "OR":
                 fta_drawing_helper.draw_rotated_or_gate_clone_shape(canvas, eff_x, eff_y,
                                                                     scale=40 * self.zoom,
@@ -7183,9 +7239,69 @@ class FaultTreeApp:
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
+                self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
             self.open_arch_window(idx)
+
+    def on_analysis_tree_right_click(self, event):
+        iid = self.analysis_tree.identify_row(event.y)
+        if not iid:
+            return
+        self.analysis_tree.selection_set(iid)
+        self.analysis_tree.focus(iid)
+        menu = tk.Menu(self.analysis_tree, tearoff=0)
+        menu.add_command(label="Rename", command=self.rename_selected_tree_item)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def rename_selected_tree_item(self):
+        item = self.analysis_tree.focus()
+        tags = self.analysis_tree.item(item, "tags")
+        if len(tags) != 2:
+            return
+        kind, idx = tags[0], int(tags[1])
+        current = ""
+        if kind == "fmea":
+            current = self.fmeas[idx]["name"]
+        elif kind == "fmeda":
+            current = self.fmedas[idx]["name"]
+        elif kind == "hazop":
+            current = self.hazop_docs[idx].name
+        elif kind == "hara":
+            current = self.hara_docs[idx].name
+        elif kind == "fi2tc":
+            current = self.fi2tc_docs[idx].name
+        elif kind == "tc2fi":
+            current = self.tc2fi_docs[idx].name
+        elif kind == "arch":
+            current = self.arch_diagrams[idx].name
+        elif kind == "fta":
+            node = next((t for t in self.top_events if t.unique_id == idx), None)
+            current = node.user_name if node else ""
+        else:
+            return
+        new = simpledialog.askstring("Rename", "Enter new name:", initialvalue=current)
+        if not new:
+            return
+        if kind == "fmea":
+            self.fmeas[idx]["name"] = new
+        elif kind == "fmeda":
+            self.fmedas[idx]["name"] = new
+        elif kind == "hazop":
+            self.hazop_docs[idx].name = new
+        elif kind == "hara":
+            self.hara_docs[idx].name = new
+        elif kind == "fi2tc":
+            self.fi2tc_docs[idx].name = new
+        elif kind == "tc2fi":
+            self.tc2fi_docs[idx].name = new
+        elif kind == "arch":
+            self.arch_diagrams[idx].name = new
+        elif kind == "fta" and node:
+            node.user_name = new
+        self.update_views()
+        if hasattr(self, "_arch_window") and self._arch_window.winfo_exists():
+            self._arch_window.populate()
 
     def on_tool_list_double_click(self, event):
         sel = self.tools_list.curselection()
@@ -7326,7 +7442,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7354,6 +7470,9 @@ class FaultTreeApp:
         menu.add_command(label="Add Confidence", command=lambda: self.add_node_of_type("Confidence Level"))
         menu.add_command(label="Add Robustness", command=lambda: self.add_node_of_type("Robustness Score"))
         menu.add_command(label="Add Gate", command=lambda: self.add_node_of_type("GATE"))
+        menu.add_command(label="Add Basic Event", command=lambda: self.add_node_of_type("Basic Event"))
+        menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
+        menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
         menu.tk_popup(event.x_root, event.y_root)
 
     def on_canvas_click(self, event):
@@ -7361,7 +7480,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7379,7 +7498,7 @@ class FaultTreeApp:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -7475,6 +7594,14 @@ class FaultTreeApp:
         """Return a list of all basic events across all top-level trees."""
         return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "BASIC EVENT"]
 
+    def get_all_gates(self):
+        """Return a list of all gate nodes (including top events)."""
+        return [
+            n
+            for n in self.get_all_nodes_in_model()
+            if n.node_type.upper() in GATE_NODE_TYPES
+        ]
+
     def get_all_triggering_conditions(self):
         """Return all triggering condition nodes."""
         return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "TRIGGERING CONDITION"]
@@ -7553,11 +7680,29 @@ class FaultTreeApp:
         return repo.get_activity_actions()
 
     def get_all_component_names(self):
-        """Return unique component names from HAZOP and reliability analyses."""
+        """Return unique component names from analyses, including FTA failure modes."""
         names = set()
         for doc in getattr(self, "hazop_docs", []):
             names.update(e.component for e in doc.entries if getattr(e, "component", ""))
         names.update(c.name for c in self.reliability_components)
+        for be in self.get_all_basic_events():
+            comp = self.get_component_name_for_node(be)
+            if comp:
+                names.add(comp)
+        for entry in self.fmea_entries:
+            comp = getattr(entry, "fmea_component", "")
+            if comp:
+                names.add(comp)
+        for doc in self.fmeas:
+            for e in doc.get("entries", []):
+                comp = getattr(e, "fmea_component", "")
+                if comp:
+                    names.add(comp)
+        for doc in self.fmedas:
+            for e in doc.get("entries", []):
+                comp = getattr(e, "fmea_component", "")
+                if comp:
+                    names.add(comp)
         return sorted(n for n in names if n)
 
     def get_all_malfunction_names(self):
@@ -7593,6 +7738,35 @@ class FaultTreeApp:
             unique[getattr(m, "unique_id", id(m))] = m
         return list(unique.values())
 
+    def get_non_basic_failure_modes(self):
+        """Return failure modes from gate nodes, FMEAs and FMEDAs."""
+        modes = [
+            g
+            for g in self.get_all_gates()
+            if g.node_type.upper() != "TOP EVENT" and getattr(g, "description", "").strip()
+        ]
+        for entry in self.fmea_entries:
+            if getattr(entry, "description", "").strip():
+                modes.append(entry)
+        for f in self.fmeas:
+            modes.extend([e for e in f.get("entries", []) if getattr(e, "description", "").strip()])
+        for d in self.fmedas:
+            modes.extend([e for e in d.get("entries", []) if getattr(e, "description", "").strip()])
+        unique = {}
+        for m in modes:
+            unique[getattr(m, "unique_id", id(m))] = m
+        return list(unique.values())
+
+    def get_available_failure_modes_for_gates(self, current_gate=None):
+        """Return failure modes not already used by other gates."""
+        modes = self.get_non_basic_failure_modes()
+        used = {
+            getattr(g, "failure_mode_ref", None)
+            for g in self.get_all_gates()
+            if g is not current_gate and getattr(g, "failure_mode_ref", None)
+        }
+        return [m for m in modes if getattr(m, "unique_id", None) not in used]
+
     def get_failure_mode_node(self, node):
         ref = getattr(node, "failure_mode_ref", None)
         if ref:
@@ -7601,16 +7775,26 @@ class FaultTreeApp:
                 return n
         return node
 
+    def get_component_name_for_node(self, node):
+        """Return component name for the given failure mode node."""
+        src = self.get_failure_mode_node(node)
+        parent = src.parents[0] if src.parents else None
+        if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES:
+            if getattr(parent, "user_name", ""):
+                return parent.user_name
+        return getattr(src, "fmea_component", "")
+
     def format_failure_mode_label(self, node):
-        comp = node.parents[0].user_name if node.parents else getattr(node, "fmea_component", "")
-        label = node.description or (node.user_name or f"BE {node.unique_id}")
+        comp = self.get_component_name_for_node(node)
+        label = node.description if node.description else (node.user_name or f"Node {node.unique_id}")
         return f"{comp}: {label}" if comp else label
 
     def get_failure_modes_for_malfunction(self, malfunction: str) -> list[str]:
         """Return labels of basic events linked to the given malfunction."""
         result = []
         for be in self.get_all_basic_events():
-            if getattr(be, "fmeda_malfunction", "") == malfunction:
+            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
+            if malfunction in mals:
                 result.append(self.format_failure_mode_label(be))
         return result
 
@@ -7639,6 +7823,7 @@ class FaultTreeApp:
         return rec(node)
 
     def update_views(self):
+        self.refresh_model()
         # Compute occurrence counts from the current tree
         self.occurrence_counts = self.compute_occurrence_counts()
 
@@ -7675,7 +7860,14 @@ class FaultTreeApp:
             arch_root = tree.insert("", "end", text="AutoML Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                tree.insert(arch_root, "end", text=name, tags=("arch", str(idx)))
+                icon = self.diagram_icons.get(diag.diag_type)
+                tree.insert(
+                    arch_root,
+                    "end",
+                    text=name,
+                    tags=("arch", str(idx)),
+                    image=icon,
+                )
             tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
             tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
 
@@ -7741,6 +7933,39 @@ class FaultTreeApp:
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
 
+    def refresh_model(self):
+        """Propagate changes across analyses when the model updates."""
+        self.ensure_asil_consistency()
+        for fm in self.get_all_failure_modes():
+            self.propagate_failure_mode_attributes(fm)
+
+        def iter_analysis_events():
+            for be in self.get_all_basic_events():
+                yield be
+            for e in self.fmea_entries:
+                yield e
+            for doc in self.fmeas:
+                for e in doc.get("entries", []):
+                    yield e
+            for doc in self.fmedas:
+                for e in doc.get("entries", []):
+                    yield e
+
+        for entry in iter_analysis_events():
+            mals = [m.strip() for m in getattr(entry, "fmeda_malfunction", "").split(";") if m.strip()]
+            goals = self.get_safety_goals_for_malfunctions(mals) or self.get_top_event_safety_goals(entry)
+            if goals:
+                sg = ", ".join(goals)
+                entry.fmeda_safety_goal = sg
+                first = goals[0]
+                te = next((t for t in self.top_events if first in [t.user_name, t.safety_goal_description]), None)
+                if te:
+                    entry.fmeda_dc_target = getattr(te, "sg_dc_target", 0.0)
+                    entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
+                    entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
+
+        self.update_basic_event_probabilities()
+
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
         if not node.parents or node.node_type.upper() == "TOP EVENT" or node.is_page:
@@ -7770,7 +7995,7 @@ class FaultTreeApp:
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def draw_grid(self):
-        if not self.project_properties.get("show_grid", True):
+        if not self.project_properties.get("show_grid", False):
             return
         spacing = self.grid_size * self.zoom
         width = self.canvas.winfo_width()
@@ -7885,7 +8110,7 @@ class FaultTreeApp:
                     fill=fill_color, outline_color=outline_color,
                     line_width=line_width, font_obj=font_obj
                 )
-            elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            elif node_type_upper in GATE_NODE_TYPES:
                 if source.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_clone_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -7916,7 +8141,7 @@ class FaultTreeApp:
                 )
         else:
             # Primary node: use normal drawing routines.
-            if node_type_upper in ["TOP EVENT", "GATE", "RIGOR LEVEL"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if source.is_page and source != self.root_node:
                     fta_drawing_helper.draw_triangle_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -8067,6 +8292,7 @@ class FaultTreeApp:
             new_node = FaultTreeNode("", "Triggering Condition", parent=parent_node)
         elif event_type.upper() == "FUNCTIONAL INSUFFICIENCY":
             new_node = FaultTreeNode("", "Functional Insufficiency", parent=parent_node)
+            new_node.gate_type = "AND"
         else:
             new_node = FaultTreeNode("", event_type, parent=parent_node)
         new_node.x = parent_node.x + 100
@@ -8620,7 +8846,7 @@ class FaultTreeApp:
 
 
     def show_fmea_list(self):
-        if hasattr(self, "_fmea_tab") and self._fmea_tab.winfo_exists():
+        if getattr(self, "_fmea_tab", None) is not None and self._fmea_tab.winfo_exists():
             self.doc_nb.select(self._fmea_tab)
             return
         self._fmea_tab = self._new_tab("FMEA List")
@@ -8657,15 +8883,31 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmea():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmeas[idx]['name']
+            name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmeas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmea).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmea).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmea).pack(fill=tk.X)
 
     def show_fmeda_list(self):
-        if hasattr(self, "_fmeda_tab") and self._fmeda_tab.winfo_exists():
+        if getattr(self, "_fmeda_tab", None) is not None and self._fmeda_tab.winfo_exists():
             self.doc_nb.select(self._fmeda_tab)
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
@@ -8702,11 +8944,27 @@ class FaultTreeApp:
             listbox.delete(idx)
             self.update_views()
 
+        def rename_fmeda():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.fmedas[idx]['name']
+            name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            self.fmedas[idx]['name'] = name
+            listbox.delete(idx)
+            listbox.insert(idx, name)
+            listbox.select_set(idx)
+            self.update_views()
+
         listbox.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
@@ -8748,12 +9006,13 @@ class FaultTreeApp:
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
 
     class FMEARowDialog(simpledialog.Dialog):
-        def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False):
+        def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False, is_fmeda=False):
             self.node = node
             self.app = app
             self.fmea_entries = fmea_entries
             self.mechanisms = mechanisms or []
             self.hide_diagnostics = hide_diagnostics
+            self.is_fmeda = is_fmeda
             super().__init__(parent, title="Edit FMEA Entry")
             self.app.selected_node = node
 
@@ -8767,18 +9026,20 @@ class FaultTreeApp:
             nb.add(metric_frame, text="Metrics")
 
             ttk.Label(gen_frame, text="Component:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
-            if self.node.parents:
+            if self.node.parents and getattr(self.node.parents[0], "node_type", "").upper() not in GATE_NODE_TYPES:
                 comp = self.node.parents[0].user_name or f"Node {self.node.parents[0].unique_id}"
             else:
                 comp = getattr(self.node, "fmea_component", "")
             comp_names = {c.name for c in self.app.reliability_components}
-            basic_events = self.app.get_all_basic_events()
-            for be in basic_events + self.fmea_entries:
-                parent = be.parents[0] if be.parents else None
-                if parent and parent.user_name:
+            # Gather failure modes from gates and FMEA/FMEDA tables only
+            basic_events = self.app.get_non_basic_failure_modes()
+            for be in basic_events:
+                src = self.app.get_failure_mode_node(be)
+                parent = src.parents[0] if src.parents else None
+                if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES and parent.user_name:
                     comp_names.add(parent.user_name)
                 else:
-                    name = getattr(be, "fmea_component", "")
+                    name = getattr(src, "fmea_component", "")
                     if name:
                         comp_names.add(name)
             self.comp_var = tk.StringVar(value=comp)
@@ -8792,8 +9053,9 @@ class FaultTreeApp:
             # Include failure modes from both the FTA and any FMEA specific
             # entries so the combo box always lists all available modes.
             self.mode_map = {
-                be.description or (be.user_name or f"BE {be.unique_id}"): be
-                for be in basic_events + self.fmea_entries
+                be.description: be
+                for be in basic_events
+                if getattr(be, "description", "").strip()
             }
             for doc in self.app.hazop_docs:
                 for e in doc.entries:
@@ -8815,51 +9077,102 @@ class FaultTreeApp:
                 label = self.mode_var.get()
                 src = self.mode_map.get(label)
                 if src:
-                    if src.parents:
-                        comp_name = src.parents[0].user_name or f"Node {src.parents[0].unique_id}"
-                    else:
-                        comp_name = getattr(src, "fmea_component", "")
+                    comp_name = self.app.get_component_name_for_node(src)
                     if comp_name:
                         self.comp_var.set(comp_name)
                         comp_sel()
 
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
-            ttk.Label(gen_frame, text="Failure Effect:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
             self.effect_text = tk.Text(gen_frame, width=30, height=3)
             self.effect_text.insert("1.0", self.node.fmea_effect)
-            self.effect_text.grid(row=2, column=1, padx=5, pady=5)
+            row_next = 2
+            if not self.is_fmeda:
+                ttk.Label(gen_frame, text="Failure Effect:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+                self.effect_text.grid(row=row_next, column=1, padx=5, pady=5)
+                row_next += 1
 
-            ttk.Label(gen_frame, text="Potential Cause:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
-            self.cause_text = tk.Text(gen_frame, width=30, height=3)
-            self.cause_text.insert("1.0", getattr(self.node, 'fmea_cause', ''))
-            self.cause_text.grid(row=3, column=1, padx=5, pady=5)
+            ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+            fault_names = sorted(set(self.app.faults))
+            self.cause_var = tk.StringVar(value=getattr(self.node, 'fmea_cause', ''))
+            self.cause_combo = ttk.Combobox(gen_frame, textvariable=self.cause_var, values=fault_names, width=30)
+            self.cause_combo.grid(row=row_next, column=1, padx=5, pady=5)
+            row_next += 1
 
-            ttk.Label(gen_frame, text="Related Malfunction:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
-            self.mal_var = tk.StringVar(value=getattr(self.node, 'fmeda_malfunction', ''))
-            ttk.Entry(gen_frame, textvariable=self.mal_var, width=30).grid(row=4, column=1, padx=5, pady=5)
+            ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
+            self.mal_vars = {}
+            sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
+            self.mal_frame = ttk.Frame(gen_frame)
+            self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
 
-            ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
+            def update_sg(*_):
+                selected = [m for m, v in self.mal_vars.items() if v.get()]
+                goals = self.app.get_safety_goals_for_malfunctions(selected)
+                if not goals:
+                    goals = self.app.get_top_event_safety_goals(self.node)
+                self.sg_var.set(", ".join(goals))
+
+            for m in sorted(self.app.malfunctions):
+                var = tk.BooleanVar(value=m in sel_mals)
+                ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
+                self.mal_vars[m] = var
+
+            btn_frame = ttk.Frame(gen_frame)
+            btn_frame.grid(row=row_next + 1, column=1, sticky="w")
+
+            def add_malfunction():
+                name = simpledialog.askstring("New Malfunction", "Name:")
+                if name:
+                    name = name.strip()
+                if not name:
+                    return
+                if name in self.app.malfunctions:
+                    messagebox.showinfo("Malfunction", "Already exists")
+                    return
+                self.app.malfunctions.append(name)
+                var = tk.BooleanVar(value=True)
+                ttk.Checkbutton(self.mal_frame, text=name, variable=var, command=update_sg).pack(anchor="w")
+                self.mal_vars[name] = var
+                update_sg()
+
+            def del_malfunction():
+                options = [m for m in self.app.malfunctions if not self.app.is_malfunction_used(m)]
+                if not options:
+                    messagebox.showinfo("Delete", "No deletable malfunctions")
+                    return
+                dlg = tk.Toplevel(self)
+                dlg.title("Delete Malfunction")
+                lb = tk.Listbox(dlg, selectmode=tk.MULTIPLE)
+                for m in options:
+                    lb.insert(tk.END, m)
+                lb.pack(padx=5, pady=5)
+                def ok():
+                    sel = [lb.get(i) for i in lb.curselection()]
+                    for m in sel:
+                        if m in self.app.malfunctions:
+                            self.app.malfunctions.remove(m)
+                            cb = self.mal_vars.pop(m, None)
+                            for child in list(self.mal_frame.winfo_children()):
+                                if child.cget("text") == m:
+                                    child.destroy()
+                    update_sg()
+                    dlg.destroy()
+                ttk.Button(dlg, text="Delete", command=ok).pack(pady=5)
+                dlg.grab_set()
+                dlg.wait_window()
+
+            ttk.Button(btn_frame, text="Add", command=add_malfunction).pack(side=tk.LEFT, padx=2)
+            ttk.Button(btn_frame, text="Delete", command=del_malfunction).pack(side=tk.LEFT, padx=2)
+            row_next += 2
+
+            ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
+            preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
+                self.app.get_top_event_safety_goals(self.node)
             sg_value = ", ".join(preset_goals) if preset_goals else getattr(self.node, 'fmeda_safety_goal', '')
             self.sg_var = tk.StringVar(value=sg_value)
-            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30)
-            if preset_goals:
-                self.sg_entry.config(state='readonly')
-            self.sg_entry.grid(row=5, column=1, padx=5, pady=5)
-            if not preset_goals:
-                def choose_goals():
-                    names = [g.strip() for g in self.sg_var.get().split(',') if g.strip()]
-                    dlg = self.app.SelectSafetyGoalsDialog(self, self.app.top_events, names)
-                    if dlg.result:
-                        self.sg_var.set(
-                            ", ".join(
-                                sg.user_name or sg.safety_goal_description or f"SG {sg.unique_id}"
-                                for sg in dlg.result
-                            )
-                        )
-
-                ttk.Button(gen_frame, text="Select", command=choose_goals).grid(row=5, column=2, padx=5, pady=5)
+            self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30, state='readonly')
+            self.sg_entry.grid(row=row_next, column=1, padx=5, pady=5)
+            update_sg()
 
             ttk.Label(metric_frame, text="Severity (1-10):").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.sev_spin = tk.Spinbox(metric_frame, from_=1, to=10, width=5)
@@ -8896,9 +9209,36 @@ class FaultTreeApp:
                     for m in self.mechanisms:
                         if m.name == name:
                             self.dc_var.set(m.coverage)
+                            req_text = getattr(m, "requirement", "")
+                            if req_text:
+                                global global_requirements
+                                req = next(
+                                    (
+                                        r
+                                        for r in global_requirements.values()
+                                        if r.get("text") == req_text
+                                    ),
+                                    None,
+                                )
+                                if req is None:
+                                    rid = str(uuid.uuid4())
+                                    req = {
+                                        "id": rid,
+                                        "req_type": "vehicle",
+                                        "text": req_text,
+                                        "asil": "",
+                                    }
+                                    global_requirements[rid] = req
+                                if not hasattr(self.node, "safety_requirements"):
+                                    self.node.safety_requirements = []
+                                if not any(r.get("id") == req["id"] for r in self.node.safety_requirements):
+                                    self.node.safety_requirements.append(req)
+                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                                    self.req_listbox.insert(tk.END, desc)
                             break
 
                 self.mech_combo.bind("<<ComboboxSelected>>", mech_sel)
+                mech_sel(None)
                 row += 1
             else:
                 self.dc_var = tk.DoubleVar(value=0.0)
@@ -8970,13 +9310,15 @@ class FaultTreeApp:
 
         def apply(self):
             comp = self.comp_var.get()
-            if self.node.parents:
+            if self.node.parents and getattr(self.node.parents[0], "node_type", "").upper() not in GATE_NODE_TYPES:
                 self.node.parents[0].user_name = comp
             # Always store the component name so it can be restored on load
             self.node.fmea_component = comp
             self.node.description = self.mode_var.get()
             self.node.fmea_effect = self.effect_text.get("1.0", "end-1c")
-            self.node.fmea_cause = self.cause_text.get("1.0", "end-1c")
+            self.node.fmea_cause = self.cause_var.get()
+            if self.node.fmea_cause and self.node.fmea_cause not in self.app.faults:
+                self.app.faults.append(self.node.fmea_cause)
             try:
                 self.node.fmea_severity = int(self.sev_spin.get())
             except ValueError:
@@ -8989,12 +9331,12 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
-            self.node.fmeda_malfunction = self.mal_var.get()
-            preset_goals = self.app.get_top_event_safety_goals(self.node)
-            if preset_goals:
-                self.node.fmeda_safety_goal = ", ".join(preset_goals)
-            else:
-                self.node.fmeda_safety_goal = self.sg_var.get()
+            selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+            self.node.fmeda_malfunction = ";".join(selected_mals)
+            for m in selected_mals:
+                if m and m not in self.app.malfunctions:
+                    self.app.malfunctions.append(m)
+            self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
             except ValueError:
@@ -9137,9 +9479,13 @@ class FaultTreeApp:
 
         def body(self, master):
             self.listbox = tk.Listbox(master, height=10, width=40)
+            self._visible_events = []
             for be in self.events:
-                label = be.description or (be.user_name or f"BE {be.unique_id}")
-                self.listbox.insert(tk.END, label)
+                desc = getattr(be, "description", "").strip()
+                if not desc:
+                    continue
+                self._visible_events.append(be)
+                self.listbox.insert(tk.END, desc)
             if self.allow_new:
                 self.listbox.insert(tk.END, "<Create New Failure Mode>")
             self.listbox.grid(row=0, column=0, padx=5, pady=5)
@@ -9149,10 +9495,10 @@ class FaultTreeApp:
             sel = self.listbox.curselection()
             if sel:
                 idx = sel[0]
-                if self.allow_new and idx == len(self.events):
+                if self.allow_new and idx == len(self._visible_events):
                     self.selected = "NEW"
                 else:
-                    self.selected = self.events[idx]
+                    self.selected = self._visible_events[idx]
 
     class SelectSafetyGoalsDialog(simpledialog.Dialog):
         def __init__(self, parent, goals, initial=None):
@@ -9176,7 +9522,9 @@ class FaultTreeApp:
 
     def show_fmea_table(self, fmea=None, fmeda=False):
         """Display an editable AIAG-compliant FMEA or FMEDA table."""
-        basic_events = self.get_all_basic_events()
+        # Use failure modes defined on gates or within FMEA/FMEDA documents.
+        # Do not include FTA base events as selectable failure modes.
+        basic_events = self.get_non_basic_failure_modes()
         entries = self.fmea_entries if fmea is None else fmea['entries']
         title = f"FMEA Table - {fmea['name']}" if fmea else "FMEA Table"
         win = self._new_tab(title)
@@ -9426,9 +9774,7 @@ class FaultTreeApp:
             frac_totals = {}
             for be in events:
                 src = self.get_failure_mode_node(be)
-                comp_name = (
-                    src.parents[0].user_name if src.parents else getattr(src, "fmea_component", "")
-                )
+                comp_name = self.get_component_name_for_node(src)
                 fit = comp_fit.get(comp_name)
                 frac = src.fmeda_fault_fraction
                 if frac > 1.0:
@@ -9460,13 +9806,9 @@ class FaultTreeApp:
 
             for idx, be in enumerate(events):
                 src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
                 parent = src.parents[0] if src.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    parent_name = comp
-                else:
-                    comp = getattr(src, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 if comp not in comp_items:
                     comp_items[comp] = tree.insert(
                         "",
@@ -9559,9 +9901,9 @@ class FaultTreeApp:
                 mechs = []
                 for lib in selected_libs:
                     mechs.extend(lib.mechanisms)
-                comp_name = node.parents[0].user_name if node.parents else getattr(node, "fmea_component", "")
+                comp_name = self.get_component_name_for_node(node)
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
                 refresh_tree()
 
         tree.bind("<Double-1>", on_double)
@@ -9577,7 +9919,7 @@ class FaultTreeApp:
                     mechs.extend(lib.mechanisms)
                 comp_name = getattr(node, "fmea_component", "")
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             elif node:
                 # gather all failure modes under the same component/parent
                 if node.parents:
@@ -9604,9 +9946,9 @@ class FaultTreeApp:
                     mechs = []
                     for lib in selected_libs:
                         mechs.extend(lib.mechanisms)
-                    comp_name = be.parents[0].user_name if be.parents else getattr(be, "fmea_component", "")
+                    comp_name = self.get_component_name_for_node(be)
                     is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive)
+                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
 
         add_btn.config(command=add_failure_mode)
@@ -9663,7 +10005,10 @@ class FaultTreeApp:
                     fmea['bom'] = bom_var.get()
             win.destroy()
 
-        win.protocol("WM_DELETE_WINDOW", on_close)
+        if hasattr(win, "protocol"):
+            win.protocol("WM_DELETE_WINDOW", on_close)
+        else:
+            win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
         columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]
@@ -9671,15 +10016,10 @@ class FaultTreeApp:
             writer = csv.writer(f)
             writer.writerow(columns)
             for be in fmea['entries']:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -9710,15 +10050,10 @@ class FaultTreeApp:
             writer = csv.writer(f)
             writer.writerow(columns)
             for be in fmeda['entries']:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
@@ -9758,14 +10093,7 @@ class FaultTreeApp:
         tree.pack(fill=tk.BOTH, expand=True)
 
         for be in basic_events:
-            parent = be.parents[0] if be.parents else None
-            if parent:
-                if parent.user_name:
-                    comp = parent.user_name
-                else:
-                    comp = "Node {}".format(parent.unique_id)
-            else:
-                comp = "N/A"
+            comp = self.get_component_name_for_node(be) or "N/A"
             tree.insert(
                 "",
                 "end",
@@ -10016,11 +10344,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10119,11 +10456,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10222,11 +10568,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10325,11 +10680,20 @@ class FaultTreeApp:
         ttk.Checkbutton(chk_frame, text="FMEA", variable=var_fmea).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FMEDA", variable=var_fmeda).pack(side=tk.LEFT)
         ttk.Checkbutton(chk_frame, text="FTA", variable=var_fta).pack(side=tk.LEFT)
-        tree = ttk.Treeview(win, columns=["Cause", "Events"], show="headings")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=["Cause", "Events"], show="headings")
         for c in ["Cause", "Events"]:
             tree.heading(c, text=c)
             tree.column(c, width=150)
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
 
         def refresh():
             tree.delete(*tree.get_children())
@@ -10528,14 +10892,22 @@ class FaultTreeApp:
         win = self._mech_tab
         lib_lb = tk.Listbox(win, height=8, width=25)
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        mech_tree = ttk.Treeview(win, columns=("cov", "desc"), show="headings")
+        mech_tree = ttk.Treeview(
+            win, columns=("cov", "req", "desc", "detail"), show="headings"
+        )
         mech_tree.heading("cov", text="Coverage")
         mech_tree.column("cov", width=80)
+        mech_tree.heading("req", text="Requirement")
+        mech_tree.column("req", width=200)
         mech_tree.heading("desc", text="Description")
         mech_tree.column("desc", width=200)
-        mech_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
+        mech_tree.heading("detail", text="Detail")
+        mech_tree.column("detail", width=300)
+        mech_tree.grid(row=0, column=1, columnspan=4, sticky="nsew")
         win.grid_rowconfigure(0, weight=1)
-        win.grid_columnconfigure(1, weight=1)
+        win.grid_columnconfigure(0, weight=0)
+        for c in range(1, 5):
+            win.grid_columnconfigure(c, weight=1)
 
         def refresh_libs():
             lib_lb.delete(0, tk.END)
@@ -10550,7 +10922,56 @@ class FaultTreeApp:
                 return
             lib = self.mechanism_libraries[sel[0]]
             for mech in lib.mechanisms:
-                mech_tree.insert("", tk.END, values=(f"{mech.coverage:.2f}", mech.description), text=mech.name)
+                mech_tree.insert(
+                    "",
+                    tk.END,
+                    values=(
+                        f"{mech.coverage:.2f}",
+                        getattr(mech, "requirement", ""),
+                        mech.description,
+                        mech.detail,
+                    ),
+                    text=mech.name,
+                )
+
+        tip_win = None
+
+        def hide_tip():
+            nonlocal tip_win
+            if tip_win is not None:
+                tip_win.destroy()
+                tip_win = None
+
+        def show_tip(event, text):
+            nonlocal tip_win
+            hide_tip()
+            if not text:
+                return
+            tip_win = tk.Toplevel(win)
+            tip_win.wm_overrideredirect(True)
+            tip_win.wm_geometry(
+                f"+{win.winfo_rootx()+event.x+20}+{win.winfo_rooty()+event.y+20}"
+            )
+            lbl = tk.Label(
+                tip_win,
+                text=text,
+                justify="left",
+                background="lightyellow",
+                relief="solid",
+                borderwidth=1,
+                wraplength=300,
+            )
+            lbl.pack()
+
+        def on_tree_motion(event):
+            row = mech_tree.identify_row(event.y)
+            col = mech_tree.identify_column(event.x)
+            if row and col in ("#3", "#4"):
+                field = "desc" if col == "#3" else "detail"
+                text = mech_tree.set(row, field)
+                show_tip(event, text)
+            else:
+                hide_tip()
 
         def add_lib():
             name = simpledialog.askstring("New Library", "Library name:")
@@ -10576,35 +10997,79 @@ class FaultTreeApp:
             del self.mechanism_libraries[sel[0]]
             refresh_libs()
 
+        def clone_lib():
+            sel = lib_lb.curselection()
+            if not sel:
+                return
+            lib = self.mechanism_libraries[sel[0]]
+            name = simpledialog.askstring(
+                "Clone Library",
+                "Library name:",
+                initialvalue=f"{lib.name} Copy",
+            )
+            if not name:
+                return
+            existing = {l.name for l in self.mechanism_libraries}
+            base = name
+            idx = 1
+            while name in existing:
+                name = f"{base} ({idx})"
+                idx += 1
+            new_mechs = [
+                DiagnosticMechanism(
+                    m.name,
+                    m.coverage,
+                    m.description,
+                    m.detail,
+                    getattr(m, "requirement", ""),
+                )
+                for m in lib.mechanisms
+            ]
+            self.mechanism_libraries.append(MechanismLibrary(name, new_mechs))
+            refresh_libs()
+
         def add_mech():
             sel = lib_lb.curselection()
             if not sel:
                 return
             lib = self.mechanism_libraries[sel[0]]
-            dlg = simpledialog.Dialog(win, title="Add Mechanism")
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value="1.0")
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar()
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar()
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     self.result = (
                         self.name_var.get(),
                         float(self.cov_var.get() or 1.0),
-                        self.desc_var.get(),
+                        self.desc_text.get("1.0", "end-1c"),
+                        self.detail_text.get("1.0", "end-1c"),
+                        self.req_var.get(),
                     )
 
             form = MForm(win)
             if hasattr(form, "result"):
-                name, cov, desc = form.result
-                lib.mechanisms.append(DiagnosticMechanism(name, cov, desc))
+                name, cov, desc, detail, req = form.result
+                lib.mechanisms.append(
+                    DiagnosticMechanism(name, cov, desc, detail, req)
+                )
                 refresh_mechs()
 
         def edit_mech():
@@ -10618,20 +11083,34 @@ class FaultTreeApp:
 
             class MForm(simpledialog.Dialog):
                 def body(self, master):
+                    self.resizable(True, True)
+                    master.grid_columnconfigure(1, weight=1)
+                    for r in (2, 3):
+                        master.grid_rowconfigure(r, weight=1)
                     ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                     self.name_var = tk.StringVar(value=mech.name)
-                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+                    ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                     ttk.Label(master, text="Coverage").grid(row=1, column=0, sticky="e")
                     self.cov_var = tk.StringVar(value=str(mech.coverage))
-                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1)
-                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="e")
-                    self.desc_var = tk.StringVar(value=mech.description)
-                    ttk.Entry(master, textvariable=self.desc_var).grid(row=2, column=1)
+                    ttk.Entry(master, textvariable=self.cov_var).grid(row=1, column=1, sticky="ew")
+                    ttk.Label(master, text="Description").grid(row=2, column=0, sticky="ne")
+                    self.desc_text = tk.Text(master, width=40, height=3, wrap="word")
+                    self.desc_text.insert("1.0", mech.description)
+                    self.desc_text.grid(row=2, column=1, sticky="nsew")
+                    ttk.Label(master, text="Detail").grid(row=3, column=0, sticky="ne")
+                    self.detail_text = tk.Text(master, width=40, height=4, wrap="word")
+                    self.detail_text.insert("1.0", mech.detail)
+                    self.detail_text.grid(row=3, column=1, sticky="nsew")
+                    ttk.Label(master, text="Requirement").grid(row=4, column=0, sticky="e")
+                    self.req_var = tk.StringVar(value=getattr(mech, "requirement", ""))
+                    ttk.Entry(master, textvariable=self.req_var).grid(row=4, column=1, sticky="ew")
 
                 def apply(self):
                     mech.name = self.name_var.get()
                     mech.coverage = float(self.cov_var.get() or 1.0)
-                    mech.description = self.desc_var.get()
+                    mech.description = self.desc_text.get("1.0", "end-1c")
+                    mech.detail = self.detail_text.get("1.0", "end-1c")
+                    mech.requirement = self.req_var.get()
 
             MForm(win)
             refresh_mechs()
@@ -10651,11 +11130,16 @@ class FaultTreeApp:
         ttk.Button(btnf, text="Add Lib", command=add_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Edit Lib", command=edit_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Lib", command=del_lib).pack(side=tk.LEFT)
+        ttk.Button(btnf, text="Clone Lib", command=clone_lib).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Add Mech", command=add_mech).pack(side=tk.LEFT, padx=5)
         ttk.Button(btnf, text="Edit Mech", command=edit_mech).pack(side=tk.LEFT)
         ttk.Button(btnf, text="Del Mech", command=del_mech).pack(side=tk.LEFT)
 
         lib_lb.bind("<<ListboxSelect>>", refresh_mechs)
+        lib_lb.bind("<Double-1>", lambda e: edit_lib())
+        mech_tree.bind("<Double-1>", lambda e: edit_mech())
+        mech_tree.bind("<Motion>", on_tree_motion)
+        mech_tree.bind("<Leave>", lambda e: hide_tip())
         refresh_libs()
 
     def manage_scenario_libraries(self):
@@ -11155,6 +11639,56 @@ class FaultTreeApp:
         self.doc_nb.select(tab)
         return tab
 
+    def _format_diag_title(self, diag) -> str:
+        """Return SysML style title for a diagram tab."""
+        if diag.name:
+            return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK} {diag.name}"
+        return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
+
+    def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
+        """Return a simple 16x16 PhotoImage for the given shape and color."""
+        size = 16
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
+        if shape == "circle":
+            r = size // 2 - 2
+            cx = cy = size // 2
+            for y in range(size):
+                for x in range(size):
+                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        img.put(c, (x, y))
+        elif shape == "arrow":
+            mid = size // 2
+            for x in range(2, mid + 1):
+                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
+            for i in range(4):
+                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "rect":
+            for x in range(3, size - 3):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for y in range(3, size - 3):
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
+        elif shape == "nested":
+            for x in range(1, size - 1):
+                img.put(c, (x, 1))
+                img.put(c, (x, size - 2))
+            for y in range(1, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(5, size - 5):
+                img.put(c, (x, 5))
+                img.put(c, (x, size - 6))
+            for y in range(5, size - 5):
+                img.put(c, (5, y))
+                img.put(c, (size - 6, y))
+        else:
+            img.put(c, to=(2, 2, size - 2, size - 2))
+        return img
+
     def open_use_case_diagram(self):
         """Prompt for a diagram name then open a new use case diagram."""
         name = simpledialog.askstring("New Use Case Diagram", "Enter diagram name:")
@@ -11162,7 +11696,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Use Case Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11174,7 +11708,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11186,7 +11720,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11198,7 +11732,7 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Internal Block Diagram", name=name, package=repo.root_package.elem_id)
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
@@ -11220,7 +11754,7 @@ class FaultTreeApp:
         if existing and existing.winfo_exists():
             self.doc_nb.select(existing)
             return
-        tab = self._new_tab(diag.name)
+        tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
@@ -11466,7 +12000,7 @@ class FaultTreeApp:
             messagebox.showwarning("Edit Value", "Select a Confidence or Robustness node.")
 
     def edit_gate_type(self):
-        if self.selected_node and self.selected_node.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+        if self.selected_node and self.selected_node.node_type.upper() in GATE_NODE_TYPES:
             new_gt = simpledialog.askstring("Edit Gate Type", "Enter new gate type (AND/OR):", initialvalue=self.selected_node.gate_type)
             if new_gt is not None and new_gt.upper() in ["AND", "OR"]:
                 self.selected_node.gate_type = new_gt.upper()
@@ -11641,6 +12175,8 @@ class FaultTreeApp:
             "tc2fi_entries": self.tc2fi_entries,
             "scenario_libraries": self.scenario_libraries,
             "odd_libraries": self.odd_libraries,
+            "faults": self.faults,
+            "malfunctions": self.malfunctions,
             "project_properties": self.project_properties,
             "global_requirements": global_requirements,
             "reviews": reviews,
@@ -11849,6 +12385,8 @@ class FaultTreeApp:
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
         self.odd_libraries = data.get("odd_libraries", [])
+        self.faults = data.get("faults", [])
+        self.malfunctions = data.get("malfunctions", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
@@ -11974,7 +12512,7 @@ class FaultTreeApp:
     def build_html_report(self):
         def node_to_html(n):
             txt = f"{n.name} ({n.node_type}"
-            if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if n.node_type.upper() in GATE_NODE_TYPES:
                 txt += f", {n.gate_type}"
             txt += ")"
             if n.display_label:
@@ -12126,7 +12664,7 @@ class FaultTreeApp:
             )
         else:
             node_type_upper = node.node_type.upper()
-            if node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if node.gate_type and node.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_shape(
                         self.page_canvas,
@@ -12489,15 +13027,10 @@ class FaultTreeApp:
             ]
             writer.writerow(columns)
             for be in fmea["entries"]:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    if parent.description:
-                        comp = f"{comp} - {parent.description}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 req_ids = "; ".join(
                     [f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])]
                 )
@@ -12535,13 +13068,10 @@ class FaultTreeApp:
             ]
             writer.writerow(columns)
             for be in fmeda["entries"]:
-                parent = be.parents[0] if be.parents else None
-                if parent:
-                    comp = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                    parent_name = parent.user_name if parent.user_name else f"Node {parent.unique_id}"
-                else:
-                    comp = getattr(be, "fmea_component", "") or "N/A"
-                    parent_name = ""
+                src = self.get_failure_mode_node(be)
+                comp = self.get_component_name_for_node(src) or "N/A"
+                parent = src.parents[0] if src.parents else None
+                parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
                 row = [
                     comp,
                     parent_name,
@@ -13019,7 +13549,7 @@ class FaultTreeNode:
         if parent is not None:
             self.parents.append(parent)
         self.quant_value = None
-        self.gate_type = "AND" if node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else None
+        self.gate_type = "AND" if node_type.upper() in GATE_NODE_TYPES else None
         self.description = ""
         self.rationale = ""
         self.x = 50
@@ -13070,6 +13600,10 @@ class FaultTreeNode:
         self.fmeda_lpfm_target = 0.0
         # Reference to a unique failure mode this node represents
         self.failure_mode_ref = None
+        # Reference to a fault represented by a basic event
+        self.fault_ref = ""
+        # Malfunction name for top level events
+        self.malfunction = ""
         # Probability values for classical FTA calculations
         self.failure_prob = 0.0
         self.probability = 0.0
@@ -13128,6 +13662,8 @@ class FaultTreeNode:
             "fmeda_spfm_target": self.fmeda_spfm_target,
             "fmeda_lpfm_target": self.fmeda_lpfm_target,
             "failure_mode_ref": self.failure_mode_ref,
+            "fault_ref": self.fault_ref,
+            "malfunction": self.malfunction,
             # Save the safety requirements list (which now includes custom_id)
             "safety_requirements": self.safety_requirements,
             "failure_prob": self.failure_prob,
@@ -13185,6 +13721,8 @@ class FaultTreeNode:
         node.fmeda_spfm_target = data.get("fmeda_spfm_target", 0.0)
         node.fmeda_lpfm_target = data.get("fmeda_lpfm_target", 0.0)
         node.failure_mode_ref = data.get("failure_mode_ref")
+        node.fault_ref = data.get("fault_ref", "")
+        node.malfunction = data.get("malfunction", "")
         # NEW: Load safety_requirements (or default to empty list)
         node.safety_requirements = data.get("safety_requirements", [])
         node.failure_prob = data.get("failure_prob", 0.0)
@@ -13298,7 +13836,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 node = n
                 break
@@ -13369,7 +13907,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -13425,7 +13963,7 @@ class PageDiagram:
         y = self.canvas.canvasy(event.y) / self.zoom
         clicked_node = None
         for n in self.get_all_nodes(self.root_node):
-            radius = 60 if n.node_type.upper() in ["GATE", "RIGOR LEVEL", "TOP EVENT"] else 45
+            radius = 60 if n.node_type.upper() in GATE_NODE_TYPES else 45
             if (x - n.x)**2 + (y - n.y)**2 < radius**2:
                 clicked_node = n
                 break
@@ -13487,7 +14025,7 @@ class PageDiagram:
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def draw_grid(self):
-        if not self.project_properties.get("show_grid", True):
+        if not self.project_properties.get("show_grid", False):
             return
         spacing = self.grid_size * self.zoom
         width = self.canvas.winfo_width()
@@ -13571,7 +14109,7 @@ class PageDiagram:
                                                              outline_color=outline_color,
                                                              line_width=1,
                                                              font_obj=self.diagram_font)
-            elif node_type_upper in ["GATE", "RIGOR LEVEL", "TOP EVENT"]:
+            elif node_type_upper in GATE_NODE_TYPES:
                 if source.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_clone_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
@@ -13602,7 +14140,7 @@ class PageDiagram:
                 )
         else:
             # Primary node: use normal drawing routines.
-            if node_type_upper in ["TOP EVENT", "GATE", "RIGOR LEVEL"]:
+            if node_type_upper in GATE_NODE_TYPES:
                 if source.is_page and source != self.root_node:
                     fta_drawing_helper.draw_triangle_shape(
                         self.canvas, eff_x, eff_y, scale=40 * self.zoom,
