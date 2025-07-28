@@ -1,26 +1,33 @@
 import tkinter as tk
 
 class ToolTip:
-    """Simple tooltip for Tkinter widgets."""
+    """Simple tooltip for Tkinter widgets.
 
-    def __init__(self, widget, text: str, delay: int = 500):
+    By default the tooltip is displayed when the mouse hovers over the
+    associated widget.  The ``show`` and ``hide`` methods can also be used to
+    control the tooltip manually (e.g. for notebook tabs).
+    """
+
+    def __init__(self, widget, text: str, delay: int = 500, *, automatic: bool = True):
         self.widget = widget
         self.text = text
         self.delay = delay
         self.tipwindow = None
         self.id = None
-        widget.bind("<Enter>", self._schedule)
-        widget.bind("<Leave>", self._hide)
+        if automatic:
+            widget.bind("<Enter>", self._schedule)
+            widget.bind("<Leave>", self._hide)
 
     def _schedule(self, _event=None):
         self._unschedule()
         self.id = self.widget.after(self.delay, self._show)
 
-    def _show(self):
+    def _show(self, x: int | None = None, y: int | None = None):
         if self.tipwindow or not self.text:
             return
-        x = self.widget.winfo_rootx() + 20
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
+        if x is None:
+            x = self.widget.winfo_rootx() + 20
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         # Ensure the tooltip stays above other windows
@@ -39,6 +46,15 @@ class ToolTip:
             wraplength=300,
         )
         label.pack(ipadx=1)
+
+    def show(self, x: int | None = None, y: int | None = None):
+        """Show the tooltip immediately."""
+        self._hide()
+        self._show(x, y)
+
+    def hide(self):
+        """Hide the tooltip immediately."""
+        self._hide()
 
     def _hide(self, _event=None):
         self._unschedule()

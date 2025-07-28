@@ -21,6 +21,7 @@ from analysis.models import (
     PASSIVE_QUAL_FACTORS,
     component_fit_map,
     calc_asil,
+    global_requirements,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -39,11 +40,13 @@ def _total_fit_from_boms(boms):
         total += sum(component_fit_map(bom).values())
     return total
 
+
 def _wrap_val(val, width=30):
     """Return text wrapped value for tree view cells."""
     if val is None:
         return ""
     return textwrap.fill(str(val), width)
+
 
 class ReliabilityWindow(tk.Frame):
     def __init__(self, master, app):
@@ -83,7 +86,9 @@ class ReliabilityWindow(tk.Frame):
             state="readonly",
         )
         self.profile_combo.pack(anchor="w", fill="x")
-        ToolTip(self.profile_combo, "Mission profiles define temperature and usage factors.")
+        ToolTip(
+            self.profile_combo, "Mission profiles define temperature and usage factors."
+        )
 
         ttk.Label(self, text="Analysis:").pack(anchor="w")
         self.analysis_var = tk.StringVar()
@@ -113,22 +118,37 @@ class ReliabilityWindow(tk.Frame):
         load_btn = ttk.Button(btn_frame, text="Load CSV", command=self.load_csv)
         load_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_btn, "Import components from a CSV Bill of Materials.")
-        add_btn = ttk.Button(btn_frame, text="Add Component", command=self.add_component)
+        add_btn = ttk.Button(
+            btn_frame, text="Add Component", command=self.add_component
+        )
         add_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(add_btn, "Create a new component entry manually.")
-        cfg_btn = ttk.Button(btn_frame, text="Configure Component", command=self.configure_component)
+        cfg_btn = ttk.Button(
+            btn_frame, text="Configure Component", command=self.configure_component
+        )
         cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(cfg_btn, "Edit parameters of the selected component.")
-        calc_btn = ttk.Button(btn_frame, text="Calculate FIT", command=self.calculate_fit)
+        calc_btn = ttk.Button(
+            btn_frame, text="Calculate FIT", command=self.calculate_fit
+        )
         calc_btn.pack(side=tk.LEFT, padx=2, pady=2)
-        ToolTip(calc_btn, "Compute total FIT rate using the selected model and mission profile.")
-        save_btn = ttk.Button(btn_frame, text="Save Analysis", command=self.save_analysis)
+        ToolTip(
+            calc_btn,
+            "Compute total FIT rate using the selected model and mission profile.",
+        )
+        save_btn = ttk.Button(
+            btn_frame, text="Save Analysis", command=self.save_analysis
+        )
         save_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(save_btn, "Store the current analysis in the project file.")
-        load_an_btn = ttk.Button(btn_frame, text="Load Analysis", command=self.load_analysis)
+        load_an_btn = ttk.Button(
+            btn_frame, text="Load Analysis", command=self.load_analysis
+        )
         load_an_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_an_btn, "Reload a previously saved reliability analysis.")
-        del_btn = ttk.Button(btn_frame, text="Delete Analysis", command=self.delete_analysis)
+        del_btn = ttk.Button(
+            btn_frame, text="Delete Analysis", command=self.delete_analysis
+        )
         del_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_btn, "Remove the selected analysis from the project.")
         self.formula_label = ttk.Label(self, text="")
@@ -149,14 +169,22 @@ class ReliabilityWindow(tk.Frame):
             state="readonly",
         )
         type_cb.grid(row=1, column=1, padx=5, pady=5)
-        ttk.Label(dialog, text="Quantity").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        ttk.Label(dialog, text="Quantity").grid(
+            row=2, column=0, padx=5, pady=5, sticky="e"
+        )
         qty_var = tk.IntVar(value=1)
         ttk.Entry(dialog, textvariable=qty_var).grid(row=2, column=1, padx=5, pady=5)
-        ttk.Label(dialog, text="Qualification").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        ttk.Label(dialog, text="Qualification").grid(
+            row=3, column=0, padx=5, pady=5, sticky="e"
+        )
         qual_var = tk.StringVar(value="None")
-        ttk.Combobox(dialog, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=3, column=1, padx=5, pady=5)
+        ttk.Combobox(
+            dialog, textvariable=qual_var, values=QUALIFICATIONS, state="readonly"
+        ).grid(row=3, column=1, padx=5, pady=5)
         passive_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(dialog, text="Passive", variable=passive_var).grid(row=4, column=0, columnspan=2, pady=5)
+        ttk.Checkbutton(dialog, text="Passive", variable=passive_var).grid(
+            row=4, column=0, columnspan=2, pady=5
+        )
 
         attr_frame = ttk.Frame(dialog)
         attr_frame.grid(row=5, column=0, columnspan=2)
@@ -168,13 +196,19 @@ class ReliabilityWindow(tk.Frame):
             attr_vars.clear()
             template = COMPONENT_ATTR_TEMPLATES.get(type_var.get(), {})
             for i, (k, v) in enumerate(template.items()):
-                ttk.Label(attr_frame, text=k).grid(row=i, column=0, padx=5, pady=5, sticky="e")
+                ttk.Label(attr_frame, text=k).grid(
+                    row=i, column=0, padx=5, pady=5, sticky="e"
+                )
                 if isinstance(v, list):
                     var = tk.StringVar(value=v[0])
-                    ttk.Combobox(attr_frame, textvariable=var, values=v, state="readonly").grid(row=i, column=1, padx=5, pady=5)
+                    ttk.Combobox(
+                        attr_frame, textvariable=var, values=v, state="readonly"
+                    ).grid(row=i, column=1, padx=5, pady=5)
                 else:
                     var = tk.StringVar(value=str(v))
-                    ttk.Entry(attr_frame, textvariable=var).grid(row=i, column=1, padx=5, pady=5)
+                    ttk.Entry(attr_frame, textvariable=var).grid(
+                        row=i, column=1, padx=5, pady=5
+                    )
                 attr_vars[k] = var
 
         type_cb.bind("<<ComboboxSelected>>", refresh_attr_fields)
@@ -195,10 +229,11 @@ class ReliabilityWindow(tk.Frame):
             self.refresh_tree()
             dialog.destroy()
 
-        ttk.Button(dialog, text="Add", command=ok).grid(row=6, column=0, columnspan=2, pady=5)
+        ttk.Button(dialog, text="Add", command=ok).grid(
+            row=6, column=0, columnspan=2, pady=5
+        )
         dialog.grab_set()
         dialog.wait_window()
-
 
     def show_formula(self, event=None):
         sel = self.tree.focus()
@@ -250,7 +285,11 @@ class ReliabilityWindow(tk.Frame):
                     name = row.get(mapping["name"], "")
                     ctype = row.get(mapping["type"], "")
                     qty = int(row.get(mapping["qty"], 1) or 1)
-                    qual = row.get(mapping.get("qualification"), "") if mapping.get("qualification") else ""
+                    qual = (
+                        row.get(mapping.get("qualification"), "")
+                        if mapping.get("qualification")
+                        else ""
+                    )
                     comp = ReliabilityComponent(name, ctype, qty, {}, qual)
                     template = COMPONENT_ATTR_TEMPLATES.get(ctype, {})
                     for k, v in template.items():
@@ -272,7 +311,9 @@ class ReliabilityWindow(tk.Frame):
         vars = {}
         targets = ["name", "type", "qty", "qualification"]
         for i, tgt in enumerate(targets):
-            ttk.Label(win, text=tgt.capitalize()).grid(row=i, column=0, padx=5, pady=5, sticky="e")
+            ttk.Label(win, text=tgt.capitalize()).grid(
+                row=i, column=0, padx=5, pady=5, sticky="e"
+            )
             var = tk.StringVar()
             cb = ttk.Combobox(win, textvariable=var, values=fields, state="readonly")
             if i < len(fields):
@@ -292,7 +333,9 @@ class ReliabilityWindow(tk.Frame):
             win.destroy()
 
         ttk.Button(win, text="OK", command=ok).grid(row=len(targets), column=0, pady=5)
-        ttk.Button(win, text="Cancel", command=cancel).grid(row=len(targets), column=1, pady=5)
+        ttk.Button(win, text="Cancel", command=cancel).grid(
+            row=len(targets), column=1, pady=5
+        )
         win.grab_set()
         win.wait_window()
         if not result:
@@ -323,25 +366,45 @@ class ReliabilityWindow(tk.Frame):
                 nb.add(attr_tab, text="Attributes")
 
                 row = 0
-                ttk.Label(gen_tab, text="Quantity").grid(row=row, column=0, padx=5, pady=5, sticky="e")
+                ttk.Label(gen_tab, text="Quantity").grid(
+                    row=row, column=0, padx=5, pady=5, sticky="e"
+                )
                 qty_var = tk.IntVar(value=comp.quantity)
-                ttk.Entry(gen_tab, textvariable=qty_var).grid(row=row, column=1, padx=5, pady=5)
+                ttk.Entry(gen_tab, textvariable=qty_var).grid(
+                    row=row, column=1, padx=5, pady=5
+                )
                 self.vars["__qty__"] = qty_var
                 row += 1
-                ttk.Label(gen_tab, text="Qualification").grid(row=row, column=0, padx=5, pady=5, sticky="e")
+                ttk.Label(gen_tab, text="Qualification").grid(
+                    row=row, column=0, padx=5, pady=5, sticky="e"
+                )
                 qual_var = tk.StringVar(value=comp.qualification)
-                ttk.Combobox(gen_tab, textvariable=qual_var, values=QUALIFICATIONS, state="readonly").grid(row=row, column=1, padx=5, pady=5)
+                ttk.Combobox(
+                    gen_tab,
+                    textvariable=qual_var,
+                    values=QUALIFICATIONS,
+                    state="readonly",
+                ).grid(row=row, column=1, padx=5, pady=5)
                 self.vars["__qual__"] = qual_var
 
                 row = 0
                 for k, v in comp.attributes.items():
-                    ttk.Label(attr_tab, text=k).grid(row=row, column=0, padx=5, pady=5, sticky="e")
+                    ttk.Label(attr_tab, text=k).grid(
+                        row=row, column=0, padx=5, pady=5, sticky="e"
+                    )
                     if isinstance(template.get(k), list):
                         var = tk.StringVar(value=str(v))
-                        ttk.Combobox(attr_tab, textvariable=var, values=template[k], state="readonly").grid(row=row, column=1, padx=5, pady=5)
+                        ttk.Combobox(
+                            attr_tab,
+                            textvariable=var,
+                            values=template[k],
+                            state="readonly",
+                        ).grid(row=row, column=1, padx=5, pady=5)
                     else:
                         var = tk.StringVar(value=str(v))
-                        ttk.Entry(attr_tab, textvariable=var).grid(row=row, column=1, padx=5, pady=5)
+                        ttk.Entry(attr_tab, textvariable=var).grid(
+                            row=row, column=1, padx=5, pady=5
+                        )
                     self.vars[k] = var
                     row += 1
 
@@ -372,7 +435,11 @@ class ReliabilityWindow(tk.Frame):
             else:
                 info = RELIABILITY_MODELS.get(std, {}).get(comp.comp_type)
                 if info:
-                    qf = PASSIVE_QUAL_FACTORS.get(comp.qualification, 1.0) if comp.is_passive else 1.0
+                    qf = (
+                        PASSIVE_QUAL_FACTORS.get(comp.qualification, 1.0)
+                        if comp.is_passive
+                        else 1.0
+                    )
                     if mp is not None:
                         comp.fit = info["formula"](comp.attributes, mp) * mp.tau * qf
                     else:
@@ -381,11 +448,14 @@ class ReliabilityWindow(tk.Frame):
                     comp.fit = 0.0
             total += comp.fit * comp.quantity
 
-        sg_targets = {sg.user_name: {
-            "dc": getattr(sg, "sg_dc_target", 0.0),
-            "spfm": getattr(sg, "sg_spfm_target", 0.0),
-            "lpfm": getattr(sg, "sg_lpfm_target", 0.0),
-        } for sg in self.app.top_events}
+        sg_targets = {
+            sg.user_name: {
+                "dc": getattr(sg, "sg_dc_target", 0.0),
+                "spfm": getattr(sg, "sg_spfm_target", 0.0),
+                "lpfm": getattr(sg, "sg_lpfm_target", 0.0),
+            }
+            for sg in self.app.top_events
+        }
         for be in self.app.fmea_entries:
             sg = getattr(be, "fmeda_safety_goal", "")
             if sg and sg not in sg_targets:
@@ -416,7 +486,8 @@ class ReliabilityWindow(tk.Frame):
         self.formula_label.config(
             text=(
                 f"Total FIT: {metrics['total']:.2f}  DC: {metrics['dc']:.2f}  "
-                f"SPFM: {metrics['spfm_raw']:.2f}  LPFM: {metrics['lpfm_raw']:.2f}" + extra
+                f"SPFM: {metrics['spfm_raw']:.2f}  LPFM: {metrics['lpfm_raw']:.2f}"
+                + extra
             )
         )
 
@@ -475,7 +546,9 @@ class ReliabilityWindow(tk.Frame):
             self._populate_from_analysis(ra)
             win.destroy()
 
-        ttk.Button(win, text="Load", command=do_load).pack(side=tk.RIGHT, padx=5, pady=5)
+        ttk.Button(win, text="Load", command=do_load).pack(
+            side=tk.RIGHT, padx=5, pady=5
+        )
 
     def load_selected_analysis(self, *_):
         """Load analysis chosen from the combo box."""
@@ -491,7 +564,9 @@ class ReliabilityWindow(tk.Frame):
             return
         if not messagebox.askyesno("Delete", f"Delete analysis '{name}'?"):
             return
-        self.app.reliability_analyses = [r for r in self.app.reliability_analyses if r.name != name]
+        self.app.reliability_analyses = [
+            r for r in self.app.reliability_analyses if r.name != name
+        ]
         self.analysis_var.set("")
         self.refresh_analysis_list()
         self.components.clear()
@@ -522,11 +597,27 @@ class ReliabilityWindow(tk.Frame):
 
 class FI2TCWindow(tk.Frame):
     COLS = [
-        "id","system_function","allocation","interfaces","insufficiency",
-        "scene","scenario","driver_behavior","occurrence","vehicle_effect",
-        "severity","design_measures","verification","measure_effectiveness",
-        "triggering_condition","worst_case","tc_effect","mitigation","acceptance"
+        "id",
+        "system_function",
+        "allocation",
+        "interfaces",
+        "functional_insufficiencies",
+        "scene",
+        "scenario",
+        "driver_behavior",
+        "occurrence",
+        "vehicle_effect",
+        "severity",
+        "design_measures",
+        "verification",
+        "measure_effectiveness",
+        "triggering_conditions",
+        "worst_case",
+        "tc_effect",
+        "mitigation",
+        "acceptance",
     ]
+
     def __init__(self, master, app):
         super().__init__(master)
         self.app = app
@@ -558,7 +649,7 @@ class FI2TCWindow(tk.Frame):
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for c in self.COLS:
-            self.tree.heading(c, text=c.replace("_"," ").title())
+            self.tree.heading(c, text=c.replace("_", " ").title())
             width = 200 if c == "hazard" else 120
             self.tree.column(c, width=width)
         self.tree.grid(row=0, column=0, sticky="nsew")
@@ -578,11 +669,14 @@ class FI2TCWindow(tk.Frame):
         del_row_btn = ttk.Button(btn, text="Delete", command=self.del_row)
         del_row_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_row_btn, "Remove the selected HAZOP entry from the table.")
-        ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
         self.refresh_docs()
         self.refresh()
         if not isinstance(master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
+
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         for row in self.app.fi2tc_entries:
@@ -596,20 +690,38 @@ class FI2TCWindow(tk.Frame):
             default = {k: "" for k in parent.COLS}
             self.data = data or default
             super().__init__(parent, title="Edit Row")
+
         def body(self, master):
-            fi_names = [n.user_name or f"FI {n.unique_id}" for n in self.app.get_all_functional_insufficiencies()]
-            tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
+            fi_names = [
+                n.user_name or f"FI {n.unique_id}"
+                for n in self.app.get_all_functional_insufficiencies()
+            ]
+            tc_names = [
+                n.user_name or f"TC {n.unique_id}"
+                for n in self.app.get_all_triggering_conditions()
+            ]
             func_names = self.app.get_all_function_names()
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
+            req_opts = [
+                f"[{r['id']}] {r['text']}"
+                for r in global_requirements.values()
+                if r.get("req_type") == "functional modification"
+            ]
             self.widgets = {}
             r = 0
 
             def refresh_funcs(*_):
                 comp = self.widgets.get("allocation")
                 if isinstance(comp, tk.StringVar):
-                    func_opts = sorted({e.function for e in self.app.hazop_entries if not comp.get() or e.component == comp.get()})
+                    func_opts = sorted(
+                        {
+                            e.function
+                            for e in self.app.hazop_entries
+                            if not comp.get() or e.component == comp.get()
+                        }
+                    )
                 else:
                     func_opts = func_names
                 if "system_function" in self.widgets:
@@ -617,42 +729,62 @@ class FI2TCWindow(tk.Frame):
                     w["values"] = func_opts
 
             for col in self.parent_win.COLS:
-                ttk.Label(master, text=col.replace("_", " ").title()).grid(row=r, column=0, sticky="e", padx=5, pady=2)
-                if col == "triggering_condition":
+                ttk.Label(master, text=col.replace("_", " ").title()).grid(
+                    row=r, column=0, sticky="e", padx=5, pady=2
+                )
+                if col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=tc_names, state="readonly")
+                    cb = ttk.Combobox(master, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
-                elif col == "insufficiency":
+                elif col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=fi_names, state="readonly")
+                    cb = ttk.Combobox(master, textvariable=var, values=fi_names)
+                    cb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = var
+                elif col == "design_measures":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "system_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=func_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=func_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                     self.widgets["system_function_widget"] = cb
                 elif col == "allocation":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=comp_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=comp_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     cb.bind("<<ComboboxSelected>>", refresh_funcs)
                     self.widgets[col] = var
                 elif col == "scene":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=scene_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=scene_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "scenario":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=scen_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=scen_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=["1", "2", "3"], state="readonly")
+                    cb = ttk.Combobox(
+                        master,
+                        textvariable=var,
+                        values=["1", "2", "3"],
+                        state="readonly",
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 else:
@@ -662,7 +794,7 @@ class FI2TCWindow(tk.Frame):
                     self.widgets[col] = txt
                 r += 1
             refresh_funcs()
-            
+
         def apply(self):
             for col, widget in self.widgets.items():
                 if isinstance(widget, tk.Entry):
@@ -678,6 +810,7 @@ class FI2TCWindow(tk.Frame):
         if getattr(dlg, "result", None):
             self.app.fi2tc_entries.append(dlg.data)
             self.refresh()
+
     def edit_row(self):
         sel = self.tree.focus()
         if not sel:
@@ -687,6 +820,7 @@ class FI2TCWindow(tk.Frame):
         dlg = self.RowDialog(self, self.app, data)
         if getattr(dlg, "result", None):
             self.refresh()
+
     def del_row(self):
         sel = self.tree.selection()
         for iid in sel:
@@ -694,8 +828,11 @@ class FI2TCWindow(tk.Frame):
             if idx < len(self.app.fi2tc_entries):
                 del self.app.fi2tc_entries[idx]
         self.refresh()
+
     def export_csv(self):
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV","*.csv")])
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+        )
         if not path:
             return
         with open(path, "w", newline="") as f:
@@ -764,6 +901,7 @@ class FI2TCWindow(tk.Frame):
         self.refresh()
         self.app.update_views()
 
+
 class HazopWindow(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
@@ -779,7 +917,9 @@ class HazopWindow(tk.Frame):
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ToolTip(self.doc_cb, "All HAZOP analyses stored in the project are listed here.")
+        ToolTip(
+            self.doc_cb, "All HAZOP analyses stored in the project are listed here."
+        )
         new_btn = ttk.Button(top, text="New", command=self.new_doc)
         new_btn.pack(side=tk.LEFT)
         ToolTip(new_btn, "Create a new HAZOP document.")
@@ -797,7 +937,6 @@ class HazopWindow(tk.Frame):
                 width = 120
             self.tree.column(col, width=width)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
@@ -885,9 +1024,13 @@ class HazopWindow(tk.Frame):
             ToolTip(func_lbl, "Select the vehicle function under analysis.")
             funcs = self.app.get_all_action_names()
             self.func = tk.StringVar(value=self.row.function)
-            func_cb = ttk.Combobox(master, textvariable=self.func, values=funcs, state="readonly")
+            func_cb = ttk.Combobox(
+                master, textvariable=self.func, values=funcs, state="readonly"
+            )
             func_cb.grid(row=0, column=1, padx=5, pady=5)
-            ToolTip(func_cb, "Functions come from activity diagrams or architecture blocks.")
+            ToolTip(
+                func_cb, "Functions come from activity diagrams or architecture blocks."
+            )
 
             mal_lbl = ttk.Label(master, text="Malfunction")
             mal_lbl.grid(row=1, column=0, sticky="e", padx=5, pady=5)
@@ -896,7 +1039,7 @@ class HazopWindow(tk.Frame):
                 "Choose an existing malfunction or type a new one.\n"
                 "Create malfunctions via the Malfunctions editor or by\n"
                 "building an activity diagram that defines vehicle level\n"
-                "functions, then running a HAZOP on the diagram activities."
+                "functions, then running a HAZOP on the diagram activities.",
             )
             self.mal = tk.StringVar(value=self.row.malfunction)
             mal_cb = ttk.Combobox(
@@ -909,7 +1052,10 @@ class HazopWindow(tk.Frame):
 
             typ_lbl = ttk.Label(master, text="Type")
             typ_lbl.grid(row=2, column=0, sticky="e", padx=5, pady=5)
-            ToolTip(typ_lbl, "Guideword describing how the malfunction deviates from the intended function.")
+            ToolTip(
+                typ_lbl,
+                "Guideword describing how the malfunction deviates from the intended function.",
+            )
             self.typ = tk.StringVar(value=self.row.mtype)
             typ_cb = ttk.Combobox(
                 master,
@@ -927,7 +1073,9 @@ class HazopWindow(tk.Frame):
             for lib in self.app.scenario_libraries:
                 scenarios.extend(lib.get("scenarios", []))
             self.scen = tk.StringVar(value=self.row.scenario)
-            scen_cb = ttk.Combobox(master, textvariable=self.scen, values=scenarios, state="readonly")
+            scen_cb = ttk.Combobox(
+                master, textvariable=self.scen, values=scenarios, state="readonly"
+            )
             scen_cb.grid(row=3, column=1, padx=5, pady=5)
             ToolTip(scen_cb, "Scenarios come from imported scenario libraries.")
 
@@ -962,11 +1110,18 @@ class HazopWindow(tk.Frame):
 
             safety_lbl = ttk.Label(master, text="Safety Relevant")
             safety_lbl.grid(row=6, column=0, sticky="e", padx=5, pady=5)
-            ToolTip(safety_lbl, "Mark 'Yes' if the malfunction can lead to a safety hazard.")
+            ToolTip(
+                safety_lbl, "Mark 'Yes' if the malfunction can lead to a safety hazard."
+            )
             self.safety = tk.StringVar(value="Yes" if self.row.safety else "No")
-            safety_cb = ttk.Combobox(master, textvariable=self.safety, values=["Yes", "No"], state="readonly")
+            safety_cb = ttk.Combobox(
+                master, textvariable=self.safety, values=["Yes", "No"], state="readonly"
+            )
             safety_cb.grid(row=6, column=1, padx=5, pady=5)
-            ToolTip(safety_cb, "Only safety relevant malfunctions are used in HARA analyses.")
+            ToolTip(
+                safety_cb,
+                "Only safety relevant malfunctions are used in HARA analyses.",
+            )
 
             rat_lbl = ttk.Label(master, text="Rationale")
             rat_lbl.grid(row=7, column=0, sticky="ne", padx=5, pady=5)
@@ -980,18 +1135,27 @@ class HazopWindow(tk.Frame):
             cov_lbl.grid(row=8, column=0, sticky="e", padx=5, pady=5)
             ToolTip(cov_lbl, "Indicate whether the malfunction is already mitigated.")
             self.cov = tk.StringVar(value="Yes" if self.row.covered else "No")
-            cov_cb = ttk.Combobox(master, textvariable=self.cov, values=["Yes", "No"], state="readonly")
+            cov_cb = ttk.Combobox(
+                master, textvariable=self.cov, values=["Yes", "No"], state="readonly"
+            )
             cov_cb.grid(row=8, column=1, padx=5, pady=5)
-            ToolTip(cov_cb, "Select 'Yes' if another function or feature prevents the hazard.")
+            ToolTip(
+                cov_cb,
+                "Select 'Yes' if another function or feature prevents the hazard.",
+            )
 
             covby_lbl = ttk.Label(master, text="Covered By")
             covby_lbl.grid(row=9, column=0, sticky="e", padx=5, pady=5)
             ToolTip(covby_lbl, "Reference the malfunction providing mitigation.")
             malfs = [e.malfunction for e in self.app.hazop_entries]
             self.cov_by = tk.StringVar(value=self.row.covered_by)
-            covby_cb = ttk.Combobox(master, textvariable=self.cov_by, values=malfs, state="readonly")
+            covby_cb = ttk.Combobox(
+                master, textvariable=self.cov_by, values=malfs, state="readonly"
+            )
             covby_cb.grid(row=9, column=1, padx=5, pady=5)
-            ToolTip(covby_cb, "Choose a malfunction that covers this one if applicable.")
+            ToolTip(
+                covby_cb, "Choose a malfunction that covers this one if applicable."
+            )
 
         def new_hazard(self):
             name = simpledialog.askstring("New Hazard", "Name:")
@@ -1063,6 +1227,7 @@ class HazopWindow(tk.Frame):
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         for ra in self.app.reliability_analyses:
             lb.insert(tk.END, ra.name)
+
         def do_load():
             sel = lb.curselection()
             if not sel:
@@ -1080,7 +1245,10 @@ class HazopWindow(tk.Frame):
             self.formula_label.config(
                 text=f"Total FIT: {ra.total_fit:.2f}  DC: {ra.dc:.2f}  SPFM: {ra.spfm:.2f}  LPFM: {ra.lpfm:.2f}"
             )
-        ttk.Button(win, text="Load", command=do_load).pack(side=tk.RIGHT, padx=5, pady=5)
+
+        ttk.Button(win, text="Load", command=do_load).pack(
+            side=tk.RIGHT, padx=5, pady=5
+        )
 
     def save_analysis(self):
         if not self.components:
@@ -1105,8 +1273,16 @@ class HazopWindow(tk.Frame):
 
 class HaraWindow(tk.Frame):
     COLS = [
-        "malfunction","hazard","severity","sev_rationale","controllability",
-        "cont_rationale","exposure","exp_rationale","asil","safety_goal"
+        "malfunction",
+        "hazard",
+        "severity",
+        "sev_rationale",
+        "controllability",
+        "cont_rationale",
+        "exposure",
+        "exp_rationale",
+        "asil",
+        "safety_goal",
     ]
 
     def __init__(self, master, app):
@@ -1134,15 +1310,21 @@ class HaraWindow(tk.Frame):
 
         self.tree = ttk.Treeview(self, columns=self.COLS, show="headings")
         for c in self.COLS:
-            self.tree.heading(c, text=c.replace("_"," ").title())
+            self.tree.heading(c, text=c.replace("_", " ").title())
             width = 200 if c == "hazard" else 120
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
-        ttk.Button(btn, text="Add", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Add", command=self.add_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Edit", command=self.edit_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Delete", command=self.del_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
         self.refresh_docs()
         self.refresh()
         if not isinstance(master, tk.Toplevel):
@@ -1157,7 +1339,9 @@ class HaraWindow(tk.Frame):
             self.doc_var.set(self.app.active_hara.name)
             hazops = ", ".join(getattr(self.app.active_hara, "hazops", []))
             self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
-            self.status_lbl.config(text=f"Status: {getattr(self.app.active_hara, 'status', 'draft')}")
+            self.status_lbl.config(
+                text=f"Status: {getattr(self.app.active_hara, 'status', 'draft')}"
+            )
 
         elif names:
             self.doc_var.set(names[0])
@@ -1218,11 +1402,16 @@ class HaraWindow(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         for row in self.app.hara_entries:
             vals = [
-                row.malfunction, row.hazard,
-                row.severity, row.sev_rationale,
-                row.controllability, row.cont_rationale,
-                row.exposure, row.exp_rationale,
-                row.asil, row.safety_goal
+                row.malfunction,
+                row.hazard,
+                row.severity,
+                row.sev_rationale,
+                row.controllability,
+                row.cont_rationale,
+                row.exposure,
+                row.exp_rationale,
+                row.asil,
+                row.safety_goal,
             ]
             self.tree.insert("", "end", values=vals)
         self.app.sync_hara_to_safety_goals()
@@ -1230,7 +1419,7 @@ class HaraWindow(tk.Frame):
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, row=None):
             self.app = app
-            self.row = row or HaraEntry("","",1,"",1,"",1,"","QM","")
+            self.row = row or HaraEntry("", "", 1, "", 1, "", 1, "", "QM", "")
             super().__init__(parent, title="Edit HARA Row")
 
         def body(self, master):
@@ -1248,48 +1437,78 @@ class HaraWindow(tk.Frame):
                         if getattr(e, "safety", False):
                             malfs.add(e.malfunction)
                             if e.hazard:
-                                hazards_map.setdefault(e.malfunction, []).append(e.hazard)
+                                hazards_map.setdefault(e.malfunction, []).append(
+                                    e.hazard
+                                )
             malfs = sorted(malfs)
-            goals = [te.safety_goal_description or (te.user_name or f"SG {te.unique_id}") for te in self.app.top_events]
-            ttk.Label(master, text="Malfunction").grid(row=0,column=0,sticky="e")
+            goals = [
+                te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
+                for te in self.app.top_events
+            ]
+            ttk.Label(master, text="Malfunction").grid(row=0, column=0, sticky="e")
             self.mal_var = tk.StringVar(value=self.row.malfunction)
-            mal_cb = ttk.Combobox(master, textvariable=self.mal_var, values=malfs, state="readonly")
-            mal_cb.grid(row=0,column=1)
-            ttk.Label(master, text="Hazard").grid(row=1,column=0,sticky="ne")
+            mal_cb = ttk.Combobox(
+                master, textvariable=self.mal_var, values=malfs, state="readonly"
+            )
+            mal_cb.grid(row=0, column=1)
+            ttk.Label(master, text="Hazard").grid(row=1, column=0, sticky="ne")
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
-            self.haz.grid(row=1,column=1)
-            ttk.Label(master, text="Severity").grid(row=2,column=0,sticky="e")
+            self.haz.grid(row=1, column=1)
+            ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
             self.sev_var = tk.StringVar(value=str(self.row.severity))
-            sev_cb = ttk.Combobox(master, textvariable=self.sev_var, values=["1","2","3"], state="readonly")
-            sev_cb.grid(row=2,column=1)
-            ttk.Label(master, text="Severity Rationale").grid(row=3,column=0,sticky="e")
+            sev_cb = ttk.Combobox(
+                master,
+                textvariable=self.sev_var,
+                values=["1", "2", "3"],
+                state="readonly",
+            )
+            sev_cb.grid(row=2, column=1)
+            ttk.Label(master, text="Severity Rationale").grid(
+                row=3, column=0, sticky="e"
+            )
             self.sev_rat = tk.Entry(master)
             self.sev_rat.insert(0, self.row.sev_rationale)
-            self.sev_rat.grid(row=3,column=1)
-            ttk.Label(master, text="Controllability").grid(row=4,column=0,sticky="e")
+            self.sev_rat.grid(row=3, column=1)
+            ttk.Label(master, text="Controllability").grid(row=4, column=0, sticky="e")
             self.cont_var = tk.StringVar(value=str(self.row.controllability))
-            cont_cb = ttk.Combobox(master, textvariable=self.cont_var, values=["1","2","3"], state="readonly")
-            cont_cb.grid(row=4,column=1)
-            ttk.Label(master, text="Controllability Rationale").grid(row=5,column=0,sticky="e")
+            cont_cb = ttk.Combobox(
+                master,
+                textvariable=self.cont_var,
+                values=["1", "2", "3"],
+                state="readonly",
+            )
+            cont_cb.grid(row=4, column=1)
+            ttk.Label(master, text="Controllability Rationale").grid(
+                row=5, column=0, sticky="e"
+            )
             self.cont_rat = tk.Entry(master)
             self.cont_rat.insert(0, self.row.cont_rationale)
-            self.cont_rat.grid(row=5,column=1)
-            ttk.Label(master, text="Exposure").grid(row=6,column=0,sticky="e")
+            self.cont_rat.grid(row=5, column=1)
+            ttk.Label(master, text="Exposure").grid(row=6, column=0, sticky="e")
             self.exp_var = tk.StringVar(value=str(self.row.exposure))
-            exp_cb = ttk.Combobox(master, textvariable=self.exp_var, values=["1","2","3","4"], state="readonly")
-            exp_cb.grid(row=6,column=1)
-            ttk.Label(master, text="Exposure Rationale").grid(row=7,column=0,sticky="e")
+            exp_cb = ttk.Combobox(
+                master,
+                textvariable=self.exp_var,
+                values=["1", "2", "3", "4"],
+                state="readonly",
+            )
+            exp_cb.grid(row=6, column=1)
+            ttk.Label(master, text="Exposure Rationale").grid(
+                row=7, column=0, sticky="e"
+            )
             self.exp_rat = tk.Entry(master)
             self.exp_rat.insert(0, self.row.exp_rationale)
-            self.exp_rat.grid(row=7,column=1)
-            ttk.Label(master, text="ASIL").grid(row=8,column=0,sticky="e")
+            self.exp_rat.grid(row=7, column=1)
+            ttk.Label(master, text="ASIL").grid(row=8, column=0, sticky="e")
             self.asil_var = tk.StringVar(value=self.row.asil)
             asil_lbl = ttk.Label(master, textvariable=self.asil_var)
-            asil_lbl.grid(row=8,column=1)
-            ttk.Label(master, text="Safety Goal").grid(row=9,column=0,sticky="e")
+            asil_lbl.grid(row=8, column=1)
+            ttk.Label(master, text="Safety Goal").grid(row=9, column=0, sticky="e")
             self.sg_var = tk.StringVar(value=self.row.safety_goal)
-            ttk.Combobox(master, textvariable=self.sg_var, values=goals, state="readonly").grid(row=9,column=1)
+            ttk.Combobox(
+                master, textvariable=self.sg_var, values=goals, state="readonly"
+            ).grid(row=9, column=1)
 
             def auto_hazard(_=None):
                 mal = self.mal_var.get()
@@ -1313,7 +1532,7 @@ class HaraWindow(tk.Frame):
                 except ValueError:
                     self.asil_var.set("QM")
                     return
-                self.asil_var.set(calc_asil(s,c,e))
+                self.asil_var.set(calc_asil(s, c, e))
 
             sev_cb.bind("<<ComboboxSelected>>", recalc)
             cont_cb.bind("<<ComboboxSelected>>", recalc)
@@ -1398,7 +1617,7 @@ class TC2FIWindow(tk.Frame):
         "impacted_function",
         "arch_elements",
         "interfaces",
-        "functional_insufficiency",
+        "functional_insufficiencies",
         "vehicle_effect",
         "severity",
         "design_measures",
@@ -1407,7 +1626,7 @@ class TC2FIWindow(tk.Frame):
         "scene",
         "scenario",
         "driver_behavior",
-        "triggering_condition",
+        "triggering_conditions",
         "tc_effect",
         "mitigation",
         "acceptance",
@@ -1456,10 +1675,18 @@ class TC2FIWindow(tk.Frame):
         self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack()
-        ttk.Button(btn, text="Add", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Add", command=self.add_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Edit", command=self.edit_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Delete", command=self.del_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
         self.refresh_docs()
         self.refresh()
         if not isinstance(master, tk.Toplevel):
@@ -1479,19 +1706,36 @@ class TC2FIWindow(tk.Frame):
             super().__init__(parent, title="Edit Row")
 
         def body(self, master):
-            tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
-            fi_names = [n.user_name or f"FI {n.unique_id}" for n in self.app.get_all_functional_insufficiencies()]
+            tc_names = [
+                n.user_name or f"TC {n.unique_id}"
+                for n in self.app.get_all_triggering_conditions()
+            ]
+            fi_names = [
+                n.user_name or f"FI {n.unique_id}"
+                for n in self.app.get_all_functional_insufficiencies()
+            ]
             func_names = self.app.get_all_function_names()
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
+            req_opts = [
+                f"[{r['id']}] {r['text']}"
+                for r in global_requirements.values()
+                if r.get("req_type") == "functional modification"
+            ]
             self.widgets = {}
             r = 0
 
             def refresh_funcs(*_):
                 comp = self.widgets.get("arch_elements")
                 if isinstance(comp, tk.StringVar):
-                    opts = sorted({e.function for e in self.app.hazop_entries if not comp.get() or e.component == comp.get()})
+                    opts = sorted(
+                        {
+                            e.function
+                            for e in self.app.hazop_entries
+                            if not comp.get() or e.component == comp.get()
+                        }
+                    )
                 else:
                     opts = func_names
                 if "impacted_function" in self.widgets:
@@ -1499,42 +1743,62 @@ class TC2FIWindow(tk.Frame):
                     w["values"] = opts
 
             for col in TC2FIWindow.COLS:
-                ttk.Label(master, text=col.replace("_", " ").title()).grid(row=r, column=0, sticky="e", padx=5, pady=2)
-                if col == "functional_insufficiency":
+                ttk.Label(master, text=col.replace("_", " ").title()).grid(
+                    row=r, column=0, sticky="e", padx=5, pady=2
+                )
+                if col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=fi_names, state="readonly")
+                    cb = ttk.Combobox(master, textvariable=var, values=fi_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
-                elif col == "triggering_condition":
+                elif col == "design_measures":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=tc_names, state="readonly")
+                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
+                    cb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = var
+                elif col == "triggering_conditions":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    cb = ttk.Combobox(master, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "impacted_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=func_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=func_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                     self.widgets["impacted_function_widget"] = cb
                 elif col == "arch_elements":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=comp_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=comp_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     cb.bind("<<ComboboxSelected>>", refresh_funcs)
                     self.widgets[col] = var
                 elif col == "scene":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=scene_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=scene_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "scenario":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=scen_names, state="readonly")
+                    cb = ttk.Combobox(
+                        master, textvariable=var, values=scen_names, state="readonly"
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=["1", "2", "3"], state="readonly")
+                    cb = ttk.Combobox(
+                        master,
+                        textvariable=var,
+                        values=["1", "2", "3"],
+                        state="readonly",
+                    )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 else:
@@ -1555,6 +1819,7 @@ class TC2FIWindow(tk.Frame):
                     self.data[col] = widget.get()
 
             self.result = True
+
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
         if getattr(dlg, "result", None):
@@ -1580,7 +1845,9 @@ class TC2FIWindow(tk.Frame):
         self.refresh()
 
     def export_csv(self):
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+        )
         if not path:
             return
         with open(path, "w", newline="") as f:
@@ -1649,6 +1916,7 @@ class TC2FIWindow(tk.Frame):
         self.refresh()
         self.app.update_views()
 
+
 class HazardExplorerWindow(tk.Toplevel):
     """Read-only list of hazards per HARA."""
 
@@ -1678,7 +1946,9 @@ class HazardExplorerWindow(tk.Toplevel):
                 )
 
     def export_csv(self):
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+        )
         if not path:
             return
         with open(path, "w", newline="") as f:

@@ -227,6 +227,7 @@ import math
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+from gui.tooltip import ToolTip
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -2106,6 +2107,10 @@ class FaultTreeApp:
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         self.tools_nb = ttk.Notebook(self.tools_group)
         self.tools_nb.pack(fill=tk.BOTH, expand=True)
+        # Tooltip helper for tabs (text may be clipped)
+        self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
+        self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
+        self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
@@ -2136,29 +2141,36 @@ class FaultTreeApp:
             "Set Current User": self.set_current_user,
             "Common Cause Toolbox": self.show_common_cause_view,
             "Safety Goal Export": self.export_safety_goal_requirements,
+            "FTA Cut Sets": self.show_cut_sets,
+            "FTA-FMEA Traceability": self.show_traceability_matrix,
         }
 
         self.tool_categories = {
-            "Reliability Tools": [
-                "Mission Profiles",
-                "Mechanism Libraries",
-                "Scenario Libraries",
+            "Concept": [
                 "ODD Libraries",
-                "Reliability Analysis",
-                "FMEDA Manager",
-                "FMEA Manager",
-            ],
-            "SOTIF Tools": [
-                "Triggering Conditions",
-                "Functional Insufficiencies",
-                "FI2TC Analysis",
-                "TC2FI Analysis",
+                "Scenario Libraries",
                 "HAZOP Analysis",
                 "HARA Analysis",
-                "Hazards Editor",
-                "Malfunctions Editor",
-                "Faults Editor",
-                "Failures Editor",
+                "Safety Goal Export",
+                "Safety Goals Editor",
+            ],
+            "Design": [
+                "AutoML Explorer",
+                "Requirements Editor",
+            ],
+            "Safety Analysis": [
+                "FMEA Manager",
+                "FI2TC Analysis",
+                "TC2FI Analysis",
+                "FTA Cut Sets",
+                "FTA-FMEA Traceability",
+                "Common Cause Toolbox",
+            ],
+            "Hardware": [
+                "Mission Profiles",
+                "Mechanism Libraries",
+                "Reliability Analysis",
+                "FMEDA Manager",
             ],
             "Review Toolbox": [
                 "Start Peer Review",
@@ -2168,12 +2180,13 @@ class FaultTreeApp:
                 "Compare Versions",
                 "Set Current User",
             ],
-            "Additional Tools": [
-                "Common Cause Toolbox",
-                "Safety Goal Export",
-                "AutoML Explorer",
-                "Requirements Editor",
-                "Safety Goals Editor",
+            "Fault modeling Tools": [
+                "Hazards Editor",
+                "Malfunctions Editor",
+                "Faults Editor",
+                "Failures Editor",
+                "Triggering Conditions",
+                "Functional Insufficiencies",
             ],
         }
 
@@ -7559,6 +7572,24 @@ class FaultTreeApp:
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def _on_tool_tab_motion(self, event):
+        """Show tooltip for notebook tabs when hovering over them."""
+        try:
+            idx = self.tools_nb.index(f"@{event.x},{event.y}")
+        except tk.TclError:
+            self._tools_tip.hide()
+            return
+        text = self.tools_nb.tab(idx, "text")
+        bbox = self.tools_nb.bbox(idx)
+        if not bbox:
+            self._tools_tip.hide()
+            return
+        x = self.tools_nb.winfo_rootx() + bbox[0] + bbox[2] // 2
+        y = self.tools_nb.winfo_rooty() + bbox[1] + bbox[3]
+        if self._tools_tip.text != text:
+            self._tools_tip.text = text
+        self._tools_tip.show(x, y)
 
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
