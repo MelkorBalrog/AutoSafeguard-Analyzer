@@ -368,6 +368,8 @@ class UserInfoDialog(simpledialog.Dialog):
         super().__init__(parent, title="User Information")
 
     def body(self, master):
+        # Disable resizing to keep the dialog size fixed
+        self.resizable(False, False)
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
         self.name_var = tk.StringVar(value=self._name)
         name_entry = ttk.Entry(master, textvariable=self.name_var)
@@ -15091,10 +15093,14 @@ def main():
     # Hide the main window while prompting for user info
     root.withdraw()
     name, email = load_user_config()
-    dlg = UserInfoDialog(root, name, email)
-    if dlg.result:
-        name, email = dlg.result
-        save_user_config(name, email)
+    if not name or not email:
+        dlg = UserInfoDialog(root, name, email)
+        if dlg.result:
+            name, email = dlg.result
+            save_user_config(name, email)
+    else:
+        # User information already stored
+        pass
     set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
