@@ -6984,7 +6984,7 @@ class FaultTreeApp:
             Story.append(Spacer(1, 12))
             for fmea in self.fmeas:
                 Story.append(Paragraph(fmea['name'], pdf_styles["Heading3"]))
-                data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]]
+                data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]]
                 for be in fmea['entries']:
                     src = self.get_failure_mode_node(be)
                     comp = self.get_component_name_for_node(src) or "N/A"
@@ -6993,7 +6993,7 @@ class FaultTreeApp:
                     req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
                     rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                     failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                    row = [comp, parent_name, failure_mode, be.fmea_effect, getattr(be, 'fmea_cause', ''), be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids]
+                    row = [comp, parent_name, failure_mode, be.fmea_effect, getattr(be, 'fmea_cause', ''), be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, 'fmeda_malfunction', '')]
                     data.append(row)
                 table = Table(data, repeatRows=1)
                 table.setStyle(TableStyle([
@@ -10085,10 +10085,10 @@ class FaultTreeApp:
             "D",
             "RPN",
             "Requirements",
+            "Malfunction",
         ]
         if fmeda:
             columns.extend([
-                "Malfunction",
                 "Safety Goal",
                 "FaultType",
                 "Fraction",
@@ -10342,7 +10342,7 @@ class FaultTreeApp:
                         "",
                         "end",
                         text=comp,
-                        values=[comp, "", "", "", "", "", "", "", "", ""],
+                        values=[comp] + [""] * (len(columns) - 1),
                         tags=("component",),
                     )
                 comp_iid = comp_items[comp]
@@ -10362,6 +10362,7 @@ class FaultTreeApp:
                     src.fmea_detection,
                     rpn,
                     req_ids,
+                    src.fmeda_malfunction,
                 ]
                 if fmeda:
                     sg_value = src.fmeda_safety_goal
@@ -10369,7 +10370,6 @@ class FaultTreeApp:
                     if goals:
                         sg_value = ", ".join(goals)
                     vals.extend([
-                        src.fmeda_malfunction,
                         sg_value,
                         src.fmeda_fault_type,
                         f"{src.fmeda_fault_fraction:.2f}",
@@ -10539,7 +10539,7 @@ class FaultTreeApp:
             win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
-        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]
+        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(columns)
@@ -10551,7 +10551,7 @@ class FaultTreeApp:
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids]
+                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, "fmeda_malfunction", "")]
                 writer.writerow(row)
 
     def export_fmeda_to_csv(self, fmeda, path):
