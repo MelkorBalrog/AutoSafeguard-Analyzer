@@ -1455,6 +1455,10 @@ class HazopWindow(tk.Frame):
         new_btn = ttk.Button(top, text="New", command=self.new_doc)
         new_btn.pack(side=tk.LEFT)
         ToolTip(new_btn, "Create a new HAZOP document.")
+        edit_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
+        edit_btn.pack(side=tk.LEFT)
+        del_btn = ttk.Button(top, text="Delete", command=self.delete_doc)
+        del_btn.pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
 
         columns = ("function", "malfunction", "type", "safety", "rationale")
@@ -1526,6 +1530,36 @@ class HazopWindow(tk.Frame):
         self.app.hazop_docs.append(doc)
         self.app.active_hazop = doc
         self.app.hazop_entries = doc.entries
+        self.refresh_docs()
+        self.refresh()
+        self.app.update_views()
+
+    def rename_doc(self):
+        if not self.app.active_hazop:
+            return
+        name = simpledialog.askstring(
+            "Rename HAZOP", "Name:", initialvalue=self.app.active_hazop.name
+        )
+        if not name:
+            return
+        self.app.active_hazop.name = name
+        self.refresh_docs()
+        self.app.update_views()
+
+    def delete_doc(self):
+        doc = self.app.active_hazop
+        if not doc:
+            return
+        if not messagebox.askyesno("Delete", f"Delete HAZOP '{doc.name}'?"):
+            return
+        self.app.hazop_docs.remove(doc)
+        if self.app.hazop_docs:
+            self.app.active_hazop = self.app.hazop_docs[0]
+        else:
+            self.app.active_hazop = None
+        self.app.hazop_entries = (
+            self.app.active_hazop.entries if self.app.active_hazop else []
+        )
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -1869,6 +1903,10 @@ class HaraWindow(tk.Frame):
         new_hara_btn = ttk.Button(top, text="New", command=self.new_doc)
         new_hara_btn.pack(side=tk.LEFT)
         ToolTip(new_hara_btn, "Create a new HARA document.")
+        edit_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
+        edit_btn.pack(side=tk.LEFT)
+        del_btn = ttk.Button(top, text="Delete", command=self.delete_doc)
+        del_btn.pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
         self.hazop_lbl = ttk.Label(top, text="")
         self.hazop_lbl.pack(side=tk.LEFT, padx=10)
@@ -1977,6 +2015,39 @@ class HaraWindow(tk.Frame):
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
         self.status_lbl.config(text=f"Status: {doc.status}")
+        self.refresh_docs()
+        self.refresh()
+        self.app.update_views()
+
+    def rename_doc(self):
+        if not self.app.active_hara:
+            return
+        name = simpledialog.askstring(
+            "Rename HARA", "Name:", initialvalue=self.app.active_hara.name
+        )
+        if not name:
+            return
+        self.app.active_hara.name = name
+        self.refresh_docs()
+        self.app.update_views()
+
+    def delete_doc(self):
+        doc = self.app.active_hara
+        if not doc:
+            return
+        if not messagebox.askyesno("Delete", f"Delete HARA '{doc.name}'?"):
+            return
+        self.app.hara_docs.remove(doc)
+        if self.app.hara_docs:
+            self.app.active_hara = self.app.hara_docs[0]
+        else:
+            self.app.active_hara = None
+        self.app.hara_entries = (
+            self.app.active_hara.entries if self.app.active_hara else []
+        )
+        self.status_lbl.config(
+            text=f"Status: {getattr(self.app.active_hara, 'status', 'draft')}"
+        )
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
