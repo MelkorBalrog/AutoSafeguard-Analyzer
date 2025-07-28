@@ -1023,6 +1023,8 @@ class FI2TCWindow(tk.Frame):
                         txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
             self.update_known_use_case()
 
@@ -1217,6 +1219,7 @@ class FI2TCWindow(tk.Frame):
             for idx in reversed(sel):
                 self.fi_lb.delete(idx)
             self.update_known_use_case()
+
 
         def add_func_existing(self):
             dlg = _SelectFunctionsDialog(self, self.func_options)
@@ -2545,6 +2548,8 @@ class TC2FIWindow(tk.Frame):
                         txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
             self.update_known_use_case()
 
