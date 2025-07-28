@@ -160,6 +160,24 @@ class _SelectHazardsDialog(simpledialog.Dialog):
         self.result = [self.lb.get(i) for i in self.lb.curselection()]
 
 
+class _SelectFIsDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing functional insufficiencies."""
+
+    def __init__(self, parent, names):
+        self.names = names
+        super().__init__(parent, title="Select Functional Insufficiencies")
+
+    def body(self, master):
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for name in sorted(self.names):
+            self.lb.insert(tk.END, name)
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+
+
 class ReliabilityWindow(tk.Frame):
     def __init__(self, master, app):
         if isinstance(master, tk.Toplevel):
@@ -898,17 +916,19 @@ class FI2TCWindow(tk.Frame):
                     ttk.Button(tc_frame, text="Add Existing", command=self.add_tc_existing).grid(row=1, column=3, padx=2, pady=2)
                     self.widgets[col] = self.tc_lb
                 elif col == "functional_insufficiencies":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(frame, textvariable=var, values=fi_names)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(frame, text=var.get())
-                    lbl.grid(row=r, column=2, padx=2)
-                    def sel(_=None, v=var, f=col, l=lbl):
-                        self.selected[f] = v.get()
-                        l.config(text=v.get())
-                    cb.bind("<<ComboboxSelected>>", sel)
-                    sel()
-                    self.widgets[col] = var
+                    fi_frame = ttk.Frame(frame)
+                    fi_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.fi_lb = tk.Listbox(fi_frame, selectmode="extended", height=4, exportselection=False)
+                    self.fi_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(";") if e.strip()]
+                    for val in existing:
+                        self.fi_lb.insert(tk.END, val)
+                    ttk.Button(fi_frame, text="Add New", command=self.add_fi_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Edit", command=self.edit_fi).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Delete", command=self.del_fi).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Add Existing", command=self.add_fi_existing).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.fi_lb
+                    self.fi_options = fi_names
                 elif col == "design_measures":
                     self.req_opts = list(req_opts)
                     dm_frame = ttk.Frame(frame)
@@ -998,6 +1018,9 @@ class FI2TCWindow(tk.Frame):
                 else:
                     txt = tk.Text(frame, width=25, height=2, wrap="word")
                     txt.insert("1.0", self.data.get(col, ""))
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
+                        txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
                     if col == "known_use_case":
@@ -1013,16 +1036,14 @@ class FI2TCWindow(tk.Frame):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
                     items = list(widget.get(0, tk.END))
-                    if col == "triggering_conditions":
+                    if col == "triggering_conditions" or col == "functional_insufficiencies":
                         self.data[col] = ";".join(items)
                     else:
                         self.data[col] = ",".join(items)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
-                    if col == "functional_insufficiencies" and orig and val != orig:
-                        self.app.rename_functional_insufficiency(orig, val)
-                    elif col == "triggering_conditions" and orig and val != orig:
+                    if col == "triggering_conditions" and orig and val != orig:
                         self.app.rename_triggering_condition(orig, val)
                     elif col == "vehicle_effect" and orig and val != orig:
                         self.app.rename_hazard(orig, val)
@@ -1133,6 +1154,73 @@ class FI2TCWindow(tk.Frame):
             for idx in reversed(sel):
                 self.mit_lb.delete(idx)
 
+        def add_fi_new(self):
+            name = simpledialog.askstring("Functional Insufficiency", "Name:")
+            if name:
+                if name not in self.fi_lb.get(0, tk.END):
+                    self.fi_lb.insert(tk.END, name)
+                self.update_known_use_case()
+
+        def add_fi_existing(self):
+            dlg = _SelectFIsDialog(self, self.fi_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.fi_lb.get(0, tk.END):
+                        self.fi_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def edit_fi(self):
+            sel = self.fi_lb.curselection()
+            if not sel:
+                return
+            current = self.fi_lb.get(sel[0])
+            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_functional_insufficiency(current, name)
+                self.fi_lb.delete(sel[0])
+                self.fi_lb.insert(sel[0], name)
+            self.update_known_use_case()
+
+        def del_fi(self):
+            sel = list(self.fi_lb.curselection())
+            for idx in reversed(sel):
+                self.fi_lb.delete(idx)
+            self.update_known_use_case()
+
+        def add_fi_new(self):
+            name = simpledialog.askstring("Functional Insufficiency", "Name:")
+            if name:
+                if name not in self.fi_lb.get(0, tk.END):
+                    self.fi_lb.insert(tk.END, name)
+                self.update_known_use_case()
+
+        def add_fi_existing(self):
+            dlg = _SelectFIsDialog(self, self.fi_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.fi_lb.get(0, tk.END):
+                        self.fi_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def edit_fi(self):
+            sel = self.fi_lb.curselection()
+            if not sel:
+                return
+            current = self.fi_lb.get(sel[0])
+            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_functional_insufficiency(current, name)
+                self.fi_lb.delete(sel[0])
+                self.fi_lb.insert(sel[0], name)
+            self.update_known_use_case()
+
+        def del_fi(self):
+            sel = list(self.fi_lb.curselection())
+            for idx in reversed(sel):
+                self.fi_lb.delete(idx)
+            self.update_known_use_case()
+
+
         def add_func_existing(self):
             dlg = _SelectFunctionsDialog(self, self.func_options)
             if getattr(dlg, "result", None):
@@ -1184,13 +1272,16 @@ class FI2TCWindow(tk.Frame):
             if not hasattr(self, "kuc_widget"):
                 return
             funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            fis = list(self.fi_lb.get(0, tk.END)) if hasattr(self, "fi_lb") else []
             ucs = []
-            for f in funcs:
+            for f in funcs + fis:
                 uc = self.app.get_use_case_for_function(f)
                 if uc and uc not in ucs:
                     ucs.append(uc)
+            self.kuc_widget.config(state="normal")
             self.kuc_widget.delete("1.0", tk.END)
             self.kuc_widget.insert("1.0", ";".join(ucs))
+            self.kuc_widget.config(state="disabled")
 
         def add_func_existing(self):
             dlg = _SelectFunctionsDialog(self, self.func_options)
@@ -1243,13 +1334,16 @@ class FI2TCWindow(tk.Frame):
             if not hasattr(self, "kuc_widget"):
                 return
             funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            fis = list(self.fi_lb.get(0, tk.END)) if hasattr(self, "fi_lb") else []
             ucs = []
-            for f in funcs:
+            for f in funcs + fis:
                 uc = self.app.get_use_case_for_function(f)
                 if uc and uc not in ucs:
                     ucs.append(uc)
+            self.kuc_widget.config(state="normal")
             self.kuc_widget.delete("1.0", tk.END)
             self.kuc_widget.insert("1.0", ";".join(ucs))
+            self.kuc_widget.config(state="disabled")
 
         def add_dm_new(self):
             dlg = _RequirementDialog(self)
@@ -2336,17 +2430,19 @@ class TC2FIWindow(tk.Frame):
                     row=r, column=0, sticky="e", padx=5, pady=2
                 )
                 if col == "functional_insufficiencies":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(frame, textvariable=var, values=fi_names)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(frame, text=var.get())
-                    lbl.grid(row=r, column=2, padx=2)
-                    def sel(_=None, v=var, f=col, l=lbl):
-                        self.selected[f] = v.get()
-                        l.config(text=v.get())
-                    cb.bind("<<ComboboxSelected>>", sel)
-                    sel()
-                    self.widgets[col] = var
+                    fi_frame = ttk.Frame(frame)
+                    fi_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.fi_lb = tk.Listbox(fi_frame, selectmode="extended", height=4, exportselection=False)
+                    self.fi_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(";") if e.strip()]
+                    for val in existing:
+                        self.fi_lb.insert(tk.END, val)
+                    ttk.Button(fi_frame, text="Add New", command=self.add_fi_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Edit", command=self.edit_fi).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Delete", command=self.del_fi).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(fi_frame, text="Add Existing", command=self.add_fi_existing).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.fi_lb
+                    self.fi_options = fi_names
                 elif col == "design_measures":
                     self.dm_ids = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
                     dm_frame = ttk.Frame(frame)
@@ -2447,6 +2543,9 @@ class TC2FIWindow(tk.Frame):
                 else:
                     txt = tk.Text(frame, width=25, height=2, wrap="word")
                     txt.insert("1.0", self.data.get(col, ""))
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
+                        txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
                     if col == "known_use_case":
@@ -2462,16 +2561,14 @@ class TC2FIWindow(tk.Frame):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
                     items = list(widget.get(0, tk.END))
-                    if col == "triggering_conditions":
+                    if col in ("triggering_conditions", "functional_insufficiencies"):
                         self.data[col] = ";".join(items)
                     else:
                         self.data[col] = ",".join(items)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
-                    if col == "functional_insufficiencies" and orig and val != orig:
-                        self.app.rename_functional_insufficiency(orig, val)
-                    elif col == "triggering_conditions" and orig and val != orig:
+                    if col == "triggering_conditions" and orig and val != orig:
                         self.app.rename_triggering_condition(orig, val)
                     elif col == "vehicle_effect" and orig and val != orig:
                         self.app.rename_hazard(orig, val)
