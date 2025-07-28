@@ -42,6 +42,7 @@ class SysMLDiagram:
     package: Optional[str] = None
     description: str = ""
     color: str = "#FFFFFF"
+    father: Optional[str] = None
     elements: List[str] = field(default_factory=list)
     relationships: List[str] = field(default_factory=list)
     objects: List[dict] = field(default_factory=list)
@@ -118,6 +119,7 @@ class SysMLRepository:
         package: Optional[str] = None,
         description: str = "",
         color: str = "#FFFFFF",
+        father: Optional[str] = None,
     ) -> SysMLDiagram:
         if diag_id is None:
             diag_id = str(uuid.uuid4())
@@ -141,6 +143,7 @@ class SysMLRepository:
             package,
             description,
             color,
+            father,
             author=CURRENT_USER_NAME,
             modified_by=CURRENT_USER_NAME,
         )
