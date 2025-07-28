@@ -8373,7 +8373,7 @@ class FaultTreeApp:
                 self.page_diagram.redraw_canvas()
             else:
                 self.page_diagram = None
-        elif hasattr(self, "canvas") and self.canvas.winfo_exists():
+        elif hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
             if self.selected_node is not None:
                 self.redraw_canvas()
             else:
@@ -8482,7 +8482,7 @@ class FaultTreeApp:
                 self.insert_node_in_tree(parent_item, child)
 
     def redraw_canvas(self):
-        if not hasattr(self, "canvas") or not self.canvas.winfo_exists():
+        if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
         self.draw_grid()
@@ -8512,7 +8512,7 @@ class FaultTreeApp:
             self.canvas.create_line(0, y, width, y, fill="#ddd", tags="grid")
 
     def create_diagram_image_without_grid(self):
-        if hasattr(self, "canvas") and self.canvas.winfo_exists():
+        if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
             target_canvas = self.canvas
         elif hasattr(self, "page_diagram") and self.page_diagram is not None:
             target_canvas = self.page_diagram.canvas
@@ -14795,7 +14795,7 @@ class FaultTreeApp:
     def focus_on_node(self, node):
         self.selected_node = node
         try:
-            if hasattr(self, "canvas") and self.canvas.winfo_exists():
+            if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
                 self.redraw_canvas()
                 bbox = self.canvas.bbox("all")
                 if bbox:
@@ -15353,7 +15353,7 @@ class PageDiagram:
 
     def redraw_canvas(self):
         # Clear the canvas and draw the grid first.
-        if not hasattr(self, "canvas") or not self.canvas.winfo_exists():
+        if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
         self.draw_grid()
