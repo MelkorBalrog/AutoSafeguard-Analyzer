@@ -695,6 +695,8 @@ class FI2TCWindow(tk.Frame):
             super().__init__(parent, title="Edit Row")
 
         def body(self, master):
+            self.resizable(False, False)
+            self.geometry("700x500")
             fi_names = [
                 n.user_name or f"FI {n.unique_id}"
                 for n in self.app.get_all_functional_insufficiencies()
@@ -713,7 +715,33 @@ class FI2TCWindow(tk.Frame):
                 if r.get("req_type") == "functional modification"
             ]
             self.widgets = {}
-            r = 0
+            nb = ttk.Notebook(master)
+            nb.pack(fill=tk.BOTH, expand=True)
+            categories = {
+                "General": ["id", "system_function", "allocation", "interfaces"],
+                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
+                "Effects": ["vehicle_effect", "severity", "worst_case", "tc_effect"],
+                "Measures": [
+                    "design_measures",
+                    "verification",
+                    "measure_effectiveness",
+                    "mitigation",
+                    "acceptance",
+                ],
+            }
+            tabs = {name: ttk.Frame(nb) for name in categories}
+            for name, frame in tabs.items():
+                nb.add(frame, text=name)
+            rows = {name: 0 for name in categories}
+
+            def get_frame(col):
+                for name, cols in categories.items():
+                    if col in cols:
+                        r = rows[name]
+                        rows[name] += 1
+                        return tabs[name], r
+                return master, 0
 
             def refresh_funcs(*_):
                 comp = self.widgets.get("allocation")
@@ -732,14 +760,15 @@ class FI2TCWindow(tk.Frame):
                     w["values"] = func_opts
 
             for col in self.parent_win.COLS:
-                ttk.Label(master, text=col.replace("_", " ").title()).grid(
+                frame, r = get_frame(col)
+                ttk.Label(frame, text=col.replace("_", " ").title()).grid(
                     row=r, column=0, sticky="e", padx=5, pady=2
                 )
                 if col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=tc_names)
+                    cb = ttk.Combobox(frame, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(master, text=var.get())
+                    lbl = ttk.Label(frame, text=var.get())
                     lbl.grid(row=r, column=2, padx=2)
                     def sel(_=None, v=var, f=col, l=lbl):
                         self.selected[f] = v.get()
@@ -749,9 +778,9 @@ class FI2TCWindow(tk.Frame):
                     self.widgets[col] = var
                 elif col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=fi_names)
+                    cb = ttk.Combobox(frame, textvariable=var, values=fi_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(master, text=var.get())
+                    lbl = ttk.Label(frame, text=var.get())
                     lbl.grid(row=r, column=2, padx=2)
                     def sel(_=None, v=var, f=col, l=lbl):
                         self.selected[f] = v.get()
@@ -760,7 +789,7 @@ class FI2TCWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(master, selectmode="extended", height=5)
+                    lb = tk.Listbox(frame, selectmode="extended", height=5)
                     for opt in req_opts:
                         lb.insert(tk.END, opt)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
@@ -772,7 +801,7 @@ class FI2TCWindow(tk.Frame):
                 elif col == "system_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=func_names, state="readonly"
+                        frame, textvariable=var, values=func_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
@@ -780,7 +809,7 @@ class FI2TCWindow(tk.Frame):
                 elif col == "allocation":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=comp_names, state="readonly"
+                        frame, textvariable=var, values=comp_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     cb.bind("<<ComboboxSelected>>", refresh_funcs)
@@ -788,21 +817,21 @@ class FI2TCWindow(tk.Frame):
                 elif col == "scene":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=scene_names, state="readonly"
+                        frame, textvariable=var, values=scene_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "scenario":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=scen_names, state="readonly"
+                        frame, textvariable=var, values=scen_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master,
+                        frame,
                         textvariable=var,
                         values=["1", "2", "3"],
                         state="readonly",
@@ -810,11 +839,10 @@ class FI2TCWindow(tk.Frame):
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 else:
-                    txt = tk.Text(master, width=25, height=2, wrap="word")
+                    txt = tk.Text(frame, width=25, height=2, wrap="word")
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
-                r += 1
             refresh_funcs()
 
         def apply(self):
@@ -1738,6 +1766,8 @@ class TC2FIWindow(tk.Frame):
             super().__init__(parent, title="Edit Row")
 
         def body(self, master):
+            self.resizable(False, False)
+            self.geometry("700x500")
             tc_names = [
                 n.user_name or f"TC {n.unique_id}"
                 for n in self.app.get_all_triggering_conditions()
@@ -1756,7 +1786,39 @@ class TC2FIWindow(tk.Frame):
                 if r.get("req_type") == "functional modification"
             ]
             self.widgets = {}
-            r = 0
+            nb = ttk.Notebook(master)
+            nb.pack(fill=tk.BOTH, expand=True)
+            categories = {
+                "General": [
+                    "id",
+                    "known_use_case",
+                    "impacted_function",
+                    "arch_elements",
+                    "interfaces",
+                ],
+                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
+                "Effects": ["vehicle_effect", "severity", "tc_effect"],
+                "Measures": [
+                    "design_measures",
+                    "verification",
+                    "measure_effectiveness",
+                    "mitigation",
+                    "acceptance",
+                ],
+            }
+            tabs = {name: ttk.Frame(nb) for name in categories}
+            for name, frame in tabs.items():
+                nb.add(frame, text=name)
+            rows = {name: 0 for name in categories}
+
+            def get_frame(col):
+                for name, cols in categories.items():
+                    if col in cols:
+                        r = rows[name]
+                        rows[name] += 1
+                        return tabs[name], r
+                return master, 0
 
             def refresh_funcs(*_):
                 comp = self.widgets.get("arch_elements")
@@ -1775,14 +1837,15 @@ class TC2FIWindow(tk.Frame):
                     w["values"] = opts
 
             for col in TC2FIWindow.COLS:
-                ttk.Label(master, text=col.replace("_", " ").title()).grid(
+                frame, r = get_frame(col)
+                ttk.Label(frame, text=col.replace("_", " ").title()).grid(
                     row=r, column=0, sticky="e", padx=5, pady=2
                 )
                 if col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=fi_names)
+                    cb = ttk.Combobox(frame, textvariable=var, values=fi_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(master, text=var.get())
+                    lbl = ttk.Label(frame, text=var.get())
                     lbl.grid(row=r, column=2, padx=2)
                     def sel(_=None, v=var, f=col, l=lbl):
                         self.selected[f] = v.get()
@@ -1791,7 +1854,7 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(master, selectmode="extended", height=5)
+                    lb = tk.Listbox(frame, selectmode="extended", height=5)
                     for opt in req_opts:
                         lb.insert(tk.END, opt)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
@@ -1802,9 +1865,9 @@ class TC2FIWindow(tk.Frame):
                     self.widgets[col] = lb
                 elif col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=tc_names)
+                    cb = ttk.Combobox(frame, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(master, text=var.get())
+                    lbl = ttk.Label(frame, text=var.get())
                     lbl.grid(row=r, column=2, padx=2)
                     def sel(_=None, v=var, f=col, l=lbl):
                         self.selected[f] = v.get()
@@ -1815,7 +1878,7 @@ class TC2FIWindow(tk.Frame):
                 elif col == "impacted_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=func_names, state="readonly"
+                        frame, textvariable=var, values=func_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
@@ -1823,7 +1886,7 @@ class TC2FIWindow(tk.Frame):
                 elif col == "arch_elements":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=comp_names, state="readonly"
+                        frame, textvariable=var, values=comp_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     cb.bind("<<ComboboxSelected>>", refresh_funcs)
@@ -1831,21 +1894,21 @@ class TC2FIWindow(tk.Frame):
                 elif col == "scene":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=scene_names, state="readonly"
+                        frame, textvariable=var, values=scene_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "scenario":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master, textvariable=var, values=scen_names, state="readonly"
+                        frame, textvariable=var, values=scen_names, state="readonly"
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
-                        master,
+                        frame,
                         textvariable=var,
                         values=["1", "2", "3"],
                         state="readonly",
@@ -1853,11 +1916,10 @@ class TC2FIWindow(tk.Frame):
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
                 else:
-                    txt = tk.Text(master, width=25, height=2, wrap="word")
+                    txt = tk.Text(frame, width=25, height=2, wrap="word")
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
-                r += 1
             refresh_funcs()
 
         def apply(self):
