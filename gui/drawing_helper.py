@@ -58,8 +58,84 @@ class FTADrawingHelper:
         v3 = (x, y - size)
         canvas.create_polygon([v1, v2, v3], fill="black", outline="black")
 
-    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color="dimgray", line_width=1, fixed_length=40):
-        """Draw a 90° connection line from a parent point to a child point."""
+    def _segment_intersection(self, p1, p2, p3, p4):
+        """Return intersection point (x, y, t) of segments *p1*-*p2* and *p3*-*p4* or None."""
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        x4, y4 = p4
+        denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+        if denom == 0:
+            return None
+        t = ((x3 - x1) * (y4 - y3) - (y3 - y1) * (x4 - x3)) / denom
+        u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / denom
+        if 0 <= t <= 1 and 0 <= u <= 1:
+            ix = x1 + t * (x2 - x1)
+            iy = y1 + t * (y2 - y1)
+            return ix, iy, t
+        return None
+
+    def point_on_shape(self, shape, target_pt):
+        """Return the intersection of the line to *target_pt* with *shape*."""
+        typ = shape.get("type")
+        if typ == "circle":
+            cx, cy = shape.get("center", (0, 0))
+            r = shape.get("radius", 0)
+            dx = target_pt[0] - cx
+            dy = target_pt[1] - cy
+            dist = math.hypot(dx, dy) or 1
+            return (cx + dx / dist * r, cy + dy / dist * r)
+        elif typ == "rect":
+            cx, cy = shape.get("center", (0, 0))
+            w = shape.get("width", 0) / 2
+            h = shape.get("height", 0) / 2
+            dx = target_pt[0] - cx
+            dy = target_pt[1] - cy
+            if abs(dx) > abs(dy):
+                if dx > 0:
+                    cx += w
+                    cy += dy * (w / abs(dx)) if dx != 0 else 0
+                else:
+                    cx -= w
+                    cy += dy * (w / abs(dx)) if dx != 0 else 0
+            else:
+                if dy > 0:
+                    cy += h
+                    cx += dx * (h / abs(dy)) if dy != 0 else 0
+                else:
+                    cy -= h
+                    cx += dx * (h / abs(dy)) if dy != 0 else 0
+            return cx, cy
+        elif typ == "polygon":
+            cx, cy = shape.get("center", (0, 0))
+            points = shape.get("points", [])
+            if len(points) < 3:
+                return target_pt
+            best = None
+            for i in range(len(points)):
+                p3 = points[i]
+                p4 = points[(i + 1) % len(points)]
+                inter = self._segment_intersection((cx, cy), target_pt, p3, p4)
+                if inter:
+                    ix, iy, t = inter
+                    if best is None or t < best[2]:
+                        best = (ix, iy, t)
+            if best:
+                return best[0], best[1]
+        return target_pt
+
+    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color="dimgray", line_width=1,
+                           fixed_length=40, parent_shape=None, child_shape=None):
+        """Draw a 90° connection line from a parent point to a child point.
+
+        If *parent_shape* or *child_shape* dictionaries are provided, the start
+        and end points are adjusted so the connector touches the object's surface.
+        """
+        if parent_shape:
+            parent_pt = self.point_on_shape(parent_shape, child_pt)
+        if child_shape:
+            child_pt = self.point_on_shape(child_shape, parent_pt)
+
         fixed_y = parent_pt[1] + fixed_length
         canvas.create_line(parent_pt[0], parent_pt[1], parent_pt[0], fixed_y,
                            fill=outline_color, width=line_width)
