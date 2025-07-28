@@ -1740,6 +1740,8 @@ class EditNodeDialog(simpledialog.Dialog):
                             new_mal = getattr(self.node, "malfunction", "")
                             self.mal_sel_var.set(new_mal)
                             break
+                if target_node.malfunction and target_node.malfunction != new_mal:
+                    self.app.rename_malfunction(target_node.malfunction, new_mal)
                 target_node.malfunction = new_mal
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
@@ -3085,6 +3087,108 @@ class FaultTreeApp:
     def add_hazard(self, name: str) -> None:
         """Add a hazard to the list if not already present."""
         append_unique_insensitive(self.hazards, name)
+
+    # --------------------------------------------------------------
+    # Rename helpers propagate changes across the entire model
+    # --------------------------------------------------------------
+    def _replace_in_mal_list(self, obj, old, new):
+        val = getattr(obj, "fmeda_malfunction", "")
+        if not val:
+            return
+        parts = []
+        changed = False
+        for m in val.split(";"):
+            m = m.strip()
+            if not m:
+                continue
+            if m == old:
+                parts.append(new)
+                changed = True
+            else:
+                parts.append(m)
+        if changed:
+            obj.fmeda_malfunction = ";".join(parts)
+
+    def _replace_entry_mal(self, entry, old, new):
+        val = getattr(entry, "fmeda_malfunction", "")
+        if val:
+            parts = [new if m.strip() == old else m.strip() for m in val.split(";") if m.strip()]
+            if ";".join(parts) != val:
+                entry.fmeda_malfunction = ";".join(parts)
+
+    def rename_malfunction(self, old: str, new: str) -> None:
+        """Rename a malfunction and update all references."""
+        if not old or old == new:
+            return
+        for i, m in enumerate(self.malfunctions):
+            if m == old:
+                self.malfunctions[i] = new
+        for te in self.top_events:
+            if getattr(te, "malfunction", "") == old:
+                te.malfunction = new
+        for n in self.get_all_nodes_in_model():
+            self._replace_in_mal_list(n, old, new)
+        for doc in self.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "malfunction", "") == old:
+                    e.malfunction = new
+        for d in self.fmeas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        for d in self.fmedas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        self.update_views()
+
+    def rename_hazard(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, h in enumerate(self.hazards):
+            if h == old:
+                self.hazards[i] = new
+        for doc in self.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        for doc in self.hara_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        self.update_views()
+
+    def rename_fault(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, f in enumerate(self.faults):
+            if f == old:
+                self.faults[i] = new
+        for n in self.get_all_nodes_in_model():
+            if getattr(n, "fault_ref", "") == old:
+                n.fault_ref = new
+        for be in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(be, "fmea_cause", "").split(";")]
+            changed = False
+            for idx, c in enumerate(causes):
+                if c == old:
+                    causes[idx] = new
+                    changed = True
+            if changed:
+                be.fmea_cause = ";".join([c for c in causes if c])
+        self.update_views()
+
+    def rename_failure(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, fl in enumerate(self.failures):
+            if fl == old:
+                self.failures[i] = new
+        for be in self.get_all_fmea_entries():
+            if getattr(be, "fmea_effect", "") == old:
+                be.fmea_effect = new
+        for n in self.get_all_nodes_in_model():
+            if getattr(n, "fmea_effect", "") == old:
+                n.fmea_effect = new
+        self.update_views()
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -9237,8 +9341,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
             if not name:
                 return
-            self.hazards.remove(current)
-            self.add_hazard(name)
+            self.rename_hazard(current, name)
             refresh()
 
         def delete():
@@ -9291,8 +9394,7 @@ class FaultTreeApp:
             if any(m.lower() == name.lower() for m in self.malfunctions if m != current):
                 messagebox.showinfo("Malfunction", "Already exists")
                 return
-            self.malfunctions.remove(current)
-            self.add_malfunction(name)
+            self.rename_malfunction(current, name)
             refresh()
 
         def delete():
@@ -9344,8 +9446,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Fault", "Name:", initialvalue=current)
             if not name:
                 return
-            self.faults.remove(current)
-            self.add_fault(name)
+            self.rename_fault(current, name)
             refresh()
 
         def delete():
@@ -9397,8 +9498,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Failure", "Name:", initialvalue=current)
             if not name:
                 return
-            self.failures.remove(current)
-            self.add_failure(name)
+            self.rename_failure(current, name)
             refresh()
 
         def delete():
@@ -9818,9 +9918,17 @@ class FaultTreeApp:
             # Always store the component name so it can be restored on load
             self.node.fmea_component = comp
             self.node.description = self.mode_var.get()
-            self.node.fmea_effect = self.effect_text.get("1.0", "end-1c")
+            new_effect = self.effect_text.get("1.0", "end-1c")
+            if self.node.fmea_effect and self.node.fmea_effect != new_effect:
+                self.app.rename_failure(self.node.fmea_effect, new_effect)
+            self.node.fmea_effect = new_effect
             sel = [self.cause_list.get(i) for i in self.cause_list.curselection()]
+            old_causes = [c.strip() for c in getattr(self.node, "fmea_cause", "").split(";") if c.strip()]
             self.node.fmea_cause = ";".join(sel)
+            if len(old_causes) == len(sel):
+                for o, n in zip(old_causes, sel):
+                    if o != n:
+                        self.app.rename_fault(o, n)
             for name in sel:
                 if name and name not in self.app.faults:
                     self.app.faults.append(name)
@@ -9836,6 +9944,7 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
+            old_mal = self.node.fmeda_malfunction
             if self.is_fmeda:
                 selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
                 if not selected_mals:
@@ -9844,6 +9953,8 @@ class FaultTreeApp:
             else:
                 mal_value = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 selected_mals = [mal_value] if mal_value else []
+            if old_mal and old_mal != mal_value:
+                self.app.rename_malfunction(old_mal, mal_value)
             self.node.fmeda_malfunction = mal_value
             self.node.fmeda_safety_goal = self.sg_var.get()
             try:
