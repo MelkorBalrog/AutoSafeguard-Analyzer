@@ -1353,6 +1353,42 @@ class EditNodeDialog(simpledialog.Dialog):
                 asil = a
         return asil
 
+    def find_safety_goal_node(self, name):
+        """Return the top event node matching *name* if present."""
+        for te in self.top_events:
+            if name in (te.safety_goal_description, te.user_name):
+                return te
+        return None
+
+    def compute_validation_criteria(self, req_id):
+        """Return validation criteria probability for a requirement."""
+        goals = self.get_requirement_goal_names(req_id)
+        vals = []
+        for g in goals:
+            sg = self.find_safety_goal_node(g)
+            if not sg:
+                continue
+            try:
+                acc = float(getattr(sg, "acceptance_prob", 1.0))
+            except (TypeError, ValueError):
+                acc = 1.0
+            try:
+                sev = float(getattr(sg, "severity", 3)) / 3.0
+            except (TypeError, ValueError):
+                sev = 1.0
+            try:
+                cont = float(getattr(sg, "controllability", 3)) / 3.0
+            except (TypeError, ValueError):
+                cont = 1.0
+            vals.append(acc * sev * cont)
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def update_validation_criteria(self, req_id):
+        req = global_requirements.get(req_id)
+        if not req:
+            return
+        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
         if not req:
@@ -1364,6 +1400,14 @@ class EditNodeDialog(simpledialog.Dialog):
             if req.get("parent_id"):
                 continue  # keep decomposition ASIL
             self.update_requirement_asil(rid)
+
+    def update_all_validation_criteria(self):
+        for rid in global_requirements:
+            self.update_validation_criteria(rid)
+
+    def update_all_validation_criteria(self):
+        for rid in global_requirements:
+            self.update_validation_criteria(rid)
 
     def update_base_event_requirement_asil(self):
         """Update ASIL for requirements allocated to base events."""
@@ -1407,6 +1451,8 @@ class EditNodeDialog(simpledialog.Dialog):
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
+        self.update_all_validation_criteria()
+        self.update_all_validation_criteria()
         self.update_requirement_decomposition()
 
     def refresh_model(self):
@@ -1504,10 +1550,13 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": dialog.result["text"],
                 "custom_id": custom_id,
                 "asil": asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM"),
+                "validation_criteria": 0.0,
                 "status": "draft",
                 "parent_id": ""
             }
             global_requirements[custom_id] = req
+
+        self.update_validation_criteria(custom_id)
 
         # Allocate this requirement to the current node if not already present.
         if not hasattr(self.node, "safety_requirements"):
@@ -1556,6 +1605,7 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
+        self.update_validation_criteria(new_custom_id)
         self.app.invalidate_reviews_for_requirement(new_custom_id)
         self.node.safety_requirements[index] = current_req
         self.safety_req_listbox.delete(index)
@@ -1598,6 +1648,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (A)",
             "custom_id": req_id_a,
             "asil": asil_a,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1607,6 +1658,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (B)",
             "custom_id": req_id_b,
             "asil": asil_b,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1614,6 +1666,8 @@ class EditNodeDialog(simpledialog.Dialog):
         global_requirements[req.get("id")] = req
         global_requirements[req_id_a] = r1
         global_requirements[req_id_b] = r2
+        self.update_validation_criteria(req_id_a)
+        self.update_validation_criteria(req_id_b)
         del self.node.safety_requirements[index]
         self.node.safety_requirements.insert(index, r2)
         self.node.safety_requirements.insert(index, r1)
@@ -10174,9 +10228,11 @@ class FaultTreeApp:
                     "req_type": dialog.result["req_type"],
                     "text": dialog.result["text"],
                     "custom_id": custom_id,
-                    "asil": dialog.result.get("asil", "QM")
+                    "asil": dialog.result.get("asil", "QM"),
+                    "validation_criteria": 0.0
                 }
                 global_requirements[custom_id] = req
+            self.app.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
@@ -10202,6 +10258,7 @@ class FaultTreeApp:
             current_req["custom_id"] = new_custom_id
             current_req["id"] = new_custom_id
             global_requirements[new_custom_id] = current_req
+            self.app.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
             desc = f"[{current_req['req_type']}] [{current_req.get('asil','')}] {current_req['text']}"
@@ -14138,6 +14195,40 @@ class FaultTreeApp:
             if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
                 asil = a
         return asil
+
+    def find_safety_goal_node(self, name):
+        for te in self.top_events:
+            if name in (te.safety_goal_description, te.user_name):
+                return te
+        return None
+
+    def compute_validation_criteria(self, req_id):
+        goals = self.get_requirement_goal_names(req_id)
+        vals = []
+        for g in goals:
+            sg = self.find_safety_goal_node(g)
+            if not sg:
+                continue
+            try:
+                acc = float(getattr(sg, "acceptance_prob", 1.0))
+            except (TypeError, ValueError):
+                acc = 1.0
+            try:
+                sev = float(getattr(sg, "severity", 3)) / 3.0
+            except (TypeError, ValueError):
+                sev = 1.0
+            try:
+                cont = float(getattr(sg, "controllability", 3)) / 3.0
+            except (TypeError, ValueError):
+                cont = 1.0
+            vals.append(acc * sev * cont)
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def update_validation_criteria(self, req_id):
+        req = global_requirements.get(req_id)
+        if not req:
+            return
+        req["validation_criteria"] = self.compute_validation_criteria(req_id)
 
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
