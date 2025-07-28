@@ -99,8 +99,6 @@ class EditableTreeview(ttk.Treeview):
         widget.bind("<FocusOut>", save)
         self._edit_widget = widget
 
-
-
 def _total_fit_from_boms(boms):
     """Return the aggregated FIT of all components in ``boms``.
 
@@ -905,6 +903,7 @@ class FI2TCWindow(tk.Frame):
         for row in self.app.fi2tc_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -1506,6 +1505,7 @@ class HazopWindow(tk.Frame):
                 row.covered_by,
             ]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
@@ -1947,6 +1947,7 @@ class HaraWindow(tk.Frame):
                 row.safety_goal,
             ]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
         self.app.sync_hara_to_safety_goals()
 
     class RowDialog(simpledialog.Dialog):
@@ -2244,6 +2245,7 @@ class TC2FIWindow(tk.Frame):
         for row in self.app.tc2fi_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
+        stripe_rows(self.tree)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
