@@ -1021,7 +1021,10 @@ class FI2TCWindow(tk.Frame):
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
+            self.update_known_use_case()
 
         def apply(self):
             for col, widget in self.widgets.items():
@@ -2416,7 +2419,10 @@ class TC2FIWindow(tk.Frame):
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
+            self.update_known_use_case()
 
         def apply(self):
             for col, widget in self.widgets.items():
