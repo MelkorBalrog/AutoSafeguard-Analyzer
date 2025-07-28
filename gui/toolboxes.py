@@ -2581,6 +2581,66 @@ class TC2FIWindow(tk.Frame):
             sel = list(self.mit_lb.curselection())
             for idx in reversed(sel):
                 self.mit_lb.delete(idx)
+
+        def add_func_existing(self):
+            dlg = _SelectFunctionsDialog(self, self.func_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.func_lb.get(0, tk.END):
+                        self.func_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def del_func(self):
+            sel = list(self.func_lb.curselection())
+            for idx in reversed(sel):
+                self.func_lb.delete(idx)
+            self.update_known_use_case()
+
+        def add_haz_new(self):
+            name = simpledialog.askstring("Hazard", "Name:")
+            if name:
+                if name not in self.haz_lb.get(0, tk.END):
+                    self.haz_lb.insert(tk.END, name)
+                sev_widget = self.widgets.get("severity")
+                sev = sev_widget.get() if isinstance(sev_widget, tk.StringVar) else "1"
+                self.app.add_hazard(name)
+                self.app.update_hazard_severity(name, sev)
+
+        def add_haz_existing(self):
+            dlg = _SelectHazardsDialog(self, self.app.hazards)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.haz_lb.get(0, tk.END):
+                        self.haz_lb.insert(tk.END, val)
+
+        def edit_haz(self):
+            sel = self.haz_lb.curselection()
+            if not sel:
+                return
+            current = self.haz_lb.get(sel[0])
+            name = simpledialog.askstring("Hazard", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_hazard(current, name)
+                self.haz_lb.delete(sel[0])
+                self.haz_lb.insert(sel[0], name)
+
+        def del_haz(self):
+            sel = list(self.haz_lb.curselection())
+            for idx in reversed(sel):
+                self.haz_lb.delete(idx)
+
+        def update_known_use_case(self):
+            if not hasattr(self, "kuc_widget"):
+                return
+            funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            ucs = []
+            for f in funcs:
+                uc = self.app.get_use_case_for_function(f)
+                if uc and uc not in ucs:
+                    ucs.append(uc)
+            self.kuc_widget.delete("1.0", tk.END)
+            self.kuc_widget.insert("1.0", ";".join(ucs))
+
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
         if getattr(dlg, "result", None):
