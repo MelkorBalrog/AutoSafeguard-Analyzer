@@ -2626,6 +2626,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
             fill=tk.X, padx=2, pady=2
         )
+        ttk.Button(self.toolbox, text="Add Parent Parts", command=self.add_parent_parts).pack(
+            fill=tk.X, padx=2, pady=2
+        )
 
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
@@ -2723,6 +2726,17 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
+
+    def add_parent_parts(self) -> None:
+        """Add parts from the assigned father block."""
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag or not getattr(diag, "father", None):
+            messagebox.showinfo("Add Parent Parts", "No father block assigned")
+            return
+        inherit_father_parts(repo, diag)
+        self.redraw()
+        self._sync_to_repository()
 
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
