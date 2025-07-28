@@ -2089,29 +2089,36 @@ class FaultTreeApp:
             "Set Current User": self.set_current_user,
             "Common Cause Toolbox": self.show_common_cause_view,
             "Safety Goal Export": self.export_safety_goal_requirements,
+            "FTA Cut Sets": self.show_cut_sets,
+            "FTA-FMEA Traceability": self.show_traceability_matrix,
         }
 
         self.tool_categories = {
-            "Reliability Tools": [
-                "Mission Profiles",
-                "Mechanism Libraries",
-                "Scenario Libraries",
+            "Concept": [
                 "ODD Libraries",
-                "Reliability Analysis",
-                "FMEDA Manager",
-                "FMEA Manager",
-            ],
-            "SOTIF Tools": [
-                "Triggering Conditions",
-                "Functional Insufficiencies",
-                "FI2TC Analysis",
-                "TC2FI Analysis",
+                "Scenario Libraries",
                 "HAZOP Analysis",
                 "HARA Analysis",
-                "Hazards Editor",
-                "Malfunctions Editor",
-                "Faults Editor",
-                "Failures Editor",
+                "Safety Goal Export",
+                "Safety Goals Editor",
+            ],
+            "Design": [
+                "AutoML Explorer",
+                "Requirements Editor",
+            ],
+            "Safety Analysis": [
+                "FMEA Manager",
+                "FI2TC Analysis",
+                "TC2FI Analysis",
+                "FTA Cut Sets",
+                "FTA-FMEA Traceability",
+                "Common Cause Toolbox",
+            ],
+            "Hardware": [
+                "Mission Profiles",
+                "Mechanism Libraries",
+                "Reliability Analysis",
+                "FMEDA Manager",
             ],
             "Review Toolbox": [
                 "Start Peer Review",
@@ -2121,12 +2128,13 @@ class FaultTreeApp:
                 "Compare Versions",
                 "Set Current User",
             ],
-            "Additional Tools": [
-                "Common Cause Toolbox",
-                "Safety Goal Export",
-                "AutoML Explorer",
-                "Requirements Editor",
-                "Safety Goals Editor",
+            "Fault modeling Tools": [
+                "Hazards Editor",
+                "Malfunctions Editor",
+                "Faults Editor",
+                "Failures Editor",
+                "Triggering Conditions",
+                "Functional Insufficiencies",
             ],
         }
 
