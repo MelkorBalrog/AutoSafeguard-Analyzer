@@ -1812,6 +1812,7 @@ class SysMLDiagramWindow(tk.Frame):
         if diag:
             diag.objects = [obj.__dict__ for obj in self.objects]
             diag.connections = [conn.__dict__ for conn in self.connections]
+            self.repo.touch_diagram(self.diagram_id)
 
     def on_close(self):
         self._sync_to_repository()
@@ -2451,6 +2452,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
                                     joined = repo.elements[self.obj.element_id].properties["partProperties"]
                                     self.obj.properties["partProperties"] = joined
                             repo.diagrams[diag_id] = diag
+                            repo.touch_diagram(diag_id)
+                            if self.obj.element_id:
+                                repo.touch_element(self.obj.element_id)
                             if hasattr(self.master, "_sync_to_repository"):
                                 self.master._sync_to_repository()
 
