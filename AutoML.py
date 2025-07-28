@@ -9079,8 +9079,8 @@ class FaultTreeApp:
             messagebox.showinfo("Export","Triggering conditions exported.")
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
 
-    def show_hazard_editor(self):
-        """Open a tab to manage global hazards."""
+    def show_hazard_list(self):
+        """Open a tab to manage the list of hazards."""
         if hasattr(self, "_haz_tab") and self._haz_tab.winfo_exists():
             self.doc_nb.select(self._haz_tab)
             return
@@ -9188,8 +9188,8 @@ class FaultTreeApp:
 
         refresh()
 
-    def show_fault_editor(self):
-        """Open a tab to manage global faults."""
+    def show_fault_list(self):
+        """Open a tab to manage the list of faults."""
         if hasattr(self, "_fault_tab") and self._fault_tab.winfo_exists():
             self.doc_nb.select(self._fault_tab)
             return
@@ -9237,10 +9237,9 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
-        refresh()
+    def show_failure_list(self):
+        """Open a tab to manage the list of failures."""
 
-    def show_failure_editor(self):
-        """Open a tab to manage global failures."""
         if hasattr(self, "_failure_tab") and self._failure_tab.winfo_exists():
             self.doc_nb.select(self._failure_tab)
             return
