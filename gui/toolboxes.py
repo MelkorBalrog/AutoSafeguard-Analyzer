@@ -1023,6 +1023,8 @@ class FI2TCWindow(tk.Frame):
                         txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
             self.update_known_use_case()
 
@@ -2303,6 +2305,8 @@ class TC2FIWindow(tk.Frame):
                         txt.configure(state="disabled")
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
             self.update_known_use_case()
 
