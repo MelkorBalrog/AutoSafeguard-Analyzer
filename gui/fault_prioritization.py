@@ -225,6 +225,11 @@ class FaultPrioritizationWindow(tk.Frame):
             "Technical Safety Requirement": requirement_ids("technical safety"),
             "Functional Modification": requirement_ids("functional modification"),
         }
+        req_cols = {
+            "Operational Requirement": "operational",
+            "Technical Safety Requirement": "technical safety",
+            "Functional Modification": "functional modification",
+        }
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
@@ -234,6 +239,7 @@ class FaultPrioritizationWindow(tk.Frame):
             style="FaultPrio.Treeview",
             column_options=col_opts,
             edit_callback=self.on_cell_edit,
+            requirement_columns=req_cols,
         )
         vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.tree.xview)

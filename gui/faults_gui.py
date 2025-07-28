@@ -18,7 +18,9 @@ from PyQt6.QtGui import QAction, QPalette, QColor
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QFileDialog, QMessageBox, QTableView, QStyledItemDelegate, QComboBox,
-    QToolBar, QStatusBar, QLabel, QDoubleSpinBox, QMenu
+    QToolBar, QStatusBar, QLabel, QDoubleSpinBox, QMenu, QListWidget,
+    QListWidgetItem, QDialog, QVBoxLayout as QDialogVBox, QDialogButtonBox,
+    QAbstractItemView,
 )
 
 # ----------------------------
@@ -147,6 +149,30 @@ def requirement_ids(req_type: str) -> List[str]:
     """Return sorted requirement IDs for the given type."""
     ids = [r["id"] for r in global_requirements.values() if r.get("req_type") == req_type]
     return sorted(ids)
+
+
+class MultiSelectDialog(QDialog):
+    """Simple dialog to choose multiple items from a list."""
+
+    def __init__(self, options: List[str], selected: List[str] | None = None, title: str = "Select", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        layout = QDialogVBox(self)
+        self.list = QListWidget()
+        self.list.setSelectionMode(QListWidget.MultiSelection)
+        for opt in options:
+            item = QListWidgetItem(opt)
+            self.list.addItem(item)
+            if selected and opt in selected:
+                item.setSelected(True)
+        layout.addWidget(self.list)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def selected_items(self) -> List[str]:
+        return [i.text() for i in self.list.selectedItems()]
 
 
 def compute_metrics(row: Dict[str, Any],
@@ -467,6 +493,8 @@ class FaultsWindow(QMainWindow):
         self.table = QTableView()
         self.table.setAlternatingRowColors(True)
         self.table.setSortingEnabled(True)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.doubleClicked.connect(self.on_table_double_clicked)
         layout.addWidget(self.table)
 
         # Buttons row
@@ -627,9 +655,6 @@ class FaultsWindow(QMainWindow):
         self.table.setItemDelegateForColumn(col_index("Mission Impact"), ComboDelegate(CBO_IMPACT, self))
         self.table.setItemDelegateForColumn(col_index("Recovery"), ComboDelegate(CBO_RECOV, self))
         self.table.setItemDelegateForColumn(col_index("Detectability"), ComboDelegate(CBO_DETECT, self))
-        self.table.setItemDelegateForColumn(col_index("Operational Requirement"), ComboDelegate(requirement_ids("operational"), self))
-        self.table.setItemDelegateForColumn(col_index("Technical Safety Requirement"), ComboDelegate(requirement_ids("technical safety"), self))
-        self.table.setItemDelegateForColumn(col_index("Functional Modification"), ComboDelegate(requirement_ids("functional modification"), self))
 
     # ---------- Model <-> View ----------
 

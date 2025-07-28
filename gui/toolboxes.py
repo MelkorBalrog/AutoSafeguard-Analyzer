@@ -58,12 +58,23 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
 
 
 class EditableTreeview(ttk.Treeview):
-    """Treeview with in-place cell editing support."""
+    """Treeview with in-place cell editing support.
 
-    def __init__(self, master=None, *, column_options=None, edit_callback=None, **kwargs):
+    Parameters
+    ----------
+    column_options : dict[str, list[str]]
+        Mapping of column name to list of single-select options.
+    edit_callback : callable
+        Called with ``(row_index, column_name, new_value)`` after an edit.
+    requirement_columns : dict[str, str]
+        Mapping of column name to requirement type. When editing these columns
+        a requirement selection dialog allowing multiple selections is shown.
+    """
+    def __init__(self, master=None, *, column_options=None, edit_callback=None, requirement_columns=None, **kwargs):
         super().__init__(master, **kwargs)
         self._col_options = column_options or {}
         self._edit_cb = edit_callback
+        self._req_cols = requirement_columns or {}
         self._edit_widget = None
         self.bind("<Double-1>", self._begin_edit, add="+")
 
@@ -79,8 +90,20 @@ class EditableTreeview(ttk.Treeview):
             return
         col_index = int(col.replace("#", "")) - 1
         col_name = self.cget("columns")[col_index]
-        x, y, w, h = self.bbox(rowid, col)
         value = self.set(rowid, col_name)
+        req_type = self._req_cols.get(col_name)
+        if req_type is not None:
+            current = [v for v in map(str.strip, value.split(";")) if v]
+            dlg = _SelectRequirementsDialog(self, req_type=req_type, initial=current)
+            if getattr(dlg, "result", None):
+                ids = [s.split("]",1)[0][1:] for s in dlg.result]
+                new_val = ";".join(ids)
+                self.set(rowid, col_name, new_val)
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, new_val)
+            return
+        x, y, w, h = self.bbox(rowid, col)
         opts = self._col_options.get(col_name)
         var = tk.StringVar(value=value)
         if opts:
@@ -89,7 +112,6 @@ class EditableTreeview(ttk.Treeview):
             widget = tk.Entry(self, textvariable=var)
         widget.place(x=x, y=y, width=w, height=h)
         widget.focus_set()
-
         def save(event=None):
             self.set(rowid, col_name, var.get())
             widget.destroy()
@@ -97,12 +119,9 @@ class EditableTreeview(ttk.Treeview):
             if self._edit_cb:
                 row_index = self.index(rowid)
                 self._edit_cb(row_index, col_name, var.get())
-
         widget.bind("<Return>", save)
         widget.bind("<FocusOut>", save)
         self._edit_widget = widget
-
-
 def stripe_rows(tree: ttk.Treeview) -> None:
     """Apply alternating background colors to rows for visual separation."""
     tree.tag_configure("even", background="#f0f0f0")
@@ -168,8 +187,8 @@ class _RequirementDialog(simpledialog.Dialog):
 class _SelectRequirementsDialog(simpledialog.Dialog):
     """Dialog to choose one or more existing requirements of a given type."""
 
-    def __init__(self, parent, req_type="functional modification"):
-        self.selected = []
+    def __init__(self, parent, req_type="functional modification", initial=None):
+        self.selected = initial or []
         self.req_type = req_type
         super().__init__(parent, title="Select Requirements")
 
@@ -179,6 +198,9 @@ class _SelectRequirementsDialog(simpledialog.Dialog):
             if req.get("req_type") == self.req_type:
                 self.lb.insert(tk.END, f"[{req['id']}] {req['text']}")
         self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        for idx, req in enumerate(global_requirements.values()):
+            if req.get("req_type") == self.req_type and req["id"] in self.selected:
+                self.lb.selection_set(idx)
         return self.lb
 
     def apply(self):
