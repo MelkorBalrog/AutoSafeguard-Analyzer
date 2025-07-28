@@ -2162,13 +2162,15 @@ class FaultTreeApp:
                 "Requirements Editor",
                 "Requirements Explorer",
             ],
-            "Safety Analysis": [
+            "FUSA Safety Analysis": [
                 "FMEA Manager",
-                "FI2TC Analysis",
-                "TC2FI Analysis",
                 "FTA Cut Sets",
                 "FTA-FMEA Traceability",
                 "Common Cause Toolbox",
+            ],
+            "SOTIF Safety Analysis": [
+                "FI2TC Analysis",
+                "TC2FI Analysis",
             ],
             "Hardware": [
                 "Mission Profiles",
