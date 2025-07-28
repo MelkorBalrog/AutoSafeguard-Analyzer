@@ -8051,6 +8051,32 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         return repo.get_activity_actions()
 
+    def get_use_case_for_function(self, name: str) -> str:
+        """Return the use case (activity diagram name) containing the action."""
+        repo = SysMLRepository.get_instance()
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Activity Diagram":
+                continue
+            diag_name = diag.name or ""
+            for obj in diag.objects:
+                typ = obj.get("obj_type") or obj.get("type")
+                if typ in ("Action Usage", "Action", "CallBehaviorAction"):
+                    n = obj.get("properties", {}).get("name", "")
+                    elem_id = obj.get("element_id")
+                    if not n and elem_id in repo.elements:
+                        n = repo.elements[elem_id].name
+                    if n == name:
+                        return diag_name
+            for elem_id in getattr(diag, "elements", []):
+                elem = repo.elements.get(elem_id)
+                if (
+                    elem
+                    and elem.elem_type in ("Action Usage", "Action", "CallBehaviorAction")
+                    and elem.name == name
+                ):
+                    return diag_name
+        return ""
+
     def get_all_component_names(self):
         """Return unique component names from analyses, including FTA failure modes."""
         names = set()
