@@ -38,12 +38,14 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style.theme_use("clam")
     except tk.TclError:
         pass
+    border_opts = {"bordercolor": "black", "borderwidth": 1, "relief": "solid"}
     style.configure(
         style_name,
         font=("Segoe UI", 10),
         rowheight=rowheight,
         borderwidth=1,
         relief="solid",
+        bordercolor="black",
     )
     style.configure(
         f"{style_name}.Heading",
@@ -51,6 +53,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         background="#d0d0d0",
         borderwidth=1,
         relief="raised",
+        bordercolor="black",
     )
 
 
@@ -98,6 +101,15 @@ class EditableTreeview(ttk.Treeview):
         widget.bind("<Return>", save)
         widget.bind("<FocusOut>", save)
         self._edit_widget = widget
+
+
+def stripe_rows(tree: ttk.Treeview) -> None:
+    """Apply alternating background colors to rows for visual separation."""
+    tree.tag_configure("even", background="#f0f0f0")
+    tree.tag_configure("odd", background="#ffffff")
+    for i, item in enumerate(tree.get_children("")):
+        tree.item(item, tags=("even" if i % 2 else "odd",))
+
 
 def _total_fit_from_boms(boms):
     """Return the aggregated FIT of all components in ``boms``.
@@ -878,7 +890,7 @@ class FI2TCWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", lambda e: self.edit_row(), add="+")
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         add_row_btn = ttk.Button(btn, text="Add", command=self.add_row)
@@ -2220,7 +2232,7 @@ class TC2FIWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", lambda e: self.edit_row(), add="+")
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack()
         ttk.Button(btn, text="Add", command=self.add_row).pack(
