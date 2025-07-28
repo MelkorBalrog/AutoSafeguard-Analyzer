@@ -38,6 +38,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style.theme_use("clam")
     except tk.TclError:
         pass
+    border_opts = {"bordercolor": "black", "borderwidth": 1, "relief": "solid"}
     style.configure(
         style_name,
         font=("Segoe UI", 10),
