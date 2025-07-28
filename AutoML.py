@@ -284,6 +284,7 @@ from analysis.models import (
     ASIL_DECOMP_SCHEMES,
     calc_asil,
     global_requirements,
+    REQUIREMENT_TYPE_OPTIONS,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -1145,9 +1146,13 @@ class EditNodeDialog(simpledialog.Dialog):
             dialog_font = tk.font.Font(family="Arial", size=10)
             ttk.Label(master, text="Requirement Type:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.type_var = tk.StringVar()
-            self.type_combo = ttk.Combobox(master, textvariable=self.type_var, 
-                                           values=["vehicle", "operational"],
-                                           state="readonly", width=15)
+            self.type_combo = ttk.Combobox(
+                master,
+                textvariable=self.type_var,
+                values=REQUIREMENT_TYPE_OPTIONS,
+                state="readonly",
+                width=20,
+            )
             self.type_combo.grid(row=0, column=1, padx=5, pady=5)
             
             ttk.Label(master, text="Custom Requirement ID:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
@@ -9093,7 +9098,13 @@ class FaultTreeApp:
 
                 ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e")
                 self.type_var = tk.StringVar(value=self.initial.get("req_type", "vehicle"))
-                ttk.Combobox(master, textvariable=self.type_var, values=["vehicle", "operational"], state="readonly").grid(row=1, column=1, padx=5, pady=5)
+                ttk.Combobox(
+                    master,
+                    textvariable=self.type_var,
+                    values=REQUIREMENT_TYPE_OPTIONS,
+                    state="readonly",
+                    width=20,
+                ).grid(row=1, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="ASIL:").grid(row=2, column=0, sticky="e")
                 self.asil_var = tk.StringVar(value=self.initial.get("asil", "QM"))
@@ -9943,7 +9954,7 @@ class FaultTreeApp:
                                     rid = str(uuid.uuid4())
                                     req = {
                                         "id": rid,
-                                        "req_type": "vehicle",
+                                        "req_type": REQUIREMENT_TYPE_OPTIONS[0],
                                         "text": req_text,
                                         "asil": "",
                                     }

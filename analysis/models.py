@@ -353,6 +353,18 @@ RELIABILITY_MODELS = {
 }
 
 global_requirements = {}
+
+# Requirement type options used throughout the GUI when creating or
+# editing safety requirements.  The list retains the original "vehicle"
+# and "operational" categories and adds new ones for functional and
+# technical safety as well as functional modifications.
+REQUIREMENT_TYPE_OPTIONS = [
+    "vehicle",
+    "operational",
+    "functional safety",
+    "technical safety",
+    "functional modification",
+]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [
     "QM", "QM(A)", "QM(B)", "QM(C)", "QM(D)",
