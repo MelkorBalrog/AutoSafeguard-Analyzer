@@ -1950,10 +1950,10 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
         qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
-        qualitative_menu.add_command(label="Hazards", command=self.show_hazard_list)
+        qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
-        qualitative_menu.add_command(label="Faults", command=self.show_fault_list)
-        qualitative_menu.add_command(label="Failures", command=self.show_failure_list)
+        qualitative_menu.add_command(label="Faults Editor", command=self.show_fault_editor)
+        qualitative_menu.add_command(label="Failures Editor", command=self.show_failure_editor)
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="Triggering Conditions", command=self.show_triggering_condition_list)
         qualitative_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
@@ -2069,10 +2069,10 @@ class FaultTreeApp:
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
             "HARA Analysis": self.open_hara_window,
-            "Hazards": self.show_hazard_list,
+            "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
-            "Faults": self.show_fault_list,
-            "Failures": self.show_failure_list,
+            "Faults Editor": self.show_fault_editor,
+            "Failures Editor": self.show_failure_editor,
             "FI2TC Analysis": self.open_fi2tc_window,
             "TC2FI Analysis": self.open_tc2fi_window,
             "AutoML Explorer": self.manage_architecture,
@@ -9079,20 +9079,28 @@ class FaultTreeApp:
             messagebox.showinfo("Export","Triggering conditions exported.")
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
 
-    def show_hazard_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Hazards")
+    def show_hazard_editor(self):
+        """Open a tab to manage global hazards."""
+        if hasattr(self, "_haz_tab") and self._haz_tab.winfo_exists():
+            self.doc_nb.select(self._haz_tab)
+            return
+        self._haz_tab = self._new_tab("Hazards")
+        win = self._haz_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.update_hazard_list()
-        for h in self.hazards:
-            lb.insert(tk.END, h)
+
+        def refresh():
+            lb.delete(0, tk.END)
+            self.update_hazard_list()
+            for h in self.hazards:
+                lb.insert(tk.END, h)
 
         def add():
             name = simpledialog.askstring("Add Hazard", "Name:")
             if name:
                 self.add_hazard(name)
-                lb.insert(tk.END, name)
+                refresh()
 
         def rename():
             sel = lb.curselection()
@@ -9104,8 +9112,7 @@ class FaultTreeApp:
                 return
             self.hazards.remove(current)
             self.add_hazard(name)
-            lb.delete(sel[0])
-            lb.insert(sel[0], name)
+            refresh()
 
         def delete():
             sel = lb.curselection()
@@ -9114,13 +9121,15 @@ class FaultTreeApp:
             current = lb.get(sel[0])
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
                 self.hazards.remove(current)
-                lb.delete(sel[0])
+                refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+        refresh()
 
     def show_malfunction_editor(self):
         """Open a tab to manage global malfunctions."""
@@ -9179,19 +9188,27 @@ class FaultTreeApp:
 
         refresh()
 
-    def show_fault_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Faults")
+    def show_fault_editor(self):
+        """Open a tab to manage global faults."""
+        if hasattr(self, "_fault_tab") and self._fault_tab.winfo_exists():
+            self.doc_nb.select(self._fault_tab)
+            return
+        self._fault_tab = self._new_tab("Faults")
+        win = self._fault_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        for f in self.faults:
-            lb.insert(tk.END, f)
+
+        def refresh():
+            lb.delete(0, tk.END)
+            for f in self.faults:
+                lb.insert(tk.END, f)
 
         def add():
             name = simpledialog.askstring("Add Fault", "Name:")
             if name:
                 self.add_fault(name)
-                lb.insert(tk.END, name)
+                refresh()
 
         def rename():
             sel = lb.curselection()
@@ -9203,8 +9220,7 @@ class FaultTreeApp:
                 return
             self.faults.remove(current)
             self.add_fault(name)
-            lb.delete(sel[0])
-            lb.insert(sel[0], name)
+            refresh()
 
         def delete():
             sel = lb.curselection()
@@ -9213,7 +9229,7 @@ class FaultTreeApp:
             current = lb.get(sel[0])
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
                 self.faults.remove(current)
-                lb.delete(sel[0])
+                refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -9221,20 +9237,30 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
-    def show_failure_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Failures")
+        refresh()
+
+    def show_failure_editor(self):
+        """Open a tab to manage global failures."""
+        if hasattr(self, "_failure_tab") and self._failure_tab.winfo_exists():
+            self.doc_nb.select(self._failure_tab)
+            return
+        self._failure_tab = self._new_tab("Failures")
+        win = self._failure_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.update_failure_list()
-        for fl in self.failures:
-            lb.insert(tk.END, fl)
+
+        def refresh():
+            lb.delete(0, tk.END)
+            self.update_failure_list()
+            for fl in self.failures:
+                lb.insert(tk.END, fl)
 
         def add():
             name = simpledialog.askstring("Add Failure", "Name:")
             if name:
                 self.add_failure(name)
-                lb.insert(tk.END, name)
+                refresh()
 
         def rename():
             sel = lb.curselection()
@@ -9246,8 +9272,7 @@ class FaultTreeApp:
                 return
             self.failures.remove(current)
             self.add_failure(name)
-            lb.delete(sel[0])
-            lb.insert(sel[0], name)
+            refresh()
 
         def delete():
             sel = lb.curselection()
@@ -9256,13 +9281,15 @@ class FaultTreeApp:
             current = lb.get(sel[0])
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
                 self.failures.remove(current)
-                lb.delete(sel[0])
+                refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+        refresh()
 
     def show_functional_insufficiency_list(self):
         win = tk.Toplevel(self.root)
