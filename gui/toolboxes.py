@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 import csv
 import copy
 import textwrap
+import uuid
 
 from gui.tooltip import ToolTip
 from analysis.models import (
@@ -48,6 +49,77 @@ def _wrap_val(val, width=30):
     if val is None:
         return ""
     return textwrap.fill(str(val), width)
+
+
+class _RequirementDialog(simpledialog.Dialog):
+    """Simple dialog to create or edit a requirement."""
+
+    def __init__(self, parent, req=None, req_type="functional modification"):
+        self.req = req or {}
+        self.req_type = req_type
+        super().__init__(parent, title="Requirement")
+
+    def body(self, master):
+        ttk.Label(master, text="ID:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.id_var = tk.StringVar(value=self.req.get("id", ""))
+        tk.Entry(master, textvariable=self.id_var, width=20).grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Text:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        self.text_var = tk.Entry(master, width=40)
+        self.text_var.insert(0, self.req.get("text", ""))
+        self.text_var.grid(row=1, column=1, padx=5, pady=5)
+        return self.text_var
+
+    def apply(self):
+        rid = self.id_var.get().strip() or str(uuid.uuid4())
+        self.result = {
+            "id": rid,
+            "custom_id": rid,
+            "req_type": self.req_type,
+            "text": self.text_var.get().strip(),
+            "asil": self.req.get("asil", "QM"),
+            "cal": self.req.get("cal", ""),
+            "status": "draft",
+            "parent_id": self.req.get("parent_id", ""),
+        }
+
+
+class _SelectRequirementsDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing requirements of a given type."""
+
+    def __init__(self, parent, req_type="functional modification"):
+        self.selected = []
+        self.req_type = req_type
+        super().__init__(parent, title="Select Requirements")
+
+    def body(self, master):
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for req in global_requirements.values():
+            if req.get("req_type") == self.req_type:
+                self.lb.insert(tk.END, f"[{req['id']}] {req['text']}")
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+
+
+class _SelectTriggeringDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing triggering conditions."""
+
+    def __init__(self, parent, options):
+        self.options = options
+        super().__init__(parent, title="Select Triggering Conditions")
+
+    def body(self, master):
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for opt in self.options:
+            self.lb.insert(tk.END, opt)
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
 
 
 class ReliabilityWindow(tk.Frame):
@@ -719,17 +791,26 @@ class FI2TCWindow(tk.Frame):
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
-                "General": ["id", "system_function", "allocation", "interfaces"],
-                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
-                "Effects": ["vehicle_effect", "severity"],
-                "Measures": [
+                "Known Functional Weakness": [
+                    "id",
+                    "system_function",
+                    "allocation",
+                    "interfaces",
+                    "scene",
+                    "scenario",
+                    "driver_behavior",
+                    "occurrence",
+                    "functional_insufficiencies",
+                    "vehicle_effect",
+                    "severity",
+                ],
+                "Design Measures": [
                     "design_measures",
                     "verification",
                     "measure_effectiveness",
-                    "mitigation",
-                    "acceptance",
                 ],
+                "Triggering Condition Identification": ["triggering_conditions"],
+                "Mitigations": ["mitigation", "acceptance"],
             }
             tabs = {name: ttk.Frame(nb) for name in categories}
             for name, frame in tabs.items():
@@ -766,17 +847,18 @@ class FI2TCWindow(tk.Frame):
                     row=r, column=0, sticky="e", padx=5, pady=2
                 )
                 if col == "triggering_conditions":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(frame, textvariable=var, values=tc_names)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(frame, text=var.get())
-                    lbl.grid(row=r, column=2, padx=2)
-                    def sel(_=None, v=var, f=col, l=lbl):
-                        self.selected[f] = v.get()
-                        l.config(text=v.get())
-                    cb.bind("<<ComboboxSelected>>", sel)
-                    sel()
-                    self.widgets[col] = var
+                    tc_frame = ttk.Frame(frame)
+                    tc_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.tc_lb = tk.Listbox(tc_frame, selectmode="extended", height=5, exportselection=False)
+                    self.tc_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(";") if e.strip()]
+                    for val in existing:
+                        self.tc_lb.insert(tk.END, val)
+                    ttk.Button(tc_frame, text="Add New", command=self.add_tc_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Add Existing", command=self.add_tc_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Edit", command=self.edit_tc).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Delete", command=self.del_tc).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.tc_lb
                 elif col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(frame, textvariable=var, values=fi_names)
@@ -790,20 +872,32 @@ class FI2TCWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(
-                        frame,
-                        selectmode="extended",
-                        height=5,
-                        exportselection=False,
-                    )
-                    for opt in req_opts:
-                        lb.insert(tk.END, opt)
+                    self.req_opts = list(req_opts)
+                    dm_frame = ttk.Frame(frame)
+                    dm_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.dm_lb = tk.Listbox(dm_frame, selectmode="extended", height=5, exportselection=False)
+                    self.dm_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
-                    for i, opt in enumerate(req_opts):
-                        if opt in existing:
-                            lb.selection_set(i)
-                    lb.grid(row=r, column=1, padx=5, pady=2)
-                    self.widgets[col] = lb
+                    for val in existing:
+                        self.dm_lb.insert(tk.END, val)
+                    ttk.Button(dm_frame, text="Add New", command=self.add_dm_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Add Existing", command=self.add_dm_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Edit", command=self.edit_dm).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Delete", command=self.del_dm).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.dm_lb
+                elif col == "mitigation":
+                    mit_frame = ttk.Frame(frame)
+                    mit_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.mit_lb = tk.Listbox(mit_frame, selectmode="extended", height=5, exportselection=False)
+                    self.mit_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    for val in existing:
+                        self.mit_lb.insert(tk.END, val)
+                    ttk.Button(mit_frame, text="Add New", command=self.add_mit_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Add Existing", command=self.add_mit_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Edit", command=self.edit_mit).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Delete", command=self.del_mit).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.mit_lb
                 elif col == "system_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -876,8 +970,11 @@ class FI2TCWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
-                    sel = [widget.get(i) for i in widget.curselection()]
-                    self.data[col] = ",".join(sel)
+                    items = list(widget.get(0, tk.END))
+                    if col == "triggering_conditions":
+                        self.data[col] = ";".join(items)
+                    else:
+                        self.data[col] = ",".join(items)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
@@ -894,6 +991,207 @@ class FI2TCWindow(tk.Frame):
                 self.app.add_hazard(veh)
                 self.app.update_hazard_severity(veh, sev)
             self.result = True
+
+        def add_dm_new(self):
+            dlg = _RequirementDialog(self, req_type="functional modification")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                self.dm_lb.insert(tk.END, text)
+
+        def add_dm_existing(self):
+            dlg = _SelectRequirementsDialog(self, req_type="functional modification")
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.dm_lb.get(0, tk.END):
+                        self.dm_lb.insert(tk.END, val)
+
+        def edit_dm(self):
+            sel = self.dm_lb.curselection()
+            if not sel:
+                return
+            text = self.dm_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="functional modification")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                new_text = f"[{req['id']}] {req['text']}"
+                self.dm_lb.delete(sel[0])
+                self.dm_lb.insert(sel[0], new_text)
+
+        def del_dm(self):
+            sel = list(self.dm_lb.curselection())
+            for idx in reversed(sel):
+                self.dm_lb.delete(idx)
+
+        def add_tc_new(self):
+            name = simpledialog.askstring("Triggering Condition", "Name:")
+            if name and name not in self.tc_lb.get(0, tk.END):
+                self.tc_lb.insert(tk.END, name)
+
+        def add_tc_existing(self):
+            opts = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
+            dlg = _SelectTriggeringDialog(self, opts)
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.tc_lb.get(0, tk.END):
+                        self.tc_lb.insert(tk.END, val)
+
+        def edit_tc(self):
+            sel = self.tc_lb.curselection()
+            if not sel:
+                return
+            current = self.tc_lb.get(sel[0])
+            name = simpledialog.askstring("Triggering Condition", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_triggering_condition(current, name)
+                self.tc_lb.delete(sel[0])
+                self.tc_lb.insert(sel[0], name)
+
+        def del_tc(self):
+            sel = list(self.tc_lb.curselection())
+            for idx in reversed(sel):
+                self.tc_lb.delete(idx)
+
+        def add_mit_new(self):
+            dlg = _RequirementDialog(self, req_type="operational")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                self.mit_lb.insert(tk.END, text)
+
+        def add_mit_existing(self):
+            dlg = _SelectRequirementsDialog(self, req_type="operational")
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.mit_lb.get(0, tk.END):
+                        self.mit_lb.insert(tk.END, val)
+
+        def edit_mit(self):
+            sel = self.mit_lb.curselection()
+            if not sel:
+                return
+            text = self.mit_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="operational")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                new_text = f"[{req['id']}] {req['text']}"
+                self.mit_lb.delete(sel[0])
+                self.mit_lb.insert(sel[0], new_text)
+
+        def del_mit(self):
+            sel = list(self.mit_lb.curselection())
+            for idx in reversed(sel):
+                self.mit_lb.delete(idx)
+
+        def add_dm_new(self):
+            dlg = _RequirementDialog(self)
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                if text not in self.req_opts:
+                    self.req_opts.append(text)
+                self.dm_lb.insert(tk.END, text)
+
+        def add_dm_existing(self):
+            dlg = _SelectRequirementsDialog(self)
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.dm_lb.get(0, tk.END):
+                        self.dm_lb.insert(tk.END, val)
+
+        def edit_dm(self):
+            sel = self.dm_lb.curselection()
+            if not sel:
+                return
+            text = self.dm_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req)
+            if dlg.result:
+                new_req = dlg.result
+                global_requirements[new_req["id"]] = new_req
+                new_text = f"[{new_req['id']}] {new_req['text']}"
+                self.dm_lb.delete(sel[0])
+                self.dm_lb.insert(sel[0], new_text)
+
+        def del_dm(self):
+            sel = list(self.dm_lb.curselection())
+            for idx in reversed(sel):
+                self.dm_lb.delete(idx)
+
+        def add_tc_new(self):
+            name = simpledialog.askstring("Triggering Condition", "Name:")
+            if name:
+                if name not in self.tc_lb.get(0, tk.END):
+                    self.tc_lb.insert(tk.END, name)
+
+        def add_tc_existing(self):
+            opts = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
+            dlg = _SelectTriggeringDialog(self, opts)
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.tc_lb.get(0, tk.END):
+                        self.tc_lb.insert(tk.END, val)
+
+        def edit_tc(self):
+            sel = self.tc_lb.curselection()
+            if not sel:
+                return
+            current = self.tc_lb.get(sel[0])
+            name = simpledialog.askstring("Triggering Condition", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_triggering_condition(current, name)
+                self.tc_lb.delete(sel[0])
+                self.tc_lb.insert(sel[0], name)
+
+        def del_tc(self):
+            sel = list(self.tc_lb.curselection())
+            for idx in reversed(sel):
+                self.tc_lb.delete(idx)
+
+        def add_mit_new(self):
+            dlg = _RequirementDialog(self, req_type="operational")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                self.mit_lb.insert(tk.END, text)
+
+        def add_mit_existing(self):
+            dlg = _SelectRequirementsDialog(self, req_type="operational")
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.mit_lb.get(0, tk.END):
+                        self.mit_lb.insert(tk.END, val)
+
+        def edit_mit(self):
+            sel = self.mit_lb.curselection()
+            if not sel:
+                return
+            text = self.mit_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="operational")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                new_text = f"[{req['id']}] {req['text']}"
+                self.mit_lb.delete(sel[0])
+                self.mit_lb.insert(sel[0], new_text)
+
+        def del_mit(self):
+            sel = list(self.mit_lb.curselection())
+            for idx in reversed(sel):
+                self.mit_lb.delete(idx)
 
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
@@ -1823,22 +2121,25 @@ class TC2FIWindow(tk.Frame):
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
-                "General": [
+                "Known Env/Operational Condition": [
                     "id",
                     "known_use_case",
                     "impacted_function",
                     "arch_elements",
                     "interfaces",
+                    "scene",
+                    "scenario",
+                    "driver_behavior",
+                    "occurrence",
+                    "triggering_conditions",
                 ],
-                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Mitigations": ["mitigation", "acceptance"],
+                "Affected Functions Identification": ["functional_insufficiencies"],
                 "Effects": ["vehicle_effect", "severity"],
-                "Measures": [
+                "Design Measures": [
                     "design_measures",
                     "verification",
                     "measure_effectiveness",
-                    "mitigation",
-                    "acceptance",
                 ],
             }
             tabs = {name: ttk.Frame(nb) for name in categories}
@@ -1888,32 +2189,45 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(
-                        frame,
-                        selectmode="extended",
-                        height=5,
-                        exportselection=False,
-                    )
-                    for opt in req_opts:
-                        lb.insert(tk.END, opt)
+                    self.req_opts = list(req_opts)
+                    dm_frame = ttk.Frame(frame)
+                    dm_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.dm_lb = tk.Listbox(dm_frame, selectmode="extended", height=5, exportselection=False)
+                    self.dm_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
                     existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
-                    for i, opt in enumerate(req_opts):
-                        if opt in existing:
-                            lb.selection_set(i)
-                    lb.grid(row=r, column=1, padx=5, pady=2)
-                    self.widgets[col] = lb
+                    for val in existing:
+                        self.dm_lb.insert(tk.END, val)
+                    ttk.Button(dm_frame, text="Add New", command=self.add_dm_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Add Existing", command=self.add_dm_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Edit", command=self.edit_dm).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Delete", command=self.del_dm).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.dm_lb
                 elif col == "triggering_conditions":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(frame, textvariable=var, values=tc_names)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    lbl = ttk.Label(frame, text=var.get())
-                    lbl.grid(row=r, column=2, padx=2)
-                    def sel(_=None, v=var, f=col, l=lbl):
-                        self.selected[f] = v.get()
-                        l.config(text=v.get())
-                    cb.bind("<<ComboboxSelected>>", sel)
-                    sel()
-                    self.widgets[col] = var
+                    tc_frame = ttk.Frame(frame)
+                    tc_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.tc_lb = tk.Listbox(tc_frame, selectmode="extended", height=5, exportselection=False)
+                    self.tc_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(";") if e.strip()]
+                    for val in existing:
+                        self.tc_lb.insert(tk.END, val)
+                    ttk.Button(tc_frame, text="Add New", command=self.add_tc_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Add Existing", command=self.add_tc_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Edit", command=self.edit_tc).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(tc_frame, text="Delete", command=self.del_tc).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.tc_lb
+                elif col == "mitigation":
+                    mit_frame = ttk.Frame(frame)
+                    mit_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.mit_lb = tk.Listbox(mit_frame, selectmode="extended", height=5, exportselection=False)
+                    self.mit_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    for val in existing:
+                        self.mit_lb.insert(tk.END, val)
+                    ttk.Button(mit_frame, text="Add New", command=self.add_mit_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Add Existing", command=self.add_mit_existing).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Edit", command=self.edit_mit).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(mit_frame, text="Delete", command=self.del_mit).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.mit_lb
                 elif col == "impacted_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -1968,8 +2282,11 @@ class TC2FIWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
-                    sel = [widget.get(i) for i in widget.curselection()]
-                    self.data[col] = ",".join(sel)
+                    items = list(widget.get(0, tk.END))
+                    if col == "triggering_conditions":
+                        self.data[col] = ";".join(items)
+                    else:
+                        self.data[col] = ",".join(items)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
