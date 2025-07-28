@@ -2161,37 +2161,36 @@ class FaultTreeApp:
         }
 
         self.tool_categories = {
-            "Concept": [
+            "Hazard Analysis": [
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
+                "FI2TC Analysis",
+                "TC2FI Analysis",
+            ],
+            "Risk Assessment": [
                 "HARA Analysis",
                 "Safety Goal Export",
                 "Safety Goals Editor",
             ],
-            "Design": [
+            "System Engineering": [
                 "AutoML Explorer",
                 "Requirements Editor",
                 "Requirements Explorer",
             ],
-            "FUSA Safety Analysis": [
+            "Safety Analysis": [
                 "FMEA Manager",
                 "FTA Cut Sets",
                 "FTA-FMEA Traceability",
                 "Common Cause Toolbox",
-                "Cause & Effect Chain",
             ],
-            "SOTIF Safety Analysis": [
-                "FI2TC Analysis",
-                "TC2FI Analysis",
-            ],
-            "Hardware": [
+            "Reliability": [
                 "Mission Profiles",
                 "Mechanism Libraries",
                 "Reliability Analysis",
                 "FMEDA Manager",
             ],
-            "Review Toolbox": [
+            "Review": [
                 "Start Peer Review",
                 "Start Joint Review",
                 "Open Review Toolbox",
@@ -2200,12 +2199,13 @@ class FaultTreeApp:
                 "Set Current User",
             ],
             "Fault modeling Tools": [
-                "Hazards Editor",
-                "Malfunctions Editor",
-                "Faults Editor",
-                "Failures Editor",
                 "Triggering Conditions",
                 "Functional Insufficiencies",
+                "Hazards Editor",
+                "Malfunctions Editor",
+                "Failures Editor",
+                "Faults Editor",
+                "Cause & Effect Chain",
             ],
         }
 
