@@ -23,6 +23,11 @@ class ToolTip:
         y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
+        # Ensure the tooltip stays above other windows
+        try:
+            tw.wm_attributes("-topmost", True)
+        except tk.TclError:
+            pass
         tw.wm_geometry(f"+{x}+{y}")
         label = tk.Label(
             tw,

@@ -1387,7 +1387,6 @@ class EditNodeDialog(simpledialog.Dialog):
                 asil = a
         return asil
 
-
     def refresh_model(self):
         """Propagate changes to keep analyses synchronized."""
         self.ensure_asil_consistency()
@@ -8207,6 +8206,11 @@ class FaultTreeApp:
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
 
+    def touch_doc(self, doc):
+        """Update modification metadata for the given document."""
+        doc["modified"] = datetime.datetime.now().isoformat()
+        doc["modified_by"] = CURRENT_USER_NAME
+
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
         self.ensure_asil_consistency()
@@ -9229,54 +9233,86 @@ class FaultTreeApp:
             return
         self._fmea_tab = self._new_tab("FMEA List")
         win = self._fmea_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for fmea in self.fmeas:
-            listbox.insert(tk.END, fmea['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    fmea.get("name", ""),
+                    fmea.get("created", ""),
+                    fmea.get("author", ""),
+                    fmea.get("modified", ""),
+                    fmea.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = fmea
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmea_tab = None
-            self.show_fmea_table(self.fmeas[idx])
+            self.show_fmea_table(doc)
 
         def add_fmea():
             name = simpledialog.askstring("New FMEA", "Enter FMEA name:")
             if name:
                 file_name = f"fmea_{name}.csv"
-                self.fmeas.append({'name': name, 'entries': [], 'file': file_name})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "created": now,
+                    "author": CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": CURRENT_USER_NAME,
+                }
+                self.fmeas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            del self.fmeas[idx]
-            listbox.delete(idx)
+            self.fmeas.remove(doc)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            current = self.fmeas[idx]['name']
+            current = doc.get("name", "")
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmeas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            doc["name"] = name
+            self.touch_doc(doc)
+            tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
@@ -9290,54 +9326,87 @@ class FaultTreeApp:
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
         win = self._fmeda_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for doc in self.fmedas:
-            listbox.insert(tk.END, doc['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.get("name", ""),
+                    doc.get("created", ""),
+                    doc.get("author", ""),
+                    doc.get("modified", ""),
+                    doc.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = doc
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmeda_tab = None
-            self.show_fmea_table(self.fmedas[idx], fmeda=True)
+            self.show_fmea_table(d, fmeda=True)
 
         def add_fmeda():
             name = simpledialog.askstring("New FMEDA", "Enter FMEDA name:")
             if name:
                 file_name = f"fmeda_{name}.csv"
-                self.fmedas.append({'name': name, 'entries': [], 'file': file_name, 'bom': ''})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "bom": "",
+                    "created": now,
+                    "author": CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": CURRENT_USER_NAME,
+                }
+                self.fmedas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            del self.fmedas[idx]
-            listbox.delete(idx)
+            self.fmedas.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            current = self.fmedas[idx]['name']
+            current = d.get("name", "")
             name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmedas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            d["name"] = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
@@ -10675,9 +10744,11 @@ class FaultTreeApp:
                     for lib in selected_libs:
                         mechs.extend(lib.mechanisms)
                     comp_name = self.get_component_name_for_node(be)
-                    is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
+                is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
+                self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         add_btn.config(command=add_failure_mode)
 
@@ -10691,6 +10762,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         remove_btn.config(command=remove_from_fmea)
 
@@ -10706,6 +10779,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         del_btn.config(command=delete_failure_mode)
 
@@ -10725,6 +10800,7 @@ class FaultTreeApp:
 
         def on_close():
             if fmea is not None:
+                self.touch_doc(fmea)
                 if fmeda:
                     self.export_fmeda_to_csv(fmea, fmea['file'])
                 else:
@@ -12848,6 +12924,10 @@ class FaultTreeApp:
                     "name": f["name"],
                     "file": f["file"],
                     "entries": [e.to_dict() for e in f["entries"]],
+                    "created": f.get("created", ""),
+                    "author": f.get("author", ""),
+                    "modified": f.get("modified", ""),
+                    "modified_by": f.get("modified_by", ""),
                 }
                 for f in self.fmeas
             ],
@@ -12857,6 +12937,10 @@ class FaultTreeApp:
                     "file": d["file"],
                     "entries": [e.to_dict() for e in d["entries"]],
                     "bom": d.get("bom", ""),
+                    "created": d.get("created", ""),
+                    "author": d.get("author", ""),
+                    "modified": d.get("modified", ""),
+                    "modified_by": d.get("modified_by", ""),
                 }
                 for d in self.fmedas
             ],
@@ -12995,7 +13079,15 @@ class FaultTreeApp:
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
             entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({"name": fmea_data.get("name", "FMEA"), "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"), "entries": entries})
+            self.fmeas.append({
+                "name": fmea_data.get("name", "FMEA"),
+                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
+                "entries": entries,
+                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
+                "author": fmea_data.get("author", CURRENT_USER_NAME),
+                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
+            })
         if not self.fmeas and "fmea_entries" in data:
             entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
             self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
@@ -13008,6 +13100,10 @@ class FaultTreeApp:
                 "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
                 "entries": entries,
                 "bom": doc.get("bom", ""),
+                "created": doc.get("created", datetime.datetime.now().isoformat()),
+                "author": doc.get("author", CURRENT_USER_NAME),
+                "modified": doc.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
             })
 
         self.update_failure_list()
@@ -15031,6 +15127,8 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    # Hide the main window while prompting for user info
+    root.withdraw()
     name, email = load_user_config()
     dlg = UserInfoDialog(root, name, email)
     if dlg.result:
@@ -15040,6 +15138,16 @@ def main():
     # Create a fresh helper each session:
     global AutoML_Helper
     AutoML_Helper = AutoMLHelper()
+
+    # Show and maximize the main window after login
+    root.deiconify()
+    try:
+        root.state("zoomed")
+    except tk.TclError:
+        try:
+            root.attributes("-zoomed", True)
+        except tk.TclError:
+            pass
 
     app = FaultTreeApp(root)
     root.mainloop()
