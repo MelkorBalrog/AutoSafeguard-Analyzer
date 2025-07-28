@@ -9389,53 +9389,7 @@ class FaultTreeApp:
                 ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
                 self.mal_vars[m] = var
 
-            btn_frame = ttk.Frame(gen_frame)
-            btn_frame.grid(row=row_next + 1, column=1, sticky="w")
-
-            def add_malfunction():
-                name = simpledialog.askstring("New Malfunction", "Name:")
-                if name:
-                    name = name.strip()
-                if not name:
-                    return
-                if any(m.lower() == name.lower() for m in self.app.malfunctions):
-                    messagebox.showinfo("Malfunction", "Already exists")
-                    return
-                self.app.add_malfunction(name)
-                var = tk.BooleanVar(value=True)
-                ttk.Checkbutton(self.mal_frame, text=name, variable=var, command=update_sg).pack(anchor="w")
-                self.mal_vars[name] = var
-                update_sg()
-
-            def del_malfunction():
-                options = [m for m in self.app.malfunctions if not self.app.is_malfunction_used(m)]
-                if not options:
-                    messagebox.showinfo("Delete", "No deletable malfunctions")
-                    return
-                dlg = tk.Toplevel(self)
-                dlg.title("Delete Malfunction")
-                lb = tk.Listbox(dlg, selectmode=tk.MULTIPLE)
-                for m in options:
-                    lb.insert(tk.END, m)
-                lb.pack(padx=5, pady=5)
-                def ok():
-                    sel = [lb.get(i) for i in lb.curselection()]
-                    for m in sel:
-                        if m in self.app.malfunctions:
-                            self.app.malfunctions.remove(m)
-                            cb = self.mal_vars.pop(m, None)
-                            for child in list(self.mal_frame.winfo_children()):
-                                if child.cget("text") == m:
-                                    child.destroy()
-                    update_sg()
-                    dlg.destroy()
-                ttk.Button(dlg, text="Delete", command=ok).pack(pady=5)
-                dlg.grab_set()
-                dlg.wait_window()
-
-            ttk.Button(btn_frame, text="Add", command=add_malfunction).pack(side=tk.LEFT, padx=2)
-            ttk.Button(btn_frame, text="Delete", command=del_malfunction).pack(side=tk.LEFT, padx=2)
-            row_next += 2
+            row_next += 1
 
             ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
             preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
