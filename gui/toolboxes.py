@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 import csv
 import copy
 import textwrap
+import uuid
 
 from gui.tooltip import ToolTip
 from analysis.models import (
@@ -24,6 +25,7 @@ from analysis.models import (
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
     ASIL_LEVEL_OPTIONS,
+    CAL_LEVEL_OPTIONS,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -48,6 +50,98 @@ def _wrap_val(val, width=30):
     if val is None:
         return ""
     return textwrap.fill(str(val), width)
+
+
+class RequirementDialog(simpledialog.Dialog):
+    """Create or edit a functional modification requirement."""
+
+    def __init__(self, parent, title, initial_req=None):
+        self.initial_req = initial_req or {}
+        super().__init__(parent, title=title)
+
+    def body(self, master):
+        self.resizable(False, False)
+        dialog_font = tk.font.Font(family="Arial", size=10)
+        ttk.Label(master, text="Requirement Type:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.type_var = tk.StringVar(value=self.initial_req.get("req_type", "functional modification"))
+        self.type_combo = ttk.Combobox(master, textvariable=self.type_var, values=REQUIREMENT_TYPE_OPTIONS, state="readonly", width=20)
+        self.type_combo.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Custom Requirement ID:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        self.custom_id_entry = tk.Entry(master, width=20, font=dialog_font)
+        self.custom_id_entry.insert(0, self.initial_req.get("custom_id", self.initial_req.get("id", "")))
+        self.custom_id_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Requirement Text:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.req_entry = tk.Entry(master, width=40, font=dialog_font)
+        self.req_entry.insert(0, self.initial_req.get("text", ""))
+        self.req_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="ASIL:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        self.req_asil_var = tk.StringVar(value=self.initial_req.get("asil", "QM"))
+        self.req_asil_combo = ttk.Combobox(master, textvariable=self.req_asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8)
+        self.req_asil_combo.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+        ttk.Label(master, text="CAL:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+        self.req_cal_var = tk.StringVar(value=self.initial_req.get("cal", CAL_LEVEL_OPTIONS[0]))
+        self.req_cal_combo = ttk.Combobox(master, textvariable=self.req_cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8)
+        self.req_cal_combo.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+
+        return self.req_entry
+
+    def validate(self):
+        custom_id = self.custom_id_entry.get().strip()
+        if custom_id:
+            existing = global_requirements.get(custom_id)
+            if existing and custom_id not in (
+                self.initial_req.get("custom_id"),
+                self.initial_req.get("id"),
+            ):
+                messagebox.showerror("Duplicate ID", f"Requirement ID '{custom_id}' already exists. Please choose a unique ID.")
+                return False
+        return True
+
+    def apply(self):
+        self.result = {
+            "req_type": self.type_var.get().strip(),
+            "custom_id": self.custom_id_entry.get().strip(),
+            "text": self.req_entry.get().strip(),
+            "asil": self.req_asil_var.get().strip(),
+            "cal": self.req_cal_var.get().strip(),
+        }
+
+
+class SelectExistingRequirementsDialog(simpledialog.Dialog):
+    """Dialog showing all global requirements with checkboxes."""
+
+    def __init__(self, parent, title="Select Existing Requirements"):
+        self.selected_vars = {}
+        super().__init__(parent, title=title)
+
+    def body(self, master):
+        ttk.Label(master, text="Select one or more existing requirements:").pack(padx=5, pady=5)
+
+        container = ttk.Frame(master)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(container, borderwidth=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        self.check_frame = ttk.Frame(canvas)
+        self.check_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=self.check_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        for req_id, req in global_requirements.items():
+            var = tk.BooleanVar(value=False)
+            self.selected_vars[req_id] = var
+            text = f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
+            ttk.Checkbutton(self.check_frame, text=text, variable=var).pack(anchor="w", padx=2, pady=2)
+        return self.check_frame
+
+    def apply(self):
+        self.result = [rid for rid, var in self.selected_vars.items() if var.get()]
 
 
 class ReliabilityWindow(tk.Frame):
@@ -790,19 +884,18 @@ class FI2TCWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(
-                        frame,
-                        selectmode="extended",
-                        height=5,
-                        exportselection=False,
-                    )
-                    for opt in req_opts:
-                        lb.insert(tk.END, opt)
-                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
-                    for i, opt in enumerate(req_opts):
-                        if opt in existing:
-                            lb.selection_set(i)
-                    lb.grid(row=r, column=1, padx=5, pady=2)
+                    self.dm_ids = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    dm_frame = ttk.Frame(frame)
+                    dm_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    lb = tk.Listbox(dm_frame, height=4, width=50)
+                    lb.grid(row=0, column=0, columnspan=4, sticky="w")
+                    for rid in self.dm_ids:
+                        req = global_requirements.get(rid, {"id": rid, "text": ""})
+                        lb.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+                    ttk.Button(dm_frame, text="Add New", command=self.add_dm_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Edit", command=self.edit_dm).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Delete", command=self.del_dm).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Add Existing", command=self.add_dm_existing).grid(row=1, column=3, padx=2, pady=2)
                     self.widgets[col] = lb
                 elif col == "system_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
@@ -876,8 +969,11 @@ class FI2TCWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
-                    sel = [widget.get(i) for i in widget.curselection()]
-                    self.data[col] = ",".join(sel)
+                    if col == "design_measures":
+                        self.data[col] = ",".join(self.dm_ids)
+                    else:
+                        sel = [widget.get(i) for i in widget.curselection()]
+                        self.data[col] = ",".join(sel)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
@@ -894,6 +990,138 @@ class FI2TCWindow(tk.Frame):
                 self.app.add_hazard(veh)
                 self.app.update_hazard_severity(veh, sev)
             self.result = True
+
+        def _refresh_dm(self):
+            lb = self.widgets.get("design_measures")
+            if not lb:
+                return
+            lb.delete(0, tk.END)
+            for rid in self.dm_ids:
+                req = global_requirements.get(rid, {"id": rid, "text": ""})
+                lb.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+
+        def add_dm_new(self):
+            dlg = RequirementDialog(self, "Add Design Measure", initial_req={"req_type": "functional modification"})
+            if getattr(dlg, "result", None) and dlg.result.get("text"):
+                rid = dlg.result.get("custom_id") or str(uuid.uuid4())
+                req = {
+                    "id": rid,
+                    "req_type": dlg.result["req_type"],
+                    "text": dlg.result["text"],
+                    "custom_id": rid,
+                    "asil": dlg.result.get("asil", "QM"),
+                    "cal": dlg.result.get("cal", CAL_LEVEL_OPTIONS[0]),
+                }
+                global_requirements[rid] = req
+                if rid not in self.dm_ids:
+                    self.dm_ids.append(rid)
+                self._refresh_dm()
+
+        def edit_dm(self):
+            lb = self.widgets.get("design_measures")
+            sel = lb.curselection() if lb else []
+            if not sel:
+                messagebox.showwarning("Edit", "Select a design measure")
+                return
+            idx = sel[0]
+            rid = self.dm_ids[idx]
+            req = global_requirements.get(rid, {"id": rid})
+            dlg = RequirementDialog(self, "Edit Design Measure", initial_req=req)
+            if getattr(dlg, "result", None) and dlg.result.get("text"):
+                new_id = dlg.result.get("custom_id") or rid
+                req.update(dlg.result)
+                req["id"] = new_id
+                req["custom_id"] = new_id
+                global_requirements.pop(rid, None)
+                global_requirements[new_id] = req
+                self.dm_ids[idx] = new_id
+                self._refresh_dm()
+
+        def del_dm(self):
+            lb = self.widgets.get("design_measures")
+            sel = lb.curselection() if lb else []
+            if not sel:
+                return
+            idx = sel[0]
+            del self.dm_ids[idx]
+            self._refresh_dm()
+
+        def add_dm_existing(self):
+            if not global_requirements:
+                messagebox.showinfo("No Existing Requirements", "There are no existing requirements to add.")
+                return
+            dlg = SelectExistingRequirementsDialog(self, title="Select Existing Requirements")
+            if getattr(dlg, "result", None):
+                for rid in dlg.result:
+                    if rid not in self.dm_ids and global_requirements.get(rid, {}).get("req_type") == "functional modification":
+                        self.dm_ids.append(rid)
+                self._refresh_dm()
+
+        def _refresh_dm(self):
+            lb = self.widgets.get("design_measures")
+            if not lb:
+                return
+            lb.delete(0, tk.END)
+            for rid in self.dm_ids:
+                req = global_requirements.get(rid, {"id": rid, "text": ""})
+                lb.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+
+        def add_dm_new(self):
+            dlg = RequirementDialog(self, "Add Design Measure", initial_req={"req_type": "functional modification"})
+            if getattr(dlg, "result", None) and dlg.result.get("text"):
+                rid = dlg.result.get("custom_id") or str(uuid.uuid4())
+                req = {
+                    "id": rid,
+                    "req_type": dlg.result["req_type"],
+                    "text": dlg.result["text"],
+                    "custom_id": rid,
+                    "asil": dlg.result.get("asil", "QM"),
+                    "cal": dlg.result.get("cal", CAL_LEVEL_OPTIONS[0]),
+                }
+                global_requirements[rid] = req
+                if rid not in self.dm_ids:
+                    self.dm_ids.append(rid)
+                self._refresh_dm()
+
+        def edit_dm(self):
+            lb = self.widgets.get("design_measures")
+            sel = lb.curselection() if lb else []
+            if not sel:
+                messagebox.showwarning("Edit", "Select a design measure")
+                return
+            idx = sel[0]
+            rid = self.dm_ids[idx]
+            req = global_requirements.get(rid, {"id": rid})
+            dlg = RequirementDialog(self, "Edit Design Measure", initial_req=req)
+            if getattr(dlg, "result", None) and dlg.result.get("text"):
+                new_id = dlg.result.get("custom_id") or rid
+                req.update(dlg.result)
+                req["id"] = new_id
+                req["custom_id"] = new_id
+                global_requirements.pop(rid, None)
+                global_requirements[new_id] = req
+                self.dm_ids[idx] = new_id
+                self._refresh_dm()
+
+        def del_dm(self):
+            lb = self.widgets.get("design_measures")
+            sel = lb.curselection() if lb else []
+            if not sel:
+                return
+            idx = sel[0]
+            del self.dm_ids[idx]
+            self._refresh_dm()
+
+        def add_dm_existing(self):
+            if not global_requirements:
+                messagebox.showinfo("No Existing Requirements", "There are no existing requirements to add.")
+                return
+            dlg = SelectExistingRequirementsDialog(self, title="Select Existing Requirements")
+            if getattr(dlg, "result", None):
+                for rid in dlg.result:
+                    if rid not in self.dm_ids and global_requirements.get(rid, {}).get("req_type") == "functional modification":
+                        self.dm_ids.append(rid)
+                self._refresh_dm()
 
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
@@ -1888,19 +2116,18 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(
-                        frame,
-                        selectmode="extended",
-                        height=5,
-                        exportselection=False,
-                    )
-                    for opt in req_opts:
-                        lb.insert(tk.END, opt)
-                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
-                    for i, opt in enumerate(req_opts):
-                        if opt in existing:
-                            lb.selection_set(i)
-                    lb.grid(row=r, column=1, padx=5, pady=2)
+                    self.dm_ids = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    dm_frame = ttk.Frame(frame)
+                    dm_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    lb = tk.Listbox(dm_frame, height=4, width=50)
+                    lb.grid(row=0, column=0, columnspan=4, sticky="w")
+                    for rid in self.dm_ids:
+                        req = global_requirements.get(rid, {"id": rid, "text": ""})
+                        lb.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+                    ttk.Button(dm_frame, text="Add New", command=self.add_dm_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Edit", command=self.edit_dm).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Delete", command=self.del_dm).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Add Existing", command=self.add_dm_existing).grid(row=1, column=3, padx=2, pady=2)
                     self.widgets[col] = lb
                 elif col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
@@ -1968,8 +2195,11 @@ class TC2FIWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 elif isinstance(widget, tk.Listbox):
-                    sel = [widget.get(i) for i in widget.curselection()]
-                    self.data[col] = ",".join(sel)
+                    if col == "design_measures":
+                        self.data[col] = ",".join(self.dm_ids)
+                    else:
+                        sel = [widget.get(i) for i in widget.curselection()]
+                        self.data[col] = ",".join(sel)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")

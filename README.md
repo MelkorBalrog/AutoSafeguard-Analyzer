@@ -692,10 +692,10 @@ Two additional tables support tracing between these elements:
   that reveal the hazard. The hazard and its **severity** are recorded here. The
   table includes dedicated **triggering_conditions** and
   **functional_insufficiencies** columns populated via comboboxes so new items
-  can be added on the fly. The **design_measures** column now offers a
-  multi-select list of all existing requirements labelled as *functional
-  modification* for quick selection. Hold **Ctrl** while clicking to choose
-  multiple items.
+  can be added on the fly. The **design_measures** column now shows a list of
+  allocated functional modification requirements with **Add New** and
+  **Add Existing** buttons just like FTA nodes. Selected requirements appear in
+  the listbox and can be edited or removed individually.
 * **TC2FI Analysis** – also mirrors HAZOP concepts for SOTIF. It starts from the
   triggering condition and lists the impacted functions, architecture elements
   and related insufficiencies. The identified hazard and its **severity** are
