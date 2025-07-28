@@ -600,22 +600,20 @@ class ReliabilityWindow(tk.Frame):
 class FI2TCWindow(tk.Frame):
     COLS = [
         "id",
+        "functional_insufficiencies",
         "system_function",
         "allocation",
         "interfaces",
-        "functional_insufficiencies",
         "scene",
         "scenario",
         "driver_behavior",
         "occurrence",
+        "triggering_conditions",
         "vehicle_effect",
         "severity",
         "design_measures",
         "verification",
         "measure_effectiveness",
-        "triggering_conditions",
-        "worst_case",
-        "tc_effect",
         "mitigation",
         "acceptance",
     ]
@@ -685,6 +683,8 @@ class FI2TCWindow(tk.Frame):
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
 
+
+
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
             self.app = app
@@ -709,19 +709,15 @@ class FI2TCWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = [f"[{r['id']}] {r['text']}" for r in global_requirements.values()]
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
                 "General": ["id", "system_function", "allocation", "interfaces"],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
                 "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Effects": ["vehicle_effect", "severity", "worst_case", "tc_effect"],
+                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Effects": ["vehicle_effect", "severity"],
                 "Measures": [
                     "design_measures",
                     "verification",
@@ -828,6 +824,29 @@ class FI2TCWindow(tk.Frame):
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
+                elif col == "vehicle_effect":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    frame_h = ttk.Frame(frame)
+                    frame_h.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    cb = ttk.Combobox(
+                        frame_h,
+                        textvariable=var,
+                        values=self.app.get_hazard_names(),
+                    )
+                    cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+                    def sel(_=None, v=var, f=col):
+                        self.selected[f] = v.get()
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
+                    def new_haz():
+                        name = simpledialog.askstring("New Hazard", "Name:")
+                        if not name:
+                            return
+                        self.app.add_hazard(name)
+                        var.set(name)
+                        cb.configure(values=self.app.get_hazard_names())
+                    ttk.Button(frame_h, text="New", command=new_haz).pack(side=tk.LEFT)
+                    self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -861,6 +880,12 @@ class FI2TCWindow(tk.Frame):
                         self.app.rename_functional_insufficiency(orig, val)
                     elif col == "triggering_conditions" and orig and val != orig:
                         self.app.rename_triggering_condition(orig, val)
+                    elif col == "vehicle_effect":
+                        if orig and val != orig:
+                            self.app.rename_hazard(orig, val)
+                        sev_val = int(self.widgets.get("severity").get() or 1)
+                        self.app.add_hazard(val, sev_val)
+                        self.app.set_hazard_severity(val, sev_val)
                     self.data[col] = val
             self.result = True
 
@@ -1515,14 +1540,9 @@ class HaraWindow(tk.Frame):
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=1, column=1)
             ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
-            self.sev_var = tk.StringVar(value=str(self.row.severity))
-            sev_cb = ttk.Combobox(
-                master,
-                textvariable=self.sev_var,
-                values=["1", "2", "3"],
-                state="readonly",
-            )
-            sev_cb.grid(row=2, column=1)
+            sev_value = self.app.get_hazard_severity(self.row.hazard)
+            self.sev_var = tk.StringVar(value=str(sev_value))
+            ttk.Label(master, textvariable=self.sev_var).grid(row=2, column=1)
             ttk.Label(master, text="Severity Rationale").grid(
                 row=3, column=0, sticky="e"
             )
@@ -1593,7 +1613,6 @@ class HaraWindow(tk.Frame):
                     return
                 self.asil_var.set(calc_asil(s, c, e))
 
-            sev_cb.bind("<<ComboboxSelected>>", recalc)
             cont_cb.bind("<<ComboboxSelected>>", recalc)
             exp_cb.bind("<<ComboboxSelected>>", recalc)
             recalc()
@@ -1607,7 +1626,8 @@ class HaraWindow(tk.Frame):
             self.row.hazard = self.haz.get("1.0", "end-1c")
             if old_haz and old_haz != self.row.hazard:
                 self.app.rename_hazard(old_haz, self.row.hazard)
-            self.app.add_hazard(self.row.hazard)
+            self.app.add_hazard(self.row.hazard, int(self.sev_var.get()))
+            self.app.set_hazard_severity(self.row.hazard, int(self.sev_var.get()))
             self.app.update_hazard_list()
             self.row.severity = int(self.sev_var.get())
             self.row.sev_rationale = self.sev_rat.get()
@@ -1671,8 +1691,12 @@ class HaraWindow(tk.Frame):
 class TC2FIWindow(tk.Frame):
     COLS = [
         "id",
-        "known_use_case",
+        "triggering_conditions",
+        "scene",
+        "scenario",
+        "driver_behavior",
         "occurrence",
+        "known_use_case",
         "impacted_function",
         "arch_elements",
         "interfaces",
@@ -1682,11 +1706,6 @@ class TC2FIWindow(tk.Frame):
         "design_measures",
         "verification",
         "measure_effectiveness",
-        "scene",
-        "scenario",
-        "driver_behavior",
-        "triggering_conditions",
-        "tc_effect",
         "mitigation",
         "acceptance",
     ]
@@ -1757,6 +1776,7 @@ class TC2FIWindow(tk.Frame):
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
 
+
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
             self.app = app
@@ -1780,11 +1800,7 @@ class TC2FIWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = [f"[{r['id']}] {r['text']}" for r in global_requirements.values()]
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
@@ -1796,9 +1812,9 @@ class TC2FIWindow(tk.Frame):
                     "arch_elements",
                     "interfaces",
                 ],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
                 "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Effects": ["vehicle_effect", "severity", "tc_effect"],
+                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Effects": ["vehicle_effect", "severity"],
                 "Measures": [
                     "design_measures",
                     "verification",
@@ -1905,6 +1921,29 @@ class TC2FIWindow(tk.Frame):
                     )
                     cb.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = var
+                elif col == "vehicle_effect":
+                    var = tk.StringVar(value=self.data.get(col, ""))
+                    frame_h = ttk.Frame(frame)
+                    frame_h.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    cb = ttk.Combobox(
+                        frame_h,
+                        textvariable=var,
+                        values=self.app.get_hazard_names(),
+                    )
+                    cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+                    def sel(_=None, v=var, f=col):
+                        self.selected[f] = v.get()
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
+                    def new_haz():
+                        name = simpledialog.askstring("New Hazard", "Name:")
+                        if not name:
+                            return
+                        self.app.add_hazard(name)
+                        var.set(name)
+                        cb.configure(values=self.app.get_hazard_names())
+                    ttk.Button(frame_h, text="New", command=new_haz).pack(side=tk.LEFT)
+                    self.widgets[col] = var
                 elif col == "severity":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -1938,6 +1977,12 @@ class TC2FIWindow(tk.Frame):
                         self.app.rename_functional_insufficiency(orig, val)
                     elif col == "triggering_conditions" and orig and val != orig:
                         self.app.rename_triggering_condition(orig, val)
+                    elif col == "vehicle_effect":
+                        if orig and val != orig:
+                            self.app.rename_hazard(orig, val)
+                        sev_val = int(self.widgets.get("severity").get() or 1)
+                        self.app.add_hazard(val, sev_val)
+                        self.app.set_hazard_severity(val, sev_val)
                     self.data[col] = val
 
             self.result = True
@@ -2047,11 +2092,11 @@ class HazardExplorerWindow(tk.Toplevel):
         self.app = app
         self.title("Hazard Explorer")
 
-        columns = ("HARA", "Malfunction", "Hazard")
+        columns = ("HARA", "Malfunction", "Hazard", "Severity")
         self.tree = ttk.Treeview(self, columns=columns, show="headings")
         for c in columns:
             self.tree.heading(c, text=c)
-            width = 200 if c == "Hazard" else 120
+            width = 200 if c == "Hazard" else 80
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
         ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
@@ -2061,10 +2106,12 @@ class HazardExplorerWindow(tk.Toplevel):
         self.tree.delete(*self.tree.get_children())
         for doc in self.app.hara_docs:
             for e in doc.entries:
+                haz = getattr(e, "hazard", "")
+                sev = self.app.get_hazard_severity(haz)
                 self.tree.insert(
                     "",
                     "end",
-                    values=(doc.name, e.malfunction, getattr(e, "hazard", "")),
+                    values=(doc.name, e.malfunction, haz, sev),
                 )
 
     def export_csv(self):
@@ -2075,7 +2122,7 @@ class HazardExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["HARA", "Malfunction", "Hazard"])
+            w.writerow(["HARA", "Malfunction", "Hazard", "Severity"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Hazards exported")

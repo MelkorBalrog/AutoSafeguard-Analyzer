@@ -681,14 +681,22 @@ Two additional tables support tracing between these elements:
   conditions, scenarios and mitigation measures that reveal the hazard. The
   table includes dedicated **triggering_conditions** and
   **functional_insufficiencies** columns populated via comboboxes so new items
-  can be added on the fly.
-  The **design_measures** column now offers a multi-select list of all existing
-  requirements labelled as *functional modification* for quick selection.
-  Hold **Ctrl** while clicking to choose multiple items.
+  can be added on the fly. The **design_measures** column provides a multi-select
+  list of all requirements so several may be allocated at once. Hold **Ctrl**
+  while clicking to choose multiple items.
 * **TC2FI Analysis** – starts from the triggering condition and lists the
   impacted functions, architecture elements and related insufficiencies. The
   **triggering_conditions** and **functional_insufficiencies** fields mirror
   those in the FI2TC table to keep the relationships consistent.
+
+The analyses approach the problem from opposite directions:
+
+| Aspect | FI2TC | TC2FI |
+| --- | --- | --- |
+| Start Point | Known functional weakness | Known environmental/operational condition |
+| Goal | Identify triggering conditions | Identify affected functions |
+| Focus | Understanding cause of known issues | Discovering issues from known situations |
+| Role in SOTIF | Verifying known risks are well covered | Expanding coverage for unknown risks |
 
 HARA values such as severity and the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
