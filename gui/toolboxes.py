@@ -2307,6 +2307,104 @@ class TC2FIWindow(tk.Frame):
                 self.app.update_hazard_severity(veh, sev)
             self.result = True
 
+        def add_dm_new(self):
+            dlg = _RequirementDialog(self, req_type="functional modification")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                self.dm_lb.insert(tk.END, text)
+
+        def add_dm_existing(self):
+            dlg = _SelectRequirementsDialog(self, req_type="functional modification")
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.dm_lb.get(0, tk.END):
+                        self.dm_lb.insert(tk.END, val)
+
+        def edit_dm(self):
+            sel = self.dm_lb.curselection()
+            if not sel:
+                return
+            text = self.dm_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="functional modification")
+            if dlg.result:
+                new_req = dlg.result
+                global_requirements[new_req["id"]] = new_req
+                new_text = f"[{new_req['id']}] {new_req['text']}"
+                self.dm_lb.delete(sel[0])
+                self.dm_lb.insert(sel[0], new_text)
+
+        def del_dm(self):
+            sel = list(self.dm_lb.curselection())
+            for idx in reversed(sel):
+                self.dm_lb.delete(idx)
+
+        def add_tc_existing(self):
+            dlg = _SelectTriggeringConditionsDialog(self, self.app.triggering_conditions)
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.tc_lb.get(0, tk.END):
+                        self.tc_lb.insert(tk.END, val)
+
+        def add_tc(self):
+            name = simpledialog.askstring("Triggering Condition", "Name:")
+            if name:
+                if name not in self.tc_lb.get(0, tk.END):
+                    self.tc_lb.insert(tk.END, name)
+
+        def edit_tc(self):
+            sel = self.tc_lb.curselection()
+            if not sel:
+                return
+            current = self.tc_lb.get(sel[0])
+            name = simpledialog.askstring("Triggering Condition", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_triggering_condition(current, name)
+                self.tc_lb.delete(sel[0])
+                self.tc_lb.insert(sel[0], name)
+
+        def del_tc(self):
+            sel = list(self.tc_lb.curselection())
+            for idx in reversed(sel):
+                self.tc_lb.delete(idx)
+
+        def add_mit_new(self):
+            dlg = _RequirementDialog(self, req_type="operational")
+            if dlg.result:
+                req = dlg.result
+                global_requirements[req["id"]] = req
+                text = f"[{req['id']}] {req['text']}"
+                self.mit_lb.insert(tk.END, text)
+
+        def add_mit_existing(self):
+            dlg = _SelectRequirementsDialog(self, req_type="operational")
+            if dlg.result:
+                for val in dlg.result:
+                    if val not in self.mit_lb.get(0, tk.END):
+                        self.mit_lb.insert(tk.END, val)
+
+        def edit_mit(self):
+            sel = self.mit_lb.curselection()
+            if not sel:
+                return
+            text = self.mit_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="operational")
+            if dlg.result:
+                new_req = dlg.result
+                global_requirements[new_req["id"]] = new_req
+                new_text = f"[{new_req['id']}] {new_req['text']}"
+                self.mit_lb.delete(sel[0])
+                self.mit_lb.insert(sel[0], new_text)
+
+        def del_mit(self):
+            sel = list(self.mit_lb.curselection())
+            for idx in reversed(sel):
+                self.mit_lb.delete(idx)
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
         if getattr(dlg, "result", None):
