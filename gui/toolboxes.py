@@ -913,6 +913,10 @@ class HazopWindow(tk.Frame):
         def apply(self):
             self.row.function = self.func.get()
             self.row.malfunction = self.mal.get()
+            # When a new malfunction is introduced from a HAZOP entry,
+            # automatically create a corresponding top level event.
+            # Register the malfunction globally; AutoML will create a
+            # corresponding top level event if it's new.
             self.app.add_malfunction(self.row.malfunction)
             self.row.mtype = self.typ.get()
             self.row.scenario = self.scen.get()
