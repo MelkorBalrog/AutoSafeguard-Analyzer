@@ -7781,7 +7781,16 @@ class FaultTreeApp:
 
     def get_non_basic_failure_modes(self):
         """Return failure modes from gate nodes, FMEAs and FMEDAs."""
-        modes = [g for g in self.get_all_gates() if getattr(g, "description", "").strip()]
+        modes = [
+            g
+            for g in self.get_all_gates()
+            if (
+                g.node_type.upper() != "TOP EVENT"
+                and not g.is_page
+                and not any(p.is_page for p in getattr(g, "parents", []))
+                and getattr(g, "description", "").strip()
+            )
+        ]
         for entry in self.fmea_entries:
             if getattr(entry, "description", "").strip():
                 modes.append(entry)
