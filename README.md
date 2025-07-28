@@ -4,6 +4,35 @@ Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.
 
 AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
 
+## Index
+
+- [Workflow Overview](#workflow-overview)
+- [HAZOP Analysis](#hazop-analysis)
+- [HARA Analysis](#hara-analysis)
+- [Requirements Creation and Management](#requirements-creation-and-management)
+- [AutoML Diagrams and Safety Analyses](#automl-diagrams-and-safety-analyses)
+- [Metamodel Overview](#metamodel-overview)
+  - [AutoML Safety Extensions](#automl-safety-extensions)
+  - [Core SysML Elements](#core-sysml-elements)
+  - [Diagram Relationships](#diagram-relationships)
+  - [Detailed Safety and Reliability Metamodel](#detailed-safety-and-reliability-metamodel)
+  - [Extended AutoML Element Attributes](#extended-automl-element-attributes)
+- [BOM Integration with AutoML Diagrams](#bom-integration-with-automl-diagrams)
+- [Component Qualifications](#component-qualifications)
+- [Mission Profiles and Probability Formulas](#mission-profiles-and-probability-formulas)
+- [SOTIF Analysis](#sotif-analysis)
+  - [SOTIF Traceability](#sotif-traceability)
+- [Review Toolbox](#review-toolbox)
+- [Additional Tools](#additional-tools)
+  - [Common Cause Toolbox](#common-cause-toolbox)
+  - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
+  - [Safety Goal Export](#safety-goal-export)
+- [Email Setup](#email-setup)
+- [Dependencies](#dependencies)
+- [License](#license)
+- [Building the Executable](#building-the-executable)
+- [Version History](#version-history)
+
 ## Workflow Overview
 
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL values propagated throughout the model.
@@ -413,14 +442,48 @@ classDiagram
 
 #### Differences From Standard SysML
 
-- `BlockUsage` elements add the properties `analysis`, `fit`, `qualification` and
-  `failureModes` to reference reliability calculations.
-- `PartUsage` elements add `component`, `failureModes` and `asil` so individual
-  parts can point to BOM entries and SOTIF ratings.
-- Safety specific element types such as `SafetyGoal`, `Hazard`, `Scenario` and
-  `FaultTreeNode` are stored using dedicated `elem_type` values within the
-  repository. These extend the basic `SysMLElement` with fields for ASIL, FMEA
-  ratings, diagnostic coverage and requirement links.
+- **BlockUsage** – extends the standard `Block` with reliability information:
+  `analysis`, `fit`, `qualification` and `failureModes` link architecture
+  elements to FMEA tables.
+- **PartUsage** – extends `PartProperty` by referencing a BOM `component`,
+  listing applicable `failureModes` and storing the assigned `asil` level.
+- **SafetyGoal** – specialization of `Requirement` holding a textual
+  `description`, `asil` rating and quantitative targets `spfm`, `lpfm` and `dc`.
+- **Hazard** – extends `SysMLElement` with a hazard `description` and HARA
+  `severity` plus the related `scenarios`.
+- **Scenario** – extends `SysMLElement` to include a short `description`, linked
+  `scenery` context and traced `hazards`.
+- **Scenery** – extends `SysMLElement` with the `odd_element` name and flexible
+  context `attributes` describing that environment.
+- **FaultTreeNode** – extends `SysMLElement` by storing FMEA fields
+  `fmea_effect` and `fmea_cause`, FMEDA metrics and traced
+  `safety_requirements`.
+- **ReliabilityAnalysis** – specialization of `AnalysisDocument` capturing the
+  selected reliability `standard`, mission `profile`, aggregated `total_fit` and
+  resulting `spfm`, `lpfm` and `dc` values.
+- **ReliabilityComponent** – extends `SysMLElement` with component `name`,
+  qualification certificate, `quantity`, parameter `attributes` and computed
+  `fit` rate.
+- **FmeaDoc** – specialized `AnalysisDocument` holding the failure mode table
+  with occurrence and detection ratings.
+- **FmeaEntry** – extends `SysMLElement` with `failure_mode`, `cause`, `effect`,
+  `severity`, `occurrence` and `detection` data.
+- **FmedaDoc** – specialized `AnalysisDocument` whose table-level metrics
+  `spfm`, `lpfm` and `dc` are calculated from failure mode FIT values.
+- **FaultTreeDiagram** – specialization of `SysMLDiagram` storing the overall
+  fault tree probability `phmf` and Prototype Assurance Level `pal`.
+- **TriggeringCondition** – extends `SysMLElement` with a textual
+  `description`, the related `scenario` and any allocated acceptance criteria.
+- **FunctionalInsufficiency** – extends `SysMLElement` with the missing function
+  `description`, associated `scenario` and impacted `safetyGoal`.
+- **FunctionalModification** – extends `SysMLElement` to record the mitigation
+  text and linked `acceptanceCriteria` used to verify the change.
+- **AcceptanceCriteria** – extends `SysMLElement` with a measurable condition
+  proving a functional modification resolves the hazard.
+- **Fault** – extends `SysMLElement` to describe the underlying cause leading to
+  a failure mode.
+- **Failure** – extends `SysMLElement` to record the malfunction effect used as
+  an FMEA failure mode and FTA event.
 
 ### Extended AutoML Element Attributes
 
