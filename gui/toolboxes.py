@@ -38,12 +38,66 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style.theme_use("clam")
     except tk.TclError:
         pass
-    style.configure(style_name, font=("Segoe UI", 10), rowheight=rowheight)
+    style.configure(
+        style_name,
+        font=("Segoe UI", 10),
+        rowheight=rowheight,
+        borderwidth=1,
+        relief="solid",
+    )
     style.configure(
         f"{style_name}.Heading",
         font=("Segoe UI", 10, "bold"),
         background="#d0d0d0",
+        borderwidth=1,
+        relief="raised",
     )
+
+
+class EditableTreeview(ttk.Treeview):
+    """Treeview with in-place cell editing support."""
+
+    def __init__(self, master=None, *, column_options=None, edit_callback=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self._col_options = column_options or {}
+        self._edit_cb = edit_callback
+        self._edit_widget = None
+        self.bind("<Double-1>", self._begin_edit, add="+")
+
+    def _begin_edit(self, event):
+        if self._edit_widget:
+            return
+        region = self.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        rowid = self.identify_row(event.y)
+        col = self.identify_column(event.x)
+        if not rowid or not col:
+            return
+        col_index = int(col.replace("#", "")) - 1
+        col_name = self.cget("columns")[col_index]
+        x, y, w, h = self.bbox(rowid, col)
+        value = self.set(rowid, col_name)
+        opts = self._col_options.get(col_name)
+        var = tk.StringVar(value=value)
+        if opts:
+            widget = ttk.Combobox(self, textvariable=var, values=opts, state="readonly")
+        else:
+            widget = tk.Entry(self, textvariable=var)
+        widget.place(x=x, y=y, width=w, height=h)
+        widget.focus_set()
+
+        def save(event=None):
+            self.set(rowid, col_name, var.get())
+            widget.destroy()
+            self._edit_widget = None
+            if self._edit_cb:
+                row_index = self.index(rowid)
+                self._edit_cb(row_index, col_name, var.get())
+
+        widget.bind("<Return>", save)
+        widget.bind("<FocusOut>", save)
+        self._edit_widget = widget
 
 
 def _total_fit_from_boms(boms):
@@ -247,11 +301,17 @@ class ReliabilityWindow(tk.Frame):
         self.refresh_analysis_list()
 
         configure_table_style("Reliability.Treeview")
-        self.tree = ttk.Treeview(
+        column_opts = {
+            "type": list(COMPONENT_ATTR_TEMPLATES.keys()),
+            "qualification": QUALIFICATIONS,
+        }
+        self.tree = EditableTreeview(
             self,
             columns=("name", "type", "qty", "fit", "qualification"),
             show="headings",
             style="Reliability.Treeview",
+            column_options=column_opts,
+            edit_callback=self.on_cell_edit,
         )
         for col in ("name", "type", "qty", "fit", "qualification"):
             heading = "Qualification" if col == "qualification" else col.capitalize()
@@ -415,6 +475,23 @@ class ReliabilityWindow(tk.Frame):
         self.profile_combo.config(values=[mp.name for mp in self.app.mission_profiles])
         # keep application level components updated so property dialogs see them
         self.app.reliability_components = list(self.components)
+
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        if row >= len(self.components):
+            return
+        comp = self.components[row]
+        if column == "name":
+            comp.name = value
+        elif column == "type":
+            comp.comp_type = value
+        elif column == "qty":
+            try:
+                comp.quantity = int(value)
+            except ValueError:
+                pass
+        elif column == "qualification":
+            comp.qualification = value
+        self.refresh_tree()
 
     def load_csv(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
@@ -782,12 +859,13 @@ class FI2TCWindow(tk.Frame):
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         configure_table_style("FI2TC.Treeview", rowheight=80)
-        self.tree = ttk.Treeview(
+        self.tree = EditableTreeview(
             tree_frame,
             columns=self.COLS,
             show="headings",
             style="FI2TC.Treeview",
             height=4,
+            edit_callback=self.on_cell_edit,
         )
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
@@ -1244,6 +1322,11 @@ class FI2TCWindow(tk.Frame):
                 del self.app.fi2tc_entries[idx]
         self.refresh()
 
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        if row >= len(self.app.fi2tc_entries):
+            return
+        self.app.fi2tc_entries[row][column] = value
+
     def export_csv(self):
         path = filedialog.asksaveasfilename(
             defaultextension=".csv", filetypes=[("CSV", "*.csv")]
@@ -1344,7 +1427,13 @@ class HazopWindow(tk.Frame):
         content = ttk.Frame(self)
         content.pack(fill=tk.BOTH, expand=True)
         configure_table_style("Hazop.Treeview")
-        self.tree = ttk.Treeview(content, columns=columns, show="headings", style="Hazop.Treeview")
+        self.tree = EditableTreeview(
+            content,
+            columns=columns,
+            show="headings",
+            style="Hazop.Treeview",
+            edit_callback=self.on_cell_edit,
+        )
         for col in columns:
             self.tree.heading(col, text=col.capitalize())
             if col in ("rationale", "hazard"):
@@ -1633,6 +1722,26 @@ class HazopWindow(tk.Frame):
                 del self.app.hazop_entries[idx]
         self.refresh()
 
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        if row >= len(self.app.hazop_entries):
+            return
+        entry = self.app.hazop_entries[row]
+        mapping = {
+            "function": "function",
+            "malfunction": "malfunction",
+            "type": "mtype",
+            "safety": "safety",
+            "rationale": "rationale",
+        }
+        attr = mapping.get(column)
+        if not attr:
+            return
+        if attr == "safety":
+            setattr(entry, attr, value.lower() in ("yes", "true", "1"))
+        else:
+            setattr(entry, attr, value)
+        self.refresh()
+
     def load_analysis(self):
         if not self.app.reliability_analyses:
             messagebox.showwarning("Load", "No saved analyses")
@@ -1725,7 +1834,13 @@ class HaraWindow(tk.Frame):
         self.status_lbl.pack(side=tk.LEFT, padx=10)
 
         configure_table_style("Hara.Treeview")
-        self.tree = ttk.Treeview(self, columns=self.COLS, show="headings", style="Hara.Treeview")
+        self.tree = EditableTreeview(
+            self,
+            columns=self.COLS,
+            show="headings",
+            style="Hara.Treeview",
+            edit_callback=self.on_cell_edit,
+        )
         for c in self.COLS:
             self.tree.heading(c, text=c.replace("_", " ").title())
             width = 200 if c == "hazard" else 120
@@ -2016,6 +2131,20 @@ class HaraWindow(tk.Frame):
             self.status_lbl.config(text=f"Status: {self.app.active_hara.status}")
         self.refresh()
 
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        if row >= len(self.app.hara_entries):
+            return
+        entry = self.app.hara_entries[row]
+        if column in self.COLS:
+            if column in {"severity", "controllability", "exposure"}:
+                try:
+                    setattr(entry, column, int(value))
+                except ValueError:
+                    return
+            else:
+                setattr(entry, column, value)
+        self.refresh()
+
     def approve_doc(self):
         if not self.app.active_hara:
             return
@@ -2070,12 +2199,13 @@ class TC2FIWindow(tk.Frame):
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         configure_table_style("TC2FI.Treeview", rowheight=80)
-        self.tree = ttk.Treeview(
+        self.tree = EditableTreeview(
             tree_frame,
             columns=self.COLS,
             show="headings",
             style="TC2FI.Treeview",
             height=4,
+            edit_callback=self.on_cell_edit,
         )
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
@@ -2570,6 +2700,12 @@ class TC2FIWindow(tk.Frame):
                 del self.app.tc2fi_entries[idx]
         self.refresh()
 
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        if row >= len(self.app.tc2fi_entries):
+            return
+        self.app.tc2fi_entries[row][column] = value
+        self.refresh()
+
     def export_csv(self):
         path = filedialog.asksaveasfilename(
             defaultextension=".csv", filetypes=[("CSV", "*.csv")]
@@ -2653,7 +2789,13 @@ class HazardExplorerWindow(tk.Toplevel):
 
         columns = ("HARA", "Malfunction", "Hazard", "Severity")
         configure_table_style("HazExp.Treeview")
-        self.tree = ttk.Treeview(self, columns=columns, show="headings", style="HazExp.Treeview")
+        self.tree = EditableTreeview(
+            self,
+            columns=columns,
+            show="headings",
+            style="HazExp.Treeview",
+            edit_callback=self.on_cell_edit,
+        )
         for c in columns:
             self.tree.heading(c, text=c)
             width = 200 if c == "Hazard" else 120
@@ -2686,6 +2828,12 @@ class HazardExplorerWindow(tk.Toplevel):
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Hazards exported")
+
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        values = list(self.tree.item(self.tree.get_children()[row], "values"))
+        idx = ("HARA", "Malfunction", "Hazard", "Severity").index(column)
+        values[idx] = value
+        self.tree.item(self.tree.get_children()[row], values=values)
 
 
 class RequirementsExplorerWindow(tk.Toplevel):
@@ -2739,7 +2887,13 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
         configure_table_style("ReqExp.Treeview")
-        self.tree = ttk.Treeview(self, columns=columns, show="headings", style="ReqExp.Treeview")
+        self.tree = EditableTreeview(
+            self,
+            columns=columns,
+            show="headings",
+            style="ReqExp.Treeview",
+            edit_callback=self.on_cell_edit,
+        )
         for c in columns:
             self.tree.heading(c, text=c)
             width = 100 if c != "Text" else 300
@@ -2786,3 +2940,10 @@ class RequirementsExplorerWindow(tk.Toplevel):
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
+
+    def on_cell_edit(self, row: int, column: str, value: str) -> None:
+        values = list(self.tree.item(self.tree.get_children()[row], "values"))
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":5}
+        if column in idx_map:
+            values[idx_map[column]] = value
+            self.tree.item(self.tree.get_children()[row], values=values)
