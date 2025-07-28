@@ -370,11 +370,12 @@ class UserInfoDialog(simpledialog.Dialog):
     def body(self, master):
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
         self.name_var = tk.StringVar(value=self._name)
-        ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=5, pady=5)
+        name_entry = ttk.Entry(master, textvariable=self.name_var)
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(master, text="Email:").grid(row=1, column=0, sticky="e")
         self.email_var = tk.StringVar(value=self._email)
         ttk.Entry(master, textvariable=self.email_var).grid(row=1, column=1, padx=5, pady=5)
-        return self.name_var
+        return name_entry
 
     def apply(self):
         self.result = (self.name_var.get().strip(), self.email_var.get().strip())
