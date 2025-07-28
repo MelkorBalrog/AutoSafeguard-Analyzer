@@ -100,7 +100,6 @@ class EditableTreeview(ttk.Treeview):
         self._edit_widget = widget
 
 
-
 def _total_fit_from_boms(boms):
     """Return the aggregated FIT of all components in ``boms``.
 
