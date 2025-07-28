@@ -22,6 +22,8 @@ from analysis.models import (
     component_fit_map,
     calc_asil,
     global_requirements,
+    REQUIREMENT_TYPE_OPTIONS,
+    ASIL_LEVEL_OPTIONS,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -1957,3 +1959,102 @@ class HazardExplorerWindow(tk.Toplevel):
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Hazards exported")
+
+
+class RequirementsExplorerWindow(tk.Toplevel):
+    """Read-only list of global requirements with filter options."""
+
+    STATUSES = ["", "draft", "in review", "peer reviewed", "pending approval", "approved"]
+
+    def __init__(self, app):
+        super().__init__(app.root)
+        self.app = app
+        self.title("Requirements Explorer")
+
+        filter_frame = ttk.Frame(self)
+        filter_frame.pack(fill=tk.X, padx=5, pady=2)
+
+        ttk.Label(filter_frame, text="Text:").grid(row=0, column=0, sticky="e")
+        self.query_var = tk.StringVar()
+        tk.Entry(filter_frame, textvariable=self.query_var, width=20).grid(row=0, column=1, padx=5)
+
+        ttk.Label(filter_frame, text="Type:").grid(row=0, column=2, sticky="e")
+        self.type_var = tk.StringVar()
+        ttk.Combobox(
+            filter_frame,
+            textvariable=self.type_var,
+            values=[""] + REQUIREMENT_TYPE_OPTIONS,
+            state="readonly",
+            width=18,
+        ).grid(row=0, column=3, padx=5)
+
+        ttk.Label(filter_frame, text="ASIL:").grid(row=0, column=4, sticky="e")
+        self.asil_var = tk.StringVar()
+        ttk.Combobox(
+            filter_frame,
+            textvariable=self.asil_var,
+            values=[""] + ASIL_LEVEL_OPTIONS,
+            state="readonly",
+            width=6,
+        ).grid(row=0, column=5, padx=5)
+
+        ttk.Label(filter_frame, text="Status:").grid(row=0, column=6, sticky="e")
+        self.status_var = tk.StringVar()
+        ttk.Combobox(
+            filter_frame,
+            textvariable=self.status_var,
+            values=self.STATUSES,
+            state="readonly",
+            width=15,
+        ).grid(row=0, column=7, padx=5)
+
+        tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
+
+        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
+        self.tree = ttk.Treeview(self, columns=columns, show="headings")
+        for c in columns:
+            self.tree.heading(c, text=c)
+            width = 100 if c != "Text" else 300
+            self.tree.column(c, width=width)
+        self.tree.pack(fill=tk.BOTH, expand=True)
+        ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
+        self.refresh()
+
+    def refresh(self):
+        self.tree.delete(*self.tree.get_children())
+        query = self.query_var.get().strip().lower()
+        rtype = self.type_var.get().strip()
+        asil = self.asil_var.get().strip()
+        status = self.status_var.get().strip()
+        for req in global_requirements.values():
+            if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
+                continue
+            if rtype and req.get("req_type") != rtype:
+                continue
+            if asil and req.get("asil") != asil:
+                continue
+            if status and req.get("status", "") != status:
+                continue
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    req.get("id", ""),
+                    req.get("asil", ""),
+                    req.get("req_type", ""),
+                    req.get("status", ""),
+                    req.get("parent_id", ""),
+                    req.get("text", ""),
+                ),
+            )
+
+    def export_csv(self):
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not path:
+            return
+        with open(path, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Text"])
+            for iid in self.tree.get_children():
+                w.writerow(self.tree.item(iid, "values"))
+        messagebox.showinfo("Export", "Requirements exported")
