@@ -3,7 +3,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 import csv
 import copy
+import datetime
 import textwrap
+import analysis.user_config as user_config
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,
@@ -424,12 +426,16 @@ class ReliabilityWindow(tk.Frame):
             )
             if ra is None:
                 ra = ReliabilityAnalysis(current, "", "", [], 0.0, 0.0, 0.0, 0.0)
+                ra.meta.author = user_config.CURRENT_USER_NAME
+                ra.meta.modified_by = user_config.CURRENT_USER_NAME
                 self.app.reliability_analyses.append(ra)
         else:
             name = simpledialog.askstring("Save Analysis", "Enter analysis name:")
             if not name:
                 return
             ra = ReliabilityAnalysis(name, "", "", [], 0.0, 0.0, 0.0, 0.0)
+            ra.meta.author = user_config.CURRENT_USER_NAME
+            ra.meta.modified_by = user_config.CURRENT_USER_NAME
             self.app.reliability_analyses.append(ra)
             current = name
 
@@ -441,6 +447,8 @@ class ReliabilityWindow(tk.Frame):
         ra.spfm = self.app.spfm
         ra.lpfm = self.app.lpfm
         ra.dc = self.app.reliability_dc
+        ra.meta.modified = datetime.datetime.now().isoformat()
+        ra.meta.modified_by = user_config.CURRENT_USER_NAME
 
         self.refresh_analysis_list()
         self.analysis_var.set(current)
@@ -712,6 +720,8 @@ class FI2TCWindow(tk.Frame):
         if not name:
             return
         doc = FI2TCDoc(name, [])
+        doc.meta.author = user_config.CURRENT_USER_NAME
+        doc.meta.modified_by = user_config.CURRENT_USER_NAME
         self.app.fi2tc_docs.append(doc)
         self.app.active_fi2tc = doc
         self.app.fi2tc_entries = doc.entries
@@ -812,6 +822,8 @@ class HazopWindow(tk.Frame):
         if not name:
             return
         doc = HazopDoc(name, [])
+        doc.meta.author = user_config.CURRENT_USER_NAME
+        doc.meta.modified_by = user_config.CURRENT_USER_NAME
         self.app.hazop_docs.append(doc)
         self.app.active_hazop = doc
         self.app.hazop_entries = doc.entries
@@ -1109,6 +1121,8 @@ class HaraWindow(tk.Frame):
             return
         name, hazops = dlg.result
         doc = HaraDoc(name, hazops, [], False, "draft")
+        doc.meta.author = user_config.CURRENT_USER_NAME
+        doc.meta.modified_by = user_config.CURRENT_USER_NAME
         self.app.hara_docs.append(doc)
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
@@ -1515,6 +1529,8 @@ class TC2FIWindow(tk.Frame):
         if not name:
             return
         doc = TC2FIDoc(name, [])
+        doc.meta.author = user_config.CURRENT_USER_NAME
+        doc.meta.modified_by = user_config.CURRENT_USER_NAME
         self.app.tc2fi_docs.append(doc)
         self.app.active_tc2fi = doc
         self.app.tc2fi_entries = doc.entries

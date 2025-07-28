@@ -248,6 +248,12 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+from analysis.user_config import (
+    load_user_config,
+    save_user_config,
+    set_current_user,
+)
+import analysis.user_config as user_config
 from analysis.risk_assessment import (
     DERIVED_MATURITY_TABLE,
     ASSURANCE_AGGREGATION_AND,
@@ -350,6 +356,28 @@ def get_version() -> str:
 
 
 VERSION = get_version()
+
+
+class UserInfoDialog(simpledialog.Dialog):
+    """Prompt for the user's name and email."""
+
+    def __init__(self, parent, name: str = "", email: str = ""):
+        self._name = name
+        self._email = email
+        super().__init__(parent, title="User Information")
+
+    def body(self, master):
+        ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
+        self.name_var = tk.StringVar(value=self._name)
+        name_entry = ttk.Entry(master, textvariable=self.name_var)
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(master, text="Email:").grid(row=1, column=0, sticky="e")
+        self.email_var = tk.StringVar(value=self._email)
+        ttk.Entry(master, textvariable=self.email_var).grid(row=1, column=1, padx=5, pady=5)
+        return name_entry
+
+    def apply(self):
+        self.result = (self.name_var.get().strip(), self.email_var.get().strip())
 
 
 class ClosableNotebook(ttk.Notebook):
@@ -1983,6 +2011,11 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="TC2FI Analysis", command=self.open_tc2fi_window)
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="FMEA Manager", command=self.show_fmea_list)
+        qualitative_menu.add_command(label="FMEDA Manager", command=self.show_fmeda_list)
+        qualitative_menu.add_command(label="HAZOP Manager", command=self.show_hazop_list)
+        qualitative_menu.add_command(label="HARA Manager", command=self.show_hara_list)
+        qualitative_menu.add_command(label="FI2TC Manager", command=self.show_fi2tc_list)
+        qualitative_menu.add_command(label="TC2FI Manager", command=self.show_tc2fi_list)
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
@@ -2087,6 +2120,10 @@ class FaultTreeApp:
             "Reliability Analysis": self.open_reliability_window,
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
+            "HAZOP Manager": self.show_hazop_list,
+            "HARA Manager": self.show_hara_list,
+            "FI2TC Manager": self.show_fi2tc_list,
+            "TC2FI Manager": self.show_tc2fi_list,
             "HAZOP Analysis": self.open_hazop_window,
             "HARA Analysis": self.open_hara_window,
             "Hazards Editor": self.show_hazard_editor,
@@ -8178,6 +8215,16 @@ class FaultTreeApp:
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
 
+    def touch_doc(self, doc):
+        """Update modification metadata for the given document."""
+        now = datetime.datetime.now().isoformat()
+        if isinstance(doc, dict):
+            doc["modified"] = now
+            doc["modified_by"] = user_config.CURRENT_USER_NAME
+        elif hasattr(doc, "meta"):
+            doc.meta.modified = now
+            doc.meta.modified_by = user_config.CURRENT_USER_NAME
+
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
         self.ensure_asil_consistency()
@@ -9200,54 +9247,86 @@ class FaultTreeApp:
             return
         self._fmea_tab = self._new_tab("FMEA List")
         win = self._fmea_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for fmea in self.fmeas:
-            listbox.insert(tk.END, fmea['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    fmea.get("name", ""),
+                    fmea.get("created", ""),
+                    fmea.get("author", ""),
+                    fmea.get("modified", ""),
+                    fmea.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = fmea
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmea_tab = None
-            self.show_fmea_table(self.fmeas[idx])
+            self.show_fmea_table(doc)
 
         def add_fmea():
             name = simpledialog.askstring("New FMEA", "Enter FMEA name:")
             if name:
                 file_name = f"fmea_{name}.csv"
-                self.fmeas.append({'name': name, 'entries': [], 'file': file_name})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "created": now,
+                    "author": user_config.CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": user_config.CURRENT_USER_NAME,
+                }
+                self.fmeas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, user_config.CURRENT_USER_NAME, now, user_config.CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            del self.fmeas[idx]
-            listbox.delete(idx)
+            self.fmeas.remove(doc)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            current = self.fmeas[idx]['name']
+            current = doc.get("name", "")
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmeas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            doc["name"] = name
+            self.touch_doc(doc)
+            tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
@@ -9261,60 +9340,447 @@ class FaultTreeApp:
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
         win = self._fmeda_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for doc in self.fmedas:
-            listbox.insert(tk.END, doc['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.get("name", ""),
+                    doc.get("created", ""),
+                    doc.get("author", ""),
+                    doc.get("modified", ""),
+                    doc.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = doc
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmeda_tab = None
-            self.show_fmea_table(self.fmedas[idx], fmeda=True)
+            self.show_fmea_table(d, fmeda=True)
 
         def add_fmeda():
             name = simpledialog.askstring("New FMEDA", "Enter FMEDA name:")
             if name:
                 file_name = f"fmeda_{name}.csv"
-                self.fmedas.append({'name': name, 'entries': [], 'file': file_name, 'bom': ''})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "bom": "",
+                    "created": now,
+                    "author": user_config.CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": user_config.CURRENT_USER_NAME,
+                }
+                self.fmedas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, user_config.CURRENT_USER_NAME, now, user_config.CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            del self.fmedas[idx]
-            listbox.delete(idx)
+            self.fmedas.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            current = self.fmedas[idx]['name']
+            current = d.get("name", "")
             name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmedas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            d["name"] = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Add", command=add_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Rename", command=rename_fmeda).pack(fill=tk.X)
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
+
+    def show_hazop_list(self):
+        if getattr(self, "_hazop_tab", None) is not None and self._hazop_tab.winfo_exists():
+            self.doc_nb.select(self._hazop_tab)
+            return
+        self._hazop_tab = self._new_tab("HAZOP List")
+        win = self._hazop_tab
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        item_map = {}
+        for doc in self.hazop_docs:
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.name,
+                    doc.meta.created,
+                    doc.meta.author,
+                    doc.meta.modified,
+                    doc.meta.modified_by,
+                ),
+            )
+            item_map[iid] = doc
+
+        def open_selected(event=None):
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            win.destroy()
+            self._hazop_tab = None
+            self.open_hazop_window()
+            if hasattr(self, "_hazop_window"):
+                self._hazop_window.doc_var.set(d.name)
+                self._hazop_window.select_doc()
+
+        def add_doc():
+            name = simpledialog.askstring("New HAZOP", "Enter HAZOP name:")
+            if name:
+                doc = HazopDoc(name, [])
+                doc.meta.author = user_config.CURRENT_USER_NAME
+                doc.meta.modified_by = user_config.CURRENT_USER_NAME
+                self.hazop_docs.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, doc.meta.created, doc.meta.author, doc.meta.modified, doc.meta.modified_by),
+                )
+                item_map[iid] = doc
+                self.update_views()
+
+        def delete_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            self.hazop_docs.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
+            self.update_views()
+
+        def rename_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            current = d.name
+            name = simpledialog.askstring("Rename HAZOP", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            d.name = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d.meta.created, d.meta.author, d.meta.modified, d.meta.modified_by))
+            self.update_views()
+
+        tree.bind("<Double-1>", open_selected)
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Add", command=add_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Delete", command=delete_doc).pack(fill=tk.X)
+
+    def show_hara_list(self):
+        if getattr(self, "_hara_list_tab", None) is not None and self._hara_list_tab.winfo_exists():
+            self.doc_nb.select(self._hara_list_tab)
+            return
+        self._hara_list_tab = self._new_tab("HARA List")
+        win = self._hara_list_tab
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        item_map = {}
+        for doc in self.hara_docs:
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.name,
+                    doc.meta.created,
+                    doc.meta.author,
+                    doc.meta.modified,
+                    doc.meta.modified_by,
+                ),
+            )
+            item_map[iid] = doc
+
+        def open_selected(event=None):
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            win.destroy()
+            self._hara_list_tab = None
+            self.open_hara_window()
+            if hasattr(self, "_hara_window"):
+                self._hara_window.doc_var.set(d.name)
+                self._hara_window.select_doc()
+
+        def add_doc():
+            dlg = HaraWindow.NewHaraDialog(self, self)
+            if not getattr(dlg, "result", None):
+                return
+            name, hazops = dlg.result
+            doc = HaraDoc(name, hazops, [], False, "draft")
+            doc.meta.author = user_config.CURRENT_USER_NAME
+            doc.meta.modified_by = user_config.CURRENT_USER_NAME
+            self.hara_docs.append(doc)
+            iid = tree.insert(
+                "",
+                "end",
+                values=(name, doc.meta.created, doc.meta.author, doc.meta.modified, doc.meta.modified_by),
+            )
+            item_map[iid] = doc
+            self.update_views()
+
+        def delete_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            self.hara_docs.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
+            self.update_views()
+
+        def rename_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            current = d.name
+            name = simpledialog.askstring("Rename HARA", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            d.name = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d.meta.created, d.meta.author, d.meta.modified, d.meta.modified_by))
+            self.update_views()
+
+        tree.bind("<Double-1>", open_selected)
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Add", command=add_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Delete", command=delete_doc).pack(fill=tk.X)
+
+    def show_fi2tc_list(self):
+        if getattr(self, "_fi2tc_list_tab", None) is not None and self._fi2tc_list_tab.winfo_exists():
+            self.doc_nb.select(self._fi2tc_list_tab)
+            return
+        self._fi2tc_list_tab = self._new_tab("FI2TC List")
+        win = self._fi2tc_list_tab
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        item_map = {}
+        for doc in self.fi2tc_docs:
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.name,
+                    doc.meta.created,
+                    doc.meta.author,
+                    doc.meta.modified,
+                    doc.meta.modified_by,
+                ),
+            )
+            item_map[iid] = doc
+
+        def open_selected(event=None):
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            win.destroy()
+            self._fi2tc_list_tab = None
+            self.open_fi2tc_window()
+            if hasattr(self, "_fi2tc_window"):
+                self._fi2tc_window.doc_var.set(d.name)
+                self._fi2tc_window.select_doc()
+
+        def add_doc():
+            name = simpledialog.askstring("New FI2TC", "Enter FI2TC name:")
+            if name:
+                doc = FI2TCDoc(name, [])
+                doc.meta.author = user_config.CURRENT_USER_NAME
+                doc.meta.modified_by = user_config.CURRENT_USER_NAME
+                self.fi2tc_docs.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, doc.meta.created, doc.meta.author, doc.meta.modified, doc.meta.modified_by),
+                )
+                item_map[iid] = doc
+                self.update_views()
+
+        def delete_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            self.fi2tc_docs.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
+            self.update_views()
+
+        def rename_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            current = d.name
+            name = simpledialog.askstring("Rename FI2TC", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            d.name = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d.meta.created, d.meta.author, d.meta.modified, d.meta.modified_by))
+            self.update_views()
+
+        tree.bind("<Double-1>", open_selected)
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Add", command=add_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Delete", command=delete_doc).pack(fill=tk.X)
+
+    def show_tc2fi_list(self):
+        if getattr(self, "_tc2fi_list_tab", None) is not None and self._tc2fi_list_tab.winfo_exists():
+            self.doc_nb.select(self._tc2fi_list_tab)
+            return
+        self._tc2fi_list_tab = self._new_tab("TC2FI List")
+        win = self._tc2fi_list_tab
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        item_map = {}
+        for doc in self.tc2fi_docs:
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.name,
+                    doc.meta.created,
+                    doc.meta.author,
+                    doc.meta.modified,
+                    doc.meta.modified_by,
+                ),
+            )
+            item_map[iid] = doc
+
+        def open_selected(event=None):
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            win.destroy()
+            self._tc2fi_list_tab = None
+            self.open_tc2fi_window()
+            if hasattr(self, "_tc2fi_window"):
+                self._tc2fi_window.doc_var.set(d.name)
+                self._tc2fi_window.select_doc()
+
+        def add_doc():
+            name = simpledialog.askstring("New TC2FI", "Enter TC2FI name:")
+            if name:
+                doc = TC2FIDoc(name, [])
+                doc.meta.author = user_config.CURRENT_USER_NAME
+                doc.meta.modified_by = user_config.CURRENT_USER_NAME
+                self.tc2fi_docs.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, doc.meta.created, doc.meta.author, doc.meta.modified, doc.meta.modified_by),
+                )
+                item_map[iid] = doc
+                self.update_views()
+
+        def delete_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            self.tc2fi_docs.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
+            self.update_views()
+
+        def rename_doc():
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
+                return
+            current = d.name
+            name = simpledialog.askstring("Rename TC2FI", "Enter new name:", initialvalue=current)
+            if not name:
+                return
+            d.name = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d.meta.created, d.meta.author, d.meta.modified, d.meta.modified_by))
+            self.update_views()
+
+        tree.bind("<Double-1>", open_selected)
+        btn_frame = ttk.Frame(win)
+        btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Add", command=add_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Rename", command=rename_doc).pack(fill=tk.X)
+        ttk.Button(btn_frame, text="Delete", command=delete_doc).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
         win = tk.Toplevel(self.root)
@@ -10018,6 +10484,8 @@ class FaultTreeApp:
                 self.node.fmeda_spfm_target = getattr(fta_goal, "sg_spfm_target", 0.0)
                 self.node.fmeda_lpfm_target = getattr(fta_goal, "sg_lpfm_target", 0.0)
             self.app.propagate_failure_mode_attributes(self.node)
+            self.node.modified = datetime.datetime.now().isoformat()
+            self.node.modified_by = user_config.CURRENT_USER_NAME
 
         def add_existing_requirement(self):
             global global_requirements
@@ -10251,6 +10719,7 @@ class FaultTreeApp:
                 "DiagCov",
                 "Mechanism",
             ])
+        columns.extend(["Created", "Author", "Modified", "ModifiedBy"])
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.TOP, pady=2)
         add_btn = ttk.Button(btn_frame, text="Add Failure Mode")
@@ -10423,6 +10892,10 @@ class FaultTreeApp:
                 width = 150
             elif col in ["FaultType", "Fraction", "FIT", "DiagCov", "Mechanism"]:
                 width = 80
+            elif col in ["Created", "Modified"]:
+                width = 130
+            elif col in ["Author", "ModifiedBy"]:
+                width = 100
             tree.column(col, width=width, anchor="center")
         tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
@@ -10532,6 +11005,12 @@ class FaultTreeApp:
                         f"{src.fmeda_diag_cov:.2f}",
                         getattr(src, "fmeda_mechanism", ""),
                     ])
+                vals.extend([
+                    getattr(src, "created", ""),
+                    getattr(src, "author", ""),
+                    getattr(src, "modified", ""),
+                    getattr(src, "modified_by", ""),
+                ])
                 tags = ["evenrow" if idx % 2 == 0 else "oddrow"]
                 if rpn >= 100:
                     tags.append("highrpn")
@@ -10630,9 +11109,11 @@ class FaultTreeApp:
                     for lib in selected_libs:
                         mechs.extend(lib.mechanisms)
                     comp_name = self.get_component_name_for_node(be)
-                    is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
+                is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
+                self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         add_btn.config(command=add_failure_mode)
 
@@ -10646,6 +11127,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         remove_btn.config(command=remove_from_fmea)
 
@@ -10661,6 +11144,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         del_btn.config(command=delete_failure_mode)
 
@@ -10680,6 +11165,7 @@ class FaultTreeApp:
 
         def on_close():
             if fmea is not None:
+                self.touch_doc(fmea)
                 if fmeda:
                     self.export_fmeda_to_csv(fmea, fmea['file'])
                 else:
@@ -12789,6 +13275,10 @@ class FaultTreeApp:
                     "name": f["name"],
                     "file": f["file"],
                     "entries": [e.to_dict() for e in f["entries"]],
+                    "created": f.get("created", ""),
+                    "author": f.get("author", ""),
+                    "modified": f.get("modified", ""),
+                    "modified_by": f.get("modified_by", ""),
                 }
                 for f in self.fmeas
             ],
@@ -12798,6 +13288,10 @@ class FaultTreeApp:
                     "file": d["file"],
                     "entries": [e.to_dict() for e in d["entries"]],
                     "bom": d.get("bom", ""),
+                    "created": d.get("created", ""),
+                    "author": d.get("author", ""),
+                    "modified": d.get("modified", ""),
+                    "modified_by": d.get("modified_by", ""),
                 }
                 for d in self.fmedas
             ],
@@ -12828,6 +13322,10 @@ class FaultTreeApp:
                     "spfm": ra.spfm,
                     "lpfm": ra.lpfm,
                     "dc": ra.dc,
+                    "created": ra.meta.created,
+                    "author": ra.meta.author,
+                    "modified": ra.meta.modified,
+                    "modified_by": ra.meta.modified_by,
                 }
                 for ra in self.reliability_analyses
             ],
@@ -12835,6 +13333,10 @@ class FaultTreeApp:
                 {
                     "name": doc.name,
                     "entries": [asdict(e) for e in doc.entries],
+                    "created": doc.meta.created,
+                    "author": doc.meta.author,
+                    "modified": doc.meta.modified,
+                    "modified_by": doc.meta.modified_by,
                 }
                 for doc in self.hazop_docs
             ],
@@ -12845,15 +13347,33 @@ class FaultTreeApp:
                     "entries": [asdict(e) for e in doc.entries],
                     "approved": getattr(doc, "approved", False),
                     "status": getattr(doc, "status", "draft"),
+                    "created": doc.meta.created,
+                    "author": doc.meta.author,
+                    "modified": doc.meta.modified,
+                    "modified_by": doc.meta.modified_by,
                 }
                 for doc in self.hara_docs
             ],
             "fi2tc_docs": [
-                {"name": doc.name, "entries": doc.entries}
+                {
+                    "name": doc.name,
+                    "entries": doc.entries,
+                    "created": doc.meta.created,
+                    "author": doc.meta.author,
+                    "modified": doc.meta.modified,
+                    "modified_by": doc.meta.modified_by,
+                }
                 for doc in self.fi2tc_docs
             ],
             "tc2fi_docs": [
-                {"name": doc.name, "entries": doc.entries}
+                {
+                    "name": doc.name,
+                    "entries": doc.entries,
+                    "created": doc.meta.created,
+                    "author": doc.meta.author,
+                    "modified": doc.meta.modified,
+                    "modified_by": doc.meta.modified_by,
+                }
                 for doc in self.tc2fi_docs
             ],
             "hazop_entries": [asdict(e) for e in self.hazop_entries],
@@ -12936,7 +13456,15 @@ class FaultTreeApp:
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
             entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({"name": fmea_data.get("name", "FMEA"), "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"), "entries": entries})
+            self.fmeas.append({
+                "name": fmea_data.get("name", "FMEA"),
+                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
+                "entries": entries,
+                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
+                "author": fmea_data.get("author", user_config.CURRENT_USER_NAME),
+                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": fmea_data.get("modified_by", user_config.CURRENT_USER_NAME),
+            })
         if not self.fmeas and "fmea_entries" in data:
             entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
             self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
@@ -12949,6 +13477,10 @@ class FaultTreeApp:
                 "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
                 "entries": entries,
                 "bom": doc.get("bom", ""),
+                "created": doc.get("created", datetime.datetime.now().isoformat()),
+                "author": doc.get("author", user_config.CURRENT_USER_NAME),
+                "modified": doc.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": doc.get("modified_by", user_config.CURRENT_USER_NAME),
             })
 
         self.update_failure_list()
@@ -13008,18 +13540,21 @@ class FaultTreeApp:
                 return comp
 
             comps = [load_comp(c) for c in ra.get("components", [])]
-            self.reliability_analyses.append(
-                ReliabilityAnalysis(
-                    ra.get("name", ""),
-                    ra.get("standard", ""),
-                    ra.get("profile", ""),
-                    comps,
-                    ra.get("total_fit", 0.0),
-                    ra.get("spfm", 0.0),
-                    ra.get("lpfm", 0.0),
-                    ra.get("dc", 0.0),
-                )
+            analysis = ReliabilityAnalysis(
+                ra.get("name", ""),
+                ra.get("standard", ""),
+                ra.get("profile", ""),
+                comps,
+                ra.get("total_fit", 0.0),
+                ra.get("spfm", 0.0),
+                ra.get("lpfm", 0.0),
+                ra.get("dc", 0.0),
             )
+            analysis.meta.created = ra.get("created", datetime.datetime.now().isoformat())
+            analysis.meta.author = ra.get("author", user_config.CURRENT_USER_NAME)
+            analysis.meta.modified = ra.get("modified", analysis.meta.created)
+            analysis.meta.modified_by = ra.get("modified_by", user_config.CURRENT_USER_NAME)
+            self.reliability_analyses.append(analysis)
 
         self.hazop_docs = []
         for d in data.get("hazops", []):
@@ -13028,9 +13563,12 @@ class FaultTreeApp:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
-            self.hazop_docs.append(
-                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
-            )
+            doc = HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
+            doc.meta.created = d.get("created", datetime.datetime.now().isoformat())
+            doc.meta.author = d.get("author", user_config.CURRENT_USER_NAME)
+            doc.meta.modified = d.get("modified", doc.meta.created)
+            doc.meta.modified_by = d.get("modified_by", user_config.CURRENT_USER_NAME)
+            self.hazop_docs.append(doc)
         if not self.hazop_docs and "hazop_entries" in data:
             entries = []
             for h in data.get("hazop_entries", []):
@@ -13048,15 +13586,18 @@ class FaultTreeApp:
             if not hazops:
                 hazop = d.get("hazop")
                 hazops = [hazop] if hazop else []
-            self.hara_docs.append(
-                HaraDoc(
-                    d.get("name", f"HARA {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
-                )
+            doc = HaraDoc(
+                d.get("name", f"HARA {len(self.hara_docs)+1}"),
+                hazops,
+                entries,
+                d.get("approved", False),
+                d.get("status", "draft"),
             )
+            doc.meta.created = d.get("created", datetime.datetime.now().isoformat())
+            doc.meta.author = d.get("author", user_config.CURRENT_USER_NAME)
+            doc.meta.modified = d.get("modified", doc.meta.created)
+            doc.meta.modified_by = d.get("modified_by", user_config.CURRENT_USER_NAME)
+            self.hara_docs.append(doc)
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             self.hara_docs.append(
@@ -13068,9 +13609,12 @@ class FaultTreeApp:
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
-            self.fi2tc_docs.append(
-                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
-            )
+            doc = FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
+            doc.meta.created = d.get("created", datetime.datetime.now().isoformat())
+            doc.meta.author = d.get("author", user_config.CURRENT_USER_NAME)
+            doc.meta.modified = d.get("modified", doc.meta.created)
+            doc.meta.modified_by = d.get("modified_by", user_config.CURRENT_USER_NAME)
+            self.fi2tc_docs.append(doc)
         if not self.fi2tc_docs and "fi2tc_entries" in data:
             self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
@@ -13078,9 +13622,12 @@ class FaultTreeApp:
 
         self.tc2fi_docs = []
         for d in data.get("tc2fi_docs", []):
-            self.tc2fi_docs.append(
-                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
-            )
+            doc = TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
+            doc.meta.created = d.get("created", datetime.datetime.now().isoformat())
+            doc.meta.author = d.get("author", user_config.CURRENT_USER_NAME)
+            doc.meta.modified = d.get("modified", doc.meta.created)
+            doc.meta.modified_by = d.get("modified_by", user_config.CURRENT_USER_NAME)
+            self.tc2fi_docs.append(doc)
         if not self.tc2fi_docs and "tc2fi_entries" in data:
             self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
@@ -14277,6 +14824,10 @@ class FaultTreeNode:
         self.is_page = False
         self.is_primary_instance = True
         self.original = self
+        self.created = datetime.datetime.now().isoformat()
+        self.author = user_config.CURRENT_USER_NAME
+        self.modified = self.created
+        self.modified_by = user_config.CURRENT_USER_NAME
         self.safety_goal_description = ""
         self.safety_goal_asil = ""
         self.safe_state = ""
@@ -14926,10 +15477,16 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    name, email = load_user_config()
+    dlg = UserInfoDialog(root, name, email)
+    if dlg.result:
+        name, email = dlg.result
+        save_user_config(name, email)
+    set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
     AutoML_Helper = AutoMLHelper()
-    
+
     app = FaultTreeApp(root)
     root.mainloop()
 
