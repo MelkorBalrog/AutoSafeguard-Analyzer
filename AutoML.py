@@ -1957,6 +1957,7 @@ class FaultTreeApp:
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="Triggering Conditions", command=self.show_triggering_condition_list)
         qualitative_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
+        qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunctions_editor)
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="FI2TC Analysis", command=self.open_fi2tc_window)
         qualitative_menu.add_command(label="TC2FI Analysis", command=self.open_tc2fi_window)
@@ -2062,6 +2063,7 @@ class FaultTreeApp:
             "Mechanism Libraries": self.manage_mechanism_libraries,
             "Scenario Libraries": self.manage_scenario_libraries,
             "ODD Libraries": self.manage_odd_libraries,
+            "Malfunctions Editor": self.show_malfunctions_editor,
             "Reliability Analysis": self.open_reliability_window,
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
@@ -9280,6 +9282,73 @@ class FaultTreeApp:
                     w.writerow([n.unique_id, n.user_name, n.description])
             messagebox.showinfo("Export","Functional insufficiencies exported.")
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+
+    def show_malfunctions_editor(self):
+        """Manage the global list of malfunctions."""
+        if hasattr(self, "_mal_tab") and self._mal_tab.winfo_exists():
+            self.doc_nb.select(self._mal_tab)
+            return
+        self._mal_tab = self._new_tab("Malfunctions")
+        win = self._mal_tab
+
+        lb = tk.Listbox(win, height=10, width=30)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        for m in sorted(self.malfunctions):
+            lb.insert(tk.END, m)
+
+        def add_mal():
+            name = simpledialog.askstring("New Malfunction", "Name:")
+            if not name:
+                return
+            name = name.strip()
+            if not name:
+                return
+            if any(name.lower() == x.lower() for x in self.malfunctions):
+                messagebox.showinfo("Malfunction", "Already exists")
+                return
+            self.malfunctions.append(name)
+            lb.insert(tk.END, name)
+            self.update_views()
+
+        def edit_mal():
+            sel = lb.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            current = self.malfunctions[idx]
+            name = simpledialog.askstring("Edit Malfunction", "Name:", initialvalue=current)
+            if not name:
+                return
+            name = name.strip()
+            if not name:
+                return
+            if any(name.lower() == x.lower() for i, x in enumerate(self.malfunctions) if i != idx):
+                messagebox.showinfo("Malfunction", "Already exists")
+                return
+            self.malfunctions[idx] = name
+            lb.delete(idx)
+            lb.insert(idx, name)
+            lb.select_set(idx)
+            self.update_views()
+
+        def del_mal():
+            sel = lb.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            name = self.malfunctions[idx]
+            if self.is_malfunction_used(name):
+                messagebox.showinfo("Delete", "Malfunction is in use")
+                return
+            del self.malfunctions[idx]
+            lb.delete(idx)
+            self.update_views()
+
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add_mal).pack(fill=tk.X)
+        ttk.Button(btn, text="Edit", command=edit_mal).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=del_mal).pack(fill=tk.X)
 
     class FMEARowDialog(simpledialog.Dialog):
         def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False, is_fmeda=False):
