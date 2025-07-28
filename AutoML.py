@@ -1893,6 +1893,7 @@ class FaultTreeApp:
         self.faults: list[str] = []
         self.malfunctions: list[str] = []
         self.hazards: list[str] = []
+        self.hazard_severity: dict[str, int] = {}
         self.failures: list[str] = []
         self.triggering_conditions: list[str] = []
         self.functional_insufficiencies: list[str] = []
@@ -3184,9 +3185,16 @@ class FaultTreeApp:
         """Add a failure to the list if not already present."""
         append_unique_insensitive(self.failures, name)
 
-    def add_hazard(self, name: str) -> None:
+    def add_hazard(self, name: str, severity: int | str = 1) -> None:
         """Add a hazard to the list if not already present."""
         append_unique_insensitive(self.hazards, name)
+        if isinstance(severity, str):
+            try:
+                severity = int(severity)
+            except Exception:
+                severity = 1
+        if name not in self.hazard_severity:
+            self.hazard_severity[name] = int(severity)
 
     # --------------------------------------------------------------
     # Rename helpers propagate changes across the entire model
@@ -3246,6 +3254,8 @@ class FaultTreeApp:
         for i, h in enumerate(self.hazards):
             if h == old:
                 self.hazards[i] = new
+        if old in self.hazard_severity:
+            self.hazard_severity[new] = self.hazard_severity.pop(old)
         for doc in self.hazop_docs:
             for e in doc.entries:
                 if getattr(e, "hazard", "") == old:
@@ -3254,6 +3264,26 @@ class FaultTreeApp:
             for e in doc.entries:
                 if getattr(e, "hazard", "") == old:
                     e.hazard = new
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                if e.get("vehicle_effect", "") == old:
+                    e["vehicle_effect"] = new
+        self.update_views()
+
+    def update_hazard_severity(self, hazard: str, severity: int | str) -> None:
+        try:
+            severity = int(severity)
+        except Exception:
+            severity = 1
+        self.hazard_severity[hazard] = severity
+        for doc in self.hara_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == hazard:
+                    e.severity = severity
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                if e.get("vehicle_effect", "") == hazard:
+                    e["severity"] = str(severity)
         self.update_views()
 
     def rename_fault(self, old: str, new: str) -> None:
@@ -8085,6 +8115,9 @@ class FaultTreeApp:
                 h = getattr(e, "hazard", "").strip()
                 if h and h not in hazards:
                     hazards.append(h)
+        for h in hazards:
+            if h not in self.hazard_severity:
+                self.hazard_severity[h] = 1
         self.hazards = hazards
 
     def update_failure_list(self):
@@ -9634,45 +9667,55 @@ class FaultTreeApp:
         self._haz_tab = self._new_tab("Hazards")
         win = self._haz_tab
 
-        lb = tk.Listbox(win, height=10, width=40)
-        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(win, columns=("Hazard", "Severity"), show="headings")
+        tree.heading("Hazard", text="Hazard")
+        tree.heading("Severity", text="Severity")
+        tree.column("Hazard", width=200)
+        tree.column("Severity", width=80)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         def refresh():
-            lb.delete(0, tk.END)
+            tree.delete(*tree.get_children())
             self.update_hazard_list()
             for h in self.hazards:
-                lb.insert(tk.END, h)
+                tree.insert("", "end", values=(h, self.hazard_severity.get(h, "")))
 
         def add():
             name = simpledialog.askstring("Add Hazard", "Name:")
-            if name:
-                self.add_hazard(name)
-                refresh()
+            if not name:
+                return
+            sev = simpledialog.askstring("Severity", "1-3:", initialvalue="1")
+            self.add_hazard(name, sev)
+            refresh()
 
         def rename():
-            sel = lb.curselection()
+            sel = tree.focus()
             if not sel:
                 return
-            current = lb.get(sel[0])
+            current, sev = tree.item(sel, "values")[:2]
             name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
             if not name:
                 return
-            self.rename_hazard(current, name)
+            sev_val = simpledialog.askstring("Severity", "1-3:", initialvalue=str(sev))
+            if name != current:
+                self.rename_hazard(current, name)
+            self.update_hazard_severity(name, sev_val)
             refresh()
 
         def delete():
-            sel = lb.curselection()
+            sel = tree.focus()
             if not sel:
                 return
-            current = lb.get(sel[0])
+            current = tree.item(sel, "values")[0]
             if messagebox.askyesno("Delete", f"Delete '{current}'?"):
                 self.hazards.remove(current)
+                self.hazard_severity.pop(current, None)
                 refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
-        ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
+        ttk.Button(btn, text="Edit", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
         refresh()
