@@ -59,16 +59,22 @@ class ReliabilityWindow(tk.Frame):
             self.pack(fill=tk.BOTH, expand=True)
         self.components = []
 
-        ttk.Label(self, text="Standard:").pack(anchor="w")
+        std_lbl = ttk.Label(self, text="Standard:")
+        std_lbl.pack(anchor="w")
+        ToolTip(std_lbl, "Choose the reliability standard used for FIT calculations.")
         self.standard_var = tk.StringVar(value="IEC 62380")
-        ttk.Combobox(
+        std_cb = ttk.Combobox(
             self,
             textvariable=self.standard_var,
             values=["IEC 62380", "SN 29500"],
             state="readonly",
-        ).pack(anchor="w")
+        )
+        std_cb.pack(anchor="w")
+        ToolTip(std_cb, "Values are applied when calculating component failure rates.")
 
-        ttk.Label(self, text="Mission Profile:").pack(anchor="w")
+        mp_lbl = ttk.Label(self, text="Mission Profile:")
+        mp_lbl.pack(anchor="w")
+        ToolTip(mp_lbl, "Select operating conditions that influence FIT values.")
         self.profile_var = tk.StringVar()
         self.profile_combo = ttk.Combobox(
             self,
@@ -77,6 +83,7 @@ class ReliabilityWindow(tk.Frame):
             state="readonly",
         )
         self.profile_combo.pack(anchor="w", fill="x")
+        ToolTip(self.profile_combo, "Mission profiles define temperature and usage factors.")
 
         ttk.Label(self, text="Analysis:").pack(anchor="w")
         self.analysis_var = tk.StringVar()
@@ -103,27 +110,27 @@ class ReliabilityWindow(tk.Frame):
 
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X)
-        ttk.Button(btn_frame, text="Load CSV", command=self.load_csv).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Add Component", command=self.add_component).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Configure Component", command=self.configure_component).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Calculate FIT", command=self.calculate_fit).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Save Analysis", command=self.save_analysis).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Load Analysis", command=self.load_analysis).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
-        ttk.Button(btn_frame, text="Delete Analysis", command=self.delete_analysis).pack(
-            side=tk.LEFT, padx=2, pady=2
-        )
+        load_btn = ttk.Button(btn_frame, text="Load CSV", command=self.load_csv)
+        load_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(load_btn, "Import components from a CSV Bill of Materials.")
+        add_btn = ttk.Button(btn_frame, text="Add Component", command=self.add_component)
+        add_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(add_btn, "Create a new component entry manually.")
+        cfg_btn = ttk.Button(btn_frame, text="Configure Component", command=self.configure_component)
+        cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(cfg_btn, "Edit parameters of the selected component.")
+        calc_btn = ttk.Button(btn_frame, text="Calculate FIT", command=self.calculate_fit)
+        calc_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(calc_btn, "Compute total FIT rate using the selected model and mission profile.")
+        save_btn = ttk.Button(btn_frame, text="Save Analysis", command=self.save_analysis)
+        save_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(save_btn, "Store the current analysis in the project file.")
+        load_an_btn = ttk.Button(btn_frame, text="Load Analysis", command=self.load_analysis)
+        load_an_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(load_an_btn, "Reload a previously saved reliability analysis.")
+        del_btn = ttk.Button(btn_frame, text="Delete Analysis", command=self.delete_analysis)
+        del_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(del_btn, "Remove the selected analysis from the project.")
         self.formula_label = ttk.Label(self, text="")
         self.formula_label.pack(anchor="w", padx=5, pady=5)
 
@@ -568,9 +575,15 @@ class FI2TCWindow(tk.Frame):
         self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
-        ttk.Button(btn, text="Add", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(side=tk.LEFT, padx=2, pady=2)
+        add_row_btn = ttk.Button(btn, text="Add", command=self.add_row)
+        add_row_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(add_row_btn, "Insert a new HAZOP entry in the table.")
+        edit_row_btn = ttk.Button(btn, text="Edit", command=self.edit_row)
+        edit_row_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(edit_row_btn, "Edit the selected HAZOP entry.")
+        del_row_btn = ttk.Button(btn, text="Delete", command=self.del_row)
+        del_row_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(del_row_btn, "Remove the selected HAZOP entry from the table.")
         ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=2, pady=2)
         self.refresh_docs()
         self.refresh()
@@ -768,11 +781,16 @@ class HazopWindow(tk.Frame):
             master.geometry("600x400")
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
-        ttk.Label(top, text="HAZOP:").pack(side=tk.LEFT)
+        doc_lbl = ttk.Label(top, text="HAZOP:")
+        doc_lbl.pack(side=tk.LEFT)
+        ToolTip(doc_lbl, "Select a HAZOP document to edit or view.")
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
+        ToolTip(self.doc_cb, "All HAZOP analyses stored in the project are listed here.")
+        new_btn = ttk.Button(top, text="New", command=self.new_doc)
+        new_btn.pack(side=tk.LEFT)
+        ToolTip(new_btn, "Create a new HAZOP document.")
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
 
         columns = ("function", "malfunction", "type", "safety", "rationale")
@@ -791,9 +809,15 @@ class HazopWindow(tk.Frame):
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
-        ttk.Button(btn, text="Add", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(side=tk.LEFT, padx=2, pady=2)
+        hara_add_btn = ttk.Button(btn, text="Add", command=self.add_row)
+        hara_add_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(hara_add_btn, "Insert a new HARA entry.")
+        hara_edit_btn = ttk.Button(btn, text="Edit", command=self.edit_row)
+        hara_edit_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(hara_edit_btn, "Edit the selected HARA row.")
+        hara_del_btn = ttk.Button(btn, text="Delete", command=self.del_row)
+        hara_del_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(hara_del_btn, "Delete the selected HARA row.")
 
         self.refresh_docs()
         self.refresh()
@@ -866,61 +890,105 @@ class HazopWindow(tk.Frame):
             super().__init__(parent, title="Edit HAZOP Row")
 
         def body(self, master):
-            ttk.Label(master, text="Function").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+            func_lbl = ttk.Label(master, text="Function")
+            func_lbl.grid(row=0, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(func_lbl, "Select the vehicle function under analysis.")
             funcs = self.app.get_all_action_names()
             self.func = tk.StringVar(value=self.row.function)
-            ttk.Combobox(master, textvariable=self.func, values=funcs, state="readonly").grid(row=0, column=1, padx=5, pady=5)
+            func_cb = ttk.Combobox(master, textvariable=self.func, values=funcs, state="readonly")
+            func_cb.grid(row=0, column=1, padx=5, pady=5)
+            ToolTip(func_cb, "Functions come from activity diagrams or architecture blocks.")
 
-            ttk.Label(master, text="Malfunction").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+            mal_lbl = ttk.Label(master, text="Malfunction")
+            mal_lbl.grid(row=1, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(
+                mal_lbl,
+                "Choose an existing malfunction or type a new one.\n"
+                "Create malfunctions via the Malfunctions editor or by\n"
+                "building an activity diagram that defines vehicle level\n"
+                "functions, then running a HAZOP on the diagram activities."
+            )
             self.mal = tk.StringVar(value=self.row.malfunction)
-            ttk.Combobox(
+            mal_cb = ttk.Combobox(
                 master,
                 textvariable=self.mal,
                 values=sorted(self.app.malfunctions),
-            ).grid(row=1, column=1, padx=5, pady=5)
+            )
+            mal_cb.grid(row=1, column=1, padx=5, pady=5)
+            ToolTip(mal_cb, "Type a new malfunction to add it to the project.")
 
-            ttk.Label(master, text="Type").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+            typ_lbl = ttk.Label(master, text="Type")
+            typ_lbl.grid(row=2, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(typ_lbl, "Guideword describing how the malfunction deviates from the intended function.")
             self.typ = tk.StringVar(value=self.row.mtype)
-            ttk.Combobox(
+            typ_cb = ttk.Combobox(
                 master,
                 textvariable=self.typ,
                 values=["No/Not", "Unintended", "Excessive", "Insufficient", "Reverse"],
                 state="readonly",
-            ).grid(row=2, column=1, padx=5, pady=5)
+            )
+            typ_cb.grid(row=2, column=1, padx=5, pady=5)
+            ToolTip(typ_cb, "Select the malfunction guideword.")
 
-            ttk.Label(master, text="Scenario").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+            scen_lbl = ttk.Label(master, text="Scenario")
+            scen_lbl.grid(row=3, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(scen_lbl, "Operational scenario associated with this function.")
             scenarios = []
             for lib in self.app.scenario_libraries:
                 scenarios.extend(lib.get("scenarios", []))
             self.scen = tk.StringVar(value=self.row.scenario)
-            ttk.Combobox(master, textvariable=self.scen, values=scenarios, state="readonly").grid(row=3, column=1, padx=5, pady=5)
+            scen_cb = ttk.Combobox(master, textvariable=self.scen, values=scenarios, state="readonly")
+            scen_cb.grid(row=3, column=1, padx=5, pady=5)
+            ToolTip(scen_cb, "Scenarios come from imported scenario libraries.")
 
-            ttk.Label(master, text="Driving Conditions").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            cond_lbl = ttk.Label(master, text="Driving Conditions")
+            cond_lbl.grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(cond_lbl, "Optional free text describing environmental conditions.")
             self.cond = tk.StringVar(value=self.row.conditions)
-            ttk.Entry(master, textvariable=self.cond).grid(row=4, column=1, padx=5, pady=5)
+            cond_entry = ttk.Entry(master, textvariable=self.cond)
+            cond_entry.grid(row=4, column=1, padx=5, pady=5)
+            ToolTip(cond_entry, "Example: rain, snow, gravel road, etc.")
 
-            ttk.Label(master, text="Hazard").grid(row=5, column=0, sticky="ne", padx=5, pady=5)
+            haz_lbl = ttk.Label(master, text="Hazard")
+            haz_lbl.grid(row=5, column=0, sticky="ne", padx=5, pady=5)
+            ToolTip(haz_lbl, "Consequence of the malfunction under the given scenario.")
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=5, column=1, padx=5, pady=5)
+            ToolTip(self.haz, "Describe the hazard that could result from this malfunction.")
 
-            ttk.Label(master, text="Safety Relevant").grid(row=6, column=0, sticky="e", padx=5, pady=5)
+            safety_lbl = ttk.Label(master, text="Safety Relevant")
+            safety_lbl.grid(row=6, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(safety_lbl, "Mark 'Yes' if the malfunction can lead to a safety hazard.")
             self.safety = tk.StringVar(value="Yes" if self.row.safety else "No")
-            ttk.Combobox(master, textvariable=self.safety, values=["Yes", "No"], state="readonly").grid(row=6, column=1, padx=5, pady=5)
+            safety_cb = ttk.Combobox(master, textvariable=self.safety, values=["Yes", "No"], state="readonly")
+            safety_cb.grid(row=6, column=1, padx=5, pady=5)
+            ToolTip(safety_cb, "Only safety relevant malfunctions are used in HARA analyses.")
 
-            ttk.Label(master, text="Rationale").grid(row=7, column=0, sticky="ne", padx=5, pady=5)
+            rat_lbl = ttk.Label(master, text="Rationale")
+            rat_lbl.grid(row=7, column=0, sticky="ne", padx=5, pady=5)
+            ToolTip(rat_lbl, "Reasoning for the safety relevance decision.")
             self.rat = tk.Text(master, width=30, height=3)
             self.rat.insert("1.0", self.row.rationale)
             self.rat.grid(row=7, column=1, padx=5, pady=5)
+            ToolTip(self.rat, "Provide justification or references for this entry.")
 
-            ttk.Label(master, text="Covered").grid(row=8, column=0, sticky="e", padx=5, pady=5)
+            cov_lbl = ttk.Label(master, text="Covered")
+            cov_lbl.grid(row=8, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(cov_lbl, "Indicate whether the malfunction is already mitigated.")
             self.cov = tk.StringVar(value="Yes" if self.row.covered else "No")
-            ttk.Combobox(master, textvariable=self.cov, values=["Yes", "No"], state="readonly").grid(row=8, column=1, padx=5, pady=5)
+            cov_cb = ttk.Combobox(master, textvariable=self.cov, values=["Yes", "No"], state="readonly")
+            cov_cb.grid(row=8, column=1, padx=5, pady=5)
+            ToolTip(cov_cb, "Select 'Yes' if another function or feature prevents the hazard.")
 
-            ttk.Label(master, text="Covered By").grid(row=9, column=0, sticky="e", padx=5, pady=5)
+            covby_lbl = ttk.Label(master, text="Covered By")
+            covby_lbl.grid(row=9, column=0, sticky="e", padx=5, pady=5)
+            ToolTip(covby_lbl, "Reference the malfunction providing mitigation.")
             malfs = [e.malfunction for e in self.app.hazop_entries]
             self.cov_by = tk.StringVar(value=self.row.covered_by)
-            ttk.Combobox(master, textvariable=self.cov_by, values=malfs, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+            covby_cb = ttk.Combobox(master, textvariable=self.cov_by, values=malfs, state="readonly")
+            covby_cb.grid(row=9, column=1, padx=5, pady=5)
+            ToolTip(covby_cb, "Choose a malfunction that covers this one if applicable.")
 
         def apply(self):
             self.row.function = self.func.get()
@@ -1036,11 +1104,16 @@ class HaraWindow(tk.Frame):
             master.title("HARA Analysis")
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
-        ttk.Label(top, text="HARA:").pack(side=tk.LEFT)
+        hara_lbl = ttk.Label(top, text="HARA:")
+        hara_lbl.pack(side=tk.LEFT)
+        ToolTip(hara_lbl, "Select a HARA document to work on.")
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
+        ToolTip(self.doc_cb, "Only HARAs defined in the project appear here.")
+        new_hara_btn = ttk.Button(top, text="New", command=self.new_doc)
+        new_hara_btn.pack(side=tk.LEFT)
+        ToolTip(new_hara_btn, "Create a new HARA document.")
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
         self.hazop_lbl = ttk.Label(top, text="")
         self.hazop_lbl.pack(side=tk.LEFT, padx=10)
