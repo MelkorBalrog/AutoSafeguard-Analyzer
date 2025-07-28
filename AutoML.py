@@ -321,6 +321,7 @@ styles.add(preformatted_style)
 
 # Characters used to display pass/fail status in metrics labels.
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from analysis.utils import append_unique_insensitive
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -1727,8 +1728,8 @@ class EditNodeDialog(simpledialog.Dialog):
                             self.mal_var.set(new_mal)
                             break
                 target_node.malfunction = new_mal
-                if target_node.malfunction and target_node.malfunction not in self.app.malfunctions:
-                    self.app.malfunctions.append(target_node.malfunction)
+                if target_node.malfunction:
+                    self.app.add_malfunction(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
                     target_node.sg_dc_target = float(self.dc_target_var.get())
@@ -3033,6 +3034,10 @@ class FaultTreeApp:
             if name in mals:
                 return True
         return False
+
+    def add_malfunction(self, name: str) -> None:
+        """Add a malfunction to the list if it does not already exist."""
+        append_unique_insensitive(self.malfunctions, name)
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -9183,10 +9188,10 @@ class FaultTreeApp:
                     name = name.strip()
                 if not name:
                     return
-                if name in self.app.malfunctions:
+                if any(m.lower() == name.lower() for m in self.app.malfunctions):
                     messagebox.showinfo("Malfunction", "Already exists")
                     return
-                self.app.malfunctions.append(name)
+                self.app.add_malfunction(name)
                 var = tk.BooleanVar(value=True)
                 ttk.Checkbutton(self.mal_frame, text=name, variable=var, command=update_sg).pack(anchor="w")
                 self.mal_vars[name] = var
@@ -9393,8 +9398,8 @@ class FaultTreeApp:
             selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
             self.node.fmeda_malfunction = ";".join(selected_mals)
             for m in selected_mals:
-                if m and m not in self.app.malfunctions:
-                    self.app.malfunctions.append(m)
+                if m:
+                    self.app.add_malfunction(m)
             self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
@@ -12463,7 +12468,10 @@ class FaultTreeApp:
             desc = be.description.strip()
             if desc and desc not in self.faults:
                 self.faults.append(desc)
-        self.malfunctions = data.get("malfunctions", [])
+        mals = []
+        for m in data.get("malfunctions", []):
+            append_unique_insensitive(mals, m)
+        self.malfunctions = mals
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
