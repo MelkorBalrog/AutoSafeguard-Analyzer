@@ -9645,8 +9645,6 @@ class FaultTreeApp:
                 self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 self.mal_combo.bind("<<ComboboxSelected>>", update_sg)
 
-            update_sg()
-
             row_next += 1
 
             ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
