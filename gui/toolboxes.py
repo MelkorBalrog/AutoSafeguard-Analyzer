@@ -760,10 +760,15 @@ class FI2TCWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    self.widgets[col] = var
+                    lb = tk.Listbox(master, selectmode="extended", height=5)
+                    for opt in req_opts:
+                        lb.insert(tk.END, opt)
+                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    for i, opt in enumerate(req_opts):
+                        if opt in existing:
+                            lb.selection_set(i)
+                    lb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = lb
                 elif col == "system_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -818,6 +823,9 @@ class FI2TCWindow(tk.Frame):
                     self.data[col] = widget.get()
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
+                elif isinstance(widget, tk.Listbox):
+                    sel = [widget.get(i) for i in widget.curselection()]
+                    self.data[col] = ",".join(sel)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
@@ -1783,10 +1791,15 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(master, textvariable=var, values=req_opts)
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    self.widgets[col] = var
+                    lb = tk.Listbox(master, selectmode="extended", height=5)
+                    for opt in req_opts:
+                        lb.insert(tk.END, opt)
+                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    for i, opt in enumerate(req_opts):
+                        if opt in existing:
+                            lb.selection_set(i)
+                    lb.grid(row=r, column=1, padx=5, pady=2)
+                    self.widgets[col] = lb
                 elif col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=tc_names)
@@ -1853,6 +1866,9 @@ class TC2FIWindow(tk.Frame):
                     self.data[col] = widget.get()
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
+                elif isinstance(widget, tk.Listbox):
+                    sel = [widget.get(i) for i in widget.curselection()]
+                    self.data[col] = ",".join(sel)
                 else:
                     val = widget.get()
                     orig = self.selected.get(col, "")
