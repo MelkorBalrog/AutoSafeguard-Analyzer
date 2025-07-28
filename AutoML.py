@@ -1967,6 +1967,7 @@ class FaultTreeApp:
         fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
         fta_menu.add_command(label="FTA Cut Sets", command=self.show_cut_sets)
         fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
+        fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Edit Selected", command=self.edit_selected)
@@ -2153,6 +2154,7 @@ class FaultTreeApp:
             "Compare Versions": self.compare_versions,
             "Set Current User": self.set_current_user,
             "Common Cause Toolbox": self.show_common_cause_view,
+            "Cause & Effect Chain": self.show_cause_effect_chain,
             "Safety Goal Export": self.export_safety_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
@@ -2177,6 +2179,7 @@ class FaultTreeApp:
                 "FTA Cut Sets",
                 "FTA-FMEA Traceability",
                 "Common Cause Toolbox",
+                "Cause & Effect Chain",
             ],
             "SOTIF Safety Analysis": [
                 "FI2TC Analysis",
@@ -11465,6 +11468,98 @@ class FaultTreeApp:
         btn_frame.pack()
         ttk.Button(btn_frame, text="Refresh", command=refresh).pack(side=tk.LEFT, padx=5, pady=5)
         ttk.Button(btn_frame, text="Export CSV", command=export_csv).pack(side=tk.LEFT, padx=5, pady=5)
+
+    def build_cause_effect_data(self):
+        """Collect cause and effect chain information."""
+        rows = {}
+        # Map hazards to malfunctions from HARA entries
+        for doc in self.hara_docs:
+            for e in doc.entries:
+                haz = e.hazard.strip()
+                mal = e.malfunction.strip()
+                if not haz or not mal:
+                    continue
+                key = (haz, mal)
+                rows.setdefault(key, {
+                    "hazard": haz,
+                    "malfunction": mal,
+                    "fis": set(),
+                    "tcs": set(),
+                    "failure_modes": set(),
+                    "faults": set(),
+                })
+
+        # Add FI/TC info per hazard
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                haz = e.get("vehicle_effect", "").strip()
+                if not haz:
+                    continue
+                fis = [f.strip() for f in e.get("functional_insufficiencies", "").split(";") if f.strip()]
+                tcs = [t.strip() for t in e.get("triggering_conditions", "").split(";") if t.strip()]
+                for (hz, mal), info in rows.items():
+                    if hz == haz:
+                        info["fis"].update(fis)
+                        info["tcs"].update(tcs)
+
+        # Add failure modes and faults per malfunction
+        for be in self.get_all_basic_events():
+            mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
+            for (hz, mal), info in rows.items():
+                if mal in mals:
+                    info["failure_modes"].add(self.format_failure_mode_label(be))
+                    info["faults"].update(self.get_faults_for_failure_mode(be))
+
+        return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
+
+    def show_cause_effect_chain(self):
+        """Display a table linking hazards to downstream events."""
+        data = self.build_cause_effect_data()
+        if not data:
+            messagebox.showinfo("Cause & Effect", "No data available")
+            return
+        win = tk.Toplevel(self.root)
+        win.title("Cause & Effect Chain")
+        cols = (
+            "Hazard",
+            "Malfunction",
+            "Failure Modes",
+            "Faults",
+            "FIs",
+            "TCs",
+        )
+        tree = ttk.Treeview(win, columns=cols, show="headings")
+        for c in cols:
+            tree.heading(c, text=c)
+            tree.column(c, width=180 if c in ("Hazard", "Malfunction") else 150)
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for row in data:
+            tree.insert(
+                "",
+                "end",
+                values=(
+                    row["hazard"],
+                    row["malfunction"],
+                    ", ".join(sorted(row["failure_modes"])),
+                    ", ".join(sorted(row["faults"])),
+                    ", ".join(sorted(row["fis"])),
+                    ", ".join(sorted(row["tcs"])),
+                ),
+            )
+
+        def export_csv():
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(cols)
+                for iid in tree.get_children():
+                    writer.writerow(tree.item(iid, "values"))
+            messagebox.showinfo("Export", "Cause & effect data exported")
+
+        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=5)
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
