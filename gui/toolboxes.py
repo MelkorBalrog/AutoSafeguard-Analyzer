@@ -683,39 +683,6 @@ class FI2TCWindow(tk.Frame):
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
 
-    def start_cell_edit(self, event=None, item=None, column=None):
-        if event:
-            item = item or self.tree.identify_row(event.y)
-            column = column or self.tree.identify_column(event.x)
-        if not item or not column:
-            return
-        col_idx = int(column[1:]) - 1
-        col_key = self.COLS[col_idx]
-        x, y, w, h = self.tree.bbox(item, column)
-        if not w:
-            return
-        value = self.tree.set(item, col_key)
-        entry = tk.Entry(self.tree)
-        entry.insert(0, value)
-        entry.select_range(0, tk.END)
-        entry.focus()
-        entry.place(x=x, y=y, width=w, height=h)
-
-        def save(event=None):
-            new_val = entry.get()
-            self.tree.set(item, col_key, _wrap_val(new_val))
-            idx = self.tree.index(item)
-            old_val = self.app.fi2tc_entries[idx].get(col_key, "")
-            self.app.fi2tc_entries[idx][col_key] = new_val
-            if col_key == "functional_insufficiencies" and old_val and new_val != old_val:
-                self.app.rename_functional_insufficiency(old_val, new_val)
-            elif col_key == "triggering_conditions" and old_val and new_val != old_val:
-                self.app.rename_triggering_condition(old_val, new_val)
-            entry.destroy()
-
-        entry.bind("<Return>", save)
-        entry.bind("<FocusOut>", save)
-
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
             self.app = app
@@ -740,11 +707,7 @@ class FI2TCWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = [f"[{r['id']}] {r['text']}" for r in global_requirements.values()]
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
@@ -1806,39 +1769,6 @@ class TC2FIWindow(tk.Frame):
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
 
-    def start_cell_edit(self, event=None, item=None, column=None):
-        if event:
-            item = item or self.tree.identify_row(event.y)
-            column = column or self.tree.identify_column(event.x)
-        if not item or not column:
-            return
-        col_idx = int(column[1:]) - 1
-        col_key = self.COLS[col_idx]
-        x, y, w, h = self.tree.bbox(item, column)
-        if not w:
-            return
-        value = self.tree.set(item, col_key)
-        entry = tk.Entry(self.tree)
-        entry.insert(0, value)
-        entry.select_range(0, tk.END)
-        entry.focus()
-        entry.place(x=x, y=y, width=w, height=h)
-
-        def save(event=None):
-            new_val = entry.get()
-            self.tree.set(item, col_key, _wrap_val(new_val))
-            idx = self.tree.index(item)
-            old_val = self.app.tc2fi_entries[idx].get(col_key, "")
-            self.app.tc2fi_entries[idx][col_key] = new_val
-            if col_key == "functional_insufficiencies" and old_val and new_val != old_val:
-                self.app.rename_functional_insufficiency(old_val, new_val)
-            elif col_key == "triggering_conditions" and old_val and new_val != old_val:
-                self.app.rename_triggering_condition(old_val, new_val)
-            entry.destroy()
-
-        entry.bind("<Return>", save)
-        entry.bind("<FocusOut>", save)
-
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
             self.app = app
@@ -1862,11 +1792,7 @@ class TC2FIWindow(tk.Frame):
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
-            req_opts = [
-                f"[{r['id']}] {r['text']}"
-                for r in global_requirements.values()
-                if r.get("req_type") == "functional modification"
-            ]
+            req_opts = [f"[{r['id']}] {r['text']}" for r in global_requirements.values()]
             self.widgets = {}
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
