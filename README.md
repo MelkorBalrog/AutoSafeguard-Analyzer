@@ -522,6 +522,8 @@ Key attributes are:
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
 
+**BlockUsage** – extends `Block` with reliability fields like `analysis`, `fit`, `qualification` and `failureModes`.
+
 ```mermaid
 classDiagram
     class BlockUsage {
@@ -533,6 +535,8 @@ classDiagram
     Block <|-- BlockUsage
 ```
 
+**PartUsage** – extends `PartProperty` with `component`, `failureModes` and `asil` fields.
+
 ```mermaid
 classDiagram
     class PartUsage {
@@ -542,6 +546,8 @@ classDiagram
     }
     PartProperty <|-- PartUsage
 ```
+
+**SafetyGoal** – specialization of `Requirement` with `asil` and FMEDA metrics (`spfm`, `lpfm`, `dc`).
 
 ```mermaid
 classDiagram
@@ -554,6 +560,8 @@ classDiagram
     Requirement <|-- SafetyGoal
 ```
 
+**Hazard** – extends `SysMLElement` to store the hazard `description` and HARA `severity`.
+
 ```mermaid
 classDiagram
     class Hazard {
@@ -562,6 +570,8 @@ classDiagram
     }
     SysMLElement <|-- Hazard
 ```
+
+**Scenario** – extends `SysMLElement` with a short `description` and linked `scenery`.
 
 ```mermaid
 classDiagram
@@ -572,6 +582,8 @@ classDiagram
     SysMLElement <|-- Scenario
 ```
 
+**Scenery** – extends `SysMLElement` with an `odd_element` name and descriptive `attributes`.
+
 ```mermaid
 classDiagram
     class Scenery {
@@ -580,6 +592,8 @@ classDiagram
     }
     SysMLElement <|-- Scenery
 ```
+
+**FaultTreeNode** – specialized `SysMLElement` capturing FMEA and FMEDA data for FTA events.
 
 ```mermaid
 classDiagram
@@ -596,6 +610,8 @@ classDiagram
     SysMLElement <|-- FaultTreeNode
 ```
 
+**ReliabilityAnalysis** – extends `AnalysisDocument` to store mission profile and cumulative FIT metrics.
+
 ```mermaid
 classDiagram
     class ReliabilityAnalysis {
@@ -608,6 +624,8 @@ classDiagram
     }
     AnalysisDocument <|-- ReliabilityAnalysis
 ```
+**ReliabilityComponent** – extends `SysMLElement` with component data like `name`, `qualification`, `quantity`, `attributes` and `fit`.
+
 
 ```mermaid
 classDiagram
@@ -620,6 +638,8 @@ classDiagram
     }
     SysMLElement <|-- ReliabilityComponent
 ```
+**AnalysisDocument** – base class for safety tables with `name`, `date` and `description`.
+
 
 ```mermaid
 classDiagram
@@ -631,6 +651,8 @@ classDiagram
     SysMLElement <|-- AnalysisDocument
 ```
 
+**FmeaDoc** – extends `AnalysisDocument` for FMEA tables with an `rpn_threshold`.
+
 ```mermaid
 classDiagram
     class FmeaDoc {
@@ -638,6 +660,8 @@ classDiagram
     }
     AnalysisDocument <|-- FmeaDoc
 ```
+
+**FmeaEntry** – extends `SysMLElement` with failure mode data including `cause`, `effect`, `severity`, `occurrence` and `detection`.
 
 ```mermaid
 classDiagram
@@ -652,6 +676,8 @@ classDiagram
     SysMLElement <|-- FmeaEntry
 ```
 
+**FmedaDoc** – another `AnalysisDocument` variant storing table-level `spfm`, `lpfm` and `dc` metrics.
+
 ```mermaid
 classDiagram
     class FmedaDoc {
@@ -661,6 +687,8 @@ classDiagram
     }
     AnalysisDocument <|-- FmedaDoc
 ```
+**FaultTreeDiagram** – specialization of `SysMLDiagram` storing overall probability `phmf` and Prototype Assurance Level `pal`.
+
 
 ```mermaid
 classDiagram
@@ -670,6 +698,8 @@ classDiagram
     }
     SysMLDiagram <|-- FaultTreeDiagram
 ```
+
+**TriggeringCondition** – extends `SysMLElement` with a `description`, linked `scenario` and associated acceptance criteria.
 
 ```mermaid
 classDiagram
@@ -681,6 +711,8 @@ classDiagram
     SysMLElement <|-- TriggeringCondition
 ```
 
+**FunctionalInsufficiency** – extends `SysMLElement` with a failure `description`, linked `scenario` and impacted `safetyGoal`.
+
 ```mermaid
 classDiagram
     class FunctionalInsufficiency {
@@ -691,6 +723,8 @@ classDiagram
     SysMLElement <|-- FunctionalInsufficiency
 ```
 
+**FunctionalModification** – extends `SysMLElement` with mitigation `text` and linked acceptance criteria.
+
 ```mermaid
 classDiagram
     class FunctionalModification {
@@ -699,6 +733,8 @@ classDiagram
     }
     SysMLElement <|-- FunctionalModification
 ```
+**AcceptanceCriteria** – extends `SysMLElement` with a textual description verifying a functional modification.
+
 
 ```mermaid
 classDiagram
@@ -707,6 +743,8 @@ classDiagram
     }
     SysMLElement <|-- AcceptanceCriteria
 ```
+**Fault** – extends `SysMLElement` to describe an underlying cause leading to a failure mode.
+
 ```mermaid
 classDiagram
     class Fault {
@@ -714,6 +752,8 @@ classDiagram
     }
     SysMLElement <|-- Fault
 ```
+
+**Failure** – extends `SysMLElement` to capture a malfunction effect and its `severity`.
 
 ```mermaid
 classDiagram
