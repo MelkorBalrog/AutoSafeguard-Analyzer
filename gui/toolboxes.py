@@ -691,6 +691,7 @@ class FI2TCWindow(tk.Frame):
             self.parent_win = parent
             default = {k: "" for k in parent.COLS}
             self.data = data or default
+            self.selected = {}
             super().__init__(parent, title="Edit Row")
 
         def body(self, master):
@@ -738,11 +739,25 @@ class FI2TCWindow(tk.Frame):
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
+                    lbl = ttk.Label(master, text=var.get())
+                    lbl.grid(row=r, column=2, padx=2)
+                    def sel(_=None, v=var, f=col, l=lbl):
+                        self.selected[f] = v.get()
+                        l.config(text=v.get())
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
                     self.widgets[col] = var
                 elif col == "functional_insufficiencies":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=fi_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
+                    lbl = ttk.Label(master, text=var.get())
+                    lbl.grid(row=r, column=2, padx=2)
+                    def sel(_=None, v=var, f=col, l=lbl):
+                        self.selected[f] = v.get()
+                        l.config(text=v.get())
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
                     var = tk.StringVar(value=self.data.get(col, ""))
@@ -804,7 +819,13 @@ class FI2TCWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 else:
-                    self.data[col] = widget.get()
+                    val = widget.get()
+                    orig = self.selected.get(col, "")
+                    if col == "functional_insufficiencies" and orig and val != orig:
+                        self.app.rename_functional_insufficiency(orig, val)
+                    elif col == "triggering_conditions" and orig and val != orig:
+                        self.app.rename_triggering_condition(orig, val)
+                    self.data[col] = val
             self.result = True
 
     def add_row(self):
@@ -1705,6 +1726,7 @@ class TC2FIWindow(tk.Frame):
             self.app = app
             default = {k: "" for k in TC2FIWindow.COLS}
             self.data = data or default
+            self.selected = {}
             super().__init__(parent, title="Edit Row")
 
         def body(self, master):
@@ -1752,6 +1774,13 @@ class TC2FIWindow(tk.Frame):
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=fi_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
+                    lbl = ttk.Label(master, text=var.get())
+                    lbl.grid(row=r, column=2, padx=2)
+                    def sel(_=None, v=var, f=col, l=lbl):
+                        self.selected[f] = v.get()
+                        l.config(text=v.get())
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
                     var = tk.StringVar(value=self.data.get(col, ""))
@@ -1762,6 +1791,13 @@ class TC2FIWindow(tk.Frame):
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(master, textvariable=var, values=tc_names)
                     cb.grid(row=r, column=1, padx=5, pady=2)
+                    lbl = ttk.Label(master, text=var.get())
+                    lbl.grid(row=r, column=2, padx=2)
+                    def sel(_=None, v=var, f=col, l=lbl):
+                        self.selected[f] = v.get()
+                        l.config(text=v.get())
+                    cb.bind("<<ComboboxSelected>>", sel)
+                    sel()
                     self.widgets[col] = var
                 elif col == "impacted_function":
                     var = tk.StringVar(value=self.data.get(col, ""))
@@ -1818,7 +1854,13 @@ class TC2FIWindow(tk.Frame):
                 elif isinstance(widget, tk.Text):
                     self.data[col] = widget.get("1.0", "end-1c")
                 else:
-                    self.data[col] = widget.get()
+                    val = widget.get()
+                    orig = self.selected.get(col, "")
+                    if col == "functional_insufficiencies" and orig and val != orig:
+                        self.app.rename_functional_insufficiency(orig, val)
+                    elif col == "triggering_conditions" and orig and val != orig:
+                        self.app.rename_triggering_condition(orig, val)
+                    self.data[col] = val
 
             self.result = True
 

@@ -1887,6 +1887,8 @@ class FaultTreeApp:
         self.malfunctions: list[str] = []
         self.hazards: list[str] = []
         self.failures: list[str] = []
+        self.triggering_conditions: list[str] = []
+        self.functional_insufficiencies: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.active_hazop = None
@@ -3277,6 +3279,50 @@ class FaultTreeApp:
         for n in self.get_all_nodes_in_model():
             if getattr(n, "fmea_effect", "") == old:
                 n.fmea_effect = new
+        self.update_views()
+
+    def _replace_name_in_list(self, value: str, old: str, new: str) -> str:
+        parts = []
+        changed = False
+        for p in value.split(";"):
+            p = p.strip()
+            if not p:
+                continue
+            if p == old:
+                parts.append(new)
+                changed = True
+            else:
+                parts.append(p)
+        return ";".join(parts) if changed else value
+
+    def rename_triggering_condition(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for n in self.get_all_triggering_conditions():
+            if n.user_name == old:
+                n.user_name = new
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                new_val = self._replace_name_in_list(val, old, new)
+                if new_val != val:
+                    e["triggering_conditions"] = new_val
+        self.update_triggering_condition_list()
+        self.update_views()
+
+    def rename_functional_insufficiency(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for n in self.get_all_functional_insufficiencies():
+            if n.user_name == old:
+                n.user_name = new
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                new_val = self._replace_name_in_list(val, old, new)
+                if new_val != val:
+                    e["functional_insufficiencies"] = new_val
+        self.update_functional_insufficiency_list()
         self.update_views()
 
     def calculate_fmeda_metrics(self, events):
@@ -8041,6 +8087,38 @@ class FaultTreeApp:
                 failures.append(eff)
         self.failures = failures
 
+    def update_triggering_condition_list(self):
+        """Aggregate triggering conditions from docs and FTAs."""
+        names: list[str] = []
+        for n in self.get_all_triggering_conditions():
+            nm = n.user_name or f"TC {n.unique_id}"
+            if nm not in names:
+                names.append(nm)
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("triggering_conditions", "")
+                for part in val.split(";"):
+                    p = part.strip()
+                    if p and p not in names:
+                        names.append(p)
+        self.triggering_conditions = names
+
+    def update_functional_insufficiency_list(self):
+        """Aggregate functional insufficiencies from docs and FTAs."""
+        names: list[str] = []
+        for n in self.get_all_functional_insufficiencies():
+            nm = n.user_name or f"FI {n.unique_id}"
+            if nm not in names:
+                names.append(nm)
+        for doc in self.fi2tc_docs + self.tc2fi_docs:
+            for e in doc.entries:
+                val = e.get("functional_insufficiencies", "")
+                for part in val.split(";"):
+                    p = part.strip()
+                    if p and p not in names:
+                        names.append(p)
+        self.functional_insufficiencies = names
+
     def get_entry_field(self, entry, field, default=""):
         """Retrieve attribute or dict value from an entry."""
         if isinstance(entry, dict):
@@ -9510,23 +9588,34 @@ class FaultTreeApp:
         ttk.Button(btn_frame, text="Delete", command=delete_fmeda).pack(fill=tk.X)
         
     def show_triggering_condition_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Triggering Conditions")
+        if hasattr(self, "_tc_tab") and self._tc_tab.winfo_exists():
+            self.doc_nb.select(self._tc_tab)
+            return
+        self._tc_tab = self._new_tab("Triggering Conditions")
+        win = self._tc_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        for tc in self.get_all_triggering_conditions():
-            lb.insert(tk.END, tc.user_name or f"TC {tc.unique_id}")
+
+        def refresh():
+            lb.delete(0, tk.END)
+            self.update_triggering_condition_list()
+            for tc in self.triggering_conditions:
+                lb.insert(tk.END, tc)
+
         def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV","*.csv")])
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
             if not path:
                 return
             with open(path, "w", newline="") as f:
                 w = csv.writer(f)
-                w.writerow(["ID","Name","Description"])
-                for n in self.get_all_triggering_conditions():
-                    w.writerow([n.unique_id, n.user_name, n.description])
-            messagebox.showinfo("Export","Triggering conditions exported.")
+                w.writerow(["Name"])
+                for name in self.triggering_conditions:
+                    w.writerow([name])
+            messagebox.showinfo("Export", "Triggering conditions exported.")
+
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+        refresh()
 
     def show_hazard_list(self):
         """Open a tab to manage the list of hazards."""
@@ -9753,23 +9842,34 @@ class FaultTreeApp:
         self.show_failure_list()
 
     def show_functional_insufficiency_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Functional Insufficiencies")
+        if hasattr(self, "_fi_tab") and self._fi_tab.winfo_exists():
+            self.doc_nb.select(self._fi_tab)
+            return
+        self._fi_tab = self._new_tab("Functional Insufficiencies")
+        win = self._fi_tab
+
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        for fi in self.get_all_functional_insufficiencies():
-            lb.insert(tk.END, fi.user_name or f"FI {fi.unique_id}")
+
+        def refresh():
+            lb.delete(0, tk.END)
+            self.update_functional_insufficiency_list()
+            for fi in self.functional_insufficiencies:
+                lb.insert(tk.END, fi)
+
         def export_csv():
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV","*.csv")])
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
             if not path:
                 return
             with open(path, "w", newline="") as f:
                 w = csv.writer(f)
-                w.writerow(["ID","Name","Description"])
-                for n in self.get_all_functional_insufficiencies():
-                    w.writerow([n.unique_id, n.user_name, n.description])
-            messagebox.showinfo("Export","Functional insufficiencies exported.")
+                w.writerow(["Name"])
+                for name in self.functional_insufficiencies:
+                    w.writerow([name])
+            messagebox.showinfo("Export", "Functional insufficiencies exported.")
+
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+        refresh()
 
     def show_malfunctions_editor(self):
         """Manage the global list of malfunctions."""
