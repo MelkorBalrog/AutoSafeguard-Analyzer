@@ -14972,6 +14972,8 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    # Hide the main window while prompting for user info
+    root.withdraw()
     name, email = load_user_config()
     dlg = UserInfoDialog(root, name, email)
     if dlg.result:
@@ -14981,6 +14983,16 @@ def main():
     # Create a fresh helper each session:
     global AutoML_Helper
     AutoML_Helper = AutoMLHelper()
+
+    # Show and maximize the main window after login
+    root.deiconify()
+    try:
+        root.state("zoomed")
+    except tk.TclError:
+        try:
+            root.attributes("-zoomed", True)
+        except tk.TclError:
+            pass
 
     app = FaultTreeApp(root)
     root.mainloop()
