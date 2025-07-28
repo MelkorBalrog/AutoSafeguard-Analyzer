@@ -2102,6 +2102,15 @@ class SysMLObjectDialog(simpledialog.Dialog):
             self.diagram_var = tk.StringVar(value=cur_name)
             ttk.Combobox(link_frame, textvariable=self.diagram_var, values=list(ids.keys())).grid(row=link_row, column=1, padx=4, pady=2)
             link_row += 1
+        elif self.obj.obj_type == "Use Case":
+            diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Activity Diagram"]
+            self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
+            ttk.Label(link_frame, text="Behavior Diagram:").grid(row=link_row, column=0, sticky="e", padx=4, pady=2)
+            cur_id = repo.get_linked_diagram(self.obj.element_id)
+            cur_name = next((n for n, i in self.behavior_map.items() if i == cur_id), "")
+            self.behavior_var = tk.StringVar(value=cur_name)
+            ttk.Combobox(link_frame, textvariable=self.behavior_var, values=list(self.behavior_map.keys())).grid(row=link_row, column=1, padx=4, pady=2)
+            link_row += 1
         elif self.obj.obj_type in ("Action Usage", "Action"):
             diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Activity Diagram"]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
