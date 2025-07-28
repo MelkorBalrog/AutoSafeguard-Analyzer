@@ -2035,6 +2035,7 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="TC2FI Analysis", command=self.open_tc2fi_window)
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="FMEA Manager", command=self.show_fmea_list)
+        qualitative_menu.add_command(label="Fault Prioritization", command=self.open_fault_prioritization_window)
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
@@ -12784,6 +12785,14 @@ class FaultTreeApp:
             return
         self._tc2fi_tab = self._new_tab("TC2FI")
         self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
+
+    def open_fault_prioritization_window(self):
+        if hasattr(self, "_fault_prio_tab") and self._fault_prio_tab.winfo_exists():
+            self.doc_nb.select(self._fault_prio_tab)
+            return
+        self._fault_prio_tab = self._new_tab("Fault Prioritization")
+        from gui.fault_prioritization import FaultPrioritizationWindow
+        self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
 
     def show_hazard_explorer(self):
         if hasattr(self, "_haz_exp_window") and self._haz_exp_window.winfo_exists():
