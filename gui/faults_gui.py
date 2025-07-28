@@ -875,26 +875,6 @@ class FaultsWindow(QMainWindow):
         self.model.set_dataframe(self.df)
         self.status.showMessage(f"Deleted {len(rows)} row(s).", 4000)
 
-    def on_table_double_clicked(self, index: QModelIndex):
-        colname = self.df.columns[index.column()]
-        req_map = {
-            "Operational Requirement": "operational",
-            "Technical Safety Requirement": "technical safety",
-            "Functional Modification": "functional modification",
-        }
-        if colname in req_map:
-            current = str(self.df.at[index.row(), colname] or "")
-            selected = [v.strip() for v in current.split(";") if v.strip()]
-            opts = requirement_ids(req_map[colname])
-            dlg = MultiSelectDialog(opts, selected, title=colname, parent=self)
-            if dlg.exec() == QDialog.DialogCode.Accepted:
-                ids = dlg.selected_items()
-                self.df.at[index.row(), colname] = ";".join(ids)
-                self.recompute_row(index.row())
-                self.model.dataChanged.emit(index, index)
-            return
-        self.table.edit(index)
-
     def on_thresholds_changed(self, _value: float):
         for i in range(len(self.df)):
             self.recompute_row(i)
