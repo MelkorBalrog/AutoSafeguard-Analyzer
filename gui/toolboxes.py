@@ -1134,26 +1134,6 @@ class FI2TCWindow(tk.Frame):
                     if val not in self.mit_lb.get(0, tk.END):
                         self.mit_lb.insert(tk.END, val)
 
-        def edit_mit(self):
-            sel = self.mit_lb.curselection()
-            if not sel:
-                return
-            text = self.mit_lb.get(sel[0])
-            rid = text.split("]", 1)[0][1:]
-            req = global_requirements.get(rid, {"id": rid, "text": text})
-            dlg = _RequirementDialog(self, req, req_type="operational")
-            if dlg.result:
-                new_req = dlg.result
-                global_requirements[new_req["id"]] = new_req
-                new_text = f"[{new_req['id']}] {new_req['text']}"
-                self.mit_lb.delete(sel[0])
-                self.mit_lb.insert(sel[0], new_text)
-
-        def del_mit(self):
-            sel = list(self.mit_lb.curselection())
-            for idx in reversed(sel):
-                self.mit_lb.delete(idx)
-
         def add_fi_new(self):
             name = simpledialog.askstring("Functional Insufficiency", "Name:")
             if name:
@@ -1186,6 +1166,27 @@ class FI2TCWindow(tk.Frame):
             for idx in reversed(sel):
                 self.fi_lb.delete(idx)
             self.update_known_use_case()
+
+        def edit_mit(self):
+            sel = self.mit_lb.curselection()
+            if not sel:
+                return
+            text = self.mit_lb.get(sel[0])
+            rid = text.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {"id": rid, "text": text})
+            dlg = _RequirementDialog(self, req, req_type="operational")
+            if dlg.result:
+                new_req = dlg.result
+                global_requirements[new_req["id"]] = new_req
+                new_text = f"[{new_req['id']}] {new_req['text']}"
+                self.mit_lb.delete(sel[0])
+                self.mit_lb.insert(sel[0], new_text)
+
+        def del_mit(self):
+            sel = list(self.mit_lb.curselection())
+            for idx in reversed(sel):
+                self.mit_lb.delete(idx)
+
 
         def update_known_use_case(self):
             if not hasattr(self, "kuc_widget"):
@@ -2415,6 +2416,38 @@ class TC2FIWindow(tk.Frame):
                 for val in dlg.result:
                     if val not in self.mit_lb.get(0, tk.END):
                         self.mit_lb.insert(tk.END, val)
+        def add_fi_new(self):
+            name = simpledialog.askstring("Functional Insufficiency", "Name:")
+            if name:
+                if name not in self.fi_lb.get(0, tk.END):
+                    self.fi_lb.insert(tk.END, name)
+                self.update_known_use_case()
+
+        def add_fi_existing(self):
+            dlg = _SelectFIsDialog(self, self.fi_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.fi_lb.get(0, tk.END):
+                        self.fi_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def edit_fi(self):
+            sel = self.fi_lb.curselection()
+            if not sel:
+                return
+            current = self.fi_lb.get(sel[0])
+            name = simpledialog.askstring("Functional Insufficiency", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_functional_insufficiency(current, name)
+                self.fi_lb.delete(sel[0])
+                self.fi_lb.insert(sel[0], name)
+            self.update_known_use_case()
+
+        def del_fi(self):
+            sel = list(self.fi_lb.curselection())
+            for idx in reversed(sel):
+                self.fi_lb.delete(idx)
+            self.update_known_use_case()
 
         def edit_mit(self):
             sel = self.mit_lb.curselection()
@@ -2487,8 +2520,9 @@ class TC2FIWindow(tk.Frame):
             if not hasattr(self, "kuc_widget"):
                 return
             funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            fis = list(self.fi_lb.get(0, tk.END)) if hasattr(self, "fi_lb") else []
             ucs = []
-            for f in funcs:
+            for f in funcs + fis:
                 uc = self.app.get_use_case_for_function(f)
                 if uc and uc not in ucs:
                     ucs.append(uc)
