@@ -8051,30 +8051,26 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         return repo.get_activity_actions()
 
-    def get_use_case_for_function(self, name: str) -> str:
-        """Return the use case (activity diagram name) containing the action."""
+    def get_use_case_for_function(self, func: str) -> str:
+        """Return the use case (activity diagram name) implementing a function."""
         repo = SysMLRepository.get_instance()
         for diag in repo.diagrams.values():
             if diag.diag_type != "Activity Diagram":
                 continue
-            diag_name = diag.name or ""
+            if diag.name == func:
+                return diag.name
             for obj in diag.objects:
-                typ = obj.get("obj_type") or obj.get("type")
-                if typ in ("Action Usage", "Action", "CallBehaviorAction"):
-                    n = obj.get("properties", {}).get("name", "")
+                name = obj.get("properties", {}).get("name", "")
+                if not name:
                     elem_id = obj.get("element_id")
-                    if not n and elem_id in repo.elements:
-                        n = repo.elements[elem_id].name
-                    if n == name:
-                        return diag_name
+                    if elem_id and elem_id in repo.elements:
+                        name = repo.elements[elem_id].name
+                if name == func:
+                    return diag.name
             for elem_id in getattr(diag, "elements", []):
                 elem = repo.elements.get(elem_id)
-                if (
-                    elem
-                    and elem.elem_type in ("Action Usage", "Action", "CallBehaviorAction")
-                    and elem.name == name
-                ):
-                    return diag_name
+                if elem and elem.name == func:
+                    return diag.name
         return ""
 
     def get_all_component_names(self):
