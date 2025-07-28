@@ -1006,9 +1006,22 @@ class EditNodeDialog(simpledialog.Dialog):
                 row_next += 1
 
                 ttk.Label(safety_frame, text="Malfunction:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.mal_var = tk.StringVar(value=getattr(self.node, 'malfunction', ''))
-                self.mal_combo = ttk.Combobox(safety_frame, textvariable=self.mal_var, values=sorted(self.app.malfunctions), width=30)
+                stored_mal = getattr(self.node, 'malfunction', '')
+                self.mal_var = tk.StringVar(value="")
+                self.mal_combo = ttk.Combobox(
+                    safety_frame,
+                    textvariable=self.mal_var,
+                    values=sorted(self.app.malfunctions),
+                    state="readonly",
+                    width=30,
+                )
                 self.mal_combo.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                self.mal_sel_var = tk.StringVar(value=stored_mal)
+                def mal_sel(_):
+                    self.mal_sel_var.set(self.mal_var.get())
+                self.mal_combo.bind("<<ComboboxSelected>>", mal_sel)
+                row_next += 1
+                ttk.Label(safety_frame, textvariable=self.mal_sel_var, foreground="blue").grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="FTTI:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
@@ -1716,7 +1729,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 target_node.safety_goal_description = self.safety_goal_text.get("1.0", "end-1c")
                 target_node.safety_goal_asil = self.sg_asil_var.get().strip()
                 target_node.safe_state = self.safe_state_entry.get().strip()
-                new_mal = self.mal_var.get().strip()
+                new_mal = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 if new_mal:
                     for te in self.app.top_events:
                         if te is not target_node and getattr(te, "malfunction", "") == new_mal:
@@ -1725,11 +1738,11 @@ class EditNodeDialog(simpledialog.Dialog):
                                 "This malfunction is already assigned to another top level event.",
                             )
                             new_mal = getattr(self.node, "malfunction", "")
-                            self.mal_var.set(new_mal)
+                            self.mal_sel_var.set(new_mal)
                             break
+                if target_node.malfunction and target_node.malfunction != new_mal:
+                    self.app.rename_malfunction(target_node.malfunction, new_mal)
                 target_node.malfunction = new_mal
-                if target_node.malfunction:
-                    self.app.add_malfunction(target_node.malfunction)
                 target_node.ftti = self.ftti_entry.get().strip()
                 try:
                     target_node.sg_dc_target = float(self.dc_target_var.get())
@@ -3074,6 +3087,108 @@ class FaultTreeApp:
     def add_hazard(self, name: str) -> None:
         """Add a hazard to the list if not already present."""
         append_unique_insensitive(self.hazards, name)
+
+    # --------------------------------------------------------------
+    # Rename helpers propagate changes across the entire model
+    # --------------------------------------------------------------
+    def _replace_in_mal_list(self, obj, old, new):
+        val = getattr(obj, "fmeda_malfunction", "")
+        if not val:
+            return
+        parts = []
+        changed = False
+        for m in val.split(";"):
+            m = m.strip()
+            if not m:
+                continue
+            if m == old:
+                parts.append(new)
+                changed = True
+            else:
+                parts.append(m)
+        if changed:
+            obj.fmeda_malfunction = ";".join(parts)
+
+    def _replace_entry_mal(self, entry, old, new):
+        val = getattr(entry, "fmeda_malfunction", "")
+        if val:
+            parts = [new if m.strip() == old else m.strip() for m in val.split(";") if m.strip()]
+            if ";".join(parts) != val:
+                entry.fmeda_malfunction = ";".join(parts)
+
+    def rename_malfunction(self, old: str, new: str) -> None:
+        """Rename a malfunction and update all references."""
+        if not old or old == new:
+            return
+        for i, m in enumerate(self.malfunctions):
+            if m == old:
+                self.malfunctions[i] = new
+        for te in self.top_events:
+            if getattr(te, "malfunction", "") == old:
+                te.malfunction = new
+        for n in self.get_all_nodes_in_model():
+            self._replace_in_mal_list(n, old, new)
+        for doc in self.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "malfunction", "") == old:
+                    e.malfunction = new
+        for d in self.fmeas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        for d in self.fmedas:
+            for e in d.get("entries", []):
+                self._replace_entry_mal(e, old, new)
+        self.update_views()
+
+    def rename_hazard(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, h in enumerate(self.hazards):
+            if h == old:
+                self.hazards[i] = new
+        for doc in self.hazop_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        for doc in self.hara_docs:
+            for e in doc.entries:
+                if getattr(e, "hazard", "") == old:
+                    e.hazard = new
+        self.update_views()
+
+    def rename_fault(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, f in enumerate(self.faults):
+            if f == old:
+                self.faults[i] = new
+        for n in self.get_all_nodes_in_model():
+            if getattr(n, "fault_ref", "") == old:
+                n.fault_ref = new
+        for be in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(be, "fmea_cause", "").split(";")]
+            changed = False
+            for idx, c in enumerate(causes):
+                if c == old:
+                    causes[idx] = new
+                    changed = True
+            if changed:
+                be.fmea_cause = ";".join([c for c in causes if c])
+        self.update_views()
+
+    def rename_failure(self, old: str, new: str) -> None:
+        if not old or old == new:
+            return
+        for i, fl in enumerate(self.failures):
+            if fl == old:
+                self.failures[i] = new
+        for be in self.get_all_fmea_entries():
+            if getattr(be, "fmea_effect", "") == old:
+                be.fmea_effect = new
+        for n in self.get_all_nodes_in_model():
+            if getattr(n, "fmea_effect", "") == old:
+                n.fmea_effect = new
+        self.update_views()
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -6984,7 +7099,7 @@ class FaultTreeApp:
             Story.append(Spacer(1, 12))
             for fmea in self.fmeas:
                 Story.append(Paragraph(fmea['name'], pdf_styles["Heading3"]))
-                data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]]
+                data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]]
                 for be in fmea['entries']:
                     src = self.get_failure_mode_node(be)
                     comp = self.get_component_name_for_node(src) or "N/A"
@@ -6993,7 +7108,7 @@ class FaultTreeApp:
                     req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
                     rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                     failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                    row = [comp, parent_name, failure_mode, be.fmea_effect, getattr(be, 'fmea_cause', ''), be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids]
+                    row = [comp, parent_name, failure_mode, be.fmea_effect, getattr(be, 'fmea_cause', ''), be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, 'fmeda_malfunction', '')]
                     data.append(row)
                 table = Table(data, repeatRows=1)
                 table.setStyle(TableStyle([
@@ -9226,8 +9341,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
             if not name:
                 return
-            self.hazards.remove(current)
-            self.add_hazard(name)
+            self.rename_hazard(current, name)
             refresh()
 
         def delete():
@@ -9280,8 +9394,7 @@ class FaultTreeApp:
             if any(m.lower() == name.lower() for m in self.malfunctions if m != current):
                 messagebox.showinfo("Malfunction", "Already exists")
                 return
-            self.malfunctions.remove(current)
-            self.add_malfunction(name)
+            self.rename_malfunction(current, name)
             refresh()
 
         def delete():
@@ -9333,8 +9446,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Fault", "Name:", initialvalue=current)
             if not name:
                 return
-            self.faults.remove(current)
-            self.add_fault(name)
+            self.rename_fault(current, name)
             refresh()
 
         def delete():
@@ -9386,8 +9498,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename Failure", "Name:", initialvalue=current)
             if not name:
                 return
-            self.failures.remove(current)
-            self.add_failure(name)
+            self.rename_failure(current, name)
             refresh()
 
         def delete():
@@ -9615,6 +9726,7 @@ class FaultTreeApp:
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
             sel_mals = [m.strip() for m in getattr(self.node, 'fmeda_malfunction', '').split(';') if m.strip()]
+            self.mal_sel_var = tk.StringVar(value=";".join(sel_mals))
             def update_sg(*_):
                 if self.is_fmeda:
                     selected = [m for m, v in self.mal_vars.items() if v.get()]
@@ -9624,17 +9736,24 @@ class FaultTreeApp:
                 if not goals:
                     goals = self.app.get_top_event_safety_goals(self.node)
                 self.sg_var.set(", ".join(goals))
+                if self.is_fmeda:
+                    sel = [m for m, v in self.mal_vars.items() if v.get()]
+                    if sel:
+                        self.mal_sel_var.set(";".join(sel))
+                else:
+                    if self.mal_var.get():
+                        self.mal_sel_var.set(self.mal_var.get())
 
             if self.is_fmeda:
                 self.mal_vars = {}
                 self.mal_frame = ttk.Frame(gen_frame)
                 self.mal_frame.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 for m in sorted(self.app.malfunctions):
-                    var = tk.BooleanVar(value=m in sel_mals)
+                    var = tk.BooleanVar(value=False)
                     ttk.Checkbutton(self.mal_frame, text=m, variable=var, command=update_sg).pack(anchor="w")
                     self.mal_vars[m] = var
             else:
-                self.mal_var = tk.StringVar(value=sel_mals[0] if sel_mals else "")
+                self.mal_var = tk.StringVar(value="")
                 self.mal_combo = ttk.Combobox(
                     gen_frame,
                     textvariable=self.mal_var,
@@ -9646,6 +9765,8 @@ class FaultTreeApp:
                 self.mal_combo.bind("<<ComboboxSelected>>", update_sg)
 
             row_next += 1
+            ttk.Label(gen_frame, textvariable=self.mal_sel_var, foreground="blue").grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+            row_next += 1
 
             ttk.Label(gen_frame, text="Violates Safety Goal:").grid(row=row_next, column=0, sticky="e", padx=5, pady=5)
             preset_goals = self.app.get_safety_goals_for_malfunctions(sel_mals) or \
@@ -9654,7 +9775,6 @@ class FaultTreeApp:
             self.sg_var = tk.StringVar(value=sg_value)
             self.sg_entry = ttk.Entry(gen_frame, textvariable=self.sg_var, width=30, state='readonly')
             self.sg_entry.grid(row=row_next, column=1, padx=5, pady=5)
-            update_sg()
 
             ttk.Label(metric_frame, text="Severity (1-10):").grid(row=0, column=0, sticky="e", padx=5, pady=5)
             self.sev_spin = tk.Spinbox(metric_frame, from_=1, to=10, width=5)
@@ -9798,9 +9918,17 @@ class FaultTreeApp:
             # Always store the component name so it can be restored on load
             self.node.fmea_component = comp
             self.node.description = self.mode_var.get()
-            self.node.fmea_effect = self.effect_text.get("1.0", "end-1c")
+            new_effect = self.effect_text.get("1.0", "end-1c")
+            if self.node.fmea_effect and self.node.fmea_effect != new_effect:
+                self.app.rename_failure(self.node.fmea_effect, new_effect)
+            self.node.fmea_effect = new_effect
             sel = [self.cause_list.get(i) for i in self.cause_list.curselection()]
+            old_causes = [c.strip() for c in getattr(self.node, "fmea_cause", "").split(";") if c.strip()]
             self.node.fmea_cause = ";".join(sel)
+            if len(old_causes) == len(sel):
+                for o, n in zip(old_causes, sel):
+                    if o != n:
+                        self.app.rename_fault(o, n)
             for name in sel:
                 if name and name not in self.app.faults:
                     self.app.faults.append(name)
@@ -9816,16 +9944,18 @@ class FaultTreeApp:
                 self.node.fmea_detection = int(self.det_spin.get())
             except ValueError:
                 self.node.fmea_detection = 1
+            old_mal = self.node.fmeda_malfunction
             if self.is_fmeda:
                 selected_mals = [m for m, v in self.mal_vars.items() if v.get()]
+                if not selected_mals:
+                    selected_mals = [m.strip() for m in self.mal_sel_var.get().split(';') if m.strip()]
                 mal_value = ";".join(selected_mals)
             else:
-                mal_value = self.mal_var.get()
+                mal_value = self.mal_var.get().strip() or self.mal_sel_var.get().strip()
                 selected_mals = [mal_value] if mal_value else []
+            if old_mal and old_mal != mal_value:
+                self.app.rename_malfunction(old_mal, mal_value)
             self.node.fmeda_malfunction = mal_value
-            for m in selected_mals:
-                if m:
-                    self.app.add_malfunction(m)
             self.node.fmeda_safety_goal = self.sg_var.get()
             try:
                 self.node.fmeda_diag_cov = float(self.dc_var.get())
@@ -10085,10 +10215,10 @@ class FaultTreeApp:
             "D",
             "RPN",
             "Requirements",
+            "Malfunction",
         ]
         if fmeda:
             columns.extend([
-                "Malfunction",
                 "Safety Goal",
                 "FaultType",
                 "Fraction",
@@ -10342,7 +10472,7 @@ class FaultTreeApp:
                         "",
                         "end",
                         text=comp,
-                        values=[comp, "", "", "", "", "", "", "", "", ""],
+                        values=[comp] + [""] * (len(columns) - 1),
                         tags=("component",),
                     )
                 comp_iid = comp_items[comp]
@@ -10362,6 +10492,7 @@ class FaultTreeApp:
                     src.fmea_detection,
                     rpn,
                     req_ids,
+                    src.fmeda_malfunction,
                 ]
                 if fmeda:
                     sg_value = src.fmeda_safety_goal
@@ -10369,7 +10500,6 @@ class FaultTreeApp:
                     if goals:
                         sg_value = ", ".join(goals)
                     vals.extend([
-                        src.fmeda_malfunction,
                         sg_value,
                         src.fmeda_fault_type,
                         f"{src.fmeda_fault_fraction:.2f}",
@@ -10539,7 +10669,7 @@ class FaultTreeApp:
             win.bind("<Destroy>", lambda e: on_close() if e.widget is win else None)
 
     def export_fmea_to_csv(self, fmea, path):
-        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements"]
+        columns = ["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction"]
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(columns)
@@ -10551,7 +10681,7 @@ class FaultTreeApp:
                 req_ids = "; ".join([f"{req['req_type']}:{req['text']}" for req in getattr(be, 'safety_requirements', [])])
                 rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                 failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
-                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids]
+                row = [comp, parent_name, failure_mode, be.fmea_effect, be.fmea_cause, be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, "fmeda_malfunction", "")]
                 writer.writerow(row)
 
     def export_fmeda_to_csv(self, fmeda, path):

@@ -912,7 +912,10 @@ class HazopWindow(tk.Frame):
 
         def apply(self):
             self.row.function = self.func.get()
+            old_mal = self.row.malfunction
             self.row.malfunction = self.mal.get()
+            if old_mal and old_mal != self.row.malfunction:
+                self.app.rename_malfunction(old_mal, self.row.malfunction)
             # When a new malfunction is introduced from a HAZOP entry,
             # automatically create a corresponding top level event.
             # Register the malfunction globally; AutoML will create a
@@ -921,7 +924,10 @@ class HazopWindow(tk.Frame):
             self.row.mtype = self.typ.get()
             self.row.scenario = self.scen.get()
             self.row.conditions = self.cond.get()
+            old_haz = self.row.hazard
             self.row.hazard = self.haz.get("1.0", "end-1c")
+            if old_haz and old_haz != self.row.hazard:
+                self.app.rename_hazard(old_haz, self.row.hazard)
             self.row.safety = self.safety.get() == "Yes"
             self.row.rationale = self.rat.get("1.0", "end-1c")
             self.row.covered = self.cov.get() == "Yes"
@@ -1198,8 +1204,14 @@ class HaraWindow(tk.Frame):
             recalc()
 
         def apply(self):
+            old_mal = self.row.malfunction
             self.row.malfunction = self.mal_var.get()
+            if old_mal and old_mal != self.row.malfunction:
+                self.app.rename_malfunction(old_mal, self.row.malfunction)
+            old_haz = self.row.hazard
             self.row.hazard = self.haz.get("1.0", "end-1c")
+            if old_haz and old_haz != self.row.hazard:
+                self.app.rename_hazard(old_haz, self.row.hazard)
             self.row.severity = int(self.sev_var.get())
             self.row.sev_rationale = self.sev_rat.get()
             self.row.controllability = int(self.cont_var.get())
