@@ -719,17 +719,26 @@ class FI2TCWindow(tk.Frame):
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
-                "General": ["id", "system_function", "allocation", "interfaces"],
-                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
-                "Effects": ["vehicle_effect", "severity"],
-                "Measures": [
+                "Known Functional Weakness": [
+                    "id",
+                    "system_function",
+                    "allocation",
+                    "interfaces",
+                    "scene",
+                    "scenario",
+                    "driver_behavior",
+                    "occurrence",
+                    "functional_insufficiencies",
+                    "vehicle_effect",
+                    "severity",
+                ],
+                "Design Measures": [
                     "design_measures",
                     "verification",
                     "measure_effectiveness",
-                    "mitigation",
-                    "acceptance",
                 ],
+                "Triggering Condition Identification": ["triggering_conditions"],
+                "Mitigations": ["mitigation", "acceptance"],
             }
             tabs = {name: ttk.Frame(nb) for name in categories}
             for name, frame in tabs.items():
@@ -1823,22 +1832,25 @@ class TC2FIWindow(tk.Frame):
             nb = ttk.Notebook(master)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
-                "General": [
+                "Known Env/Operational Condition": [
                     "id",
                     "known_use_case",
                     "impacted_function",
                     "arch_elements",
                     "interfaces",
+                    "scene",
+                    "scenario",
+                    "driver_behavior",
+                    "occurrence",
+                    "triggering_conditions",
                 ],
-                "Scenario": ["scene", "scenario", "driver_behavior", "occurrence"],
-                "Relations": ["functional_insufficiencies", "triggering_conditions"],
+                "Mitigations": ["mitigation", "acceptance"],
+                "Affected Functions Identification": ["functional_insufficiencies"],
                 "Effects": ["vehicle_effect", "severity"],
-                "Measures": [
+                "Design Measures": [
                     "design_measures",
                     "verification",
                     "measure_effectiveness",
-                    "mitigation",
-                    "acceptance",
                 ],
             }
             tabs = {name: ttk.Frame(nb) for name in categories}
