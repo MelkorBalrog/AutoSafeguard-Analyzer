@@ -358,18 +358,24 @@ global_requirements = {}
 # editing safety requirements.  The list retains the original "vehicle"
 # and "operational" categories and adds new ones for functional and
 # technical safety as well as functional modifications.
+# Updated requirement categories including functional and technical safety,
+# functional modifications and cybersecurity.
 REQUIREMENT_TYPE_OPTIONS = [
     "vehicle",
     "operational",
     "functional safety",
     "technical safety",
     "functional modification",
+    "cybersecurity",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [
     "QM", "QM(A)", "QM(B)", "QM(C)", "QM(D)",
     "A", "A(B)", "B", "B(C)", "C", "C(D)", "D"
 ]
+
+# Cybersecurity Assurance Levels defined in ISO 21434
+CAL_LEVEL_OPTIONS = ["CAL1", "CAL2", "CAL3", "CAL4"]
 
 ASIL_ORDER = {"QM":0, "A":1, "B":2, "C":3, "D":4}
 ASIL_TARGETS = {
