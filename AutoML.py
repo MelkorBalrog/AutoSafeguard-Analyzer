@@ -2057,24 +2057,14 @@ class FaultTreeApp:
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        tools_frame = ttk.Frame(self.tools_group)
-        tools_frame.pack(fill=tk.BOTH, expand=True)
-        self.tools_list = tk.Listbox(tools_frame, height=10)
-        vsb = ttk.Scrollbar(tools_frame, orient="vertical", command=self.tools_list.yview)
-        hsb = ttk.Scrollbar(tools_frame, orient="horizontal", command=self.tools_list.xview)
-        self.tools_list.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        self.tools_list.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        tools_frame.rowconfigure(0, weight=1)
-        tools_frame.columnconfigure(0, weight=1)
+        self.tools_nb = ttk.Notebook(self.tools_group)
+        self.tools_nb.pack(fill=tk.BOTH, expand=True)
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
             "Mechanism Libraries": self.manage_mechanism_libraries,
             "Scenario Libraries": self.manage_scenario_libraries,
             "ODD Libraries": self.manage_odd_libraries,
-            "Malfunctions Editor": self.show_malfunctions_editor,
             "Reliability Analysis": self.open_reliability_window,
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
@@ -2084,16 +2074,75 @@ class FaultTreeApp:
             "Malfunctions Editor": self.show_malfunction_editor,
             "Faults Editor": self.show_fault_editor,
             "Failures Editor": self.show_failure_editor,
+            "Triggering Conditions": self.show_triggering_condition_list,
+            "Functional Insufficiencies": self.show_functional_insufficiency_list,
             "FI2TC Analysis": self.open_fi2tc_window,
             "TC2FI Analysis": self.open_tc2fi_window,
             "AutoML Explorer": self.manage_architecture,
             "Requirements Editor": self.show_requirements_editor,
             "Safety Goals Editor": self.show_safety_goals_editor,
-            "Review Toolbox": self.open_review_toolbox,
+            "Start Peer Review": self.start_peer_review,
+            "Start Joint Review": self.start_joint_review,
+            "Open Review Toolbox": self.open_review_toolbox,
+            "Merge Review Comments": self.merge_review_comments,
+            "Compare Versions": self.compare_versions,
+            "Set Current User": self.set_current_user,
+            "Common Cause Toolbox": self.show_common_cause_view,
+            "Safety Goal Export": self.export_safety_goal_requirements,
         }
-        for name in self.tool_actions:
-            self.tools_list.insert(tk.END, name)
-        self.tools_list.bind("<Double-1>", self.on_tool_list_double_click)
+
+        self.tool_categories = {
+            "Reliability Tools": [
+                "Mission Profiles",
+                "Mechanism Libraries",
+                "Scenario Libraries",
+                "ODD Libraries",
+                "Reliability Analysis",
+                "FMEDA Manager",
+                "FMEA Manager",
+            ],
+            "SOTIF Tools": [
+                "Triggering Conditions",
+                "Functional Insufficiencies",
+                "FI2TC Analysis",
+                "TC2FI Analysis",
+                "HAZOP Analysis",
+                "HARA Analysis",
+                "Hazards Editor",
+                "Malfunctions Editor",
+                "Faults Editor",
+                "Failures Editor",
+            ],
+            "Review Toolbox": [
+                "Start Peer Review",
+                "Start Joint Review",
+                "Open Review Toolbox",
+                "Merge Review Comments",
+                "Compare Versions",
+                "Set Current User",
+            ],
+            "Additional Tools": [
+                "Common Cause Toolbox",
+                "Safety Goal Export",
+                "AutoML Explorer",
+                "Requirements Editor",
+                "Safety Goals Editor",
+            ],
+        }
+
+        self.tool_listboxes = {}
+        for cat, names in self.tool_categories.items():
+            frame = ttk.Frame(self.tools_nb)
+            self.tools_nb.add(frame, text=cat)
+            lb = tk.Listbox(frame, height=10)
+            vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
+            lb.configure(yscrollcommand=vsb.set)
+            lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            vsb.pack(side=tk.RIGHT, fill=tk.Y)
+            for n in names:
+                lb.insert(tk.END, n)
+            lb.bind("<Double-1>", self.on_tool_list_double_click)
+            self.tool_listboxes[lb] = None
 
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
@@ -7474,10 +7523,11 @@ class FaultTreeApp:
             self._arch_window.populate()
 
     def on_tool_list_double_click(self, event):
-        sel = self.tools_list.curselection()
+        lb = event.widget
+        sel = lb.curselection()
         if not sel:
             return
-        name = self.tools_list.get(sel[0])
+        name = lb.get(sel[0])
         action = self.tool_actions.get(name)
         if action:
             action()
