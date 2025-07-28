@@ -31,6 +31,21 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 
 
+def configure_table_style(style_name: str, rowheight: int = 60) -> None:
+    """Apply a consistent look to ttk.Treeview widgets used in analysis tables."""
+    style = ttk.Style()
+    try:
+        style.theme_use("clam")
+    except tk.TclError:
+        pass
+    style.configure(style_name, font=("Segoe UI", 10), rowheight=rowheight)
+    style.configure(
+        f"{style_name}.Heading",
+        font=("Segoe UI", 10, "bold"),
+        background="#d0d0d0",
+    )
+
+
 def _total_fit_from_boms(boms):
     """Return the aggregated FIT of all components in ``boms``.
 
@@ -231,10 +246,12 @@ class ReliabilityWindow(tk.Frame):
         self.analysis_combo.bind("<<ComboboxSelected>>", self.load_selected_analysis)
         self.refresh_analysis_list()
 
+        configure_table_style("Reliability.Treeview")
         self.tree = ttk.Treeview(
             self,
             columns=("name", "type", "qty", "fit", "qualification"),
             show="headings",
+            style="Reliability.Treeview",
         )
         for col in ("name", "type", "qty", "fit", "qualification"):
             heading = "Qualification" if col == "qualification" else col.capitalize()
@@ -764,8 +781,7 @@ class FI2TCWindow(tk.Frame):
 
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
-        style = ttk.Style(self)
-        style.configure("FI2TC.Treeview", rowheight=80)
+        configure_table_style("FI2TC.Treeview", rowheight=80)
         self.tree = ttk.Treeview(
             tree_frame,
             columns=self.COLS,
@@ -1327,7 +1343,8 @@ class HazopWindow(tk.Frame):
         columns = ("function", "malfunction", "type", "safety", "rationale")
         content = ttk.Frame(self)
         content.pack(fill=tk.BOTH, expand=True)
-        self.tree = ttk.Treeview(content, columns=columns, show="headings")
+        configure_table_style("Hazop.Treeview")
+        self.tree = ttk.Treeview(content, columns=columns, show="headings", style="Hazop.Treeview")
         for col in columns:
             self.tree.heading(col, text=col.capitalize())
             if col in ("rationale", "hazard"):
@@ -1707,7 +1724,8 @@ class HaraWindow(tk.Frame):
         self.status_lbl = ttk.Label(top, text="")
         self.status_lbl.pack(side=tk.LEFT, padx=10)
 
-        self.tree = ttk.Treeview(self, columns=self.COLS, show="headings")
+        configure_table_style("Hara.Treeview")
+        self.tree = ttk.Treeview(self, columns=self.COLS, show="headings", style="Hara.Treeview")
         for c in self.COLS:
             self.tree.heading(c, text=c.replace("_", " ").title())
             width = 200 if c == "hazard" else 120
@@ -2051,8 +2069,7 @@ class TC2FIWindow(tk.Frame):
             master.geometry("800x400")
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
-        style = ttk.Style(self)
-        style.configure("TC2FI.Treeview", rowheight=80)
+        configure_table_style("TC2FI.Treeview", rowheight=80)
         self.tree = ttk.Treeview(
             tree_frame,
             columns=self.COLS,
@@ -2635,7 +2652,8 @@ class HazardExplorerWindow(tk.Toplevel):
         self.title("Hazard Explorer")
 
         columns = ("HARA", "Malfunction", "Hazard", "Severity")
-        self.tree = ttk.Treeview(self, columns=columns, show="headings")
+        configure_table_style("HazExp.Treeview")
+        self.tree = ttk.Treeview(self, columns=columns, show="headings", style="HazExp.Treeview")
         for c in columns:
             self.tree.heading(c, text=c)
             width = 200 if c == "Hazard" else 120
@@ -2720,7 +2738,8 @@ class RequirementsExplorerWindow(tk.Toplevel):
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
         columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
-        self.tree = ttk.Treeview(self, columns=columns, show="headings")
+        configure_table_style("ReqExp.Treeview")
+        self.tree = ttk.Treeview(self, columns=columns, show="headings", style="ReqExp.Treeview")
         for c in columns:
             self.tree.heading(c, text=c)
             width = 100 if c != "Text" else 300
