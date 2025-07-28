@@ -49,7 +49,7 @@ The **HARA Analysis** view builds on the safety relevant malfunctions from one o
 
 The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
 
-The **Hazard Explorer** window lists all hazards from every HARA in a read-only table for quick review or CSV export.
+The **Hazard Explorer** window lists all hazards from every HARA in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
 
 ## Requirements Creation and Management
 

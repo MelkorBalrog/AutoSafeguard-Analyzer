@@ -344,6 +344,7 @@ from gui.toolboxes import (
     HaraWindow,
     TC2FIWindow,
     HazardExplorerWindow,
+    RequirementsExplorerWindow,
 )
 
 
@@ -1986,6 +1987,7 @@ class FaultTreeApp:
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
         requirements_menu.add_command(label="Requirements Editor", command=self.show_requirements_editor)
+        requirements_menu.add_command(label="Requirements Explorer", command=self.show_requirements_explorer)
         requirements_menu.add_command(label="Safety Goals Matrix", command=self.show_safety_goals_matrix)
         requirements_menu.add_command(label="Safety Goals Editor", command=self.show_safety_goals_editor)
         requirements_menu.add_command(label="Export SG Requirements", command=self.export_safety_goal_requirements)
@@ -2132,6 +2134,7 @@ class FaultTreeApp:
             "TC2FI Analysis": self.open_tc2fi_window,
             "AutoML Explorer": self.manage_architecture,
             "Requirements Editor": self.show_requirements_editor,
+            "Requirements Explorer": self.show_requirements_explorer,
             "Safety Goals Editor": self.show_safety_goals_editor,
             "Start Peer Review": self.start_peer_review,
             "Start Joint Review": self.start_joint_review,
@@ -2157,6 +2160,7 @@ class FaultTreeApp:
             "Design": [
                 "AutoML Explorer",
                 "Requirements Editor",
+                "Requirements Explorer",
             ],
             "Safety Analysis": [
                 "FMEA Manager",
@@ -12516,6 +12520,12 @@ class FaultTreeApp:
             self._haz_exp_window.lift()
             return
         self._haz_exp_window = HazardExplorerWindow(self)
+
+    def show_requirements_explorer(self):
+        if hasattr(self, "_req_exp_window") and self._req_exp_window.winfo_exists():
+            self._req_exp_window.lift()
+            return
+        self._req_exp_window = RequirementsExplorerWindow(self)
 
     def _register_close(self, win, collection):
         def _close():
