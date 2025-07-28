@@ -9350,7 +9350,6 @@ class FaultTreeApp:
                                 self.cause_list.select_set(i)
             
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
-            mode_sel(None)
 
             self.effect_text = tk.Text(gen_frame, width=30, height=3)
             self.effect_text.insert("1.0", self.node.fmea_effect)
@@ -9493,6 +9492,7 @@ class FaultTreeApp:
 
             self.comp_combo.bind("<<ComboboxSelected>>", comp_sel)
             comp_sel()
+            mode_sel(None)
 
             row += 1
             ttk.Label(metric_frame, text="DC Target:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
