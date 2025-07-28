@@ -227,6 +227,7 @@ import math
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+from gui.tooltip import ToolTip
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -1814,6 +1815,13 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # Increase notebook tab font/size so titles are fully visible
+        self.style.configure(
+            "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
+        )
+        self.style.configure(
+            "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
+        )
         # small icons for diagram types shown in the explorer
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
@@ -2064,6 +2072,10 @@ class FaultTreeApp:
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         self.tools_nb = ttk.Notebook(self.tools_group)
         self.tools_nb.pack(fill=tk.BOTH, expand=True)
+        # Tooltip helper for tabs (text may be clipped)
+        self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
+        self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
+        self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
@@ -7525,6 +7537,24 @@ class FaultTreeApp:
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def _on_tool_tab_motion(self, event):
+        """Show tooltip for notebook tabs when hovering over them."""
+        try:
+            idx = self.tools_nb.index(f"@{event.x},{event.y}")
+        except tk.TclError:
+            self._tools_tip.hide()
+            return
+        text = self.tools_nb.tab(idx, "text")
+        bbox = self.tools_nb.bbox(idx)
+        if not bbox:
+            self._tools_tip.hide()
+            return
+        x = self.tools_nb.winfo_rootx() + bbox[0] + bbox[2] // 2
+        y = self.tools_nb.winfo_rooty() + bbox[1] + bbox[3]
+        if self._tools_tip.text != text:
+            self._tools_tip.text = text
+        self._tools_tip.show(x, y)
 
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
