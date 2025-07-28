@@ -24,7 +24,11 @@ import difflib
 import sys
 import json
 import re
-from PIL import Image, ImageTk
+try:
+    from PIL import Image, ImageTk
+except ModuleNotFoundError:
+    print("Error: Pillow package is required for image support. Please install pillow.")
+    sys.exit(1)
 
 # Node types treated as gates when deriving component names
 GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}

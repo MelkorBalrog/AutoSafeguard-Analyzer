@@ -289,7 +289,11 @@ from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
-from PIL import Image, ImageDraw, ImageFont, ImageTk
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageTk
+except ModuleNotFoundError:
+    print("Error: Pillow package is required for image support. Please install pillow.")
+    sys.exit(1)
 import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
