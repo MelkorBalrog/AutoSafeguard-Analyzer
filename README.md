@@ -677,8 +677,15 @@ The **Qualitative Analysis** menu also provides dedicated SOTIF tools. Selecting
 
 Two additional tables support tracing between these elements:
 
-* **FI2TC Analysis** – links each functional insufficiency to the triggering conditions, scenarios and mitigation measures that reveal the hazard.
-* **TC2FI Analysis** – starts from the triggering condition and lists the impacted functions, architecture elements and related insufficiencies.
+* **FI2TC Analysis** – links each functional insufficiency to the triggering
+  conditions, scenarios and mitigation measures that reveal the hazard. The
+  table includes dedicated **triggering_conditions** and
+  **functional_insufficiencies** columns populated via comboboxes so new items
+  can be added on the fly.
+* **TC2FI Analysis** – starts from the triggering condition and lists the
+  impacted functions, architecture elements and related insufficiencies. The
+  **triggering_conditions** and **functional_insufficiencies** fields mirror
+  those in the FI2TC table to keep the relationships consistent.
 
 HARA values such as severity and the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
