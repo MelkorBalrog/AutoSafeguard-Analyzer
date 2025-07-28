@@ -1666,6 +1666,9 @@ class EditNodeDialog(simpledialog.Dialog):
                 messagebox.showerror("Invalid Input", "Select a value between 1 and 5.")
         elif self.node.node_type.upper() == "BASIC EVENT":
             target_node.fault_ref = target_node.description
+            desc = target_node.description.strip()
+            if desc and desc not in self.app.faults:
+                self.app.faults.append(desc)
             target_node.prob_formula = self.formula_var.get()
             if target_node.prob_formula == "constant":
                 try:
@@ -12386,6 +12389,10 @@ class FaultTreeApp:
         self.scenario_libraries = data.get("scenario_libraries", [])
         self.odd_libraries = data.get("odd_libraries", [])
         self.faults = data.get("faults", [])
+        for be in self.get_all_basic_events():
+            desc = be.description.strip()
+            if desc and desc not in self.faults:
+                self.faults.append(desc)
         self.malfunctions = data.get("malfunctions", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
