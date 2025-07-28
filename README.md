@@ -689,25 +689,17 @@ Two additional tables support tracing between these elements:
 
 * **FI2TC Analysis** – links each functional insufficiency to the triggering
   conditions, scenarios and mitigation measures that reveal the hazard. The
-  table includes dedicated **triggering_conditions** and
-  **functional_insufficiencies** columns populated via comboboxes so new items
-  can be added on the fly. The **design_measures** column provides a multi-select
-  list of all requirements so several may be allocated at once. Hold **Ctrl**
-  while clicking to choose multiple items.
+  table now supports editing directly in the list by double clicking any cell.
+  Dedicated **triggering_conditions** and **functional_insufficiencies**
+  columns remain populated via comboboxes so new items can be added on the fly.
+  The **design_measures** column still offers a multi-select list of all
+  requirements labelled as *functional modification*. Hold **Ctrl** while
+  clicking to choose multiple items.
 * **TC2FI Analysis** – starts from the triggering condition and lists the
   impacted functions, architecture elements and related insufficiencies. This
   table also allows in-place editing. The **triggering_conditions** and
   **functional_insufficiencies** fields mirror those in the FI2TC table to keep
   the relationships consistent.
-
-The analyses approach the problem from opposite directions:
-
-| Aspect | FI2TC | TC2FI |
-| --- | --- | --- |
-| Start Point | Known functional weakness | Known environmental/operational condition |
-| Goal | Identify triggering conditions | Identify affected functions |
-| Focus | Understanding cause of known issues | Discovering issues from known situations |
-| Role in SOTIF | Verifying known risks are well covered | Expanding coverage for unknown risks |
 
 The analyses approach the problem from opposite directions:
 
