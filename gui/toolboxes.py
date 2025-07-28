@@ -600,22 +600,22 @@ class ReliabilityWindow(tk.Frame):
 class FI2TCWindow(tk.Frame):
     COLS = [
         "id",
-        "functional_insufficiencies",
         "system_function",
         "allocation",
         "interfaces",
+        "functional_insufficiencies",
         "scene",
         "scenario",
         "driver_behavior",
         "occurrence",
-        "triggering_conditions",
         "vehicle_effect",
         "severity",
-        "worst_case",
-        "tc_effect",
         "design_measures",
         "verification",
         "measure_effectiveness",
+        "triggering_conditions",
+        "worst_case",
+        "tc_effect",
         "mitigation",
         "acceptance",
     ]
@@ -659,7 +659,7 @@ class FI2TCWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", self.start_cell_edit)
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         add_row_btn = ttk.Button(btn, text="Add", command=self.add_row)
@@ -684,39 +684,6 @@ class FI2TCWindow(tk.Frame):
         for row in self.app.fi2tc_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
-
-    def start_cell_edit(self, event=None, item=None, column=None):
-        if event:
-            item = item or self.tree.identify_row(event.y)
-            column = column or self.tree.identify_column(event.x)
-        if not item or not column:
-            return
-        col_idx = int(column[1:]) - 1
-        col_key = self.COLS[col_idx]
-        x, y, w, h = self.tree.bbox(item, column)
-        if not w:
-            return
-        value = self.tree.set(item, col_key)
-        entry = tk.Entry(self.tree)
-        entry.insert(0, value)
-        entry.select_range(0, tk.END)
-        entry.focus()
-        entry.place(x=x, y=y, width=w, height=h)
-
-        def save(event=None):
-            new_val = entry.get()
-            self.tree.set(item, col_key, _wrap_val(new_val))
-            idx = self.tree.index(item)
-            old_val = self.app.fi2tc_entries[idx].get(col_key, "")
-            self.app.fi2tc_entries[idx][col_key] = new_val
-            if col_key == "functional_insufficiencies" and old_val and new_val != old_val:
-                self.app.rename_functional_insufficiency(old_val, new_val)
-            elif col_key == "triggering_conditions" and old_val and new_val != old_val:
-                self.app.rename_triggering_condition(old_val, new_val)
-            entry.destroy()
-
-        entry.bind("<Return>", save)
-        entry.bind("<FocusOut>", save)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -898,15 +865,20 @@ class FI2TCWindow(tk.Frame):
             self.result = True
 
     def add_row(self):
-        data = {k: "" for k in self.COLS}
-        self.app.fi2tc_entries.append(data)
-        self.refresh()
+        dlg = self.RowDialog(self, self.app)
+        if getattr(dlg, "result", None):
+            self.app.fi2tc_entries.append(dlg.data)
+            self.refresh()
 
     def edit_row(self):
         sel = self.tree.focus()
         if not sel:
             return
-        self.start_cell_edit(item=sel, column="#1")
+        idx = self.tree.index(sel)
+        data = self.app.fi2tc_entries[idx]
+        dlg = self.RowDialog(self, self.app, data)
+        if getattr(dlg, "result", None):
+            self.refresh()
 
     def del_row(self):
         sel = self.tree.selection()
@@ -1699,22 +1671,22 @@ class HaraWindow(tk.Frame):
 class TC2FIWindow(tk.Frame):
     COLS = [
         "id",
-        "triggering_conditions",
-        "scene",
-        "scenario",
-        "driver_behavior",
-        "occurrence",
         "known_use_case",
+        "occurrence",
         "impacted_function",
         "arch_elements",
         "interfaces",
         "functional_insufficiencies",
         "vehicle_effect",
         "severity",
-        "tc_effect",
         "design_measures",
         "verification",
         "measure_effectiveness",
+        "scene",
+        "scenario",
+        "driver_behavior",
+        "triggering_conditions",
+        "tc_effect",
         "mitigation",
         "acceptance",
     ]
@@ -1759,7 +1731,7 @@ class TC2FIWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", self.start_cell_edit)
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack()
         ttk.Button(btn, text="Add", command=self.add_row).pack(
@@ -1784,39 +1756,6 @@ class TC2FIWindow(tk.Frame):
         for row in self.app.tc2fi_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
             self.tree.insert("", "end", values=vals)
-
-    def start_cell_edit(self, event=None, item=None, column=None):
-        if event:
-            item = item or self.tree.identify_row(event.y)
-            column = column or self.tree.identify_column(event.x)
-        if not item or not column:
-            return
-        col_idx = int(column[1:]) - 1
-        col_key = self.COLS[col_idx]
-        x, y, w, h = self.tree.bbox(item, column)
-        if not w:
-            return
-        value = self.tree.set(item, col_key)
-        entry = tk.Entry(self.tree)
-        entry.insert(0, value)
-        entry.select_range(0, tk.END)
-        entry.focus()
-        entry.place(x=x, y=y, width=w, height=h)
-
-        def save(event=None):
-            new_val = entry.get()
-            self.tree.set(item, col_key, _wrap_val(new_val))
-            idx = self.tree.index(item)
-            old_val = self.app.tc2fi_entries[idx].get(col_key, "")
-            self.app.tc2fi_entries[idx][col_key] = new_val
-            if col_key == "functional_insufficiencies" and old_val and new_val != old_val:
-                self.app.rename_functional_insufficiency(old_val, new_val)
-            elif col_key == "triggering_conditions" and old_val and new_val != old_val:
-                self.app.rename_triggering_condition(old_val, new_val)
-            entry.destroy()
-
-        entry.bind("<Return>", save)
-        entry.bind("<FocusOut>", save)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -2004,15 +1943,20 @@ class TC2FIWindow(tk.Frame):
             self.result = True
 
     def add_row(self):
-        data = {k: "" for k in self.COLS}
-        self.app.tc2fi_entries.append(data)
-        self.refresh()
+        dlg = self.RowDialog(self, self.app)
+        if getattr(dlg, "result", None):
+            self.app.tc2fi_entries.append(dlg.data)
+            self.refresh()
 
     def edit_row(self):
         sel = self.tree.focus()
         if not sel:
             return
-        self.start_cell_edit(item=sel, column="#1")
+        idx = self.tree.index(sel)
+        data = self.app.tc2fi_entries[idx]
+        dlg = self.RowDialog(self, self.app, data)
+        if getattr(dlg, "result", None):
+            self.refresh()
 
     def del_row(self):
         sel = self.tree.selection()
