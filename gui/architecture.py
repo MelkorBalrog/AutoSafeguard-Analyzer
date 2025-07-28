@@ -1812,6 +1812,7 @@ class SysMLDiagramWindow(tk.Frame):
         if diag:
             diag.objects = [obj.__dict__ for obj in self.objects]
             diag.connections = [conn.__dict__ for conn in self.connections]
+            self.repo.touch_diagram(self.diagram_id)
 
     def on_close(self):
         self._sync_to_repository()
@@ -2451,6 +2452,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
                                     joined = repo.elements[self.obj.element_id].properties["partProperties"]
                                     self.obj.properties["partProperties"] = joined
                             repo.diagrams[diag_id] = diag
+                            repo.touch_diagram(diag_id)
+                            if self.obj.element_id:
+                                repo.touch_element(self.obj.element_id)
                             if hasattr(self.master, "_sync_to_repository"):
                                 self.master._sync_to_repository()
 
@@ -2753,7 +2757,12 @@ class ArchitectureManagerDialog(tk.Frame):
 
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
-        self.tree = ttk.Treeview(tree_frame)
+        columns = ("Type", "Created", "Author", "Modified", "ModifiedBy")
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show="tree headings")
+        for c in columns:
+            self.tree.heading(c, text=c)
+            width = 100 if c == "Type" else 120
+            self.tree.column(c, width=width)
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
@@ -2840,7 +2849,13 @@ class ArchitectureManagerDialog(tk.Frame):
                     "end",
                     iid=elem_id,
                     text=elem.name or elem_id,
-                    values=(elem.elem_type,),
+                    values=(
+                        elem.elem_type,
+                        getattr(elem, "created", ""),
+                        getattr(elem, "author", ""),
+                        getattr(elem, "modified", ""),
+                        getattr(elem, "modified_by", ""),
+                    ),
                     image=icon,
                 )
             for rel_id, tgt_id, rtype in rel_children.get(elem_id, []):
@@ -2898,7 +2913,13 @@ class ArchitectureManagerDialog(tk.Frame):
                             "end",
                             iid=diag_iid,
                             text=label,
-                            values=(d.diag_type,),
+                            values=(
+                                d.diag_type,
+                                getattr(d, "created", ""),
+                                getattr(d, "author", ""),
+                                getattr(d, "modified", ""),
+                                getattr(d, "modified_by", ""),
+                            ),
                             image=icon,
                         )
                     objs = sorted(
