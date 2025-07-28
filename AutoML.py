@@ -1376,6 +1376,7 @@ class EditNodeDialog(simpledialog.Dialog):
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from HARAs and update requirement ASILs."""
         self.sync_hara_to_safety_goals()
+        self.update_hazard_list()
         self.update_all_requirement_asil()
         self.update_requirement_decomposition()
 
@@ -7891,6 +7892,21 @@ class FaultTreeApp:
             names.update(e.malfunction for e in doc.entries if getattr(e, "malfunction", ""))
         return sorted(names)
 
+    def get_hazards_for_malfunction(self, malfunction: str, hazop_names=None) -> list[str]:
+        """Return hazards linked to the malfunction in the given HAZOPs."""
+        hazards: list[str] = []
+        names = hazop_names or [d.name for d in self.hazop_docs]
+        for hz_name in names:
+            doc = self.get_hazop_by_name(hz_name)
+            if not doc:
+                continue
+            for entry in doc.entries:
+                if entry.malfunction == malfunction:
+                    h = getattr(entry, "hazard", "").strip()
+                    if h and h not in hazards:
+                        hazards.append(h)
+        return hazards
+
     def update_odd_elements(self):
         """Aggregate elements from all ODD libraries into odd_elements list."""
         self.odd_elements = []
@@ -7898,9 +7914,14 @@ class FaultTreeApp:
             self.odd_elements.extend(lib.get("elements", []))
 
     def update_hazard_list(self):
-        """Aggregate hazards from all HARA documents into ``hazards`` list."""
+        """Aggregate hazards from HARA and HAZOP documents."""
         hazards: list[str] = []
         for doc in self.hara_docs:
+            for e in doc.entries:
+                h = getattr(e, "hazard", "").strip()
+                if h and h not in hazards:
+                    hazards.append(h)
+        for doc in self.hazop_docs:
             for e in doc.entries:
                 h = getattr(e, "hazard", "").strip()
                 if h and h not in hazards:
@@ -14008,6 +14029,7 @@ class FaultTreeApp:
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from HARAs and update requirement ASILs."""
         self.sync_hara_to_safety_goals()
+        self.update_hazard_list()
         self.update_all_requirement_asil()
 
     def invalidate_reviews_for_hara(self, name):
