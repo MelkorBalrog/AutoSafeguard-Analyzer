@@ -1446,6 +1446,9 @@ class HazopWindow(tk.Frame):
             style="Hazop.Treeview",
             edit_callback=self.on_cell_edit,
         )
+        vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(content, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for col in columns:
             self.tree.heading(col, text=col.capitalize())
             if col in ("rationale", "hazard"):
@@ -1453,7 +1456,11 @@ class HazopWindow(tk.Frame):
             else:
                 width = 120
             self.tree.column(col, width=width)
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
@@ -1847,18 +1854,27 @@ class HaraWindow(tk.Frame):
         self.status_lbl.pack(side=tk.LEFT, padx=10)
 
         configure_table_style("Hara.Treeview")
+        table_frame = ttk.Frame(self)
+        table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
-            self,
+            table_frame,
             columns=self.COLS,
             show="headings",
             style="Hara.Treeview",
             edit_callback=self.on_cell_edit,
         )
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for c in self.COLS:
             self.tree.heading(c, text=c.replace("_", " ").title())
             width = 200 if c == "hazard" else 120
             self.tree.column(c, width=width)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        table_frame.columnconfigure(0, weight=1)
+        table_frame.rowconfigure(0, weight=1)
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         ttk.Button(btn, text="Add", command=self.add_row).pack(

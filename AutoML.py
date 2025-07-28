@@ -2156,6 +2156,7 @@ class FaultTreeApp:
             "Set Current User": self.set_current_user,
             "Common Cause Toolbox": self.show_common_cause_view,
             "Cause & Effect Chain": self.show_cause_effect_chain,
+            "Fault Prioritization": self.open_fault_prioritization_window,
             "Safety Goal Export": self.export_safety_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
@@ -2207,6 +2208,7 @@ class FaultTreeApp:
                 "Failures Editor",
                 "Faults Editor",
                 "Cause & Effect Chain",
+                "Fault Prioritization",
             ],
         }
 
