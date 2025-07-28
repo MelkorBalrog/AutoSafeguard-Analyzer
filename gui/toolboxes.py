@@ -43,34 +43,17 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style_name,
         font=("Segoe UI", 10),
         rowheight=rowheight,
-        **border_opts,
+        borderwidth=1,
+        relief="solid",
+        bordercolor="black",
     )
     style.configure(
         f"{style_name}.Heading",
         font=("Segoe UI", 10, "bold"),
         background="#d0d0d0",
-        **border_opts,
-    )
-    style.layout(
-        style_name,
-        [
-            (
-                "Treeview.field",
-                {
-                    "sticky": "nswe",
-                    **border_opts,
-                    "children": [
-                        (
-                            "Treeview.padding",
-                            {
-                                "sticky": "nswe",
-                                "children": [("Treeview.treearea", {"sticky": "nswe"})],
-                            },
-                        )
-                    ],
-                },
-            )
-        ],
+        borderwidth=1,
+        relief="raised",
+        bordercolor="black",
     )
 
 
