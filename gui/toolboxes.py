@@ -25,6 +25,7 @@ from analysis.models import (
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
     ASIL_LEVEL_OPTIONS,
+    CAL_LEVEL_OPTIONS,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -2013,19 +2014,18 @@ class TC2FIWindow(tk.Frame):
                     sel()
                     self.widgets[col] = var
                 elif col == "design_measures":
-                    lb = tk.Listbox(
-                        frame,
-                        selectmode="extended",
-                        height=5,
-                        exportselection=False,
-                    )
-                    for opt in req_opts:
-                        lb.insert(tk.END, opt)
-                    existing = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
-                    for i, opt in enumerate(req_opts):
-                        if opt in existing:
-                            lb.selection_set(i)
-                    lb.grid(row=r, column=1, padx=5, pady=2)
+                    self.dm_ids = [e.strip() for e in self.data.get(col, "").split(",") if e.strip()]
+                    dm_frame = ttk.Frame(frame)
+                    dm_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    lb = tk.Listbox(dm_frame, height=4, width=50)
+                    lb.grid(row=0, column=0, columnspan=4, sticky="w")
+                    for rid in self.dm_ids:
+                        req = global_requirements.get(rid, {"id": rid, "text": ""})
+                        lb.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+                    ttk.Button(dm_frame, text="Add New", command=self.add_dm_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Edit", command=self.edit_dm).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Delete", command=self.del_dm).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(dm_frame, text="Add Existing", command=self.add_dm_existing).grid(row=1, column=3, padx=2, pady=2)
                     self.widgets[col] = lb
                 elif col == "triggering_conditions":
                     var = tk.StringVar(value=self.data.get(col, ""))
