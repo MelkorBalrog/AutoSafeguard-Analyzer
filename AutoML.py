@@ -7798,6 +7798,18 @@ class FaultTreeApp:
                 result.append(self.format_failure_mode_label(be))
         return result
 
+    def get_faults_for_failure_mode(self, failure_mode_node) -> list[str]:
+        """Return fault names causing the given failure mode."""
+        fm_node = self.get_failure_mode_node(failure_mode_node)
+        fm_id = fm_node.unique_id
+        faults: list[str] = []
+        for be in self.get_all_basic_events():
+            if getattr(be, "failure_mode_ref", None) == fm_id:
+                fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
+                if fault:
+                    faults.append(fault)
+        return sorted(set(faults))
+
 
     def get_all_nodes(self, node=None):
         if node is None:
@@ -9081,6 +9093,9 @@ class FaultTreeApp:
                     if comp_name:
                         self.comp_var.set(comp_name)
                         comp_sel()
+                    faults = self.app.get_faults_for_failure_mode(src)
+                    if faults:
+                        self.cause_var.set(";".join(sorted(faults)))
 
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
