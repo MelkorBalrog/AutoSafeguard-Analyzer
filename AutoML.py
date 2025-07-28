@@ -9080,8 +9080,12 @@ class FaultTreeApp:
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
 
     def show_hazard_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Hazards")
+        """Open a tab to manage the list of hazards."""
+        if hasattr(self, "_haz_tab") and self._haz_tab.winfo_exists():
+            self.doc_nb.select(self._haz_tab)
+            return
+        self._haz_tab = self._new_tab("Hazards")
+        win = self._haz_tab
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_hazard_list()
@@ -9180,8 +9184,12 @@ class FaultTreeApp:
         refresh()
 
     def show_fault_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Faults")
+        """Open a tab to manage the list of faults."""
+        if hasattr(self, "_fault_tab") and self._fault_tab.winfo_exists():
+            self.doc_nb.select(self._fault_tab)
+            return
+        self._fault_tab = self._new_tab("Faults")
+        win = self._fault_tab
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         for f in self.faults:
@@ -9222,8 +9230,12 @@ class FaultTreeApp:
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
     def show_failure_list(self):
-        win = tk.Toplevel(self.root)
-        win.title("Failures")
+        """Open a tab to manage the list of failures."""
+        if hasattr(self, "_failure_tab") and self._failure_tab.winfo_exists():
+            self.doc_nb.select(self._failure_tab)
+            return
+        self._failure_tab = self._new_tab("Failures")
+        win = self._failure_tab
         lb = tk.Listbox(win, height=10, width=40)
         lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_failure_list()
@@ -9263,6 +9275,22 @@ class FaultTreeApp:
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+    # ------------------------------------------------------------------
+    # Compatibility wrappers
+    # ------------------------------------------------------------------
+
+    def show_hazard_editor(self):
+        """Backward compatible alias for :meth:`show_hazard_list`."""
+        self.show_hazard_list()
+
+    def show_fault_editor(self):
+        """Backward compatible alias for :meth:`show_fault_list`."""
+        self.show_fault_list()
+
+    def show_failure_editor(self):
+        """Backward compatible alias for :meth:`show_failure_list`."""
+        self.show_failure_list()
 
     def show_functional_insufficiency_list(self):
         win = tk.Toplevel(self.root)
