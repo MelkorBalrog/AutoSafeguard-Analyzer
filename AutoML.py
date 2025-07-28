@@ -1858,6 +1858,13 @@ class FaultTreeApp:
         except tk.TclError:
             pass
         self.style.configure("Treeview", font=("Arial", 10))
+        # Increase notebook tab font/size so titles are fully visible
+        self.style.configure(
+            "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
+        )
+        self.style.configure(
+            "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
+        )
         # small icons for diagram types shown in the explorer
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
