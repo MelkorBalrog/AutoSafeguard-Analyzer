@@ -1893,6 +1893,8 @@ class FaultTreeApp:
         fta_menu.add_command(label="Add Triggering Condition", command=lambda: self.add_node_of_type("Triggering Condition"))
         fta_menu.add_command(label="Add Functional Insufficiency", command=lambda: self.add_node_of_type("Functional Insufficiency"))
         fta_menu.add_command(label="Add FMEA/FMEDA Event", command=self.add_basic_event_from_fmea)
+        fta_menu.add_command(label="Add Gate from Failure Mode", command=self.add_gate_from_failure_mode)
+        fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
         fta_menu.add_separator()
         fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
         fta_menu.add_command(label="FTA Cut Sets", command=self.show_cut_sets)
@@ -8564,6 +8566,110 @@ class FaultTreeApp:
         else:
             messagebox.showwarning("Delete Node", "Select a node to delete.")
 
+    # ------------------------------------------------------------------
+    # Helpers for malfunctions and failure modes
+    # ------------------------------------------------------------------
+    def create_top_event_for_malfunction(self, name: str) -> None:
+        """Create a new top level event linked to the given malfunction."""
+        new_event = FaultTreeNode("", "TOP EVENT")
+        new_event.x, new_event.y = 300, 200
+        new_event.is_top_event = True
+        new_event.malfunction = name
+        self.top_events.append(new_event)
+        self.root_node = new_event
+        self.update_views()
+
+    def delete_top_events_for_malfunction(self, name: str) -> None:
+        """Remove all FTAs tied to the malfunction ``name``."""
+        removed = [te for te in self.top_events if getattr(te, "malfunction", "") == name]
+        if not removed:
+            return
+        for te in removed:
+            self.top_events.remove(te)
+        if self.root_node in removed:
+            self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
+        self.update_views()
+
+    def add_gate_from_failure_mode(self):
+        modes = self.get_available_failure_modes_for_gates()
+        if not modes:
+            messagebox.showinfo("No Failure Modes", "No failure modes available.")
+            return
+        dialog = self.SelectFailureModeDialog(self.root, self, modes)
+        selected = dialog.selected
+        if not selected:
+            return
+        if self.selected_node:
+            parent_node = self.selected_node
+            if not parent_node.is_primary_instance:
+                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
+                return
+        else:
+            sel = self.treeview.selection()
+            if not sel:
+                messagebox.showwarning("No selection", "Select a parent node to paste into.")
+                return
+            try:
+                node_id = int(self.treeview.item(sel[0], "tags")[0])
+            except (IndexError, ValueError):
+                messagebox.showwarning("No selection", "Select a parent node from the tree.")
+                return
+            parent_node = self.find_node_by_id_all(node_id)
+        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
+            messagebox.showwarning("Invalid", "Base events cannot have children.")
+            return
+        new_node = FaultTreeNode("", "GATE", parent=parent_node)
+        new_node.gate_type = "AND"
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
+            new_node.description = getattr(selected, "description", "")
+            new_node.user_name = getattr(selected, "user_name", "")
+        else:
+            new_node.description = self.get_entry_field(selected, "description", "")
+            new_node.user_name = self.get_entry_field(selected, "user_name", "")
+        new_node.x = parent_node.x + 100
+        new_node.y = parent_node.y + 100
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        self.update_views()
+
+    def add_fault_event(self):
+        if not self.faults:
+            messagebox.showinfo("No Faults", "No faults available.")
+            return
+        dialog = self.SelectFaultDialog(self.root, sorted(self.faults))
+        fault = dialog.selected
+        if not fault:
+            return
+        if self.selected_node:
+            parent_node = self.selected_node
+            if not parent_node.is_primary_instance:
+                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
+                return
+        else:
+            sel = self.treeview.selection()
+            if not sel:
+                messagebox.showwarning("No selection", "Select a parent node to paste into.")
+                return
+            try:
+                node_id = int(self.treeview.item(sel[0], "tags")[0])
+            except (IndexError, ValueError):
+                messagebox.showwarning("No selection", "Select a parent node from the tree.")
+                return
+            parent_node = self.find_node_by_id_all(node_id)
+        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
+            messagebox.showwarning("Invalid", "Base events cannot have children.")
+            return
+        new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
+        new_node.failure_prob = 0.0
+        new_node.fault_ref = fault
+        new_node.description = fault
+        new_node.x = parent_node.x + 100
+        new_node.y = parent_node.y + 100
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        self.update_views()
+
     def calculate_overall(self):
         for top_event in self.top_events:
             AutoML_Helper.calculate_assurance_recursive(top_event, self.top_events)
@@ -9151,6 +9257,7 @@ class FaultTreeApp:
             name = simpledialog.askstring("Add Malfunction", "Name:")
             if name:
                 self.add_malfunction(name)
+                self.create_top_event_for_malfunction(name)
                 refresh()
 
         def rename():
@@ -9173,12 +9280,11 @@ class FaultTreeApp:
             if not sel:
                 return
             current = lb.get(sel[0])
-            if self.is_malfunction_used(current):
-                messagebox.showinfo("Delete", "Malfunction is in use")
+            if not messagebox.askyesno("Delete", f"Delete '{current}' and its FTA?"):
                 return
-            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
-                self.malfunctions.remove(current)
-                refresh()
+            self.delete_top_events_for_malfunction(current)
+            self.malfunctions.remove(current)
+            refresh()
 
         btn = ttk.Frame(win)
         btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -9237,6 +9343,8 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
+        refresh()
+
     def show_failure_list(self):
         """Open a tab to manage the list of failures."""
 
@@ -9287,6 +9395,8 @@ class FaultTreeApp:
         ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+        refresh()
 
     # ------------------------------------------------------------------
     # Compatibility wrappers
@@ -9348,7 +9458,7 @@ class FaultTreeApp:
                 return
             self.malfunctions.append(name)
             lb.insert(tk.END, name)
-            self.update_views()
+            self.create_top_event_for_malfunction(name)
 
         def edit_mal():
             sel = lb.curselection()
@@ -9377,9 +9487,9 @@ class FaultTreeApp:
                 return
             idx = sel[0]
             name = self.malfunctions[idx]
-            if self.is_malfunction_used(name):
-                messagebox.showinfo("Delete", "Malfunction is in use")
+            if not messagebox.askyesno("Delete", f"Delete malfunction '{name}' and its FTA?"):
                 return
+            self.delete_top_events_for_malfunction(name)
             del self.malfunctions[idx]
             lb.delete(idx)
             self.update_views()
@@ -9852,6 +9962,44 @@ class FaultTreeApp:
                     self.selected = "NEW"
                 else:
                     self.selected = self._visible_events[idx]
+
+    class SelectFailureModeDialog(simpledialog.Dialog):
+        def __init__(self, parent, app, modes):
+            self.app = app
+            self.modes = modes
+            self.selected = None
+            super().__init__(parent, title="Select Failure Mode")
+
+        def body(self, master):
+            self.listbox = tk.Listbox(master, height=10, width=50)
+            for m in self.modes:
+                label = self.app.format_failure_mode_label(m)
+                self.listbox.insert(tk.END, label)
+            self.listbox.grid(row=0, column=0, padx=5, pady=5)
+            return self.listbox
+
+        def apply(self):
+            sel = self.listbox.curselection()
+            if sel:
+                self.selected = self.modes[sel[0]]
+
+    class SelectFaultDialog(simpledialog.Dialog):
+        def __init__(self, parent, faults):
+            self.faults = faults
+            self.selected = None
+            super().__init__(parent, title="Select Fault")
+
+        def body(self, master):
+            self.listbox = tk.Listbox(master, height=10, width=40)
+            for f in self.faults:
+                self.listbox.insert(tk.END, f)
+            self.listbox.grid(row=0, column=0, padx=5, pady=5)
+            return self.listbox
+
+        def apply(self):
+            sel = self.listbox.curselection()
+            if sel:
+                self.selected = self.faults[sel[0]]
 
     class SelectSafetyGoalsDialog(simpledialog.Dialog):
         def __init__(self, parent, goals, initial=None):
@@ -14241,6 +14389,8 @@ class PageDiagram:
         menu.add_command(label="Add Basic Event", command=lambda: self.context_add("Basic Event"))
         menu.add_command(label="Add Triggering Condition", command=lambda: self.context_add("Triggering Condition"))
         menu.add_command(label="Add Functional Insufficiency", command=lambda: self.context_add("Functional Insufficiency"))
+        menu.add_command(label="Add Gate from Failure Mode", command=lambda: self.context_add_gate_from_failure_mode())
+        menu.add_command(label="Add Fault Event", command=lambda: self.context_add_fault_event())
         menu.tk_popup(event.x_root, event.y_root)
 
     def context_edit(self, node):
@@ -14280,6 +14430,18 @@ class PageDiagram:
     def context_add(self, event_type):
         self.app.selected_node = self.selected_node
         self.app.add_node_of_type(event_type)
+        self.redraw_canvas()
+        self.app.update_views()
+
+    def context_add_gate_from_failure_mode(self):
+        self.app.selected_node = self.selected_node
+        self.app.add_gate_from_failure_mode()
+        self.redraw_canvas()
+        self.app.update_views()
+
+    def context_add_fault_event(self):
+        self.app.selected_node = self.selected_node
+        self.app.add_fault_event()
         self.redraw_canvas()
         self.app.update_views()
 
