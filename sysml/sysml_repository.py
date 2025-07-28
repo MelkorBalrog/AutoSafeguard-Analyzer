@@ -4,6 +4,8 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional
 import os
+import datetime
+from analysis.user_config import CURRENT_USER_NAME
 
 @dataclass
 class SysMLElement:
@@ -14,6 +16,10 @@ class SysMLElement:
     properties: Dict[str, str] = field(default_factory=dict)
     stereotypes: Dict[str, str] = field(default_factory=dict)
     owner: Optional[str] = None
+    created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    author: str = CURRENT_USER_NAME
+    modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    modified_by: str = CURRENT_USER_NAME
 
 @dataclass
 class SysMLRelationship:
@@ -23,6 +29,10 @@ class SysMLRelationship:
     target: str
     stereotype: Optional[str] = None
     properties: Dict[str, str] = field(default_factory=dict)
+    created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    author: str = CURRENT_USER_NAME
+    modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    modified_by: str = CURRENT_USER_NAME
 
 @dataclass
 class SysMLDiagram:
@@ -36,6 +46,10 @@ class SysMLDiagram:
     relationships: List[str] = field(default_factory=list)
     objects: List[dict] = field(default_factory=list)
     connections: List[dict] = field(default_factory=list)
+    created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    author: str = CURRENT_USER_NAME
+    modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    modified_by: str = CURRENT_USER_NAME
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
@@ -49,6 +63,24 @@ class SysMLRepository:
         self.element_diagrams: Dict[str, str] = {}
         self.root_package = self.create_element("Package", name="Root")
 
+    def touch_element(self, elem_id: str) -> None:
+        elem = self.elements.get(elem_id)
+        if elem:
+            elem.modified = datetime.datetime.now().isoformat()
+            elem.modified_by = CURRENT_USER_NAME
+
+    def touch_diagram(self, diag_id: str) -> None:
+        diag = self.diagrams.get(diag_id)
+        if diag:
+            diag.modified = datetime.datetime.now().isoformat()
+            diag.modified_by = CURRENT_USER_NAME
+
+    def touch_relationship(self, rel_id: str) -> None:
+        rel = next((r for r in self.relationships if r.rel_id == rel_id), None)
+        if rel:
+            rel.modified = datetime.datetime.now().isoformat()
+            rel.modified_by = CURRENT_USER_NAME
+
     @classmethod
     def get_instance(cls) -> "SysMLRepository":
         if cls._instance is None:
@@ -57,7 +89,15 @@ class SysMLRepository:
 
     def create_element(self, elem_type: str, name: str = "", properties: Optional[Dict[str, str]] = None, owner: Optional[str] = None) -> SysMLElement:
         elem_id = str(uuid.uuid4())
-        elem = SysMLElement(elem_id, elem_type, name, properties or {}, owner=owner)
+        elem = SysMLElement(
+            elem_id,
+            elem_type,
+            name,
+            properties or {},
+            owner=owner,
+            author=CURRENT_USER_NAME,
+            modified_by=CURRENT_USER_NAME,
+        )
         self.elements[elem_id] = elem
         return elem
 
@@ -94,7 +134,16 @@ class SysMLRepository:
             while name in existing:
                 name = f"{base}_{suffix}"
                 suffix += 1
-        diagram = SysMLDiagram(diag_id, diag_type, name, package, description, color)
+        diagram = SysMLDiagram(
+            diag_id,
+            diag_type,
+            name,
+            package,
+            description,
+            color,
+            author=CURRENT_USER_NAME,
+            modified_by=CURRENT_USER_NAME,
+        )
         self.diagrams[diag_id] = diagram
         return diagram
 
@@ -181,7 +230,16 @@ class SysMLRepository:
 
     def create_relationship(self, rel_type: str, source: str, target: str, stereotype: Optional[str] = None, properties: Optional[Dict[str, str]] = None) -> SysMLRelationship:
         rel_id = str(uuid.uuid4())
-        rel = SysMLRelationship(rel_id, rel_type, source, target, stereotype, properties or {})
+        rel = SysMLRelationship(
+            rel_id,
+            rel_type,
+            source,
+            target,
+            stereotype,
+            properties or {},
+            author=CURRENT_USER_NAME,
+            modified_by=CURRENT_USER_NAME,
+        )
         self.relationships.append(rel)
         return rel
 

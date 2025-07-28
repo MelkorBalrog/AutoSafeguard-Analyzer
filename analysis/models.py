@@ -1,5 +1,16 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from dataclasses import dataclass, field
+import datetime
+
+
+@dataclass
+class Metadata:
+    """Track creation and modification info."""
+
+    created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    author: str = ""
+    modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
+    modified_by: str = ""
 
 @dataclass
 class MissionProfile:
@@ -131,6 +142,7 @@ class HazopDoc:
     """Container for a HAZOP with a name and list of entries."""
     name: str
     entries: list
+    meta: Metadata = field(default_factory=Metadata)
 
 @dataclass
 class HaraDoc:
@@ -140,18 +152,21 @@ class HaraDoc:
     entries: list
     approved: bool = False
     status: str = "draft"
+    meta: Metadata = field(default_factory=Metadata)
 
 @dataclass
 class FI2TCDoc:
     """Container for an FI2TC analysis."""
     name: str
     entries: list
+    meta: Metadata = field(default_factory=Metadata)
 
 @dataclass
 class TC2FIDoc:
     """Container for a TC2FI analysis."""
     name: str
     entries: list
+    meta: Metadata = field(default_factory=Metadata)
 
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {

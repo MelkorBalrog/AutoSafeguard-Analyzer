@@ -248,6 +248,13 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+from analysis.user_config import (
+    load_user_config,
+    save_user_config,
+    set_current_user,
+    CURRENT_USER_NAME,
+    CURRENT_USER_EMAIL,
+)
 from analysis.risk_assessment import (
     DERIVED_MATURITY_TABLE,
     ASSURANCE_AGGREGATION_AND,
@@ -350,6 +357,28 @@ def get_version() -> str:
 
 
 VERSION = get_version()
+
+
+class UserInfoDialog(simpledialog.Dialog):
+    """Prompt for the user's name and email."""
+
+    def __init__(self, parent, name: str = "", email: str = ""):
+        self._name = name
+        self._email = email
+        super().__init__(parent, title="User Information")
+
+    def body(self, master):
+        ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
+        self.name_var = tk.StringVar(value=self._name)
+        name_entry = ttk.Entry(master, textvariable=self.name_var)
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(master, text="Email:").grid(row=1, column=0, sticky="e")
+        self.email_var = tk.StringVar(value=self._email)
+        ttk.Entry(master, textvariable=self.email_var).grid(row=1, column=1, padx=5, pady=5)
+        return name_entry
+
+    def apply(self):
+        self.result = (self.name_var.get().strip(), self.email_var.get().strip())
 
 
 class ClosableNotebook(ttk.Notebook):
@@ -1324,6 +1353,42 @@ class EditNodeDialog(simpledialog.Dialog):
                 asil = a
         return asil
 
+    def find_safety_goal_node(self, name):
+        """Return the top event node matching *name* if present."""
+        for te in self.top_events:
+            if name in (te.safety_goal_description, te.user_name):
+                return te
+        return None
+
+    def compute_validation_criteria(self, req_id):
+        """Return validation criteria probability for a requirement."""
+        goals = self.get_requirement_goal_names(req_id)
+        vals = []
+        for g in goals:
+            sg = self.find_safety_goal_node(g)
+            if not sg:
+                continue
+            try:
+                acc = float(getattr(sg, "acceptance_prob", 1.0))
+            except (TypeError, ValueError):
+                acc = 1.0
+            try:
+                sev = float(getattr(sg, "severity", 3)) / 3.0
+            except (TypeError, ValueError):
+                sev = 1.0
+            try:
+                cont = float(getattr(sg, "controllability", 3)) / 3.0
+            except (TypeError, ValueError):
+                cont = 1.0
+            vals.append(acc * sev * cont)
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def update_validation_criteria(self, req_id):
+        req = global_requirements.get(req_id)
+        if not req:
+            return
+        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
         if not req:
@@ -1335,6 +1400,14 @@ class EditNodeDialog(simpledialog.Dialog):
             if req.get("parent_id"):
                 continue  # keep decomposition ASIL
             self.update_requirement_asil(rid)
+
+    def update_all_validation_criteria(self):
+        for rid in global_requirements:
+            self.update_validation_criteria(rid)
+
+    def update_all_validation_criteria(self):
+        for rid in global_requirements:
+            self.update_validation_criteria(rid)
 
     def update_base_event_requirement_asil(self):
         """Update ASIL for requirements allocated to base events."""
@@ -1378,6 +1451,8 @@ class EditNodeDialog(simpledialog.Dialog):
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
+        self.update_all_validation_criteria()
+        self.update_all_validation_criteria()
         self.update_requirement_decomposition()
 
     def refresh_model(self):
@@ -1475,10 +1550,13 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": dialog.result["text"],
                 "custom_id": custom_id,
                 "asil": asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM"),
+                "validation_criteria": 0.0,
                 "status": "draft",
                 "parent_id": ""
             }
             global_requirements[custom_id] = req
+
+        self.update_validation_criteria(custom_id)
 
         # Allocate this requirement to the current node if not already present.
         if not hasattr(self.node, "safety_requirements"):
@@ -1527,6 +1605,7 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
+        self.update_validation_criteria(new_custom_id)
         self.app.invalidate_reviews_for_requirement(new_custom_id)
         self.node.safety_requirements[index] = current_req
         self.safety_req_listbox.delete(index)
@@ -1569,6 +1648,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (A)",
             "custom_id": req_id_a,
             "asil": asil_a,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1578,6 +1658,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (B)",
             "custom_id": req_id_b,
             "asil": asil_b,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1585,6 +1666,8 @@ class EditNodeDialog(simpledialog.Dialog):
         global_requirements[req.get("id")] = req
         global_requirements[req_id_a] = r1
         global_requirements[req_id_b] = r2
+        self.update_validation_criteria(req_id_a)
+        self.update_validation_criteria(req_id_b)
         del self.node.safety_requirements[index]
         self.node.safety_requirements.insert(index, r2)
         self.node.safety_requirements.insert(index, r1)
@@ -8178,6 +8261,11 @@ class FaultTreeApp:
                 be.prob_formula = fm_node.prob_formula
                 be.failure_prob = self.compute_failure_prob(be)
 
+    def touch_doc(self, doc):
+        """Update modification metadata for the given document."""
+        doc["modified"] = datetime.datetime.now().isoformat()
+        doc["modified_by"] = CURRENT_USER_NAME
+
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
         self.ensure_asil_consistency()
@@ -9200,54 +9288,86 @@ class FaultTreeApp:
             return
         self._fmea_tab = self._new_tab("FMEA List")
         win = self._fmea_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for fmea in self.fmeas:
-            listbox.insert(tk.END, fmea['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    fmea.get("name", ""),
+                    fmea.get("created", ""),
+                    fmea.get("author", ""),
+                    fmea.get("modified", ""),
+                    fmea.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = fmea
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmea_tab = None
-            self.show_fmea_table(self.fmeas[idx])
+            self.show_fmea_table(doc)
 
         def add_fmea():
             name = simpledialog.askstring("New FMEA", "Enter FMEA name:")
             if name:
                 file_name = f"fmea_{name}.csv"
-                self.fmeas.append({'name': name, 'entries': [], 'file': file_name})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "created": now,
+                    "author": CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": CURRENT_USER_NAME,
+                }
+                self.fmeas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            del self.fmeas[idx]
-            listbox.delete(idx)
+            self.fmeas.remove(doc)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmea():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            doc = item_map.get(iid)
+            if not doc:
                 return
-            idx = sel[0]
-            current = self.fmeas[idx]['name']
+            current = doc.get("name", "")
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmeas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            doc["name"] = name
+            self.touch_doc(doc)
+            tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
@@ -9261,54 +9381,87 @@ class FaultTreeApp:
             return
         self._fmeda_tab = self._new_tab("FMEDA List")
         win = self._fmeda_tab
-        listbox = tk.Listbox(win, height=10, width=40)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        columns = ("Name", "Created", "Author", "Modified", "ModifiedBy")
+        tree = ttk.Treeview(win, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 150 if c == "Name" else 120
+            tree.column(c, width=width)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        item_map = {}
         for doc in self.fmedas:
-            listbox.insert(tk.END, doc['name'])
+            iid = tree.insert(
+                "",
+                "end",
+                values=(
+                    doc.get("name", ""),
+                    doc.get("created", ""),
+                    doc.get("author", ""),
+                    doc.get("modified", ""),
+                    doc.get("modified_by", ""),
+                ),
+            )
+            item_map[iid] = doc
 
         def open_selected(event=None):
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
             win.destroy()
             self._fmeda_tab = None
-            self.show_fmea_table(self.fmedas[idx], fmeda=True)
+            self.show_fmea_table(d, fmeda=True)
 
         def add_fmeda():
             name = simpledialog.askstring("New FMEDA", "Enter FMEDA name:")
             if name:
                 file_name = f"fmeda_{name}.csv"
-                self.fmedas.append({'name': name, 'entries': [], 'file': file_name, 'bom': ''})
-                listbox.insert(tk.END, name)
+                now = datetime.datetime.now().isoformat()
+                doc = {
+                    "name": name,
+                    "entries": [],
+                    "file": file_name,
+                    "bom": "",
+                    "created": now,
+                    "author": CURRENT_USER_NAME,
+                    "modified": now,
+                    "modified_by": CURRENT_USER_NAME,
+                }
+                self.fmedas.append(doc)
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=(name, now, CURRENT_USER_NAME, now, CURRENT_USER_NAME),
+                )
+                item_map[iid] = doc
                 self.update_views()
 
         def delete_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            del self.fmedas[idx]
-            listbox.delete(idx)
+            self.fmedas.remove(d)
+            tree.delete(iid)
+            item_map.pop(iid, None)
             self.update_views()
 
         def rename_fmeda():
-            sel = listbox.curselection()
-            if not sel:
+            iid = tree.focus()
+            d = item_map.get(iid)
+            if not d:
                 return
-            idx = sel[0]
-            current = self.fmedas[idx]['name']
+            current = d.get("name", "")
             name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
             if not name:
                 return
-            self.fmedas[idx]['name'] = name
-            listbox.delete(idx)
-            listbox.insert(idx, name)
-            listbox.select_set(idx)
+            d["name"] = name
+            self.touch_doc(d)
+            tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
             self.update_views()
 
-        listbox.bind("<Double-1>", open_selected)
+        tree.bind("<Double-1>", open_selected)
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.RIGHT, fill=tk.Y)
         ttk.Button(btn_frame, text="Open", command=open_selected).pack(fill=tk.X)
@@ -10018,6 +10171,8 @@ class FaultTreeApp:
                 self.node.fmeda_spfm_target = getattr(fta_goal, "sg_spfm_target", 0.0)
                 self.node.fmeda_lpfm_target = getattr(fta_goal, "sg_lpfm_target", 0.0)
             self.app.propagate_failure_mode_attributes(self.node)
+            self.node.modified = datetime.datetime.now().isoformat()
+            self.node.modified_by = CURRENT_USER_NAME
 
         def add_existing_requirement(self):
             global global_requirements
@@ -10073,9 +10228,11 @@ class FaultTreeApp:
                     "req_type": dialog.result["req_type"],
                     "text": dialog.result["text"],
                     "custom_id": custom_id,
-                    "asil": dialog.result.get("asil", "QM")
+                    "asil": dialog.result.get("asil", "QM"),
+                    "validation_criteria": 0.0
                 }
                 global_requirements[custom_id] = req
+            self.app.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
@@ -10101,6 +10258,7 @@ class FaultTreeApp:
             current_req["custom_id"] = new_custom_id
             current_req["id"] = new_custom_id
             global_requirements[new_custom_id] = current_req
+            self.app.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
             desc = f"[{current_req['req_type']}] [{current_req.get('asil','')}] {current_req['text']}"
@@ -10251,6 +10409,7 @@ class FaultTreeApp:
                 "DiagCov",
                 "Mechanism",
             ])
+        columns.extend(["Created", "Author", "Modified", "ModifiedBy"])
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.TOP, pady=2)
         add_btn = ttk.Button(btn_frame, text="Add Failure Mode")
@@ -10423,6 +10582,10 @@ class FaultTreeApp:
                 width = 150
             elif col in ["FaultType", "Fraction", "FIT", "DiagCov", "Mechanism"]:
                 width = 80
+            elif col in ["Created", "Modified"]:
+                width = 130
+            elif col in ["Author", "ModifiedBy"]:
+                width = 100
             tree.column(col, width=width, anchor="center")
         tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
@@ -10532,6 +10695,12 @@ class FaultTreeApp:
                         f"{src.fmeda_diag_cov:.2f}",
                         getattr(src, "fmeda_mechanism", ""),
                     ])
+                vals.extend([
+                    getattr(src, "created", ""),
+                    getattr(src, "author", ""),
+                    getattr(src, "modified", ""),
+                    getattr(src, "modified_by", ""),
+                ])
                 tags = ["evenrow" if idx % 2 == 0 else "oddrow"]
                 if rpn >= 100:
                     tags.append("highrpn")
@@ -10630,9 +10799,11 @@ class FaultTreeApp:
                     for lib in selected_libs:
                         mechs.extend(lib.mechanisms)
                     comp_name = self.get_component_name_for_node(be)
-                    is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                    self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
+                is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
+                self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         add_btn.config(command=add_failure_mode)
 
@@ -10646,6 +10817,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         remove_btn.config(command=remove_from_fmea)
 
@@ -10661,6 +10834,8 @@ class FaultTreeApp:
                 if node in entries:
                     entries.remove(node)
             refresh_tree()
+            if fmea is not None:
+                self.touch_doc(fmea)
 
         del_btn.config(command=delete_failure_mode)
 
@@ -10680,6 +10855,7 @@ class FaultTreeApp:
 
         def on_close():
             if fmea is not None:
+                self.touch_doc(fmea)
                 if fmeda:
                     self.export_fmeda_to_csv(fmea, fmea['file'])
                 else:
@@ -12789,6 +12965,10 @@ class FaultTreeApp:
                     "name": f["name"],
                     "file": f["file"],
                     "entries": [e.to_dict() for e in f["entries"]],
+                    "created": f.get("created", ""),
+                    "author": f.get("author", ""),
+                    "modified": f.get("modified", ""),
+                    "modified_by": f.get("modified_by", ""),
                 }
                 for f in self.fmeas
             ],
@@ -12798,6 +12978,10 @@ class FaultTreeApp:
                     "file": d["file"],
                     "entries": [e.to_dict() for e in d["entries"]],
                     "bom": d.get("bom", ""),
+                    "created": d.get("created", ""),
+                    "author": d.get("author", ""),
+                    "modified": d.get("modified", ""),
+                    "modified_by": d.get("modified_by", ""),
                 }
                 for d in self.fmedas
             ],
@@ -12936,7 +13120,15 @@ class FaultTreeApp:
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
             entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
-            self.fmeas.append({"name": fmea_data.get("name", "FMEA"), "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"), "entries": entries})
+            self.fmeas.append({
+                "name": fmea_data.get("name", "FMEA"),
+                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
+                "entries": entries,
+                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
+                "author": fmea_data.get("author", CURRENT_USER_NAME),
+                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
+            })
         if not self.fmeas and "fmea_entries" in data:
             entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
             self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
@@ -12949,6 +13141,10 @@ class FaultTreeApp:
                 "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
                 "entries": entries,
                 "bom": doc.get("bom", ""),
+                "created": doc.get("created", datetime.datetime.now().isoformat()),
+                "author": doc.get("author", CURRENT_USER_NAME),
+                "modified": doc.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
             })
 
         self.update_failure_list()
@@ -14000,6 +14196,40 @@ class FaultTreeApp:
                 asil = a
         return asil
 
+    def find_safety_goal_node(self, name):
+        for te in self.top_events:
+            if name in (te.safety_goal_description, te.user_name):
+                return te
+        return None
+
+    def compute_validation_criteria(self, req_id):
+        goals = self.get_requirement_goal_names(req_id)
+        vals = []
+        for g in goals:
+            sg = self.find_safety_goal_node(g)
+            if not sg:
+                continue
+            try:
+                acc = float(getattr(sg, "acceptance_prob", 1.0))
+            except (TypeError, ValueError):
+                acc = 1.0
+            try:
+                sev = float(getattr(sg, "severity", 3)) / 3.0
+            except (TypeError, ValueError):
+                sev = 1.0
+            try:
+                cont = float(getattr(sg, "controllability", 3)) / 3.0
+            except (TypeError, ValueError):
+                cont = 1.0
+            vals.append(acc * sev * cont)
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def update_validation_criteria(self, req_id):
+        req = global_requirements.get(req_id)
+        if not req:
+            return
+        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
         if not req:
@@ -14277,6 +14507,10 @@ class FaultTreeNode:
         self.is_page = False
         self.is_primary_instance = True
         self.original = self
+        self.created = datetime.datetime.now().isoformat()
+        self.author = CURRENT_USER_NAME
+        self.modified = self.created
+        self.modified_by = CURRENT_USER_NAME
         self.safety_goal_description = ""
         self.safety_goal_asil = ""
         self.safe_state = ""
@@ -14926,10 +15160,28 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    # Hide the main window while prompting for user info
+    root.withdraw()
+    name, email = load_user_config()
+    dlg = UserInfoDialog(root, name, email)
+    if dlg.result:
+        name, email = dlg.result
+        save_user_config(name, email)
+    set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
     AutoML_Helper = AutoMLHelper()
-    
+
+    # Show and maximize the main window after login
+    root.deiconify()
+    try:
+        root.state("zoomed")
+    except tk.TclError:
+        try:
+            root.attributes("-zoomed", True)
+        except tk.TclError:
+            pass
+
     app = FaultTreeApp(root)
     root.mainloop()
 
