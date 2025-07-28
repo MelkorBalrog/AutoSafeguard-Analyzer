@@ -2104,27 +2104,7 @@ class FaultTreeApp:
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.main_pane.add(self.doc_nb, stretch="always")
 
-        self.canvas_tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(self.canvas_tab, text="FTA")
-        self.doc_nb.protected.add(str(self.canvas_tab))
-
-        self.canvas_frame = self.canvas_tab
-        self.canvas = tk.Canvas(self.canvas_frame, bg="white")
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                           scrollregion=(0, 0, 2000, 2000))
-        self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-        self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-        self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+        self._create_fta_tab()
         self.root_node = FaultTreeNode("", "TOP EVENT")
         self.root_node.x, self.root_node.y = 300, 200
         self.top_events = [self.root_node]
@@ -7409,6 +7389,7 @@ class FaultTreeApp:
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
+                self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "arch":
@@ -12396,13 +12377,45 @@ class FaultTreeApp:
             win.destroy()
         return _close
 
+    def _create_fta_tab(self):
+        """Create the main FTA tab with canvas and bindings."""
+        self.canvas_tab = ttk.Frame(self.doc_nb)
+        self.doc_nb.add(self.canvas_tab, text="FTA")
+
+        self.canvas_frame = self.canvas_tab
+        self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
+                           scrollregion=(0, 0, 2000, 2000))
+        self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
+        self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
+        self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
+        self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+
+    def ensure_fta_tab(self):
+        """Recreate the FTA tab if it was closed."""
+        if not getattr(self, "canvas_tab", None) or not self.canvas_tab.winfo_exists():
+            self._create_fta_tab()
+
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
         tab = self.doc_nb.nametowidget(tab_id)
         if tab is self.canvas_tab:
-            # Prevent closing the main FTA tab
-            self.doc_nb.add(tab, text="FTA")
-            self.doc_nb.protected.add(tab_id)
+            self.canvas_tab = None
+            self.canvas_frame = None
+            self.canvas = None
+            self.hbar = None
+            self.vbar = None
+            self.page_diagram = None
+            tab.destroy()
             return
         for child in tab.winfo_children():
             if hasattr(child, "on_close"):
@@ -13374,6 +13387,7 @@ class FaultTreeApp:
         return node
 
     def open_page_diagram(self, node, push_history=True):
+        self.ensure_fta_tab()
         # Resolve the node to its original.
         resolved_node = self.resolve_original(node)
         if push_history and hasattr(self, "page_diagram") and self.page_diagram is not None:
