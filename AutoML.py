@@ -248,6 +248,13 @@ try:
 except Exception:  # openpyxl may not be installed
     load_workbook = None
 from gui.drawing_helper import FTADrawingHelper, fta_drawing_helper
+from analysis.user_config import (
+    load_user_config,
+    save_user_config,
+    set_current_user,
+    CURRENT_USER_NAME,
+    CURRENT_USER_EMAIL,
+)
 from analysis.risk_assessment import (
     DERIVED_MATURITY_TABLE,
     ASSURANCE_AGGREGATION_AND,
@@ -350,6 +357,27 @@ def get_version() -> str:
 
 
 VERSION = get_version()
+
+
+class UserInfoDialog(simpledialog.Dialog):
+    """Prompt for the user's name and email."""
+
+    def __init__(self, parent, name: str = "", email: str = ""):
+        self._name = name
+        self._email = email
+        super().__init__(parent, title="User Information")
+
+    def body(self, master):
+        ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
+        self.name_var = tk.StringVar(value=self._name)
+        ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(master, text="Email:").grid(row=1, column=0, sticky="e")
+        self.email_var = tk.StringVar(value=self._email)
+        ttk.Entry(master, textvariable=self.email_var).grid(row=1, column=1, padx=5, pady=5)
+        return self.name_var
+
+    def apply(self):
+        self.result = (self.name_var.get().strip(), self.email_var.get().strip())
 
 
 class ClosableNotebook(ttk.Notebook):
@@ -10018,6 +10046,8 @@ class FaultTreeApp:
                 self.node.fmeda_spfm_target = getattr(fta_goal, "sg_spfm_target", 0.0)
                 self.node.fmeda_lpfm_target = getattr(fta_goal, "sg_lpfm_target", 0.0)
             self.app.propagate_failure_mode_attributes(self.node)
+            self.node.modified = datetime.datetime.now().isoformat()
+            self.node.modified_by = CURRENT_USER_NAME
 
         def add_existing_requirement(self):
             global global_requirements
@@ -10251,6 +10281,7 @@ class FaultTreeApp:
                 "DiagCov",
                 "Mechanism",
             ])
+        columns.extend(["Created", "Author", "Modified", "ModifiedBy"])
         btn_frame = ttk.Frame(win)
         btn_frame.pack(side=tk.TOP, pady=2)
         add_btn = ttk.Button(btn_frame, text="Add Failure Mode")
@@ -10423,6 +10454,10 @@ class FaultTreeApp:
                 width = 150
             elif col in ["FaultType", "Fraction", "FIT", "DiagCov", "Mechanism"]:
                 width = 80
+            elif col in ["Created", "Modified"]:
+                width = 130
+            elif col in ["Author", "ModifiedBy"]:
+                width = 100
             tree.column(col, width=width, anchor="center")
         tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
@@ -10532,6 +10567,12 @@ class FaultTreeApp:
                         f"{src.fmeda_diag_cov:.2f}",
                         getattr(src, "fmeda_mechanism", ""),
                     ])
+                vals.extend([
+                    getattr(src, "created", ""),
+                    getattr(src, "author", ""),
+                    getattr(src, "modified", ""),
+                    getattr(src, "modified_by", ""),
+                ])
                 tags = ["evenrow" if idx % 2 == 0 else "oddrow"]
                 if rpn >= 100:
                     tags.append("highrpn")
@@ -14277,6 +14318,10 @@ class FaultTreeNode:
         self.is_page = False
         self.is_primary_instance = True
         self.original = self
+        self.created = datetime.datetime.now().isoformat()
+        self.author = CURRENT_USER_NAME
+        self.modified = self.created
+        self.modified_by = CURRENT_USER_NAME
         self.safety_goal_description = ""
         self.safety_goal_asil = ""
         self.safe_state = ""
@@ -14926,10 +14971,16 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    name, email = load_user_config()
+    dlg = UserInfoDialog(root, name, email)
+    if dlg.result:
+        name, email = dlg.result
+        save_user_config(name, email)
+    set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
     AutoML_Helper = AutoMLHelper()
-    
+
     app = FaultTreeApp(root)
     root.mainloop()
 
