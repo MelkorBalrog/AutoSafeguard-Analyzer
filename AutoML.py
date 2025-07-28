@@ -1827,6 +1827,8 @@ class FaultTreeApp:
         # Lists of user-defined faults and malfunctions
         self.faults: list[str] = []
         self.malfunctions: list[str] = []
+        self.hazards: list[str] = []
+        self.failures: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.active_hazop = None
@@ -1948,6 +1950,10 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
         qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
+        qualitative_menu.add_command(label="Hazards", command=self.show_hazard_list)
+        qualitative_menu.add_command(label="Malfunctions", command=self.show_malfunction_list)
+        qualitative_menu.add_command(label="Faults", command=self.show_fault_list)
+        qualitative_menu.add_command(label="Failures", command=self.show_failure_list)
         qualitative_menu.add_separator()
         qualitative_menu.add_command(label="Triggering Conditions", command=self.show_triggering_condition_list)
         qualitative_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
@@ -2061,6 +2067,10 @@ class FaultTreeApp:
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
             "HARA Analysis": self.open_hara_window,
+            "Hazards": self.show_hazard_list,
+            "Malfunctions": self.show_malfunction_list,
+            "Faults": self.show_fault_list,
+            "Failures": self.show_failure_list,
             "FI2TC Analysis": self.open_fi2tc_window,
             "TC2FI Analysis": self.open_tc2fi_window,
             "AutoML Explorer": self.manage_architecture,
@@ -3038,6 +3048,18 @@ class FaultTreeApp:
     def add_malfunction(self, name: str) -> None:
         """Add a malfunction to the list if it does not already exist."""
         append_unique_insensitive(self.malfunctions, name)
+
+    def add_fault(self, name: str) -> None:
+        """Add a fault to the list if not already present."""
+        append_unique_insensitive(self.faults, name)
+
+    def add_failure(self, name: str) -> None:
+        """Add a failure to the list if not already present."""
+        append_unique_insensitive(self.failures, name)
+
+    def add_hazard(self, name: str) -> None:
+        """Add a hazard to the list if not already present."""
+        append_unique_insensitive(self.hazards, name)
 
     def calculate_fmeda_metrics(self, events):
         """Return ASIL and FMEDA metrics for the given events."""
@@ -7742,6 +7764,25 @@ class FaultTreeApp:
         for lib in self.odd_libraries:
             self.odd_elements.extend(lib.get("elements", []))
 
+    def update_hazard_list(self):
+        """Aggregate hazards from all HARA documents into ``hazards`` list."""
+        hazards: list[str] = []
+        for doc in self.hara_docs:
+            for e in doc.entries:
+                h = getattr(e, "hazard", "").strip()
+                if h and h not in hazards:
+                    hazards.append(h)
+        self.hazards = hazards
+
+    def update_failure_list(self):
+        """Aggregate failure effects from FMEA and FMEDA entries."""
+        failures: list[str] = []
+        for entry in self.get_all_fmea_entries():
+            eff = getattr(entry, "fmea_effect", "").strip()
+            if eff and eff not in failures:
+                failures.append(eff)
+        self.failures = failures
+
     def get_entry_field(self, entry, field, default=""):
         """Retrieve attribute or dict value from an entry."""
         if isinstance(entry, dict):
@@ -9035,6 +9076,176 @@ class FaultTreeApp:
                     w.writerow([n.unique_id, n.user_name, n.description])
             messagebox.showinfo("Export","Triggering conditions exported.")
         ttk.Button(win, text="Export CSV", command=export_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+
+    def show_hazard_list(self):
+        win = tk.Toplevel(self.root)
+        win.title("Hazards")
+        lb = tk.Listbox(win, height=10, width=40)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.update_hazard_list()
+        for h in self.hazards:
+            lb.insert(tk.END, h)
+
+        def add():
+            name = simpledialog.askstring("Add Hazard", "Name:")
+            if name:
+                self.add_hazard(name)
+                lb.insert(tk.END, name)
+
+        def rename():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
+            if not name:
+                return
+            self.hazards.remove(current)
+            self.add_hazard(name)
+            lb.delete(sel[0])
+            lb.insert(sel[0], name)
+
+        def delete():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
+                self.hazards.remove(current)
+                lb.delete(sel[0])
+
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
+        ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+    def show_malfunction_list(self):
+        win = tk.Toplevel(self.root)
+        win.title("Malfunctions")
+        lb = tk.Listbox(win, height=10, width=40)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        for m in self.malfunctions:
+            lb.insert(tk.END, m)
+
+        def add():
+            name = simpledialog.askstring("Add Malfunction", "Name:")
+            if name:
+                self.add_malfunction(name)
+                lb.insert(tk.END, name)
+
+        def rename():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Rename Malfunction", "Name:", initialvalue=current)
+            if not name:
+                return
+            self.malfunctions.remove(current)
+            self.add_malfunction(name)
+            lb.delete(sel[0])
+            lb.insert(sel[0], name)
+
+        def delete():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
+                self.malfunctions.remove(current)
+                lb.delete(sel[0])
+
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
+        ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+    def show_fault_list(self):
+        win = tk.Toplevel(self.root)
+        win.title("Faults")
+        lb = tk.Listbox(win, height=10, width=40)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        for f in self.faults:
+            lb.insert(tk.END, f)
+
+        def add():
+            name = simpledialog.askstring("Add Fault", "Name:")
+            if name:
+                self.add_fault(name)
+                lb.insert(tk.END, name)
+
+        def rename():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Rename Fault", "Name:", initialvalue=current)
+            if not name:
+                return
+            self.faults.remove(current)
+            self.add_fault(name)
+            lb.delete(sel[0])
+            lb.insert(sel[0], name)
+
+        def delete():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
+                self.faults.remove(current)
+                lb.delete(sel[0])
+
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
+        ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
+
+    def show_failure_list(self):
+        win = tk.Toplevel(self.root)
+        win.title("Failures")
+        lb = tk.Listbox(win, height=10, width=40)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.update_failure_list()
+        for fl in self.failures:
+            lb.insert(tk.END, fl)
+
+        def add():
+            name = simpledialog.askstring("Add Failure", "Name:")
+            if name:
+                self.add_failure(name)
+                lb.insert(tk.END, name)
+
+        def rename():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            name = simpledialog.askstring("Rename Failure", "Name:", initialvalue=current)
+            if not name:
+                return
+            self.failures.remove(current)
+            self.add_failure(name)
+            lb.delete(sel[0])
+            lb.insert(sel[0], name)
+
+        def delete():
+            sel = lb.curselection()
+            if not sel:
+                return
+            current = lb.get(sel[0])
+            if messagebox.askyesno("Delete", f"Delete '{current}'?"):
+                self.failures.remove(current)
+                lb.delete(sel[0])
+
+        btn = ttk.Frame(win)
+        btn.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(btn, text="Add", command=add).pack(fill=tk.X)
+        ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
+        ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
     def show_functional_insufficiency_list(self):
         win = tk.Toplevel(self.root)
@@ -12244,6 +12455,8 @@ class FaultTreeApp:
             "odd_libraries": self.odd_libraries,
             "faults": self.faults,
             "malfunctions": self.malfunctions,
+            "hazards": self.hazards,
+            "failures": self.failures,
             "project_properties": self.project_properties,
             "global_requirements": global_requirements,
             "reviews": reviews,
@@ -12329,6 +12542,8 @@ class FaultTreeApp:
                 "entries": entries,
                 "bom": doc.get("bom", ""),
             })
+
+        self.update_failure_list()
 
         # Link FMEA entries to the fault tree nodes so edits propagate
         node_map = {}
@@ -12441,6 +12656,7 @@ class FaultTreeApp:
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
+        self.update_hazard_list()
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
@@ -12472,6 +12688,8 @@ class FaultTreeApp:
         for m in data.get("malfunctions", []):
             append_unique_insensitive(mals, m)
         self.malfunctions = mals
+        self.hazards = data.get("hazards", [])
+        self.failures = data.get("failures", [])
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
