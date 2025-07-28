@@ -2652,22 +2652,24 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             messagebox.showinfo("Add Parts", "No block is linked to this diagram")
             return
         block = repo.elements[block_id]
+        diag = repo.diagrams.get(self.diagram_id)
+        if diag:
+            inherit_father_parts(repo, diag)
         ra_name = block.properties.get("analysis", "")
-        if not ra_name:
-            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
-            return
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
         ra = ra_map.get(ra_name)
-        if not ra or not ra.components:
+        if ra_name and (not ra or not ra.components):
             messagebox.showinfo("Add Parts", "Analysis has no components")
             return
-        comps = list(ra.components)
+        comps = list(ra.components) if ra_name and ra and ra.components else []
+        if not comps and not getattr(diag, "father", None):
+            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
+            return
         dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
         selected = dlg.result or []
         if not selected:
             return
-        diag = repo.diagrams.get(self.diagram_id)
         if diag is None:
             return
         diag.objects = getattr(diag, "objects", [])
