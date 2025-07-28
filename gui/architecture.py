@@ -994,6 +994,8 @@ class SysMLDiagramWindow(tk.Frame):
         if not diag or diag.diag_type != "Internal Block Diagram":
             return
         DiagramPropertiesDialog(self, diag)
+        self.objects = [SysMLObject(**o) for o in getattr(diag, "objects", [])]
+        self.sort_objects()
         self._sync_to_repository()
         self.redraw()
 
@@ -2658,6 +2660,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         diag = repo.diagrams.get(self.diagram_id)
         if diag:
             inherit_father_parts(repo, diag)
+            self.objects = [SysMLObject(**o) for o in getattr(diag, "objects", [])]
+            self.sort_objects()
         ra_name = block.properties.get("analysis", "")
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
@@ -2735,6 +2739,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             messagebox.showinfo("Add Parent Parts", "No father block assigned")
             return
         inherit_father_parts(repo, diag)
+        self.objects = [SysMLObject(**o) for o in getattr(diag, "objects", [])]
+        self.sort_objects()
         self.redraw()
         self._sync_to_repository()
 
