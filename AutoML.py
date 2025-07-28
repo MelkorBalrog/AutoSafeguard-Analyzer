@@ -946,7 +946,12 @@ class EditNodeDialog(simpledialog.Dialog):
 
         elif self.node.node_type.upper() == "BASIC EVENT":
             ttk.Label(safety_frame, text="Failure Probability:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-            self.prob_entry = tk.Entry(safety_frame, font=dialog_font)
+            self.prob_entry = tk.Entry(
+                safety_frame,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(self.register(self.validate_float), "%P"),
+            )
             self.prob_entry.grid(row=row_next, column=1, padx=5, pady=5)
             row_next += 1
 
@@ -1058,24 +1063,59 @@ class EditNodeDialog(simpledialog.Dialog):
                 row_next += 1
 
                 ttk.Label(safety_frame, text="FTTI:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.ftti_entry = tk.Entry(safety_frame, width=20, font=dialog_font)
+                self.ftti_entry = tk.Entry(
+                    safety_frame,
+                    width=20,
+                    font=dialog_font,
+                    validate="key",
+                    validatecommand=(self.register(self.validate_float), "%P"),
+                )
                 self.ftti_entry.insert(0, getattr(self.node, "ftti", ""))
                 self.ftti_entry.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="DC Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.dc_target_var = tk.DoubleVar(value=getattr(self.node, "sg_dc_target", 0.0))
-                tk.Entry(safety_frame, textvariable=self.dc_target_var, width=8).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                tk.Entry(
+                    safety_frame,
+                    textvariable=self.dc_target_var,
+                    width=8,
+                    validate="key",
+                    validatecommand=(self.register(self.validate_float), "%P"),
+                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="SPFM Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.spfm_target_var = tk.DoubleVar(value=getattr(self.node, "sg_spfm_target", 0.0))
-                tk.Entry(safety_frame, textvariable=self.spfm_target_var, width=8).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                tk.Entry(
+                    safety_frame,
+                    textvariable=self.spfm_target_var,
+                    width=8,
+                    validate="key",
+                    validatecommand=(self.register(self.validate_float), "%P"),
+                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="LPFM Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.lpfm_target_var = tk.DoubleVar(value=getattr(self.node, "sg_lpfm_target", 0.0))
-                tk.Entry(safety_frame, textvariable=self.lpfm_target_var, width=8).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                tk.Entry(
+                    safety_frame,
+                    textvariable=self.lpfm_target_var,
+                    width=8,
+                    validate="key",
+                    validatecommand=(self.register(self.validate_float), "%P"),
+                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                row_next += 1
+
+                ttk.Label(safety_frame, text="Acceptance Probability:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                self.acc_prob_var = tk.StringVar(value=str(getattr(self.node, "acceptance_prob", 1.0)))
+                tk.Entry(
+                    safety_frame,
+                    textvariable=self.acc_prob_var,
+                    width=8,
+                    validate="key",
+                    validatecommand=(self.register(self.validate_float), "%P"),
+                ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
                 row_next += 1
 
                 ttk.Label(safety_frame, text="Acceptance Criteria:").grid(row=row_next, column=0, padx=5, pady=5, sticky="ne")
@@ -1158,6 +1198,10 @@ class EditNodeDialog(simpledialog.Dialog):
                 width=8,
             )
             self.req_asil_combo.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+            ttk.Label(master, text="Validation Target:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            self.val_var = tk.StringVar(value=str(self.initial_req.get("validation_criteria", 0.0)))
+            tk.Entry(master, textvariable=self.val_var, state="readonly", width=10).grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
             self.type_var.set(self.initial_req.get("req_type", "vehicle"))
             self.req_entry.insert(0, self.initial_req.get("text", ""))
@@ -1343,71 +1387,6 @@ class EditNodeDialog(simpledialog.Dialog):
                 asil = a
         return asil
 
-    def compute_requirement_asil(self, req_id):
-        """Return highest ASIL across all safety goals linked to the requirement."""
-        goals = self.get_requirement_goal_names(req_id)
-        asil = "QM"
-        for g in goals:
-            a = self.app.get_safety_goal_asil(g)
-            if ASIL_ORDER.get(a, 0) > ASIL_ORDER.get(asil, 0):
-                asil = a
-        return asil
-
-    def update_requirement_asil(self, req_id):
-        req = global_requirements.get(req_id)
-        if not req:
-            return
-        req["asil"] = self.compute_requirement_asil(req_id)
-
-    def update_all_requirement_asil(self):
-        for rid, req in global_requirements.items():
-            if req.get("parent_id"):
-                continue  # keep decomposition ASIL
-            self.update_requirement_asil(rid)
-
-    def update_base_event_requirement_asil(self):
-        """Update ASIL for requirements allocated to base events."""
-        nodes_to_check = self.get_all_nodes(self.root_node)
-        nodes_to_check.extend(self.get_all_fmea_entries())
-
-        for node in nodes_to_check:
-            if getattr(node, "node_type", "").upper() != "BASIC EVENT":
-                continue
-            for req in getattr(node, "safety_requirements", []):
-                rid = req.get("id")
-                if not rid:
-                    continue
-                asil = self.compute_requirement_asil(rid)
-                req["asil"] = asil
-                if rid in global_requirements:
-                    global_requirements[rid]["asil"] = asil
-
-    def update_requirement_decomposition(self):
-        """Update ASIL values of decomposed child requirements."""
-        parent_map = {}
-        for req in global_requirements.values():
-            pid = req.get("parent_id")
-            if pid:
-                parent_map.setdefault(pid, []).append(req)
-
-        for pid, children in parent_map.items():
-            parent = global_requirements.get(pid)
-            if not parent or len(children) < 2:
-                continue
-            schemes = ASIL_DECOMP_SCHEMES.get(parent.get("asil", "QM"), [])
-            if not schemes:
-                continue
-            asil_a, asil_b = schemes[0]
-            children_sorted = sorted(children, key=lambda r: r.get("id"))
-            children_sorted[0]["asil"] = asil_a
-            children_sorted[1]["asil"] = asil_b
-
-    def ensure_asil_consistency(self):
-        """Sync safety goal ASILs from HARAs and update requirement ASILs."""
-        self.sync_hara_to_safety_goals()
-        self.update_hazard_list()
-        self.update_all_requirement_asil()
-        self.update_requirement_decomposition()
 
     def refresh_model(self):
         """Propagate changes to keep analyses synchronized."""
@@ -1504,10 +1483,13 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": dialog.result["text"],
                 "custom_id": custom_id,
                 "asil": asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM"),
+                "validation_criteria": 0.0,
                 "status": "draft",
                 "parent_id": ""
             }
             global_requirements[custom_id] = req
+
+        self.update_validation_criteria(custom_id)
 
         # Allocate this requirement to the current node if not already present.
         if not hasattr(self.node, "safety_requirements"):
@@ -1556,6 +1538,7 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
+        self.update_validation_criteria(new_custom_id)
         self.app.invalidate_reviews_for_requirement(new_custom_id)
         self.node.safety_requirements[index] = current_req
         self.safety_req_listbox.delete(index)
@@ -1598,6 +1581,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (A)",
             "custom_id": req_id_a,
             "asil": asil_a,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1607,6 +1591,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "text": base_text + " (B)",
             "custom_id": req_id_b,
             "asil": asil_b,
+            "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
@@ -1614,6 +1599,8 @@ class EditNodeDialog(simpledialog.Dialog):
         global_requirements[req.get("id")] = req
         global_requirements[req_id_a] = r1
         global_requirements[req_id_b] = r2
+        self.update_validation_criteria(req_id_a)
+        self.update_validation_criteria(req_id_b)
         del self.node.safety_requirements[index]
         self.node.safety_requirements.insert(index, r2)
         self.node.safety_requirements.insert(index, r1)
@@ -1681,6 +1668,15 @@ class EditNodeDialog(simpledialog.Dialog):
     def on_enter_pressed(self, event):
         event.widget.insert("insert", "\n")
         return "break"
+
+    def validate_float(self, value):
+        if value in ("", "-", "+", ".", "-.", "+."):
+            return True
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
 
     def update_probability(self, *_):
         if hasattr(self, "prob_entry"):
@@ -1790,6 +1786,10 @@ class EditNodeDialog(simpledialog.Dialog):
                     target_node.sg_lpfm_target = float(self.lpfm_target_var.get())
                 except Exception:
                     target_node.sg_lpfm_target = 0.0
+                try:
+                    target_node.acceptance_prob = float(self.acc_prob_var.get())
+                except Exception:
+                    target_node.acceptance_prob = 1.0
                 target_node.acceptance_criteria = self.ac_text.get("1.0", "end-1c")
             else:
                 target_node.is_page = self.is_page_var.get()
@@ -10104,9 +10104,11 @@ class FaultTreeApp:
                     "req_type": dialog.result["req_type"],
                     "text": dialog.result["text"],
                     "custom_id": custom_id,
-                    "asil": dialog.result.get("asil", "QM")
+                    "asil": dialog.result.get("asil", "QM"),
+                    "validation_criteria": 0.0
                 }
                 global_requirements[custom_id] = req
+            self.app.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
@@ -10132,6 +10134,7 @@ class FaultTreeApp:
             current_req["custom_id"] = new_custom_id
             current_req["id"] = new_custom_id
             global_requirements[new_custom_id] = current_req
+            self.app.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
             desc = f"[{current_req['req_type']}] [{current_req.get('asil','')}] {current_req['text']}"
@@ -10875,7 +10878,7 @@ class FaultTreeApp:
         self._sg_tab = self._new_tab("Safety Goals")
         win = self._sg_tab
 
-        columns = ["ID", "ASIL", "Safe State", "FTTI", "Acceptance", "Description"]
+        columns = ["ID", "ASIL", "Safe State", "FTTI", "Prob", "Acceptance", "Description"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
             tree.heading(c, text=c)
@@ -10894,6 +10897,7 @@ class FaultTreeApp:
                         sg.safety_goal_asil,
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
+                        getattr(sg, "acceptance_prob", ""),
                         getattr(sg, "acceptance_criteria", ""),
                         sg.safety_goal_description,
                     ],
@@ -10919,17 +10923,21 @@ class FaultTreeApp:
 
                 ttk.Label(master, text="FTTI:").grid(row=3, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
-                tk.Entry(master, textvariable=self.ftti_var).grid(row=3, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.ftti_var, validate="key", validatecommand=(master.register(parent.validate_float), "%P")).grid(row=3, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=4, column=0, sticky="ne")
+                ttk.Label(master, text="Acceptance Prob:").grid(row=4, column=0, sticky="e")
+                self.prob_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_prob", 1.0)))
+                tk.Entry(master, textvariable=self.prob_var, validate="key", validatecommand=(master.register(parent.validate_float), "%P")).grid(row=4, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=5, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=4, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=5, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=6, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=5, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=6, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -10938,6 +10946,7 @@ class FaultTreeApp:
                     "asil": self.asil_var.get().strip(),
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
+                    "prob": self.prob_var.get().strip(),
                     "accept": self.acc_text.get("1.0", "end-1c"),
                     "desc": self.desc_text.get("1.0", "end-1c"),
                 }
@@ -10949,6 +10958,10 @@ class FaultTreeApp:
                 node.safety_goal_asil = dlg.result["asil"]
                 node.safe_state = dlg.result["state"]
                 node.ftti = dlg.result["ftti"]
+                try:
+                    node.acceptance_prob = float(dlg.result["prob"])
+                except Exception:
+                    node.acceptance_prob = 1.0
                 node.acceptance_criteria = dlg.result["accept"]
                 node.safety_goal_description = dlg.result["desc"]
                 self.top_events.append(node)
@@ -10967,6 +10980,10 @@ class FaultTreeApp:
                 sg.safety_goal_asil = dlg.result["asil"]
                 sg.safe_state = dlg.result["state"]
                 sg.ftti = dlg.result["ftti"]
+                try:
+                    sg.acceptance_prob = float(dlg.result["prob"])
+                except Exception:
+                    sg.acceptance_prob = 1.0
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
                 refresh_tree()
@@ -14042,11 +14059,49 @@ class FaultTreeApp:
                 asil = a
         return asil
 
+    def find_safety_goal_node(self, name):
+        for te in self.top_events:
+            if name in (te.safety_goal_description, te.user_name):
+                return te
+        return None
+
+    def compute_validation_criteria(self, req_id):
+        goals = self.get_requirement_goal_names(req_id)
+        vals = []
+        for g in goals:
+            sg = self.find_safety_goal_node(g)
+            if not sg:
+                continue
+            try:
+                acc = float(getattr(sg, "acceptance_prob", 1.0))
+            except (TypeError, ValueError):
+                acc = 1.0
+            try:
+                sev = float(getattr(sg, "severity", 3)) / 3.0
+            except (TypeError, ValueError):
+                sev = 1.0
+            try:
+                cont = float(getattr(sg, "controllability", 3)) / 3.0
+            except (TypeError, ValueError):
+                cont = 1.0
+            vals.append(acc * sev * cont)
+        return sum(vals) / len(vals) if vals else 0.0
+
+    def update_validation_criteria(self, req_id):
+        req = global_requirements.get(req_id)
+        if not req:
+            return
+        req["validation_criteria"] = self.compute_validation_criteria(req_id)
+
     def update_requirement_asil(self, req_id):
         req = global_requirements.get(req_id)
         if not req:
             return
         req["asil"] = self.compute_requirement_asil(req_id)
+
+    def update_all_validation_criteria(self):
+        for rid in global_requirements:
+            self.update_validation_criteria(rid)
 
     def update_all_requirement_asil(self):
         for rid, req in global_requirements.items():
@@ -14073,6 +14128,7 @@ class FaultTreeApp:
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
+        self.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
@@ -14327,6 +14383,7 @@ class FaultTreeNode:
         self.safety_goal_asil = ""
         self.safe_state = ""
         self.ftti = ""
+        self.acceptance_prob = 1.0
         self.acceptance_criteria = ""
         # Targets for safety goal metrics
         self.sg_dc_target = 0.0
@@ -14398,6 +14455,7 @@ class FaultTreeNode:
             "safety_goal_asil": self.safety_goal_asil,
             "safe_state": self.safe_state,
             "ftti": self.ftti,
+            "acceptance_prob": self.acceptance_prob,
             "acceptance_criteria": self.acceptance_criteria,
             "sg_dc_target": self.sg_dc_target,
             "sg_spfm_target": self.sg_spfm_target,
@@ -14457,6 +14515,7 @@ class FaultTreeNode:
         node.safety_goal_asil = data.get("safety_goal_asil", "")
         node.safe_state = data.get("safe_state", "")
         node.ftti = data.get("ftti", "")
+        node.acceptance_prob = data.get("acceptance_prob", 1.0)
         node.acceptance_criteria = data.get("acceptance_criteria", "")
         node.sg_dc_target = data.get("sg_dc_target", 0.0)
         node.sg_spfm_target = data.get("sg_spfm_target", 0.0)
