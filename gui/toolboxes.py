@@ -124,6 +124,42 @@ class _SelectTriggeringConditionsDialog(simpledialog.Dialog):
         self.result = [self.lb.get(i) for i in self.lb.curselection()]
 
 
+class _SelectFunctionsDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing functions."""
+
+    def __init__(self, parent, names):
+        self.names = names
+        super().__init__(parent, title="Select Functions")
+
+    def body(self, master):
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for name in sorted(self.names):
+            self.lb.insert(tk.END, name)
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+
+
+class _SelectHazardsDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing hazards."""
+
+    def __init__(self, parent, names):
+        self.names = names
+        super().__init__(parent, title="Select Hazards")
+
+    def body(self, master):
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for name in sorted(self.names):
+            self.lb.insert(tk.END, name)
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+
+
 class ReliabilityWindow(tk.Frame):
     def __init__(self, master, app):
         if isinstance(master, tk.Toplevel):
@@ -964,7 +1000,10 @@ class FI2TCWindow(tk.Frame):
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
+            self.update_known_use_case()
 
         def apply(self):
             for col, widget in self.widgets.items():
@@ -1093,6 +1132,124 @@ class FI2TCWindow(tk.Frame):
             sel = list(self.mit_lb.curselection())
             for idx in reversed(sel):
                 self.mit_lb.delete(idx)
+
+        def add_func_existing(self):
+            dlg = _SelectFunctionsDialog(self, self.func_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.func_lb.get(0, tk.END):
+                        self.func_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def del_func(self):
+            sel = list(self.func_lb.curselection())
+            for idx in reversed(sel):
+                self.func_lb.delete(idx)
+            self.update_known_use_case()
+
+        def add_haz_new(self):
+            name = simpledialog.askstring("Hazard", "Name:")
+            if name:
+                if name not in self.haz_lb.get(0, tk.END):
+                    self.haz_lb.insert(tk.END, name)
+                sev_widget = self.widgets.get("severity")
+                sev = sev_widget.get() if isinstance(sev_widget, tk.StringVar) else "1"
+                self.app.add_hazard(name)
+                self.app.update_hazard_severity(name, sev)
+
+        def add_haz_existing(self):
+            dlg = _SelectHazardsDialog(self, self.app.hazards)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.haz_lb.get(0, tk.END):
+                        self.haz_lb.insert(tk.END, val)
+
+        def edit_haz(self):
+            sel = self.haz_lb.curselection()
+            if not sel:
+                return
+            current = self.haz_lb.get(sel[0])
+            name = simpledialog.askstring("Hazard", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_hazard(current, name)
+                self.haz_lb.delete(sel[0])
+                self.haz_lb.insert(sel[0], name)
+
+        def del_haz(self):
+            sel = list(self.haz_lb.curselection())
+            for idx in reversed(sel):
+                self.haz_lb.delete(idx)
+
+        def update_known_use_case(self):
+            if not hasattr(self, "kuc_widget"):
+                return
+            funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            ucs = []
+            for f in funcs:
+                uc = self.app.get_use_case_for_function(f)
+                if uc and uc not in ucs:
+                    ucs.append(uc)
+            self.kuc_widget.delete("1.0", tk.END)
+            self.kuc_widget.insert("1.0", ";".join(ucs))
+
+        def add_func_existing(self):
+            dlg = _SelectFunctionsDialog(self, self.func_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.func_lb.get(0, tk.END):
+                        self.func_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def del_func(self):
+            sel = list(self.func_lb.curselection())
+            for idx in reversed(sel):
+                self.func_lb.delete(idx)
+            self.update_known_use_case()
+
+        def add_haz_new(self):
+            name = simpledialog.askstring("Hazard", "Name:")
+            if name:
+                if name not in self.haz_lb.get(0, tk.END):
+                    self.haz_lb.insert(tk.END, name)
+                sev_widget = self.widgets.get("severity")
+                sev = sev_widget.get() if isinstance(sev_widget, tk.StringVar) else "1"
+                self.app.add_hazard(name)
+                self.app.update_hazard_severity(name, sev)
+
+        def add_haz_existing(self):
+            dlg = _SelectHazardsDialog(self, self.app.hazards)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.haz_lb.get(0, tk.END):
+                        self.haz_lb.insert(tk.END, val)
+
+        def edit_haz(self):
+            sel = self.haz_lb.curselection()
+            if not sel:
+                return
+            current = self.haz_lb.get(sel[0])
+            name = simpledialog.askstring("Hazard", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_hazard(current, name)
+                self.haz_lb.delete(sel[0])
+                self.haz_lb.insert(sel[0], name)
+
+        def del_haz(self):
+            sel = list(self.haz_lb.curselection())
+            for idx in reversed(sel):
+                self.haz_lb.delete(idx)
+
+        def update_known_use_case(self):
+            if not hasattr(self, "kuc_widget"):
+                return
+            funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            ucs = []
+            for f in funcs:
+                uc = self.app.get_use_case_for_function(f)
+                if uc and uc not in ucs:
+                    ucs.append(uc)
+            self.kuc_widget.delete("1.0", tk.END)
+            self.kuc_widget.insert("1.0", ";".join(ucs))
 
         def add_dm_new(self):
             dlg = _RequirementDialog(self)
@@ -2126,7 +2283,6 @@ class TC2FIWindow(tk.Frame):
                 "Known Env/Operational Condition": [
                     "id",
                     "known_use_case",
-                    "impacted_function",
                     "arch_elements",
                     "interfaces",
                     "scene",
@@ -2136,7 +2292,10 @@ class TC2FIWindow(tk.Frame):
                     "triggering_conditions",
                 ],
                 "Mitigations": ["mitigation", "acceptance"],
-                "Affected Functions Identification": ["functional_insufficiencies"],
+                "Affected Functions Identification": [
+                    "impacted_function",
+                    "functional_insufficiencies",
+                ],
                 "Effects": ["vehicle_effect", "severity"],
                 "Design Measures": [
                     "design_measures",
@@ -2169,9 +2328,7 @@ class TC2FIWindow(tk.Frame):
                     )
                 else:
                     opts = func_names
-                if "impacted_function" in self.widgets:
-                    w = self.widgets["impacted_function_widget"]
-                    w["values"] = opts
+                self.func_options = opts
 
             for col in TC2FIWindow.COLS:
                 frame, r = get_frame(col)
@@ -2232,13 +2389,29 @@ class TC2FIWindow(tk.Frame):
                     ttk.Button(tc_frame, text="Add Existing", command=self.add_tc_existing).grid(row=1, column=3, padx=2, pady=2)
                     self.widgets[col] = self.tc_lb
                 elif col == "impacted_function":
-                    var = tk.StringVar(value=self.data.get(col, ""))
-                    cb = ttk.Combobox(
-                        frame, textvariable=var, values=func_names, state="readonly"
-                    )
-                    cb.grid(row=r, column=1, padx=5, pady=2)
-                    self.widgets[col] = var
-                    self.widgets["impacted_function_widget"] = cb
+                    func_frame = ttk.Frame(frame)
+                    func_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.func_lb = tk.Listbox(func_frame, selectmode="extended", height=4, exportselection=False)
+                    self.func_lb.grid(row=0, column=0, columnspan=3, padx=2, pady=2)
+                    existing = [f.strip() for f in self.data.get(col, "").split(",") if f.strip()]
+                    for val in existing:
+                        self.func_lb.insert(tk.END, val)
+                    ttk.Button(func_frame, text="Add Existing", command=self.add_func_existing).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(func_frame, text="Remove", command=self.del_func).grid(row=1, column=1, padx=2, pady=2)
+                    self.widgets[col] = self.func_lb
+                elif col == "vehicle_effect":
+                    haz_frame = ttk.Frame(frame)
+                    haz_frame.grid(row=r, column=1, padx=5, pady=2, sticky="w")
+                    self.haz_lb = tk.Listbox(haz_frame, selectmode="extended", height=4, exportselection=False)
+                    self.haz_lb.grid(row=0, column=0, columnspan=4, padx=2, pady=2)
+                    existing = [h.strip() for h in self.data.get(col, "").split(",") if h.strip()]
+                    for val in existing:
+                        self.haz_lb.insert(tk.END, val)
+                    ttk.Button(haz_frame, text="Add New", command=self.add_haz_new).grid(row=1, column=0, padx=2, pady=2)
+                    ttk.Button(haz_frame, text="Edit", command=self.edit_haz).grid(row=1, column=1, padx=2, pady=2)
+                    ttk.Button(haz_frame, text="Delete", command=self.del_haz).grid(row=1, column=2, padx=2, pady=2)
+                    ttk.Button(haz_frame, text="Add Existing", command=self.add_haz_existing).grid(row=1, column=3, padx=2, pady=2)
+                    self.widgets[col] = self.haz_lb
                 elif col == "arch_elements":
                     var = tk.StringVar(value=self.data.get(col, ""))
                     cb = ttk.Combobox(
@@ -2276,7 +2449,10 @@ class TC2FIWindow(tk.Frame):
                     txt.insert("1.0", self.data.get(col, ""))
                     txt.grid(row=r, column=1, padx=5, pady=2)
                     self.widgets[col] = txt
+                    if col == "known_use_case":
+                        self.kuc_widget = txt
             refresh_funcs()
+            self.update_known_use_case()
 
         def apply(self):
             for col, widget in self.widgets.items():
@@ -2405,6 +2581,66 @@ class TC2FIWindow(tk.Frame):
             sel = list(self.mit_lb.curselection())
             for idx in reversed(sel):
                 self.mit_lb.delete(idx)
+
+        def add_func_existing(self):
+            dlg = _SelectFunctionsDialog(self, self.func_options)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.func_lb.get(0, tk.END):
+                        self.func_lb.insert(tk.END, val)
+                self.update_known_use_case()
+
+        def del_func(self):
+            sel = list(self.func_lb.curselection())
+            for idx in reversed(sel):
+                self.func_lb.delete(idx)
+            self.update_known_use_case()
+
+        def add_haz_new(self):
+            name = simpledialog.askstring("Hazard", "Name:")
+            if name:
+                if name not in self.haz_lb.get(0, tk.END):
+                    self.haz_lb.insert(tk.END, name)
+                sev_widget = self.widgets.get("severity")
+                sev = sev_widget.get() if isinstance(sev_widget, tk.StringVar) else "1"
+                self.app.add_hazard(name)
+                self.app.update_hazard_severity(name, sev)
+
+        def add_haz_existing(self):
+            dlg = _SelectHazardsDialog(self, self.app.hazards)
+            if getattr(dlg, "result", None):
+                for val in dlg.result:
+                    if val not in self.haz_lb.get(0, tk.END):
+                        self.haz_lb.insert(tk.END, val)
+
+        def edit_haz(self):
+            sel = self.haz_lb.curselection()
+            if not sel:
+                return
+            current = self.haz_lb.get(sel[0])
+            name = simpledialog.askstring("Hazard", "Name:", initialvalue=current)
+            if name and name != current:
+                self.app.rename_hazard(current, name)
+                self.haz_lb.delete(sel[0])
+                self.haz_lb.insert(sel[0], name)
+
+        def del_haz(self):
+            sel = list(self.haz_lb.curselection())
+            for idx in reversed(sel):
+                self.haz_lb.delete(idx)
+
+        def update_known_use_case(self):
+            if not hasattr(self, "kuc_widget"):
+                return
+            funcs = list(self.func_lb.get(0, tk.END)) if hasattr(self, "func_lb") else []
+            ucs = []
+            for f in funcs:
+                uc = self.app.get_use_case_for_function(f)
+                if uc and uc not in ucs:
+                    ucs.append(uc)
+            self.kuc_widget.delete("1.0", tk.END)
+            self.kuc_widget.insert("1.0", ";".join(ucs))
+
     def add_row(self):
         dlg = self.RowDialog(self, self.app)
         if getattr(dlg, "result", None):
