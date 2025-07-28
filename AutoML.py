@@ -9288,7 +9288,21 @@ class FaultTreeApp:
         ttk.Button(btn, text="Rename", command=rename).pack(fill=tk.X)
         ttk.Button(btn, text="Delete", command=delete).pack(fill=tk.X)
 
-        refresh()
+    # ------------------------------------------------------------------
+    # Compatibility wrappers
+    # ------------------------------------------------------------------
+
+    def show_hazard_editor(self):
+        """Backward compatible alias for :meth:`show_hazard_list`."""
+        self.show_hazard_list()
+
+    def show_fault_editor(self):
+        """Backward compatible alias for :meth:`show_fault_list`."""
+        self.show_fault_list()
+
+    def show_failure_editor(self):
+        """Backward compatible alias for :meth:`show_failure_list`."""
+        self.show_failure_list()
 
     def show_functional_insufficiency_list(self):
         win = tk.Toplevel(self.root)
