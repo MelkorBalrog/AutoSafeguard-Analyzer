@@ -1902,9 +1902,17 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
 
     def remove_object(self, obj: SysMLObject) -> None:
+        removed_ids = {obj.obj_id}
         if obj in self.objects:
             self.objects.remove(obj)
-        self.connections = [c for c in self.connections if c.src != obj.obj_id and c.dst != obj.obj_id]
+        if obj.obj_type == "Part":
+            before = {o.obj_id for o in self.objects}
+            remove_orphan_ports(self.objects)
+            removed_ids.update(before - {o.obj_id for o in self.objects})
+        self.connections = [
+            c for c in self.connections
+            if c.src not in removed_ids and c.dst not in removed_ids
+        ]
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag and obj.element_id in diag.elements:
             diag.elements.remove(obj.element_id)
