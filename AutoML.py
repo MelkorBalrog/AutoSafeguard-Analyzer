@@ -9866,7 +9866,6 @@ class FaultTreeApp:
 
         def refresh():
             lb.delete(0, tk.END)
-            self.update_failure_list()
             for fl in self.failures:
                 lb.insert(tk.END, fl)
 
