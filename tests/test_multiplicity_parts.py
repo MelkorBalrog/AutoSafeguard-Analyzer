@@ -37,5 +37,20 @@ class MultiplicityPartTests(unittest.TestCase):
         ]
         self.assertEqual(len(objs), 4)
 
+    def test_update_existing_parts(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="P")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "1")
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "3")
+        names = [
+            repo.elements[o["element_id"]].name
+            for o in ibd.objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(names, ["P[1]", "P[2]", "P[3]"])
+
 if __name__ == "__main__":
     unittest.main()

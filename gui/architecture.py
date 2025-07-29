@@ -471,6 +471,15 @@ def add_multiplicity_parts(
 
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
+
+    # rename existing part elements so their names follow the indexing scheme
+    for idx, obj in enumerate(existing):
+        elem = repo.elements.get(obj.get("element_id"))
+        if elem:
+            expected = f"{base_name}[{idx + 1}]"
+            if elem.name != expected:
+                elem.name = expected
+
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(diag.objects)
     for i in range(total, target_total):
