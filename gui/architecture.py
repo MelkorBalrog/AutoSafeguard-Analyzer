@@ -4820,6 +4820,8 @@ class ConnectionDialog(simpledialog.Dialog):
         super().__init__(master, title="Connection Properties")
 
     def body(self, master):
+        # Disable window resizing so the property layout stays consistent
+        self.resizable(False, False)
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=self.connection.name)
         ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, columnspan=2, padx=4, pady=4, sticky="we")
