@@ -2102,6 +2102,10 @@ class SysMLDiagramWindow(tk.Frame):
                 "Flow",
                 "Connector",
                 "Generalization",
+                "Generalize",
+                "Communication Path",
+                "Aggregation",
+                "Composite Aggregation",
             )
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
