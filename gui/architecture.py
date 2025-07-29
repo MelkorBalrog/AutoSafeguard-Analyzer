@@ -772,6 +772,42 @@ def set_ibd_father(
     return added
 
 
+def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
+    """Sync the father block's ``partProperties`` from diagram part objects."""
+
+    if diagram.diag_type != "Internal Block Diagram":
+        return
+    block_id = getattr(diagram, "father", None)
+    if not block_id:
+        block_id = next((eid for eid, did in repo.element_diagrams.items() if did == diagram.diag_id), None)
+    if not block_id or block_id not in repo.elements:
+        return
+    block = repo.elements[block_id]
+    names = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    bases = [n.split("[")[0].strip() for n in names]
+    changed = False
+    for obj in getattr(diagram, "objects", []):
+        if obj.get("obj_type") != "Part":
+            continue
+        def_id = obj.get("properties", {}).get("definition")
+        if def_id and def_id in repo.elements:
+            name = repo.elements[def_id].name or def_id
+            if name not in bases:
+                names.append(name)
+                bases.append(name)
+                changed = True
+    if changed:
+        joined = ", ".join(names)
+        block.properties["partProperties"] = joined
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == block_id:
+                    o.setdefault("properties", {})["partProperties"] = joined
+        for child_id in _find_generalization_children(repo, block_id):
+            inherit_block_properties(repo, child_id)
+        repo.touch_element(block_id)
+
+
 def remove_aggregation_part(
     repo: SysMLRepository,
     whole_id: str,
@@ -3868,6 +3904,7 @@ class SysMLDiagramWindow(tk.Frame):
         if diag:
             diag.objects = [obj.__dict__ for obj in self.objects]
             diag.connections = [conn.__dict__ for conn in self.connections]
+            update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             _sync_block_parts_from_ibd(self.repo, self.diagram_id)
 
