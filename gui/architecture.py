@@ -682,7 +682,10 @@ class SysMLDiagramWindow(tk.Frame):
                         return None
                     new_dir_a = "out" if dir_a == "out" else "in"
                     new_dir_b = "out" if dir_b == "out" else "in"
-                    for c in self.connections:
+                    connections = getattr(self, "connections", None)
+                    if connections is None:
+                        return False, "Inconsistent data flow on port"
+                    for c in connections:
                         if c.conn_type != "Connector":
                             continue
                         if src.obj_id in (c.src, c.dst):
@@ -1938,6 +1941,40 @@ class SysMLDiagramWindow(tk.Frame):
             width=width,
         )
 
+    def _draw_center_triangle(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw a filled triangular indicator at the midpoint from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        mx = (start[0] + end[0]) / 2
+        my = (start[1] + end[1]) / 2
+        ux = dx / length
+        uy = dy / length
+        size = 10 * self.zoom
+        tip = (mx + ux * size / 2, my + uy * size / 2)
+        base_cx = mx - ux * size / 2
+        base_cy = my - uy * size / 2
+        px = -uy
+        py = ux
+        base1 = (base_cx + px * size / 2, base_cy + py * size / 2)
+        base2 = (base_cx - px * size / 2, base_cy - py * size / 2)
+        self.canvas.create_polygon(
+            tip,
+            base1,
+            base2,
+            fill=color,
+            outline=color,
+            width=width,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -2368,66 +2405,17 @@ class SysMLDiagramWindow(tk.Frame):
             if mid_idx > 0:
                 mstart = points[mid_idx - 1]
                 mend = points[mid_idx]
-                if open_arrow or conn.conn_type in ("Generalize", "Generalization"):
-                    if mid_forward:
-                        self._draw_open_arrow(mstart, mend, color=color, width=width)
-                    elif mid_backward:
-                        self._draw_open_arrow(mend, mstart, color=color, width=width)
-                else:
-                    if mid_forward or not mid_backward:
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.LAST,
-                            fill=color,
-                            width=width,
-                        )
-                    if mid_backward:
-                        self.canvas.create_line(
-                            mend[0],
-                            mend[1],
-                            mstart[0],
-                            mstart[1],
-                            arrow=tk.LAST,
-                            fill=color,
-                            width=width,
-                        )
                 if flow_port:
                     direction = flow_port.properties.get("direction", "")
                     if flow_port is b:
                         direction = "in" if direction == "out" else "out" if direction == "in" else direction
                     if direction == "inout":
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.BOTH,
-                            fill=color,
-                            width=width,
-                        )
+                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                        self._draw_center_triangle(mend, mstart, color=color, width=width)
                     elif direction == "in":
-                        self.canvas.create_line(
-                            mend[0],
-                            mend[1],
-                            mstart[0],
-                            mstart[1],
-                            arrow=tk.LAST,
-                            fill=color,
-                            width=width,
-                        )
+                        self._draw_center_triangle(mend, mstart, color=color, width=width)
                     else:
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.LAST,
-                            fill=color,
-                            width=width,
-                        )
+                        self._draw_center_triangle(mstart, mend, color=color, width=width)
                     mx = (mstart[0] + mend[0]) / 2
                     my = (mstart[1] + mend[1]) / 2
                     self.canvas.create_text(
@@ -2436,6 +2424,11 @@ class SysMLDiagramWindow(tk.Frame):
                         text=flow_name,
                         font=self.font,
                     )
+                else:
+                    if mid_forward or not mid_backward:
+                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                    if mid_backward:
+                        self._draw_center_triangle(mend, mstart, color=color, width=width)
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
@@ -3401,7 +3394,7 @@ class ConnectionDialog(simpledialog.Dialog):
         self.arrow_cb.grid(row=3, column=1, padx=4, pady=4)
         self.mid_var = tk.BooleanVar(value=self.connection.mid_arrow)
         self.mid_check = ttk.Checkbutton(
-            master, text="Middle Arrow", variable=self.mid_var
+            master, text="Arrow", variable=self.mid_var
         )
         self.mid_check.grid(row=3, column=2, padx=4, pady=4)
         if self.connection.conn_type in (
