@@ -2347,11 +2347,23 @@ class SysMLDiagramWindow(tk.Frame):
             if backward:
                 self._draw_open_arrow(points[1], points[0], color=color, width=width)
         elif conn.conn_type in ("Generalize", "Generalization"):
+            # SysML uses an open triangular arrow head for generalization
+            # relationships. Use the open arrow drawing helper so the arrow
+            # interior matches the canvas background (typically white).
             if forward:
-                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
             if backward:
                 self._draw_filled_arrow(points[1], points[0], color=color, width=width)
-        if conn.mid_arrow:
+        flow_port = None
+        flow_name = ""
+        if a.obj_type == "Port" and a.properties.get("flow"):
+            flow_port = a
+            flow_name = a.properties.get("flow", "")
+        elif b.obj_type == "Port" and b.properties.get("flow"):
+            flow_port = b
+            flow_name = b.properties.get("flow", "")
+
+        if conn.mid_arrow or flow_port:
             mid_idx = len(points) // 2
             if mid_idx > 0:
                 mstart = points[mid_idx - 1]
@@ -2382,6 +2394,48 @@ class SysMLDiagramWindow(tk.Frame):
                             fill=color,
                             width=width,
                         )
+                if flow_port:
+                    direction = flow_port.properties.get("direction", "")
+                    if flow_port is b:
+                        direction = "in" if direction == "out" else "out" if direction == "in" else direction
+                    if direction == "inout":
+                        self.canvas.create_line(
+                            mstart[0],
+                            mstart[1],
+                            mend[0],
+                            mend[1],
+                            arrow=tk.BOTH,
+                            fill=color,
+                            width=width,
+                        )
+                    elif direction == "in":
+                        self.canvas.create_line(
+                            mend[0],
+                            mend[1],
+                            mstart[0],
+                            mstart[1],
+                            arrow=tk.LAST,
+                            fill=color,
+                            width=width,
+                        )
+                    else:
+                        self.canvas.create_line(
+                            mstart[0],
+                            mstart[1],
+                            mend[0],
+                            mend[1],
+                            arrow=tk.LAST,
+                            fill=color,
+                            width=width,
+                        )
+                    mx = (mstart[0] + mend[0]) / 2
+                    my = (mstart[1] + mend[1]) / 2
+                    self.canvas.create_text(
+                        mx,
+                        my - 10 * self.zoom,
+                        text=flow_name,
+                        font=self.font,
+                    )
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:

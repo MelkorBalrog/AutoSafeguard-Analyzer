@@ -253,6 +253,8 @@ from analysis.user_config import (
     load_user_config,
     save_user_config,
     set_current_user,
+    load_all_users,
+    set_last_user,
     CURRENT_USER_NAME,
     CURRENT_USER_EMAIL,
 )
@@ -385,6 +387,42 @@ class UserInfoDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = (self.name_var.get().strip(), self.email_var.get().strip())
+
+
+class UserSelectDialog(simpledialog.Dialog):
+    """Prompt to select a user from a list."""
+
+    def __init__(self, parent, users, last_user=""):
+        self._users = users
+        self._last_user = last_user
+        super().__init__(parent, title="Select User")
+
+    def body(self, master):
+        self.resizable(False, False)
+        ttk.Label(master, text="User:").grid(row=0, column=0, sticky="e")
+        names = list(self._users.keys()) + ["New User..."]
+        self.name_var = tk.StringVar(value=self._last_user if self._last_user in self._users else names[0])
+        self.name_cb = ttk.Combobox(master, textvariable=self.name_var, values=names, state="readonly")
+        self.name_cb.grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(master, text="Email:").grid(row=1, column=0, sticky="e")
+        self.email_var = tk.StringVar()
+        self.email_entry = ttk.Entry(master, textvariable=self.email_var, state="disabled")
+        self.email_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.name_cb.bind("<<ComboboxSelected>>", self._on_select)
+        self._on_select()
+        return self.name_cb
+
+    def _on_select(self, event=None):
+        name = self.name_var.get()
+        if name in self._users:
+            self.email_var.set(self._users[name])
+            self.email_entry.config(state="disabled")
+        else:
+            self.email_var.set("")
+            self.email_entry.config(state="normal")
+
+    def apply(self):
+        self.result = (self.name_var.get(), self.email_var.get().strip())
 
 
 class ClosableNotebook(ttk.Notebook):
@@ -15550,15 +15588,25 @@ def main():
     root = tk.Tk()
     # Hide the main window while prompting for user info
     root.withdraw()
-    name, email = load_user_config()
-    if not name or not email:
-        dlg = UserInfoDialog(root, name, email)
+    users = load_all_users()
+    last_name, last_email = load_user_config()
+    if users:
+        dlg = UserSelectDialog(root, users, last_name)
+        if dlg.result:
+            name, email = dlg.result
+            if name == "New User...":
+                info = UserInfoDialog(root, "", "").result
+                if info:
+                    name, email = info
+                    save_user_config(name, email)
+            else:
+                email = users.get(name, email)
+                set_last_user(name)
+    else:
+        dlg = UserInfoDialog(root, last_name, last_email)
         if dlg.result:
             name, email = dlg.result
             save_user_config(name, email)
-    else:
-        # User information already stored
-        pass
     set_current_user(name, email)
     # Create a fresh helper each session:
     global AutoML_Helper
