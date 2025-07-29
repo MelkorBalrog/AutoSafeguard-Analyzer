@@ -129,6 +129,108 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
                 o.setdefault("properties", {})["partProperties"] = joined
 
 
+def _find_blocks_with_part(repo: SysMLRepository, part_id: str, old_name: str | None = None) -> set[str]:
+    """Return all blocks that include ``part_id`` as a part."""
+    blocks: set[str] = set()
+    # check diagrams for part objects referencing the block
+    for blk_id, diag_id in repo.element_diagrams.items():
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
+            continue
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") != "Part":
+                continue
+            if obj.get("properties", {}).get("definition") == part_id:
+                blocks.add(blk_id)
+                break
+    # also check property strings if old name provided
+    if old_name is not None:
+        for blk_id, elem in repo.elements.items():
+            if elem.elem_type != "Block":
+                continue
+            parts = [p.strip() for p in elem.properties.get("partProperties", "").split(",") if p.strip()]
+            for val in parts:
+                base = val.split("[")[0].strip()
+                if base == old_name:
+                    blocks.add(blk_id)
+                    break
+    return blocks
+
+
+def _replace_part_name(repo: SysMLRepository, block_id: str, old_name: str, new_name: str) -> None:
+    """Replace occurrences of *old_name* with *new_name* in block's part list."""
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    parts = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    changed = False
+    for idx, val in enumerate(parts):
+        base = val.split("[")[0].strip()
+        suffix = val[len(base):]
+        if base == old_name:
+            parts[idx] = new_name + suffix
+            changed = True
+    if changed:
+        block.properties["partProperties"] = ", ".join(parts)
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == block_id:
+                    o.setdefault("properties", {})["partProperties"] = block.properties["partProperties"]
+
+
+def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
+    """Return all blocks that generalize ``parent_id``."""
+    children: set[str] = set()
+    for rel in repo.relationships:
+        if rel.rel_type == "Generalization" and rel.target == parent_id:
+            children.add(rel.source)
+    return children
+
+
+def _find_generalization_descendants(repo: SysMLRepository, parent_id: str, visited=None) -> list[str]:
+    """Return all generalization descendants of ``parent_id`` in parent-first order."""
+    if visited is None:
+        visited = set()
+    descendants: list[str] = []
+    for child in _find_generalization_children(repo, parent_id):
+        if child in visited:
+            continue
+        visited.add(child)
+        descendants.append(child)
+        descendants.extend(_find_generalization_descendants(repo, child, visited))
+    return descendants
+
+
+def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
+    """Rename ``block_id`` and propagate changes to related blocks."""
+    block = repo.elements.get(block_id)
+    if not block or block.elem_type != "Block":
+        return
+    old_name = block.name
+    if old_name == new_name:
+        return
+    block.name = new_name
+    # update part elements referencing this block
+    for elem in repo.elements.values():
+        if elem.elem_type == "Part" and elem.properties.get("definition") == block_id:
+            elem.name = new_name
+    # update blocks that include this block as a part
+    parents = _find_blocks_with_part(repo, block_id, old_name)
+    for parent_id in parents:
+        parent = repo.elements.get(parent_id)
+        if not parent:
+            continue
+        _replace_part_name(repo, parent_id, old_name, new_name)
+        # propagate to generalization descendants of parent
+        for desc in _find_generalization_descendants(repo, parent_id):
+            _replace_part_name(repo, desc, old_name, new_name)
+            inherit_block_properties(repo, desc)
+    # propagate property inheritance to all generalization descendants of the renamed block
+    for child_id in _find_generalization_descendants(repo, block_id):
+        _replace_part_name(repo, child_id, old_name, new_name)
+        inherit_block_properties(repo, child_id)
+
+
 def add_aggregation_part(
     repo: SysMLRepository,
     whole_id: str,
@@ -4426,7 +4528,10 @@ class ArchitectureManagerDialog(tk.Frame):
             if elem:
                 name = simpledialog.askstring("Rename", "Name:", initialvalue=elem.name)
                 if name:
-                    elem.name = name
+                    if elem.elem_type == "Block":
+                        rename_block(self.repo, elem.elem_id, name)
+                    else:
+                        elem.name = name
                     self.populate()
 
     # ------------------------------------------------------------------
