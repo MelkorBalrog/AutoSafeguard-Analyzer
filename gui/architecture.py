@@ -2825,7 +2825,8 @@ class SysMLDiagramWindow(tk.Frame):
             return
         mx = (start[0] + end[0]) / 2
         my = (start[1] + end[1]) / 2
-        size = 6 * self.zoom
+        # Slightly enlarge the arrowhead to make flow direction clearer
+        size = 10 * self.zoom
         angle = math.atan2(dy, dx)
         spread = math.radians(20)
         p1 = (mx, my)
