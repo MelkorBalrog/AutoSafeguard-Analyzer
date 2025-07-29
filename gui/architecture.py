@@ -290,6 +290,7 @@ def add_composite_aggregation_part(
         "locked": True,
     }
     diag.objects.append(obj_dict)
+    _add_ports_for_part(repo, diag, obj_dict, app=app)
     if app:
         for win in getattr(app, "ibd_windows", []):
             if getattr(win, "diagram_id", None) == diag.diag_id:
@@ -352,6 +353,7 @@ def _sync_ibd_composite_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
+        added += _add_ports_for_part(repo, diag, obj_dict, app=app)
         if app:
             for win in getattr(app, "ibd_windows", []):
                 if getattr(win, "diagram_id", None) == diag.diag_id:
@@ -407,6 +409,7 @@ def _sync_ibd_aggregation_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
+        added += _add_ports_for_part(repo, diag, obj_dict, app=app)
         if app:
             for win in getattr(app, "ibd_windows", []):
                 if getattr(win, "diagram_id", None) == diag.diag_id:
@@ -775,6 +778,72 @@ def update_ports_for_part(part: SysMLObject, objs: List[SysMLObject]) -> None:
     for o in objs:
         if o.obj_type == "Port" and o.properties.get("parent") == str(part.obj_id):
             snap_port_to_parent_obj(o, part)
+
+
+def _add_ports_for_part(
+    repo: SysMLRepository,
+    diag: SysMLDiagram,
+    part_obj: dict,
+    app=None,
+) -> list[dict]:
+    """Create port objects for ``part_obj`` based on its block definition."""
+
+    part_elem = repo.elements.get(part_obj.get("element_id"))
+    if not part_elem:
+        return []
+    block_id = part_elem.properties.get("definition")
+    names: list[str] = []
+    if block_id and block_id in repo.elements:
+        block_elem = repo.elements[block_id]
+        names.extend([
+            p.strip()
+            for p in block_elem.properties.get("ports", "").split(",")
+            if p.strip()
+        ])
+    names.extend([
+        p.strip() for p in part_elem.properties.get("ports", "").split(",") if p.strip()
+    ])
+    if not names:
+        return []
+    added: list[dict] = []
+    parent = SysMLObject(
+        part_obj.get("obj_id"),
+        "Part",
+        part_obj.get("x", 0.0),
+        part_obj.get("y", 0.0),
+        element_id=part_obj.get("element_id"),
+        width=part_obj.get("width", 80.0),
+        height=part_obj.get("height", 40.0),
+        properties=part_obj.get("properties", {}).copy(),
+        locked=part_obj.get("locked", False),
+    )
+    for name in names:
+        port = SysMLObject(
+            _get_next_id(),
+            "Port",
+            parent.x + parent.width / 2 + 20,
+            parent.y,
+            properties={
+                "name": name,
+                "parent": str(parent.obj_id),
+                "side": "E",
+                "labelX": "8",
+                "labelY": "-8",
+            },
+        )
+        snap_port_to_parent_obj(port, parent)
+        port_dict = asdict(port)
+        diag.objects.append(port_dict)
+        added.append(port_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(port)
+                    win.redraw()
+                    win._sync_to_repository()
+    part_obj.setdefault("properties", {})["ports"] = ", ".join(names)
+    part_elem.properties["ports"] = ", ".join(names)
+    return added
 
 
 def parse_operations(raw: str) -> List[OperationDefinition]:
