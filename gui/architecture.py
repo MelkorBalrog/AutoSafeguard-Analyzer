@@ -173,20 +173,6 @@ def _collect_generalization_parents(
     return parents
 
 
-def _parent_has_aggregation(repo: SysMLRepository, child_id: str, part_id: str) -> bool:
-    """Return ``True`` if any ancestor of ``child_id`` aggregates ``part_id``."""
-
-    parents = _collect_generalization_parents(repo, child_id)
-    for rel in repo.relationships:
-        if (
-            rel.rel_type in ("Aggregation", "Composite Aggregation")
-            and rel.source in parents
-            and rel.target == part_id
-        ):
-            return True
-    return False
-
-
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
     block = repo.elements.get(block_id)
@@ -234,8 +220,6 @@ def add_aggregation_part(
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
-        return
-    if _parent_has_aggregation(repo, whole_id, part_id):
         return
     name = part.name or part_id
     entry = f"{name}[{multiplicity}]" if multiplicity else name
@@ -1451,12 +1435,6 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
-                if (
-                    src.element_id
-                    and dst.element_id
-                    and _parent_has_aggregation(self.repo, src.element_id, dst.element_id)
-                ):
-                    return False, "Block already inherits this part via generalization"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
