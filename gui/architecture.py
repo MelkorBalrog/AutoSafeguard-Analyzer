@@ -1673,7 +1673,7 @@ class SysMLDiagramWindow(tk.Frame):
         y = self.canvas.canvasy(event.y)
         if self.resizing_obj:
             obj = self.resizing_obj
-            if obj.obj_type in ("Initial", "Final"):
+            if obj.obj_type in ("Initial", "Final", "Actor"):
                 return
             cx = obj.x * self.zoom
             cy = obj.y * self.zoom
@@ -2152,7 +2152,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def hit_resize_handle(self, obj: SysMLObject, x: float, y: float) -> str | None:
-        if obj.obj_type in ("Initial", "Final"):
+        if obj.obj_type in ("Initial", "Final", "Actor"):
             return None
         margin = 5
         ox = obj.x * self.zoom
@@ -3002,7 +3002,7 @@ class SysMLDiagramWindow(tk.Frame):
             ex = x + w
             ey = y + h
             self.canvas.create_rectangle(bx, by, ex, ey, outline="red", dash=(2, 2))
-            if obj == self.selected_obj:
+            if obj == self.selected_obj and obj.obj_type != "Actor":
                 s = 4
                 for hx, hy in [(bx, by), (bx, ey), (ex, by), (ex, ey)]:
                     self.canvas.create_rectangle(
@@ -3463,7 +3463,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row += 1
         ttk.Label(gen_frame, text="Width:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=2)
         self.width_var = tk.StringVar(value=str(self.obj.width))
-        width_state = "readonly" if self.obj.obj_type in ("Initial", "Final") else "normal"
+        width_state = "readonly" if self.obj.obj_type in ("Initial", "Final", "Actor") else "normal"
         ttk.Entry(gen_frame, textvariable=self.width_var, state=width_state).grid(
             row=gen_row, column=1, padx=4, pady=2
         )
@@ -3473,7 +3473,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 row=gen_row, column=0, sticky="e", padx=4, pady=2
             )
             self.height_var = tk.StringVar(value=str(self.obj.height))
-            height_state = "readonly" if self.obj.obj_type in ("Initial", "Final") else "normal"
+            height_state = "readonly" if self.obj.obj_type in ("Initial", "Final", "Actor") else "normal"
             ttk.Entry(gen_frame, textvariable=self.height_var, state=height_state).grid(
                 row=gen_row, column=1, padx=4, pady=2
             )
