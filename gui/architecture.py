@@ -765,7 +765,15 @@ class SysMLDiagramWindow(tk.Frame):
                     valid, msg = self.validate_connection(self.start, obj, t)
                     if valid:
                         arrow_default = (
-                            "forward" if t in ("Flow", "Generalize", "Generalization") else "none"
+                            "forward"
+                            if t in (
+                                "Flow",
+                                "Generalize",
+                                "Generalization",
+                                "Include",
+                                "Extend",
+                            )
+                            else "none"
                         )
                         conn = DiagramConnection(
                             self.start.obj_id,
@@ -974,6 +982,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalization",
+            "Generalize",
+            "Communication Path",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1112,6 +1122,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalization",
+            "Generalize",
+            "Communication Path",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1119,7 +1131,24 @@ class SysMLDiagramWindow(tk.Frame):
             if obj and obj != self.start:
                 valid, msg = self.validate_connection(self.start, obj, self.current_tool)
                 if valid:
-                    conn = DiagramConnection(self.start.obj_id, obj.obj_id, self.current_tool)
+                    arrow_default = (
+                        "forward"
+                        if self.current_tool
+                        in (
+                            "Flow",
+                            "Generalize",
+                            "Generalization",
+                            "Include",
+                            "Extend",
+                        )
+                        else "none"
+                    )
+                    conn = DiagramConnection(
+                        self.start.obj_id,
+                        obj.obj_id,
+                        self.current_tool,
+                        arrow=arrow_default,
+                    )
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
                         rel = self.repo.create_relationship(
@@ -1235,6 +1264,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalization",
+            "Generalize",
+            "Communication Path",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1249,6 +1280,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalization",
+            "Generalize",
+            "Communication Path",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -3193,10 +3226,26 @@ class ConnectionDialog(simpledialog.Dialog):
 
         ttk.Label(master, text="Arrows:").grid(row=3, column=0, sticky="e", padx=4, pady=4)
         self.arrow_var = tk.StringVar(value=self.connection.arrow)
-        ttk.Combobox(master, textvariable=self.arrow_var,
-                     values=["none", "forward", "backward", "both"]).grid(row=3, column=1, padx=4, pady=4)
+        self.arrow_cb = ttk.Combobox(
+            master,
+            textvariable=self.arrow_var,
+            values=["none", "forward", "backward", "both"],
+        )
+        self.arrow_cb.grid(row=3, column=1, padx=4, pady=4)
         self.mid_var = tk.BooleanVar(value=self.connection.mid_arrow)
-        ttk.Checkbutton(master, text="Middle Arrow", variable=self.mid_var).grid(row=3, column=2, padx=4, pady=4)
+        self.mid_check = ttk.Checkbutton(
+            master, text="Middle Arrow", variable=self.mid_var
+        )
+        self.mid_check.grid(row=3, column=2, padx=4, pady=4)
+        if self.connection.conn_type in (
+            "Flow",
+            "Generalize",
+            "Generalization",
+            "Include",
+            "Extend",
+        ):
+            self.arrow_cb.configure(state="disabled")
+            self.mid_check.configure(state="disabled")
 
     def add_point(self):
         x = simpledialog.askfloat("Point", "X:", parent=self)
