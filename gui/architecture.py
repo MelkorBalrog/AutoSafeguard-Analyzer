@@ -1148,7 +1148,15 @@ class SysMLDiagramWindow(tk.Frame):
         for data in getattr(diagram, "objects", []):
             if "requirements" not in data:
                 data["requirements"] = []
-            self.objects.append(SysMLObject(**data))
+            obj = SysMLObject(**data)
+            if obj.obj_type == "Part":
+                asil = calculate_allocated_asil(obj.requirements)
+                obj.properties.setdefault("asil", asil)
+                if obj.element_id and obj.element_id in self.repo.elements:
+                    self.repo.elements[obj.element_id].properties.setdefault(
+                        "asil", asil
+                    )
+            self.objects.append(obj)
         self.sort_objects()
         self.connections: List[DiagramConnection] = [
             DiagramConnection(**data) for data in getattr(diagram, "connections", [])
@@ -2514,6 +2522,11 @@ class SysMLDiagramWindow(tk.Frame):
 
         name = obj.properties.get("name", obj.obj_type)
         if obj.obj_type == "Part":
+            asil = calculate_allocated_asil(obj.requirements)
+            if obj.properties.get("asil") != asil:
+                obj.properties["asil"] = asil
+                if obj.element_id and obj.element_id in self.repo.elements:
+                    self.repo.elements[obj.element_id].properties["asil"] = asil
             def_id = obj.properties.get("definition")
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
