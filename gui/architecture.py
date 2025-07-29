@@ -789,13 +789,18 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
     for obj in getattr(diagram, "objects", []):
         if obj.get("obj_type") != "Part":
             continue
-        def_id = obj.get("properties", {}).get("definition")
-        if def_id and def_id in repo.elements:
-            name = repo.elements[def_id].name or def_id
-            if name not in bases:
-                names.append(name)
-                bases.append(name)
-                changed = True
+        name = ""
+        elem_id = obj.get("element_id")
+        if elem_id and elem_id in repo.elements:
+            name = repo.elements[elem_id].name or name
+        if not name:
+            def_id = obj.get("properties", {}).get("definition")
+            if def_id and def_id in repo.elements:
+                name = repo.elements[def_id].name or def_id
+        if name and name not in bases:
+            names.append(name)
+            bases.append(name)
+            changed = True
     if changed:
         joined = ", ".join(names)
         block.properties["partProperties"] = joined
