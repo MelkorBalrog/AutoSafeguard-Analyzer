@@ -662,14 +662,37 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Connectors must link Parts or Ports"
                 if src.obj_type == "Port" and dst.obj_type == "Port":
-                    src_dir = src.properties.get("direction")
-                    dst_dir = dst.properties.get("direction")
-                    if {src_dir, dst_dir} == {"in", "out"}:
-                        return False, "Ports must have compatible directions"
-                    s_flow = src.properties.get("flow")
-                    d_flow = dst.properties.get("flow")
-                    if s_flow and d_flow and s_flow != d_flow:
-                        return False, "Connected ports must use the same flow"
+                    dir_a = src.properties.get("direction", "inout").lower()
+                    dir_b = dst.properties.get("direction", "inout").lower()
+                    if {dir_a, dir_b} != {"in", "out"}:
+                        return False, "Ports must connect one 'in' and one 'out'"
+                    def flow_dir(conn: DiagramConnection, port_id: int) -> str | None:
+                        if conn.arrow == "both":
+                            return None
+                        if port_id == conn.src:
+                            if conn.arrow == "forward":
+                                return "out"
+                            if conn.arrow == "backward":
+                                return "in"
+                        elif port_id == conn.dst:
+                            if conn.arrow == "forward":
+                                return "in"
+                            if conn.arrow == "backward":
+                                return "out"
+                        return None
+                    new_dir_a = "out" if dir_a == "out" else "in"
+                    new_dir_b = "out" if dir_b == "out" else "in"
+                    for c in self.connections:
+                        if c.conn_type != "Connector":
+                            continue
+                        if src.obj_id in (c.src, c.dst):
+                            ex = flow_dir(c, src.obj_id)
+                            if ex and ex != new_dir_a:
+                                return False, "Inconsistent data flow on port"
+                        if dst.obj_id in (c.src, c.dst):
+                            ex = flow_dir(c, dst.obj_id)
+                            if ex and ex != new_dir_b:
+                                return False, "Inconsistent data flow on port"
 
         elif diag_type == "Activity Diagram":
             # Basic control flow rules
@@ -1158,6 +1181,41 @@ class SysMLDiagramWindow(tk.Frame):
                         self.current_tool,
                         arrow=arrow_default,
                     )
+                    if self.current_tool == "Connector":
+                        src_flow = self.start.properties.get("flow") if self.start.obj_type == "Port" else None
+                        dst_flow = obj.properties.get("flow") if obj.obj_type == "Port" else None
+                        if src_flow or dst_flow:
+                            conn.mid_arrow = True
+                            if src_flow and dst_flow:
+                                dir_a = self.start.properties.get("direction", "out").lower()
+                                dir_b = obj.properties.get("direction", "out").lower()
+                                if dir_a == "out":
+                                    conn.name = src_flow
+                                    conn.arrow = "forward"
+                                elif dir_b == "out":
+                                    conn.name = dst_flow
+                                    conn.arrow = "backward"
+                                else:
+                                    conn.name = src_flow
+                                    conn.arrow = "both"
+                            elif src_flow:
+                                conn.name = src_flow
+                                dir_attr = self.start.properties.get("direction", "out")
+                                if dir_attr == "in":
+                                    conn.arrow = "backward"
+                                elif dir_attr == "out":
+                                    conn.arrow = "forward"
+                                else:
+                                    conn.arrow = "both"
+                            else:
+                                conn.name = dst_flow
+                                dir_attr = obj.properties.get("direction", "out")
+                                if dir_attr == "in":
+                                    conn.arrow = "forward"
+                                elif dir_attr == "out":
+                                    conn.arrow = "backward"
+                                else:
+                                    conn.arrow = "both"
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
                         rel = self.repo.create_relationship(
@@ -2215,6 +2273,8 @@ class SysMLDiagramWindow(tk.Frame):
             label = f"{incl_label}\n{label}" if label else incl_label
         elif conn.conn_type in ("Generalize", "Generalization", "Communication Path"):
             dash = (2, 2)
+        src_flow = a.properties.get("flow") if a.obj_type == "Port" else None
+        dst_flow = b.properties.get("flow") if b.obj_type == "Port" else None
         points = [(ax, ay)]
         if conn.style == "Squared":
             if conn.points:
@@ -2241,11 +2301,46 @@ class SysMLDiagramWindow(tk.Frame):
                 arrow_style = tk.FIRST
             elif conn.arrow == "both":
                 arrow_style = tk.BOTH
+        forward = conn.arrow in ("forward", "both")
+        backward = conn.arrow in ("backward", "both")
+        mid_forward = forward
+        mid_backward = backward
+        if conn.conn_type == "Connector" and (src_flow or dst_flow):
+            arrow_style = tk.NONE
+            conn.mid_arrow = True
+            if src_flow and dst_flow:
+                dir_a = a.properties.get("direction", "out").lower()
+                dir_b = b.properties.get("direction", "out").lower()
+                if dir_a == "out":
+                    label = src_flow
+                    mid_forward, mid_backward = True, False
+                elif dir_b == "out":
+                    label = dst_flow
+                    mid_forward, mid_backward = False, True
+                else:
+                    label = src_flow
+                    mid_forward, mid_backward = True, True
+            elif src_flow:
+                label = src_flow
+                dir_attr = a.properties.get("direction", "out")
+                if dir_attr == "in":
+                    mid_forward, mid_backward = False, True
+                elif dir_attr == "out":
+                    mid_forward, mid_backward = True, False
+                else:
+                    mid_forward, mid_backward = True, True
+            else:
+                label = dst_flow
+                dir_attr = b.properties.get("direction", "out")
+                if dir_attr == "in":
+                    mid_forward, mid_backward = True, False
+                elif dir_attr == "out":
+                    mid_forward, mid_backward = False, True
+                else:
+                    mid_forward, mid_backward = True, True
         self.canvas.create_line(
             *flat, arrow=arrow_style, dash=dash, fill=color, width=width
         )
-        forward = conn.arrow in ("forward", "both")
-        backward = conn.arrow in ("backward", "both")
         if open_arrow:
             if forward:
                 self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
@@ -2274,12 +2369,12 @@ class SysMLDiagramWindow(tk.Frame):
                 mstart = points[mid_idx - 1]
                 mend = points[mid_idx]
                 if open_arrow or conn.conn_type in ("Generalize", "Generalization"):
-                    if forward:
+                    if mid_forward:
                         self._draw_open_arrow(mstart, mend, color=color, width=width)
-                    elif backward:
+                    elif mid_backward:
                         self._draw_open_arrow(mend, mstart, color=color, width=width)
                 else:
-                    if forward or not backward:
+                    if mid_forward or not mid_backward:
                         self.canvas.create_line(
                             mstart[0],
                             mstart[1],
@@ -2289,7 +2384,7 @@ class SysMLDiagramWindow(tk.Frame):
                             fill=color,
                             width=width,
                         )
-                    if backward:
+                    if mid_backward:
                         self.canvas.create_line(
                             mend[0],
                             mend[1],
@@ -2708,9 +2803,18 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 self.listboxes[prop] = lb
             elif prop == "direction":
                 var = tk.StringVar(value=self.obj.properties.get(prop, "in"))
-                ttk.Combobox(frame, textvariable=var, values=["in", "out", "inout"]).grid(
-                    row=row, column=1, padx=4, pady=2
-                )
+                conns = [
+                    c
+                    for c in self.master.connections
+                    if c.conn_type == "Connector" and self.obj.obj_id in (c.src, c.dst)
+                ]
+                state = "readonly" if conns else "normal"
+                ttk.Combobox(
+                    frame,
+                    textvariable=var,
+                    values=["in", "out", "inout"],
+                    state=state,
+                ).grid(row=row, column=1, padx=4, pady=2)
                 self.entries[prop] = var
             elif self.obj.obj_type == "Use Case" and prop == "useCaseDefinition":
                 repo = SysMLRepository.get_instance()
