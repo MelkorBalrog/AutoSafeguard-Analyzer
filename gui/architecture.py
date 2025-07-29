@@ -2220,6 +2220,12 @@ class SysMLDiagramWindow(tk.Frame):
                                 o.y += dy
         self.redraw()
         self._sync_to_repository()
+        if self.app:
+            self.app.update_views()
+        if self.app:
+            self.app.update_views()
+        if self.app:
+            self.app.update_views()
 
     def on_left_release(self, event):
         if self.start and self.current_tool in (
@@ -2604,6 +2610,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(SysMLObject(**data))
         self._sync_to_repository()
         self.redraw()
+        if self.app:
+            self.app.update_views()
 
     def go_back(self):
         if not self.diagram_history:
@@ -5192,6 +5200,24 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
+        diag.objects = getattr(diag, "objects", []) if diag else []
+        existing_components = {
+            o.get("properties", {}).get("component")
+            for o in diag.objects
+            if o.get("obj_type") == "Part"
+        }
+        existing_defs = {
+            o.get("properties", {}).get("definition")
+            for o in diag.objects
+            if o.get("obj_type") == "Part"
+        }
+        existing_names = {
+            repo.elements[did].name
+            for did in existing_defs
+            if did in repo.elements and repo.elements[did].elem_type == "Block"
+        }
+        comps = [c for c in comps if c.name not in existing_components]
+
         # If there are no components, no father and no aggregations,
         # there is nothing to inherit
         src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
@@ -5202,6 +5228,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         part_names = [
             n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()
         ]
+        part_names = [n for n in part_names if n not in existing_names]
         if not comps and not getattr(diag, "father", None) and not has_aggr and not part_names:
             messagebox.showinfo("Add Contained Parts", "No contained parts available")
             self.redraw()
@@ -5227,11 +5254,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         if diag is None:
             return
         diag.objects = getattr(diag, "objects", [])
-        existing = {
-            o.get("properties", {}).get("component")
-            for o in diag.objects
-            if o.get("obj_type") == "Part"
-        }
+        existing = existing_components
         base_x = 50.0
         base_y = 50.0
         offset = 60.0
@@ -5272,6 +5295,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             self.objects.append(SysMLObject(**data))
         self.redraw()
         self._sync_to_repository()
+        if self.app:
+            self.app.update_views()
         if added:
             names = [
                 n.strip()
