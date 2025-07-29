@@ -150,21 +150,20 @@ class InheritPartsTests(unittest.TestCase):
         parent = repo.create_element(
             "Block",
             name="Parent",
-            properties={"partProperties": "p1", "valueProperties": "a1"},
+            properties={"partProperties": "p1"},
         )
         child = repo.create_element("Block", name="Child")
         repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
         inherit_block_properties(repo, child.elem_id)
         props = repo.elements[child.elem_id].properties
         self.assertIn("p1", props.get("partProperties", ""))
-        self.assertIn("a1", props.get("valueProperties", ""))
 
     def test_remove_generalization_clears_properties(self):
         repo = self.repo
         parent = repo.create_element(
             "Block",
             name="Parent",
-            properties={"partProperties": "p1", "valueProperties": "a1"},
+            properties={"partProperties": "p1"},
         )
         child = repo.create_element("Block", name="Child")
         rel = repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
@@ -174,19 +173,18 @@ class InheritPartsTests(unittest.TestCase):
         inherit_block_properties(repo, child.elem_id)
         props = repo.elements[child.elem_id].properties
         self.assertNotIn("p1", props.get("partProperties", ""))
-        self.assertNotIn("a1", props.get("valueProperties", ""))
 
     def test_reroute_generalization_updates_properties(self):
         repo = self.repo
         parent1 = repo.create_element(
             "Block",
             name="Parent1",
-            properties={"valueProperties": "a1"},
+            properties={"partProperties": "p1"},
         )
         parent2 = repo.create_element(
             "Block",
             name="Parent2",
-            properties={"valueProperties": "a2"},
+            properties={"partProperties": "p2"},
         )
         child = repo.create_element("Block", name="Child")
         rel = repo.create_relationship("Generalization", child.elem_id, parent1.elem_id)
@@ -195,8 +193,25 @@ class InheritPartsTests(unittest.TestCase):
         rel.target = parent2.elem_id
         inherit_block_properties(repo, child.elem_id)
         props = repo.elements[child.elem_id].properties
-        self.assertIn("a2", props.get("valueProperties", ""))
-        self.assertNotIn("a1", props.get("valueProperties", ""))
+        self.assertIn("p2", props.get("partProperties", ""))
+        self.assertNotIn("p1", props.get("partProperties", ""))
+
+    def test_sync_partproperty_parts(self):
+        repo = self.repo
+        blk = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(blk.elem_id, ibd.diag_id)
+        added = _sync_ibd_partproperty_parts(repo, blk.elem_id)
+        self.assertTrue(
+            any(
+                o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id
+                for o in ibd.objects
+            )
+        )
+        self.assertTrue(
+            any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)
+        )
 
     def test_sync_partproperty_parts(self):
         repo = self.repo
