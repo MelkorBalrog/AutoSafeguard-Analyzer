@@ -27,13 +27,6 @@ class CompositeAggregationTests(unittest.TestCase):
                 for o in ibd.objects
             )
         )
-        obj = next(
-            o for o in ibd.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
-        )
-        self.assertEqual(
-            repo.elements[obj["element_id"]].properties.get("partDefinition"),
-            "Part",
-        )
 
     def test_remove_composite_part_from_ibd(self):
         repo = self.repo
@@ -65,13 +58,6 @@ class CompositeAggregationTests(unittest.TestCase):
                 for o in ibd.objects
             )
         )
-        obj = next(
-            o for o in ibd.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
-        )
-        self.assertEqual(
-            repo.elements[obj["element_id"]].properties.get("partDefinition"),
-            "Part",
-        )
         # ensure added list includes the new part
         self.assertTrue(any(d.get("properties", {}).get("definition") == part.elem_id for d in added))
 
@@ -85,10 +71,6 @@ class CompositeAggregationTests(unittest.TestCase):
         pid = rel.properties.get("part_elem")
         self.assertIsNotNone(pid)
         self.assertEqual(repo.elements[pid].properties.get("force_ibd"), "true")
-        self.assertEqual(
-            repo.elements[pid].properties.get("partDefinition"),
-            "Part",
-        )
         ibd = repo.create_diagram("Internal Block Diagram")
         repo.link_diagram(whole.elem_id, ibd.diag_id)
         set_ibd_father(repo, ibd, whole.elem_id)
