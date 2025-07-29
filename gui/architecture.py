@@ -231,10 +231,35 @@ def add_composite_aggregation_part(
     part object in the whole's Internal Block Diagram if present."""
 
     add_aggregation_part(repo, whole_id, part_id, multiplicity)
+
+    # create or locate the Part element representing this composite aggregation
+    part_elem = None
+    for elem in repo.elements.values():
+        if (
+            elem.elem_type == "Part"
+            and elem.properties.get("definition") == part_id
+            and elem.properties.get("whole") == whole_id
+            and elem.properties.get("composite") == "true"
+        ):
+            part_elem = elem
+            break
+    if part_elem is None:
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(part_id).name or part_id,
+            properties={
+                "definition": part_id,
+                "composite": "true",
+                "whole": whole_id,
+            },
+            owner=repo.root_package.elem_id,
+        )
+
     diag_id = repo.get_linked_diagram(whole_id)
     diag = repo.diagrams.get(diag_id)
     if not diag or diag.diag_type != "Internal Block Diagram":
         return
+
     diag.objects = getattr(diag, "objects", [])
     existing_defs = {
         o.get("properties", {}).get("definition")
@@ -243,12 +268,7 @@ def add_composite_aggregation_part(
     }
     if part_id in existing_defs:
         return
-    part_elem = repo.create_element(
-        "Part",
-        name=repo.elements.get(part_id).name or part_id,
-        properties={"definition": part_id},
-        owner=repo.root_package.elem_id,
-    )
+
     repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
     obj_dict = {
         "obj_id": _get_next_id(),
@@ -256,7 +276,7 @@ def add_composite_aggregation_part(
         "x": 50.0,
         "y": 50.0 + 60.0 * len(existing_defs),
         "element_id": part_elem.elem_id,
-        "properties": {"definition": part_id},
+        "properties": {"definition": part_id, "composite": "true"},
     }
     diag.objects.append(obj_dict)
     if app:
@@ -295,12 +315,27 @@ def _sync_ibd_composite_parts(
     for pid in part_ids:
         if pid in existing_defs:
             continue
-        part_elem = repo.create_element(
-            "Part",
-            name=repo.elements.get(pid).name or pid,
-            properties={"definition": pid},
-            owner=repo.root_package.elem_id,
-        )
+        part_elem = None
+        for elem in repo.elements.values():
+            if (
+                elem.elem_type == "Part"
+                and elem.properties.get("definition") == pid
+                and elem.properties.get("whole") == block_id
+                and elem.properties.get("composite") == "true"
+            ):
+                part_elem = elem
+                break
+        if part_elem is None:
+            part_elem = repo.create_element(
+                "Part",
+                name=repo.elements.get(pid).name or pid,
+                properties={
+                    "definition": pid,
+                    "composite": "true",
+                    "whole": block_id,
+                },
+                owner=repo.root_package.elem_id,
+            )
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
         obj_dict = {
             "obj_id": _get_next_id(),
@@ -308,7 +343,7 @@ def _sync_ibd_composite_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {"definition": pid},
+            "properties": {"definition": pid, "composite": "true"},
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -398,6 +433,15 @@ def remove_aggregation_part(
                         ]
                         win.redraw()
                         win._sync_to_repository()
+            # remove associated Part element if it represents the composite part
+            for elem_id, elem in list(repo.elements.items()):
+                if (
+                    elem.elem_type == "Part"
+                    and elem.properties.get("definition") == part_id
+                    and elem.properties.get("whole") == whole_id
+                    and elem.properties.get("composite") == "true"
+                ):
+                    repo.delete_element(elem_id)
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
@@ -3033,6 +3077,9 @@ class SysMLDiagramWindow(tk.Frame):
                 self.update_property_view()
 
     def remove_object(self, obj: SysMLObject) -> None:
+        if obj.obj_type == "Part" and obj.properties.get("composite") == "true":
+            # Prevent manual deletion of composite aggregated parts
+            return
         removed_ids = {obj.obj_id}
         if obj in self.objects:
             self.objects.remove(obj)
