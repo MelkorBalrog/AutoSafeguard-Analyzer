@@ -715,6 +715,45 @@ def _sync_ibd_partproperty_parts(
     return added
 
 
+def _sync_block_parts_from_ibd(repo: SysMLRepository, diag_id: str) -> None:
+    """Ensure the block linked to ``diag_id`` lists all part definitions."""
+
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return
+    block_id = (
+        getattr(diag, "father", None)
+        or next((eid for eid, did in repo.element_diagrams.items() if did == diag_id), None)
+    )
+    if not block_id or block_id not in repo.elements:
+        return
+    block = repo.elements[block_id]
+    names = [
+        p.strip()
+        for p in block.properties.get("partProperties", "").split(",")
+        if p.strip()
+    ]
+    bases = {n.split("[")[0].strip() for n in names}
+    for obj in getattr(diag, "objects", []):
+        if obj.get("obj_type") != "Part":
+            continue
+        def_id = obj.get("properties", {}).get("definition")
+        if def_id and def_id in repo.elements:
+            pname = repo.elements[def_id].name or def_id
+            if pname not in bases:
+                names.append(pname)
+                bases.add(pname)
+    if names:
+        joined = ", ".join(names)
+        block.properties["partProperties"] = joined
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == block_id:
+                    o.setdefault("properties", {})["partProperties"] = joined
+        for child_id in _find_generalization_children(repo, block_id):
+            inherit_block_properties(repo, child_id)
+
+
 def set_ibd_father(
     repo: SysMLRepository, diagram: SysMLDiagram, father_id: str | None, app=None
 ) -> list[dict]:
@@ -3872,6 +3911,7 @@ class SysMLDiagramWindow(tk.Frame):
             diag.connections = [conn.__dict__ for conn in self.connections]
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
+            _sync_block_parts_from_ibd(self.repo, self.diagram_id)
 
     def on_close(self):
         self._sync_to_repository()
