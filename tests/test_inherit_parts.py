@@ -1,7 +1,12 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from sysml.sysml_repository import SysMLRepository
-from gui.architecture import extend_block_parts_with_parents, inherit_father_parts
+from gui.architecture import (
+    extend_block_parts_with_parents,
+    inherit_father_parts,
+    inherit_block_properties,
+    remove_inherited_block_properties,
+)
 
 class InheritPartsTests(unittest.TestCase):
     def setUp(self):
@@ -23,23 +28,27 @@ class InheritPartsTests(unittest.TestCase):
         repo.link_diagram(c.elem_id, dc.diag_id)
 
         pb = repo.create_element("Part", name="PB")
-        da.objects.append({
-            "obj_id": 1,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": pb.elem_id,
-            "properties": {"definition": b.elem_id},
-        })
+        da.objects.append(
+            {
+                "obj_id": 1,
+                "obj_type": "Part",
+                "x": 0,
+                "y": 0,
+                "element_id": pb.elem_id,
+                "properties": {"definition": b.elem_id},
+            }
+        )
         pc = repo.create_element("Part", name="PC")
-        db.objects.append({
-            "obj_id": 2,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": pc.elem_id,
-            "properties": {"definition": c.elem_id},
-        })
+        db.objects.append(
+            {
+                "obj_id": 2,
+                "obj_type": "Part",
+                "x": 0,
+                "y": 0,
+                "element_id": pc.elem_id,
+                "properties": {"definition": c.elem_id},
+            }
+        )
         repo.create_relationship("Association", c.elem_id, d.elem_id)
 
         extend_block_parts_with_parents(repo, c.elem_id)
@@ -61,14 +70,16 @@ class InheritPartsTests(unittest.TestCase):
         pf = repo.create_element("Part", name="P1")
         df = repo.create_diagram("Internal Block Diagram", name="Father")
         repo.link_diagram(father.elem_id, df.diag_id)
-        df.objects.append({
-            "obj_id": 1,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": pf.elem_id,
-            "properties": {"definition": father.elem_id},
-        })
+        df.objects.append(
+            {
+                "obj_id": 1,
+                "obj_type": "Part",
+                "x": 0,
+                "y": 0,
+                "element_id": pf.elem_id,
+                "properties": {"definition": father.elem_id},
+            }
+        )
         dc = repo.create_diagram("Internal Block Diagram", name="Child")
         repo.link_diagram(child.elem_id, dc.diag_id)
         dc.father = father.elem_id
@@ -130,6 +141,59 @@ class InheritPartsTests(unittest.TestCase):
         self.assertEqual(dir_map["b"], "out")
         port_added = [o for o in added if o.get("obj_type") == "Port"]
         self.assertEqual(len(port_added), 2)
+
+    def test_generalization_inherits_properties(self):
+        repo = self.repo
+        parent = repo.create_element(
+            "Block",
+            name="Parent",
+            properties={"partProperties": "p1", "valueProperties": "a1"},
+        )
+        child = repo.create_element("Block", name="Child")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        inherit_block_properties(repo, child.elem_id)
+        props = repo.elements[child.elem_id].properties
+        self.assertIn("p1", props.get("partProperties", ""))
+        self.assertIn("a1", props.get("valueProperties", ""))
+
+    def test_remove_generalization_clears_properties(self):
+        repo = self.repo
+        parent = repo.create_element(
+            "Block",
+            name="Parent",
+            properties={"partProperties": "p1", "valueProperties": "a1"},
+        )
+        child = repo.create_element("Block", name="Child")
+        rel = repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        inherit_block_properties(repo, child.elem_id)
+        remove_inherited_block_properties(repo, child.elem_id, parent.elem_id)
+        repo.relationships.remove(rel)
+        inherit_block_properties(repo, child.elem_id)
+        props = repo.elements[child.elem_id].properties
+        self.assertNotIn("p1", props.get("partProperties", ""))
+        self.assertNotIn("a1", props.get("valueProperties", ""))
+
+    def test_reroute_generalization_updates_properties(self):
+        repo = self.repo
+        parent1 = repo.create_element(
+            "Block",
+            name="Parent1",
+            properties={"valueProperties": "a1"},
+        )
+        parent2 = repo.create_element(
+            "Block",
+            name="Parent2",
+            properties={"valueProperties": "a2"},
+        )
+        child = repo.create_element("Block", name="Child")
+        rel = repo.create_relationship("Generalization", child.elem_id, parent1.elem_id)
+        inherit_block_properties(repo, child.elem_id)
+        remove_inherited_block_properties(repo, child.elem_id, parent1.elem_id)
+        rel.target = parent2.elem_id
+        inherit_block_properties(repo, child.elem_id)
+        props = repo.elements[child.elem_id].properties
+        self.assertIn("a2", props.get("valueProperties", ""))
+        self.assertNotIn("a1", props.get("valueProperties", ""))
 
 if __name__ == "__main__":
     unittest.main()
