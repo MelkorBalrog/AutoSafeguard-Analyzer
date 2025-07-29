@@ -24,6 +24,7 @@ import difflib
 import sys
 import json
 import re
+import datetime
 try:
     from PIL import Image, ImageTk
 except ModuleNotFoundError:
@@ -1528,6 +1529,10 @@ class VersionCompareDialog(tk.Frame):
             master.resizable(True, True)
 
         names = [v["name"] for v in self.app.versions]
+        self.mode_var = tk.StringVar(value="version")
+        tk.Radiobutton(self, text="Compare Versions", variable=self.mode_var, value="version", command=self.toggle_mode).pack(anchor="w")
+        tk.Radiobutton(self, text="Compare by Date Range", variable=self.mode_var, value="date", command=self.toggle_mode).pack(anchor="w")
+
         tk.Label(self, text="Base version:").pack(padx=5, pady=2)
         self.base_var = tk.StringVar()
         self.base_combo = ttk.Combobox(self, values=names, textvariable=self.base_var, state="readonly")
@@ -1540,18 +1545,43 @@ class VersionCompareDialog(tk.Frame):
         self.other_combo.pack(fill=tk.X, padx=5)
         self.other_combo.bind("<<ComboboxSelected>>", self.compare)
 
+        tk.Label(self, text="Start Date (YYYY-MM-DD)").pack(padx=5, pady=2)
+        self.start_var = tk.StringVar()
+        self.start_entry = tk.Entry(self, textvariable=self.start_var)
+        self.start_entry.pack(fill=tk.X, padx=5)
+        tk.Label(self, text="End Date (YYYY-MM-DD)").pack(padx=5, pady=2)
+        self.end_var = tk.StringVar()
+        self.end_entry = tk.Entry(self, textvariable=self.end_var)
+        self.end_entry.pack(fill=tk.X, padx=5)
+
+        cb_frame = tk.Frame(self)
+        cb_frame.pack(padx=5, pady=2)
+        self.show_fta_var = tk.BooleanVar(value=True)
+        self.show_fmea_var = tk.BooleanVar(value=True)
+        self.show_fmeda_var = tk.BooleanVar(value=True)
+        self.show_hazop_var = tk.BooleanVar(value=True)
+        self.show_hara_var = tk.BooleanVar(value=True)
+        for text, var in [
+            ("FTA", self.show_fta_var),
+            ("FMEA", self.show_fmea_var),
+            ("FMEDA", self.show_fmeda_var),
+            ("HAZOP", self.show_hazop_var),
+            ("HARA", self.show_hara_var),
+        ]:
+            tk.Checkbutton(cb_frame, text=text, variable=var, command=self.compare).pack(side=tk.LEFT)
+
         # canvas to display FTA differences
-        canvas_frame = tk.Frame(self)
-        canvas_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.tree_canvas = tk.Canvas(canvas_frame, width=600, height=300, bg="white")
-        vbar = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.tree_canvas.yview)
-        hbar = tk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.tree_canvas.xview)
+        self.canvas_frame = tk.Frame(self)
+        self.canvas_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.tree_canvas = tk.Canvas(self.canvas_frame, width=600, height=300, bg="white")
+        vbar = tk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.tree_canvas.yview)
+        hbar = tk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.tree_canvas.xview)
         self.tree_canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
         self.tree_canvas.grid(row=0, column=0, sticky="nsew")
         vbar.grid(row=0, column=1, sticky="ns")
         hbar.grid(row=1, column=0, sticky="ew")
-        canvas_frame.rowconfigure(0, weight=1)
-        canvas_frame.columnconfigure(0, weight=1)
+        self.canvas_frame.rowconfigure(0, weight=1)
+        self.canvas_frame.columnconfigure(0, weight=1)
 
         # table for FMEA differences - mimic the full FMEA table
         columns = [
@@ -1567,9 +1597,9 @@ class VersionCompareDialog(tk.Frame):
             "RPN",
             "Requirements",
         ]
-        fmea_frame = tk.Frame(self)
-        fmea_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.fmea_tree = ttk.Treeview(fmea_frame, columns=columns, show="headings")
+        self.fmea_frame = tk.Frame(self)
+        self.fmea_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.fmea_tree = ttk.Treeview(self.fmea_frame, columns=columns, show="headings")
         for col in columns:
             self.fmea_tree.heading(col, text=col)
             width = 120
@@ -1578,14 +1608,14 @@ class VersionCompareDialog(tk.Frame):
             elif col == "Parent":
                 width = 150
             self.fmea_tree.column(col, width=width, anchor="center")
-        vsb_fmea = ttk.Scrollbar(fmea_frame, orient="vertical", command=self.fmea_tree.yview)
-        hsb_fmea = ttk.Scrollbar(fmea_frame, orient="horizontal", command=self.fmea_tree.xview)
+        vsb_fmea = ttk.Scrollbar(self.fmea_frame, orient="vertical", command=self.fmea_tree.yview)
+        hsb_fmea = ttk.Scrollbar(self.fmea_frame, orient="horizontal", command=self.fmea_tree.xview)
         self.fmea_tree.configure(yscrollcommand=vsb_fmea.set, xscrollcommand=hsb_fmea.set)
         self.fmea_tree.grid(row=0, column=0, sticky="nsew")
         vsb_fmea.grid(row=0, column=1, sticky="ns")
         hsb_fmea.grid(row=1, column=0, sticky="ew")
-        fmea_frame.rowconfigure(0, weight=1)
-        fmea_frame.columnconfigure(0, weight=1)
+        self.fmea_frame.rowconfigure(0, weight=1)
+        self.fmea_frame.columnconfigure(0, weight=1)
         self.fmea_tree.tag_configure("added", background="#cce5ff")
         self.fmea_tree.tag_configure("removed", background="#f8d7da")
         self.fmea_tree.tag_configure("existing", background="#e2e3e5")
@@ -1593,23 +1623,23 @@ class VersionCompareDialog(tk.Frame):
         columns_fmeda = [
             "FMEDA","Component","Parent","Failure Mode","Malfunction","Safety Goal","FaultType","Fraction","FIT","DiagCov","Mechanism"
         ]
-        fmeda_frame = tk.Frame(self)
-        fmeda_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.fmeda_tree = ttk.Treeview(fmeda_frame, columns=columns_fmeda, show="headings")
+        self.fmeda_frame = tk.Frame(self)
+        self.fmeda_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.fmeda_tree = ttk.Treeview(self.fmeda_frame, columns=columns_fmeda, show="headings")
         for col in columns_fmeda:
             self.fmeda_tree.heading(col, text=col)
             width = 100
             if col in ["Malfunction","Safety Goal"]:
                 width = 150
             self.fmeda_tree.column(col, width=width, anchor="center")
-        vsb_fmeda = ttk.Scrollbar(fmeda_frame, orient="vertical", command=self.fmeda_tree.yview)
-        hsb_fmeda = ttk.Scrollbar(fmeda_frame, orient="horizontal", command=self.fmeda_tree.xview)
+        vsb_fmeda = ttk.Scrollbar(self.fmeda_frame, orient="vertical", command=self.fmeda_tree.yview)
+        hsb_fmeda = ttk.Scrollbar(self.fmeda_frame, orient="horizontal", command=self.fmeda_tree.xview)
         self.fmeda_tree.configure(yscrollcommand=vsb_fmeda.set, xscrollcommand=hsb_fmeda.set)
         self.fmeda_tree.grid(row=0, column=0, sticky="nsew")
         vsb_fmeda.grid(row=0, column=1, sticky="ns")
         hsb_fmeda.grid(row=1, column=0, sticky="ew")
-        fmeda_frame.rowconfigure(0, weight=1)
-        fmeda_frame.columnconfigure(0, weight=1)
+        self.fmeda_frame.rowconfigure(0, weight=1)
+        self.fmeda_frame.columnconfigure(0, weight=1)
         self.fmeda_tree.tag_configure("added", background="#cce5ff")
         self.fmeda_tree.tag_configure("removed", background="#f8d7da")
         self.fmeda_tree.tag_configure("existing", background="#e2e3e5")
@@ -1627,23 +1657,23 @@ class VersionCompareDialog(tk.Frame):
             "Covered",
             "Covered By",
         ]
-        hazop_frame = tk.Frame(self)
-        hazop_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.hazop_tree = ttk.Treeview(hazop_frame, columns=columns_hazop, show="headings")
+        self.hazop_frame = tk.Frame(self)
+        self.hazop_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.hazop_tree = ttk.Treeview(self.hazop_frame, columns=columns_hazop, show="headings")
         for col in columns_hazop:
             self.hazop_tree.heading(col, text=col)
             width = 100
             if col in ["Function", "Malfunction", "Scenario", "Rationale"]:
                 width = 150
             self.hazop_tree.column(col, width=width, anchor="center")
-        vsb_hazop = ttk.Scrollbar(hazop_frame, orient="vertical", command=self.hazop_tree.yview)
-        hsb_hazop = ttk.Scrollbar(hazop_frame, orient="horizontal", command=self.hazop_tree.xview)
+        vsb_hazop = ttk.Scrollbar(self.hazop_frame, orient="vertical", command=self.hazop_tree.yview)
+        hsb_hazop = ttk.Scrollbar(self.hazop_frame, orient="horizontal", command=self.hazop_tree.xview)
         self.hazop_tree.configure(yscrollcommand=vsb_hazop.set, xscrollcommand=hsb_hazop.set)
         self.hazop_tree.grid(row=0, column=0, sticky="nsew")
         vsb_hazop.grid(row=0, column=1, sticky="ns")
         hsb_hazop.grid(row=1, column=0, sticky="ew")
-        hazop_frame.rowconfigure(0, weight=1)
-        hazop_frame.columnconfigure(0, weight=1)
+        self.hazop_frame.rowconfigure(0, weight=1)
+        self.hazop_frame.columnconfigure(0, weight=1)
         self.hazop_tree.tag_configure("added", background="#cce5ff")
         self.hazop_tree.tag_configure("removed", background="#f8d7da")
         self.hazop_tree.tag_configure("existing", background="#e2e3e5")
@@ -1661,34 +1691,34 @@ class VersionCompareDialog(tk.Frame):
             "ASIL",
             "Safety Goal",
         ]
-        hara_frame = tk.Frame(self)
-        hara_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.hara_tree = ttk.Treeview(hara_frame, columns=columns_hara, show="headings")
+        self.hara_frame = tk.Frame(self)
+        self.hara_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.hara_tree = ttk.Treeview(self.hara_frame, columns=columns_hara, show="headings")
         for col in columns_hara:
             self.hara_tree.heading(col, text=col)
             width = 100
             if col in ["Malfunction", "Hazard", "Sev Rationale", "Cont Rationale", "Exp Rationale", "Safety Goal"]:
                 width = 150
             self.hara_tree.column(col, width=width, anchor="center")
-        vsb_hara = ttk.Scrollbar(hara_frame, orient="vertical", command=self.hara_tree.yview)
-        hsb_hara = ttk.Scrollbar(hara_frame, orient="horizontal", command=self.hara_tree.xview)
+        vsb_hara = ttk.Scrollbar(self.hara_frame, orient="vertical", command=self.hara_tree.yview)
+        hsb_hara = ttk.Scrollbar(self.hara_frame, orient="horizontal", command=self.hara_tree.xview)
         self.hara_tree.configure(yscrollcommand=vsb_hara.set, xscrollcommand=hsb_hara.set)
         self.hara_tree.grid(row=0, column=0, sticky="nsew")
         vsb_hara.grid(row=0, column=1, sticky="ns")
         hsb_hara.grid(row=1, column=0, sticky="ew")
-        hara_frame.rowconfigure(0, weight=1)
-        hara_frame.columnconfigure(0, weight=1)
+        self.hara_frame.rowconfigure(0, weight=1)
+        self.hara_frame.columnconfigure(0, weight=1)
         self.hara_tree.tag_configure("added", background="#cce5ff")
         self.hara_tree.tag_configure("removed", background="#f8d7da")
         self.hara_tree.tag_configure("existing", background="#e2e3e5")
 
         # box for requirement changes similar to ReviewDocument
-        req_frame = tk.Frame(self)
-        req_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        tk.Label(req_frame, text="Requirements").pack(anchor="w")
-        vbar_req = tk.Scrollbar(req_frame, orient=tk.VERTICAL)
+        self.req_frame = tk.Frame(self)
+        self.req_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        tk.Label(self.req_frame, text="Requirements").pack(anchor="w")
+        vbar_req = tk.Scrollbar(self.req_frame, orient=tk.VERTICAL)
         self.req_text = tk.Text(
-            req_frame,
+            self.req_frame,
             wrap="word",
             yscrollcommand=vbar_req.set,
             height=8,
@@ -1700,11 +1730,11 @@ class VersionCompareDialog(tk.Frame):
         self.req_text.tag_configure("removed", foreground="red")
 
         # text box for detailed log of changes
-        log_frame = tk.Frame(self)
-        log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        vbar_log = tk.Scrollbar(log_frame, orient=tk.VERTICAL)
+        self.log_frame = tk.Frame(self)
+        self.log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        vbar_log = tk.Scrollbar(self.log_frame, orient=tk.VERTICAL)
         self.log_text = tk.Text(
-            log_frame,
+            self.log_frame,
             wrap="word",
             yscrollcommand=vbar_log.set,
             height=8,
@@ -1722,6 +1752,18 @@ class VersionCompareDialog(tk.Frame):
             else:
                 self.other_combo.current(0)
             self.compare()
+
+    def toggle_mode(self):
+        if self.mode_var.get() == "version":
+            self.base_combo.pack(fill=tk.X, padx=5)
+            self.other_combo.pack(fill=tk.X, padx=5)
+            self.start_entry.pack_forget()
+            self.end_entry.pack_forget()
+        else:
+            self.base_combo.pack_forget()
+            self.other_combo.pack_forget()
+            self.start_entry.pack(fill=tk.X, padx=5)
+            self.end_entry.pack(fill=tk.X, padx=5)
 
     def insert_diff(self, old, new):
         """Insert a colorized diff between old and new strings."""
@@ -1856,18 +1898,39 @@ class VersionCompareDialog(tk.Frame):
 
     def compare(self, event=None):
         import json  # ensure available even if module-level import is altered
-        base = self.base_var.get()
-        other = self.other_var.get()
-        if not base or not other:
-            return
-        data1 = data2 = None
-        for v in self.app.versions:
-            if v["name"] == base:
-                data1 = v["data"]
-            if v["name"] == other:
-                data2 = v["data"]
-        if data1 is None or data2 is None:
-            return
+        if self.mode_var.get() == "version":
+            base = self.base_var.get()
+            other = self.other_var.get()
+            if not base or not other:
+                return
+            data1 = data2 = None
+            for v in self.app.versions:
+                if v["name"] == base:
+                    data1 = v["data"]
+                if v["name"] == other:
+                    data2 = v["data"]
+            if data1 is None or data2 is None:
+                return
+        else:
+            start = self.start_var.get()
+            end = self.end_var.get()
+            if not start or not end:
+                return
+            try:
+                sdt = datetime.datetime.fromisoformat(start)
+                edt = datetime.datetime.fromisoformat(end)
+            except Exception:
+                return
+            data1 = data2 = None
+            versions = sorted(self.app.versions, key=lambda x: x.get("date", ""))
+            for v in versions:
+                dt = datetime.datetime.fromisoformat(v.get("date", ""))
+                if dt <= sdt:
+                    data1 = v["data"]
+                if dt <= edt:
+                    data2 = v["data"]
+            if data1 is None or data2 is None:
+                return
 
         map1 = self.app.node_map_from_data(data1["top_events"])
         map2 = self.app.node_map_from_data(data2["top_events"])
@@ -2413,9 +2476,9 @@ class VersionCompareDialog(tk.Frame):
                 tag = "existing" if e in e1 else "added"
                 self.hazop_tree.insert("", "end", values=row, tags=(tag,))
                 seen.add(json.dumps(e, sort_keys=True))
-            for e in e1:
-                if json.dumps(e, sort_keys=True) not in seen:
-                    row = [
+        for e in e1:
+            if json.dumps(e, sort_keys=True) not in seen:
+                row = [
                         name,
                         e.get("function", ""),
                         e.get("malfunction", ""),
@@ -2473,6 +2536,20 @@ class VersionCompareDialog(tk.Frame):
                     ]
                     self.hara_tree.insert("", "end", values=row, tags=("removed",))
 
+        # show or hide work product sections
+        for frame, var in [
+            (self.canvas_frame, self.show_fta_var),
+            (self.fmea_frame, self.show_fmea_var),
+            (self.fmeda_frame, self.show_fmeda_var),
+            (self.hazop_frame, self.show_hazop_var),
+            (self.hara_frame, self.show_hara_var),
+            (self.req_frame, self.show_fta_var),
+            (self.log_frame, self.show_fta_var),
+        ]:
+            if var.get():
+                frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            else:
+                frame.pack_forget()
 
 
     def on_close(self):
