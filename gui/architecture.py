@@ -1131,6 +1131,45 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                 repo.touch_diagram(diag.diag_id)
 
 
+def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
+    """Propagate updates on ``block_id`` to all parts referencing it."""
+
+    block = repo.elements.get(block_id)
+    if not block or block.elem_type != "Block":
+        return
+
+    propagate_block_port_changes(repo, block_id)
+
+    props = {
+        k: v
+        for k, v in block.properties.items()
+        if k in ("operations", "partProperties", "behaviors")
+    }
+    for elem in repo.elements.values():
+        if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
+            continue
+        for k in ("operations", "partProperties", "behaviors"):
+            if k in props and props[k]:
+                elem.properties[k] = props[k]
+            else:
+                elem.properties.pop(k, None)
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Internal Block Diagram":
+                continue
+            diag.objects = getattr(diag, "objects", [])
+            updated = False
+            for obj in diag.objects:
+                if obj.get("obj_type") == "Part" and obj.get("element_id") == elem.elem_id:
+                    for k in ("operations", "partProperties", "behaviors"):
+                        if k in props and props[k]:
+                            obj.setdefault("properties", {})[k] = props[k]
+                        else:
+                            obj.setdefault("properties", {}).pop(k, None)
+                    updated = True
+            if updated:
+                repo.touch_diagram(diag.diag_id)
+
+
 def _propagate_block_requirement_changes(
     repo: SysMLRepository, parent_id: str, child_id: str
 ) -> None:
@@ -1642,6 +1681,14 @@ class SysMLDiagramWindow(tk.Frame):
                         if src_id and dst_id:
                             rel = self.repo.create_relationship(t, src_id, dst_id)
                             self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                            if t == "Composite Aggregation":
+                                add_composite_aggregation_part(
+                                    self.repo, src_id, dst_id
+                                )
+                            elif t == "Aggregation":
+                                add_aggregation_part(
+                                    self.repo, src_id, dst_id
+                                )
                         self._sync_to_repository()
                         ConnectionDialog(self, conn)
                     else:
@@ -3583,6 +3630,14 @@ class SysMLDiagramWindow(tk.Frame):
                     )
                     if not messagebox.askyesno("Remove Inheritance", msg):
                         return
+                if (
+                    self.selected_conn.conn_type in ("Aggregation", "Composite Aggregation")
+                    and src_elem
+                    and dst_elem
+                ):
+                    msg = "Remove aggregation and delete implemented part?"
+                    if not messagebox.askyesno("Remove Aggregation", msg):
+                        return
                 self.connections.remove(self.selected_conn)
                 # remove matching repository relationship
                 if src_elem and dst_elem and src_elem.element_id and dst_elem.element_id:
@@ -4362,7 +4417,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     repo.elements[self.obj.element_id].properties[prop] = joined
 
         if self.obj.obj_type == "Block" and self.obj.element_id:
-            propagate_block_port_changes(repo, self.obj.element_id)
+            propagate_block_part_changes(repo, self.obj.element_id)
             propagate_block_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
