@@ -3932,7 +3932,7 @@ class SysMLDiagramWindow(tk.Frame):
         """Remove *obj* from the current diagram but keep it in the model."""
         if obj.obj_type != "Part":
             return
-        self.remove_object(obj)
+        obj.hidden = True
         self.selected_obj = None
         self._sync_to_repository()
         self.redraw()
