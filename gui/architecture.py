@@ -597,6 +597,9 @@ class SysMLDiagramWindow(tk.Frame):
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None
+                # Return to select mode after completing a connection
+                self.current_tool = "Select"
+                self.canvas.configure(cursor="arrow")
                 self.redraw()
         elif t and t != "Select":
             if t == "Port":
@@ -673,6 +676,10 @@ class SysMLDiagramWindow(tk.Frame):
             self.sort_objects()
             self._sync_to_repository()
             self.selected_obj = new_obj
+            # After placing one object, revert to select mode so additional
+            # clicks do not keep adding elements unintentionally
+            self.current_tool = "Select"
+            self.canvas.configure(cursor="arrow")
             self.redraw()
         else:
             if obj:
@@ -930,6 +937,9 @@ class SysMLDiagramWindow(tk.Frame):
             self.select_rect_id = None
         self.start = None
         self.temp_line_end = None
+        # Return to select mode after completing a connection
+        self.current_tool = "Select"
+        self.canvas.configure(cursor="arrow")
         self.resizing_obj = None
         self.resize_edge = None
         if self.dragging_point_index is not None and self.selected_conn:
