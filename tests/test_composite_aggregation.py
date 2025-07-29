@@ -2,6 +2,7 @@ import unittest
 from gui.architecture import (
     add_composite_aggregation_part,
     remove_aggregation_part,
+    set_ibd_father,
 )
 from sysml.sysml_repository import SysMLRepository
 
@@ -41,6 +42,23 @@ class CompositeAggregationTests(unittest.TestCase):
                 for o in ibd.objects
             )
         )
+
+    def test_set_father_links_and_renders_existing_parts(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Composite Aggregation", whole.elem_id, part.elem_id)
+        ibd = repo.create_diagram("Internal Block Diagram")
+        added = set_ibd_father(repo, ibd, whole.elem_id)
+        self.assertEqual(repo.get_linked_diagram(whole.elem_id), ibd.diag_id)
+        self.assertTrue(
+            any(
+                o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+                for o in ibd.objects
+            )
+        )
+        # ensure added list includes the new part
+        self.assertTrue(any(d.get("properties", {}).get("definition") == part.elem_id for d in added))
 
 
 if __name__ == "__main__":
