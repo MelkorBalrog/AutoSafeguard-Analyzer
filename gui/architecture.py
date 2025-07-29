@@ -145,18 +145,6 @@ def _find_blocks_with_part(repo: SysMLRepository, part_id: str) -> set[str]:
     return blocks
 
 
-def _find_blocks_with_aggregation(repo: SysMLRepository, part_id: str) -> set[str]:
-    """Return blocks that have an aggregation relationship to ``part_id``."""
-    blocks: set[str] = set()
-    for rel in repo.relationships:
-        if (
-            rel.rel_type in ("Aggregation", "Composite Aggregation")
-            and rel.target == part_id
-        ):
-            blocks.add(rel.source)
-    return blocks
-
-
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -199,8 +187,7 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
         if elem.elem_type == "Part" and elem.properties.get("definition") == block_id:
             elem.name = new_name
     # update blocks that include this block as a part
-    related = _find_blocks_with_part(repo, block_id) | _find_blocks_with_aggregation(repo, block_id)
-    for parent_id in related:
+    for parent_id in _find_blocks_with_part(repo, block_id):
         parent = repo.elements.get(parent_id)
         if not parent:
             continue
@@ -1179,8 +1166,7 @@ def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
     for elem in repo.elements.values():
         if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
             continue
-        elem.name = block.name
-
+            
         for prop in props:
             if prop in block.properties:
                 elem.properties[prop] = block.properties[prop]
