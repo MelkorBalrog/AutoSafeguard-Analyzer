@@ -220,7 +220,7 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
         for idx, val in enumerate(parts):
             base = val.split("[")[0].strip()
             suffix = val[len(base):]
-            if base == old_name:
+            if base == old_name or base == block_id:
                 parts[idx] = new_name + suffix
                 changed = True
         if changed:
@@ -5092,7 +5092,12 @@ class ElementPropertiesDialog(simpledialog.Dialog):
             row += 1
 
     def apply(self):
-        self.element.name = self.name_var.get()
+        repo = SysMLRepository.get_instance()
+        new_name = self.name_var.get()
+        if self.element.elem_type == "Block":
+            rename_block(repo, self.element.elem_id, new_name)
+        else:
+            self.element.name = new_name
         for prop, var in self.entries.items():
             self.element.properties[prop] = var.get()
 
