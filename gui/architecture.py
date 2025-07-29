@@ -142,9 +142,6 @@ def _find_blocks_with_part(repo: SysMLRepository, part_id: str) -> set[str]:
             if obj.get("properties", {}).get("definition") == part_id:
                 blocks.add(blk_id)
                 break
-    for rel in repo.relationships:
-        if rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.target == part_id:
-            blocks.add(rel.source)
     return blocks
 
 
@@ -2116,16 +2113,14 @@ class SysMLDiagramWindow(tk.Frame):
                                     "Aggregation",
                                     "Composite Aggregation",
                                 ):
-                                    msg = "Remove selected part?"
-                                    if messagebox.askyesno("Remove Part", msg):
-                                        remove_aggregation_part(
-                                            self.repo,
-                                            src_obj.element_id,
-                                            dst_obj.element_id,
-                                            remove_object=self.selected_conn.conn_type
-                                            == "Composite Aggregation",
-                                            app=getattr(self, "app", None),
-                                        )
+                                    remove_aggregation_part(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                        remove_object=self.selected_conn.conn_type
+                                        == "Composite Aggregation",
+                                        app=getattr(self, "app", None),
+                                    )
                                 if self.dragging_endpoint == "dst":
                                     rel.target = obj.element_id
                                     self.selected_conn.dst = obj.obj_id
@@ -2677,7 +2672,7 @@ class SysMLDiagramWindow(tk.Frame):
             def_id = obj.properties.get("definition")
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
-                name = f"{def_name} : {name}" if name else def_name
+                name = f"{name} : {def_name}" if name else def_name
 
         lines: list[str] = []
         diag_id = self.repo.get_linked_diagram(obj.element_id)
@@ -3261,7 +3256,7 @@ class SysMLDiagramWindow(tk.Frame):
                 def_id = obj.properties.get("definition")
                 if def_id and def_id in self.repo.elements:
                     def_name = self.repo.elements[def_id].name or def_id
-                    label = f"{def_name} : {name}" if name else def_name
+                    label = f"{name} : {def_name}" if name else def_name
             diag_id = self.repo.get_linked_diagram(obj.element_id)
             label_lines = []
             if diag_id and diag_id in self.repo.diagrams:
@@ -3613,9 +3608,6 @@ class SysMLDiagramWindow(tk.Frame):
                         "properties and attributes. Continue?"
                     )
                     if not messagebox.askyesno("Remove Inheritance", msg):
-                        return
-                if self.selected_conn.conn_type in ("Aggregation", "Composite Aggregation") and src_elem and dst_elem:
-                    if not messagebox.askyesno("Remove Part", "Remove selected part?"):
                         return
                 self.connections.remove(self.selected_conn)
                 # remove matching repository relationship
