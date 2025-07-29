@@ -8065,18 +8065,6 @@ class FaultTreeApp:
                     names.append(name)
         return names
 
-    def get_all_scenery_names(self):
-        """Return the list of scenery/ODD element names."""
-        names = []
-        for lib in self.odd_libraries:
-            for el in lib.get("elements", []):
-                if isinstance(el, dict):
-                    name = el.get("name") or el.get("element") or el.get("id")
-                else:
-                    name = str(el)
-                if name:
-                    names.append(name)
-        return names
 
     def get_all_function_names(self):
         """Return unique function names from HAZOP entries."""

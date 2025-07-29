@@ -213,22 +213,6 @@ class InheritPartsTests(unittest.TestCase):
             any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)
         )
 
-    def test_sync_partproperty_parts(self):
-        repo = self.repo
-        blk = repo.create_element("Block", name="A", properties={"partProperties": "B"})
-        part_blk = repo.create_element("Block", name="B")
-        ibd = repo.create_diagram("Internal Block Diagram")
-        repo.link_diagram(blk.elem_id, ibd.diag_id)
-        added = _sync_ibd_partproperty_parts(repo, blk.elem_id)
-        self.assertTrue(
-            any(
-                o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id
-                for o in ibd.objects
-            )
-        )
-        self.assertTrue(
-            any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)
-        )
 
     def test_sync_aggregation_parts_with_parent(self):
         repo = self.repo
