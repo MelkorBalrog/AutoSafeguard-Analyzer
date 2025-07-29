@@ -2243,10 +2243,13 @@ class SysMLDiagramWindow(tk.Frame):
             if backward:
                 self._draw_open_arrow(points[1], points[0], color=color, width=width)
         elif conn.conn_type in ("Generalize", "Generalization"):
+            # SysML uses an open triangular arrow head for generalization
+            # relationships. Use the open arrow drawing helper so the arrow
+            # interior matches the canvas background (typically white).
             if forward:
-                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
             if backward:
-                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+                self._draw_open_arrow(points[1], points[0], color=color, width=width)
         if conn.mid_arrow:
             mid_idx = len(points) // 2
             if mid_idx > 0:
