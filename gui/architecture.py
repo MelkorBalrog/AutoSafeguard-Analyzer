@@ -1385,16 +1385,6 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
-                # Prevent duplicate aggregations when inherited via generalization
-                parents = _collect_generalization_parents(self.repo, src.element_id)
-                for p in parents:
-                    if any(
-                        r.rel_type in ("Aggregation", "Composite Aggregation")
-                        and r.source == p
-                        and r.target == dst.element_id
-                        for r in self.repo.relationships
-                    ):
-                        return False, "Target already aggregated through generalization"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
@@ -4329,10 +4319,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         self.obj.properties["name"] = self.name_var.get()
         repo = SysMLRepository.get_instance()
         if self.obj.element_id and self.obj.element_id in repo.elements:
-            if self.obj.obj_type == "Block":
-                rename_block(repo, self.obj.element_id, self.name_var.get())
-            else:
-                repo.elements[self.obj.element_id].name = self.name_var.get()
+            repo.elements[self.obj.element_id].name = self.name_var.get()
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
