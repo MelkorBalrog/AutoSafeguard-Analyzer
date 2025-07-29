@@ -8,7 +8,6 @@ from gui.architecture import (
     remove_inherited_block_properties,
 )
 
-
 class InheritPartsTests(unittest.TestCase):
     def setUp(self):
         SysMLRepository._instance = None
@@ -195,7 +194,6 @@ class InheritPartsTests(unittest.TestCase):
         props = repo.elements[child.elem_id].properties
         self.assertIn("a2", props.get("valueProperties", ""))
         self.assertNotIn("a1", props.get("valueProperties", ""))
-
 
 if __name__ == "__main__":
     unittest.main()

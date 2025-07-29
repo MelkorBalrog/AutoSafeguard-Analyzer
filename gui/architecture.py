@@ -358,6 +358,44 @@ def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     objs[:] = filtered
 
 
+def snap_port_to_parent_obj(port: SysMLObject, parent: SysMLObject) -> None:
+    """Position *port* along the closest edge of *parent*."""
+    px = port.x
+    py = port.y
+    left = parent.x - parent.width / 2
+    right = parent.x + parent.width / 2
+    top = parent.y - parent.height / 2
+    bottom = parent.y + parent.height / 2
+    d_left = abs(px - left)
+    d_right = abs(px - right)
+    d_top = abs(py - top)
+    d_bottom = abs(py - bottom)
+    min_d = min(d_left, d_right, d_top, d_bottom)
+    if min_d == d_left:
+        port.x = left
+        port.y = min(max(py, top), bottom)
+        port.properties["side"] = "W"
+    elif min_d == d_right:
+        port.x = right
+        port.y = min(max(py, top), bottom)
+        port.properties["side"] = "E"
+    elif min_d == d_top:
+        port.y = top
+        port.x = min(max(px, left), right)
+        port.properties["side"] = "N"
+    else:
+        port.y = bottom
+        port.x = min(max(px, left), right)
+        port.properties["side"] = "S"
+
+
+def update_ports_for_part(part: SysMLObject, objs: List[SysMLObject]) -> None:
+    """Snap all ports referencing *part* to its border."""
+    for o in objs:
+        if o.obj_type == "Port" and o.properties.get("parent") == str(part.obj_id):
+            snap_port_to_parent_obj(o, part)
+
+
 def parse_operations(raw: str) -> List[OperationDefinition]:
     """Return a list of operations parsed from *raw* JSON or comma text."""
     if not raw:
@@ -684,6 +722,9 @@ class SysMLDiagramWindow(tk.Frame):
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None
+                # Return to select mode after completing a connection
+                self.current_tool = "Select"
+                self.canvas.configure(cursor="arrow")
                 self.redraw()
         elif t and t != "Select":
             if t == "Port":
@@ -767,6 +808,10 @@ class SysMLDiagramWindow(tk.Frame):
             self.sort_objects()
             self._sync_to_repository()
             self.selected_obj = new_obj
+            # After placing one object, revert to select mode so additional
+            # clicks do not keep adding elements unintentionally
+            self.current_tool = "Select"
+            self.canvas.configure(cursor="arrow")
             self.redraw()
         else:
             if obj:
@@ -946,6 +991,8 @@ class SysMLDiagramWindow(tk.Frame):
                 new_w = new_h = size
             obj.width = new_w
             obj.height = new_h
+            if obj.obj_type == "Part":
+                update_ports_for_part(obj, self.objects)
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
@@ -1032,6 +1079,9 @@ class SysMLDiagramWindow(tk.Frame):
             self.select_rect_id = None
         self.start = None
         self.temp_line_end = None
+        # Return to select mode after completing a connection
+        self.current_tool = "Select"
+        self.canvas.configure(cursor="arrow")
         self.resizing_obj = None
         self.resize_edge = None
         if self.dragging_point_index is not None and self.selected_conn:
@@ -1396,33 +1446,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def snap_port_to_parent(self, port: SysMLObject, parent: SysMLObject) -> None:
-        px = port.x
-        py = port.y
-        left = parent.x - parent.width / 2
-        right = parent.x + parent.width / 2
-        top = parent.y - parent.height / 2
-        bottom = parent.y + parent.height / 2
-        d_left = abs(px - left)
-        d_right = abs(px - right)
-        d_top = abs(py - top)
-        d_bottom = abs(py - bottom)
-        min_d = min(d_left, d_right, d_top, d_bottom)
-        if min_d == d_left:
-            port.x = left
-            port.y = min(max(py, top), bottom)
-            port.properties["side"] = "W"
-        elif min_d == d_right:
-            port.x = right
-            port.y = min(max(py, top), bottom)
-            port.properties["side"] = "E"
-        elif min_d == d_top:
-            port.y = top
-            port.x = min(max(px, left), right)
-            port.properties["side"] = "N"
-        else:
-            port.y = bottom
-            port.x = min(max(px, left), right)
-            port.properties["side"] = "S"
+        snap_port_to_parent_obj(port, parent)
 
     def edge_point(
         self,
@@ -3106,7 +3130,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         modes.add(label)
         return ", ".join(sorted(modes))
 
-    def add_block_parts(self) -> None:
+    def add_inherited_parts(self) -> None:
         repo = self.repo
         # determine which block this IBD represents
         block_id = next(
@@ -3194,18 +3218,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
-    def add_parent_parts(self) -> None:
-        """Add parts from the assigned father block."""
-        repo = self.repo
-        diag = repo.diagrams.get(self.diagram_id)
-        if not diag or not getattr(diag, "father", None):
-            messagebox.showinfo("Add Parent Parts", "No father block assigned")
-            return
-        added = inherit_father_parts(repo, diag)
-        for data in added:
-            self.objects.append(SysMLObject(**data))
-        self.redraw()
-        self._sync_to_repository()
 
 
 class NewDiagramDialog(simpledialog.Dialog):
