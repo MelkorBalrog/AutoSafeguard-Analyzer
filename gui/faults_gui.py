@@ -475,6 +475,9 @@ class FaultsWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Autonomous Truck Fault Prioritization")
         self.resize(1400, 800)
+        # Keep the window large enough for the table, toolbar and status bar
+        # to remain fully visible when the user resizes it.
+        self.setMinimumSize(1200, 700)
 
         # thresholds
         self.sev_hi = SEVERITY_HI_TH
