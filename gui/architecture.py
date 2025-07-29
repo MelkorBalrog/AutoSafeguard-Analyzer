@@ -5272,6 +5272,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             self.objects.append(SysMLObject(**data))
         self.redraw()
         self._sync_to_repository()
+        if diag is not None:
+            update_block_parts_from_ibd(repo, diag)
+            _sync_block_parts_from_ibd(repo, diag.diag_id)
         if added:
             names = [
                 n.strip()
@@ -5365,6 +5368,8 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
                 repo, self.diagram, father_id, app=getattr(self.master, "app", None)
             )
             self.added_parts.extend(inherit_father_parts(repo, self.diagram))
+            update_block_parts_from_ibd(repo, self.diagram)
+            _sync_block_parts_from_ibd(repo, self.diagram.diag_id)
 
 
 class PackagePropertiesDialog(simpledialog.Dialog):

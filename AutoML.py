@@ -296,6 +296,8 @@ from gui.architecture import (
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
     ArchitectureManagerDialog,
+    update_block_parts_from_ibd,
+    _sync_block_parts_from_ibd,
 )
 from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
@@ -1448,6 +1450,9 @@ class EditNodeDialog(simpledialog.Dialog):
         for fm in self.get_all_failure_modes():
             self.propagate_failure_mode_attributes(fm)
         self.update_basic_event_probabilities()
+        for diag in self.repo.diagrams.values():
+            update_block_parts_from_ibd(self.repo, diag)
+            _sync_block_parts_from_ibd(self.repo, diag.diag_id)
 
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
@@ -8493,6 +8498,9 @@ class FaultTreeApp:
                     entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
 
         self.update_basic_event_probabilities()
+        for diag in self.repo.diagrams.values():
+            update_block_parts_from_ibd(self.repo, diag)
+            _sync_block_parts_from_ibd(self.repo, diag.diag_id)
 
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
