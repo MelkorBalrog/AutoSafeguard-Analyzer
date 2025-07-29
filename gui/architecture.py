@@ -1123,6 +1123,23 @@ class SysMLDiagramWindow(tk.Frame):
         ly = ay + t * (by - ay)
         return ((px - lx) ** 2 + (py - ly) ** 2) ** 0.5
 
+    def _segment_intersection(self, p1, p2, p3, p4):
+        """Return intersection point (x, y, t) of segments *p1*-*p2* and *p3*-*p4* or None."""
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        x4, y4 = p4
+        denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+        if denom == 0:
+            return None
+        t = ((x3 - x1) * (y4 - y3) - (y3 - y1) * (x4 - x3)) / denom
+        u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / denom
+        if 0 <= t <= 1 and 0 <= u <= 1:
+            ix = x1 + t * (x2 - x1)
+            iy = y1 + t * (y2 - y1)
+            return ix, iy, t
+        return None
+
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         for conn in self.connections:
             src = self.get_object(conn.src)
@@ -1214,6 +1231,24 @@ class SysMLDiagramWindow(tk.Frame):
             r = min(w, h)
             dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
             return x + dx / dist * r, y + dy / dist * r
+        if obj.obj_type in ("Decision", "Merge"):
+            points = [
+                (x, y - h),
+                (x + w, y),
+                (x, y + h),
+                (x - w, y),
+            ]
+            best = None
+            for i in range(len(points)):
+                p3 = points[i]
+                p4 = points[(i + 1) % len(points)]
+                inter = self._segment_intersection((x, y), (tx, ty), p3, p4)
+                if inter:
+                    ix, iy, t = inter
+                    if best is None or t < best[2]:
+                        best = (ix, iy, t)
+            if best:
+                return best[0], best[1]
         if abs(dx) > abs(dy):
             if dx > 0:
                 x += w
@@ -1766,7 +1801,10 @@ class SysMLDiagramWindow(tk.Frame):
         flat = [coord for pt in points for coord in pt]
         color = "red" if selected else "black"
         width = 2 if selected else 1
-        self.canvas.create_line(*flat, arrow=tk.LAST, dash=dash, fill=color, width=width)
+        arrow_style = tk.LAST
+        if conn.conn_type == "Connector":
+            arrow_style = tk.NONE
+        self.canvas.create_line(*flat, arrow=arrow_style, dash=dash, fill=color, width=width)
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
