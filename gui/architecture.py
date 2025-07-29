@@ -220,7 +220,7 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
         for idx, val in enumerate(parts):
             base = val.split("[")[0].strip()
             suffix = val[len(base):]
-            if base == old_name:
+            if base == old_name or base == block_id:
                 parts[idx] = new_name + suffix
                 changed = True
         if changed:

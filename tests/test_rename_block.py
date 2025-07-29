@@ -2,6 +2,7 @@ import unittest
 from gui.architecture import (
     add_composite_aggregation_part,
     add_aggregation_part,
+    remove_aggregation_part,
     rename_block,
     inherit_block_properties,
 )
@@ -72,6 +73,23 @@ class RenameBlockTests(unittest.TestCase):
         pid = rel.properties.get("part_elem")
         self.assertIsNotNone(pid)
         self.assertEqual(repo.elements[pid].name, "NewPart")
+
+    def test_rename_empty_block_syncs_and_removes(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="")
+        repo.create_relationship("Aggregation", whole.elem_id, part.elem_id)
+        add_aggregation_part(repo, whole.elem_id, part.elem_id)
+        rename_block(repo, part.elem_id, "Renamed")
+        self.assertIn(
+            "Renamed",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
+        )
+        remove_aggregation_part(repo, whole.elem_id, part.elem_id)
+        self.assertNotIn(
+            "Renamed",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
+        )
 
 
 if __name__ == "__main__":
