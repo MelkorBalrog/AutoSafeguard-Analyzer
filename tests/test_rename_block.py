@@ -74,6 +74,25 @@ class RenameBlockTests(unittest.TestCase):
         self.assertIsNotNone(pid)
         self.assertEqual(repo.elements[pid].name, "NewPart")
 
+    def test_rename_aggregated_block_updates_generalized_parent(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent")
+        child = repo.create_element("Block", name="Child")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Composite Aggregation", parent.elem_id, part.elem_id)
+        add_composite_aggregation_part(repo, parent.elem_id, part.elem_id)
+        inherit_block_properties(repo, child.elem_id)
+        rename_block(repo, part.elem_id, "Renamed")
+        self.assertIn(
+            "Renamed",
+            repo.elements[parent.elem_id].properties.get("partProperties", ""),
+        )
+        self.assertIn(
+            "Renamed",
+            repo.elements[child.elem_id].properties.get("partProperties", ""),
+        )
+
     def test_rename_empty_block_syncs_and_removes(self):
         repo = self.repo
         whole = repo.create_element("Block", name="Whole")

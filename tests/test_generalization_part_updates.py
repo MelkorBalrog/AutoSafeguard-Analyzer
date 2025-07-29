@@ -53,6 +53,23 @@ class GeneralizationPartUpdateTests(unittest.TestCase):
             repo.elements[child.elem_id].properties.get("partProperties", ""),
         )
 
+    def test_multiplicity_change_updates_child(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="P")
+        child = repo.create_element("Block", name="C")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        part = repo.create_element("Block", name="B")
+        add_composite_aggregation_part(repo, parent.elem_id, part.elem_id, "1")
+        self.assertEqual(
+            repo.elements[child.elem_id].properties.get("partProperties"),
+            "B[1]",
+        )
+        add_composite_aggregation_part(repo, parent.elem_id, part.elem_id, "3")
+        self.assertEqual(
+            repo.elements[child.elem_id].properties.get("partProperties"),
+            "B[3]",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
