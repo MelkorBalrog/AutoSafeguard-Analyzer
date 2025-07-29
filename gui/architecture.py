@@ -3,6 +3,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk, simpledialog, messagebox
 import json
+import math
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Tuple
 
@@ -1454,6 +1455,39 @@ class SysMLDiagramWindow(tk.Frame):
             points, smooth=True, splinesteps=36, **kwargs
         )
 
+    def _draw_open_arrow(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw an open arrow head from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        size = 10 * self.zoom
+        angle = math.atan2(dy, dx)
+        spread = math.radians(20)
+        p1 = (
+            end[0] - size * math.cos(angle - spread),
+            end[1] - size * math.sin(angle - spread),
+        )
+        p2 = (
+            end[0] - size * math.cos(angle + spread),
+            end[1] - size * math.sin(angle + spread),
+        )
+        self.canvas.create_polygon(
+            end,
+            p1,
+            p2,
+            fill=self.canvas.cget("background"),
+            outline=color,
+            width=width,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -1802,9 +1836,19 @@ class SysMLDiagramWindow(tk.Frame):
         color = "red" if selected else "black"
         width = 2 if selected else 1
         arrow_style = tk.LAST
+        open_arrow = False
         if conn.conn_type == "Connector":
             arrow_style = tk.NONE
-        self.canvas.create_line(*flat, arrow=arrow_style, dash=dash, fill=color, width=width)
+        elif conn.conn_type == "Association":
+            arrow_style = tk.NONE
+        elif conn.conn_type in ("Include", "Extend"):
+            arrow_style = tk.NONE
+            open_arrow = True
+        self.canvas.create_line(
+            *flat, arrow=arrow_style, dash=dash, fill=color, width=width
+        )
+        if open_arrow:
+            self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
