@@ -1,6 +1,7 @@
 import unittest
 from gui.architecture import (
     add_composite_aggregation_part,
+    add_aggregation_part,
     rename_block,
     inherit_block_properties,
 )
@@ -49,6 +50,28 @@ class RenameBlockTests(unittest.TestCase):
             "b",
             repo.elements[child.elem_id].properties.get("partProperties", ""),
         )
+
+    def test_rename_block_updates_aggregation_without_ibd(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Aggregation", whole.elem_id, part.elem_id)
+        add_aggregation_part(repo, whole.elem_id, part.elem_id)
+        rename_block(repo, part.elem_id, "NewPart")
+        self.assertIn(
+            "NewPart",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
+        )
+        rel = next(
+            r
+            for r in repo.relationships
+            if r.rel_type == "Aggregation"
+            and r.source == whole.elem_id
+            and r.target == part.elem_id
+        )
+        pid = rel.properties.get("part_elem")
+        self.assertIsNotNone(pid)
+        self.assertEqual(repo.elements[pid].name, "NewPart")
 
 
 if __name__ == "__main__":
