@@ -737,7 +737,10 @@ class SysMLDiagramWindow(tk.Frame):
                         return None
                     new_dir_a = "out" if dir_a == "out" else "in"
                     new_dir_b = "out" if dir_b == "out" else "in"
-                    for c in self.connections:
+                    connections = getattr(self, "connections", None)
+                    if connections is None:
+                        return False, "Inconsistent data flow on port"
+                    for c in connections:
                         if c.conn_type != "Connector":
                             continue
                         if src.obj_id in (c.src, c.dst):
@@ -2527,23 +2530,17 @@ class SysMLDiagramWindow(tk.Frame):
                         self._draw_open_arrow(mend, mstart, color=color, width=width)
                 else:
                     if mid_forward or not mid_backward:
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.LAST,
-                            fill=color,
+                        self._draw_filled_arrow(
+                            mstart,
+                            mend,
+                            color=color,
                             width=width,
                         )
                     if mid_backward:
-                        self.canvas.create_line(
-                            mend[0],
-                            mend[1],
-                            mstart[0],
-                            mstart[1],
-                            arrow=tk.LAST,
-                            fill=color,
+                        self._draw_filled_arrow(
+                            mend,
+                            mstart,
+                            color=color,
                             width=width,
                         )
                 if flow_port:
@@ -2551,33 +2548,30 @@ class SysMLDiagramWindow(tk.Frame):
                     if flow_port is b:
                         direction = "in" if direction == "out" else "out" if direction == "in" else direction
                     if direction == "inout":
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.BOTH,
-                            fill=color,
+                        self._draw_filled_arrow(
+                            mstart,
+                            mend,
+                            color=color,
+                            width=width,
+                        )
+                        self._draw_filled_arrow(
+                            mend,
+                            mstart,
+                            color=color,
                             width=width,
                         )
                     elif direction == "in":
-                        self.canvas.create_line(
-                            mend[0],
-                            mend[1],
-                            mstart[0],
-                            mstart[1],
-                            arrow=tk.LAST,
-                            fill=color,
+                        self._draw_filled_arrow(
+                            mend,
+                            mstart,
+                            color=color,
                             width=width,
                         )
                     else:
-                        self.canvas.create_line(
-                            mstart[0],
-                            mstart[1],
-                            mend[0],
-                            mend[1],
-                            arrow=tk.LAST,
-                            fill=color,
+                        self._draw_filled_arrow(
+                            mstart,
+                            mend,
+                            color=color,
                             width=width,
                         )
                     mx = (mstart[0] + mend[0]) / 2
