@@ -4445,7 +4445,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         repo = SysMLRepository.get_instance()
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
-            if self.obj.obj_type == "Block" and elem.name != new_name:
+            if self.obj.obj_type == "Block":
                 rename_block(repo, elem.elem_id, new_name)
             else:
                 elem.name = new_name
