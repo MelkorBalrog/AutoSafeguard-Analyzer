@@ -1,7 +1,11 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import unittest
 from sysml.sysml_repository import SysMLRepository
-from gui.architecture import extend_block_parts_with_parents, inherit_father_parts
+from gui.architecture import (
+    extend_block_parts_with_parents,
+    inherit_father_parts,
+    inherit_block_properties,
+)
 
 class InheritPartsTests(unittest.TestCase):
     def setUp(self):
@@ -130,6 +134,20 @@ class InheritPartsTests(unittest.TestCase):
         self.assertEqual(dir_map["b"], "out")
         port_added = [o for o in added if o.get("obj_type") == "Port"]
         self.assertEqual(len(port_added), 2)
+
+    def test_generalization_inherits_properties(self):
+        repo = self.repo
+        parent = repo.create_element(
+            "Block",
+            name="Parent",
+            properties={"partProperties": "p1", "valueProperties": "a1"},
+        )
+        child = repo.create_element("Block", name="Child")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        inherit_block_properties(repo, child.elem_id)
+        props = repo.elements[child.elem_id].properties
+        self.assertIn("p1", props.get("partProperties", ""))
+        self.assertIn("a1", props.get("valueProperties", ""))
 
 if __name__ == "__main__":
     unittest.main()
