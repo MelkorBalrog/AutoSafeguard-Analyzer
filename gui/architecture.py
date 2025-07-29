@@ -416,6 +416,80 @@ def _sync_ibd_aggregation_parts(
     return added
 
 
+def _sync_ibd_partproperty_parts(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD includes parts for entries in ``partProperties``.
+
+    Returns the list of added part object dictionaries."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
+    block = repo.elements.get(block_id)
+    if not block:
+        return []
+
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    existing_names = {
+        repo.elements[did].name
+        for did in existing_defs
+        if did in repo.elements and repo.elements[did].elem_type == "Block"
+    }
+    names = [
+        p.split("[")[0].strip()
+        for p in block.properties.get("partProperties", "").split(",")
+        if p.strip()
+    ]
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_defs)
+    for name in names:
+        if name in existing_names:
+            continue
+        target_id = next(
+            (
+                eid
+                for eid, elem in repo.elements.items()
+                if elem.elem_type == "Block" and elem.name == name
+            ),
+            None,
+        )
+        if not target_id:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=name,
+            properties={"definition": target_id},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": target_id},
+        }
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        added.append(obj_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+    return added
+
+
 def set_ibd_father(
     repo: SysMLRepository, diagram: SysMLDiagram, father_id: str | None, app=None
 ) -> list[dict]:
@@ -4072,8 +4146,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
         ttk.Button(
             self.toolbox,
-            text="Add Inherited Parts",
-            command=self.add_inherited_parts,
+            text="Add Contained Parts",
+            command=self.add_contained_parts,
         ).pack(fill=tk.X, padx=2, pady=2)
 
     def _get_failure_modes(self, comp_name: str) -> str:
@@ -4093,11 +4167,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         modes.add(label)
         return ", ".join(sorted(modes))
 
-    def add_inherited_parts(self) -> None:
+    def add_contained_parts(self) -> None:
         repo = self.repo
         block_id = next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
         if not block_id or block_id not in repo.elements:
-            messagebox.showinfo("Add Inherited Parts", "No block is linked to this diagram")
+            messagebox.showinfo("Add Contained Parts", "No block is linked to this diagram")
             return
         block = repo.elements[block_id]
         diag = repo.diagrams.get(self.diagram_id)
@@ -4128,7 +4202,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         ra_map = {ra.name: ra for ra in analyses}
         ra = ra_map.get(ra_name)
         if ra_name and (not ra or not ra.components):
-            messagebox.showinfo("Add Inherited Parts", "Analysis has no components")
+            messagebox.showinfo("Add Contained Parts", "Analysis has no components")
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
@@ -4138,8 +4212,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source == block_id
             for rel in repo.relationships
         )
-        if not comps and not getattr(diag, "father", None) and not has_aggr:
-            messagebox.showinfo("Add Inherited Parts", "No inherited parts available")
+        part_names = [
+            n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()
+        ]
+        if not comps and not getattr(diag, "father", None) and not has_aggr and not part_names:
+            messagebox.showinfo("Add Contained Parts", "No contained parts available")
             self.redraw()
             self._sync_to_repository()
             return
@@ -4149,8 +4226,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
             selected = dlg.result or []
 
-        if not selected and not comps:
-            # No reliability components to add, only parent parts were inherited
+        if not selected and not comps and not part_names:
+            # No reliability components or contained parts to add
             self.redraw()
             self._sync_to_repository()
             return
@@ -4193,6 +4270,12 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
             added.append(c.name)
+        # add parts defined in partProperties that are not yet present
+        added_props = _sync_ibd_partproperty_parts(
+            repo, block_id, app=getattr(self, "app", None)
+        )
+        for data in added_props:
+            self.objects.append(SysMLObject(**data))
         self.redraw()
         self._sync_to_repository()
         if added:
