@@ -2428,6 +2428,7 @@ class VersionCompareDialog(tk.Frame):
                         "Yes" if e.get("covered") else "No",
                         e.get("covered_by", ""),
                     ]
+                    # Insert removed HAZOP entry
                     self.hazop_tree.insert("", "end", values=row, tags=("removed",))
 
         # ----- HARA diff -----
