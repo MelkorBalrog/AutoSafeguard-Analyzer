@@ -233,7 +233,31 @@ def add_composite_aggregation_part(
     add_aggregation_part(repo, whole_id, part_id, multiplicity)
     diag_id = repo.get_linked_diagram(whole_id)
     diag = repo.diagrams.get(diag_id)
+    # locate the relationship for future reference
+    rel = next(
+        (
+            r
+            for r in repo.relationships
+            if r.rel_type == "Composite Aggregation"
+            and r.source == whole_id
+            and r.target == part_id
+        ),
+        None,
+    )
     if not diag or diag.diag_type != "Internal Block Diagram":
+        if rel and not rel.properties.get("part_elem"):
+            part_elem = repo.create_element(
+                "Part",
+                name=repo.elements.get(part_id).name or part_id,
+                properties={"definition": part_id, "force_ibd": "true"},
+                owner=repo.root_package.elem_id,
+            )
+            rel.properties["part_elem"] = part_elem.elem_id
+        elif rel and rel.properties.get("part_elem"):
+            pid = rel.properties["part_elem"]
+            elem = repo.elements.get(pid)
+            if elem:
+                elem.properties["force_ibd"] = "true"
         return
     diag.objects = getattr(diag, "objects", [])
     existing_defs = {
@@ -243,12 +267,18 @@ def add_composite_aggregation_part(
     }
     if part_id in existing_defs:
         return
-    part_elem = repo.create_element(
-        "Part",
-        name=repo.elements.get(part_id).name or part_id,
-        properties={"definition": part_id},
-        owner=repo.root_package.elem_id,
-    )
+    if rel and rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
+        part_elem = repo.elements[rel.properties["part_elem"]]
+        part_elem.properties["force_ibd"] = "true"
+    else:
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(part_id).name or part_id,
+            properties={"definition": part_id, "force_ibd": "true"},
+            owner=repo.root_package.elem_id,
+        )
+        if rel:
+            rel.properties["part_elem"] = part_elem.elem_id
     repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
     obj_dict = {
         "obj_id": _get_next_id(),
@@ -257,6 +287,7 @@ def add_composite_aggregation_part(
         "y": 50.0 + 60.0 * len(existing_defs),
         "element_id": part_elem.elem_id,
         "properties": {"definition": part_id},
+        "locked": True,
     }
     diag.objects.append(obj_dict)
     if app:
@@ -284,23 +315,30 @@ def _sync_ibd_composite_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
-    part_ids = [
-        rel.target
+    rels = [
+        rel
         for rel in repo.relationships
         if rel.rel_type == "Composite Aggregation" and rel.source == block_id
     ]
+    part_ids = [rel.target for rel in rels]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
-    for pid in part_ids:
+    for rel in rels:
+        pid = rel.target
         if pid in existing_defs:
             continue
-        part_elem = repo.create_element(
-            "Part",
-            name=repo.elements.get(pid).name or pid,
-            properties={"definition": pid},
-            owner=repo.root_package.elem_id,
-        )
+        if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
+            part_elem = repo.elements[rel.properties["part_elem"]]
+            part_elem.properties["force_ibd"] = "true"
+        else:
+            part_elem = repo.create_element(
+                "Part",
+                name=repo.elements.get(pid).name or pid,
+                properties={"definition": pid, "force_ibd": "true"},
+                owner=repo.root_package.elem_id,
+            )
+            rel.properties["part_elem"] = part_elem.elem_id
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
         obj_dict = {
             "obj_id": _get_next_id(),
@@ -309,6 +347,7 @@ def _sync_ibd_composite_parts(
             "y": base_y,
             "element_id": part_elem.elem_id,
             "properties": {"definition": pid},
+            "locked": True,
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -398,6 +437,21 @@ def remove_aggregation_part(
                         ]
                         win.redraw()
                         win._sync_to_repository()
+        # remove stored part element if any
+        rel = next(
+            (
+                r
+                for r in repo.relationships
+                if r.rel_type == "Composite Aggregation"
+                and r.source == whole_id
+                and r.target == part_id
+            ),
+            None,
+        )
+        if rel:
+            pid = rel.properties.pop("part_elem", None)
+            if pid and pid in repo.elements:
+                repo.delete_element(pid)
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
@@ -586,6 +640,7 @@ class SysMLObject:
     height: float = 40.0
     properties: Dict[str, str] = field(default_factory=dict)
     requirements: List[dict] = field(default_factory=list)
+    locked: bool = False
 
 
 @dataclass
@@ -3033,6 +3088,8 @@ class SysMLDiagramWindow(tk.Frame):
                 self.update_property_view()
 
     def remove_object(self, obj: SysMLObject) -> None:
+        if getattr(obj, "locked", False):
+            return
         removed_ids = {obj.obj_id}
         if obj in self.objects:
             self.objects.remove(obj)
