@@ -71,6 +71,22 @@ class RenameBlockTests(unittest.TestCase):
             repo.elements[whole.elem_id].properties.get("partProperties", ""),
         )
 
+    def test_remove_after_relationship_deleted(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        rel = repo.create_relationship("Composite Aggregation", whole.elem_id, part.elem_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id)
+        rename_block(repo, part.elem_id, "Renamed")
+        pid = rel.properties.get("part_elem")
+        repo.relationships.remove(rel)
+        remove_aggregation_part(repo, whole.elem_id, part.elem_id, remove_object=True)
+        self.assertNotIn(pid, repo.elements)
+        self.assertEqual(
+            "",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

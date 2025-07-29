@@ -733,10 +733,36 @@ def remove_aggregation_part(
             ),
             None,
         )
+        pid = None
         if rel:
             pid = rel.properties.pop("part_elem", None)
-            if pid and pid in repo.elements:
-                repo.delete_element(pid)
+        else:
+            # relationship may have been deleted already; try to locate an
+            # orphaned part element that matches the part definition
+            for elem in repo.elements.values():
+                if (
+                    elem.elem_type == "Part"
+                    and elem.properties.get("definition") == part_id
+                    and elem.properties.get("force_ibd") == "true"
+                ):
+                    # ensure this part element isn't referenced by another
+                    # composite aggregation
+                    ref = next(
+                        (
+                            r
+                            for r in repo.relationships
+                            if r.rel_type == "Composite Aggregation"
+                            and r.properties.get("part_elem") == elem.elem_id
+                        ),
+                        None,
+                    )
+                    if ref is None:
+                        pid = elem.elem_id
+                        break
+        if pid and pid in repo.elements:
+            if diag and pid in getattr(diag, "elements", []):
+                diag.elements.remove(pid)
+            repo.delete_element(pid)
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
