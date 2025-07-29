@@ -152,6 +152,8 @@ classDiagram
         height: float
         properties: Dict~str, str~
         requirements: List~dict~
+        locked: bool
+        hidden: bool
     }
     class DiagramConnection {
         src: int
@@ -159,6 +161,12 @@ classDiagram
         conn_type: str
         style: str
         points: List~Tuple~float,float~~
+        src_pos: Tuple~float,float~~
+        dst_pos: Tuple~float,float~~
+        name: str
+        arrow: str
+        mid_arrow: bool
+        multiplicity: str
     }
     class BlockUsage
     class PartUsage
@@ -245,6 +253,9 @@ generic `SysMLElement` placeholder. Key classes include:
   `qualification` and `failureModes`.
 - **PartUsage** – internal part with `component`, `failureModes` and `asil`
   fields for BOM links and safety ratings.
+  Parts created automatically for composite aggregations set a `force_ibd`
+  property so an internal block diagram is generated when the block structure is
+  first opened.
 - **PortUsage** – port on a block or part. Provides `direction`, `flow`,
   `labelX` and `labelY` to specify connector orientation.
 - **ActivityUsage** – container for behaviors with `ownedActions` and
@@ -520,6 +531,12 @@ Key attributes are:
   modification resolves the hazard.
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
+- **SysMLObject** – drawn object with coordinates, size and an optional linked
+  element. The `locked` flag prevents editing while `hidden` temporarily removes
+  the object from the diagram.
+- **DiagramConnection** – connector between objects storing the connection
+  `style`, optional arrowheads, intermediate points and a `mid_arrow` toggle for
+  aggregation lines.
 
 **BlockUsage** – extends `Block` with reliability fields like `analysis`, `fit`, `qualification` and `failureModes`.
 
