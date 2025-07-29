@@ -219,6 +219,11 @@ def add_aggregation_part(
             if o.get("element_id") == whole_id:
                 o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
 
+    # propagate changes to any generalization children
+    for child_id in _find_generalization_children(repo, whole_id):
+        remove_inherited_block_properties(repo, child_id, whole_id)
+        inherit_block_properties(repo, child_id)
+
 
 def add_composite_aggregation_part(
     repo: SysMLRepository,
@@ -296,6 +301,10 @@ def add_composite_aggregation_part(
                 win.objects.append(SysMLObject(**obj_dict))
                 win.redraw()
                 win._sync_to_repository()
+
+    # propagate composite part addition to any generalization children
+    for child_id in _find_generalization_children(repo, whole_id):
+        inherit_block_properties(repo, child_id)
 
 
 def _sync_ibd_composite_parts(
@@ -537,6 +546,27 @@ def remove_aggregation_part(
                 if o.get("element_id") == whole_id:
                     if new_parts:
                         o.setdefault("properties", {})["partProperties"] = ", ".join(new_parts)
+                    else:
+                        o.setdefault("properties", {}).pop("partProperties", None)
+
+    # propagate removals to any generalization children
+    for child_id in _find_generalization_children(repo, whole_id):
+        child = repo.elements.get(child_id)
+        if not child:
+            continue
+        child_parts = [
+            p.strip() for p in child.properties.get("partProperties", "").split(",") if p.strip()
+        ]
+        child_parts = [p for p in child_parts if p.split("[")[0].strip() != name]
+        if child_parts:
+            child.properties["partProperties"] = ", ".join(child_parts)
+        else:
+            child.properties.pop("partProperties", None)
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == child_id:
+                    if child_parts:
+                        o.setdefault("properties", {})["partProperties"] = ", ".join(child_parts)
                     else:
                         o.setdefault("properties", {}).pop("partProperties", None)
     if remove_object:
