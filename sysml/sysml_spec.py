@@ -53,6 +53,10 @@ for p in ('labelX', 'labelY'):
 SYSML_PROPERTIES.setdefault('BlockUsage', [])
 SYSML_PROPERTIES.setdefault('PartUsage', [])
 
+# Remove the derived SysML property 'partDefinition' from PartUsage entries.
+if 'partDefinition' in SYSML_PROPERTIES['PartUsage']:
+    SYSML_PROPERTIES['PartUsage'].remove('partDefinition')
+
 for prop in ('analysis', 'fit', 'qualification', 'failureModes'):
     if prop not in SYSML_PROPERTIES['BlockUsage']:
         SYSML_PROPERTIES['BlockUsage'].append(prop)
