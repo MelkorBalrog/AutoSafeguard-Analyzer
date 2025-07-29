@@ -296,6 +296,7 @@ from gui.architecture import (
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
     ArchitectureManagerDialog,
+    parse_behaviors,
 )
 from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
@@ -8079,6 +8080,63 @@ class FaultTreeApp:
         """Return names of all actions and activity diagrams."""
         repo = SysMLRepository.get_instance()
         return repo.get_activity_actions()
+
+    def get_all_action_labels(self) -> list[str]:
+        """Return actions and activities with implementing block names."""
+        repo = SysMLRepository.get_instance()
+
+        # Map diagram IDs to the block implementing them
+        diag_block: dict[str, str] = {}
+
+        # Internal block diagrams are linked directly to their father block
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Internal Block Diagram":
+                continue
+            blk_id = getattr(diag, "father", None) or next(
+                (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                None,
+            )
+            if blk_id and blk_id in repo.elements:
+                diag_block[diag.diag_id] = repo.elements[blk_id].name or blk_id
+
+        # Activity diagrams may be referenced as behaviors of blocks
+        for elem in repo.elements.values():
+            if elem.elem_type != "Block":
+                continue
+            for beh in parse_behaviors(elem.properties.get("behaviors", "")):
+                if beh.diagram in repo.diagrams and beh.diagram not in diag_block:
+                    diag_block[beh.diagram] = elem.name or elem.elem_id
+
+        labels: set[str] = set()
+
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Activity Diagram":
+                continue
+            blk = diag_block.get(diag.diag_id, "")
+            name = diag.name or diag.diag_id
+            labels.add(f"{name} : {blk}" if blk else name)
+            for obj in getattr(diag, "objects", []):
+                typ = obj.get("obj_type") or obj.get("type")
+                if typ not in ("Action Usage", "Action", "CallBehaviorAction"):
+                    continue
+                action_name = obj.get("properties", {}).get("name", "")
+                elem_id = obj.get("element_id")
+                if not action_name and elem_id and elem_id in repo.elements:
+                    action_name = repo.elements[elem_id].name
+                if not action_name:
+                    continue
+                view_id = None
+                if elem_id and elem_id in repo.elements:
+                    view_id = repo.elements[elem_id].properties.get("view")
+                if not view_id:
+                    view_id = obj.get("properties", {}).get("view")
+                blk_name = diag_block.get(view_id, "")
+                if not blk_name and elem_id:
+                    linked = repo.get_linked_diagram(elem_id)
+                    blk_name = diag_block.get(linked, "")
+                labels.add(f"{action_name} : {blk_name}" if blk_name else action_name)
+
+        return sorted(labels)
 
     def get_use_case_for_function(self, func: str) -> str:
         """Return the use case (activity diagram name) implementing a function."""
