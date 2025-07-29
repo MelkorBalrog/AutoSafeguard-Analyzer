@@ -22,11 +22,6 @@ class SysMLElement:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    history: List[dict] = field(default_factory=list)
-
-    def __post_init__(self):
-        if not self.history:
-            self.history.append({"date": self.created, "user": self.author})
 
 @dataclass
 class SysMLRelationship:
@@ -42,11 +37,6 @@ class SysMLRelationship:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    history: List[dict] = field(default_factory=list)
-
-    def __post_init__(self):
-        if not self.history:
-            self.history.append({"date": self.created, "user": self.author})
 
 @dataclass
 class SysMLDiagram:
@@ -67,11 +57,6 @@ class SysMLDiagram:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    history: List[dict] = field(default_factory=list)
-
-    def __post_init__(self):
-        if not self.history:
-            self.history.append({"date": self.created, "user": self.author})
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
@@ -91,7 +76,6 @@ class SysMLRepository:
             elem.modified = datetime.datetime.now().isoformat()
             elem.modified_by = user_config.CURRENT_USER_NAME
             elem.modified_by_email = user_config.CURRENT_USER_EMAIL
-            elem.history.append({"date": elem.modified, "user": elem.modified_by})
 
     def touch_diagram(self, diag_id: str) -> None:
         diag = self.diagrams.get(diag_id)
@@ -99,7 +83,6 @@ class SysMLRepository:
             diag.modified = datetime.datetime.now().isoformat()
             diag.modified_by = user_config.CURRENT_USER_NAME
             diag.modified_by_email = user_config.CURRENT_USER_EMAIL
-            diag.history.append({"date": diag.modified, "user": diag.modified_by})
 
     def touch_relationship(self, rel_id: str) -> None:
         rel = next((r for r in self.relationships if r.rel_id == rel_id), None)
@@ -107,7 +90,6 @@ class SysMLRepository:
             rel.modified = datetime.datetime.now().isoformat()
             rel.modified_by = user_config.CURRENT_USER_NAME
             rel.modified_by_email = user_config.CURRENT_USER_EMAIL
-            rel.history.append({"date": rel.modified, "user": rel.modified_by})
 
     @classmethod
     def get_instance(cls) -> "SysMLRepository":

@@ -36,8 +36,6 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(elem.modified_by_email, "test@example.com")
         self.assertEqual(diag.author_email, "test@example.com")
         self.assertEqual(rel.author_email, "test@example.com")
-        self.assertEqual(len(elem.history), 1)
-        self.assertEqual(elem.history[0]["user"], "Test User")
 
     def test_serialize(self):
         blk = self.repo.create_element("Block", name="Car")
