@@ -273,11 +273,7 @@ def add_composite_aggregation_part(
             part_elem = repo.create_element(
                 "Part",
                 name=repo.elements.get(part_id).name or part_id,
-                properties={
-                    "definition": part_id,
-                    "force_ibd": "true",
-                    "partDefinition": repo.elements.get(part_id).name or part_id,
-                },
+                properties={"definition": part_id, "force_ibd": "true"},
                 owner=repo.root_package.elem_id,
             )
             rel.properties["part_elem"] = part_elem.elem_id
@@ -298,18 +294,11 @@ def add_composite_aggregation_part(
     if rel and rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
         part_elem = repo.elements[rel.properties["part_elem"]]
         part_elem.properties["force_ibd"] = "true"
-        part_elem.properties.setdefault(
-            "partDefinition", repo.elements.get(part_id).name or part_id
-        )
     else:
         part_elem = repo.create_element(
             "Part",
             name=repo.elements.get(part_id).name or part_id,
-            properties={
-                "definition": part_id,
-                "force_ibd": "true",
-                "partDefinition": repo.elements.get(part_id).name or part_id,
-            },
+            properties={"definition": part_id, "force_ibd": "true"},
             owner=repo.root_package.elem_id,
         )
         if rel:
@@ -379,18 +368,11 @@ def _sync_ibd_composite_parts(
         if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
             part_elem = repo.elements[rel.properties["part_elem"]]
             part_elem.properties["force_ibd"] = "true"
-            part_elem.properties.setdefault(
-                "partDefinition", repo.elements.get(pid).name or pid
-            )
         else:
             part_elem = repo.create_element(
                 "Part",
                 name=repo.elements.get(pid).name or pid,
-                properties={
-                    "definition": pid,
-                    "force_ibd": "true",
-                    "partDefinition": repo.elements.get(pid).name or pid,
-                },
+                properties={"definition": pid, "force_ibd": "true"},
                 owner=repo.root_package.elem_id,
             )
             rel.properties["part_elem"] = part_elem.elem_id
@@ -449,10 +431,7 @@ def _sync_ibd_aggregation_parts(
         part_elem = repo.create_element(
             "Part",
             name=repo.elements.get(pid).name or pid,
-            properties={
-                "definition": pid,
-                "partDefinition": repo.elements.get(pid).name or pid,
-            },
+            properties={"definition": pid},
             owner=repo.root_package.elem_id,
         )
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
@@ -3914,7 +3893,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 state = "normal"
                 if self.obj.obj_type == "Block" and prop in ("fit", "qualification"):
                     state = "readonly"
-                if self.obj.obj_type == "Part" and prop in ("asil", "partDefinition"):
+                if self.obj.obj_type == "Part" and prop == "asil":
                     state = "readonly"
                 ttk.Entry(frame, textvariable=var, state=state).grid(
                     row=row, column=1, padx=4, pady=2
