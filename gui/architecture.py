@@ -3833,8 +3833,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 if prop in editable_list_props:
                     if prop == "ports":
                         ttk.Button(btnf, text="Edit", command=self.edit_port).pack(side=tk.TOP)
-                    elif prop == "partProperties":
-                        ttk.Button(btnf, text="Edit", command=self.edit_part_property).pack(side=tk.TOP)
                     else:
                         ttk.Button(
                             btnf, text="Edit", command=lambda p=prop: self.edit_list_item(p)
@@ -4082,13 +4080,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
         req_row += 1
         self._update_asil()
 
-        if self.obj.obj_type == "Block" and self.obj.element_id:
-            _sync_ibd_partproperty_parts(
-                repo,
-                self.obj.element_id,
-                app=getattr(self.master, "app", None),
-            )
-
     def add_port(self):
         name = simpledialog.askstring("Port", "Name:", parent=self)
         if name:
@@ -4110,57 +4101,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
         if name:
             lb.delete(idx)
             lb.insert(idx, name)
-
-    def edit_part_property(self):
-        lb = self.listboxes["partProperties"]
-        sel = lb.curselection()
-        if not sel:
-            return
-        idx = sel[0]
-        entry = lb.get(idx)
-        name = entry.split("[")[0].strip()
-        repo = SysMLRepository.get_instance()
-        diag_id = repo.get_linked_diagram(self.obj.element_id)
-        diag = repo.diagrams.get(diag_id)
-        part_obj = None
-        if diag and diag.diag_type == "Internal Block Diagram":
-            for obj in getattr(diag, "objects", []):
-                if obj.get("obj_type") != "Part":
-                    continue
-                elem = repo.elements.get(obj.get("element_id"))
-                if elem and elem.name == name:
-                    part_obj = SysMLObject(**obj)
-                    break
-        if part_obj is None:
-            added = _sync_ibd_partproperty_parts(
-                repo, self.obj.element_id, names=[name], app=getattr(self.master, "app", None)
-            )
-            if added:
-                part_obj = SysMLObject(**added[0])
-                if diag and diag.diag_type == "Internal Block Diagram":
-                    diag.objects.append(added[0])
-        if part_obj is None:
-            return
-        SysMLObjectDialog(self.master, part_obj)
-        if diag and diag.diag_type == "Internal Block Diagram":
-            for i, obj in enumerate(diag.objects):
-                if obj.get("obj_id") == part_obj.obj_id:
-                    diag.objects[i] = part_obj.__dict__
-                    break
-            repo.touch_diagram(diag.diag_id)
-        app = getattr(self.master, "app", None)
-        if app:
-            for win in getattr(app, "ibd_windows", []):
-                if getattr(win, "diagram_id", None) == diag_id:
-                    for obj in win.objects:
-                        if obj.obj_id == part_obj.obj_id:
-                            obj.x = part_obj.x
-                            obj.y = part_obj.y
-                            obj.width = part_obj.width
-                            obj.height = part_obj.height
-                            obj.properties = part_obj.properties.copy()
-                    win.redraw()
-                    win._sync_to_repository()
 
     def add_list_item(self, prop: str):
         val = simpledialog.askstring(prop, "Value:", parent=self)
@@ -4425,12 +4365,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     self.obj.properties["partProperties"] = repo.elements[
                         self.obj.element_id
                     ].properties["partProperties"]
-                if self.obj.obj_type == "Block" and self.obj.element_id:
-                    _sync_ibd_partproperty_parts(
-                        repo,
-                        self.obj.element_id,
-                        app=getattr(self.master, "app", None),
-                    )
 
         # Update linked diagram if applicable
         link_id = None
@@ -4561,12 +4495,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
                                 repo.touch_element(self.obj.element_id)
                             if hasattr(self.master, "_sync_to_repository"):
                                 self.master._sync_to_repository()
-                        if self.obj.obj_type == "Block" and self.obj.element_id:
-                            _sync_ibd_partproperty_parts(
-                                repo,
-                                self.obj.element_id,
-                                app=getattr(self.master, "app", None),
-                            )
 
 
 class ConnectionDialog(simpledialog.Dialog):
