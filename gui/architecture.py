@@ -5092,7 +5092,12 @@ class ElementPropertiesDialog(simpledialog.Dialog):
             row += 1
 
     def apply(self):
-        self.element.name = self.name_var.get()
+        repo = SysMLRepository.get_instance()
+        new_name = self.name_var.get()
+        if self.element.elem_type == "Block":
+            rename_block(repo, self.element.elem_id, new_name)
+        else:
+            self.element.name = new_name
         for prop, var in self.entries.items():
             self.element.properties[prop] = var.get()
 
