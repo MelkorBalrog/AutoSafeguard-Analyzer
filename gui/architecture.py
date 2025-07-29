@@ -196,8 +196,19 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     block.name = new_name
     # update part elements referencing this block
     for elem in repo.elements.values():
-        if elem.elem_type == "Part" and elem.properties.get("definition") == block_id:
+        if elem.elem_type != "Part":
+            continue
+        def_val = elem.properties.get("definition")
+        if def_val == block_id or def_val == old_name:
             elem.name = new_name
+            elem.properties["definition"] = block_id
+    for diag in repo.diagrams.values():
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") != "Part":
+                continue
+            def_val = obj.get("properties", {}).get("definition")
+            if def_val == old_name:
+                obj.setdefault("properties", {})["definition"] = block_id
     # update blocks that include this block as a part
     related = _find_blocks_with_part(repo, block_id) | _find_blocks_with_aggregation(repo, block_id)
     for parent_id in related:

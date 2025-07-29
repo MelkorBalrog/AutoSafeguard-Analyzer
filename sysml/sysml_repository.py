@@ -310,6 +310,33 @@ class SysMLRepository:
         if self.root_package is None:
             self.root_package = self.create_element("Package", name="Root")
 
+        self._resolve_part_definition_ids()
+
+    def _resolve_part_definition_ids(self) -> None:
+        """Ensure part definitions reference block IDs instead of names."""
+        name_map = {
+            e.name: e.elem_id
+            for e in self.elements.values()
+            if e.elem_type == "Block" and e.name
+        }
+        for elem in self.elements.values():
+            if elem.elem_type != "Part":
+                continue
+            def_val = elem.properties.get("definition")
+            if def_val and def_val not in self.elements:
+                mapped = name_map.get(def_val)
+                if mapped:
+                    elem.properties["definition"] = mapped
+        for diag in self.diagrams.values():
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Part":
+                    continue
+                def_val = obj.get("properties", {}).get("definition")
+                if def_val and def_val not in self.elements:
+                    mapped = name_map.get(def_val)
+                    if mapped:
+                        obj.setdefault("properties", {})["definition"] = mapped
+
     def get_activity_actions(self) -> list[str]:
         """Return all action names and activity diagram names."""
         names = []
