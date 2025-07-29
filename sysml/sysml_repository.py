@@ -5,7 +5,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional
 import os
 import datetime
-from analysis.user_config import CURRENT_USER_NAME
+import analysis.user_config as user_config
 
 @dataclass
 class SysMLElement:
@@ -17,9 +17,11 @@ class SysMLElement:
     stereotypes: Dict[str, str] = field(default_factory=dict)
     owner: Optional[str] = None
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    author: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    author_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
 
 @dataclass
 class SysMLRelationship:
@@ -30,9 +32,11 @@ class SysMLRelationship:
     stereotype: Optional[str] = None
     properties: Dict[str, str] = field(default_factory=dict)
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    author: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    author_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
 
 @dataclass
 class SysMLDiagram:
@@ -48,9 +52,11 @@ class SysMLDiagram:
     objects: List[dict] = field(default_factory=list)
     connections: List[dict] = field(default_factory=list)
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    author: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    author_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
+    modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
@@ -68,19 +74,22 @@ class SysMLRepository:
         elem = self.elements.get(elem_id)
         if elem:
             elem.modified = datetime.datetime.now().isoformat()
-            elem.modified_by = CURRENT_USER_NAME
+            elem.modified_by = user_config.CURRENT_USER_NAME
+            elem.modified_by_email = user_config.CURRENT_USER_EMAIL
 
     def touch_diagram(self, diag_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag:
             diag.modified = datetime.datetime.now().isoformat()
-            diag.modified_by = CURRENT_USER_NAME
+            diag.modified_by = user_config.CURRENT_USER_NAME
+            diag.modified_by_email = user_config.CURRENT_USER_EMAIL
 
     def touch_relationship(self, rel_id: str) -> None:
         rel = next((r for r in self.relationships if r.rel_id == rel_id), None)
         if rel:
             rel.modified = datetime.datetime.now().isoformat()
-            rel.modified_by = CURRENT_USER_NAME
+            rel.modified_by = user_config.CURRENT_USER_NAME
+            rel.modified_by_email = user_config.CURRENT_USER_EMAIL
 
     @classmethod
     def get_instance(cls) -> "SysMLRepository":
@@ -96,8 +105,10 @@ class SysMLRepository:
             name,
             properties or {},
             owner=owner,
-            author=CURRENT_USER_NAME,
-            modified_by=CURRENT_USER_NAME,
+            author=user_config.CURRENT_USER_NAME,
+            author_email=user_config.CURRENT_USER_EMAIL,
+            modified_by=user_config.CURRENT_USER_NAME,
+            modified_by_email=user_config.CURRENT_USER_EMAIL,
         )
         self.elements[elem_id] = elem
         return elem
@@ -144,8 +155,10 @@ class SysMLRepository:
             description,
             color,
             father,
-            author=CURRENT_USER_NAME,
-            modified_by=CURRENT_USER_NAME,
+            author=user_config.CURRENT_USER_NAME,
+            author_email=user_config.CURRENT_USER_EMAIL,
+            modified_by=user_config.CURRENT_USER_NAME,
+            modified_by_email=user_config.CURRENT_USER_EMAIL,
         )
         self.diagrams[diag_id] = diagram
         return diagram
@@ -240,8 +253,10 @@ class SysMLRepository:
             target,
             stereotype,
             properties or {},
-            author=CURRENT_USER_NAME,
-            modified_by=CURRENT_USER_NAME,
+            author=user_config.CURRENT_USER_NAME,
+            author_email=user_config.CURRENT_USER_EMAIL,
+            modified_by=user_config.CURRENT_USER_NAME,
+            modified_by_email=user_config.CURRENT_USER_EMAIL,
         )
         self.relationships.append(rel)
         return rel
