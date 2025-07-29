@@ -332,6 +332,9 @@ class DiagramConnection:
     points: List[Tuple[float, float]] = field(default_factory=list)
     src_pos: Tuple[float, float] | None = None  # relative anchor (x,y)
     dst_pos: Tuple[float, float] | None = None
+    name: str = ""
+    arrow: str = "none"  # none, forward, backward, both
+    mid_arrow: bool = False
 
 
 class SysMLDiagramWindow(tk.Frame):
@@ -447,13 +450,20 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset = None
         cursor = "arrow"
         if tool != "Select":
-            cursor = "crosshair" if tool in (
-                "Association",
-                "Include",
-                "Extend",
-                "Flow",
-                "Connector",
-            ) else "tcross"
+            cursor = (
+                "crosshair"
+                if tool
+                in (
+                    "Association",
+                    "Include",
+                    "Extend",
+                    "Flow",
+                    "Connector",
+                    "Generalize",
+                    "Communication Path",
+                )
+                else "tcross"
+            )
         self.canvas.configure(cursor=cursor)
 
     # ------------------------------------------------------------
@@ -464,7 +474,15 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         diag_type = diag.diag_type if diag else ""
 
-        if conn_type in ("Association", "Include", "Extend", "Flow", "Connector"):
+        if conn_type in (
+            "Association",
+            "Include",
+            "Extend",
+            "Flow",
+            "Connector",
+            "Generalize",
+            "Communication Path",
+        ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
 
@@ -477,6 +495,12 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type in ("Include", "Extend"):
                 if src.obj_type != "Use Case" or dst.obj_type != "Use Case":
                     return False, f"{conn_type} relationships must connect two Use Cases"
+            elif conn_type == "Generalize":
+                if src.obj_type != dst.obj_type or src.obj_type not in ("Actor", "Use Case"):
+                    return False, "Generalizations must link two Actors or two Use Cases"
+            elif conn_type == "Communication Path":
+                if src.obj_type != "Actor" or dst.obj_type != "Actor":
+                    return False, "Communication Paths must connect two Actors"
 
         elif diag_type == "Block Diagram":
             if conn_type == "Association":
@@ -571,7 +595,15 @@ class SysMLDiagramWindow(tk.Frame):
         obj = self.find_object(x, y)
         t = self.current_tool
 
-        if t in ("Association", "Include", "Extend", "Flow", "Connector"):
+        if t in (
+            "Association",
+            "Include",
+            "Extend",
+            "Flow",
+            "Connector",
+            "Generalize",
+            "Communication Path",
+        ):
             if self.start is None:
                 if obj:
                     self.start = obj
@@ -583,7 +615,13 @@ class SysMLDiagramWindow(tk.Frame):
                 if obj and obj != self.start:
                     valid, msg = self.validate_connection(self.start, obj, t)
                     if valid:
-                        conn = DiagramConnection(self.start.obj_id, obj.obj_id, t)
+                        arrow_default = "forward" if t in ("Flow", "Generalize") else "none"
+                        conn = DiagramConnection(
+                            self.start.obj_id,
+                            obj.obj_id,
+                            t,
+                            arrow=arrow_default,
+                        )
                         self.connections.append(conn)
                         src_id = self.start.element_id
                         dst_id = obj.element_id
@@ -1512,6 +1550,39 @@ class SysMLDiagramWindow(tk.Frame):
             width=width,
         )
 
+    def _draw_filled_arrow(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw a filled triangular arrow from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        size = 10 * self.zoom
+        angle = math.atan2(dy, dx)
+        spread = math.radians(20)
+        p1 = (
+            end[0] - size * math.cos(angle - spread),
+            end[1] - size * math.sin(angle - spread),
+        )
+        p2 = (
+            end[0] - size * math.cos(angle + spread),
+            end[1] - size * math.sin(angle + spread),
+        )
+        self.canvas.create_polygon(
+            end,
+            p1,
+            p2,
+            fill=color,
+            outline=color,
+            width=width,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -1838,10 +1909,13 @@ class SysMLDiagramWindow(tk.Frame):
         ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
         bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         dash = ()
-        label = None
+        label = conn.name or None
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
-            label = f"<<{conn.conn_type.lower()}>>"
+            incl_label = f"<<{conn.conn_type.lower()}>>"
+            label = f"{incl_label}\n{label}" if label else incl_label
+        elif conn.conn_type in ("Generalize", "Communication Path"):
+            dash = (2, 2)
         points = [(ax, ay)]
         if conn.style == "Squared":
             if conn.points:
@@ -1859,20 +1933,61 @@ class SysMLDiagramWindow(tk.Frame):
         flat = [coord for pt in points for coord in pt]
         color = "red" if selected else "black"
         width = 2 if selected else 1
-        arrow_style = tk.LAST
-        open_arrow = False
-        if conn.conn_type == "Connector":
-            arrow_style = tk.NONE
-        elif conn.conn_type == "Association":
-            arrow_style = tk.NONE
-        elif conn.conn_type in ("Include", "Extend"):
-            arrow_style = tk.NONE
-            open_arrow = True
+        arrow_style = tk.NONE
+        open_arrow = conn.conn_type in ("Include", "Extend")
+        if not open_arrow and conn.conn_type != "Generalize":
+            if conn.arrow == "forward":
+                arrow_style = tk.LAST
+            elif conn.arrow == "backward":
+                arrow_style = tk.FIRST
+            elif conn.arrow == "both":
+                arrow_style = tk.BOTH
         self.canvas.create_line(
             *flat, arrow=arrow_style, dash=dash, fill=color, width=width
         )
+        forward = conn.arrow in ("forward", "both")
+        backward = conn.arrow in ("backward", "both")
         if open_arrow:
-            self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+            if forward:
+                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+            if backward:
+                self._draw_open_arrow(points[1], points[0], color=color, width=width)
+        elif conn.conn_type == "Generalize":
+            if forward:
+                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+            if backward:
+                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+        if conn.mid_arrow:
+            mid_idx = len(points) // 2
+            if mid_idx > 0:
+                mstart = points[mid_idx - 1]
+                mend = points[mid_idx]
+                if open_arrow or conn.conn_type == "Generalize":
+                    if forward:
+                        self._draw_open_arrow(mstart, mend, color=color, width=width)
+                    elif backward:
+                        self._draw_open_arrow(mend, mstart, color=color, width=width)
+                else:
+                    if forward or not backward:
+                        self.canvas.create_line(
+                            mstart[0],
+                            mstart[1],
+                            mend[0],
+                            mend[1],
+                            arrow=tk.LAST,
+                            fill=color,
+                            width=width,
+                        )
+                    if backward:
+                        self.canvas.create_line(
+                            mend[0],
+                            mend[1],
+                            mstart[0],
+                            mstart[1],
+                            arrow=tk.LAST,
+                            fill=color,
+                            width=width,
+                        )
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
@@ -2694,19 +2809,31 @@ class ConnectionDialog(simpledialog.Dialog):
         super().__init__(master, title="Connection Properties")
 
     def body(self, master):
-        ttk.Label(master, text="Style:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
+        ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
+        self.name_var = tk.StringVar(value=self.connection.name)
+        ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, columnspan=2, padx=4, pady=4, sticky="we")
+
+        ttk.Label(master, text="Style:").grid(row=1, column=0, sticky="e", padx=4, pady=4)
         self.style_var = tk.StringVar(value=self.connection.style)
         ttk.Combobox(master, textvariable=self.style_var,
-                     values=["Straight", "Squared", "Custom"]).grid(row=0, column=1, padx=4, pady=4)
-        ttk.Label(master, text="Points:").grid(row=1, column=0, sticky="ne", padx=4, pady=4)
+                     values=["Straight", "Squared", "Custom"]).grid(row=1, column=1, padx=4, pady=4)
+
+        ttk.Label(master, text="Points:").grid(row=2, column=0, sticky="ne", padx=4, pady=4)
         self.point_list = tk.Listbox(master, height=4)
         for px, py in self.connection.points:
             self.point_list.insert(tk.END, f"{px:.1f},{py:.1f}")
-        self.point_list.grid(row=1, column=1, padx=4, pady=4, sticky="we")
+        self.point_list.grid(row=2, column=1, padx=4, pady=4, sticky="we")
         btnf = ttk.Frame(master)
-        btnf.grid(row=1, column=2, padx=2)
+        btnf.grid(row=2, column=2, padx=2)
         ttk.Button(btnf, text="Add", command=self.add_point).pack(side=tk.TOP)
         ttk.Button(btnf, text="Remove", command=self.remove_point).pack(side=tk.TOP)
+
+        ttk.Label(master, text="Arrows:").grid(row=3, column=0, sticky="e", padx=4, pady=4)
+        self.arrow_var = tk.StringVar(value=self.connection.arrow)
+        ttk.Combobox(master, textvariable=self.arrow_var,
+                     values=["none", "forward", "backward", "both"]).grid(row=3, column=1, padx=4, pady=4)
+        self.mid_var = tk.BooleanVar(value=self.connection.mid_arrow)
+        ttk.Checkbutton(master, text="Middle Arrow", variable=self.mid_var).grid(row=3, column=2, padx=4, pady=4)
 
     def add_point(self):
         x = simpledialog.askfloat("Point", "X:", parent=self)
@@ -2720,6 +2847,7 @@ class ConnectionDialog(simpledialog.Dialog):
             self.point_list.delete(idx)
 
     def apply(self):
+        self.connection.name = self.name_var.get()
         self.connection.style = self.style_var.get()
         pts = []
         for i in range(self.point_list.size()):
@@ -2730,6 +2858,8 @@ class ConnectionDialog(simpledialog.Dialog):
             except ValueError:
                 continue
         self.connection.points = pts
+        self.connection.arrow = self.arrow_var.get()
+        self.connection.mid_arrow = self.mid_var.get()
         if hasattr(self.master, "_sync_to_repository"):
             self.master._sync_to_repository()
 
@@ -2740,6 +2870,10 @@ class UseCaseDiagramWindow(SysMLDiagramWindow):
             "Use Case",
             "System Boundary",
             "Association",
+            "Communication Path",
+            "Generalize",
+            "Include",
+            "Extend",
         ]
         super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app, history=history)
 
