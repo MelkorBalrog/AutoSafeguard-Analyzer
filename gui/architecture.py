@@ -2777,12 +2777,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             "Connector",
         ]
         super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
-        ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
-            fill=tk.X, padx=2, pady=2
-        )
-        ttk.Button(self.toolbox, text="Add Parent Parts", command=self.add_parent_parts).pack(
-            fill=tk.X, padx=2, pady=2
-        )
+        ttk.Button(
+            self.toolbox,
+            text="Add Inherited Parts",
+            command=self.add_inherited_parts,
+        ).pack(fill=tk.X, padx=2, pady=2)
 
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
@@ -2801,7 +2800,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         modes.add(label)
         return ", ".join(sorted(modes))
 
-    def add_block_parts(self) -> None:
+    def add_inherited_parts(self) -> None:
         repo = self.repo
         # determine which block this IBD represents
         block_id = next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
@@ -2883,18 +2882,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
-    def add_parent_parts(self) -> None:
-        """Add parts from the assigned father block."""
-        repo = self.repo
-        diag = repo.diagrams.get(self.diagram_id)
-        if not diag or not getattr(diag, "father", None):
-            messagebox.showinfo("Add Parent Parts", "No father block assigned")
-            return
-        added = inherit_father_parts(repo, diag)
-        for data in added:
-            self.objects.append(SysMLObject(**data))
-        self.redraw()
-        self._sync_to_repository()
 
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
