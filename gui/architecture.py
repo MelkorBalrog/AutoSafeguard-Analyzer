@@ -129,6 +129,53 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
                 o.setdefault("properties", {})["partProperties"] = joined
 
 
+def add_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str, multiplicity: str = "") -> None:
+    """Add *part_id* as a part of *whole_id* block."""
+    whole = repo.elements.get(whole_id)
+    part = repo.elements.get(part_id)
+    if not whole or not part:
+        return
+    name = part.name or part_id
+    entry = f"{name}[{multiplicity}]" if multiplicity else name
+    parts = [p.strip() for p in whole.properties.get("partProperties", "").split(",") if p.strip()]
+    base = [p.split("[")[0].strip() for p in parts]
+    if name in base:
+        for idx, b in enumerate(base):
+            if b == name:
+                parts[idx] = entry
+                break
+    else:
+        parts.append(entry)
+    whole.properties["partProperties"] = ", ".join(parts)
+    for d in repo.diagrams.values():
+        for o in getattr(d, "objects", []):
+            if o.get("element_id") == whole_id:
+                o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
+
+
+def remove_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str) -> None:
+    """Remove *part_id* from *whole_id* block's part list."""
+    whole = repo.elements.get(whole_id)
+    part = repo.elements.get(part_id)
+    if not whole or not part:
+        return
+    name = part.name or part_id
+    parts = [p.strip() for p in whole.properties.get("partProperties", "").split(",") if p.strip()]
+    new_parts = [p for p in parts if p.split("[")[0].strip() != name]
+    if len(new_parts) != len(parts):
+        if new_parts:
+            whole.properties["partProperties"] = ", ".join(new_parts)
+        else:
+            whole.properties.pop("partProperties", None)
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == whole_id:
+                    if new_parts:
+                        o.setdefault("properties", {})["partProperties"] = ", ".join(new_parts)
+                    else:
+                        o.setdefault("properties", {}).pop("partProperties", None)
+
+
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
     """Merge parent block properties into the given block."""
     extend_block_parts_with_parents(repo, block_id)
@@ -434,6 +481,7 @@ class DiagramConnection:
     name: str = ""
     arrow: str = "none"  # none, forward, backward, both
     mid_arrow: bool = False
+    multiplicity: str = ""
 
 
 class SysMLDiagramWindow(tk.Frame):
@@ -599,6 +647,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Generalize",
                     "Generalization",
                     "Communication Path",
+                    "Aggregation",
+                    "Composite Aggregation",
                 )
                 else "tcross"
             )
@@ -624,6 +674,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalize",
             "Generalization",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
@@ -653,6 +705,9 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Generalization":
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Generalizations in block diagrams must connect Blocks"
+            elif conn_type in ("Aggregation", "Composite Aggregation"):
+                if src.obj_type != "Block" or dst.obj_type != "Block":
+                    return False, "Aggregations must connect Blocks"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
@@ -1016,6 +1071,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalization",
             "Generalize",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1156,6 +1213,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalization",
             "Generalize",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1333,6 +1392,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalization",
             "Generalize",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1349,6 +1410,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalization",
             "Generalize",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1938,6 +2001,88 @@ class SysMLDiagramWindow(tk.Frame):
             width=width,
         )
 
+    def _draw_open_diamond(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw an open diamond from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        size = 10 * self.zoom
+        angle = math.atan2(dy, dx)
+        p1 = (
+            end[0] - size * math.cos(angle),
+            end[1] - size * math.sin(angle),
+        )
+        p2 = (
+            p1[0] - size * math.sin(angle) / 2,
+            p1[1] + size * math.cos(angle) / 2,
+        )
+        p3 = (
+            end[0] - 2 * size * math.cos(angle),
+            end[1] - 2 * size * math.sin(angle),
+        )
+        p4 = (
+            p1[0] + size * math.sin(angle) / 2,
+            p1[1] - size * math.cos(angle) / 2,
+        )
+        self.canvas.create_polygon(
+            end,
+            p2,
+            p3,
+            p4,
+            fill=self.canvas.cget("background"),
+            outline=color,
+            width=width,
+        )
+
+    def _draw_filled_diamond(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw a filled diamond from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        size = 10 * self.zoom
+        angle = math.atan2(dy, dx)
+        p1 = (
+            end[0] - size * math.cos(angle),
+            end[1] - size * math.sin(angle),
+        )
+        p2 = (
+            p1[0] - size * math.sin(angle) / 2,
+            p1[1] + size * math.cos(angle) / 2,
+        )
+        p3 = (
+            end[0] - 2 * size * math.cos(angle),
+            end[1] - 2 * size * math.sin(angle),
+        )
+        p4 = (
+            p1[0] + size * math.sin(angle) / 2,
+            p1[1] - size * math.cos(angle) / 2,
+        )
+        self.canvas.create_polygon(
+            end,
+            p2,
+            p3,
+            p4,
+            fill=color,
+            outline=color,
+            width=width,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -2294,6 +2439,8 @@ class SysMLDiagramWindow(tk.Frame):
         width = 2 if selected else 1
         arrow_style = tk.NONE
         open_arrow = conn.conn_type in ("Include", "Extend")
+        diamond_src = conn.conn_type in ("Aggregation", "Composite Aggregation")
+        filled_diamond = conn.conn_type == "Composite Aggregation"
         if not open_arrow and conn.conn_type not in ("Generalize", "Generalization"):
             if conn.arrow == "forward":
                 arrow_style = tk.LAST
@@ -2354,6 +2501,11 @@ class SysMLDiagramWindow(tk.Frame):
                 self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
             if backward:
                 self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+        elif diamond_src:
+            if filled_diamond:
+                self._draw_filled_diamond(points[1], points[0], color=color, width=width)
+            else:
+                self._draw_open_diamond(points[1], points[0], color=color, width=width)
         flow_port = None
         flow_name = ""
         if a.obj_type == "Port" and a.properties.get("flow"):
@@ -2461,6 +2613,15 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.create_rectangle(
                     hx - s, hy - s, hx + s, hy + s, outline="red", fill="white"
                 )
+        if conn.multiplicity and conn.conn_type in ("Aggregation", "Composite Aggregation"):
+            mx = (bx + points[-2][0]) / 2
+            my = (by + points[-2][1]) / 2
+            self.canvas.create_text(
+                mx,
+                my - 10 * self.zoom,
+                text=conn.multiplicity,
+                font=self.font,
+            )
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
             self.canvas.create_text(
@@ -2590,6 +2751,12 @@ class SysMLDiagramWindow(tk.Frame):
                                     self.repo, src_elem.element_id, dst_elem.element_id
                                 )
                                 inherit_block_properties(self.repo, src_elem.element_id)
+                            elif self.selected_conn.conn_type in ("Aggregation", "Composite Aggregation"):
+                                remove_aggregation_part(
+                                    self.repo,
+                                    src_elem.element_id,
+                                    dst_elem.element_id,
+                                )
                             break
                 self.selected_conn = None
                 self._sync_to_repository()
@@ -3414,6 +3581,11 @@ class ConnectionDialog(simpledialog.Dialog):
             self.arrow_cb.configure(state="disabled")
             self.mid_check.configure(state="disabled")
 
+        if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
+            ttk.Label(master, text="Multiplicity:").grid(row=4, column=0, sticky="e", padx=4, pady=4)
+            self.mult_var = tk.StringVar(value=self.connection.multiplicity)
+            ttk.Entry(master, textvariable=self.mult_var).grid(row=4, column=1, padx=4, pady=4, sticky="we")
+
     def add_point(self):
         x = simpledialog.askfloat("Point", "X:", parent=self)
         y = simpledialog.askfloat("Point", "Y:", parent=self)
@@ -3439,8 +3611,20 @@ class ConnectionDialog(simpledialog.Dialog):
         self.connection.points = pts
         self.connection.arrow = self.arrow_var.get()
         self.connection.mid_arrow = self.mid_var.get()
+        if hasattr(self, "mult_var"):
+            self.connection.multiplicity = self.mult_var.get()
         if hasattr(self.master, "_sync_to_repository"):
             self.master._sync_to_repository()
+        if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
+            if hasattr(self.master, "repo"):
+                add_aggregation_part(
+                    self.master.repo,
+                    self.master.get_object(self.connection.src).element_id,
+                    self.master.get_object(self.connection.dst).element_id,
+                    self.connection.multiplicity,
+                )
+                if hasattr(self.master, "_sync_to_repository"):
+                    self.master._sync_to_repository()
 
 
 class UseCaseDiagramWindow(SysMLDiagramWindow):
@@ -3480,6 +3664,8 @@ class BlockDiagramWindow(SysMLDiagramWindow):
             "Block",
             "Association",
             "Generalization",
+            "Aggregation",
+            "Composite Aggregation",
         ]
         super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
 
