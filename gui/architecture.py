@@ -2923,12 +2923,7 @@ class SysMLDiagramWindow(tk.Frame):
             return
         mx = (start[0] + end[0]) / 2
         my = (start[1] + end[1]) / 2
-        # Increase the mid-connector triangle size for better visibility
-        # Previously the triangle size was ``6 * self.zoom`` which made it
-        # significantly smaller than the arrow heads used elsewhere.  Using
-        # ``10 * self.zoom`` aligns the size with other connector decorations
-        # and makes the flow direction easier to see on complex diagrams.
-        size = 10 * self.zoom
+        size = 6 * self.zoom
         angle = math.atan2(dy, dx)
         spread = math.radians(20)
         p1 = (mx, my)
