@@ -350,6 +350,14 @@ def _sync_ibd_composite_parts(
         for rel in repo.relationships
         if rel.rel_type == "Composite Aggregation" and rel.source in src_ids
     ]
+    targets = {rel.target for rel in rels}
+    # lock any existing parts representing composite relationships
+    for obj in diag.objects:
+        if (
+            obj.get("obj_type") == "Part"
+            and obj.get("properties", {}).get("definition") in targets
+        ):
+            obj["locked"] = True
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
@@ -2746,7 +2754,12 @@ class SysMLDiagramWindow(tk.Frame):
             return
         mx = (start[0] + end[0]) / 2
         my = (start[1] + end[1]) / 2
-        size = 6 * self.zoom
+        # Increase the mid-connector triangle size for better visibility
+        # Previously the triangle size was ``6 * self.zoom`` which made it
+        # significantly smaller than the arrow heads used elsewhere.  Using
+        # ``10 * self.zoom`` aligns the size with other connector decorations
+        # and makes the flow direction easier to see on complex diagrams.
+        size = 10 * self.zoom
         angle = math.atan2(dy, dx)
         spread = math.radians(20)
         p1 = (mx, my)
@@ -4631,6 +4644,26 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             text="Add Contained Parts",
             command=self.add_contained_parts,
         ).pack(fill=tk.X, padx=2, pady=2)
+
+        # Automatically show composite parts and inherited parts
+        repo = self.repo
+        block_id = next(
+            (eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id),
+            None,
+        )
+        if block_id:
+            diag = repo.diagrams.get(self.diagram_id)
+            added_parent = inherit_father_parts(repo, diag) if diag else []
+            for data in added_parent:
+                self.objects.append(SysMLObject(**data))
+            added_comp = _sync_ibd_composite_parts(
+                repo, block_id, app=getattr(self, "app", None)
+            )
+            for data in added_comp:
+                self.objects.append(SysMLObject(**data))
+            if added_parent or added_comp:
+                self.redraw()
+                self._sync_to_repository()
 
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
