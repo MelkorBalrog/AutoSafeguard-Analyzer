@@ -939,6 +939,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.3 - Added context menu actions to remove parts from a diagram or from the model.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
 - 0.1.0 - Added Help menu and version tracking.

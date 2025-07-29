@@ -2534,6 +2534,17 @@ class SysMLDiagramWindow(tk.Frame):
             menu.add_command(label="Copy", command=self.copy_selected)
             menu.add_command(label="Cut", command=self.cut_selected)
             menu.add_command(label="Paste", command=self.paste_selected)
+            diag = self.repo.diagrams.get(self.diagram_id)
+            if diag and diag.diag_type == "Internal Block Diagram" and obj.obj_type == "Part":
+                menu.add_separator()
+                menu.add_command(
+                    label="Remove Part from Diagram",
+                    command=lambda: self.remove_part_diagram(obj),
+                )
+                menu.add_command(
+                    label="Remove Part from Model",
+                    command=lambda: self.remove_part_model(obj),
+                )
         menu.add_command(label="Delete", command=self.delete_selected)
         menu.tk_popup(event.x_root, event.y_root)
 
@@ -3902,6 +3913,69 @@ class SysMLDiagramWindow(tk.Frame):
         if diag and obj.element_id in diag.elements:
             diag.elements.remove(obj.element_id)
         self._sync_to_repository()
+
+    # ------------------------------------------------------------
+    # Part removal helpers
+    # ------------------------------------------------------------
+    def remove_part_diagram(self, obj: SysMLObject) -> None:
+        """Remove *obj* from the current diagram but keep it in the model."""
+        if obj.obj_type != "Part":
+            return
+        self.remove_object(obj)
+        self.selected_obj = None
+        self._sync_to_repository()
+        self.redraw()
+        self.update_property_view()
+
+    def remove_part_model(self, obj: SysMLObject) -> None:
+        """Remove *obj* from the repository and all diagrams."""
+        if obj.obj_type != "Part":
+            return
+        self.remove_object(obj)
+        part_id = obj.element_id
+        repo = self.repo
+        # remove from other diagrams
+        for diag in repo.diagrams.values():
+            diag.objects = [o for o in getattr(diag, "objects", []) if o.get("element_id") != part_id]
+            if part_id in getattr(diag, "elements", []):
+                diag.elements.remove(part_id)
+        # update any open windows
+        app = getattr(self, "app", None)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                win.objects = [o for o in win.objects if o.element_id != part_id]
+                remove_orphan_ports(win.objects)
+                win.redraw()
+                win._sync_to_repository()
+        # update block properties
+        diag = repo.diagrams.get(self.diagram_id)
+        block_id = getattr(diag, "father", None) or next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
+        name = ""
+        elem = repo.elements.get(part_id)
+        if elem:
+            name = elem.name or elem.properties.get("component", "")
+            def_id = elem.properties.get("definition")
+            if not name and def_id and def_id in repo.elements:
+                name = repo.elements[def_id].name or def_id
+        if block_id and name and block_id in repo.elements:
+            block = repo.elements[block_id]
+            parts = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+            parts = [p for p in parts if p.split("[")[0].strip() != name]
+            if parts:
+                block.properties["partProperties"] = ", ".join(parts)
+            else:
+                block.properties.pop("partProperties", None)
+            for d in repo.diagrams.values():
+                for o in getattr(d, "objects", []):
+                    if o.get("element_id") == block_id:
+                        if parts:
+                            o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
+                        else:
+                            o.setdefault("properties", {}).pop("partProperties", None)
+        repo.delete_element(part_id)
+        self._sync_to_repository()
+        self.redraw()
+        self.update_property_view()
 
     def _sync_to_repository(self) -> None:
         """Persist current objects and connections back to the repository."""
