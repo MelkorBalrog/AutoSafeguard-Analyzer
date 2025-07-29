@@ -1131,6 +1131,55 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                 repo.touch_diagram(diag.diag_id)
 
 
+def _collect_block_requirements(repo: SysMLRepository, block_id: str) -> list[dict]:
+    """Return list of requirement dictionaries assigned to *block_id* objects."""
+    reqs: list[dict] = []
+    for diag in repo.diagrams.values():
+        for obj in getattr(diag, "objects", []):
+            if obj.get("element_id") != block_id:
+                continue
+            for req in obj.get("requirements", []):
+                if req not in reqs:
+                    reqs.append(req)
+    return reqs
+
+
+def _propagate_requirements(repo: SysMLRepository, src_reqs: list[dict], dst_id: str) -> None:
+    """Merge *src_reqs* into all objects referencing *dst_id*."""
+    if not src_reqs:
+        return
+    for diag in repo.diagrams.values():
+        updated = False
+        for obj in getattr(diag, "objects", []):
+            if obj.get("element_id") != dst_id:
+                continue
+            obj.setdefault("requirements", [])
+            existing = {r.get("id") for r in obj["requirements"]}
+            for req in src_reqs:
+                if req.get("id") not in existing:
+                    obj["requirements"].append(req)
+                    existing.add(req.get("id"))
+                    updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
+
+
+def propagate_block_changes(repo: SysMLRepository, block_id: str, visited: set[str] | None = None) -> None:
+    """Propagate updates on ``block_id`` to blocks that generalize it."""
+
+    if visited is None:
+        visited = set()
+    if block_id in visited:
+        return
+    visited.add(block_id)
+    reqs = _collect_block_requirements(repo, block_id)
+    for child_id in _find_generalization_children(repo, block_id):
+        inherit_block_properties(repo, child_id)
+        propagate_block_port_changes(repo, child_id)
+        _propagate_requirements(repo, reqs, child_id)
+        propagate_block_changes(repo, child_id, visited)
+
+
 def parse_operations(raw: str) -> List[OperationDefinition]:
     """Return a list of operations parsed from *raw* JSON or comma text."""
     if not raw:
@@ -4319,6 +4368,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         if self.obj.obj_type == "Block" and self.obj.element_id:
             propagate_block_port_changes(repo, self.obj.element_id)
+            propagate_block_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
                 self.obj.width = float(self.width_var.get())
