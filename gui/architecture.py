@@ -66,9 +66,13 @@ def _find_parent_blocks(repo: SysMLRepository, block_id: str) -> set[str]:
             if obj.get("properties", {}).get("definition") == block_id:
                 parents.add(parent_id)
                 break
-    # also follow Association relationships
+    # also follow Association and Generalization relationships
     for rel in repo.relationships:
-        if rel.rel_type != "Association":
+        if rel.rel_type not in ("Association", "Generalization"):
+            continue
+        if rel.rel_type == "Generalization":
+            if rel.source == block_id and rel.target in repo.elements:
+                parents.add(rel.target)
             continue
         if rel.source == block_id and rel.target in repo.elements:
             parents.add(rel.target)
@@ -119,6 +123,41 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
         for o in getattr(d, "objects", []):
             if o.get("element_id") == block_id:
                 o.setdefault("properties", {})["partProperties"] = joined
+
+
+def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
+    """Merge parent block properties into the given block."""
+    extend_block_parts_with_parents(repo, block_id)
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    for parent_id in _find_parent_blocks(repo, block_id):
+        parent = repo.elements.get(parent_id)
+        if not parent:
+            continue
+        for prop in SYSML_PROPERTIES.get("BlockUsage", []):
+            if prop == "partProperties":
+                continue
+            if prop == "operations":
+                child_ops = parse_operations(block.properties.get(prop, ""))
+                child_names = {o.name for o in child_ops}
+                for op in parse_operations(parent.properties.get(prop, "")):
+                    if op.name not in child_names:
+                        child_ops.append(op)
+                        child_names.add(op.name)
+                block.properties[prop] = operations_to_json(child_ops)
+            else:
+                child_vals = [v.strip() for v in block.properties.get(prop, "").split(",") if v.strip()]
+                parent_vals = [v.strip() for v in parent.properties.get(prop, "").split(",") if v.strip()]
+                for v in parent_vals:
+                    if v not in child_vals:
+                        child_vals.append(v)
+                if child_vals:
+                    block.properties[prop] = ", ".join(child_vals)
+    for d in repo.diagrams.values():
+        for o in getattr(d, "objects", []):
+            if o.get("element_id") == block_id:
+                o.setdefault("properties", {}).update(block.properties)
 
 
 def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[dict]:
@@ -201,7 +240,7 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
             for o in getattr(d, "objects", []):
                 if o.get("element_id") == child_id:
                     o.setdefault("properties", {})["partProperties"] = joined
-        extend_block_parts_with_parents(repo, child_id)
+        inherit_block_properties(repo, child_id)
     return added
 
 
@@ -415,6 +454,7 @@ class SysMLDiagramWindow(tk.Frame):
                 "Extend",
                 "Flow",
                 "Connector",
+                "Generalization",
             ) else "tcross"
         self.canvas.configure(cursor=cursor)
 
@@ -426,7 +466,14 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         diag_type = diag.diag_type if diag else ""
 
-        if conn_type in ("Association", "Include", "Extend", "Flow", "Connector"):
+        if conn_type in (
+            "Association",
+            "Include",
+            "Extend",
+            "Flow",
+            "Connector",
+            "Generalization",
+        ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
 
@@ -444,6 +491,9 @@ class SysMLDiagramWindow(tk.Frame):
             if conn_type == "Association":
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Associations in block diagrams must connect Blocks"
+            elif conn_type == "Generalization":
+                if src.obj_type != "Block" or dst.obj_type != "Block":
+                    return False, "Generalizations in block diagrams must connect Blocks"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
@@ -533,7 +583,14 @@ class SysMLDiagramWindow(tk.Frame):
         obj = self.find_object(x, y)
         t = self.current_tool
 
-        if t in ("Association", "Include", "Extend", "Flow", "Connector"):
+        if t in (
+            "Association",
+            "Include",
+            "Extend",
+            "Flow",
+            "Connector",
+            "Generalization",
+        ):
             if self.start is None:
                 if obj:
                     self.start = obj
@@ -723,6 +780,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Extend",
             "Flow",
             "Connector",
+            "Generalization",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -856,6 +914,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Extend",
             "Flow",
             "Connector",
+            "Generalization",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -870,6 +929,8 @@ class SysMLDiagramWindow(tk.Frame):
                             self.current_tool, self.start.element_id, obj.element_id
                         )
                         self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                        if self.current_tool == "Generalization":
+                            inherit_block_properties(self.repo, self.start.element_id)
                     self._sync_to_repository()
                     ConnectionDialog(self, conn)
                 else:
@@ -916,6 +977,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Extend",
             "Flow",
             "Connector",
+            "Generalization",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -929,6 +991,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Extend",
             "Flow",
             "Connector",
+            "Generalization",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -1415,6 +1478,7 @@ class SysMLDiagramWindow(tk.Frame):
                 "Extend",
                 "Flow",
                 "Connector",
+                "Generalization",
             )
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
@@ -1841,7 +1905,7 @@ class SysMLDiagramWindow(tk.Frame):
             arrow_style = tk.NONE
         elif conn.conn_type == "Association":
             arrow_style = tk.NONE
-        elif conn.conn_type in ("Include", "Extend"):
+        elif conn.conn_type in ("Include", "Extend", "Generalization"):
             arrow_style = tk.NONE
             open_arrow = True
         self.canvas.create_line(
@@ -2536,7 +2600,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties["partProperties"] = joined
                 if self.obj.element_id:
-                    extend_block_parts_with_parents(repo, self.obj.element_id)
+                    inherit_block_properties(repo, self.obj.element_id)
                     self.obj.properties["partProperties"] = repo.elements[self.obj.element_id].properties["partProperties"]
 
         # Update linked diagram if applicable
@@ -2651,7 +2715,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                                             o.setdefault("properties", {})["partProperties"] = joined
                                 # include parent block parts
                                 if self.obj.element_id:
-                                    extend_block_parts_with_parents(repo, self.obj.element_id)
+                                    inherit_block_properties(repo, self.obj.element_id)
                                     joined = repo.elements[self.obj.element_id].properties["partProperties"]
                                     self.obj.properties["partProperties"] = joined
                             repo.diagrams[diag_id] = diag
@@ -2741,6 +2805,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
         tools = [
             "Block",
             "Association",
+            "Generalization",
         ]
         super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
 
@@ -2852,7 +2917,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     names.append(name)
             joined = ", ".join(names)
             block.properties["partProperties"] = joined
-            extend_block_parts_with_parents(repo, block_id)
+            inherit_block_properties(repo, block_id)
             joined = repo.elements[block_id].properties["partProperties"]
             for d in repo.diagrams.values():
                 for o in getattr(d, "objects", []):
