@@ -1101,6 +1101,7 @@ class SysMLObject:
     properties: Dict[str, str] = field(default_factory=dict)
     requirements: List[dict] = field(default_factory=list)
     locked: bool = False
+    hidden: bool = False
 
 
 @dataclass
@@ -2220,6 +2221,8 @@ class SysMLDiagramWindow(tk.Frame):
                                 o.y += dy
         self.redraw()
         self._sync_to_repository()
+        if self.app:
+            self.app.update_views()
 
     def on_left_release(self, event):
         if self.start and self.current_tool in (
@@ -2545,7 +2548,6 @@ class SysMLDiagramWindow(tk.Frame):
                     label="Remove Part from Model",
                     command=lambda: self.remove_part_model(obj),
                 )
-        menu.add_command(label="Delete", command=self.delete_selected)
         menu.tk_popup(event.x_root, event.y_root)
 
     def _edit_object(self, obj):
@@ -2604,6 +2606,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(SysMLObject(**data))
         self._sync_to_repository()
         self.redraw()
+        if self.app:
+            self.app.update_views()
 
     def go_back(self):
         if not self.diagram_history:
@@ -3000,6 +3004,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.sort_objects()
         remove_orphan_ports(self.objects)
         for obj in list(self.objects):
+            if getattr(obj, "hidden", False):
+                continue
             if obj.obj_type == "Part":
                 self.sync_ports(obj)
             self.ensure_text_fits(obj)
@@ -3007,7 +3013,12 @@ class SysMLDiagramWindow(tk.Frame):
         for conn in self.connections:
             src = self.get_object(conn.src)
             dst = self.get_object(conn.dst)
-            if src and dst:
+            if (
+                src
+                and dst
+                and not getattr(src, "hidden", False)
+                and not getattr(dst, "hidden", False)
+            ):
                 self.draw_connection(src, dst, conn, conn is self.selected_conn)
         if (
             self.start
@@ -4098,6 +4109,41 @@ class SysMLObjectDialog(simpledialog.Dialog):
         def apply(self):
             self.result = [n for n, var in self.selected.items() if var.get()]
 
+    class ManagePartsDialog(simpledialog.Dialog):
+        """Dialog to toggle visibility of contained parts."""
+
+        def __init__(self, parent, names, visible, hidden):
+            self.names = names
+            self.visible = visible
+            self.hidden = hidden
+            self.selected = {}
+            super().__init__(parent, title="Add Contained Parts")
+
+        def body(self, master):
+            ttk.Label(master, text="Select parts to show:").pack(padx=5, pady=5)
+            frame = ttk.Frame(master)
+            frame.pack(fill=tk.BOTH, expand=True)
+            canvas = tk.Canvas(frame, borderwidth=0)
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+            self.check_frame = ttk.Frame(canvas)
+            self.check_frame.bind(
+                "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            canvas.create_window((0, 0), window=self.check_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            for name in self.names:
+                var = tk.BooleanVar(value=name in self.visible or name not in self.hidden)
+                self.selected[name] = var
+                ttk.Checkbutton(self.check_frame, text=name, variable=var).pack(
+                    anchor="w", padx=2, pady=2
+                )
+            return self.check_frame
+
+        def apply(self):
+            self.result = [n for n, var in self.selected.items() if var.get()]
+
     def body(self, master):
         # Disable window resizing so the layout remains consistent
         self.resizable(False, False)
@@ -5153,6 +5199,20 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         modes.add(label)
         return ", ".join(sorted(modes))
 
+    def _get_part_name(self, obj: SysMLObject) -> str:
+        repo = self.repo
+        name = ""
+        if obj.element_id and obj.element_id in repo.elements:
+            elem = repo.elements[obj.element_id]
+            name = elem.name or elem.properties.get("component", "")
+        if not name:
+            def_id = obj.properties.get("definition")
+            if def_id and def_id in repo.elements:
+                name = repo.elements[def_id].name or def_id
+        if not name:
+            name = obj.properties.get("component", "")
+        return name
+
     def add_contained_parts(self) -> None:
         repo = self.repo
         block_id = next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
@@ -5162,27 +5222,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         block = repo.elements[block_id]
         diag = repo.diagrams.get(self.diagram_id)
 
-        # ------------------------------------------------------------
-        # Always inherit parts from the father block if assigned
-        # ------------------------------------------------------------
-        added_parent = []
-        if diag:
-            added_parent = inherit_father_parts(repo, diag)
-            for data in added_parent:
-                self.objects.append(SysMLObject(**data))
-
-        # ------------------------------------------------------------
-        # Add parts from aggregation relationships
-        # ------------------------------------------------------------
+        # inherit and sync aggregation/composite parts
+        added_parent = inherit_father_parts(repo, diag) if diag else []
+        for data in added_parent:
+            self.objects.append(SysMLObject(**data))
         added_agg = _sync_ibd_aggregation_parts(repo, block_id, app=getattr(self, "app", None))
         added_comp = _sync_ibd_composite_parts(repo, block_id, app=getattr(self, "app", None))
         for data in added_agg + added_comp:
             self.objects.append(SysMLObject(**data))
 
-        # ------------------------------------------------------------
-        # If the represented block has a reliability analysis with
-        # components, allow the user to select which components to add
-        # ------------------------------------------------------------
         ra_name = block.properties.get("analysis", "")
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
@@ -5192,61 +5240,48 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
-        # If there are no components, no father and no aggregations,
-        # there is nothing to inherit
-        src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
-        has_aggr = any(
-            rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source in src_ids
-            for rel in repo.relationships
-        )
-        part_names = [
-            n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()
-        ]
-        if not comps and not getattr(diag, "father", None) and not has_aggr and not part_names:
-            messagebox.showinfo("Add Contained Parts", "No contained parts available")
-            self.redraw()
-            self._sync_to_repository()
-            return
+        # existing parts on the diagram
+        visible: dict[str, SysMLObject] = {}
+        hidden: dict[str, SysMLObject] = {}
+        for obj in self.objects:
+            if obj.obj_type != "Part":
+                continue
+            name = self._get_part_name(obj)
+            if getattr(obj, "hidden", False):
+                hidden[name] = obj
+            else:
+                visible[name] = obj
 
-        selected = []
-        if comps:
-            dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
-            selected = dlg.result or []
+        part_names = [n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()]
+        comp_names = [c.name for c in comps]
+        all_names = sorted(set(part_names + comp_names + list(visible) + list(hidden)))
 
-        selected_names: list[str] = []
-        if part_names:
-            dlg = SysMLObjectDialog.SelectNamesDialog(self, part_names)
-            selected_names = dlg.result or []
+        dlg = SysMLObjectDialog.ManagePartsDialog(self, all_names, set(visible), set(hidden))
+        selected = dlg.result or []
 
-        if not selected and not selected_names and not comps and not part_names:
-            # No reliability components or contained parts to add
-            self.redraw()
-            self._sync_to_repository()
-            return
+        to_add_comps = [c for c in comps if c.name in selected and c.name not in visible and c.name not in hidden]
+        to_add_names = [n for n in part_names if n in selected and n not in visible and n not in hidden]
 
-        if diag is None:
-            return
-        diag.objects = getattr(diag, "objects", [])
-        existing = {
-            o.get("properties", {}).get("component")
-            for o in diag.objects
-            if o.get("obj_type") == "Part"
-        }
+        for name, obj in visible.items():
+            if name not in selected:
+                obj.hidden = True
+        for name, obj in hidden.items():
+            if name in selected:
+                obj.hidden = False
+
         base_x = 50.0
         base_y = 50.0
         offset = 60.0
         added = []
-        for idx, c in enumerate(selected):
-            if c.name in existing:
-                continue
+        for idx, comp in enumerate(to_add_comps):
             elem = repo.create_element(
                 "Part",
-                name=c.name,
+                name=comp.name,
                 properties={
-                    "component": c.name,
-                    "fit": f"{c.fit:.2f}",
-                    "qualification": c.qualification,
-                    "failureModes": self._get_failure_modes(c.name),
+                    "component": comp.name,
+                    "fit": f"{comp.fit:.2f}",
+                    "qualification": comp.qualification,
+                    "failureModes": self._get_failure_modes(comp.name),
                 },
                 owner=repo.root_package.elem_id,
             )
@@ -5261,17 +5296,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
-            added.append(c.name)
-        # add parts defined in partProperties that are not yet present
-        added_props = []
-        if selected_names:
+            added.append(comp.name)
+
+        if to_add_names:
             added_props = _sync_ibd_partproperty_parts(
-                repo, block_id, names=selected_names, app=getattr(self, "app", None)
+                repo, block_id, names=to_add_names, app=getattr(self, "app", None)
             )
-        for data in added_props:
-            self.objects.append(SysMLObject(**data))
-        self.redraw()
-        self._sync_to_repository()
+            for data in added_props:
+                self.objects.append(SysMLObject(**data))
+
         if added:
             names = [
                 n.strip()
@@ -5289,6 +5322,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
+
+        self.redraw()
+        self._sync_to_repository()
+        if self.app:
+            self.app.update_views()
 
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
