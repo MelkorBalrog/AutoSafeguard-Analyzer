@@ -291,6 +291,7 @@ class ReliabilityWindow(tk.Frame):
         if isinstance(master, tk.Toplevel):
             master.title("Reliability Analysis")
             master.geometry("600x400")
+            master.minsize(600, 400)
             self.pack(fill=tk.BOTH, expand=True)
         self.components = []
 
@@ -1441,6 +1442,7 @@ class HazopWindow(tk.Frame):
         if isinstance(master, tk.Toplevel):
             master.title("HAZOP Analysis")
             master.geometry("600x400")
+            master.minsize(600, 400)
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         doc_lbl = ttk.Label(top, text="HAZOP:")
@@ -2319,6 +2321,7 @@ class TC2FIWindow(tk.Frame):
 
         if isinstance(master, tk.Toplevel):
             master.geometry("800x400")
+            master.minsize(800, 400)
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         configure_table_style("TC2FI.Treeview", rowheight=80)
