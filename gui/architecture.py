@@ -1131,6 +1131,50 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                 repo.touch_diagram(diag.diag_id)
 
 
+def _propagate_block_requirement_changes(
+    repo: SysMLRepository, parent_id: str, child_id: str
+) -> None:
+    """Add requirements from ``parent_id`` objects to ``child_id`` objects."""
+
+    parent_req_ids: set[str] = set()
+    for diag in repo.diagrams.values():
+        for obj in getattr(diag, "objects", []):
+            if obj.get("element_id") == parent_id:
+                for req in obj.get("requirements", []):
+                    rid = req.get("id")
+                    if rid:
+                        parent_req_ids.add(rid)
+
+    if not parent_req_ids:
+        return
+
+    for diag in repo.diagrams.values():
+        updated = False
+        for obj in getattr(diag, "objects", []):
+            if obj.get("element_id") != child_id:
+                continue
+            existing = {r.get("id") for r in obj.get("requirements", [])}
+            for rid in parent_req_ids:
+                if rid not in existing:
+                    obj.setdefault("requirements", []).append(
+                        global_requirements.get(rid, {"id": rid})
+                    )
+                    updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
+
+
+def propagate_block_changes(repo: SysMLRepository, block_id: str) -> None:
+    """Propagate updates on ``block_id`` to its generalization children."""
+
+    for child_id in _find_generalization_children(repo, block_id):
+        remove_inherited_block_properties(repo, child_id, block_id)
+        inherit_block_properties(repo, child_id)
+        propagate_block_port_changes(repo, child_id)
+        _propagate_block_requirement_changes(repo, block_id, child_id)
+        propagate_block_changes(repo, child_id)
+
+
 def parse_operations(raw: str) -> List[OperationDefinition]:
     """Return a list of operations parsed from *raw* JSON or comma text."""
     if not raw:
@@ -4319,6 +4363,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         if self.obj.obj_type == "Block" and self.obj.element_id:
             propagate_block_port_changes(repo, self.obj.element_id)
+            propagate_block_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
                 self.obj.width = float(self.width_var.get())
