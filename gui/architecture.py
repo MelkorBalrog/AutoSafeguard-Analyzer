@@ -157,6 +157,39 @@ def _find_blocks_with_aggregation(repo: SysMLRepository, part_id: str) -> set[st
     return blocks
 
 
+def _aggregation_exists(repo: SysMLRepository, whole_id: str, part_id: str) -> bool:
+    """Return ``True`` if ``whole_id`` or its ancestors already aggregate ``part_id``."""
+
+    src_ids = [whole_id] + _collect_generalization_parents(repo, whole_id)
+    diag_id = repo.get_linked_diagram(whole_id)
+    diag = repo.diagrams.get(diag_id)
+    father = getattr(diag, "father", None) if diag else None
+    if father:
+        src_ids.append(father)
+        src_ids.extend(_collect_generalization_parents(repo, father))
+
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+            and rel.target == part_id
+        ):
+            return True
+
+    for sid in src_ids[1:]:
+        diag_id = repo.get_linked_diagram(sid)
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
+            continue
+        for obj in getattr(diag, "objects", []):
+            if (
+                obj.get("obj_type") == "Part"
+                and obj.get("properties", {}).get("definition") == part_id
+            ):
+                return True
+    return False
+
+
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -1492,6 +1525,8 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
+                if _aggregation_exists(self.repo, src.element_id, dst.element_id):
+                    return False, "Aggregation already defined for this block"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
