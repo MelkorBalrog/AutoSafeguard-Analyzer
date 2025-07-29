@@ -2264,9 +2264,7 @@ class SysMLDiagramWindow(tk.Frame):
     def _block_compartments(self, obj: SysMLObject) -> list[tuple[str, str]]:
         """Return the list of compartments displayed for a Block."""
         return [
-            ("Attributes", obj.properties.get("valueProperties", "")),
             ("Parts", obj.properties.get("partProperties", "")),
-            ("References", obj.properties.get("referenceProperties", "")),
             (
                 "Operations",
                 "; ".join(
@@ -2274,7 +2272,6 @@ class SysMLDiagramWindow(tk.Frame):
                     for op in parse_operations(obj.properties.get("operations", ""))
                 ),
             ),
-            ("Constraints", obj.properties.get("constraintProperties", "")),
             ("Ports", obj.properties.get("ports", "")),
             (
                 "Reliability",
@@ -2768,9 +2765,7 @@ class SysMLDiagramWindow(tk.Frame):
                 font=self.font,
             )
             compartments = [
-                ("Attributes", obj.properties.get("valueProperties", "")),
                 ("Parts", obj.properties.get("partProperties", "")),
-                ("References", obj.properties.get("referenceProperties", "")),
                 (
                     "Operations",
                     "; ".join(
@@ -2778,7 +2773,6 @@ class SysMLDiagramWindow(tk.Frame):
                         for op in parse_operations(obj.properties.get("operations", ""))
                     ),
                 ),
-                ("Constraints", obj.properties.get("constraintProperties", "")),
                 ("Ports", obj.properties.get("ports", "")),
                 (
                     "Reliability",
@@ -3399,13 +3393,11 @@ class SysMLObjectDialog(simpledialog.Dialog):
         list_props = {
             "ports",
             "partProperties",
-            "referenceProperties",
-            "valueProperties",
-            "constraintProperties",
             "operations",
             "behaviors",
             "failureModes",
         }
+        editable_list_props = {"ports", "partProperties"}
         reliability_props = {
             "analysis",
             "component",
@@ -3459,6 +3451,13 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 ttk.Button(btnf, text="Add", command=lambda p=prop: self.add_list_item(p)).pack(
                     side=tk.TOP
                 )
+                if prop in editable_list_props:
+                    if prop == "ports":
+                        ttk.Button(btnf, text="Edit", command=self.edit_port).pack(side=tk.TOP)
+                    else:
+                        ttk.Button(
+                            btnf, text="Edit", command=lambda p=prop: self.edit_list_item(p)
+                        ).pack(side=tk.TOP)
                 ttk.Button(
                     btnf, text="Remove", command=lambda p=prop: self.remove_list_item(p)
                 ).pack(side=tk.TOP)
@@ -3712,6 +3711,18 @@ class SysMLObjectDialog(simpledialog.Dialog):
         for idx in reversed(sel):
             self.listboxes["ports"].delete(idx)
 
+    def edit_port(self):
+        lb = self.listboxes["ports"]
+        sel = lb.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        cur = lb.get(idx)
+        name = simpledialog.askstring("Port", "Name:", initialvalue=cur, parent=self)
+        if name:
+            lb.delete(idx)
+            lb.insert(idx, name)
+
     def add_list_item(self, prop: str):
         val = simpledialog.askstring(prop, "Value:", parent=self)
         if val:
@@ -3722,6 +3733,18 @@ class SysMLObjectDialog(simpledialog.Dialog):
         sel = list(lb.curselection())
         for idx in reversed(sel):
             lb.delete(idx)
+
+    def edit_list_item(self, prop: str):
+        lb = self.listboxes[prop]
+        sel = lb.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        cur = lb.get(idx)
+        val = simpledialog.askstring(prop, "Value:", initialvalue=cur, parent=self)
+        if val:
+            lb.delete(idx)
+            lb.insert(idx, val)
 
     class OperationDialog(simpledialog.Dialog):
         def __init__(self, parent, operation=None):
