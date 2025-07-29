@@ -238,6 +238,26 @@ def add_aggregation_part(
             if o.get("element_id") == whole_id:
                 o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
 
+    # ensure a Part element exists representing the aggregation
+    rel = next(
+        (
+            r
+            for r in repo.relationships
+            if r.rel_type == "Aggregation"
+            and r.source == whole_id
+            and r.target == part_id
+        ),
+        None,
+    )
+    if rel and not rel.properties.get("part_elem"):
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(part_id).name or part_id,
+            properties={"definition": part_id},
+            owner=repo.root_package.elem_id,
+        )
+        rel.properties["part_elem"] = part_elem.elem_id
+
     # propagate changes to any generalization children
     for child_id in _find_generalization_children(repo, whole_id):
         remove_inherited_block_properties(repo, child_id, whole_id)
@@ -409,23 +429,28 @@ def _sync_ibd_aggregation_parts(
         if o.get("obj_type") == "Part"
     }
     src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
-    part_ids = [
-        rel.target
+    rels = [
+        rel
         for rel in repo.relationships
         if rel.rel_type == "Aggregation" and rel.source in src_ids
     ]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
-    for pid in part_ids:
+    for rel in rels:
+        pid = rel.target
         if pid in existing_defs:
             continue
-        part_elem = repo.create_element(
-            "Part",
-            name=repo.elements.get(pid).name or pid,
-            properties={"definition": pid},
-            owner=repo.root_package.elem_id,
-        )
+        if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
+            part_elem = repo.elements[rel.properties["part_elem"]]
+        else:
+            part_elem = repo.create_element(
+                "Part",
+                name=repo.elements.get(pid).name or pid,
+                properties={"definition": pid},
+                owner=repo.root_package.elem_id,
+            )
+            rel.properties["part_elem"] = part_elem.elem_id
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
         obj_dict = {
             "obj_id": _get_next_id(),
@@ -700,7 +725,7 @@ def remove_aggregation_part(
             (
                 r
                 for r in repo.relationships
-                if r.rel_type == "Composite Aggregation"
+                if r.rel_type in ("Composite Aggregation", "Aggregation")
                 and r.source == whole_id
                 and r.target == part_id
             ),
@@ -1129,6 +1154,23 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                     updated = True
             if updated:
                 repo.touch_diagram(diag.diag_id)
+
+
+def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
+    """Propagate attribute updates on ``block_id`` to all parts referencing it."""
+
+    block = repo.elements.get(block_id)
+    if not block or block.elem_type != "Block":
+        return
+    props = ["operations", "partProperties", "behaviors"]
+    for elem in repo.elements.values():
+        if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
+            continue
+        for prop in props:
+            if prop in block.properties:
+                elem.properties[prop] = block.properties[prop]
+            else:
+                elem.properties.pop(prop, None)
 
 
 def _propagate_block_requirement_changes(
@@ -2127,14 +2169,18 @@ class SysMLDiagramWindow(tk.Frame):
                                     "Aggregation",
                                     "Composite Aggregation",
                                 ):
-                                    remove_aggregation_part(
-                                        self.repo,
-                                        src_obj.element_id,
-                                        dst_obj.element_id,
-                                        remove_object=self.selected_conn.conn_type
-                                        == "Composite Aggregation",
-                                        app=getattr(self, "app", None),
-                                    )
+                                    msg = "Delete aggregation and its part?"
+                                    if messagebox.askyesno(
+                                        "Remove Aggregation", msg
+                                    ):
+                                        remove_aggregation_part(
+                                            self.repo,
+                                            src_obj.element_id,
+                                            dst_obj.element_id,
+                                            remove_object=self.selected_conn.conn_type
+                                            == "Composite Aggregation",
+                                            app=getattr(self, "app", None),
+                                        )
                                 if self.dragging_endpoint == "dst":
                                     rel.target = obj.element_id
                                     self.selected_conn.dst = obj.obj_id
@@ -3576,12 +3622,23 @@ class SysMLDiagramWindow(tk.Frame):
             if self.selected_conn in self.connections:
                 src_elem = self.get_object(self.selected_conn.src)
                 dst_elem = self.get_object(self.selected_conn.dst)
-                if self.selected_conn.conn_type == "Generalization" and src_elem and dst_elem:
+                if (
+                    self.selected_conn.conn_type == "Generalization"
+                    and src_elem
+                    and dst_elem
+                ):
                     msg = (
                         "Removing this inheritance will delete all inherited parts, "
                         "properties and attributes. Continue?"
                     )
                     if not messagebox.askyesno("Remove Inheritance", msg):
+                        return
+                elif self.selected_conn.conn_type in (
+                    "Aggregation",
+                    "Composite Aggregation",
+                ):
+                    msg = "Delete aggregation and its part?"
+                    if not messagebox.askyesno("Remove Aggregation", msg):
                         return
                 self.connections.remove(self.selected_conn)
                 # remove matching repository relationship
@@ -4363,6 +4420,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         if self.obj.obj_type == "Block" and self.obj.element_id:
             propagate_block_port_changes(repo, self.obj.element_id)
+            propagate_block_part_changes(repo, self.obj.element_id)
             propagate_block_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
