@@ -6,7 +6,7 @@ from analysis.user_config import CURRENT_USER_NAME, CURRENT_USER_EMAIL
 
 @dataclass
 class Metadata:
-    """Track creation and modification info with a change history."""
+    """Track creation and modification info."""
 
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     author: str = field(default_factory=lambda: CURRENT_USER_NAME)
@@ -14,11 +14,6 @@ class Metadata:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: CURRENT_USER_EMAIL)
-    history: list = field(default_factory=list)
-
-    def __post_init__(self):
-        if not self.history:
-            self.history.append({"date": self.created, "user": self.author})
 
 @dataclass
 class MissionProfile:
