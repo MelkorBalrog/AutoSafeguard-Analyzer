@@ -35,6 +35,7 @@ if 'BlockUsage' not in SYSML_PROPERTIES:
         'ports',
         'constraintProperties',
         'operations',
+        'behaviors',
     ]
 if 'PortUsage' not in SYSML_PROPERTIES:
     SYSML_PROPERTIES['PortUsage'] = []
