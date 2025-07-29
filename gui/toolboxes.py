@@ -5,6 +5,9 @@ import csv
 import copy
 import textwrap
 import uuid
+import datetime
+
+from analysis.user_config import CURRENT_USER_NAME
 
 from gui.tooltip import ToolTip
 from analysis.models import (
@@ -1412,6 +1415,10 @@ class FI2TCWindow(tk.Frame):
         if not name:
             return
         self.app.active_fi2tc.name = name
+        now = datetime.datetime.now().isoformat()
+        self.app.active_fi2tc.meta.modified = now
+        self.app.active_fi2tc.meta.modified_by = CURRENT_USER_NAME
+        self.app.active_fi2tc.meta.history.append({"date": now, "user": CURRENT_USER_NAME})
         self.refresh_docs()
         self.app.update_views()
 
@@ -2881,6 +2888,10 @@ class TC2FIWindow(tk.Frame):
         if not name:
             return
         self.app.active_tc2fi.name = name
+        now = datetime.datetime.now().isoformat()
+        self.app.active_tc2fi.meta.modified = now
+        self.app.active_tc2fi.meta.modified_by = CURRENT_USER_NAME
+        self.app.active_tc2fi.meta.history.append({"date": now, "user": CURRENT_USER_NAME})
         self.refresh_docs()
         self.app.update_views()
 
