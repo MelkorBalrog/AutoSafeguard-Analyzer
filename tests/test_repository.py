@@ -4,10 +4,12 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from sysml.sysml_repository import SysMLRepository
+from analysis.user_config import set_current_user
 
 class RepositoryTests(unittest.TestCase):
     def setUp(self):
         SysMLRepository._instance = None
+        set_current_user("Test User", "test@example.com")
         self.repo = SysMLRepository.get_instance()
 
     def test_create_elements(self):
@@ -23,6 +25,17 @@ class RepositoryTests(unittest.TestCase):
         rel = self.repo.create_relationship("Association", a.elem_id, b.elem_id)
         self.assertEqual(rel.source, a.elem_id)
         self.assertEqual(rel.target, b.elem_id)
+
+    def test_author_metadata(self):
+        elem = self.repo.create_element("Block", name="Engine")
+        diag = self.repo.create_diagram("Block Diagram", name="BD")
+        rel = self.repo.create_relationship("Association", elem.elem_id, diag.diag_id)
+        self.assertEqual(elem.author, "Test User")
+        self.assertEqual(elem.author_email, "test@example.com")
+        self.assertEqual(elem.modified_by, "Test User")
+        self.assertEqual(elem.modified_by_email, "test@example.com")
+        self.assertEqual(diag.author_email, "test@example.com")
+        self.assertEqual(rel.author_email, "test@example.com")
 
     def test_serialize(self):
         blk = self.repo.create_element("Block", name="Car")

@@ -1,7 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from dataclasses import dataclass, field
 import datetime
-from analysis.user_config import CURRENT_USER_NAME
+from analysis.user_config import CURRENT_USER_NAME, CURRENT_USER_EMAIL
 
 
 @dataclass
@@ -10,8 +10,10 @@ class Metadata:
 
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     author: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    author_email: str = field(default_factory=lambda: CURRENT_USER_EMAIL)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
+    modified_by_email: str = field(default_factory=lambda: CURRENT_USER_EMAIL)
 
 @dataclass
 class MissionProfile:
