@@ -361,6 +361,61 @@ def _sync_ibd_composite_parts(
     return added
 
 
+def _sync_ibd_aggregation_parts(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD includes parts for regular aggregations.
+
+    Returns the list of added part object dictionaries."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    part_ids = [
+        rel.target
+        for rel in repo.relationships
+        if rel.rel_type == "Aggregation" and rel.source == block_id
+    ]
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_defs)
+    for pid in part_ids:
+        if pid in existing_defs:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(pid).name or pid,
+            properties={"definition": pid},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": pid},
+        }
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        added.append(obj_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+    return added
+
+
 def set_ibd_father(
     repo: SysMLRepository, diagram: SysMLDiagram, father_id: str | None, app=None
 ) -> list[dict]:
@@ -4050,10 +4105,19 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         # ------------------------------------------------------------
         # Always inherit parts from the father block if assigned
         # ------------------------------------------------------------
+        added_parent = []
         if diag:
             added_parent = inherit_father_parts(repo, diag)
             for data in added_parent:
                 self.objects.append(SysMLObject(**data))
+
+        # ------------------------------------------------------------
+        # Add parts from aggregation relationships
+        # ------------------------------------------------------------
+        added_agg = _sync_ibd_aggregation_parts(repo, block_id, app=getattr(self, "app", None))
+        added_comp = _sync_ibd_composite_parts(repo, block_id, app=getattr(self, "app", None))
+        for data in added_agg + added_comp:
+            self.objects.append(SysMLObject(**data))
 
         # ------------------------------------------------------------
         # If the represented block has a reliability analysis with
@@ -4068,10 +4132,16 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
-        # If there are neither reliability components nor a father block,
+        # If there are no components, no father and no aggregations,
         # there is nothing to inherit
-        if not comps and not getattr(diag, "father", None):
-            messagebox.showinfo("Add Inherited Parts", "Block has no reliability analysis assigned")
+        has_aggr = any(
+            rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source == block_id
+            for rel in repo.relationships
+        )
+        if not comps and not getattr(diag, "father", None) and not has_aggr:
+            messagebox.showinfo("Add Inherited Parts", "No inherited parts available")
+            self.redraw()
+            self._sync_to_repository()
             return
 
         selected = []
