@@ -1004,6 +1004,91 @@ def _add_ports_for_part(
     return added
 
 
+def _sync_ports_for_part(repo: SysMLRepository, diag: SysMLDiagram, part_obj: dict) -> None:
+    """Update port objects for ``part_obj`` to match its definition."""
+
+    part_elem = repo.elements.get(part_obj.get("element_id"))
+    if not part_elem:
+        return
+    block_id = part_elem.properties.get("definition")
+    names: list[str] = []
+    if block_id and block_id in repo.elements:
+        block_elem = repo.elements[block_id]
+        names.extend([
+            p.strip()
+            for p in block_elem.properties.get("ports", "").split(",")
+            if p.strip()
+        ])
+    names.extend([
+        p.strip() for p in part_elem.properties.get("ports", "").split(",") if p.strip()
+    ])
+    names = list(dict.fromkeys(names))
+    part_obj.setdefault("properties", {})["ports"] = ", ".join(names)
+    part_elem.properties["ports"] = ", ".join(names)
+
+    existing = [
+        o
+        for o in list(diag.objects)
+        if o.get("obj_type") == "Port" and o.get("properties", {}).get("parent") == str(part_obj.get("obj_id"))
+    ]
+    existing_names = {o.get("properties", {}).get("name") for o in existing}
+    parent = SysMLObject(
+        part_obj.get("obj_id"),
+        "Part",
+        part_obj.get("x", 0.0),
+        part_obj.get("y", 0.0),
+        width=part_obj.get("width", 80.0),
+        height=part_obj.get("height", 40.0),
+    )
+    for name in names:
+        if name in existing_names:
+            continue
+        port = SysMLObject(
+            _get_next_id(),
+            "Port",
+            parent.x + parent.width / 2 + 20,
+            parent.y,
+            properties={
+                "name": name,
+                "parent": str(parent.obj_id),
+                "side": "E",
+                "labelX": "8",
+                "labelY": "-8",
+            },
+        )
+        snap_port_to_parent_obj(port, parent)
+        diag.objects.append(asdict(port))
+    for obj in existing:
+        if obj.get("properties", {}).get("name") not in names:
+            diag.objects.remove(obj)
+
+
+def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
+    """Propagate port updates on ``block_id`` to all parts referencing it."""
+
+    block = repo.elements.get(block_id)
+    if not block or block.elem_type != "Block":
+        return
+    for elem in repo.elements.values():
+        if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
+            continue
+        block_ports = [p.strip() for p in block.properties.get("ports", "").split(",") if p.strip()]
+        names = block_ports
+        elem.properties["ports"] = ", ".join(names)
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Internal Block Diagram":
+                continue
+            diag.objects = getattr(diag, "objects", [])
+            updated = False
+            for obj in diag.objects:
+                if obj.get("obj_type") == "Part" and obj.get("element_id") == elem.elem_id:
+                    obj.setdefault("properties", {})["ports"] = ", ".join(names)
+                    _sync_ports_for_part(repo, diag, obj)
+                    updated = True
+            if updated:
+                repo.touch_diagram(diag.diag_id)
+
+
 def parse_operations(raw: str) -> List[OperationDefinition]:
     """Return a list of operations parsed from *raw* JSON or comma text."""
     if not raw:
@@ -4254,6 +4339,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 self.obj.properties[prop] = joined
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = joined
+
+        if self.obj.obj_type == "Block" and self.obj.element_id:
+            propagate_block_port_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
                 self.obj.width = float(self.width_var.get())
