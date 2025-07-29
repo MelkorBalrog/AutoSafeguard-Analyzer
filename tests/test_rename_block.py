@@ -1,6 +1,7 @@
 import unittest
 from gui.architecture import (
     add_composite_aggregation_part,
+    remove_aggregation_part,
     rename_block,
     inherit_block_properties,
 )
@@ -48,6 +49,26 @@ class RenameBlockTests(unittest.TestCase):
         self.assertIn(
             "b",
             repo.elements[child.elem_id].properties.get("partProperties", ""),
+        )
+
+    def test_rename_then_remove_without_ibd(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        # establish composite aggregation without IBD
+        repo.create_relationship("Composite Aggregation", whole.elem_id, part.elem_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id)
+        # rename part block
+        rename_block(repo, part.elem_id, "NewPart")
+        self.assertIn(
+            "NewPart",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
+        )
+        # remove aggregation
+        remove_aggregation_part(repo, whole.elem_id, part.elem_id)
+        self.assertEqual(
+            "",
+            repo.elements[whole.elem_id].properties.get("partProperties", ""),
         )
 
 
