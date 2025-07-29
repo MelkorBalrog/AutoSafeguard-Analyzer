@@ -2215,6 +2215,46 @@ class SysMLDiagramWindow(tk.Frame):
             width=width,
         )
 
+    def _draw_center_triangle(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw a small triangular arrow pointing from *start* to *end*.
+
+        The triangle is centered on the line segment defined by the start
+        and end points and scales with the current zoom level.
+        """
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        mx = (start[0] + end[0]) / 2
+        my = (start[1] + end[1]) / 2
+        size = 6 * self.zoom
+        angle = math.atan2(dy, dx)
+        spread = math.radians(20)
+        p1 = (mx, my)
+        p2 = (
+            mx - size * math.cos(angle - spread),
+            my - size * math.sin(angle - spread),
+        )
+        p3 = (
+            mx - size * math.cos(angle + spread),
+            my - size * math.sin(angle + spread),
+        )
+        self.canvas.create_polygon(
+            p1,
+            p2,
+            p3,
+            fill=color,
+            outline=color,
+            width=width,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
