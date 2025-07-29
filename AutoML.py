@@ -227,7 +227,7 @@ import math
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
-from gui.tooltip import ToolTip
+from gui.tooltip import add_tab_tooltips
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -918,6 +918,7 @@ class EditNodeDialog(simpledialog.Dialog):
         dialog_font = tkFont.Font(family="Arial", size=10)
 
         nb = ttk.Notebook(master)
+        add_tab_tooltips(nb)
         nb.pack(fill=tk.BOTH, expand=True)
         general_frame = ttk.Frame(nb)
         safety_frame = ttk.Frame(nb)
@@ -2131,6 +2132,7 @@ class FaultTreeApp:
         self.main_pane.pack(fill=tk.BOTH, expand=True)
 
         self.explorer_nb = ttk.Notebook(self.main_pane)
+        add_tab_tooltips(self.explorer_nb)
         self.main_pane.add(self.explorer_nb, width=300)
 
         self.analysis_tab = ttk.Frame(self.explorer_nb)
@@ -2158,11 +2160,8 @@ class FaultTreeApp:
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         self.tools_nb = ttk.Notebook(self.tools_group)
+        add_tab_tooltips(self.tools_nb)
         self.tools_nb.pack(fill=tk.BOTH, expand=True)
-        # Tooltip helper for tabs (text may be clipped)
-        self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
-        self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
-        self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
             "Mission Profiles": self.manage_mission_profiles,
@@ -2270,6 +2269,7 @@ class FaultTreeApp:
 
         # Notebook for diagrams and analyses
         self.doc_nb = ClosableNotebook(self.main_pane)
+        add_tab_tooltips(self.doc_nb)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.main_pane.add(self.doc_nb, stretch="always")
 
@@ -7706,23 +7706,6 @@ class FaultTreeApp:
         if action:
             action()
 
-    def _on_tool_tab_motion(self, event):
-        """Show tooltip for notebook tabs when hovering over them."""
-        try:
-            idx = self.tools_nb.index(f"@{event.x},{event.y}")
-        except tk.TclError:
-            self._tools_tip.hide()
-            return
-        text = self.tools_nb.tab(idx, "text")
-        bbox = self.tools_nb.bbox(idx)
-        if not bbox:
-            self._tools_tip.hide()
-            return
-        x = self.tools_nb.winfo_rootx() + bbox[0] + bbox[2] // 2
-        y = self.tools_nb.winfo_rooty() + bbox[1] + bbox[3]
-        if self._tools_tip.text != text:
-            self._tools_tip.text = text
-        self._tools_tip.show(x, y)
 
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
@@ -10058,6 +10041,7 @@ class FaultTreeApp:
         def body(self, master):
             self.resizable(False, False)
             nb = ttk.Notebook(master)
+            add_tab_tooltips(nb)
             nb.pack(fill=tk.BOTH, expand=True)
             gen_frame = ttk.Frame(nb)
             metric_frame = ttk.Frame(nb)

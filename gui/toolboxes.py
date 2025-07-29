@@ -6,7 +6,7 @@ import copy
 import textwrap
 import uuid
 
-from gui.tooltip import ToolTip
+from gui.tooltip import ToolTip, add_tab_tooltips
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,
@@ -616,6 +616,7 @@ class ReliabilityWindow(tk.Frame):
                 self.resizable(False, False)
                 self.vars = {}
                 nb = ttk.Notebook(master)
+                add_tab_tooltips(nb)
                 nb.pack(fill=tk.BOTH, expand=True)
                 gen_tab = ttk.Frame(nb)
                 attr_tab = ttk.Frame(nb)
@@ -973,6 +974,7 @@ class FI2TCWindow(tk.Frame):
             )
             self.widgets = {}
             nb = ttk.Notebook(master)
+            add_tab_tooltips(nb)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
                 "Known Functional Weakness": [
@@ -2401,6 +2403,7 @@ class TC2FIWindow(tk.Frame):
             )
             self.widgets = {}
             nb = ttk.Notebook(master)
+            add_tab_tooltips(nb)
             nb.pack(fill=tk.BOTH, expand=True)
             categories = {
                 "Known Env/Operational Condition": [

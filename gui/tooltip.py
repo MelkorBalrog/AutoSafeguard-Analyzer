@@ -66,3 +66,30 @@ class ToolTip:
         if self.id:
             self.widget.after_cancel(self.id)
             self.id = None
+
+
+def add_tab_tooltips(nb: tk.Widget) -> ToolTip:
+    """Display the tab text in a tooltip when hovering over a notebook tab."""
+
+    tip = ToolTip(nb, "", automatic=False)
+
+    def _on_motion(event: tk.Event) -> None:
+        try:
+            idx = nb.index(f"@{event.x},{event.y}")
+        except tk.TclError:
+            tip.hide()
+            return
+        text = nb.tab(idx, "text")
+        bbox = nb.bbox(idx)
+        if not bbox:
+            tip.hide()
+            return
+        x = nb.winfo_rootx() + bbox[0] + bbox[2] // 2
+        y = nb.winfo_rooty() + bbox[1] + bbox[3]
+        if tip.text != text:
+            tip.text = text
+        tip.show(x, y)
+
+    nb.bind("<Motion>", _on_motion)
+    nb.bind("<Leave>", lambda _e: tip.hide())
+    return tip

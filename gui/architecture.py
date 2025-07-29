@@ -2,6 +2,7 @@
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk, simpledialog, messagebox
+from gui.tooltip import add_tab_tooltips
 import json
 import math
 from dataclasses import dataclass, field, asdict
@@ -4151,6 +4152,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         # Use a notebook to keep the dialog compact by grouping fields
         self.nb = ttk.Notebook(master)
+        add_tab_tooltips(self.nb)
         self.nb.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
         gen_frame = ttk.Frame(self.nb)

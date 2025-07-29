@@ -18,6 +18,7 @@
 
 import tkinter as tk
 from tkinter import simpledialog, messagebox, ttk
+from gui.tooltip import add_tab_tooltips
 from dataclasses import dataclass, field
 from typing import List
 import difflib
@@ -89,6 +90,7 @@ class ParticipantDialog(simpledialog.Dialog):
     def body(self, master):
         self.resizable(False, False)
         nb = ttk.Notebook(master)
+        add_tab_tooltips(nb)
         nb.pack(fill=tk.BOTH, expand=True)
 
         mod_tab = ttk.Frame(nb)
@@ -202,6 +204,7 @@ class EmailConfigDialog(simpledialog.Dialog):
     def body(self, master):
         self.resizable(False, False)
         nb = ttk.Notebook(master)
+        add_tab_tooltips(nb)
         nb.pack(fill=tk.BOTH, expand=True)
 
         server_tab = ttk.Frame(nb)
