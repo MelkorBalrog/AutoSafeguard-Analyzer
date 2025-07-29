@@ -2273,6 +2273,10 @@ class FaultTreeApp:
         self.doc_nb = ClosableNotebook(self.main_pane)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.main_pane.add(self.doc_nb, stretch="always")
+        # Tooltip helper for document tabs
+        self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
+        self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
+        self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
 
         self._create_fta_tab()
         self.root_node = FaultTreeNode("", "TOP EVENT")
@@ -7724,6 +7728,24 @@ class FaultTreeApp:
         if self._tools_tip.text != text:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
+
+    def _on_doc_tab_motion(self, event):
+        """Show tooltip for document notebook tabs when hovering over them."""
+        try:
+            idx = self.doc_nb.index(f"@{event.x},{event.y}")
+        except tk.TclError:
+            self._doc_tip.hide()
+            return
+        text = self.doc_nb.tab(idx, "text")
+        bbox = self.doc_nb.bbox(idx)
+        if not bbox:
+            self._doc_tip.hide()
+            return
+        x = self.doc_nb.winfo_rootx() + bbox[0] + bbox[2] // 2
+        y = self.doc_nb.winfo_rooty() + bbox[1] + bbox[3]
+        if self._doc_tip.text != text:
+            self._doc_tip.text = text
+        self._doc_tip.show(x, y)
 
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
