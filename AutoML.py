@@ -15586,6 +15586,9 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    # Prevent the main window from being resized so small that
+    # widgets and toolbars become unusable.
+    root.minsize(1200, 700)
     # Hide the main window while prompting for user info
     root.withdraw()
     users = load_all_users()
