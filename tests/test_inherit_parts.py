@@ -209,11 +209,6 @@ class InheritPartsTests(unittest.TestCase):
                 for o in ibd.objects
             )
         )
-        obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
-        self.assertEqual(
-            repo.elements[obj["element_id"]].properties.get("partDefinition"),
-            "B",
-        )
         self.assertTrue(
             any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)
         )
@@ -232,11 +227,6 @@ class InheritPartsTests(unittest.TestCase):
                 and repo.elements[o.get("element_id")].name == "p"
                 for o in ibd.objects
             )
-        )
-        obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
-        self.assertEqual(
-            repo.elements[obj["element_id"]].properties.get("partDefinition"),
-            "B",
         )
         self.assertTrue(
             any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)

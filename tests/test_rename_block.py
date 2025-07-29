@@ -32,12 +32,6 @@ class RenameBlockTests(unittest.TestCase):
                 and o.get("properties", {}).get("definition") == part.elem_id
             )
         )
-        pid = next(
-            o["element_id"]
-            for o in ibd.objects
-            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
-        )
-        self.assertEqual(repo.elements[pid].properties.get("partDefinition"), "NewPart")
 
     def test_rename_block_propagates_to_generalization(self):
         repo = self.repo

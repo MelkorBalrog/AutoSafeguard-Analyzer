@@ -186,11 +186,6 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     for elem in repo.elements.values():
         if elem.elem_type == "Part" and elem.properties.get("definition") == block_id:
             elem.name = new_name
-            elem.properties["partDefinition"] = new_name
-            for d in repo.diagrams.values():
-                for obj in getattr(d, "objects", []):
-                    if obj.get("element_id") == elem.elem_id:
-                        obj.setdefault("properties", {})["partDefinition"] = new_name
     # update blocks that include this block as a part
     for parent_id in _find_blocks_with_part(repo, block_id):
         parent = repo.elements.get(parent_id)
@@ -326,10 +321,7 @@ def add_composite_aggregation_part(
         "x": 50.0,
         "y": 50.0 + 60.0 * len(existing_defs),
         "element_id": part_elem.elem_id,
-        "properties": {
-            "definition": part_id,
-            "partDefinition": repo.elements.get(part_id).name or part_id,
-        },
+        "properties": {"definition": part_id},
         "locked": True,
     }
     diag.objects.append(obj_dict)
@@ -409,10 +401,7 @@ def _sync_ibd_composite_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {
-                "definition": pid,
-                "partDefinition": repo.elements.get(pid).name or pid,
-            },
+            "properties": {"definition": pid},
             "locked": True,
         }
         base_y += 60.0
@@ -473,10 +462,7 @@ def _sync_ibd_aggregation_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {
-                "definition": pid,
-                "partDefinition": repo.elements.get(pid).name or pid,
-            },
+            "properties": {"definition": pid},
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -546,10 +532,7 @@ def _sync_ibd_partproperty_parts(
         part_elem = repo.create_element(
             "Part",
             name=part_name,
-            properties={
-                "definition": target_id,
-                "partDefinition": repo.elements.get(target_id).name or target_id,
-            },
+            properties={"definition": target_id},
             owner=repo.root_package.elem_id,
         )
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
@@ -559,10 +542,7 @@ def _sync_ibd_partproperty_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {
-                "definition": target_id,
-                "partDefinition": repo.elements.get(target_id).name or target_id,
-            },
+            "properties": {"definition": target_id},
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -4046,28 +4026,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
             cur_id = self.obj.properties.get("definition", "")
             cur_name = next((n for n, i in idmap.items() if i == cur_id), "")
             self.def_var = tk.StringVar(value=cur_name)
-            cb = ttk.Combobox(
-                link_frame, textvariable=self.def_var, values=list(idmap.keys())
-            )
-            cb.grid(row=link_row, column=1, padx=4, pady=2)
-            link_row += 1
-            ttk.Label(link_frame, text="partDefinition:").grid(
-                row=link_row, column=0, sticky="e", padx=4, pady=2
-            )
-            pname = repo.elements.get(cur_id).name if cur_id in repo.elements else ""
-            self.part_def_var = tk.StringVar(value=pname)
-            ttk.Entry(link_frame, textvariable=self.part_def_var, state="readonly").grid(
+            ttk.Combobox(link_frame, textvariable=self.def_var, values=list(idmap.keys())).grid(
                 row=link_row, column=1, padx=4, pady=2
             )
             link_row += 1
-
-            def sync_part_def(_):
-                name = self.def_var.get()
-                did = self.def_map.get(name)
-                if did and did in repo.elements:
-                    self.part_def_var.set(repo.elements[did].name or did)
-
-            cb.bind("<<ComboboxSelected>>", sync_part_def)
 
         # Requirement allocation section
         req_row = 0
@@ -4461,12 +4423,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
             def_id = self.def_map.get(name)
             if def_id:
                 self.obj.properties["definition"] = def_id
-                self.obj.properties["partDefinition"] = repo.elements.get(def_id).name or def_id
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties["definition"] = def_id
-                    repo.elements[self.obj.element_id].properties["partDefinition"] = (
-                        repo.elements.get(def_id).name or def_id
-                    )
         if hasattr(self, "ucdef_var"):
             name = self.ucdef_var.get()
             def_id = self.ucdef_map.get(name)
