@@ -2581,8 +2581,43 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _block_compartments(self, obj: SysMLObject) -> list[tuple[str, str]]:
         """Return the list of compartments displayed for a Block."""
+        parts_raw = obj.properties.get("partProperties", "")
+        part_entries: list[str] = []
+        if parts_raw:
+            names = [p.strip() for p in parts_raw.split(",") if p.strip()]
+            for name in names:
+                blk_name = ""
+                # look for a Part element with this name to resolve its block
+                part_elem = next(
+                    (
+                        e
+                        for e in self.repo.elements.values()
+                        if e.elem_type == "Part" and e.name == name
+                    ),
+                    None,
+                )
+                if part_elem:
+                    def_id = part_elem.properties.get("definition")
+                    if def_id and def_id in self.repo.elements:
+                        blk_name = self.repo.elements[def_id].name or def_id
+                else:
+                    blk = next(
+                        (
+                            e
+                            for e in self.repo.elements.values()
+                            if e.elem_type == "Block" and e.name == name
+                        ),
+                        None,
+                    )
+                    if blk:
+                        blk_name = blk.name
+                if blk_name:
+                    part_entries.append(f"{name} : {blk_name}")
+                else:
+                    part_entries.append(name)
+        parts_text = ", ".join(part_entries)
         return [
-            ("Parts", obj.properties.get("partProperties", "")),
+            ("Parts", parts_text),
             (
                 "Operations",
                 "; ".join(
