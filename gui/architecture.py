@@ -157,6 +157,59 @@ def _find_blocks_with_aggregation(repo: SysMLRepository, part_id: str) -> set[st
     return blocks
 
 
+def _aggregation_exists(repo: SysMLRepository, whole_id: str, part_id: str) -> bool:
+    """Return ``True`` if ``whole_id`` or its ancestors already aggregate ``part_id``."""
+
+    src_ids = [whole_id] + _collect_generalization_parents(repo, whole_id)
+    diag_id = repo.get_linked_diagram(whole_id)
+    diag = repo.diagrams.get(diag_id)
+    father = getattr(diag, "father", None) if diag else None
+    if father:
+        src_ids.append(father)
+        src_ids.extend(_collect_generalization_parents(repo, father))
+
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+            and rel.target == part_id
+        ):
+            return True
+
+    for sid in src_ids[1:]:
+        diag_id = repo.get_linked_diagram(sid)
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
+            continue
+        for obj in getattr(diag, "objects", []):
+            if (
+                obj.get("obj_type") == "Part"
+                and obj.get("properties", {}).get("definition") == part_id
+            ):
+                return True
+    return False
+
+
+def _parse_multiplicity_range(mult: str) -> tuple[int, int | None]:
+    """Return (lower, upper) bounds parsed from *mult*."""
+
+    mult = mult.strip()
+    if not mult:
+        return 1, 1
+    if ".." in mult:
+        low, high = mult.split("..", 1)
+        low_val = int(low) if low.isdigit() else 0
+        if high == "*" or not high:
+            return low_val, None
+        return low_val, int(high)
+    if mult == "*":
+        return 0, None
+    if mult.isdigit():
+        val = int(mult)
+        return val, val
+    return 1, None
+
+
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -239,6 +292,7 @@ def add_aggregation_part(
     whole_id: str,
     part_id: str,
     multiplicity: str = "",
+    app=None,
 ) -> None:
     """Add *part_id* as a part of *whole_id* block."""
     whole = repo.elements.get(whole_id)
@@ -286,6 +340,8 @@ def add_aggregation_part(
     for child_id in _find_generalization_children(repo, whole_id):
         remove_inherited_block_properties(repo, child_id, whole_id)
         inherit_block_properties(repo, child_id)
+    # ensure multiplicity instances if composite diagram exists
+    add_multiplicity_parts(repo, whole_id, part_id, multiplicity, app=app)
 
 
 def add_composite_aggregation_part(
@@ -298,7 +354,7 @@ def add_composite_aggregation_part(
     """Add *part_id* as a composite part of *whole_id* block and create the
     part object in the whole's Internal Block Diagram if present."""
 
-    add_aggregation_part(repo, whole_id, part_id, multiplicity)
+    add_aggregation_part(repo, whole_id, part_id, multiplicity, app=app)
     diag_id = repo.get_linked_diagram(whole_id)
     diag = repo.diagrams.get(diag_id)
     # locate the relationship for future reference
@@ -366,9 +422,82 @@ def add_composite_aggregation_part(
                 win.redraw()
                 win._sync_to_repository()
 
+    # ensure additional instances per multiplicity
+    add_multiplicity_parts(repo, whole_id, part_id, multiplicity, app=app)
+
     # propagate composite part addition to any generalization children
     for child_id in _find_generalization_children(repo, whole_id):
         inherit_block_properties(repo, child_id)
+
+
+def add_multiplicity_parts(
+    repo: SysMLRepository,
+    whole_id: str,
+    part_id: str,
+    multiplicity: str,
+    count: int | None = None,
+    app=None,
+) -> list[dict]:
+    """Ensure ``count`` part instances exist according to ``multiplicity``."""
+
+    low, high = _parse_multiplicity_range(multiplicity)
+    if low <= 1 and high == 1:
+        return []
+    desired = count if count is not None else low
+    if high is not None:
+        desired = min(desired, high)
+
+    diag_id = repo.get_linked_diagram(whole_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
+    diag.objects = getattr(diag, "objects", [])
+    existing = [
+        o
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+        and o.get("properties", {}).get("definition") == part_id
+    ]
+    total = len(existing)
+    if count is not None:
+        target_total = total + desired
+    else:
+        target_total = max(total, desired)
+    if high is not None:
+        target_total = min(target_total, high)
+
+    added: list[dict] = []
+    base_name = repo.elements.get(part_id).name or part_id
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(diag.objects)
+    for i in range(total, target_total):
+        part_elem = repo.create_element(
+            "Part",
+            name=f"{base_name}[{i + 1}]",
+            properties={"definition": part_id, "force_ibd": "true"},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": part_id},
+            "locked": True,
+        }
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        _add_ports_for_part(repo, diag, obj_dict, app=app)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+        added.append(obj_dict)
+    return added
 
 
 def _sync_ibd_composite_parts(
@@ -1492,6 +1621,8 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
+                if _aggregation_exists(self.repo, src.element_id, dst.element_id):
+                    return False, "Aggregation already defined for this block"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
@@ -2184,6 +2315,7 @@ class SysMLDiagramWindow(tk.Frame):
                                         new_whole,
                                         new_part,
                                         self.selected_conn.multiplicity,
+                                        app=getattr(self, "app", None),
                                     )
                                 else:
                                     if self.dragging_endpoint == "dst":
@@ -4633,7 +4765,11 @@ class ConnectionDialog(simpledialog.Dialog):
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             ttk.Label(master, text="Multiplicity:").grid(row=4, column=0, sticky="e", padx=4, pady=4)
             self.mult_var = tk.StringVar(value=self.connection.multiplicity)
-            ttk.Entry(master, textvariable=self.mult_var).grid(row=4, column=1, padx=4, pady=4, sticky="we")
+            ttk.Combobox(
+                master,
+                textvariable=self.mult_var,
+                values=["1", "0..1", "1..*", "0..*", "2", "3", "4", "5"],
+            ).grid(row=4, column=1, padx=4, pady=4, sticky="we")
 
     def add_point(self):
         x = simpledialog.askfloat("Point", "X:", parent=self)
@@ -4682,6 +4818,7 @@ class ConnectionDialog(simpledialog.Dialog):
                         whole,
                         part,
                         self.connection.multiplicity,
+                        app=getattr(self.master, "app", None),
                     )
                 if hasattr(self.master, "_sync_to_repository"):
                     self.master._sync_to_repository()
