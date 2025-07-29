@@ -878,6 +878,29 @@ def operations_to_json(ops: List[OperationDefinition]) -> str:
 
 
 @dataclass
+class BehaviorAssignment:
+    """Mapping of a block operation to an activity diagram."""
+
+    operation: str
+    diagram: str
+
+
+def parse_behaviors(raw: str) -> List[BehaviorAssignment]:
+    """Return a list of BehaviorAssignments from *raw* JSON."""
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        return [BehaviorAssignment(**b) for b in data]
+    except Exception:
+        return []
+
+
+def behaviors_to_json(behaviors: List[BehaviorAssignment]) -> str:
+    return json.dumps([asdict(b) for b in behaviors])
+
+
+@dataclass
 class DiagramConnection:
     src: int
     dst: int
@@ -3367,6 +3390,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         self.entries = {}
         self.listboxes = {}
         self._operations: List[OperationDefinition] = []
+        self._behaviors: List[BehaviorAssignment] = []
         prop_row = 0
         rel_row = 0
         if self.obj.obj_type == "Part":
@@ -3379,6 +3403,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             "valueProperties",
             "constraintProperties",
             "operations",
+            "behaviors",
             "failureModes",
         }
         reliability_props = {
@@ -3405,6 +3430,21 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 ttk.Button(btnf, text="Add", command=self.add_operation).pack(side=tk.TOP)
                 ttk.Button(btnf, text="Edit", command=self.edit_operation).pack(side=tk.TOP)
                 ttk.Button(btnf, text="Remove", command=self.remove_operation).pack(side=tk.TOP)
+                self.listboxes[prop] = lb
+            elif prop == "behaviors":
+                lb = tk.Listbox(frame, height=4)
+                self._behaviors = parse_behaviors(self.obj.properties.get(prop, ""))
+                repo = SysMLRepository.get_instance()
+                for beh in self._behaviors:
+                    name = repo.diagrams.get(beh.diagram)
+                    label = f"{beh.operation} -> {name.name if name else beh.diagram}"
+                    lb.insert(tk.END, label)
+                lb.grid(row=row, column=1, padx=4, pady=2, sticky="we")
+                btnf = ttk.Frame(frame)
+                btnf.grid(row=row, column=2, padx=2)
+                ttk.Button(btnf, text="Add", command=self.add_behavior).pack(side=tk.TOP)
+                ttk.Button(btnf, text="Edit", command=self.edit_behavior).pack(side=tk.TOP)
+                ttk.Button(btnf, text="Remove", command=self.remove_behavior).pack(side=tk.TOP)
                 self.listboxes[prop] = lb
             elif prop in list_props:
                 lb = tk.Listbox(frame, height=4)
@@ -3722,6 +3762,31 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     )
             self.result = OperationDefinition(name, params, self.ret_var.get().strip())
 
+    class BehaviorDialog(simpledialog.Dialog):
+        def __init__(self, parent, operations: list[str], diag_map: dict[str, str], assignment=None):
+            self.operations = operations
+            self.diag_map = diag_map
+            self.assignment = assignment
+            super().__init__(parent, title="Behavior")
+
+        def body(self, master):
+            ttk.Label(master, text="Operation:").grid(row=0, column=0, padx=4, pady=2, sticky="e")
+            self.op_var = tk.StringVar(value=getattr(self.assignment, "operation", ""))
+            ttk.Combobox(master, textvariable=self.op_var, values=self.operations, state="readonly").grid(
+                row=0, column=1, padx=4, pady=2
+            )
+            ttk.Label(master, text="Diagram:").grid(row=1, column=0, padx=4, pady=2, sticky="e")
+            cur_name = next((n for n, i in self.diag_map.items() if i == getattr(self.assignment, "diagram", "")), "")
+            self.diag_var = tk.StringVar(value=cur_name)
+            ttk.Combobox(master, textvariable=self.diag_var, values=list(self.diag_map.keys()), state="readonly").grid(
+                row=1, column=1, padx=4, pady=2
+            )
+
+        def apply(self):
+            op = self.op_var.get().strip()
+            diag_id = self.diag_map.get(self.diag_var.get(), "")
+            self.result = BehaviorAssignment(operation=op, diagram=diag_id)
+
     def add_operation(self):
         dlg = self.OperationDialog(self)
         if dlg.result:
@@ -3747,6 +3812,43 @@ class SysMLObjectDialog(simpledialog.Dialog):
         for idx in reversed(sel):
             lb.delete(idx)
             del self._operations[idx]
+
+    def add_behavior(self):
+        repo = SysMLRepository.get_instance()
+        diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Activity Diagram"]
+        diag_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
+        ops = [op.name for op in self._operations]
+        dlg = self.BehaviorDialog(self, ops, diag_map)
+        if dlg.result:
+            self._behaviors.append(dlg.result)
+            name = repo.diagrams.get(dlg.result.diagram)
+            label = f"{dlg.result.operation} -> {name.name if name else dlg.result.diagram}"
+            self.listboxes["behaviors"].insert(tk.END, label)
+
+    def edit_behavior(self):
+        lb = self.listboxes["behaviors"]
+        sel = lb.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        repo = SysMLRepository.get_instance()
+        diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Activity Diagram"]
+        diag_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
+        ops = [op.name for op in self._operations]
+        dlg = self.BehaviorDialog(self, ops, diag_map, self._behaviors[idx])
+        if dlg.result:
+            self._behaviors[idx] = dlg.result
+            name = repo.diagrams.get(dlg.result.diagram)
+            label = f"{dlg.result.operation} -> {name.name if name else dlg.result.diagram}"
+            lb.delete(idx)
+            lb.insert(idx, label)
+
+    def remove_behavior(self):
+        lb = self.listboxes["behaviors"]
+        sel = list(lb.curselection())
+        for idx in reversed(sel):
+            lb.delete(idx)
+            del self._behaviors[idx]
 
     def add_requirement(self):
         if not global_requirements:
@@ -3808,6 +3910,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
         for prop, lb in self.listboxes.items():
             if prop == "operations":
                 self.obj.properties[prop] = operations_to_json(self._operations)
+                if self.obj.element_id and self.obj.element_id in repo.elements:
+                    repo.elements[self.obj.element_id].properties[prop] = self.obj.properties[prop]
+            elif prop == "behaviors":
+                self.obj.properties[prop] = behaviors_to_json(self._behaviors)
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = self.obj.properties[prop]
             else:
@@ -4122,6 +4228,85 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Flow",
         ]
         super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
+        ttk.Button(
+            self.toolbox,
+            text="Add Block Operations",
+            command=self.add_block_operations,
+        ).pack(fill=tk.X, padx=2, pady=2)
+
+    class SelectOperationsDialog(simpledialog.Dialog):
+        def __init__(self, parent, operations):
+            self.operations = operations
+            self.selected = {}
+            super().__init__(parent, title="Select Operations")
+
+        def body(self, master):
+            ttk.Label(master, text="Select operations:").pack(padx=5, pady=5)
+            frame = ttk.Frame(master)
+            frame.pack(fill=tk.BOTH, expand=True)
+            canvas = tk.Canvas(frame, borderwidth=0)
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+            self.check_frame = ttk.Frame(canvas)
+            self.check_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            canvas.create_window((0, 0), window=self.check_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            for label, op, diag in self.operations:
+                var = tk.BooleanVar(value=True)
+                self.selected[(op, diag)] = var
+                ttk.Checkbutton(self.check_frame, text=label, variable=var).pack(anchor="w", padx=2, pady=2)
+            return self.check_frame
+
+        def apply(self):
+            self.result = [(op, diag) for (op, diag), var in self.selected.items() if var.get()]
+
+    def add_block_operations(self):
+        repo = self.repo
+        blocks = []
+        for elem in repo.elements.values():
+            if elem.elem_type != "Block":
+                continue
+            for beh in parse_behaviors(elem.properties.get("behaviors", "")):
+                if beh.diagram == self.diagram_id:
+                    blocks.append(elem)
+                    break
+        operations = []
+        for blk in blocks:
+            ops = parse_operations(blk.properties.get("operations", ""))
+            behs = {b.operation: b.diagram for b in parse_behaviors(blk.properties.get("behaviors", ""))}
+            for op in ops:
+                diag_id = behs.get(op.name)
+                if diag_id:
+                    label = f"{blk.name}.{format_operation(op)}"
+                    operations.append((label, op.name, diag_id))
+        if not operations:
+            messagebox.showinfo("Add Block Operations", "No operations available")
+            return
+        dlg = self.SelectOperationsDialog(self, operations)
+        selected = dlg.result or []
+        if not selected:
+            return
+        diag = repo.diagrams.get(self.diagram_id)
+        base_x = 50.0
+        base_y = 50.0
+        offset = 60.0
+        for idx, (op_name, d_id) in enumerate(selected):
+            elem = repo.create_element("CallBehaviorAction", name=op_name, owner=diag.package)
+            repo.add_element_to_diagram(self.diagram_id, elem.elem_id)
+            repo.link_diagram(elem.elem_id, d_id)
+            obj = SysMLObject(
+                _get_next_id(),
+                "CallBehaviorAction",
+                base_x,
+                base_y + offset * idx,
+                element_id=elem.elem_id,
+                properties={"name": op_name},
+            )
+            diag.objects.append(obj.__dict__)
+            self.objects.append(obj)
+        self.redraw()
+        self._sync_to_repository()
 
 
 class BlockDiagramWindow(SysMLDiagramWindow):
