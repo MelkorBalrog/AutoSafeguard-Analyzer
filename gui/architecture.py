@@ -4434,7 +4434,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
         self.obj.properties["name"] = self.name_var.get()
         repo = SysMLRepository.get_instance()
         if self.obj.element_id and self.obj.element_id in repo.elements:
-            repo.elements[self.obj.element_id].name = self.name_var.get()
+            if self.obj.obj_type == "Block":
+                rename_block(repo, self.obj.element_id, self.name_var.get())
+            else:
+                repo.elements[self.obj.element_id].name = self.name_var.get()
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
