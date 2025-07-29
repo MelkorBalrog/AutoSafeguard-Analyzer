@@ -2398,41 +2398,86 @@ class SysMLDiagramWindow(tk.Frame):
         height_px = (1 + len(compartments)) * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
-    def ensure_text_fits(self, obj: SysMLObject) -> None:
-        """Expand the object's size so its label is fully visible."""
-        label_lines: list[str] = []
+    def _object_label_lines(self, obj: SysMLObject) -> list[str]:
+        """Return the lines of text displayed inside *obj*."""
         if obj.obj_type == "System Boundary":
             name = obj.properties.get("name", "")
-            if name:
-                label_lines.append(name)
-        else:
-            name = obj.properties.get("name", obj.obj_type)
-            if obj.obj_type == "Part":
-                def_id = obj.properties.get("definition")
-                if def_id and def_id in self.repo.elements:
-                    def_name = self.repo.elements[def_id].name or def_id
-                    name = f"{name} : {def_name}" if name else def_name
-            diag_id = self.repo.get_linked_diagram(obj.element_id)
-            if diag_id and diag_id in self.repo.diagrams:
-                diag = self.repo.diagrams[diag_id]
-                diag_name = diag.name or diag_id
-                label_lines.append(diag_name)
-            label_lines.append(name)
+            return [name] if name else []
 
-        if not label_lines:
-            return
+        if obj.obj_type in ("Block", "Port"):
+            # Blocks and ports use custom drawing logic
+            return []
 
-        text_width = max(self.font.measure(line) for line in label_lines)
-        text_height = self.font.metrics("linespace") * len(label_lines)
-        padding = 10 * self.zoom
-        min_w = (text_width + padding) / self.zoom
-        min_h = (text_height + padding) / self.zoom
+        name = obj.properties.get("name", obj.obj_type)
+        if obj.obj_type == "Part":
+            def_id = obj.properties.get("definition")
+            if def_id and def_id in self.repo.elements:
+                def_name = self.repo.elements[def_id].name or def_id
+                name = f"{name} : {def_name}" if name else def_name
 
+        lines: list[str] = []
+        diag_id = self.repo.get_linked_diagram(obj.element_id)
+        if diag_id and diag_id in self.repo.diagrams:
+            diag = self.repo.diagrams[diag_id]
+            diag_name = diag.name or diag_id
+            lines.append(diag_name)
+        lines.append(name)
+
+        key = obj.obj_type.replace(" ", "")
+        if not key.endswith("Usage"):
+            key += "Usage"
+        for prop in SYSML_PROPERTIES.get(key, []):
+            if obj.obj_type == "Part" and prop in (
+                "fit",
+                "qualification",
+                "failureModes",
+                "asil",
+            ):
+                continue
+            val = obj.properties.get(prop)
+            if val:
+                lines.append(f"{prop}: {val}")
+
+        if obj.obj_type == "Part":
+            rel_items = []
+            for lbl, key in (
+                ("ASIL", "asil"),
+                ("FIT", "fit"),
+                ("Qual", "qualification"),
+                ("FM", "failureModes"),
+            ):
+                val = obj.properties.get(key)
+                if val:
+                    rel_items.append(f"{lbl}: {val}")
+            if rel_items:
+                lines.extend(rel_items)
+            reqs = "; ".join(r.get("id") for r in obj.requirements)
+            if reqs:
+                lines.append(f"Reqs: {reqs}")
+
+        return lines
+
+    def ensure_text_fits(self, obj: SysMLObject) -> None:
+        """Expand the object's size so its label is fully visible."""
         if obj.obj_type == "Block":
             b_w, b_h = self._min_block_size(obj)
-            min_w = max(min_w, b_w)
-            min_h = max(min_h, b_h)
+            min_w, min_h = b_w, b_h
+        else:
+            label_lines = self._object_label_lines(obj)
+            if not label_lines:
+                return
 
+            text_width = max(self.font.measure(line) for line in label_lines)
+            text_height = self.font.metrics("linespace") * len(label_lines)
+            padding = 10 * self.zoom
+            min_w = (text_width + padding) / self.zoom
+            min_h = (text_height + padding) / self.zoom
+
+        if obj.obj_type in ("Block",):
+            # _min_block_size already accounts for text padding
+            pass
+        elif obj.obj_type in ("Fork", "Join", "Initial", "Final"):
+            min_h = obj.height  # height remains unchanged for these types
         if min_w > obj.width:
             obj.width = min_w
         if obj.obj_type not in ("Fork", "Join", "Initial", "Final") and min_h > obj.height:
