@@ -276,6 +276,7 @@ from analysis.models import (
     HaraDoc,
     FI2TCDoc,
     TC2FIDoc,
+    Metadata,
     QUALIFICATIONS,
     COMPONENT_ATTR_TEMPLATES,
     RELIABILITY_MODELS,
@@ -8472,6 +8473,8 @@ class FaultTreeApp:
         """Update modification metadata for the given document."""
         doc["modified"] = datetime.datetime.now().isoformat()
         doc["modified_by"] = CURRENT_USER_NAME
+        hist = doc.setdefault("history", [])
+        hist.append({"date": doc["modified"], "user": doc["modified_by"]})
 
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
@@ -9559,6 +9562,7 @@ class FaultTreeApp:
                     "author": CURRENT_USER_NAME,
                     "modified": now,
                     "modified_by": CURRENT_USER_NAME,
+                    "history": [{"date": now, "user": CURRENT_USER_NAME}],
                 }
                 self.fmeas.append(doc)
                 iid = tree.insert(
@@ -9653,6 +9657,7 @@ class FaultTreeApp:
                     "author": CURRENT_USER_NAME,
                     "modified": now,
                     "modified_by": CURRENT_USER_NAME,
+                    "history": [{"date": now, "user": CURRENT_USER_NAME}],
                 }
                 self.fmedas.append(doc)
                 iid = tree.insert(
@@ -10432,6 +10437,9 @@ class FaultTreeApp:
             self.app.propagate_failure_mode_attributes(self.node)
             self.node.modified = datetime.datetime.now().isoformat()
             self.node.modified_by = CURRENT_USER_NAME
+            if not hasattr(self.node, "history"):
+                self.node.history = []
+            self.node.history.append({"date": self.node.modified, "user": self.node.modified_by})
 
         def add_existing_requirement(self):
             global global_requirements
@@ -13380,6 +13388,7 @@ class FaultTreeApp:
                     "author": f.get("author", ""),
                     "modified": f.get("modified", ""),
                     "modified_by": f.get("modified_by", ""),
+                    "history": f.get("history", []),
                 }
                 for f in self.fmeas
             ],
@@ -13393,6 +13402,7 @@ class FaultTreeApp:
                     "author": d.get("author", ""),
                     "modified": d.get("modified", ""),
                     "modified_by": d.get("modified_by", ""),
+                    "history": d.get("history", []),
                 }
                 for d in self.fmedas
             ],
@@ -13430,6 +13440,7 @@ class FaultTreeApp:
                 {
                     "name": doc.name,
                     "entries": [asdict(e) for e in doc.entries],
+                    "meta": asdict(doc.meta),
                 }
                 for doc in self.hazop_docs
             ],
@@ -13440,15 +13451,16 @@ class FaultTreeApp:
                     "entries": [asdict(e) for e in doc.entries],
                     "approved": getattr(doc, "approved", False),
                     "status": getattr(doc, "status", "draft"),
+                    "meta": asdict(doc.meta),
                 }
                 for doc in self.hara_docs
             ],
             "fi2tc_docs": [
-                {"name": doc.name, "entries": doc.entries}
+                {"name": doc.name, "entries": doc.entries, "meta": asdict(doc.meta)}
                 for doc in self.fi2tc_docs
             ],
             "tc2fi_docs": [
-                {"name": doc.name, "entries": doc.entries}
+                {"name": doc.name, "entries": doc.entries, "meta": asdict(doc.meta)}
                 for doc in self.tc2fi_docs
             ],
             "hazop_entries": [asdict(e) for e in self.hazop_entries],
@@ -13539,6 +13551,7 @@ class FaultTreeApp:
                 "author": fmea_data.get("author", CURRENT_USER_NAME),
                 "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
                 "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
+                "history": fmea_data.get("history", []),
             })
         if not self.fmeas and "fmea_entries" in data:
             entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
@@ -13556,6 +13569,7 @@ class FaultTreeApp:
                 "author": doc.get("author", CURRENT_USER_NAME),
                 "modified": doc.get("modified", datetime.datetime.now().isoformat()),
                 "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
+                "history": doc.get("history", []),
             })
 
         self.update_failure_list()
@@ -13636,7 +13650,11 @@ class FaultTreeApp:
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
             self.hazop_docs.append(
-                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
+                HazopDoc(
+                    d.get("name", f"HAZOP {len(self.hazop_docs)+1}"),
+                    entries,
+                    Metadata(**d.get("meta", {}))
+                )
             )
         if not self.hazop_docs and "hazop_entries" in data:
             entries = []
@@ -13662,6 +13680,7 @@ class FaultTreeApp:
                     entries,
                     d.get("approved", False),
                     d.get("status", "draft"),
+                    Metadata(**d.get("meta", {})),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
@@ -13676,20 +13695,20 @@ class FaultTreeApp:
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
             self.fi2tc_docs.append(
-                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
+                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []), Metadata(**d.get("meta", {})))
             )
         if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", []), Metadata()))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
         self.tc2fi_docs = []
         for d in data.get("tc2fi_docs", []):
             self.tc2fi_docs.append(
-                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
+                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []), Metadata(**d.get("meta", {})))
             )
         if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", []), Metadata()))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -14714,7 +14733,8 @@ class FaultTreeApp:
         # Exclude the versions list when capturing a snapshot to avoid
         # recursively embedding previous versions within each saved state.
         data = self.export_model_data(include_versions=False)
-        self.versions.append({"name": name, "data": data})
+        now = datetime.datetime.now().isoformat()
+        self.versions.append({"name": name, "date": now, "user": CURRENT_USER_NAME, "data": data})
 
     def compare_versions(self):
         if not self.versions:
@@ -14934,6 +14954,7 @@ class FaultTreeNode:
         self.author = CURRENT_USER_NAME
         self.modified = self.created
         self.modified_by = CURRENT_USER_NAME
+        self.history = [{"date": self.created, "user": self.author}]
         self.safety_goal_description = ""
         self.safety_goal_asil = ""
         self.safe_state = ""
@@ -15040,6 +15061,11 @@ class FaultTreeNode:
             "failure_prob": self.failure_prob,
             "probability": self.probability,
             "prob_formula": self.prob_formula,
+            "created": self.created,
+            "author": self.author,
+            "modified": self.modified,
+            "modified_by": self.modified_by,
+            "history": self.history,
             "children": [child.to_dict() for child in self.children]
         }
         if not self.is_primary_instance and self.original and (self.original.unique_id != self.unique_id):
@@ -15103,6 +15129,11 @@ class FaultTreeNode:
         node.display_label = ""
         node.equation = ""
         node.detailed_equation = ""
+        node.created = data.get("created", datetime.datetime.now().isoformat())
+        node.author = data.get("author", CURRENT_USER_NAME)
+        node.modified = data.get("modified", node.created)
+        node.modified_by = data.get("modified_by", node.author)
+        node.history = data.get("history", [{"date": node.created, "user": node.author}])
         if "unique_id" in data:
             node.unique_id = data["unique_id"]
         else:
