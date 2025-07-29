@@ -1189,6 +1189,25 @@ def _propagate_block_requirement_changes(
     return reqs
 
 
+def _collect_block_requirements(repo: SysMLRepository, block_id: str) -> list[dict]:
+    """Return a unique list of requirements associated with ``block_id``."""
+
+    reqs: list[dict] = []
+    seen: set[str] = set()
+    for diag in repo.diagrams.values():
+        for obj in getattr(diag, "objects", []):
+            if obj.get("element_id") != block_id:
+                continue
+            for req in obj.get("requirements", []):
+                rid = req.get("id")
+                if rid is not None:
+                    if rid in seen:
+                        continue
+                    seen.add(rid)
+                reqs.append(req)
+    return reqs
+
+
 def _propagate_requirements(repo: SysMLRepository, src_reqs: list[dict], dst_id: str) -> None:
     """Merge *src_reqs* into all objects referencing *dst_id*."""
     if not src_reqs:
