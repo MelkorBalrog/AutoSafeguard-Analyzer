@@ -575,6 +575,101 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
     return added
 
 
+def _inherit_parts_from_block(
+    repo: SysMLRepository, diagram: SysMLDiagram, parent_id: str
+) -> list[dict]:
+    """Copy parts from *parent_id*'s IBD into ``diagram``."""
+    old_father = getattr(diagram, "father", None)
+    diagram.father = parent_id
+    added = inherit_father_parts(repo, diagram)
+    diagram.father = old_father
+    return added
+
+
+def inherit_generalization_parts(
+    repo: SysMLRepository, diagram: SysMLDiagram
+) -> list[dict]:
+    """Copy parts from generalized parent blocks into ``diagram``."""
+    block_id = next(
+        (eid for eid, did in repo.element_diagrams.items() if did == diagram.diag_id),
+        None,
+    )
+    if not block_id:
+        return []
+    added: list[dict] = []
+    for rel in repo.relationships:
+        if rel.rel_type == "Generalization" and rel.source == block_id:
+            added.extend(_inherit_parts_from_block(repo, diagram, rel.target))
+    return added
+
+
+def inherit_aggregation_parts(
+    repo: SysMLRepository, diagram: SysMLDiagram
+) -> list[dict]:
+    """Create part objects for aggregated blocks."""
+    block_id = next(
+        (eid for eid, did in repo.element_diagrams.items() if did == diagram.diag_id),
+        None,
+    )
+    if not block_id:
+        return []
+    diagram.objects = getattr(diagram, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diagram.objects
+        if o.get("obj_type") == "Part"
+    }
+    part_ids = [
+        rel.target
+        for rel in repo.relationships
+        if rel.source == block_id
+        and rel.rel_type in ("Aggregation", "Composite Aggregation")
+    ]
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_defs)
+    for pid in part_ids:
+        if pid in existing_defs:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(pid).name or pid,
+            properties={"definition": pid},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diagram.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": pid},
+        }
+        base_y += 60.0
+        diagram.objects.append(obj_dict)
+        added.append(obj_dict)
+    if not added:
+        return []
+    block = repo.elements.get(block_id)
+    if block:
+        names = [
+            p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()
+        ]
+        for pid in part_ids:
+            nm = repo.elements.get(pid).name or pid
+            if nm not in names:
+                names.append(nm)
+        joined = ", ".join(names)
+        block.properties["partProperties"] = joined
+        for d in repo.diagrams.values():
+            for o in getattr(d, "objects", []):
+                if o.get("element_id") == block_id:
+                    o.setdefault("properties", {})["partProperties"] = joined
+        inherit_block_properties(repo, block_id)
+    return added
+
+
 @dataclass
 class SysMLObject:
     obj_id: int
@@ -4011,10 +4106,26 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
-        # If there are neither reliability components nor a father block,
-        # there is nothing to inherit
-        if not comps and not getattr(diag, "father", None):
-            messagebox.showinfo("Add Inherited Parts", "Block has no reliability analysis assigned")
+        gen_parents = [
+            rel.target
+            for rel in repo.relationships
+            if rel.rel_type == "Generalization" and rel.source == block_id
+        ]
+        agg_parts = [
+            rel.target
+            for rel in repo.relationships
+            if rel.source == block_id
+            and rel.rel_type in ("Aggregation", "Composite Aggregation")
+        ]
+
+        # If there are no sources to inherit from, show a message
+        if (
+            not comps
+            and not getattr(diag, "father", None)
+            and not gen_parents
+            and not agg_parts
+        ):
+            messagebox.showinfo("Add Inherited Parts", "Block has no inherited parts")
             return
 
         selected = []
@@ -4066,6 +4177,12 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
             added.append(c.name)
+
+        if diag:
+            added_gen = inherit_generalization_parts(repo, diag)
+            added_agg = inherit_aggregation_parts(repo, diag)
+            for data in added_gen + added_agg:
+                self.objects.append(SysMLObject(**data))
         self.redraw()
         self._sync_to_repository()
         if added:

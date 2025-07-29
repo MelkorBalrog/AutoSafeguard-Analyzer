@@ -6,6 +6,8 @@ from gui.architecture import (
     inherit_father_parts,
     inherit_block_properties,
     remove_inherited_block_properties,
+    inherit_generalization_parts,
+    inherit_aggregation_parts,
 )
 
 class InheritPartsTests(unittest.TestCase):
@@ -194,6 +196,37 @@ class InheritPartsTests(unittest.TestCase):
         props = repo.elements[child.elem_id].properties
         self.assertIn("a2", props.get("valueProperties", ""))
         self.assertNotIn("a1", props.get("valueProperties", ""))
+
+    def test_inherit_aggregation_and_generalization_parts(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent")
+        part = repo.create_element("Block", name="PBlock")
+        p_ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(parent.elem_id, p_ibd.diag_id)
+        p_part = repo.create_element("Part", name="P1", properties={"definition": part.elem_id})
+        p_ibd.objects.append(
+            {
+                "obj_id": 1,
+                "obj_type": "Part",
+                "x": 0,
+                "y": 0,
+                "element_id": p_part.elem_id,
+                "properties": {"definition": part.elem_id},
+            }
+        )
+        child = repo.create_element("Block", name="Child")
+        c_ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, c_ibd.diag_id)
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        agg_block = repo.create_element("Block", name="Agg")
+        repo.create_relationship("Aggregation", child.elem_id, agg_block.elem_id)
+        added_gen = inherit_generalization_parts(repo, c_ibd)
+        added_agg = inherit_aggregation_parts(repo, c_ibd)
+        defs = {o.get("properties", {}).get("definition") for o in c_ibd.objects if o.get("obj_type") == "Part"}
+        self.assertIn(part.elem_id, defs)
+        self.assertIn(agg_block.elem_id, defs)
+        self.assertTrue(added_gen)
+        self.assertTrue(added_agg)
 
 if __name__ == "__main__":
     unittest.main()
