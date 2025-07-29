@@ -20,6 +20,10 @@ class AggregationPortTests(unittest.TestCase):
         repo.link_diagram(whole.elem_id, ibd.diag_id)
         added = _sync_ibd_aggregation_parts(repo, whole.elem_id)
         part_obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
+        self.assertEqual(
+            repo.elements[part_obj["element_id"]].properties.get("partDefinition"),
+            "Part",
+        )
         ports = [
             o for o in ibd.objects
             if o.get("obj_type") == "Port" and o.get("properties", {}).get("parent") == str(part_obj["obj_id"])
@@ -36,6 +40,10 @@ class AggregationPortTests(unittest.TestCase):
         repo.link_diagram(whole.elem_id, ibd.diag_id)
         add_composite_aggregation_part(repo, whole.elem_id, part.elem_id)
         part_obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
+        self.assertEqual(
+            repo.elements[part_obj["element_id"]].properties.get("partDefinition"),
+            "Part",
+        )
         ports = [
             o for o in ibd.objects
             if o.get("obj_type") == "Port" and o.get("properties", {}).get("parent") == str(part_obj["obj_id"])
