@@ -205,6 +205,79 @@ def add_composite_aggregation_part(
                 win._sync_to_repository()
 
 
+def _sync_ibd_composite_parts(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure *block_id*'s IBD includes parts for existing composite aggregations.
+
+    Returns the list of added part object dictionaries."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    part_ids = [
+        rel.target
+        for rel in repo.relationships
+        if rel.rel_type == "Composite Aggregation" and rel.source == block_id
+    ]
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_defs)
+    for pid in part_ids:
+        if pid in existing_defs:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=repo.elements.get(pid).name or pid,
+            properties={"definition": pid},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": pid},
+        }
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        added.append(obj_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+    return added
+
+
+def set_ibd_father(
+    repo: SysMLRepository, diagram: SysMLDiagram, father_id: str | None, app=None
+) -> list[dict]:
+    """Assign *father_id* as the block represented by *diagram*.
+
+    Links the diagram to the block and syncs composite parts. Returns any added
+    part object dictionaries."""
+
+    prev = getattr(diagram, "father", None)
+    diagram.father = father_id
+    if prev and prev != father_id:
+        repo.link_diagram(prev, None)
+    if father_id:
+        repo.link_diagram(father_id, diagram.diag_id)
+    added = _sync_ibd_composite_parts(repo, father_id, app=app) if father_id else []
+    return added
+
+
 def remove_aggregation_part(
     repo: SysMLRepository,
     whole_id: str,
@@ -3977,8 +4050,11 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         self.diagram.color = self.color_var.get()
         if self.diagram.diag_type == "Internal Block Diagram":
             father_id = self.father_map.get(self.father_var.get())
-            self.diagram.father = father_id
-            self.added_parts = inherit_father_parts(SysMLRepository.get_instance(), self.diagram)
+            repo = SysMLRepository.get_instance()
+            self.added_parts = set_ibd_father(
+                repo, self.diagram, father_id, app=getattr(self.master, "app", None)
+            )
+            self.added_parts.extend(inherit_father_parts(repo, self.diagram))
 
 
 class PackagePropertiesDialog(simpledialog.Dialog):
