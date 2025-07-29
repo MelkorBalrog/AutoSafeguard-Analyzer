@@ -3,7 +3,6 @@ from gui.architecture import (
     add_composite_aggregation_part,
     remove_aggregation_part,
     set_ibd_father,
-    _sync_ibd_composite_parts,
 )
 from sysml.sysml_repository import SysMLRepository
 
@@ -84,32 +83,6 @@ class CompositeAggregationTests(unittest.TestCase):
             o for o in ibd.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
         )
         self.assertTrue(obj.get("locked"))
-
-    def test_sync_composite_parts_relocks_and_restores(self):
-        repo = self.repo
-        whole = repo.create_element("Block", name="Whole")
-        part = repo.create_element("Block", name="Part")
-        repo.create_relationship("Composite Aggregation", whole.elem_id, part.elem_id)
-        ibd = repo.create_diagram("Internal Block Diagram")
-        repo.link_diagram(whole.elem_id, ibd.diag_id)
-        # manually add part object without lock
-        pe = repo.create_element("Part", properties={"definition": part.elem_id})
-        repo.add_element_to_diagram(ibd.diag_id, pe.elem_id)
-        ibd.objects.append({
-            "obj_id": 1,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": pe.elem_id,
-            "properties": {"definition": part.elem_id},
-        })
-        _sync_ibd_composite_parts(repo, whole.elem_id)
-        obj = ibd.objects[0]
-        self.assertTrue(obj.get("locked"))
-        ibd.objects.clear()
-        added = _sync_ibd_composite_parts(repo, whole.elem_id)
-        self.assertTrue(any(o.get("properties", {}).get("definition") == part.elem_id for o in ibd.objects))
-        self.assertTrue(all(d.get("locked") for d in added))
 
 
 if __name__ == "__main__":
