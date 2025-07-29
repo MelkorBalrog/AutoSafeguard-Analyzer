@@ -558,6 +558,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Flow",
                     "Connector",
                     "Generalize",
+                    "Generalization",
                     "Communication Path",
                 )
                 else "tcross"
@@ -581,6 +582,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalize",
+            "Generalization",
             "Communication Path",
         ):
             if src == dst:
@@ -707,6 +709,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalize",
+            "Generalization",
             "Communication Path",
         ):
             if self.start is None:
@@ -720,7 +723,9 @@ class SysMLDiagramWindow(tk.Frame):
                 if obj and obj != self.start:
                     valid, msg = self.validate_connection(self.start, obj, t)
                     if valid:
-                        arrow_default = "forward" if t in ("Flow", "Generalize") else "none"
+                        arrow_default = (
+                            "forward" if t in ("Flow", "Generalize", "Generalization") else "none"
+                        )
                         conn = DiagramConnection(
                             self.start.obj_id,
                             obj.obj_id,
@@ -2119,7 +2124,7 @@ class SysMLDiagramWindow(tk.Frame):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
             label = f"{incl_label}\n{label}" if label else incl_label
-        elif conn.conn_type in ("Generalize", "Communication Path"):
+        elif conn.conn_type in ("Generalize", "Generalization", "Communication Path"):
             dash = (2, 2)
         points = [(ax, ay)]
         if conn.style == "Squared":
@@ -2140,7 +2145,7 @@ class SysMLDiagramWindow(tk.Frame):
         width = 2 if selected else 1
         arrow_style = tk.NONE
         open_arrow = conn.conn_type in ("Include", "Extend")
-        if not open_arrow and conn.conn_type != "Generalize":
+        if not open_arrow and conn.conn_type not in ("Generalize", "Generalization"):
             if conn.arrow == "forward":
                 arrow_style = tk.LAST
             elif conn.arrow == "backward":
@@ -2157,7 +2162,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
             if backward:
                 self._draw_open_arrow(points[1], points[0], color=color, width=width)
-        elif conn.conn_type == "Generalize":
+        elif conn.conn_type in ("Generalize", "Generalization"):
             if forward:
                 self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
             if backward:
@@ -2167,7 +2172,7 @@ class SysMLDiagramWindow(tk.Frame):
             if mid_idx > 0:
                 mstart = points[mid_idx - 1]
                 mend = points[mid_idx]
-                if open_arrow or conn.conn_type == "Generalize":
+                if open_arrow or conn.conn_type in ("Generalize", "Generalization"):
                     if forward:
                         self._draw_open_arrow(mstart, mend, color=color, width=width)
                     elif backward:
