@@ -3218,15 +3218,12 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             "Port",
             "Connector",
         ]
-        super().__init__(
-            master, "Internal Block Diagram", tools, diagram_id, app=app, history=history
-        )
-        ttk.Button(self.toolbox, text="Add Block Parts", command=self.add_block_parts).pack(
-            fill=tk.X, padx=2, pady=2
-        )
-        ttk.Button(self.toolbox, text="Add Parent Parts", command=self.add_parent_parts).pack(
-            fill=tk.X, padx=2, pady=2
-        )
+        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
+        ttk.Button(
+            self.toolbox,
+            text="Add Inherited Parts",
+            command=self.add_inherited_parts,
+        ).pack(fill=tk.X, padx=2, pady=2)
 
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
@@ -3247,34 +3244,51 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
     def add_inherited_parts(self) -> None:
         repo = self.repo
-        # determine which block this IBD represents
-        block_id = next(
-            (eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None
-        )
+        block_id = next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
         if not block_id or block_id not in repo.elements:
-            messagebox.showinfo("Add Parts", "No block is linked to this diagram")
+            messagebox.showinfo("Add Inherited Parts", "No block is linked to this diagram")
             return
         block = repo.elements[block_id]
         diag = repo.diagrams.get(self.diagram_id)
+
+        # ------------------------------------------------------------
+        # Always inherit parts from the father block if assigned
+        # ------------------------------------------------------------
         if diag:
             added_parent = inherit_father_parts(repo, diag)
             for data in added_parent:
                 self.objects.append(SysMLObject(**data))
+
+        # ------------------------------------------------------------
+        # If the represented block has a reliability analysis with
+        # components, allow the user to select which components to add
+        # ------------------------------------------------------------
         ra_name = block.properties.get("analysis", "")
         analyses = getattr(self.app, "reliability_analyses", [])
         ra_map = {ra.name: ra for ra in analyses}
         ra = ra_map.get(ra_name)
         if ra_name and (not ra or not ra.components):
-            messagebox.showinfo("Add Parts", "Analysis has no components")
+            messagebox.showinfo("Add Inherited Parts", "Analysis has no components")
             return
         comps = list(ra.components) if ra_name and ra and ra.components else []
+
+        # If there are neither reliability components nor a father block,
+        # there is nothing to inherit
         if not comps and not getattr(diag, "father", None):
-            messagebox.showinfo("Add Parts", "Block has no reliability analysis assigned")
+            messagebox.showinfo("Add Inherited Parts", "Block has no reliability analysis assigned")
             return
-        dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
-        selected = dlg.result or []
-        if not selected:
+
+        selected = []
+        if comps:
+            dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
+            selected = dlg.result or []
+
+        if not selected and not comps:
+            # No reliability components to add, only parent parts were inherited
+            self.redraw()
+            self._sync_to_repository()
             return
+
         if diag is None:
             return
         diag.objects = getattr(diag, "objects", [])
@@ -3332,8 +3346,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
-
-
 
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
