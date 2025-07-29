@@ -8434,33 +8434,13 @@ class FaultTreeApp:
             tree = self.analysis_tree
             tree.delete(*tree.get_children())
 
-            fta_root = tree.insert("", "end", text="FTAs", open=True)
-            for idx, te in enumerate(self.top_events):
-                tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
-
-            fmea_root = tree.insert("", "end", text="FMEAs", open=True)
-            for idx, fmea in enumerate(self.fmeas):
-                tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
-            fmeda_root = tree.insert("", "end", text="FMEDAs", open=True)
-            for idx, doc in enumerate(self.fmedas):
-                tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
-            hazop_root = tree.insert("", "end", text="HAZOPs", open=True)
-            for idx, doc in enumerate(self.hazop_docs):
-                tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
-            hara_root = tree.insert("", "end", text="HARAs", open=True)
-            for idx, doc in enumerate(self.hara_docs):
-                tree.insert(hara_root, "end", text=doc.name, tags=("hara", str(idx)))
-            fi2tc_root = tree.insert("", "end", text="FI2TC Analyses", open=True)
-            for idx, doc in enumerate(self.fi2tc_docs):
-                tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
-            tc2fi_root = tree.insert("", "end", text="TC2FI Analyses", open=True)
-            for idx, doc in enumerate(self.tc2fi_docs):
-                tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
+            # --- System Design Section ---
+            sys_root = tree.insert("", "end", text="System Design", open=True)
             repo = SysMLRepository.get_instance()
             self.arch_diagrams = sorted(
                 repo.diagrams.values(), key=lambda d: d.name or d.diag_id
             )
-            arch_root = tree.insert("", "end", text="AutoML Diagrams", open=True)
+            arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
                 icon = self.diagram_icons.get(diag.diag_type)
@@ -8471,8 +8451,38 @@ class FaultTreeApp:
                     tags=("arch", str(idx)),
                     image=icon,
                 )
-            tree.insert("", "end", text="Requirements", tags=("reqs", "0"))
-            tree.insert("", "end", text="Safety Goals", tags=("sg", "0"))
+            tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
+
+            # --- Hazard Analysis Section ---
+            haz_root = tree.insert("", "end", text="Hazard Analysis", open=True)
+            hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
+            for idx, doc in enumerate(self.hazop_docs):
+                tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
+            fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
+            for idx, doc in enumerate(self.fi2tc_docs):
+                tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
+            tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
+            for idx, doc in enumerate(self.tc2fi_docs):
+                tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
+
+            # --- Risk Assessment Section ---
+            risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
+            hara_root = tree.insert(risk_root, "end", text="HARAs", open=True)
+            for idx, doc in enumerate(self.hara_docs):
+                tree.insert(hara_root, "end", text=doc.name, tags=("hara", str(idx)))
+            tree.insert(risk_root, "end", text="Safety Goals", tags=("sg", "0"))
+
+            # --- Safety Analysis Section ---
+            safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
+            fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
+            for idx, te in enumerate(self.top_events):
+                tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
+            fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
+            for idx, fmea in enumerate(self.fmeas):
+                tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
+            fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
+            for idx, doc in enumerate(self.fmedas):
+                tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
 
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             if self.page_diagram.canvas.winfo_exists():

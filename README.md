@@ -2,7 +2,7 @@ version: 0.1.3
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
-AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab listing all FMEAs, FMEDAs, HAZOPs, HARAs and AutoML diagrams so they can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
+AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab organized into *System Design*, *Hazard Analysis*, *Risk Assessment* and *Safety Analysis* sections so documents and diagrams can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
 
 ## Index
 
@@ -91,7 +91,7 @@ Open the **Requirements Matrix** from the Requirements menu to see every require
 
 ## AutoML Diagrams and Safety Analyses
 
-Use case, activity, block and internal block diagrams can be created from the **Architecture** menu. Diagrams are stored inside a built-in SysML repository and appear in the *Analyses* explorer tab so they can be reopened alongside FMEAs and other documents. Each object keeps its saved size and properties so layouts remain stable when returning to the project.
+Use case, activity, block and internal block diagrams can be created from the **Architecture** menu. Diagrams are stored inside a built-in SysML repository and appear in the *Analyses* explorer under *System Design* so they can be reopened alongside safety documents. Each object keeps its saved size and properties so layouts remain stable when returning to the project.
 
 Activity diagrams list individual **actions** that describe the expected behavior for a block. These actions can be referenced directly in HAZOP tables as potential malfunctions. When a block is linked to a reliability analysis, any actions in its internal block diagram are inherited as additional failure modes for that analysis. The inherited actions automatically show up in new FMEDA tables along with the failure modes already defined for the analysis components.
 
@@ -824,7 +824,7 @@ Two additional tables support tracing between these elements:
 
 Severity recorded in FI2TC and TC2FI entries is inherited by the HARA so the risk graph reflects the SOTIF findings. Other HARA values such as the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
-All FI2TC and TC2FI documents appear under the **Analyses** tab so they can be opened alongside HARA tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
+All FI2TC and TC2FI documents appear in the *Hazard Analysis* section of the **Analyses** tab so they can be opened alongside HARA tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
 
 ### SOTIF Traceability
 
