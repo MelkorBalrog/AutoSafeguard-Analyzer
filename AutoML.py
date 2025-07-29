@@ -8080,6 +8080,14 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         return repo.get_activity_actions()
 
+    def get_all_action_labels(self) -> list[str]:
+        """Return action/activity names with implementing block labels."""
+        repo = SysMLRepository.get_instance()
+        labels = []
+        for name, block in repo.get_activity_action_pairs():
+            labels.append(f"{name} : {block}" if block else name)
+        return sorted(set(labels))
+
     def get_use_case_for_function(self, func: str) -> str:
         """Return the use case (activity diagram name) implementing a function."""
         repo = SysMLRepository.get_instance()

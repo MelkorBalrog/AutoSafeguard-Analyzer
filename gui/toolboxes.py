@@ -1603,7 +1603,7 @@ class HazopWindow(tk.Frame):
             func_lbl = ttk.Label(master, text="Function")
             func_lbl.grid(row=0, column=0, sticky="e", padx=5, pady=5)
             ToolTip(func_lbl, "Select the vehicle function under analysis.")
-            funcs = self.app.get_all_action_names()
+            funcs = self.app.get_all_action_labels()
             self.func = tk.StringVar(value=self.row.function)
             func_cb = ttk.Combobox(
                 master, textvariable=self.func, values=funcs, state="readonly"
@@ -1747,7 +1747,10 @@ class HazopWindow(tk.Frame):
             self.haz_cb.configure(values=sorted(self.app.hazards))
 
         def apply(self):
-            self.row.function = self.func.get()
+            func_val = self.func.get()
+            if " : " in func_val:
+                func_val = func_val.split(" : ", 1)[0]
+            self.row.function = func_val
             old_mal = self.row.malfunction
             self.row.malfunction = self.mal.get()
             if old_mal and old_mal != self.row.malfunction:

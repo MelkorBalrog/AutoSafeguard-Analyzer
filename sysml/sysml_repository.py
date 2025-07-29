@@ -361,3 +361,57 @@ class SysMLRepository:
                         names.append(elem.name)
         return sorted(set(n for n in names if n))
 
+    # ------------------------------------------------------------------
+    # Helper methods for HAZOP function labels
+    # ------------------------------------------------------------------
+    def _get_block_name_for_diagram(self, diag_id: str) -> str:
+        """Return the Block name linked to *diag_id* if any."""
+        for elem_id, d_id in self.element_diagrams.items():
+            if d_id == diag_id:
+                elem = self.elements.get(elem_id)
+                if elem and elem.elem_type == "Block":
+                    return elem.name
+        diag = self.diagrams.get(diag_id)
+        father = getattr(diag, "father", None) if diag else None
+        if father and father in self.elements:
+            blk = self.elements[father]
+            if blk.elem_type == "Block":
+                return blk.name
+        return ""
+
+    def get_activity_action_pairs(self) -> list[tuple[str, str]]:
+        """Return (action_or_activity_name, block_name) pairs."""
+        pairs: list[tuple[str, str]] = []
+
+        def add_pair(name: str, diag_id: str, view_id: str | None = None) -> None:
+            block = self._get_block_name_for_diagram(view_id or diag_id)
+            pairs.append((name, block))
+
+        for diag in self.diagrams.values():
+            if diag.diag_type != "Activity Diagram":
+                continue
+            if diag.name:
+                add_pair(diag.name, diag.diag_id)
+            for obj in diag.objects:
+                typ = obj.get("obj_type") or obj.get("type")
+                if typ in ("Action Usage", "Action", "CallBehaviorAction"):
+                    name = obj.get("properties", {}).get("name", "")
+                    elem_id = obj.get("element_id")
+                    if not name and elem_id in self.elements:
+                        name = self.elements[elem_id].name
+                    if name:
+                        add_pair(name, diag.diag_id, obj.get("properties", {}).get("view"))
+            for elem_id in getattr(diag, "elements", []):
+                elem = self.elements.get(elem_id)
+                if elem and elem.elem_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                    if elem.name:
+                        add_pair(elem.name, diag.diag_id, elem.properties.get("view"))
+
+        unique: list[tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        for pair in pairs:
+            if pair not in seen:
+                seen.add(pair)
+                unique.append(pair)
+        return unique
+
