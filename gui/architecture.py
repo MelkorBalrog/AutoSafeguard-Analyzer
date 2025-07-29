@@ -154,6 +154,25 @@ def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[
     return children
 
 
+def _collect_generalization_parents(
+    repo: SysMLRepository, block_id: str, visited: set[str] | None = None
+) -> list[str]:
+    """Return all parent blocks of ``block_id`` reachable through generalizations."""
+
+    if visited is None:
+        visited = set()
+    parents: list[str] = []
+    for rel in repo.relationships:
+        if rel.rel_type == "Generalization" and rel.source == block_id:
+            target = rel.target
+            if target in visited:
+                continue
+            visited.add(target)
+            parents.append(target)
+            parents.extend(_collect_generalization_parents(repo, target, visited))
+    return parents
+
+
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
     block = repo.elements.get(block_id)
@@ -325,12 +344,12 @@ def _sync_ibd_composite_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
+    src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
     rels = [
         rel
         for rel in repo.relationships
-        if rel.rel_type == "Composite Aggregation" and rel.source == block_id
+        if rel.rel_type == "Composite Aggregation" and rel.source in src_ids
     ]
-    part_ids = [rel.target for rel in rels]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
@@ -389,10 +408,11 @@ def _sync_ibd_aggregation_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
+    src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
     part_ids = [
         rel.target
         for rel in repo.relationships
-        if rel.rel_type == "Aggregation" and rel.source == block_id
+        if rel.rel_type == "Aggregation" and rel.source in src_ids
     ]
     added: list[dict] = []
     base_x = 50.0
@@ -459,6 +479,82 @@ def _sync_ibd_partproperty_parts(
         for p in block.properties.get("partProperties", "").split(",")
         if p.strip()
     ]
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_defs)
+    for name in names:
+        if name in existing_names:
+            continue
+        target_id = next(
+            (
+                eid
+                for eid, elem in repo.elements.items()
+                if elem.elem_type == "Block" and elem.name == name
+            ),
+            None,
+        )
+        if not target_id:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=name,
+            properties={"definition": target_id},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": target_id},
+        }
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        added.append(obj_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+    return added
+
+
+def _sync_ibd_partproperty_parts(
+    repo: SysMLRepository, block_id: str, names: list[str] | None = None, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD includes parts for given ``names``.
+
+    If *names* is ``None``, the block's ``partProperties`` attribute is parsed.
+    Returns the list of added part object dictionaries."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
+    block = repo.elements.get(block_id)
+    if not block:
+        return []
+
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    existing_names = {
+        repo.elements[did].name
+        for did in existing_defs
+        if did in repo.elements and repo.elements[did].elem_type == "Block"
+    }
+    if names is None:
+        names = [
+            p.split("[")[0].strip()
+            for p in block.properties.get("partProperties", "").split(",")
+            if p.strip()
+        ]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
@@ -3436,6 +3532,39 @@ class SysMLObjectDialog(simpledialog.Dialog):
         def apply(self):
             self.result = [c for c, var in self.selected.items() if var.get()]
 
+    class SelectNamesDialog(simpledialog.Dialog):
+        """Dialog to choose which part names should be added."""
+
+        def __init__(self, parent, names, title="Select Parts"):
+            self.names = names
+            self.selected = {}
+            super().__init__(parent, title=title)
+
+        def body(self, master):
+            ttk.Label(master, text="Select parts:").pack(padx=5, pady=5)
+            frame = ttk.Frame(master)
+            frame.pack(fill=tk.BOTH, expand=True)
+            canvas = tk.Canvas(frame, borderwidth=0)
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+            self.check_frame = ttk.Frame(canvas)
+            self.check_frame.bind(
+                "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            canvas.create_window((0, 0), window=self.check_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            for name in self.names:
+                var = tk.BooleanVar(value=True)
+                self.selected[name] = var
+                ttk.Checkbutton(self.check_frame, text=name, variable=var).pack(
+                    anchor="w", padx=2, pady=2
+                )
+            return self.check_frame
+
+        def apply(self):
+            self.result = [n for n, var in self.selected.items() if var.get()]
+
     def body(self, master):
         # Disable window resizing so the layout remains consistent
         self.resizable(False, False)
@@ -4515,8 +4644,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         # If there are no components, no father and no aggregations,
         # there is nothing to inherit
+        src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
         has_aggr = any(
-            rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source == block_id
+            rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source in src_ids
             for rel in repo.relationships
         )
         part_names = [
@@ -4533,7 +4663,12 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             dlg = SysMLObjectDialog.SelectComponentsDialog(self, comps)
             selected = dlg.result or []
 
-        if not selected and not comps and not part_names:
+        selected_names: list[str] = []
+        if part_names:
+            dlg = SysMLObjectDialog.SelectNamesDialog(self, part_names)
+            selected_names = dlg.result or []
+
+        if not selected and not selected_names and not comps and not part_names:
             # No reliability components or contained parts to add
             self.redraw()
             self._sync_to_repository()
@@ -4578,9 +4713,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             self.objects.append(obj)
             added.append(c.name)
         # add parts defined in partProperties that are not yet present
-        added_props = _sync_ibd_partproperty_parts(
-            repo, block_id, app=getattr(self, "app", None)
-        )
+        added_props = []
+        if selected_names:
+            added_props = _sync_ibd_partproperty_parts(
+                repo, block_id, names=selected_names, app=getattr(self, "app", None)
+            )
         for data in added_props:
             self.objects.append(SysMLObject(**data))
         self.redraw()
