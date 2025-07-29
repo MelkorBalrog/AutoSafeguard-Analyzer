@@ -4,7 +4,9 @@ from gui.architecture import (
     SysMLObject,
     remove_orphan_ports,
     update_ports_for_part,
+    SysMLDiagramWindow,
 )
+from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 class PortParentTests(unittest.TestCase):
     def test_remove_orphan_ports(self):
@@ -34,6 +36,26 @@ class PortParentTests(unittest.TestCase):
         part.width = 100
         update_ports_for_part(part, objs)
         self.assertEqual(port.x, part.x + part.width / 2)
+
+
+class DirectionValidationTests(unittest.TestCase):
+    class DummyWindow:
+        def __init__(self):
+            self.repo = SysMLRepository.get_instance()
+            diag = SysMLDiagram(diag_id="d", diag_type="Internal Block Diagram")
+            self.repo.diagrams[diag.diag_id] = diag
+            self.diagram_id = diag.diag_id
+
+    def setUp(self):
+        SysMLRepository._instance = None
+        self.repo = SysMLRepository.get_instance()
+
+    def test_incompatible_directions(self):
+        win = self.DummyWindow()
+        src = SysMLObject(1, "Port", 0, 0, properties={"direction": "out"})
+        dst = SysMLObject(2, "Port", 0, 0, properties={"direction": "in"})
+        valid, _ = SysMLDiagramWindow.validate_connection(win, src, dst, "Connector")
+        self.assertFalse(valid)
 
 
 if __name__ == '__main__':
