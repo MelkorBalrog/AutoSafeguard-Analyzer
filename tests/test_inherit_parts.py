@@ -6,6 +6,9 @@ from gui.architecture import (
     inherit_father_parts,
     inherit_block_properties,
     remove_inherited_block_properties,
+    _sync_ibd_partproperty_parts,
+    _sync_ibd_aggregation_parts,
+    _sync_ibd_composite_parts,
 )
 
 class InheritPartsTests(unittest.TestCase):
@@ -194,6 +197,53 @@ class InheritPartsTests(unittest.TestCase):
         props = repo.elements[child.elem_id].properties
         self.assertIn("a2", props.get("valueProperties", ""))
         self.assertNotIn("a1", props.get("valueProperties", ""))
+
+    def test_sync_partproperty_parts(self):
+        repo = self.repo
+        blk = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(blk.elem_id, ibd.diag_id)
+        added = _sync_ibd_partproperty_parts(repo, blk.elem_id)
+        self.assertTrue(
+            any(
+                o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id
+                for o in ibd.objects
+            )
+        )
+        self.assertTrue(
+            any(d.get("properties", {}).get("definition") == part_blk.elem_id for d in added)
+        )
+
+    def test_sync_aggregation_parts_with_parent(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent")
+        child = repo.create_element("Block", name="Child")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        repo.create_relationship("Aggregation", parent.elem_id, part.elem_id)
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, ibd.diag_id)
+        added = _sync_ibd_aggregation_parts(repo, child.elem_id)
+        self.assertTrue(
+            any(o.get("properties", {}).get("definition") == part.elem_id for o in ibd.objects)
+        )
+        self.assertTrue(any(d.get("properties", {}).get("definition") == part.elem_id for d in added))
+
+    def test_sync_composite_parts_with_parent(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent")
+        child = repo.create_element("Block", name="Child")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        repo.create_relationship("Composite Aggregation", parent.elem_id, part.elem_id)
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, ibd.diag_id)
+        added = _sync_ibd_composite_parts(repo, child.elem_id)
+        self.assertTrue(
+            any(o.get("properties", {}).get("definition") == part.elem_id for o in ibd.objects)
+        )
+        self.assertTrue(any(d.get("properties", {}).get("definition") == part.elem_id for d in added))
 
 if __name__ == "__main__":
     unittest.main()
