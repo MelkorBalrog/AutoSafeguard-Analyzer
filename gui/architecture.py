@@ -282,6 +282,9 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == parent_id:
                         o.setdefault("properties", {})["partProperties"] = parent.properties["partProperties"]
+            for child_id in _find_generalization_children(repo, parent_id):
+                remove_inherited_block_properties(repo, child_id, parent_id)
+                inherit_block_properties(repo, child_id)
     # propagate property inheritance to children blocks
     for child_id in _find_generalization_children(repo, block_id):
         inherit_block_properties(repo, child_id)
