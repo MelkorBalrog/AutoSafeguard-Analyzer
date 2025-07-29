@@ -240,10 +240,9 @@ classDiagram
 The repository tracks each element by its specific type rather than using the
 generic `SysMLElement` placeholder. Key classes include:
 
-- **BlockUsage** – structural block definition. Properties: `valueProperties`,
-  `partProperties`, `referenceProperties`, `ports`, `constraintProperties`,
-  `operations`, plus reliability attributes `analysis`, `fit`, `qualification`
-  and `failureModes`.
+- **BlockUsage** – structural block definition. Properties: `partProperties`,
+  `ports`, `operations`, plus reliability attributes `analysis`, `fit`,
+  `qualification` and `failureModes`.
 - **PartUsage** – internal part with `component`, `failureModes` and `asil`
   fields for BOM links and safety ratings.
 - **PortUsage** – port on a block or part. Provides `direction`, `flow`,

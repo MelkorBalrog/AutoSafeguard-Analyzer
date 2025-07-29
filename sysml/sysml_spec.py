@@ -29,11 +29,8 @@ def load_sysml_properties():
 SYSML_PROPERTIES = load_sysml_properties()
 if 'BlockUsage' not in SYSML_PROPERTIES:
     SYSML_PROPERTIES['BlockUsage'] = [
-        'valueProperties',
         'partProperties',
-        'referenceProperties',
         'ports',
-        'constraintProperties',
         'operations',
     ]
 if 'PortUsage' not in SYSML_PROPERTIES:

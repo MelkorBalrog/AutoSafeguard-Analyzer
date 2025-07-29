@@ -38,16 +38,16 @@ class RenameBlockTests(unittest.TestCase):
         parent = repo.create_element(
             "Block",
             name="Parent",
-            properties={"valueProperties": "a"},
+            properties={"partProperties": "a"},
         )
         child = repo.create_element("Block", name="Child")
         repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
         inherit_block_properties(repo, child.elem_id)
-        parent.properties["valueProperties"] = "b"
+        parent.properties["partProperties"] = "b"
         rename_block(repo, parent.elem_id, "ParentNew")
         self.assertIn(
             "b",
-            repo.elements[child.elem_id].properties.get("valueProperties", ""),
+            repo.elements[child.elem_id].properties.get("partProperties", ""),
         )
 
 
