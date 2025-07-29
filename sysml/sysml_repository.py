@@ -17,9 +17,9 @@ class SysMLElement:
     stereotypes: Dict[str, str] = field(default_factory=dict)
     owner: Optional[str] = None
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = CURRENT_USER_NAME
+    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = CURRENT_USER_NAME
+    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
 
 @dataclass
 class SysMLRelationship:
@@ -30,9 +30,9 @@ class SysMLRelationship:
     stereotype: Optional[str] = None
     properties: Dict[str, str] = field(default_factory=dict)
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = CURRENT_USER_NAME
+    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = CURRENT_USER_NAME
+    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
 
 @dataclass
 class SysMLDiagram:
@@ -48,9 +48,9 @@ class SysMLDiagram:
     objects: List[dict] = field(default_factory=list)
     connections: List[dict] = field(default_factory=list)
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = CURRENT_USER_NAME
+    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = CURRENT_USER_NAME
+    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""

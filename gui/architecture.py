@@ -508,6 +508,20 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=tk.X, padx=2, pady=2
             )
 
+        self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
+        self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        self.prop_view = ttk.Treeview(
+            self.prop_frame,
+            columns=("field", "value"),
+            show="headings",
+            height=8,
+        )
+        self.prop_view.heading("field", text="Field")
+        self.prop_view.heading("value", text="Value")
+        self.prop_view.column("field", width=80, anchor="w")
+        self.prop_view.column("value", width=120, anchor="w")
+        self.prop_view.pack(fill=tk.BOTH, expand=True)
+
         self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
@@ -533,8 +547,33 @@ class SysMLDiagramWindow(tk.Frame):
         self.bind("<Delete>", self.delete_selected)
 
         self.redraw()
+        self.update_property_view()
         if not isinstance(self.master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
+
+    def update_property_view(self) -> None:
+        """Display properties and metadata for the selected object."""
+        if not hasattr(self, "prop_view"):
+            return
+        self.prop_view.delete(*self.prop_view.get_children())
+        obj = self.selected_obj
+        if not obj:
+            return
+        self.prop_view.insert("", "end", values=("Type", obj.obj_type))
+        name = obj.properties.get("name", "")
+        if name:
+            self.prop_view.insert("", "end", values=("Name", name))
+        for k, v in obj.properties.items():
+            if k == "name":
+                continue
+            self.prop_view.insert("", "end", values=(k, v))
+        if obj.element_id:
+            elem = self.repo.elements.get(obj.element_id)
+            if elem:
+                self.prop_view.insert("", "end", values=("Author", getattr(elem, "author", "")))
+                self.prop_view.insert("", "end", values=("Created", getattr(elem, "created", "")))
+                self.prop_view.insert("", "end", values=("Modified", getattr(elem, "modified", "")))
+                self.prop_view.insert("", "end", values=("ModifiedBy", getattr(elem, "modified_by", "")))
 
     def select_tool(self, tool):
         self.current_tool = tool
@@ -563,6 +602,7 @@ class SysMLDiagramWindow(tk.Frame):
                 else "tcross"
             )
         self.canvas.configure(cursor=cursor)
+        self.update_property_view()
 
     # ------------------------------------------------------------
     # Event handlers
@@ -714,6 +754,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.start = obj
                     # Do not highlight objects while adding a connection
                     self.selected_obj = None
+                    self.update_property_view()
                     self.temp_line_end = (x, y)
                     self.redraw()
             else:
@@ -740,6 +781,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None
+                self.update_property_view()
                 # Return to select mode after completing a connection
                 self.current_tool = "Select"
                 self.canvas.configure(cursor="arrow")
@@ -831,6 +873,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.current_tool = "Select"
             self.canvas.configure(cursor="arrow")
             self.redraw()
+            self.update_property_view()
         else:
             if obj:
                 self.selected_obj = obj
@@ -841,6 +884,7 @@ class SysMLDiagramWindow(tk.Frame):
                 if self.resize_edge:
                     self.resizing_obj = obj
                 self.redraw()
+                self.update_property_view()
             else:
                 conn = self.find_connection(x, y)
                 if conn:
@@ -852,6 +896,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.selected_objs = []
                     self.dragging_point_index = None
                     self.dragging_endpoint = None
+                    self.update_property_view()
                     if conn.style == "Custom":
                         for idx, (px, py) in enumerate(conn.points):
                             hx = px * self.zoom
@@ -914,6 +959,7 @@ class SysMLDiagramWindow(tk.Frame):
                             x, y, x, y, dash=(2, 2), outline="blue"
                         )
                     self.redraw()
+                    self.update_property_view()
 
     def on_left_drag(self, event):
         if self.start and self.current_tool in (
@@ -1266,6 +1312,7 @@ class SysMLDiagramWindow(tk.Frame):
         SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
+        self.update_property_view()
 
     def _open_linked_diagram(self, obj) -> bool:
         diag_id = self.repo.get_linked_diagram(obj.element_id)
@@ -2265,6 +2312,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.selected_objs = selected
         self.selected_obj = selected[0] if len(selected) == 1 else None
         self.redraw()
+        self.update_property_view()
 
     # ------------------------------------------------------------
     # Clipboard operations
@@ -2284,6 +2332,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
+            self.update_property_view()
 
     def paste_selected(self, _event=None):
         if self.clipboard:
@@ -2304,6 +2353,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj = new_obj
             self._sync_to_repository()
             self.redraw()
+            self.update_property_view()
 
     def delete_selected(self, _event=None):
         if self.selected_objs:
@@ -2313,6 +2363,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
+            self.update_property_view()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -2347,6 +2398,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.selected_conn = None
                 self._sync_to_repository()
                 self.redraw()
+                self.update_property_view()
 
     def remove_object(self, obj: SysMLObject) -> None:
         removed_ids = {obj.obj_id}

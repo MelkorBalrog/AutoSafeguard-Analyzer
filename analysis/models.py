@@ -1,6 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from dataclasses import dataclass, field
 import datetime
+from analysis.user_config import CURRENT_USER_NAME
 
 
 @dataclass
@@ -8,9 +9,9 @@ class Metadata:
     """Track creation and modification info."""
 
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    author: str = ""
+    author: str = field(default_factory=lambda: CURRENT_USER_NAME)
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
-    modified_by: str = ""
+    modified_by: str = field(default_factory=lambda: CURRENT_USER_NAME)
 
 @dataclass
 class MissionProfile:
