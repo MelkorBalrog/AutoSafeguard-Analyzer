@@ -129,7 +129,12 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
                 o.setdefault("properties", {})["partProperties"] = joined
 
 
-def add_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str, multiplicity: str = "") -> None:
+def add_aggregation_part(
+    repo: SysMLRepository,
+    whole_id: str,
+    part_id: str,
+    multiplicity: str = "",
+) -> None:
     """Add *part_id* as a part of *whole_id* block."""
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
@@ -153,8 +158,65 @@ def add_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str, mul
                 o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
 
 
-def remove_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str) -> None:
-    """Remove *part_id* from *whole_id* block's part list."""
+def add_composite_aggregation_part(
+    repo: SysMLRepository,
+    whole_id: str,
+    part_id: str,
+    multiplicity: str = "",
+    app=None,
+) -> None:
+    """Add *part_id* as a composite part of *whole_id* block and create the
+    part object in the whole's Internal Block Diagram if present."""
+
+    add_aggregation_part(repo, whole_id, part_id, multiplicity)
+    diag_id = repo.get_linked_diagram(whole_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    if part_id in existing_defs:
+        return
+    part_elem = repo.create_element(
+        "Part",
+        name=repo.elements.get(part_id).name or part_id,
+        properties={"definition": part_id},
+        owner=repo.root_package.elem_id,
+    )
+    repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+    obj_dict = {
+        "obj_id": _get_next_id(),
+        "obj_type": "Part",
+        "x": 50.0,
+        "y": 50.0 + 60.0 * len(existing_defs),
+        "element_id": part_elem.elem_id,
+        "properties": {"definition": part_id},
+    }
+    diag.objects.append(obj_dict)
+    if app:
+        for win in getattr(app, "ibd_windows", []):
+            if getattr(win, "diagram_id", None) == diag.diag_id:
+                win.objects.append(SysMLObject(**obj_dict))
+                win.redraw()
+                win._sync_to_repository()
+
+
+def remove_aggregation_part(
+    repo: SysMLRepository,
+    whole_id: str,
+    part_id: str,
+    remove_object: bool = False,
+    app=None,
+) -> None:
+    """Remove *part_id* from *whole_id* block's part list.
+
+    If *remove_object* is True, also delete any part object representing
+    *part_id* in the Internal Block Diagram linked to *whole_id*.
+    """
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
@@ -174,6 +236,33 @@ def remove_aggregation_part(repo: SysMLRepository, whole_id: str, part_id: str) 
                         o.setdefault("properties", {})["partProperties"] = ", ".join(new_parts)
                     else:
                         o.setdefault("properties", {}).pop("partProperties", None)
+    if remove_object:
+        diag_id = repo.get_linked_diagram(whole_id)
+        diag = repo.diagrams.get(diag_id)
+        if diag and diag.diag_type == "Internal Block Diagram":
+            diag.objects = getattr(diag, "objects", [])
+            before = len(diag.objects)
+            diag.objects = [
+                o
+                for o in diag.objects
+                if not (
+                    o.get("obj_type") == "Part"
+                    and o.get("properties", {}).get("definition") == part_id
+                )
+            ]
+            if len(diag.objects) != before and app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag_id:
+                        win.objects = [
+                            o
+                            for o in win.objects
+                            if not (
+                                o.obj_type == "Part"
+                                and o.properties.get("definition") == part_id
+                            )
+                        ]
+                        win.redraw()
+                        win._sync_to_repository()
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
@@ -841,6 +930,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Generalize",
             "Generalization",
             "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
         ):
             if self.start is None:
                 if obj:
@@ -1358,12 +1449,50 @@ class SysMLDiagramWindow(tk.Frame):
                                     self.selected_conn.src = obj.obj_id
                                     inherit_block_properties(self.repo, obj.element_id)
                             else:
+                                if self.selected_conn.conn_type in (
+                                    "Aggregation",
+                                    "Composite Aggregation",
+                                ):
+                                    remove_aggregation_part(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                        remove_object=self.selected_conn.conn_type
+                                        == "Composite Aggregation",
+                                        app=getattr(self, "app", None),
+                                    )
                                 if self.dragging_endpoint == "dst":
                                     rel.target = obj.element_id
                                     self.selected_conn.dst = obj.obj_id
+                                    new_whole = src_obj.element_id
+                                    new_part = obj.element_id
                                 else:
                                     rel.source = obj.element_id
                                     self.selected_conn.src = obj.obj_id
+                                    new_whole = obj.element_id
+                                    new_part = dst_obj.element_id
+                                if self.selected_conn.conn_type == "Composite Aggregation":
+                                    add_composite_aggregation_part(
+                                        self.repo,
+                                        new_whole,
+                                        new_part,
+                                        self.selected_conn.multiplicity,
+                                        app=getattr(self, "app", None),
+                                    )
+                                elif self.selected_conn.conn_type == "Aggregation":
+                                    add_aggregation_part(
+                                        self.repo,
+                                        new_whole,
+                                        new_part,
+                                        self.selected_conn.multiplicity,
+                                    )
+                                else:
+                                    if self.dragging_endpoint == "dst":
+                                        rel.target = obj.element_id
+                                        self.selected_conn.dst = obj.obj_id
+                                    else:
+                                        rel.source = obj.element_id
+                                        self.selected_conn.src = obj.obj_id
                             break
                     self._sync_to_repository()
                 elif not valid:
@@ -2004,35 +2133,83 @@ class SysMLDiagramWindow(tk.Frame):
             width=width,
         )
 
-    def _draw_center_triangle(
+    def _draw_open_diamond(
         self,
         start: Tuple[float, float],
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
     ) -> None:
-        """Draw a filled triangular indicator at the midpoint from *start* to *end*."""
+        """Draw an open diamond from *start* to *end*."""
         dx = end[0] - start[0]
         dy = end[1] - start[1]
         length = math.hypot(dx, dy)
         if length == 0:
             return
-        mx = (start[0] + end[0]) / 2
-        my = (start[1] + end[1]) / 2
-        ux = dx / length
-        uy = dy / length
         size = 10 * self.zoom
-        tip = (mx + ux * size / 2, my + uy * size / 2)
-        base_cx = mx - ux * size / 2
-        base_cy = my - uy * size / 2
-        px = -uy
-        py = ux
-        base1 = (base_cx + px * size / 2, base_cy + py * size / 2)
-        base2 = (base_cx - px * size / 2, base_cy - py * size / 2)
+        angle = math.atan2(dy, dx)
+        p1 = (
+            end[0] - size * math.cos(angle),
+            end[1] - size * math.sin(angle),
+        )
+        p2 = (
+            p1[0] - size * math.sin(angle) / 2,
+            p1[1] + size * math.cos(angle) / 2,
+        )
+        p3 = (
+            end[0] - 2 * size * math.cos(angle),
+            end[1] - 2 * size * math.sin(angle),
+        )
+        p4 = (
+            p1[0] + size * math.sin(angle) / 2,
+            p1[1] - size * math.cos(angle) / 2,
+        )
         self.canvas.create_polygon(
-            tip,
-            base1,
-            base2,
+            end,
+            p2,
+            p3,
+            p4,
+            fill=self.canvas.cget("background"),
+            outline=color,
+            width=width,
+        )
+
+    def _draw_filled_diamond(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+    ) -> None:
+        """Draw a filled diamond from *start* to *end*."""
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        size = 10 * self.zoom
+        angle = math.atan2(dy, dx)
+        p1 = (
+            end[0] - size * math.cos(angle),
+            end[1] - size * math.sin(angle),
+        )
+        p2 = (
+            p1[0] - size * math.sin(angle) / 2,
+            p1[1] + size * math.cos(angle) / 2,
+        )
+        p3 = (
+            end[0] - 2 * size * math.cos(angle),
+            end[1] - 2 * size * math.sin(angle),
+        )
+        p4 = (
+            p1[0] + size * math.sin(angle) / 2,
+            p1[1] - size * math.cos(angle) / 2,
+        )
+        self.canvas.create_polygon(
+            end,
+            p2,
+            p3,
+            p4,
             fill=color,
             outline=color,
             width=width,
@@ -2667,6 +2844,8 @@ class SysMLDiagramWindow(tk.Frame):
                                     self.repo,
                                     src_elem.element_id,
                                     dst_elem.element_id,
+                                    remove_object=self.selected_conn.conn_type == "Composite Aggregation",
+                                    app=getattr(self, "app", None),
                                 )
                             break
                 self.selected_conn = None
@@ -3528,12 +3707,23 @@ class ConnectionDialog(simpledialog.Dialog):
             self.master._sync_to_repository()
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             if hasattr(self.master, "repo"):
-                add_aggregation_part(
-                    self.master.repo,
-                    self.master.get_object(self.connection.src).element_id,
-                    self.master.get_object(self.connection.dst).element_id,
-                    self.connection.multiplicity,
-                )
+                whole = self.master.get_object(self.connection.src).element_id
+                part = self.master.get_object(self.connection.dst).element_id
+                if self.connection.conn_type == "Composite Aggregation":
+                    add_composite_aggregation_part(
+                        self.master.repo,
+                        whole,
+                        part,
+                        self.connection.multiplicity,
+                        app=getattr(self.master, "app", None),
+                    )
+                else:
+                    add_aggregation_part(
+                        self.master.repo,
+                        whole,
+                        part,
+                        self.connection.multiplicity,
+                    )
                 if hasattr(self.master, "_sync_to_repository"):
                     self.master._sync_to_repository()
 
