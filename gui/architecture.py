@@ -869,7 +869,12 @@ def remove_inherited_block_properties(repo: SysMLRepository, child_id: str, pare
     parent_parts = [
         v.strip() for v in parent.properties.get("partProperties", "").split(",") if v.strip()
     ]
-    child_parts = [v for v in child_parts if v not in parent_parts]
+    parent_bases = {p.split("[")[0].strip() for p in parent_parts}
+    child_parts = [
+        v
+        for v in child_parts
+        if v.split("[")[0].strip() not in parent_bases
+    ]
     if child_parts:
         child.properties["partProperties"] = ", ".join(child_parts)
     else:
