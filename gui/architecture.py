@@ -256,6 +256,44 @@ def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     objs[:] = filtered
 
 
+def snap_port_to_parent_obj(port: SysMLObject, parent: SysMLObject) -> None:
+    """Position *port* along the closest edge of *parent*."""
+    px = port.x
+    py = port.y
+    left = parent.x - parent.width / 2
+    right = parent.x + parent.width / 2
+    top = parent.y - parent.height / 2
+    bottom = parent.y + parent.height / 2
+    d_left = abs(px - left)
+    d_right = abs(px - right)
+    d_top = abs(py - top)
+    d_bottom = abs(py - bottom)
+    min_d = min(d_left, d_right, d_top, d_bottom)
+    if min_d == d_left:
+        port.x = left
+        port.y = min(max(py, top), bottom)
+        port.properties["side"] = "W"
+    elif min_d == d_right:
+        port.x = right
+        port.y = min(max(py, top), bottom)
+        port.properties["side"] = "E"
+    elif min_d == d_top:
+        port.y = top
+        port.x = min(max(px, left), right)
+        port.properties["side"] = "N"
+    else:
+        port.y = bottom
+        port.x = min(max(px, left), right)
+        port.properties["side"] = "S"
+
+
+def update_ports_for_part(part: SysMLObject, objs: List[SysMLObject]) -> None:
+    """Snap all ports referencing *part* to its border."""
+    for o in objs:
+        if o.obj_type == "Port" and o.properties.get("parent") == str(part.obj_id):
+            snap_port_to_parent_obj(o, part)
+
+
 def parse_operations(raw: str) -> List[OperationDefinition]:
     """Return a list of operations parsed from *raw* JSON or comma text."""
     if not raw:
@@ -808,6 +846,8 @@ class SysMLDiagramWindow(tk.Frame):
                 new_w = new_h = size
             obj.width = new_w
             obj.height = new_h
+            if obj.obj_type == "Part":
+                update_ports_for_part(obj, self.objects)
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
@@ -1178,33 +1218,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def snap_port_to_parent(self, port: SysMLObject, parent: SysMLObject) -> None:
-        px = port.x
-        py = port.y
-        left = parent.x - parent.width / 2
-        right = parent.x + parent.width / 2
-        top = parent.y - parent.height / 2
-        bottom = parent.y + parent.height / 2
-        d_left = abs(px - left)
-        d_right = abs(px - right)
-        d_top = abs(py - top)
-        d_bottom = abs(py - bottom)
-        min_d = min(d_left, d_right, d_top, d_bottom)
-        if min_d == d_left:
-            port.x = left
-            port.y = min(max(py, top), bottom)
-            port.properties["side"] = "W"
-        elif min_d == d_right:
-            port.x = right
-            port.y = min(max(py, top), bottom)
-            port.properties["side"] = "E"
-        elif min_d == d_top:
-            port.y = top
-            port.x = min(max(px, left), right)
-            port.properties["side"] = "N"
-        else:
-            port.y = bottom
-            port.x = min(max(px, left), right)
-            port.properties["side"] = "S"
+        snap_port_to_parent_obj(port, parent)
 
     def edge_point(
         self,
