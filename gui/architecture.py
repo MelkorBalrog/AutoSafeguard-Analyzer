@@ -1258,7 +1258,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.master.title(title) if isinstance(self.master, tk.Toplevel) else None
         if isinstance(self.master, tk.Toplevel):
             self.master.geometry("800x600")
-            self.master.minsize(800, 600)
 
         self.repo = SysMLRepository.get_instance()
         if diagram_id and diagram_id in self.repo.diagrams:
@@ -5219,7 +5218,6 @@ class ArchitectureManagerDialog(tk.Frame):
         if isinstance(master, tk.Toplevel):
             master.title("AutoML Explorer")
             master.geometry("350x400")
-            master.minsize(350, 400)
             self.pack(fill=tk.BOTH, expand=True)
         self.repo = SysMLRepository.get_instance()
 

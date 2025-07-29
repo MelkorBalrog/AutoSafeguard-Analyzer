@@ -15614,8 +15614,6 @@ def main():
 
     # Show and maximize the main window after login
     root.deiconify()
-    # Prevent resizing below a usable size so all tools remain accessible
-    root.minsize(1200, 800)
     try:
         root.state("zoomed")
     except tk.TclError:

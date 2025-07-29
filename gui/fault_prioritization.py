@@ -196,7 +196,6 @@ class FaultPrioritizationWindow(tk.Frame):
         if isinstance(master, tk.Toplevel):
             master.title("Fault Prioritization")
             master.geometry("1000x600")
-            master.minsize(1000, 600)
             self.pack(fill=tk.BOTH, expand=True)
 
         self.rows: List[Dict[str, Any]] = default_rows()
