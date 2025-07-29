@@ -49,6 +49,24 @@ class AggregationPartCreationTests(unittest.TestCase):
         propagate_block_part_changes(repo, part.elem_id)
         self.assertEqual(repo.elements[pid].properties.get("operations"), part.properties["operations"])
 
+    def test_part_name_sync_on_block_rename(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship("Aggregation", whole.elem_id, part.elem_id)
+        add_aggregation_part(repo, whole.elem_id, part.elem_id)
+        rel = next(
+            r
+            for r in repo.relationships
+            if r.rel_type == "Aggregation"
+            and r.source == whole.elem_id
+            and r.target == part.elem_id
+        )
+        pid = rel.properties.get("part_elem")
+        part.name = "Renamed"
+        propagate_block_part_changes(repo, part.elem_id)
+        self.assertEqual(repo.elements[pid].name, "Renamed")
+
     def test_remove_aggregation_part_object(self):
         repo = self.repo
         whole = repo.create_element("Block", name="Whole")

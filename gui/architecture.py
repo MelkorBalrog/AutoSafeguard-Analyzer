@@ -1166,6 +1166,7 @@ def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
     for elem in repo.elements.values():
         if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
             continue
+            
         for prop in props:
             if prop in block.properties:
                 elem.properties[prop] = block.properties[prop]
@@ -2363,6 +2364,10 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _open_linked_diagram(self, obj) -> bool:
         diag_id = self.repo.get_linked_diagram(obj.element_id)
+        if not diag_id and obj.obj_type == "Part":
+            def_id = obj.properties.get("definition")
+            if def_id:
+                diag_id = self.repo.get_linked_diagram(def_id)
         view_id = obj.properties.get("view")
         if (
             obj.obj_type == "CallBehaviorAction"
@@ -4421,10 +4426,15 @@ class SysMLObjectDialog(simpledialog.Dialog):
         return ", ".join(sorted(modes))
 
     def apply(self):
-        self.obj.properties["name"] = self.name_var.get()
+        new_name = self.name_var.get()
+        self.obj.properties["name"] = new_name
         repo = SysMLRepository.get_instance()
         if self.obj.element_id and self.obj.element_id in repo.elements:
-            repo.elements[self.obj.element_id].name = self.name_var.get()
+            elem = repo.elements[self.obj.element_id]
+            if self.obj.obj_type == "Block" and elem.name != new_name:
+                rename_block(repo, elem.elem_id, new_name)
+            else:
+                elem.name = new_name
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
