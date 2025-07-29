@@ -558,6 +558,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Flow",
                     "Connector",
                     "Generalize",
+                    "Generalization",
                     "Communication Path",
                 )
                 else "tcross"
@@ -581,6 +582,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalize",
+            "Generalization",
             "Communication Path",
         ):
             if src == dst:
@@ -707,6 +709,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Flow",
             "Connector",
             "Generalize",
+            "Generalization",
             "Communication Path",
         ):
             if self.start is None:
@@ -720,7 +723,9 @@ class SysMLDiagramWindow(tk.Frame):
                 if obj and obj != self.start:
                     valid, msg = self.validate_connection(self.start, obj, t)
                     if valid:
-                        arrow_default = "forward" if t in ("Flow", "Generalize") else "none"
+                        arrow_default = (
+                            "forward" if t in ("Flow", "Generalize", "Generalization") else "none"
+                        )
                         conn = DiagramConnection(
                             self.start.obj_id,
                             obj.obj_id,
