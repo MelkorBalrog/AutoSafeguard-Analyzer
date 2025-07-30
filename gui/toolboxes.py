@@ -2086,6 +2086,7 @@ class HaraWindow(tk.Frame):
                 hazop_names = getattr(self.app.active_hara, "hazops", []) or []
             malfs = set()
             hazards_map = {}
+            scenarios_map = {}
             if not hazop_names:
                 hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
@@ -2097,6 +2098,10 @@ class HaraWindow(tk.Frame):
                             if e.hazard:
                                 hazards_map.setdefault(e.malfunction, []).append(
                                     e.hazard
+                                )
+                            if e.scenario:
+                                scenarios_map.setdefault(e.malfunction, []).append(
+                                    e.scenario
                                 )
             malfs = sorted(malfs)
             goals = [
@@ -2186,6 +2191,13 @@ class HaraWindow(tk.Frame):
                     if not current:
                         self.haz.delete("1.0", "end")
                         self.haz.insert("1.0", hazard_list[0])
+                scen_list = scenarios_map.get(mal)
+                if scen_list and not self.scen_var.get().strip():
+                    self.scen_var.set(scen_list[0])
+                scen = self.scen_var.get()
+                if scen:
+                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
+                recalc()
 
             mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
             auto_hazard()
