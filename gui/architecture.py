@@ -2782,6 +2782,13 @@ class SysMLDiagramWindow(tk.Frame):
             )
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
+        radius = 0.0
+        if obj.obj_type == "Block":
+            radius = 6 * self.zoom
+        elif obj.obj_type == "System Boundary":
+            radius = 12 * self.zoom
+        elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+            radius = 8 * self.zoom
         dx = tx - x
         dy = ty - y
         if obj.obj_type in ("Initial", "Final"):
@@ -2820,6 +2827,14 @@ class SysMLDiagramWindow(tk.Frame):
             else:
                 y -= h
                 x += dx * (h / abs(dy)) if dy != 0 else 0
+
+        if radius:
+            cx, cy = obj.x * self.zoom, obj.y * self.zoom
+            vx, vy = x - cx, y - cy
+            if abs(vx) >= w and abs(vy) >= h:
+                dist = math.hypot(vx, vy) or 1.0
+                x -= radius * vx / dist
+                y -= radius * vy / dist
         return x, y
 
     def sync_ports(self, part: SysMLObject) -> None:
