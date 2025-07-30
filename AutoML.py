@@ -2279,7 +2279,9 @@ class FaultTreeApp:
         self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
         self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
 
-        self._create_fta_tab()
+        # Do not open the FTA tab by default so the application starts with no
+        # documents visible. The tab will be created on demand when the user
+        # opens an FTA related view.
         self.root_node = FaultTreeNode("", "TOP EVENT")
         self.root_node.x, self.root_node.y = 300, 200
         self.top_events = [self.root_node]
