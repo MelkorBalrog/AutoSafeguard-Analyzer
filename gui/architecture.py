@@ -769,6 +769,8 @@ def set_ibd_father(
     if father_id:
         repo.link_diagram(father_id, diagram.diag_id)
     added = _sync_ibd_composite_parts(repo, father_id, app=app) if father_id else []
+    if father_id:
+        added += _ensure_ibd_boundary(repo, diagram, father_id, app=app)
     return added
 
 
@@ -1183,6 +1185,13 @@ def update_ports_for_part(part: SysMLObject, objs: List[SysMLObject]) -> None:
             snap_port_to_parent_obj(o, part)
 
 
+def update_ports_for_boundary(boundary: SysMLObject, objs: List[SysMLObject]) -> None:
+    """Snap ports referencing *boundary* via the 'boundary' property."""
+    for o in objs:
+        if o.obj_type == "Port" and o.properties.get("boundary") == str(boundary.obj_id):
+            snap_port_to_parent_obj(o, boundary)
+
+
 def _add_ports_for_part(
     repo: SysMLRepository,
     diag: SysMLDiagram,
@@ -1422,6 +1431,93 @@ def propagate_block_changes(repo: SysMLRepository, block_id: str, visited: set[s
         propagate_block_port_changes(repo, child_id)
         _propagate_requirements(repo, reqs, child_id)
         propagate_block_changes(repo, child_id, visited)
+
+
+def _ensure_ibd_boundary(
+    repo: SysMLRepository, diagram: SysMLDiagram, father_id: str, app=None
+) -> list[dict]:
+    """Ensure a System Boundary for ``father_id`` exists and its ports are added."""
+
+    if diagram.diag_type != "Internal Block Diagram":
+        return []
+
+    diagram.objects = getattr(diagram, "objects", [])
+    # look for an existing boundary linked to this father block
+    boundary = next(
+        (
+            o
+            for o in diagram.objects
+            if o.get("obj_type") == "System Boundary"
+            and o.get("properties", {}).get("definition") == father_id
+        ),
+        None,
+    )
+    added: list[dict] = []
+    if not boundary:
+        father = repo.elements.get(father_id)
+        boundary_obj = SysMLObject(
+            _get_next_id(),
+            "System Boundary",
+            150.0,
+            100.0,
+            width=300.0,
+            height=200.0,
+            properties={
+                "definition": father_id,
+                "name": father.name if father else father_id,
+            },
+        )
+        boundary = asdict(boundary_obj)
+        diagram.objects.insert(0, boundary)
+        added.append(boundary)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diagram.diag_id:
+                    win.objects.insert(0, boundary_obj)
+                    win.redraw()
+                    win._sync_to_repository()
+
+    boundary_obj = SysMLObject(**boundary)
+    father = repo.elements.get(father_id)
+    port_names = []
+    if father:
+        port_names = [
+            p.strip() for p in father.properties.get("ports", "").split(",") if p.strip()
+        ]
+    existing = {
+        o.get("properties", {}).get("name")
+        for o in diagram.objects
+        if o.get("obj_type") == "Port" and o.get("properties", {}).get("boundary") == str(boundary_obj.obj_id)
+    }
+    for name in port_names:
+        if name in existing:
+            continue
+        port = SysMLObject(
+            _get_next_id(),
+            "Port",
+            boundary_obj.x + boundary_obj.width / 2 + 20,
+            boundary_obj.y,
+            properties={
+                "name": name,
+                "boundary": str(boundary_obj.obj_id),
+                "side": "E",
+                "labelX": "8",
+                "labelY": "-8",
+            },
+        )
+        snap_port_to_parent_obj(port, boundary_obj)
+        pd = asdict(port)
+        diagram.objects.append(pd)
+        added.append(pd)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diagram.diag_id:
+                    win.objects.append(port)
+                    win.redraw()
+                    win._sync_to_repository()
+
+    return added
+
 
 
 def parse_operations(raw: str) -> List[OperationDefinition]:
@@ -2182,6 +2278,8 @@ class SysMLDiagramWindow(tk.Frame):
             obj.height = new_h
             if obj.obj_type == "Part":
                 update_ports_for_part(obj, self.objects)
+            if obj.obj_type == "System Boundary":
+                update_ports_for_boundary(obj, self.objects)
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
