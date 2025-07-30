@@ -882,26 +882,29 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
     if not block_id or block_id not in repo.elements:
         return
     block = repo.elements[block_id]
-    names = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    bases = [n.split("[")[0].strip() for n in names]
-    changed = False
+    existing = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    diag_names: list[str] = []
+    diag_bases: set[str] = set()
     for obj in getattr(diagram, "objects", []):
         if obj.get("obj_type") != "Part":
             continue
         name = ""
         elem_id = obj.get("element_id")
         if elem_id and elem_id in repo.elements:
-            name = repo.elements[elem_id].name or name
+            elem = repo.elements[elem_id]
+            name = elem.name or elem.properties.get("component", "")
         if not name:
             def_id = obj.get("properties", {}).get("definition")
             if def_id and def_id in repo.elements:
                 name = repo.elements[def_id].name or def_id
-        if name and name not in bases:
-            names.append(name)
-            bases.append(name)
-            changed = True
-    if changed:
-        joined = ", ".join(names)
+        if not name:
+            name = obj.get("properties", {}).get("component", "")
+        base = name.split("[")[0].strip() if name else ""
+        if base and base not in diag_bases:
+            diag_names.append(name or base)
+            diag_bases.add(base)
+    if diag_names != existing:
+        joined = ", ".join(diag_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
@@ -6086,6 +6089,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 repo, block_id, names=to_add_names, app=getattr(self, "app", None)
             )
             for data in added_props:
+                data["hidden"] = False
                 self.objects.append(SysMLObject(**data))
 
         if added:
