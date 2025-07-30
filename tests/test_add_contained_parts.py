@@ -40,8 +40,11 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         repo.link_diagram(block.elem_id, ibd.diag_id)
         win = DummyWindow(ibd)
 
+        captured_visible = []
+
         class DummyDialog:
             def __init__(self, parent, names, visible, hidden):
+                captured_visible.extend(visible)
                 self.result = names
 
         with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
@@ -50,8 +53,9 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         diag = repo.diagrams[ibd.diag_id]
         self.assertEqual(len(diag.objects), 1)
         self.assertFalse(diag.objects[0].get('hidden', False))
+        self.assertNotIn("B", captured_visible)
 
-    def test_deleted_parts_removed_from_list(self):
+    def test_deleted_parts_remain_listed(self):
         repo = self.repo
         block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
         part_blk = repo.create_element("Block", name="B")
@@ -80,7 +84,7 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', CaptureDialog):
             InternalBlockDiagramWindow.add_contained_parts(win)
 
-        self.assertNotIn("B", captured)
+        self.assertIn("B", captured)
 
 if __name__ == '__main__':
     unittest.main()

@@ -4885,7 +4885,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             canvas.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
             for name in self.names:
-                var = tk.BooleanVar(value=name in self.visible or name not in self.hidden)
+                var = tk.BooleanVar(value=name in self.visible)
                 self.selected[name] = var
                 ttk.Checkbutton(self.check_frame, text=name, variable=var).pack(
                     anchor="w", padx=2, pady=2
