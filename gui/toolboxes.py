@@ -2190,15 +2190,6 @@ class HaraWindow(tk.Frame):
             mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
             auto_hazard()
 
-            def update_exposure(_=None):
-                scen = self.scen_var.get()
-                if scen:
-                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
-                recalc()
-
-            scen_cb.bind("<<ComboboxSelected>>", update_exposure)
-            update_exposure()
-
             def recalc(_=None):
                 try:
                     s = int(self.sev_var.get())
@@ -2213,6 +2204,15 @@ class HaraWindow(tk.Frame):
             cont_cb.bind("<<ComboboxSelected>>", recalc)
             exp_cb.bind("<<ComboboxSelected>>", recalc)
             recalc()
+
+            def update_exposure(_=None):
+                scen = self.scen_var.get()
+                if scen:
+                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
+                recalc()
+
+            scen_cb.bind("<<ComboboxSelected>>", update_exposure)
+            update_exposure()
 
         def apply(self):
             old_mal = self.row.malfunction
