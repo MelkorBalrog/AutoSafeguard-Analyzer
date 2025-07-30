@@ -55,6 +55,34 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         self.assertFalse(diag.objects[0].get('hidden', False))
         self.assertNotIn("B", captured_visible)
 
+    def test_new_parts_render_with_app(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(block.elem_id, ibd.diag_id)
+        win = DummyWindow(ibd)
+
+        class DummyApp:
+            def __init__(self, win):
+                self.ibd_windows = [win]
+
+            def update_views(self):
+                pass
+
+        win.app = DummyApp(win)
+
+        class DummyDialog:
+            def __init__(self, parent, names, visible, hidden):
+                self.result = names
+
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+
+        # Only one part should exist and it must be visible
+        self.assertEqual(len(win.objects), 1)
+        self.assertFalse(win.objects[0].hidden)
+
     def test_deleted_parts_remain_listed(self):
         repo = self.repo
         block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
