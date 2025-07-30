@@ -1605,6 +1605,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.bind("<Control-x>", self.cut_selected)
         self.bind("<Control-v>", self.paste_selected)
         self.bind("<Delete>", self.delete_selected)
+        # Refresh from the repository whenever the window gains focus
+        self.bind("<FocusIn>", self.refresh_from_repository)
 
         self.redraw()
         self.update_property_view()
@@ -3998,6 +4000,34 @@ class SysMLDiagramWindow(tk.Frame):
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             _sync_block_parts_from_ibd(self.repo, self.diagram_id)
+
+    def refresh_from_repository(self, _event=None) -> None:
+        """Reload diagram objects from the repository and redraw."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        self.objects = []
+        for data in getattr(diag, "objects", []):
+            if "requirements" not in data:
+                data["requirements"] = []
+            obj = SysMLObject(**data)
+            if obj.obj_type == "Part":
+                asil = calculate_allocated_asil(obj.requirements)
+                obj.properties.setdefault("asil", asil)
+                if obj.element_id and obj.element_id in self.repo.elements:
+                    self.repo.elements[obj.element_id].properties.setdefault(
+                        "asil", asil
+                    )
+            self.objects.append(obj)
+        self.sort_objects()
+        self.connections = [
+            DiagramConnection(**data) for data in getattr(diag, "connections", [])
+        ]
+        if self.objects:
+            global _next_obj_id
+            _next_obj_id = max(o.obj_id for o in self.objects) + 1
+        self.redraw()
+        self.update_property_view()
 
     def on_close(self):
         self._sync_to_repository()
