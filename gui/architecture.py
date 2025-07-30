@@ -3062,24 +3062,29 @@ class SysMLDiagramWindow(tk.Frame):
             return cx, cy
 
         def _intersect(vx: float, vy: float, w: float, h: float, r: float) -> Tuple[float, float]:
+            """Return intersection of a ray from the origin with a rounded rectangle."""
             if vx == 0 and vy == 0:
                 return 0.0, 0.0
+
             wi, hi = w - r, h - r
             signx = 1 if vx >= 0 else -1
             signy = 1 if vy >= 0 else -1
             candidates: list[tuple[float, float, float]] = []
+
             if vx != 0:
-                t_v = (signx * wi) / vx
+                t_v = (signx * w) / vx
                 if t_v >= 0:
                     y_v = vy * t_v
                     if abs(y_v) <= hi:
-                        candidates.append((t_v, signx * wi, y_v))
+                        candidates.append((t_v, signx * w, y_v))
+
             if vy != 0:
-                t_h = (signy * hi) / vy
+                t_h = (signy * h) / vy
                 if t_h >= 0:
                     x_h = vx * t_h
                     if abs(x_h) <= wi:
-                        candidates.append((t_h, x_h, signy * hi))
+                        candidates.append((t_h, x_h, signy * h))
+
             if r > 0:
                 cx_arc, cy_arc = signx * wi, signy * hi
                 a = vx * vx + vy * vy
@@ -3094,8 +3099,10 @@ class SysMLDiagramWindow(tk.Frame):
                             y_arc = vy * t_arc
                             if signx * x_arc >= wi and signy * y_arc >= hi:
                                 candidates.append((t_arc, x_arc, y_arc))
+
             if not candidates:
                 return 0.0, 0.0
+
             t, ix, iy = min(candidates, key=lambda c: c[0])
             return ix, iy
 
