@@ -3235,7 +3235,14 @@ class FaultTreeApp:
         if not exists and not any(
             getattr(te, "malfunction", "") == name for te in self.top_events
         ):
-            self.create_top_event_for_malfunction(name)
+            # If there's exactly one top event with no malfunction yet,
+            # reuse it instead of creating a new node.
+            if len(self.top_events) == 1 and not getattr(self.top_events[0], "malfunction", ""):
+                self.top_events[0].malfunction = name
+                self.root_node = self.top_events[0]
+                self.update_views()
+            else:
+                self.create_top_event_for_malfunction(name)
 
     def add_fault(self, name: str) -> None:
         """Add a fault to the list if not already present."""
@@ -13679,6 +13686,14 @@ class FaultTreeApp:
         else:
             messagebox.showerror("Error", "Invalid model file format.")
             return
+
+        # Ensure there is at least one FTA root node
+        if not self.top_events:
+            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
+            new_root.x, new_root.y = 300, 200
+            self.top_events.append(new_root)
+
+        self.root_node = self.top_events[0]
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
