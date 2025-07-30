@@ -4551,9 +4551,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 lb.grid(row=row, column=1, padx=4, pady=2, sticky="we")
                 btnf = ttk.Frame(frame)
                 btnf.grid(row=row, column=2, padx=2)
-                ttk.Button(btnf, text="Add", command=lambda p=prop: self.add_list_item(p)).pack(
-                    side=tk.TOP
-                )
+                if prop == "ports":
+                    ttk.Button(btnf, text="Add", command=self.add_port).pack(side=tk.TOP)
+                else:
+                    ttk.Button(
+                        btnf, text="Add", command=lambda p=prop: self.add_list_item(p)
+                    ).pack(side=tk.TOP)
                 if prop in editable_list_props:
                     if prop == "ports":
                         ttk.Button(btnf, text="Edit", command=self.edit_port).pack(side=tk.TOP)
@@ -5030,7 +5033,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         repo = SysMLRepository.get_instance()
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
-            if self.obj.obj_type == "Block":
+            if self.obj.obj_type in ("Block", "Block Boundary") and elem.elem_type == "Block":
                 rename_block(repo, elem.elem_id, new_name)
             else:
                 elem.name = new_name
