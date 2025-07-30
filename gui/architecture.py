@@ -36,6 +36,8 @@ OBJECT_COLORS: dict[str, str] = {
 
 
 _next_obj_id = 1
+# Pixel distance used when detecting clicks on connection lines
+CONNECTION_SELECT_RADIUS = 15
 
 
 def _get_next_id() -> int:
@@ -2136,7 +2138,15 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
         elif t and t != "Select":
             if t == "Port":
-                parent_obj = obj if obj and obj.obj_type == "Part" else None
+                parent_obj = (
+                    obj if obj and obj.obj_type in ("Part", "Block Boundary") else None
+                )
+                if parent_obj is None:
+                    # Default to the IBD boundary if present
+                    parent_obj = next(
+                        (o for o in self.objects if o.obj_type == "Block Boundary"),
+                        None,
+                    )
                 if parent_obj is None:
                     return
             pkg = self.repo.diagrams[self.diagram_id].package
@@ -2177,7 +2187,7 @@ class SysMLDiagramWindow(tk.Frame):
                 if parent_obj:
                     new_obj.properties["parent"] = str(parent_obj.obj_id)
                     self.snap_port_to_parent(new_obj, parent_obj)
-                    # Persist the port by adding it to the parent part's list
+                    # Persist the port by adding it to the parent object's list
                     pname = new_obj.properties.get("name") or ""
                     ports = [
                         p.strip()
@@ -2984,6 +2994,20 @@ class SysMLDiagramWindow(tk.Frame):
             return ix, iy, t
         return None
 
+    def _nearest_diamond_corner(self, obj: SysMLObject, tx: float, ty: float) -> Tuple[float, float]:
+        """Return the diamond corner of *obj* closest to the target (*tx*, *ty*)."""
+        x = obj.x * self.zoom
+        y = obj.y * self.zoom
+        w = obj.width * self.zoom / 2
+        h = obj.height * self.zoom / 2
+        corners = [
+            (x, y - h),
+            (x + w, y),
+            (x, y + h),
+            (x - w, y),
+        ]
+        return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
+
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         for conn in self.connections:
             src = self.get_object(conn.src)
@@ -3017,7 +3041,7 @@ class SysMLDiagramWindow(tk.Frame):
             )
             points.append((ex, ey))
             for a, b in zip(points[:-1], points[1:]):
-                if self._dist_to_segment((x, y), a, b) <= 8:
+                if self._dist_to_segment((x, y), a, b) <= CONNECTION_SELECT_RADIUS:
                     return conn
         return None
 
@@ -3397,10 +3421,25 @@ class SysMLDiagramWindow(tk.Frame):
             obj.height = min_h
 
     def sort_objects(self) -> None:
-        """Ensure System Boundaries are drawn and selected behind others."""
-        self.objects.sort(
-            key=lambda o: 0 if o.obj_type in ("System Boundary", "Block Boundary") else 1
-        )
+        """Order objects so boundaries render behind and their ports above."""
+
+        def key(o: SysMLObject) -> int:
+            if o.obj_type in ("System Boundary", "Block Boundary"):
+                return 0
+            if o.obj_type == "Port":
+                parent_id = o.properties.get("parent")
+                if parent_id:
+                    try:
+                        pid = int(parent_id)
+                    except (TypeError, ValueError):
+                        pid = None
+                    if pid is not None:
+                        for obj in self.objects:
+                            if obj.obj_id == pid and obj.obj_type == "Block Boundary":
+                                return 2
+            return 1
+
+        self.objects.sort(key=key)
 
     def redraw(self):
         self.canvas.delete("all")
