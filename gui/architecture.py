@@ -2700,6 +2700,49 @@ class SysMLDiagramWindow(tk.Frame):
                     self._sync_to_repository()
                 elif not valid:
                     messagebox.showwarning("Invalid Connection", msg)
+            elif obj is None:
+                if self.selected_conn in self.connections:
+                    self.connections.remove(self.selected_conn)
+                    if (
+                        src_obj
+                        and dst_obj
+                        and src_obj.element_id
+                        and dst_obj.element_id
+                    ):
+                        for rel in list(self.repo.relationships):
+                            if (
+                                rel.source == src_obj.element_id
+                                and rel.target == dst_obj.element_id
+                                and rel.rel_type == self.selected_conn.conn_type
+                            ):
+                                self.repo.relationships.remove(rel)
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                if diag and rel.rel_id in diag.relationships:
+                                    diag.relationships.remove(rel.rel_id)
+                                if self.selected_conn.conn_type == "Generalization":
+                                    remove_inherited_block_properties(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                    )
+                                    inherit_block_properties(
+                                        self.repo, src_obj.element_id
+                                    )
+                                elif self.selected_conn.conn_type in (
+                                    "Aggregation",
+                                    "Composite Aggregation",
+                                ):
+                                    remove_aggregation_part(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                        remove_object=self.selected_conn.conn_type
+                                        == "Composite Aggregation",
+                                        app=getattr(self, "app", None),
+                                    )
+                                break
+                    self.selected_conn = None
+                    self._sync_to_repository()
             else:
                 self._sync_to_repository()
             self.dragging_endpoint = None
