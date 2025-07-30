@@ -3400,10 +3400,25 @@ class SysMLDiagramWindow(tk.Frame):
             obj.height = min_h
 
     def sort_objects(self) -> None:
-        """Ensure System Boundaries are drawn and selected behind others."""
-        self.objects.sort(
-            key=lambda o: 0 if o.obj_type in ("System Boundary", "Block Boundary") else 1
-        )
+        """Order objects so boundaries render behind and their ports above."""
+
+        def key(o: SysMLObject) -> int:
+            if o.obj_type in ("System Boundary", "Block Boundary"):
+                return 0
+            if o.obj_type == "Port":
+                parent_id = o.properties.get("parent")
+                if parent_id:
+                    try:
+                        pid = int(parent_id)
+                    except (TypeError, ValueError):
+                        pid = None
+                    if pid is not None:
+                        for obj in self.objects:
+                            if obj.obj_id == pid and obj.obj_type == "Block Boundary":
+                                return 2
+            return 1
+
+        self.objects.sort(key=key)
 
     def redraw(self):
         self.canvas.delete("all")
