@@ -64,6 +64,10 @@ for prop in ('analysis', 'fit', 'qualification', 'failureModes'):
     if prop not in SYSML_PROPERTIES['BlockUsage']:
         SYSML_PROPERTIES['BlockUsage'].append(prop)
 
+# Remove the derived SysML property 'actionDefinition' from ActionUsage entries.
+if 'actionDefinition' in SYSML_PROPERTIES.get('ActionUsage', []):
+    SYSML_PROPERTIES['ActionUsage'].remove('actionDefinition')
+
 for prop in ('component', 'failureModes', 'asil'):
     if prop not in SYSML_PROPERTIES['PartUsage']:
         SYSML_PROPERTIES['PartUsage'].append(prop)
