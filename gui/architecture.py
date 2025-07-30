@@ -2986,6 +2986,20 @@ class SysMLDiagramWindow(tk.Frame):
             return ix, iy, t
         return None
 
+    def _nearest_diamond_corner(self, obj: SysMLObject, tx: float, ty: float) -> Tuple[float, float]:
+        """Return the diamond corner of *obj* closest to the target (*tx*, *ty*)."""
+        x = obj.x * self.zoom
+        y = obj.y * self.zoom
+        w = obj.width * self.zoom / 2
+        h = obj.height * self.zoom / 2
+        corners = [
+            (x, y - h),
+            (x + w, y),
+            (x, y + h),
+            (x - w, y),
+        ]
+        return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
+
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         for conn in self.connections:
             src = self.get_object(conn.src)
@@ -3077,23 +3091,7 @@ class SysMLDiagramWindow(tk.Frame):
             dist = (dx**2 + dy**2) ** 0.5 or 1
             return x + dx / dist * r, y + dy / dist * r
         if obj.obj_type in ("Decision", "Merge"):
-            points = [
-                (x, y - h),
-                (x + w, y),
-                (x, y + h),
-                (x - w, y),
-            ]
-            best = None
-            for i in range(len(points)):
-                p3 = points[i]
-                p4 = points[(i + 1) % len(points)]
-                inter = self._segment_intersection((x, y), (tx, ty), p3, p4)
-                if inter:
-                    ix, iy, t = inter
-                    if best is None or t < best[2]:
-                        best = (ix, iy, t)
-            if best:
-                return best[0], best[1]
+            return self._nearest_diamond_corner(obj, tx, ty)
         if abs(dx) > abs(dy):
             if dx > 0:
                 x += w
