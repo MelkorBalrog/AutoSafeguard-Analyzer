@@ -816,6 +816,19 @@ def set_ibd_father(
     return added
 
 
+def link_block_to_ibd(
+    repo: SysMLRepository, block_id: str, diag_id: str | None, app=None
+) -> list[dict]:
+    """Link *block_id* to *diag_id* and ensure the IBD boundary is created."""
+
+    if diag_id and diag_id in repo.diagrams:
+        diagram = repo.diagrams[diag_id]
+        if diagram.diag_type == "Internal Block Diagram":
+            return set_ibd_father(repo, diagram, block_id, app=app)
+    repo.link_diagram(block_id, diag_id)
+    return []
+
+
 def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
     """Sync the father block's ``partProperties`` from diagram part objects."""
 
@@ -5055,7 +5068,21 @@ class SysMLObjectDialog(simpledialog.Dialog):
         elif hasattr(self, "diagram_var"):
             link_id = self.diag_map.get(self.diagram_var.get())
         if hasattr(self, "behavior_var") or hasattr(self, "diagram_var"):
-            repo.link_diagram(self.obj.element_id, link_id)
+            if (
+                self.obj.obj_type == "Block"
+                and hasattr(self, "diagram_var")
+                and link_id
+                and link_id in repo.diagrams
+                and repo.diagrams[link_id].diag_type == "Internal Block Diagram"
+            ):
+                link_block_to_ibd(
+                    repo,
+                    self.obj.element_id,
+                    link_id,
+                    app=getattr(self.master, "app", None),
+                )
+            else:
+                repo.link_diagram(self.obj.element_id, link_id)
         if hasattr(self, "view_var"):
             view_id = self.view_map.get(self.view_var.get())
             if view_id:
