@@ -6,6 +6,7 @@ class DummyWindow:
         self.zoom = 1.0
 
     _nearest_diamond_corner = SysMLDiagramWindow._nearest_diamond_corner
+    _segment_intersection = SysMLDiagramWindow._segment_intersection
     edge_point = SysMLDiagramWindow.edge_point
     _segment_intersection = SysMLDiagramWindow._segment_intersection
 
