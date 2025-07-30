@@ -194,6 +194,22 @@ def _aggregation_exists(repo: SysMLRepository, whole_id: str, part_id: str) -> b
     return False
 
 
+def _reverse_aggregation_exists(
+    repo: SysMLRepository, whole_id: str, part_id: str
+) -> bool:
+    """Return ``True`` if ``part_id`` or its ancestors aggregate ``whole_id``."""
+
+    src_ids = [part_id] + _collect_generalization_parents(repo, part_id)
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+            and rel.target == whole_id
+        ):
+            return True
+    return False
+
+
 def _parse_multiplicity_range(mult: str) -> tuple[int, int | None]:
     """Return (lower, upper) bounds parsed from *mult*."""
 
@@ -1926,6 +1942,8 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, "Aggregations must connect Blocks"
                 if _aggregation_exists(self.repo, src.element_id, dst.element_id):
                     return False, "Aggregation already defined for this block"
+                if _reverse_aggregation_exists(self.repo, src.element_id, dst.element_id):
+                    return False, "Blocks cannot aggregate each other"
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
