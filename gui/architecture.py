@@ -1721,11 +1721,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.diagram_id = diagram.diag_id
         if isinstance(self.master, tk.Toplevel):
             self.master.protocol("WM_DELETE_WINDOW", self.on_close)
-        else:
-            # When embedded in another window, provide a small X button so
-            # the user can close the frame.
-            close_btn = ttk.Button(self, text="x", width=2, command=self.on_close)
-            close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
 
         # Load any saved objects and connections for this diagram
         self.objects: List[SysMLObject] = []
@@ -1798,13 +1793,6 @@ class SysMLDiagramWindow(tk.Frame):
 
         self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-        if not isinstance(self.master, tk.Toplevel):
-            # When a diagram is embedded in another window, add a small
-            # close button over the canvas so the frame can be closed.
-            self.close_btn = ttk.Button(self.canvas, text="x", width=2, command=self.on_close)
-            self.close_btn.place(relx=1.0, x=-4, y=4, anchor="ne")
-            self.close_btn.lift()
 
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
@@ -3141,7 +3129,9 @@ class SysMLDiagramWindow(tk.Frame):
             for i in range(len(points)):
                 p3 = points[i]
                 p4 = points[(i + 1) % len(points)]
-                inter = self._segment_intersection((cx, cy), (tx, ty), p3, p4)
+                inter = SysMLDiagramWindow._segment_intersection(
+                    self, (cx, cy), (tx, ty), p3, p4
+                )
                 if inter:
                     ix, iy, t = inter
                     if best is None or t < best[2]:
