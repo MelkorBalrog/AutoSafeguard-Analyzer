@@ -43,6 +43,9 @@ for p in ('labelX', 'labelY'):
     if p not in SYSML_PROPERTIES['PortUsage']:
         SYSML_PROPERTIES['PortUsage'].append(p)
 
+if 'BlockBoundaryUsage' not in SYSML_PROPERTIES:
+    SYSML_PROPERTIES['BlockBoundaryUsage'] = list(SYSML_PROPERTIES.get('BlockUsage', []))
+
 # ----------------------------------------------------------------------
 # Additional properties for reliability annotations
 # ----------------------------------------------------------------------
