@@ -1943,6 +1943,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Part",
                 ):
                     return False, "Connectors must link Parts or Ports"
+                if src.obj_type == "Block Boundary" or dst.obj_type == "Block Boundary":
+                    return False, "Connectors must link Parts or Ports"
                 if src.obj_type == "Port" and dst.obj_type == "Port":
                     dir_a = src.properties.get("direction", "inout").lower()
                     dir_b = dst.properties.get("direction", "inout").lower()
@@ -2056,7 +2058,20 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        obj = self.find_object(x, y)
+        conn_tools = (
+            "Association",
+            "Include",
+            "Extend",
+            "Flow",
+            "Connector",
+            "Generalize",
+            "Generalization",
+            "Communication Path",
+            "Aggregation",
+            "Composite Aggregation",
+        )
+        prefer = self.current_tool in conn_tools
+        obj = self.find_object(x, y, prefer_port=prefer)
         t = self.current_tool
 
         if t in (
@@ -2466,7 +2481,11 @@ class SysMLDiagramWindow(tk.Frame):
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            obj = self.find_object(x, y)
+            obj = self.find_object(
+                x,
+                y,
+                prefer_port=True,
+            )
             if obj and obj != self.start:
                 valid, msg = self.validate_connection(self.start, obj, self.current_tool)
                 if valid:
@@ -2562,7 +2581,7 @@ class SysMLDiagramWindow(tk.Frame):
         if self.dragging_endpoint is not None and self.selected_conn:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            obj = self.find_object(x, y)
+            obj = self.find_object(x, y, prefer_port=True)
             src_obj = self.get_object(self.selected_conn.src)
             dst_obj = self.get_object(self.selected_conn.dst)
             if obj and obj not in (src_obj, dst_obj):
@@ -2871,7 +2890,23 @@ class SysMLDiagramWindow(tk.Frame):
     # ------------------------------------------------------------
     # Utility methods
     # ------------------------------------------------------------
-    def find_object(self, x: float, y: float) -> SysMLObject | None:
+    def find_object(self, x: float, y: float, prefer_port: bool = False) -> SysMLObject | None:
+        """Return the diagram object under ``(x, y)``.
+
+        When ``prefer_port`` is ``True`` ports are looked up first so they
+        are selected over overlapping parent objects like a Block Boundary.
+        """
+        if prefer_port:
+            for obj in reversed(self.objects):
+                if obj.obj_type != "Port":
+                    continue
+                ox = obj.x * self.zoom
+                oy = obj.y * self.zoom
+                w = obj.width * self.zoom / 2
+                h = obj.height * self.zoom / 2
+                if ox - w <= x <= ox + w and oy - h <= y <= oy + h:
+                    return obj
+
         for obj in reversed(self.objects):
             ox = obj.x * self.zoom
             oy = obj.y * self.zoom
