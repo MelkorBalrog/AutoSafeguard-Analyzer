@@ -21,6 +21,7 @@ OBJECT_COLORS: dict[str, str] = {
     "Actor": "#E0F7FA",
     "Use Case": "#FFF3E0",
     "System Boundary": "#ECEFF1",
+    "Block Boundary": "",
     "Action Usage": "#E8F5E9",
     "Action": "#E8F5E9",
     "CallBehaviorAction": "#E8F5E9",
@@ -754,6 +755,45 @@ def _sync_block_parts_from_ibd(repo: SysMLRepository, diag_id: str) -> None:
             inherit_block_properties(repo, child_id)
 
 
+def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id: str, app=None) -> list[dict]:
+    """Create a boundary object for the IBD father block if needed."""
+
+    diagram.objects = getattr(diagram, "objects", [])
+    boundary = next((o for o in diagram.objects if o.get("obj_type") == "Block Boundary"), None)
+    added: list[dict] = []
+    if not boundary:
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Block Boundary",
+            "x": 100.0,
+            "y": 80.0,
+            "width": 200.0,
+            "height": 120.0,
+            "element_id": block_id,
+            "properties": {"name": repo.elements.get(block_id).name or block_id},
+        }
+        diagram.objects.insert(0, obj_dict)
+        added.append(obj_dict)
+        added += _add_ports_for_boundary(repo, diagram, obj_dict, app=app)
+    else:
+        if boundary.get("element_id") != block_id:
+            boundary["element_id"] = block_id
+        added += _add_ports_for_boundary(repo, diagram, boundary, app=app)
+    return added
+
+
+def _remove_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram) -> None:
+    """Remove boundary object and ports from the diagram."""
+
+    diagram.objects = getattr(diagram, "objects", [])
+    boundary = next((o for o in diagram.objects if o.get("obj_type") == "Block Boundary"), None)
+    if not boundary:
+        return
+    bid = boundary.get("obj_id")
+    diagram.objects = [o for o in diagram.objects if not (o.get("obj_type") == "Port" and o.get("properties", {}).get("parent") == str(bid))]
+    diagram.objects.remove(boundary)
+
+
 def set_ibd_father(
     repo: SysMLRepository, diagram: SysMLDiagram, father_id: str | None, app=None
 ) -> list[dict]:
@@ -769,6 +809,10 @@ def set_ibd_father(
     if father_id:
         repo.link_diagram(father_id, diagram.diag_id)
     added = _sync_ibd_composite_parts(repo, father_id, app=app) if father_id else []
+    if father_id:
+        added += _ensure_ibd_boundary(repo, diagram, father_id, app=app)
+    else:
+        _remove_ibd_boundary(repo, diagram)
     return added
 
 
@@ -1134,7 +1178,7 @@ def calculate_allocated_asil(requirements: List[dict]) -> str:
 
 def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     """Delete ports that don't reference an existing parent part."""
-    part_ids = {o.obj_id for o in objs if o.obj_type == "Part"}
+    part_ids = {o.obj_id for o in objs if o.obj_type in ("Part", "Block Boundary")}
     filtered: List[SysMLObject] = []
     for o in objs:
         if o.obj_type == "Port":
@@ -1181,6 +1225,13 @@ def update_ports_for_part(part: SysMLObject, objs: List[SysMLObject]) -> None:
     for o in objs:
         if o.obj_type == "Port" and o.properties.get("parent") == str(part.obj_id):
             snap_port_to_parent_obj(o, part)
+
+
+def update_ports_for_boundary(boundary: SysMLObject, objs: List[SysMLObject]) -> None:
+    """Snap all ports referencing *boundary* to its border."""
+    for o in objs:
+        if o.obj_type == "Port" and o.properties.get("parent") == str(boundary.obj_id):
+            snap_port_to_parent_obj(o, boundary)
 
 
 def _add_ports_for_part(
@@ -1249,6 +1300,58 @@ def _add_ports_for_part(
     return added
 
 
+def _add_ports_for_boundary(
+    repo: SysMLRepository,
+    diag: SysMLDiagram,
+    boundary_obj: dict,
+    app=None,
+) -> list[dict]:
+    """Create port objects for a boundary based on its block definition."""
+
+    block = repo.elements.get(boundary_obj.get("element_id"))
+    if not block:
+        return []
+    names = [p.strip() for p in block.properties.get("ports", "").split(",") if p.strip()]
+    if not names:
+        return []
+    added: list[dict] = []
+    parent = SysMLObject(
+        boundary_obj.get("obj_id"),
+        "Block Boundary",
+        boundary_obj.get("x", 0.0),
+        boundary_obj.get("y", 0.0),
+        width=boundary_obj.get("width", 160.0),
+        height=boundary_obj.get("height", 100.0),
+    )
+    for name in names:
+        port = SysMLObject(
+            _get_next_id(),
+            "Port",
+            parent.x + parent.width / 2 + 20,
+            parent.y,
+            properties={
+                "name": name,
+                "parent": str(parent.obj_id),
+                "side": "E",
+                "labelX": "8",
+                "labelY": "-8",
+            },
+        )
+        snap_port_to_parent_obj(port, parent)
+        port_dict = asdict(port)
+        diag.objects.append(port_dict)
+        added.append(port_dict)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(port)
+                    win.redraw()
+                    win._sync_to_repository()
+    boundary_obj.setdefault("properties", {})["ports"] = ", ".join(names)
+    block.properties["ports"] = ", ".join(names)
+    return added
+
+
 def _sync_ports_for_part(repo: SysMLRepository, diag: SysMLDiagram, part_obj: dict) -> None:
     """Update port objects for ``part_obj`` to match its definition."""
 
@@ -1308,6 +1411,53 @@ def _sync_ports_for_part(repo: SysMLRepository, diag: SysMLDiagram, part_obj: di
             diag.objects.remove(obj)
 
 
+def _sync_ports_for_boundary(repo: SysMLRepository, diag: SysMLDiagram, boundary_obj: dict) -> None:
+    """Update port objects for ``boundary_obj`` to match its block definition."""
+
+    block_id = boundary_obj.get("element_id")
+    block_elem = repo.elements.get(block_id)
+    if not block_elem:
+        return
+    names = [p.strip() for p in block_elem.properties.get("ports", "").split(",") if p.strip()]
+    boundary_obj.setdefault("properties", {})["ports"] = ", ".join(names)
+
+    existing = [
+        o
+        for o in list(diag.objects)
+        if o.get("obj_type") == "Port" and o.get("properties", {}).get("parent") == str(boundary_obj.get("obj_id"))
+    ]
+    existing_names = {o.get("properties", {}).get("name") for o in existing}
+    parent = SysMLObject(
+        boundary_obj.get("obj_id"),
+        "Block Boundary",
+        boundary_obj.get("x", 0.0),
+        boundary_obj.get("y", 0.0),
+        width=boundary_obj.get("width", 160.0),
+        height=boundary_obj.get("height", 100.0),
+    )
+    for name in names:
+        if name in existing_names:
+            continue
+        port = SysMLObject(
+            _get_next_id(),
+            "Port",
+            parent.x + parent.width / 2 + 20,
+            parent.y,
+            properties={
+                "name": name,
+                "parent": str(parent.obj_id),
+                "side": "E",
+                "labelX": "8",
+                "labelY": "-8",
+            },
+        )
+        snap_port_to_parent_obj(port, parent)
+        diag.objects.append(asdict(port))
+    for obj in existing:
+        if obj.get("properties", {}).get("name") not in names:
+            diag.objects.remove(obj)
+
+
 def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
     """Propagate port updates on ``block_id`` to all parts referencing it."""
 
@@ -1329,6 +1479,10 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                 if obj.get("obj_type") == "Part" and obj.get("element_id") == elem.elem_id:
                     obj.setdefault("properties", {})["ports"] = ", ".join(names)
                     _sync_ports_for_part(repo, diag, obj)
+                    updated = True
+                if obj.get("obj_type") == "Block Boundary" and obj.get("element_id") == block_id:
+                    obj.setdefault("properties", {})["ports"] = ", ".join(names)
+                    _sync_ports_for_boundary(repo, diag, obj)
                     updated = True
             if updated:
                 repo.touch_diagram(diag.diag_id)
@@ -2182,6 +2336,8 @@ class SysMLDiagramWindow(tk.Frame):
             obj.height = new_h
             if obj.obj_type == "Part":
                 update_ports_for_part(obj, self.objects)
+            if obj.obj_type == "Block Boundary":
+                update_ports_for_boundary(obj, self.objects)
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
@@ -2197,7 +2353,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj.y = y / self.zoom - self.drag_offset[1]
             dx = self.selected_obj.x - old_x
             dy = self.selected_obj.y - old_y
-            if self.selected_obj.obj_type == "Part":
+            if self.selected_obj.obj_type in ("Part", "Block Boundary"):
                 for p in self.objects:
                     if p.obj_type == "Port" and p.properties.get("parent") == str(
                         self.selected_obj.obj_id
@@ -2859,6 +3015,42 @@ class SysMLDiagramWindow(tk.Frame):
                 self.objects.remove(obj)
         self.sort_objects()
 
+    def sync_boundary_ports(self, boundary: SysMLObject) -> None:
+        names: List[str] = []
+        block_id = boundary.element_id
+        if block_id and block_id in self.repo.elements:
+            block_elem = self.repo.elements[block_id]
+            names.extend([
+                p.strip() for p in block_elem.properties.get("ports", "").split(",") if p.strip()
+            ])
+        existing = {
+            o.properties.get("name"): o
+            for o in self.objects
+            if o.obj_type == "Port" and o.properties.get("parent") == str(boundary.obj_id)
+        }
+        for n in names:
+            if n not in existing:
+                port = SysMLObject(
+                    _get_next_id(),
+                    "Port",
+                    boundary.x + boundary.width / 2 + 20,
+                    boundary.y,
+                    properties={
+                        "name": n,
+                        "parent": str(boundary.obj_id),
+                        "side": "E",
+                        "labelX": "8",
+                        "labelY": "-8",
+                    },
+                )
+                self.snap_port_to_parent(port, boundary)
+                self.objects.append(port)
+                existing[n] = port
+        for n, obj in list(existing.items()):
+            if n not in names:
+                self.objects.remove(obj)
+        self.sort_objects()
+
     def zoom_in(self):
         self.zoom *= 1.2
         self.font.config(size=int(8 * self.zoom))
@@ -2909,7 +3101,7 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _object_label_lines(self, obj: SysMLObject) -> list[str]:
         """Return the lines of text displayed inside *obj*."""
-        if obj.obj_type == "System Boundary":
+        if obj.obj_type == "System Boundary" or obj.obj_type == "Block Boundary":
             name = obj.properties.get("name", "")
             return [name] if name else []
 
@@ -2999,7 +3191,9 @@ class SysMLDiagramWindow(tk.Frame):
 
     def sort_objects(self) -> None:
         """Ensure System Boundaries are drawn and selected behind others."""
-        self.objects.sort(key=lambda o: 0 if o.obj_type == "System Boundary" else 1)
+        self.objects.sort(
+            key=lambda o: 0 if o.obj_type in ("System Boundary", "Block Boundary") else 1
+        )
 
     def redraw(self):
         self.canvas.delete("all")
@@ -3010,6 +3204,8 @@ class SysMLDiagramWindow(tk.Frame):
                 continue
             if obj.obj_type == "Part":
                 self.sync_ports(obj)
+            if obj.obj_type == "Block Boundary":
+                self.sync_boundary_ports(obj)
             self.ensure_text_fits(obj)
             self.draw_object(obj)
         for conn in self.connections:
@@ -3329,6 +3525,28 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
+        elif obj.obj_type == "Block Boundary":
+            self._create_round_rect(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                radius=12 * self.zoom,
+                dash=(4, 2),
+                outline=outline,
+                fill="",
+            )
+            label = obj.properties.get("name", "")
+            if label:
+                lx = x
+                ly = y - h - 4 * self.zoom
+                self.canvas.create_text(
+                    lx,
+                    ly,
+                    text=label,
+                    anchor="s",
+                    font=self.font,
+                )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             fill = color
@@ -3507,7 +3725,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
 
-        if obj.obj_type not in ("Block", "System Boundary", "Port"):
+        if obj.obj_type not in ("Block", "System Boundary", "Block Boundary", "Port"):
             name = obj.properties.get("name", obj.obj_type)
             label = name
             if obj.obj_type == "Part":
