@@ -2272,6 +2272,7 @@ class FaultTreeApp:
         # Notebook for diagrams and analyses
         self.doc_nb = ClosableNotebook(self.main_pane)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
+        self.doc_nb.bind("<<NotebookTabChanged>>", self._on_tab_change)
         self.main_pane.add(self.doc_nb, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
@@ -12979,6 +12980,14 @@ class FaultTreeApp:
                 del self.diagram_tabs[did]
                 break
         tab.destroy()
+
+    def _on_tab_change(self, event):
+        """Refresh diagrams when their tab becomes active."""
+        tab_id = event.widget.select()
+        tab = event.widget.nametowidget(tab_id)
+        for child in tab.winfo_children():
+            if hasattr(child, "refresh_from_repository"):
+                child.refresh_from_repository()
 
     def _new_tab(self, title: str) -> ttk.Frame:
         """Create and select a new tab in the document notebook."""
