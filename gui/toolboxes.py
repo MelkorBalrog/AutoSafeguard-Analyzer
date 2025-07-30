@@ -1877,6 +1877,7 @@ class HaraWindow(tk.Frame):
     COLS = [
         "malfunction",
         "hazard",
+        "scenario",
         "severity",
         "sev_rationale",
         "controllability",
@@ -2059,6 +2060,7 @@ class HaraWindow(tk.Frame):
             vals = [
                 row.malfunction,
                 row.hazard,
+                getattr(row, "scenario", ""),
                 row.severity,
                 row.sev_rationale,
                 row.controllability,
@@ -2075,7 +2077,7 @@ class HaraWindow(tk.Frame):
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, row=None):
             self.app = app
-            self.row = row or HaraEntry("", "", 1, "", 1, "", 1, "", "QM", "")
+            self.row = row or HaraEntry("", "", "", 1, "", 1, "", 1, "", "QM", "")
             super().__init__(parent, title="Edit HARA Row")
 
         def body(self, master):
@@ -2111,7 +2113,14 @@ class HaraWindow(tk.Frame):
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=1, column=1)
-            ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
+            ttk.Label(master, text="Scenario").grid(row=2, column=0, sticky="e")
+            scen_names = self.app.get_all_scenario_names()
+            self.scen_var = tk.StringVar(value=getattr(self.row, "scenario", ""))
+            scen_cb = ttk.Combobox(
+                master, textvariable=self.scen_var, values=scen_names, state="readonly"
+            )
+            scen_cb.grid(row=2, column=1)
+            ttk.Label(master, text="Severity").grid(row=3, column=0, sticky="e")
             sev_val = str(self.app.hazard_severity.get(self.row.hazard.strip(), self.row.severity))
             self.sev_var = tk.StringVar(value=sev_val)
             sev_cb = ttk.Combobox(
@@ -2135,37 +2144,37 @@ class HaraWindow(tk.Frame):
                 values=["1", "2", "3"],
                 state="readonly",
             )
-            cont_cb.grid(row=4, column=1)
+            cont_cb.grid(row=5, column=1)
             ttk.Label(master, text="Controllability Rationale").grid(
                 row=5, column=0, sticky="e"
             )
             self.cont_rat = tk.Entry(master)
             self.cont_rat.insert(0, self.row.cont_rationale)
-            self.cont_rat.grid(row=5, column=1)
-            ttk.Label(master, text="Exposure").grid(row=6, column=0, sticky="e")
+            self.cont_rat.grid(row=6, column=1)
+            ttk.Label(master, text="Exposure").grid(row=7, column=0, sticky="e")
             self.exp_var = tk.StringVar(value=str(self.row.exposure))
             exp_cb = ttk.Combobox(
                 master,
                 textvariable=self.exp_var,
                 values=["1", "2", "3", "4"],
-                state="readonly",
+                state="disabled",
             )
-            exp_cb.grid(row=6, column=1)
+            exp_cb.grid(row=7, column=1)
             ttk.Label(master, text="Exposure Rationale").grid(
-                row=7, column=0, sticky="e"
+                row=8, column=0, sticky="e"
             )
             self.exp_rat = tk.Entry(master)
             self.exp_rat.insert(0, self.row.exp_rationale)
-            self.exp_rat.grid(row=7, column=1)
-            ttk.Label(master, text="ASIL").grid(row=8, column=0, sticky="e")
+            self.exp_rat.grid(row=8, column=1)
+            ttk.Label(master, text="ASIL").grid(row=9, column=0, sticky="e")
             self.asil_var = tk.StringVar(value=self.row.asil)
             asil_lbl = ttk.Label(master, textvariable=self.asil_var)
-            asil_lbl.grid(row=8, column=1)
-            ttk.Label(master, text="Safety Goal").grid(row=9, column=0, sticky="e")
+            asil_lbl.grid(row=9, column=1)
+            ttk.Label(master, text="Safety Goal").grid(row=10, column=0, sticky="e")
             self.sg_var = tk.StringVar(value=self.row.safety_goal)
             ttk.Combobox(
                 master, textvariable=self.sg_var, values=goals, state="readonly"
-            ).grid(row=9, column=1)
+            ).grid(row=10, column=1)
 
             def auto_hazard(_=None):
                 mal = self.mal_var.get()
@@ -2180,6 +2189,15 @@ class HaraWindow(tk.Frame):
 
             mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
             auto_hazard()
+
+            def update_exposure(_=None):
+                scen = self.scen_var.get()
+                if scen:
+                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
+                recalc()
+
+            scen_cb.bind("<<ComboboxSelected>>", update_exposure)
+            update_exposure()
 
             def recalc(_=None):
                 try:
@@ -2215,6 +2233,7 @@ class HaraWindow(tk.Frame):
             self.row.exp_rationale = self.exp_rat.get()
             self.row.asil = self.asil_var.get()
             self.row.safety_goal = self.sg_var.get()
+            self.row.scenario = self.scen_var.get()
 
     def add_row(self):
         if not self.app.active_hara:

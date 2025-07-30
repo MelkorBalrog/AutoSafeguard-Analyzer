@@ -131,6 +131,7 @@ class HazopEntry:
 class HaraEntry:
     malfunction: str
     hazard: str
+    scenario: str
     severity: int
     sev_rationale: str
     controllability: int
