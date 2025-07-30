@@ -1,6 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 import tkinter.font as tkFont
+import textwrap
 from tkinter import ttk, simpledialog, messagebox
 import json
 import math
@@ -3146,6 +3147,54 @@ class SysMLDiagramWindow(tk.Frame):
         height_px = (1 + len(compartments)) * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
+    def _wrap_text_to_width(self, text: str, width_px: float) -> list[str]:
+        """Return *text* wrapped to fit within *width_px* pixels."""
+        if self.font.measure(text) <= width_px:
+            return [text]
+        words = text.split()
+        if not words:
+            words = [text]
+
+        if len(words) == 1 and self.font.measure(words[0]) > width_px:
+            # single long word - wrap by characters
+            lines: list[str] = []
+            current = ""
+            for ch in words[0]:
+                if self.font.measure(current + ch) <= width_px:
+                    current += ch
+                else:
+                    if current:
+                        lines.append(current)
+                    current = ch
+            if current:
+                lines.append(current)
+            return lines
+
+        lines: list[str] = []
+        current = words[0]
+        for word in words[1:]:
+            candidate = current + " " + word
+            if self.font.measure(candidate) <= width_px:
+                current = candidate
+            else:
+                lines.append(current)
+                if self.font.measure(word) <= width_px:
+                    current = word
+                else:
+                    # break long word
+                    part = ""
+                    for ch in word:
+                        if self.font.measure(part + ch) <= width_px:
+                            part += ch
+                        else:
+                            if part:
+                                lines.append(part)
+                            part = ch
+                    current = part
+        if current:
+            lines.append(current)
+        return lines
+
     def _object_label_lines(self, obj: SysMLObject) -> list[str]:
         """Return the lines of text displayed inside *obj*."""
         if obj.obj_type == "System Boundary" or obj.obj_type == "Block Boundary":
@@ -3174,7 +3223,16 @@ class SysMLDiagramWindow(tk.Frame):
             diag = self.repo.diagrams[diag_id]
             diag_name = diag.name or diag_id
             lines.append(diag_name)
-        lines.append(name)
+
+        if obj.obj_type in ("Action", "CallBehaviorAction") and name:
+            max_width = obj.width * self.zoom - 6 * self.zoom
+            if max_width > 0:
+                wrapped = self._wrap_text_to_width(name, max_width)
+                lines.extend(wrapped)
+            else:
+                lines.append(name)
+        else:
+            lines.append(name)
 
         key = obj.obj_type.replace(" ", "")
         if not key.endswith("Usage"):
@@ -3222,8 +3280,15 @@ class SysMLDiagramWindow(tk.Frame):
 
             text_width = max(self.font.measure(line) for line in label_lines)
             text_height = self.font.metrics("linespace") * len(label_lines)
-            padding = 10 * self.zoom
-            min_w = (text_width + padding) / self.zoom
+            if obj.obj_type in ("Action", "CallBehaviorAction"):
+                padding = 6 * self.zoom
+                if text_width + padding <= obj.width * self.zoom:
+                    min_w = obj.width
+                else:
+                    min_w = (text_width + padding) / self.zoom
+            else:
+                padding = 10 * self.zoom
+                min_w = (text_width + padding) / self.zoom
             min_h = (text_height + padding) / self.zoom
 
         if obj.obj_type in ("Block",):
