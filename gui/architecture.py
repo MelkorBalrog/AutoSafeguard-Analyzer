@@ -3148,10 +3148,25 @@ class SysMLDiagramWindow(tk.Frame):
             dist = (dx**2 + dy**2) ** 0.5 or 1
             return cx + dx / dist * r, cy + dy / dist * r
         if obj.obj_type in ("Decision", "Merge"):
-            if abs(dx) >= abs(dy):
-                return (cx + (w if dx >= 0 else -w), cy)
-            else:
-                return (cx, cy + (h if dy >= 0 else -h))
+            points = [
+                (cx, cy - h),
+                (cx + w, cy),
+                (cx, cy + h),
+                (cx - w, cy),
+            ]
+            best = None
+            for i in range(len(points)):
+                p3 = points[i]
+                p4 = points[(i + 1) % len(points)]
+                inter = SysMLDiagramWindow._segment_intersection(
+                    self, (cx, cy), (tx, ty), p3, p4
+                )
+                if inter:
+                    ix, iy, t = inter
+                    if best is None or t < best[2]:
+                        best = (ix, iy, t)
+            if best:
+                return best[0], best[1]
 
         ix, iy = _intersect(dx, dy, w, h, radius)
         return cx + ix, cy + iy
@@ -4058,12 +4073,30 @@ class SysMLDiagramWindow(tk.Frame):
                 sy = obj.height / 40.0 * self.zoom
                 label_x = x
                 label_y = y + 40 * sy + 10 * self.zoom
-                self.canvas.create_text(label_x, label_y, text="\n".join(label_lines), anchor="n")
+                self.canvas.create_text(
+                    label_x,
+                    label_y,
+                    text="\n".join(label_lines),
+                    anchor="n",
+                    font=self.font,
+                )
             elif obj.obj_type in ("Initial", "Final"):
                 label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
-                self.canvas.create_text(x, label_y, text="\n".join(label_lines), anchor="n")
+                self.canvas.create_text(
+                    x,
+                    label_y,
+                    text="\n".join(label_lines),
+                    anchor="n",
+                    font=self.font,
+                )
             else:
-                self.canvas.create_text(x, y, text="\n".join(label_lines), anchor="center")
+                self.canvas.create_text(
+                    x,
+                    y,
+                    text="\n".join(label_lines),
+                    anchor="center",
+                    font=self.font,
+                )
 
         if obj in self.selected_objs:
             bx = x - w
