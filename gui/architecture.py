@@ -3131,6 +3131,11 @@ class SysMLDiagramWindow(tk.Frame):
 
         if rel is not None:
             rx, ry = rel
+            if obj.obj_type in ("Decision", "Merge"):
+                if abs(rx) >= abs(ry):
+                    return (cx + (w if rx >= 0 else -w), cy)
+                else:
+                    return (cx, cy + (h if ry >= 0 else -h))
             vx = rx * obj.width / 2 * self.zoom
             vy = ry * obj.height / 2 * self.zoom
             ix, iy = _intersect(vx, vy, w, h, radius if apply_radius else 0.0)
@@ -3143,23 +3148,10 @@ class SysMLDiagramWindow(tk.Frame):
             dist = (dx**2 + dy**2) ** 0.5 or 1
             return cx + dx / dist * r, cy + dy / dist * r
         if obj.obj_type in ("Decision", "Merge"):
-            points = [
-                (cx, cy - h),
-                (cx + w, cy),
-                (cx, cy + h),
-                (cx - w, cy),
-            ]
-            best = None
-            for i in range(len(points)):
-                p3 = points[i]
-                p4 = points[(i + 1) % len(points)]
-                inter = self._segment_intersection((cx, cy), (tx, ty), p3, p4)
-                if inter:
-                    ix, iy, t = inter
-                    if best is None or t < best[2]:
-                        best = (ix, iy, t)
-            if best:
-                return best[0], best[1]
+            if abs(dx) >= abs(dy):
+                return (cx + (w if dx >= 0 else -w), cy)
+            else:
+                return (cx, cy + (h if dy >= 0 else -h))
 
         ix, iy = _intersect(dx, dy, w, h, radius)
         return cx + ix, cy + iy
