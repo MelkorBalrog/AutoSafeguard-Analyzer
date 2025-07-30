@@ -702,6 +702,8 @@ def _sync_ibd_partproperty_parts(
             for p in block.properties.get("partProperties", "").split(",")
             if p.strip()
         ]
+    else:
+        names = [n.split("[")[0].strip() for n in names]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_defs)
