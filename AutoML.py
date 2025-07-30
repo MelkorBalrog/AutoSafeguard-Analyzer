@@ -2283,6 +2283,14 @@ class FaultTreeApp:
         # documents visible. The tab and the initial top event will be created
         # on demand when the user opens an FTA related view or adds a top level
         # event.  This avoids the spurious "Node 1" appearing at startup.
+        # Initialize the canvas related attributes so tab-close callbacks work
+        # before the FTA tab has ever been created.
+        self.canvas_tab = None
+        self.canvas_frame = None
+        self.canvas = None
+        self.hbar = None
+        self.vbar = None
+        self.page_diagram = None
         self.root_node = None
         self.top_events = []
         self.fmea_entries = []
@@ -13015,7 +13023,7 @@ class FaultTreeApp:
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
         tab = self.doc_nb.nametowidget(tab_id)
-        if tab is self.canvas_tab:
+        if tab is getattr(self, "canvas_tab", None):
             self.canvas_tab = None
             self.canvas_frame = None
             self.canvas = None
@@ -13160,9 +13168,14 @@ class FaultTreeApp:
             return
         diag = self.arch_diagrams[idx]
         existing = self.diagram_tabs.get(diag.diag_id)
-        if existing and existing.winfo_exists():
-            self.doc_nb.select(existing)
-            return
+        # Ensure the existing tab is still managed by the notebook
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                return
+        else:
+            # Remove stale reference if the tab was closed
+            self.diagram_tabs.pop(diag.diag_id, None)
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         if diag.diag_type == "Use Case Diagram":
