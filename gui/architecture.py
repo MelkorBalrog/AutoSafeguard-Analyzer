@@ -6086,6 +6086,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 repo, block_id, names=to_add_names, app=getattr(self, "app", None)
             )
             for data in added_props:
+                data["hidden"] = False
                 self.objects.append(SysMLObject(**data))
 
         if added:
