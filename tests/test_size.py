@@ -18,6 +18,7 @@ class DummyWindow:
     ensure_text_fits = SysMLDiagramWindow.ensure_text_fits
     _object_label_lines = SysMLDiagramWindow._object_label_lines
     _min_block_size = SysMLDiagramWindow._min_block_size
+    _wrap_text_to_width = SysMLDiagramWindow._wrap_text_to_width
 
 class EnsureTextFitsTests(unittest.TestCase):
     def setUp(self):
@@ -39,7 +40,7 @@ class EnsureTextFitsTests(unittest.TestCase):
         win.ensure_text_fits(part)
         self.assertGreater(part.width, 10)
 
-    def test_action_width_expands_for_name(self):
+    def test_action_width_does_not_expand_for_name(self):
         win = DummyWindow()
         action = SysMLObject(
             1,
@@ -52,7 +53,7 @@ class EnsureTextFitsTests(unittest.TestCase):
         )
         action.requirements = []
         win.ensure_text_fits(action)
-        self.assertGreater(action.width, 10)
+        self.assertEqual(action.width, 10)
 
 if __name__ == "__main__":
     unittest.main()
