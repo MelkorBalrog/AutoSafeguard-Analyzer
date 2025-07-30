@@ -3483,7 +3483,10 @@ class SysMLDiagramWindow(tk.Frame):
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
             ex, ey = self.temp_line_end
-            self.canvas.create_line(sx, sy, ex, ey, dash=(2, 2), arrow=tk.LAST)
+            self.canvas.create_line(
+                sx, sy, ex, ey, dash=(2, 2), arrow=tk.LAST, tags="connection"
+            )
+        self.canvas.tag_raise("connection")
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def _create_round_rect(self, x1, y1, x2, y2, radius=10, **kwargs):
@@ -3523,6 +3526,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw an open arrow head from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3548,6 +3552,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=self.canvas.cget("background"),
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_filled_arrow(
@@ -3556,6 +3561,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a filled triangular arrow from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3581,6 +3587,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_open_diamond(
@@ -3589,6 +3596,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw an open diamond from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3622,6 +3630,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=self.canvas.cget("background"),
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_filled_diamond(
@@ -3630,6 +3639,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a filled diamond from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3663,6 +3673,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_center_triangle(
@@ -3671,6 +3682,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a small triangular arrow pointing from *start* to *end*.
 
@@ -3704,6 +3716,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def draw_object(self, obj: SysMLObject):
@@ -4121,31 +4134,52 @@ class SysMLDiagramWindow(tk.Frame):
                 else:
                     mid_forward, mid_backward = True, True
         self.canvas.create_line(
-            *flat, arrow=arrow_style, dash=dash, fill=color, width=width
+            *flat,
+            arrow=arrow_style,
+            dash=dash,
+            fill=color,
+            width=width,
+            tags="connection",
         )
         if open_arrow:
             if forward:
-                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_open_arrow(points[1], points[0], color=color, width=width)
+                self._draw_open_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         elif conn.conn_type in ("Generalize", "Generalization"):
             # SysML uses an open triangular arrow head for generalization
             # relationships. Use the open arrow drawing helper so the arrow
             # interior matches the canvas background (typically white).
             if forward:
-                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         elif diamond_src:
             if filled_diamond:
-                self._draw_filled_diamond(points[1], points[0], color=color, width=width)
+                self._draw_filled_diamond(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
             else:
-                self._draw_open_diamond(points[1], points[0], color=color, width=width)
+                self._draw_open_diamond(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         else:
             if forward:
-                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         flow_port = None
         flow_name = ""
         if a.obj_type == "Port" and a.properties.get("flow"):
@@ -4165,12 +4199,20 @@ class SysMLDiagramWindow(tk.Frame):
                     if flow_port is b:
                         direction = "in" if direction == "out" else "out" if direction == "in" else direction
                     if direction == "inout":
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
                     elif direction == "in":
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
                     else:
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
                     mx = (mstart[0] + mend[0]) / 2
                     my = (mstart[1] + mend[1]) / 2
                     self.canvas.create_text(
@@ -4178,12 +4220,17 @@ class SysMLDiagramWindow(tk.Frame):
                         my - 10 * self.zoom,
                         text=flow_name,
                         font=self.font,
+                        tags="connection",
                     )
                 else:
                     if mid_forward or not mid_backward:
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
                     if mid_backward:
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
@@ -4191,8 +4238,14 @@ class SysMLDiagramWindow(tk.Frame):
                     hy = py * self.zoom
                     s = 3
                     self.canvas.create_rectangle(
-                        hx - s, hy - s, hx + s, hy + s, outline="red", fill="white"
-                    )
+                    hx - s,
+                    hy - s,
+                    hx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
+                )
             elif conn.style == "Squared":
                 if conn.points:
                     mx = conn.points[0][0] * self.zoom
@@ -4201,13 +4254,25 @@ class SysMLDiagramWindow(tk.Frame):
                 hy = (ay + by) / 2
                 s = 3
                 self.canvas.create_rectangle(
-                    mx - s, hy - s, mx + s, hy + s, outline="red", fill="white"
+                    mx - s,
+                    hy - s,
+                    mx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
                 )
             # draw endpoint handles
             for hx, hy in [(ax, ay), (bx, by)]:
                 s = 3
                 self.canvas.create_rectangle(
-                    hx - s, hy - s, hx + s, hy + s, outline="red", fill="white"
+                    hx - s,
+                    hy - s,
+                    hx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
                 )
         if conn.multiplicity and conn.conn_type in ("Aggregation", "Composite Aggregation"):
             mx = (bx + points[-2][0]) / 2
@@ -4217,6 +4282,7 @@ class SysMLDiagramWindow(tk.Frame):
                 my - 10 * self.zoom,
                 text=conn.multiplicity,
                 font=self.font,
+                tags="connection",
             )
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
@@ -4225,6 +4291,7 @@ class SysMLDiagramWindow(tk.Frame):
                 my - 10 * self.zoom,
                 text=label,
                 font=self.font,
+                tags="connection",
             )
 
     def get_object(self, oid: int) -> SysMLObject | None:
