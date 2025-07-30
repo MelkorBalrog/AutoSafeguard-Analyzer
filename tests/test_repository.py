@@ -48,6 +48,14 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn("PortUsage", SYSML_PROPERTIES)
         self.assertIn("direction", SYSML_PROPERTIES["PortUsage"])
 
+    def test_action_usage_property_removed(self):
+        """Ensure derived ActionUsage attributes are excluded."""
+        from sysml.sysml_spec import SYSML_PROPERTIES
+        self.assertNotIn(
+            "actionDefinition",
+            SYSML_PROPERTIES.get("ActionUsage", []),
+        )
+
     def test_packages_and_save_load(self):
         pkg = self.repo.create_package("PkgA")
         blk = self.repo.create_element("Block", name="Engine", owner=pkg.elem_id)

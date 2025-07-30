@@ -55,5 +55,31 @@ class EnsureTextFitsTests(unittest.TestCase):
         win.ensure_text_fits(action)
         self.assertEqual(action.width, 10)
 
+    def test_decision_and_merge_sizes_remain_fixed(self):
+        win = DummyWindow()
+        decision = SysMLObject(
+            1,
+            "Decision",
+            0,
+            0,
+            width=40,
+            height=40,
+            properties={"name": "Decide"},
+        )
+        merge = SysMLObject(
+            2,
+            "Merge",
+            0,
+            0,
+            width=40,
+            height=40,
+            properties={"name": "MergeNode"},
+        )
+        for obj in (decision, merge):
+            obj.requirements = []
+            win.ensure_text_fits(obj)
+            self.assertEqual(obj.width, 40)
+            self.assertEqual(obj.height, 40)
+
 if __name__ == "__main__":
     unittest.main()
