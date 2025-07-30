@@ -8076,6 +8076,22 @@ class FaultTreeApp:
                     use_case.append(sc)
         return {"use_case": use_case, "sotif": sotif}
 
+    def get_scenario_exposure(self, name: str) -> int:
+        """Return exposure level for the given scenario name."""
+        for lib in self.scenario_libraries:
+            for sc in lib.get("scenarios", []):
+                if isinstance(sc, dict):
+                    sc_name = sc.get("name", "")
+                    if sc_name == name:
+                        try:
+                            return int(sc.get("exposure", 1))
+                        except (TypeError, ValueError):
+                            return 1
+                else:
+                    if sc == name:
+                        return 1
+        return 1
+
     def get_all_scenery_names(self):
         """Return the list of scenery/ODD element names."""
         names = []
@@ -12455,7 +12471,7 @@ class FaultTreeApp:
         lib_lb.grid(row=0, column=0, rowspan=4, sticky="nsew")
         scen_tree = ttk.Treeview(
             win,
-            columns=("beh", "sce", "tc", "fi", "desc"),
+            columns=("beh", "sce", "tc", "fi", "exp", "desc"),
             show="tree headings",
         )
         scen_tree.heading("#0", text="Name")
@@ -12468,6 +12484,8 @@ class FaultTreeApp:
         scen_tree.column("tc", width=80)
         scen_tree.heading("fi", text="FI")
         scen_tree.column("fi", width=80)
+        scen_tree.heading("exp", text="Exposure")
+        scen_tree.column("exp", width=80)
         scen_tree.heading("desc", text="Description")
         scen_tree.column("desc", width=200)
         scen_tree.grid(row=0, column=1, columnspan=3, sticky="nsew")
@@ -12493,11 +12511,12 @@ class FaultTreeApp:
                     sce = sc.get("scenery", "")
                     tc = sc.get("tc", "")
                     fi = sc.get("fi", "")
+                    exp = sc.get("exposure", "")
                     desc = sc.get("description", "")
                 else:
                     name = str(sc)
-                    beh = sce = tc = fi = desc = ""
-                scen_tree.insert("", tk.END, text=name, values=(beh, sce, tc, fi, desc))
+                    beh = sce = tc = fi = exp = desc = ""
+                scen_tree.insert("", tk.END, text=name, values=(beh, sce, tc, fi, exp, desc))
 
         class LibraryDialog(simpledialog.Dialog):
             def __init__(self, parent, app, data=None):
@@ -12534,6 +12553,7 @@ class FaultTreeApp:
                     "scenery": "",
                     "tc": "",
                     "fi": "",
+                    "exposure": 1,
                     "description": "",
                 }
                 self.tag_counter = 0
@@ -12580,9 +12600,18 @@ class FaultTreeApp:
                 self.fi_var = tk.StringVar(value=self.data.get("fi", ""))
                 ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=5, column=1, sticky="ew")
 
-                ttk.Label(master, text="Description").grid(row=6, column=0, sticky="ne")
+                ttk.Label(master, text="Exposure").grid(row=6, column=0, sticky="e")
+                self.exp_var = tk.StringVar(value=str(self.data.get("exposure", 1)))
+                ttk.Combobox(
+                    master,
+                    textvariable=self.exp_var,
+                    values=["1", "2", "3", "4"],
+                    state="readonly",
+                ).grid(row=6, column=1, sticky="ew")
+
+                ttk.Label(master, text="Description").grid(row=7, column=0, sticky="ne")
                 self.desc = tk.Text(master, height=4, width=40, wrap="word")
-                self.desc.grid(row=6, column=1, columnspan=3, sticky="nsew")
+                self.desc.grid(row=7, column=1, columnspan=3, sticky="nsew")
                 self.load_desc_links()
                 master.grid_columnconfigure(1, weight=1)
 
@@ -12640,6 +12669,10 @@ class FaultTreeApp:
                 self.data["scenery"] = self.sce_var.get()
                 self.data["tc"] = self.tc_var.get()
                 self.data["fi"] = self.fi_var.get()
+                try:
+                    self.data["exposure"] = int(self.exp_var.get())
+                except (TypeError, ValueError):
+                    self.data["exposure"] = 1
                 self.data["description"] = self.desc.get("1.0", "end-1c")
 
         def add_lib():
@@ -13737,7 +13770,22 @@ class FaultTreeApp:
 
         self.hara_docs = []
         for d in data.get("haras", []):
-            entries = [HaraEntry(**e) for e in d.get("entries", [])]
+            entries = [
+                HaraEntry(
+                    e.get("malfunction", ""),
+                    e.get("hazard", ""),
+                    e.get("scenario", ""),
+                    e.get("severity", 1),
+                    e.get("sev_rationale", ""),
+                    e.get("controllability", 1),
+                    e.get("cont_rationale", ""),
+                    e.get("exposure", 1),
+                    e.get("exp_rationale", ""),
+                    e.get("asil", "QM"),
+                    e.get("safety_goal", ""),
+                )
+                for e in d.get("entries", [])
+            ]
             hazops = d.get("hazops")
             if not hazops:
                 hazop = d.get("hazop")
@@ -13754,7 +13802,28 @@ class FaultTreeApp:
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             self.hara_docs.append(
-                HaraDoc("Default", [hazop_name] if hazop_name else [], [HaraEntry(**e) for e in data.get("hara_entries", [])], False, "draft")
+                HaraDoc(
+                    "Default",
+                    [hazop_name] if hazop_name else [],
+                    [
+                        HaraEntry(
+                            e.get("malfunction", ""),
+                            e.get("hazard", ""),
+                            e.get("scenario", ""),
+                            e.get("severity", 1),
+                            e.get("sev_rationale", ""),
+                            e.get("controllability", 1),
+                            e.get("cont_rationale", ""),
+                            e.get("exposure", 1),
+                            e.get("exp_rationale", ""),
+                            e.get("asil", "QM"),
+                            e.get("safety_goal", ""),
+                        )
+                        for e in data.get("hara_entries", [])
+                    ],
+                    False,
+                    "draft",
+                )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
