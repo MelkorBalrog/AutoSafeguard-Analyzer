@@ -164,7 +164,11 @@ class AutoMLHelper:
         all_ids = []
         for event in top_events:
             all_ids.extend(traverse(event))
-        self.unique_node_id_counter = max(all_ids) + 1
+        if all_ids:
+            self.unique_node_id_counter = max(all_ids) + 1
+        else:
+            # No nodes yet. Start numbering from 1.
+            self.unique_node_id_counter = 1
 
     def round_to_half(self, val):
         try:
