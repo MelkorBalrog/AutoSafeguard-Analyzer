@@ -742,6 +742,7 @@ def _sync_ibd_partproperty_parts(
             "y": base_y,
             "element_id": part_elem.elem_id,
             "properties": {"definition": target_id},
+            "hidden": True,
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
