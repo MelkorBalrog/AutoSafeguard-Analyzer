@@ -1257,6 +1257,31 @@ def update_ports_for_boundary(boundary: SysMLObject, objs: List[SysMLObject]) ->
             snap_port_to_parent_obj(o, boundary)
 
 
+def _boundary_min_size(boundary: SysMLObject, objs: List[SysMLObject]) -> tuple[float, float]:
+    """Return minimum width and height for *boundary* to contain all parts."""
+    parts = [o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)]
+    if not parts:
+        return (20.0, 20.0)
+    pad = 20.0
+    max_dx = 0.0
+    max_dy = 0.0
+    for p in parts:
+        dx = abs(p.x - boundary.x) + p.width / 2
+        dy = abs(p.y - boundary.y) + p.height / 2
+        max_dx = max(max_dx, dx)
+        max_dy = max(max_dy, dy)
+    return max_dx * 2 + pad, max_dy * 2 + pad
+
+
+def ensure_boundary_contains_parts(boundary: SysMLObject, objs: List[SysMLObject]) -> None:
+    """Expand *boundary* if any part lies outside its borders."""
+    min_w, min_h = _boundary_min_size(boundary, objs)
+    if boundary.width < min_w:
+        boundary.width = min_w
+    if boundary.height < min_h:
+        boundary.height = min_h
+
+
 def _add_ports_for_part(
     repo: SysMLRepository,
     diag: SysMLDiagram,
@@ -2354,6 +2379,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
                 min_w, min_h = self._min_block_size(obj)
+            elif obj.obj_type == "Block Boundary":
+                min_w, min_h = _boundary_min_size(obj, self.objects)
             if "e" in self.resize_edge or "w" in self.resize_edge:
                 desired_w = 2 * abs(x - cx) / self.zoom
                 new_w = max(min_w, desired_w)
@@ -2370,6 +2397,7 @@ class SysMLDiagramWindow(tk.Frame):
                 update_ports_for_part(obj, self.objects)
             if obj.obj_type == "Block Boundary":
                 update_ports_for_boundary(obj, self.objects)
+                ensure_boundary_contains_parts(obj, self.objects)
             self.redraw()
             return
         if self.selected_obj.obj_type == "Port" and "parent" in self.selected_obj.properties:
@@ -2393,6 +2421,12 @@ class SysMLDiagramWindow(tk.Frame):
                         p.x += dx
                         p.y += dy
                         self.snap_port_to_parent(p, self.selected_obj)
+            if self.selected_obj.obj_type == "Block Boundary":
+                for o in self.objects:
+                    if o.obj_type == "Part":
+                        o.x += dx
+                        o.y += dy
+                        update_ports_for_part(o, self.objects)
             if self.selected_obj.obj_type == "System Boundary":
                 for o in self.objects:
                     if o.properties.get("boundary") == str(self.selected_obj.obj_id):
@@ -2409,6 +2443,9 @@ class SysMLDiagramWindow(tk.Frame):
                             if o is not self.selected_obj and o.properties.get("boundary") == b_id:
                                 o.x += dx
                                 o.y += dy
+            boundary = self.get_ibd_boundary()
+            if boundary:
+                ensure_boundary_contains_parts(boundary, self.objects)
         self.redraw()
         self._sync_to_repository()
         if self.app:
@@ -4031,6 +4068,13 @@ class SysMLDiagramWindow(tk.Frame):
     def get_object(self, oid: int) -> SysMLObject | None:
         for o in self.objects:
             if o.obj_id == oid:
+                return o
+        return None
+
+    def get_ibd_boundary(self) -> SysMLObject | None:
+        """Return the Block Boundary object if present."""
+        for o in self.objects:
+            if o.obj_type == "Block Boundary":
                 return o
         return None
 
