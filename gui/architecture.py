@@ -291,6 +291,16 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     for child_id in _find_generalization_children(repo, block_id):
         inherit_block_properties(repo, child_id)
 
+    # update any Block Boundary objects referencing this block
+    for diag in repo.diagrams.values():
+        updated = False
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") == "Block Boundary" and obj.get("element_id") == block_id:
+                obj.setdefault("properties", {})["name"] = new_name
+                updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
+
 
 def add_aggregation_part(
     repo: SysMLRepository,
@@ -1477,11 +1487,10 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
     block = repo.elements.get(block_id)
     if not block or block.elem_type != "Block":
         return
+    names = [p.strip() for p in block.properties.get("ports", "").split(",") if p.strip()]
     for elem in repo.elements.values():
         if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
             continue
-        block_ports = [p.strip() for p in block.properties.get("ports", "").split(",") if p.strip()]
-        names = block_ports
         elem.properties["ports"] = ", ".join(names)
         for diag in repo.diagrams.values():
             if diag.diag_type != "Internal Block Diagram":
@@ -1493,12 +1502,22 @@ def propagate_block_port_changes(repo: SysMLRepository, block_id: str) -> None:
                     obj.setdefault("properties", {})["ports"] = ", ".join(names)
                     _sync_ports_for_part(repo, diag, obj)
                     updated = True
-                if obj.get("obj_type") == "Block Boundary" and obj.get("element_id") == block_id:
-                    obj.setdefault("properties", {})["ports"] = ", ".join(names)
-                    _sync_ports_for_boundary(repo, diag, obj)
-                    updated = True
             if updated:
                 repo.touch_diagram(diag.diag_id)
+
+    # update boundaries referencing this block
+    for diag in repo.diagrams.values():
+        if diag.diag_type != "Internal Block Diagram":
+            continue
+        diag.objects = getattr(diag, "objects", [])
+        updated = False
+        for obj in diag.objects:
+            if obj.get("obj_type") == "Block Boundary" and obj.get("element_id") == block_id:
+                obj.setdefault("properties", {})["ports"] = ", ".join(names)
+                _sync_ports_for_boundary(repo, diag, obj)
+                updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
 
 
 def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
@@ -4472,6 +4491,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
         if self.obj.obj_type == "Part":
             self.obj.properties.setdefault("asil", calculate_allocated_asil(self.obj.requirements))
         key = f"{self.obj.obj_type.replace(' ', '')}Usage"
+        if key not in SYSML_PROPERTIES and self.obj.obj_type == "Block Boundary":
+            key = "BlockUsage"
         list_props = {
             "ports",
             "partProperties",
@@ -5033,10 +5054,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = joined
 
-        if self.obj.obj_type == "Block" and self.obj.element_id:
-            propagate_block_port_changes(repo, self.obj.element_id)
-            propagate_block_part_changes(repo, self.obj.element_id)
-            propagate_block_changes(repo, self.obj.element_id)
+        if self.obj.element_id and self.obj.element_id in repo.elements:
+            elem_type = repo.elements[self.obj.element_id].elem_type
+            if elem_type == "Block" and self.obj.obj_type in ("Block", "Block Boundary"):
+                propagate_block_port_changes(repo, self.obj.element_id)
+                propagate_block_part_changes(repo, self.obj.element_id)
+                propagate_block_changes(repo, self.obj.element_id)
         try:
             if self.obj.obj_type not in ("Initial", "Final"):
                 self.obj.width = float(self.width_var.get())
