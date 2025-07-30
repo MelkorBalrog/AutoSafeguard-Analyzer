@@ -20,6 +20,9 @@ class DummyWindow:
         if diag:
             diag.objects = [obj.__dict__ for obj in self.objects]
             diag.connections = [conn.__dict__ for conn in self.connections]
+            architecture.update_block_parts_from_ibd(self.repo, diag)
+            self.repo.touch_diagram(self.diagram_id)
+            architecture._sync_block_parts_from_ibd(self.repo, self.diagram_id)
 
     def redraw(self):
         pass
@@ -47,6 +50,37 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         diag = repo.diagrams[ibd.diag_id]
         self.assertEqual(len(diag.objects), 1)
         self.assertFalse(diag.objects[0].get('hidden', False))
+
+    def test_deleted_parts_removed_from_list(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(block.elem_id, ibd.diag_id)
+        win = DummyWindow(ibd)
+
+        class AddDialog:
+            def __init__(self, parent, names, visible, hidden):
+                self.result = ["B"]
+
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', AddDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+
+        # remove the part from the diagram
+        obj = win.objects[0]
+        InternalBlockDiagramWindow.remove_object(win, obj)
+
+        captured = []
+
+        class CaptureDialog:
+            def __init__(self, parent, names, visible, hidden):
+                captured.extend(names)
+                self.result = []
+
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', CaptureDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+
+        self.assertNotIn("B", captured)
 
 if __name__ == '__main__':
     unittest.main()
