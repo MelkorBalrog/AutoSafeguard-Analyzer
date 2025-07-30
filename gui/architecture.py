@@ -3049,7 +3049,7 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj.obj_type == "System Boundary":
             radius = 12 * self.zoom
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
-            radius = 8 * self.zoom
+            radius = 0.0
         dx = tx - x
         dy = ty - y
         if obj.obj_type in ("Initial", "Final"):
@@ -3074,20 +3074,16 @@ class SysMLDiagramWindow(tk.Frame):
                         best = (ix, iy, t)
             if best:
                 return best[0], best[1]
-        if abs(dx) > abs(dy):
-            if dx > 0:
-                x += w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
-            else:
-                x -= w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
+        if dx == 0 and dy == 0:
+            return x, y
+        if dx == 0:
+            t = h / abs(dy) if dy != 0 else 0
+        elif dy == 0:
+            t = w / abs(dx)
         else:
-            if dy > 0:
-                y += h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
-            else:
-                y -= h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
+            t = min(w / abs(dx), h / abs(dy))
+        x += dx * t
+        y += dy * t
 
         if radius:
             cx, cy = obj.x * self.zoom, obj.y * self.zoom
