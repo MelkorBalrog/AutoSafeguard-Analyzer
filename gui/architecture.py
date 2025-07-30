@@ -36,6 +36,8 @@ OBJECT_COLORS: dict[str, str] = {
 
 
 _next_obj_id = 1
+# Pixel distance used when detecting clicks on connection lines
+CONNECTION_SELECT_RADIUS = 15
 
 
 def _get_next_id() -> int:
@@ -3017,7 +3019,7 @@ class SysMLDiagramWindow(tk.Frame):
             )
             points.append((ex, ey))
             for a, b in zip(points[:-1], points[1:]):
-                if self._dist_to_segment((x, y), a, b) <= 8:
+                if self._dist_to_segment((x, y), a, b) <= CONNECTION_SELECT_RADIUS:
                     return conn
         return None
 
