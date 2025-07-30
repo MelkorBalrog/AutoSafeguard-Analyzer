@@ -2349,14 +2349,14 @@ class SysMLDiagramWindow(tk.Frame):
             if self.dragging_endpoint == "src":
                 obj = self.get_object(self.selected_conn.src)
                 if obj:
-                    ex, ey = self.edge_point(obj, x, y)
+                    ex, ey = self.edge_point(obj, x, y, apply_radius=False)
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     self.selected_conn.src_pos = (rx, ry)
             else:
                 obj = self.get_object(self.selected_conn.dst)
                 if obj:
-                    ex, ey = self.edge_point(obj, x, y)
+                    ex, ey = self.edge_point(obj, x, y, apply_radius=False)
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     self.selected_conn.dst_pos = (rx, ry)
@@ -3030,6 +3030,7 @@ class SysMLDiagramWindow(tk.Frame):
         tx: float,
         ty: float,
         rel: tuple[float, float] | None = None,
+        apply_radius: bool = True,
     ) -> Tuple[float, float]:
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -3037,19 +3038,36 @@ class SysMLDiagramWindow(tk.Frame):
             return x, y
         if rel is not None:
             rx, ry = rel
-            return (
-                (obj.x + rx * obj.width / 2) * self.zoom,
-                (obj.y + ry * obj.height / 2) * self.zoom,
-            )
+            x = (obj.x + rx * obj.width / 2) * self.zoom
+            y = (obj.y + ry * obj.height / 2) * self.zoom
+            radius = 0.0
+            if apply_radius:
+                if obj.obj_type == "Block":
+                    radius = 6 * self.zoom
+                elif obj.obj_type == "System Boundary":
+                    radius = 12 * self.zoom
+                elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                    radius = 8 * self.zoom
+            if radius:
+                cx, cy = obj.x * self.zoom, obj.y * self.zoom
+                vx, vy = x - cx, y - cy
+                w = obj.width * self.zoom / 2
+                h = obj.height * self.zoom / 2
+                if abs(vx) >= w and abs(vy) >= h:
+                    dist = math.hypot(vx, vy) or 1.0
+                    x -= radius * vx / dist
+                    y -= radius * vy / dist
+            return x, y
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         radius = 0.0
-        if obj.obj_type == "Block":
-            radius = 6 * self.zoom
-        elif obj.obj_type == "System Boundary":
-            radius = 12 * self.zoom
-        elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
-            radius = 8 * self.zoom
+        if apply_radius:
+            if obj.obj_type == "Block":
+                radius = 6 * self.zoom
+            elif obj.obj_type == "System Boundary":
+                radius = 12 * self.zoom
+            elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                radius = 8 * self.zoom
         dx = tx - x
         dy = ty - y
         if obj.obj_type in ("Initial", "Final"):
