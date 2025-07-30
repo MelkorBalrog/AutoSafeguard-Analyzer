@@ -3056,32 +3056,49 @@ class SysMLDiagramWindow(tk.Frame):
         rel: tuple[float, float] | None = None,
         apply_radius: bool = True,
     ) -> Tuple[float, float]:
-        x = obj.x * self.zoom
-        y = obj.y * self.zoom
+        cx = obj.x * self.zoom
+        cy = obj.y * self.zoom
         if obj.obj_type == "Port":
-            return x, y
-        if rel is not None:
-            rx, ry = rel
-            x = (obj.x + rx * obj.width / 2) * self.zoom
-            y = (obj.y + ry * obj.height / 2) * self.zoom
-            radius = 0.0
-            if apply_radius:
-                if obj.obj_type == "Block":
-                    radius = 6 * self.zoom
-                elif obj.obj_type == "System Boundary":
-                    radius = 12 * self.zoom
-                elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
-                    radius = 8 * self.zoom
-            if radius:
-                cx, cy = obj.x * self.zoom, obj.y * self.zoom
-                vx, vy = x - cx, y - cy
-                w = obj.width * self.zoom / 2
-                h = obj.height * self.zoom / 2
-                if abs(vx) >= w and abs(vy) >= h:
-                    dist = math.hypot(vx, vy) or 1.0
-                    x -= radius * vx / dist
-                    y -= radius * vy / dist
-            return x, y
+            return cx, cy
+
+        def _intersect(vx: float, vy: float, w: float, h: float, r: float) -> Tuple[float, float]:
+            if vx == 0 and vy == 0:
+                return 0.0, 0.0
+            wi, hi = w - r, h - r
+            signx = 1 if vx >= 0 else -1
+            signy = 1 if vy >= 0 else -1
+            candidates: list[tuple[float, float, float]] = []
+            if vx != 0:
+                t_v = (signx * wi) / vx
+                if t_v >= 0:
+                    y_v = vy * t_v
+                    if abs(y_v) <= hi:
+                        candidates.append((t_v, signx * wi, y_v))
+            if vy != 0:
+                t_h = (signy * hi) / vy
+                if t_h >= 0:
+                    x_h = vx * t_h
+                    if abs(x_h) <= wi:
+                        candidates.append((t_h, x_h, signy * hi))
+            if r > 0:
+                cx_arc, cy_arc = signx * wi, signy * hi
+                a = vx * vx + vy * vy
+                b = -2 * (vx * cx_arc + vy * cy_arc)
+                c = cx_arc * cx_arc + cy_arc * cy_arc - r * r
+                disc = b * b - 4 * a * c
+                if disc >= 0:
+                    sqrt_disc = math.sqrt(disc)
+                    for t_arc in ((-b - sqrt_disc) / (2 * a), (-b + sqrt_disc) / (2 * a)):
+                        if t_arc >= 0:
+                            x_arc = vx * t_arc
+                            y_arc = vy * t_arc
+                            if signx * x_arc >= wi and signy * y_arc >= hi:
+                                candidates.append((t_arc, x_arc, y_arc))
+            if not candidates:
+                return 0.0, 0.0
+            t, ix, iy = min(candidates, key=lambda c: c[0])
+            return ix, iy
+
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         radius = 0.0
@@ -3092,37 +3109,41 @@ class SysMLDiagramWindow(tk.Frame):
                 radius = 12 * self.zoom
             elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
                 radius = 8 * self.zoom
-        dx = tx - x
-        dy = ty - y
+
+        if rel is not None:
+            rx, ry = rel
+            vx = rx * obj.width / 2 * self.zoom
+            vy = ry * obj.height / 2 * self.zoom
+            ix, iy = _intersect(vx, vy, w, h, radius if apply_radius else 0.0)
+            return cx + ix, cy + iy
+
+        dx = tx - cx
+        dy = ty - cy
         if obj.obj_type in ("Initial", "Final"):
             r = min(w, h)
             dist = (dx**2 + dy**2) ** 0.5 or 1
-            return x + dx / dist * r, y + dy / dist * r
+            return cx + dx / dist * r, cy + dy / dist * r
         if obj.obj_type in ("Decision", "Merge"):
-            return self._nearest_diamond_corner(obj, tx, ty)
-        if abs(dx) > abs(dy):
-            if dx > 0:
-                x += w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
-            else:
-                x -= w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
-        else:
-            if dy > 0:
-                y += h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
-            else:
-                y -= h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
+            points = [
+                (cx, cy - h),
+                (cx + w, cy),
+                (cx, cy + h),
+                (cx - w, cy),
+            ]
+            best = None
+            for i in range(len(points)):
+                p3 = points[i]
+                p4 = points[(i + 1) % len(points)]
+                inter = self._segment_intersection((cx, cy), (tx, ty), p3, p4)
+                if inter:
+                    ix, iy, t = inter
+                    if best is None or t < best[2]:
+                        best = (ix, iy, t)
+            if best:
+                return best[0], best[1]
 
-        if radius:
-            cx, cy = obj.x * self.zoom, obj.y * self.zoom
-            vx, vy = x - cx, y - cy
-            if abs(vx) >= w and abs(vy) >= h:
-                dist = math.hypot(vx, vy) or 1.0
-                x -= radius * vx / dist
-                y -= radius * vy / dist
-        return x, y
+        ix, iy = _intersect(dx, dy, w, h, radius)
+        return cx + ix, cy + iy
 
     def sync_ports(self, part: SysMLObject) -> None:
         names: List[str] = []
