@@ -2349,14 +2349,14 @@ class SysMLDiagramWindow(tk.Frame):
             if self.dragging_endpoint == "src":
                 obj = self.get_object(self.selected_conn.src)
                 if obj:
-                    ex, ey = self.edge_point(obj, x, y)
+                    ex, ey = self.edge_point(obj, x, y, apply_radius=False)
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     self.selected_conn.src_pos = (rx, ry)
             else:
                 obj = self.get_object(self.selected_conn.dst)
                 if obj:
-                    ex, ey = self.edge_point(obj, x, y)
+                    ex, ey = self.edge_point(obj, x, y, apply_radius=False)
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     self.selected_conn.dst_pos = (rx, ry)
@@ -3030,73 +3030,96 @@ class SysMLDiagramWindow(tk.Frame):
         tx: float,
         ty: float,
         rel: tuple[float, float] | None = None,
+        apply_radius: bool = True,
     ) -> Tuple[float, float]:
-        x = obj.x * self.zoom
-        y = obj.y * self.zoom
+        cx = obj.x * self.zoom
+        cy = obj.y * self.zoom
         if obj.obj_type == "Port":
-            return x, y
-        if rel is not None:
-            rx, ry = rel
-            return (
-                (obj.x + rx * obj.width / 2) * self.zoom,
-                (obj.y + ry * obj.height / 2) * self.zoom,
-            )
+            return cx, cy
+
+        def _intersect(vx: float, vy: float, w: float, h: float, r: float) -> Tuple[float, float]:
+            if vx == 0 and vy == 0:
+                return 0.0, 0.0
+            wi, hi = w - r, h - r
+            signx = 1 if vx >= 0 else -1
+            signy = 1 if vy >= 0 else -1
+            candidates: list[tuple[float, float, float]] = []
+            if vx != 0:
+                t_v = (signx * wi) / vx
+                if t_v >= 0:
+                    y_v = vy * t_v
+                    if abs(y_v) <= hi:
+                        candidates.append((t_v, signx * wi, y_v))
+            if vy != 0:
+                t_h = (signy * hi) / vy
+                if t_h >= 0:
+                    x_h = vx * t_h
+                    if abs(x_h) <= wi:
+                        candidates.append((t_h, x_h, signy * hi))
+            if r > 0:
+                cx_arc, cy_arc = signx * wi, signy * hi
+                a = vx * vx + vy * vy
+                b = -2 * (vx * cx_arc + vy * cy_arc)
+                c = cx_arc * cx_arc + cy_arc * cy_arc - r * r
+                disc = b * b - 4 * a * c
+                if disc >= 0:
+                    sqrt_disc = math.sqrt(disc)
+                    for t_arc in ((-b - sqrt_disc) / (2 * a), (-b + sqrt_disc) / (2 * a)):
+                        if t_arc >= 0:
+                            x_arc = vx * t_arc
+                            y_arc = vy * t_arc
+                            if signx * x_arc >= wi and signy * y_arc >= hi:
+                                candidates.append((t_arc, x_arc, y_arc))
+            if not candidates:
+                return 0.0, 0.0
+            t, ix, iy = min(candidates, key=lambda c: c[0])
+            return ix, iy
+
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         radius = 0.0
-        if obj.obj_type == "Block":
-            radius = 6 * self.zoom
-        elif obj.obj_type == "System Boundary":
-            radius = 12 * self.zoom
-        elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
-            radius = 8 * self.zoom
-        dx = tx - x
-        dy = ty - y
+        if apply_radius:
+            if obj.obj_type == "Block":
+                radius = 6 * self.zoom
+            elif obj.obj_type == "System Boundary":
+                radius = 12 * self.zoom
+            elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                radius = 8 * self.zoom
+
+        if rel is not None:
+            rx, ry = rel
+            vx = rx * obj.width / 2 * self.zoom
+            vy = ry * obj.height / 2 * self.zoom
+            ix, iy = _intersect(vx, vy, w, h, radius if apply_radius else 0.0)
+            return cx + ix, cy + iy
+
+        dx = tx - cx
+        dy = ty - cy
         if obj.obj_type in ("Initial", "Final"):
             r = min(w, h)
             dist = (dx**2 + dy**2) ** 0.5 or 1
-            return x + dx / dist * r, y + dy / dist * r
+            return cx + dx / dist * r, cy + dy / dist * r
         if obj.obj_type in ("Decision", "Merge"):
             points = [
-                (x, y - h),
-                (x + w, y),
-                (x, y + h),
-                (x - w, y),
+                (cx, cy - h),
+                (cx + w, cy),
+                (cx, cy + h),
+                (cx - w, cy),
             ]
             best = None
             for i in range(len(points)):
                 p3 = points[i]
                 p4 = points[(i + 1) % len(points)]
-                inter = self._segment_intersection((x, y), (tx, ty), p3, p4)
+                inter = self._segment_intersection((cx, cy), (tx, ty), p3, p4)
                 if inter:
                     ix, iy, t = inter
                     if best is None or t < best[2]:
                         best = (ix, iy, t)
             if best:
                 return best[0], best[1]
-        if abs(dx) > abs(dy):
-            if dx > 0:
-                x += w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
-            else:
-                x -= w
-                y += dy * (w / abs(dx)) if dx != 0 else 0
-        else:
-            if dy > 0:
-                y += h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
-            else:
-                y -= h
-                x += dx * (h / abs(dy)) if dy != 0 else 0
 
-        if radius:
-            cx, cy = obj.x * self.zoom, obj.y * self.zoom
-            vx, vy = x - cx, y - cy
-            if abs(vx) >= w and abs(vy) >= h:
-                dist = math.hypot(vx, vy) or 1.0
-                x -= radius * vx / dist
-                y -= radius * vy / dist
-        return x, y
+        ix, iy = _intersect(dx, dy, w, h, radius)
+        return cx + ix, cy + iy
 
     def sync_ports(self, part: SysMLObject) -> None:
         names: List[str] = []
@@ -3421,7 +3444,10 @@ class SysMLDiagramWindow(tk.Frame):
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
             ex, ey = self.temp_line_end
-            self.canvas.create_line(sx, sy, ex, ey, dash=(2, 2), arrow=tk.LAST)
+            self.canvas.create_line(
+                sx, sy, ex, ey, dash=(2, 2), arrow=tk.LAST, tags="connection"
+            )
+        self.canvas.tag_raise("connection")
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def _create_round_rect(self, x1, y1, x2, y2, radius=10, **kwargs):
@@ -3461,6 +3487,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw an open arrow head from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3486,6 +3513,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=self.canvas.cget("background"),
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_filled_arrow(
@@ -3494,6 +3522,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a filled triangular arrow from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3519,6 +3548,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_open_diamond(
@@ -3527,6 +3557,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw an open diamond from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3560,6 +3591,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=self.canvas.cget("background"),
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_filled_diamond(
@@ -3568,6 +3600,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a filled diamond from *start* to *end*."""
         dx = end[0] - start[0]
@@ -3601,6 +3634,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def _draw_center_triangle(
@@ -3609,6 +3643,7 @@ class SysMLDiagramWindow(tk.Frame):
         end: Tuple[float, float],
         color: str = "black",
         width: int = 1,
+        tags: str = "connection",
     ) -> None:
         """Draw a small triangular arrow pointing from *start* to *end*.
 
@@ -3642,6 +3677,7 @@ class SysMLDiagramWindow(tk.Frame):
             fill=color,
             outline=color,
             width=width,
+            tags=tags,
         )
 
     def draw_object(self, obj: SysMLObject):
@@ -4059,31 +4095,52 @@ class SysMLDiagramWindow(tk.Frame):
                 else:
                     mid_forward, mid_backward = True, True
         self.canvas.create_line(
-            *flat, arrow=arrow_style, dash=dash, fill=color, width=width
+            *flat,
+            arrow=arrow_style,
+            dash=dash,
+            fill=color,
+            width=width,
+            tags="connection",
         )
         if open_arrow:
             if forward:
-                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_open_arrow(points[1], points[0], color=color, width=width)
+                self._draw_open_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         elif conn.conn_type in ("Generalize", "Generalization"):
             # SysML uses an open triangular arrow head for generalization
             # relationships. Use the open arrow drawing helper so the arrow
             # interior matches the canvas background (typically white).
             if forward:
-                self._draw_open_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_open_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         elif diamond_src:
             if filled_diamond:
-                self._draw_filled_diamond(points[1], points[0], color=color, width=width)
+                self._draw_filled_diamond(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
             else:
-                self._draw_open_diamond(points[1], points[0], color=color, width=width)
+                self._draw_open_diamond(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         else:
             if forward:
-                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[-2], points[-1], color=color, width=width, tags="connection"
+                )
             if backward:
-                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
+                self._draw_filled_arrow(
+                    points[1], points[0], color=color, width=width, tags="connection"
+                )
         flow_port = None
         flow_name = ""
         if a.obj_type == "Port" and a.properties.get("flow"):
@@ -4103,12 +4160,20 @@ class SysMLDiagramWindow(tk.Frame):
                     if flow_port is b:
                         direction = "in" if direction == "out" else "out" if direction == "in" else direction
                     if direction == "inout":
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
                     elif direction == "in":
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
                     else:
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
                     mx = (mstart[0] + mend[0]) / 2
                     my = (mstart[1] + mend[1]) / 2
                     self.canvas.create_text(
@@ -4116,12 +4181,17 @@ class SysMLDiagramWindow(tk.Frame):
                         my - 10 * self.zoom,
                         text=flow_name,
                         font=self.font,
+                        tags="connection",
                     )
                 else:
                     if mid_forward or not mid_backward:
-                        self._draw_center_triangle(mstart, mend, color=color, width=width)
+                        self._draw_center_triangle(
+                            mstart, mend, color=color, width=width, tags="connection"
+                        )
                     if mid_backward:
-                        self._draw_center_triangle(mend, mstart, color=color, width=width)
+                        self._draw_center_triangle(
+                            mend, mstart, color=color, width=width, tags="connection"
+                        )
         if selected:
             if conn.style == "Custom":
                 for px, py in conn.points:
@@ -4129,8 +4199,14 @@ class SysMLDiagramWindow(tk.Frame):
                     hy = py * self.zoom
                     s = 3
                     self.canvas.create_rectangle(
-                        hx - s, hy - s, hx + s, hy + s, outline="red", fill="white"
-                    )
+                    hx - s,
+                    hy - s,
+                    hx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
+                )
             elif conn.style == "Squared":
                 if conn.points:
                     mx = conn.points[0][0] * self.zoom
@@ -4139,13 +4215,25 @@ class SysMLDiagramWindow(tk.Frame):
                 hy = (ay + by) / 2
                 s = 3
                 self.canvas.create_rectangle(
-                    mx - s, hy - s, mx + s, hy + s, outline="red", fill="white"
+                    mx - s,
+                    hy - s,
+                    mx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
                 )
             # draw endpoint handles
             for hx, hy in [(ax, ay), (bx, by)]:
                 s = 3
                 self.canvas.create_rectangle(
-                    hx - s, hy - s, hx + s, hy + s, outline="red", fill="white"
+                    hx - s,
+                    hy - s,
+                    hx + s,
+                    hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
                 )
         if conn.multiplicity and conn.conn_type in ("Aggregation", "Composite Aggregation"):
             mx = (bx + points[-2][0]) / 2
@@ -4155,6 +4243,7 @@ class SysMLDiagramWindow(tk.Frame):
                 my - 10 * self.zoom,
                 text=conn.multiplicity,
                 font=self.font,
+                tags="connection",
             )
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
@@ -4163,6 +4252,7 @@ class SysMLDiagramWindow(tk.Frame):
                 my - 10 * self.zoom,
                 text=label,
                 font=self.font,
+                tags="connection",
             )
 
     def get_object(self, oid: int) -> SysMLObject | None:
