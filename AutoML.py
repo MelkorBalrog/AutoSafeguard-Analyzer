@@ -2280,11 +2280,11 @@ class FaultTreeApp:
         self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
 
         # Do not open the FTA tab by default so the application starts with no
-        # documents visible. The tab will be created on demand when the user
-        # opens an FTA related view.
-        self.root_node = FaultTreeNode("", "TOP EVENT")
-        self.root_node.x, self.root_node.y = 300, 200
-        self.top_events = [self.root_node]
+        # documents visible. The tab and the initial top event will be created
+        # on demand when the user opens an FTA related view or adds a top level
+        # event.  This avoids the spurious "Node 1" appearing at startup.
+        self.root_node = None
+        self.top_events = []
         self.fmea_entries = []
         self.fmeas = []  # list of FMEA documents
         self.selected_node = None
@@ -7830,6 +7830,10 @@ class FaultTreeApp:
     def compute_occurrence_counts(self):
         counts = {}
         visited = set()
+
+        if self.root_node is None:
+            return counts
+
         def rec(node):
             if node.unique_id in visited:
                 counts[node.unique_id] += 1
@@ -7838,6 +7842,7 @@ class FaultTreeApp:
                 counts[node.unique_id] = 1
             for child in node.children:
                 rec(child)
+
         rec(self.root_node)
         return counts
 
