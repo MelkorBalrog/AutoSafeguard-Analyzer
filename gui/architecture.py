@@ -691,30 +691,38 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
-    existing_names = {
-        repo.elements[did].name
-        for did in existing_defs
-        if did in repo.elements and repo.elements[did].elem_type == "Block"
+    existing_props = {
+        repo.elements[o.get("element_id")].name
+        for o in diag.objects
+        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
     }
+    def _parse_entry(raw: str) -> tuple[str, str]:
+        """Return (property name, block name) for a raw part property entry."""
+        raw = raw.strip()
+        prop = raw
+        block = raw
+        if ":" in raw:
+            prop, block = raw.split(":", 1)
+        prop = prop.split("[")[0].strip()
+        block = block.split("[")[0].strip()
+        return prop or block, block
+
     if names is None:
-        names = [
-            p.split("[")[0].strip()
-            for p in block.properties.get("partProperties", "").split(",")
-            if p.strip()
-        ]
+        entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
-        names = [n.split("[")[0].strip() for n in names]
+        entries = [n for n in names if n.strip()]
+    parsed = [_parse_entry(e) for e in entries]
     added: list[dict] = []
     base_x = 50.0
-    base_y = 50.0 + 60.0 * len(existing_defs)
-    for name in names:
-        if name in existing_names:
+    base_y = 50.0 + 60.0 * len(existing_props)
+    for prop_name, block_name in parsed:
+        if prop_name in existing_props:
             continue
         target_id = next(
             (
                 eid
                 for eid, elem in repo.elements.items()
-                if elem.elem_type == "Block" and elem.name == name
+                if elem.elem_type == "Block" and elem.name == block_name
             ),
             None,
         )
@@ -722,7 +730,7 @@ def _sync_ibd_partproperty_parts(
             continue
         part_elem = repo.create_element(
             "Part",
-            name=name,
+            name=prop_name,
             properties={"definition": target_id},
             owner=repo.root_package.elem_id,
         )
@@ -738,6 +746,8 @@ def _sync_ibd_partproperty_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
+        existing_props.add(prop_name)
+        existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
                 if getattr(win, "diagram_id", None) == diag.diag_id:
