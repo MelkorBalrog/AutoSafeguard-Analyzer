@@ -3850,13 +3850,6 @@ class SysMLDiagramWindow(tk.Frame):
         open_arrow = conn.conn_type in ("Include", "Extend")
         diamond_src = conn.conn_type in ("Aggregation", "Composite Aggregation")
         filled_diamond = conn.conn_type == "Composite Aggregation"
-        if not open_arrow and conn.conn_type not in ("Generalize", "Generalization"):
-            if conn.arrow == "forward":
-                arrow_style = tk.LAST
-            elif conn.arrow == "backward":
-                arrow_style = tk.FIRST
-            elif conn.arrow == "both":
-                arrow_style = tk.BOTH
         forward = conn.arrow in ("forward", "both")
         backward = conn.arrow in ("backward", "both")
         mid_forward = forward
@@ -3915,6 +3908,11 @@ class SysMLDiagramWindow(tk.Frame):
                 self._draw_filled_diamond(points[1], points[0], color=color, width=width)
             else:
                 self._draw_open_diamond(points[1], points[0], color=color, width=width)
+        else:
+            if forward:
+                self._draw_filled_arrow(points[-2], points[-1], color=color, width=width)
+            if backward:
+                self._draw_filled_arrow(points[1], points[0], color=color, width=width)
         flow_port = None
         flow_name = ""
         if a.obj_type == "Port" and a.properties.get("flow"):
