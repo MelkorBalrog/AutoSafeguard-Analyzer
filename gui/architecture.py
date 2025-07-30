@@ -2136,7 +2136,15 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
         elif t and t != "Select":
             if t == "Port":
-                parent_obj = obj if obj and obj.obj_type == "Part" else None
+                parent_obj = (
+                    obj if obj and obj.obj_type in ("Part", "Block Boundary") else None
+                )
+                if parent_obj is None:
+                    # Default to the IBD boundary if present
+                    parent_obj = next(
+                        (o for o in self.objects if o.obj_type == "Block Boundary"),
+                        None,
+                    )
                 if parent_obj is None:
                     return
             pkg = self.repo.diagrams[self.diagram_id].package
@@ -2177,7 +2185,7 @@ class SysMLDiagramWindow(tk.Frame):
                 if parent_obj:
                     new_obj.properties["parent"] = str(parent_obj.obj_id)
                     self.snap_port_to_parent(new_obj, parent_obj)
-                    # Persist the port by adding it to the parent part's list
+                    # Persist the port by adding it to the parent object's list
                     pname = new_obj.properties.get("name") or ""
                     ports = [
                         p.strip()
