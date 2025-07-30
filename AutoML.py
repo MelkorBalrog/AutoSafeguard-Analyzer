@@ -8002,6 +8002,18 @@ class FaultTreeApp:
                     layout(child, depth+1)
                 node.y = (node.children[0].y + node.children[-1].y) / 2
         layout(self.root_node, 0)
+        # --- Center the layout horizontally on the canvas ---
+        all_nodes = self.get_all_nodes(self.root_node)
+        if all_nodes:
+            min_x = min(n.x for n in all_nodes)
+            max_x = max(n.x for n in all_nodes)
+            canvas_width = self.canvas.winfo_width()
+            if canvas_width < 10:
+                canvas_width = 800
+            diagram_width = max_x - min_x
+            offset = (canvas_width / self.zoom - diagram_width) / 2 - min_x
+            for n in all_nodes:
+                n.x += offset
         self.update_views()
 
     def get_all_nodes_table(self,root_node):
@@ -15543,6 +15555,18 @@ class PageDiagram:
                     layout(child, depth+1)
                 node.y = (node.children[0].y + node.children[-1].y) / 2
         layout(self.root_node, 0)
+        # Center layout horizontally within the canvas
+        all_nodes = self.get_all_nodes(self.root_node)
+        if all_nodes:
+            min_x = min(n.x for n in all_nodes)
+            max_x = max(n.x for n in all_nodes)
+            canvas_width = self.canvas.winfo_width()
+            if canvas_width < 10:
+                canvas_width = 800
+            diagram_width = max_x - min_x
+            offset = (canvas_width / self.zoom - diagram_width) / 2 - min_x
+            for n in all_nodes:
+                n.x += offset
         self.redraw_canvas()
 
     def redraw_canvas(self):
