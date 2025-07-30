@@ -1789,6 +1789,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.select_rect_start: tuple[float, float] | None = None
         self.select_rect_id: int | None = None
         self.temp_line_end: tuple[float, float] | None = None
+        self.endpoint_drag_pos: tuple[float, float] | None = None
         self.rc_dragged = False
 
         self.toolbox = ttk.Frame(self)
@@ -2313,9 +2314,11 @@ class SysMLDiagramWindow(tk.Frame):
                         if abs(sx - x) <= 6 and abs(sy - y) <= 6:
                             self.dragging_endpoint = "src"
                             self.conn_drag_offset = (x - sx, y - sy)
+                            self.endpoint_drag_pos = None
                         elif abs(dxp - x) <= 6 and abs(dyp - y) <= 6:
                             self.dragging_endpoint = "dst"
                             self.conn_drag_offset = (x - dxp, y - dyp)
+                            self.endpoint_drag_pos = None
                     self.redraw()
                 else:
                     # allow clicking on the resize handle even if outside the object
@@ -2376,18 +2379,25 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y) - self.conn_drag_offset[1]
             if self.dragging_endpoint == "src":
                 obj = self.get_object(self.selected_conn.src)
-                if obj:
-                    ex, ey = self.edge_point(obj, x, y, apply_radius=False)
-                    rx = (ex / self.zoom - obj.x) / (obj.width / 2)
-                    ry = (ey / self.zoom - obj.y) / (obj.height / 2)
-                    self.selected_conn.src_pos = (rx, ry)
             else:
                 obj = self.get_object(self.selected_conn.dst)
-                if obj:
+            if obj:
+                cx = obj.x * self.zoom
+                cy = obj.y * self.zoom
+                w = obj.width * self.zoom / 2
+                h = obj.height * self.zoom / 2
+                thresh = max(w, h) + CONNECTION_SELECT_RADIUS
+                if math.hypot(x - cx, y - cy) <= thresh:
+                    self.endpoint_drag_pos = None
                     ex, ey = self.edge_point(obj, x, y, apply_radius=False)
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
-                    self.selected_conn.dst_pos = (rx, ry)
+                    if self.dragging_endpoint == "src":
+                        self.selected_conn.src_pos = (rx, ry)
+                    else:
+                        self.selected_conn.dst_pos = (rx, ry)
+                else:
+                    self.endpoint_drag_pos = (x, y)
             self.redraw()
             return
         if (
@@ -2710,13 +2720,58 @@ class SysMLDiagramWindow(tk.Frame):
                     self._sync_to_repository()
                 elif not valid:
                     messagebox.showwarning("Invalid Connection", msg)
+            elif obj is None:
+                if self.selected_conn in self.connections:
+                    self.connections.remove(self.selected_conn)
+                    if (
+                        src_obj
+                        and dst_obj
+                        and src_obj.element_id
+                        and dst_obj.element_id
+                    ):
+                        for rel in list(self.repo.relationships):
+                            if (
+                                rel.source == src_obj.element_id
+                                and rel.target == dst_obj.element_id
+                                and rel.rel_type == self.selected_conn.conn_type
+                            ):
+                                self.repo.relationships.remove(rel)
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                if diag and rel.rel_id in diag.relationships:
+                                    diag.relationships.remove(rel.rel_id)
+                                if self.selected_conn.conn_type == "Generalization":
+                                    remove_inherited_block_properties(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                    )
+                                    inherit_block_properties(
+                                        self.repo, src_obj.element_id
+                                    )
+                                elif self.selected_conn.conn_type in (
+                                    "Aggregation",
+                                    "Composite Aggregation",
+                                ):
+                                    remove_aggregation_part(
+                                        self.repo,
+                                        src_obj.element_id,
+                                        dst_obj.element_id,
+                                        remove_object=self.selected_conn.conn_type
+                                        == "Composite Aggregation",
+                                        app=getattr(self, "app", None),
+                                    )
+                                break
+                    self.selected_conn = None
+                    self._sync_to_repository()
             else:
                 self._sync_to_repository()
             self.dragging_endpoint = None
             self.conn_drag_offset = None
+            self.endpoint_drag_pos = None
         else:
             self.dragging_endpoint = None
             self.conn_drag_offset = None
+            self.endpoint_drag_pos = None
         if self.selected_obj and self.current_tool == "Select":
             if self.selected_obj.obj_type != "System Boundary":
                 b = self.find_boundary_for_obj(self.selected_obj)
@@ -3521,7 +3576,56 @@ class SysMLDiagramWindow(tk.Frame):
                 and not getattr(src, "hidden", False)
                 and not getattr(dst, "hidden", False)
             ):
+                if (
+                    conn is self.selected_conn
+                    and self.dragging_endpoint is not None
+                    and self.endpoint_drag_pos
+                ):
+                    continue
                 self.draw_connection(src, dst, conn, conn is self.selected_conn)
+        if (
+            self.selected_conn
+            and self.dragging_endpoint is not None
+            and self.endpoint_drag_pos
+        ):
+            other = (
+                self.get_object(self.selected_conn.dst)
+                if self.dragging_endpoint == "src"
+                else self.get_object(self.selected_conn.src)
+            )
+            if other:
+                rel = (
+                    self.selected_conn.dst_pos
+                    if self.dragging_endpoint == "src"
+                    else self.selected_conn.src_pos
+                )
+                sx, sy = self.edge_point(other, *self.endpoint_drag_pos, rel)
+                ex, ey = self.endpoint_drag_pos
+                forward = self.selected_conn.arrow in ("forward", "both")
+                backward = self.selected_conn.arrow in ("backward", "both")
+                if self.dragging_endpoint == "src":
+                    arrow_start = backward
+                    arrow_end = forward
+                else:
+                    arrow_start = backward
+                    arrow_end = forward
+                if arrow_start and arrow_end:
+                    style = tk.BOTH
+                elif arrow_end:
+                    style = tk.LAST
+                elif arrow_start:
+                    style = tk.FIRST
+                else:
+                    style = tk.NONE
+                self.canvas.create_line(
+                    sx,
+                    sy,
+                    ex,
+                    ey,
+                    dash=(2, 2),
+                    arrow=style,
+                    tags="connection",
+                )
         if (
             self.start
             and self.temp_line_end
