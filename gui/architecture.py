@@ -6242,6 +6242,10 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
+        boundary = getattr(self, "get_ibd_boundary", lambda: None)()
+        if boundary:
+            ensure_boundary_contains_parts(boundary, self.objects)
+
         self.redraw()
         self._sync_to_repository()
         if self.app:
