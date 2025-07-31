@@ -4764,8 +4764,17 @@ class SysMLDiagramWindow(tk.Frame):
                     tags="connection",
                 )
         if conn.multiplicity and conn.conn_type in ("Aggregation", "Composite Aggregation"):
-            mx = (bx + points[-2][0]) / 2
-            my = (by + points[-2][1]) / 2
+            end_x, end_y = points[-1]
+            prev_x, prev_y = points[-2]
+            dx = prev_x - end_x
+            dy = prev_y - end_y
+            length = math.hypot(dx, dy)
+            if length:
+                offset = 15 * self.zoom
+                mx = end_x + dx / length * offset
+                my = end_y + dy / length * offset
+            else:
+                mx, my = end_x, end_y
             self.canvas.create_text(
                 mx,
                 my - 10 * self.zoom,
