@@ -6093,6 +6093,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             command=self.add_contained_parts,
         ).pack(fill=tk.X, padx=2, pady=2)
 
+        # list of parts awaiting placement by mouse click
+        self._pending_place: list[SysMLObject] = []
+
     def _get_failure_modes(self, comp_name: str) -> str:
         """Return comma separated failure modes for a component name."""
         app = getattr(self, "app", None)
@@ -6185,6 +6188,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         base_y = 50.0
         offset = 60.0
         added = []
+        place_objs: list[SysMLObject] = []
         for idx, comp in enumerate(to_add_comps):
             elem = repo.create_element(
                 "Part",
@@ -6208,6 +6212,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
+            place_objs.append(obj)
             added.append(comp.name)
 
         if to_add_names:
@@ -6222,7 +6227,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 # Avoid duplicates if the sync function already populated this
                 # window via the application.
                 if not any(o.obj_id == data["obj_id"] for o in self.objects):
-                    self.objects.append(SysMLObject(**data))
+                    obj = SysMLObject(**data)
+                    self.objects.append(obj)
+                    place_objs.append(obj)
 
         if added:
             names = [
@@ -6246,6 +6253,28 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         self._sync_to_repository()
         if self.app:
             self.app.update_views()
+        if hasattr(self, "_start_object_placement"):
+            self._start_object_placement(place_objs)
+
+    def _start_object_placement(self, objs: list[SysMLObject]) -> None:
+        """Begin interactive placement of newly added parts."""
+        if not objs:
+            return
+        self._pending_place.extend(objs)
+        self.canvas.configure(cursor="crosshair")
+        self.canvas.bind("<Button-1>", self._place_next_object, add="+")
+
+    def _place_next_object(self, event) -> None:
+        if not self._pending_place:
+            return
+        obj = self._pending_place.pop(0)
+        obj.x = self.canvas.canvasx(event.x) / self.zoom
+        obj.y = self.canvas.canvasy(event.y) / self.zoom
+        self.redraw()
+        self._sync_to_repository()
+        if not self._pending_place:
+            self.canvas.configure(cursor="arrow")
+            self.canvas.unbind("<Button-1>")
 
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
