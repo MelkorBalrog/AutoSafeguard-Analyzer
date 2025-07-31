@@ -6439,16 +6439,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             if name in selected_keys:
                 obj.hidden = False
 
-        # Determine a reasonable starting position for newly added parts. If a
-        # boundary block is present, place new parts near its top left corner so
-        # they are visible immediately.
-        boundary = getattr(self, "get_ibd_boundary", lambda: None)()
-        if boundary:
-            base_x = boundary.x - boundary.width / 2 + 30.0
-            base_y = boundary.y - boundary.height / 2 + 30.0
-        else:
-            base_x = 50.0
-            base_y = 50.0
+        base_x = 50.0
+        base_y = 50.0
         offset = 60.0
         added = []
         for idx, comp in enumerate(to_add_comps):
@@ -6483,13 +6475,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             added_props = _sync_ibd_partproperty_parts(
                 repo, block_id, names=to_add_names, app=None, hidden=True
             )
-            for idx, data in enumerate(added_props, start=len(to_add_comps)):
+            for data in added_props:
                 data["hidden"] = False
-                # Position newly added parts close to the boundary so they
-                # become visible even if the diagram previously contained no
-                # instance of them.
-                data["x"] = base_x
-                data["y"] = base_y + offset * idx
                 # Avoid duplicates if the sync function already populated this
                 # window via the application.
                 if not any(o.obj_id == data["obj_id"] for o in self.objects):
