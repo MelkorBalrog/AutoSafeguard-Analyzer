@@ -2862,7 +2862,7 @@ class SysMLDiagramWindow(tk.Frame):
             SysMLObjectDialog(self, obj)
             self._sync_to_repository()
             self.redraw()
-            if self.app:
+            if getattr(self, "app", None):
                 self.app.update_views()
         else:
             conn = self.find_connection(x, y)
@@ -2930,6 +2930,8 @@ class SysMLDiagramWindow(tk.Frame):
         if self.app:
             self.app.update_views()
         self.update_property_view()
+        if getattr(self, "app", None):
+            self.app.update_views()
 
     def _open_linked_diagram(self, obj) -> bool:
         diag_id = self.repo.get_linked_diagram(obj.element_id)
@@ -5590,6 +5592,11 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 propagate_block_port_changes(repo, self.obj.element_id)
                 propagate_block_part_changes(repo, self.obj.element_id)
                 propagate_block_changes(repo, self.obj.element_id)
+                _sync_ibd_partproperty_parts(
+                    repo,
+                    self.obj.element_id,
+                    app=getattr(self.master, "app", None),
+                )
         try:
             if self.obj.obj_type not in (
                 "Initial",
