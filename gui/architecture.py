@@ -251,6 +251,30 @@ def _parse_multiplicity_range(mult: str) -> tuple[int, int | None]:
     return 1, None
 
 
+def _get_part_multiplicity(
+    repo: SysMLRepository, whole_id: str, part_id: str
+) -> str:
+    """Return multiplicity string for ``part_id`` within ``whole_id``."""
+
+    part_name = repo.elements.get(part_id).name or part_id
+    entries = []
+    whole = repo.elements.get(whole_id)
+    if whole:
+        entries += [
+            p.strip()
+            for p in whole.properties.get("partProperties", "").split(",")
+            if p.strip()
+        ]
+    entries += _collect_parent_parts(repo, whole_id)
+    for entry in entries:
+        prop, blk = parse_part_property(entry)
+        if blk == part_name or prop == part_name:
+            if "[" in entry and "]" in entry:
+                return entry.split("[", 1)[1].split("]", 1)[0].strip()
+            return ""
+    return ""
+
+
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -698,39 +722,45 @@ def _sync_ibd_composite_parts(
     base_y = 50.0 + 60.0 * len(existing_defs)
     for rel in rels:
         pid = rel.target
-        if pid in existing_defs:
-            continue
-        if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
-            part_elem = repo.elements[rel.properties["part_elem"]]
-            part_elem.properties["force_ibd"] = "true"
-        else:
-            part_elem = repo.create_element(
-                "Part",
-                name=repo.elements.get(pid).name or pid,
-                properties={"definition": pid, "force_ibd": "true"},
-                owner=repo.root_package.elem_id,
-            )
-            rel.properties["part_elem"] = part_elem.elem_id
-        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
-        obj_dict = {
-            "obj_id": _get_next_id(),
-            "obj_type": "Part",
-            "x": base_x,
-            "y": base_y,
-            "element_id": part_elem.elem_id,
-            "properties": {"definition": pid},
-            "locked": True,
+        multiplicity = _get_part_multiplicity(repo, block_id, pid)
+        if pid not in existing_defs:
+            if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
+                part_elem = repo.elements[rel.properties["part_elem"]]
+                part_elem.properties["force_ibd"] = "true"
+            else:
+                part_elem = repo.create_element(
+                    "Part",
+                    name=repo.elements.get(pid).name or pid,
+                    properties={"definition": pid, "force_ibd": "true"},
+                    owner=repo.root_package.elem_id,
+                )
+                rel.properties["part_elem"] = part_elem.elem_id
+            repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+            obj_dict = {
+                "obj_id": _get_next_id(),
+                "obj_type": "Part",
+                "x": base_x,
+                "y": base_y,
+                "element_id": part_elem.elem_id,
+                "properties": {"definition": pid},
+                "locked": True,
+            }
+            base_y += 60.0
+            diag.objects.append(obj_dict)
+            added.append(obj_dict)
+            added += _add_ports_for_part(repo, diag, obj_dict, app=app)
+            if app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag.diag_id:
+                        win.objects.append(SysMLObject(**obj_dict))
+                        win.redraw()
+                        win._sync_to_repository()
+        added += add_multiplicity_parts(repo, block_id, pid, multiplicity, app=app)
+        existing_defs = {
+            o.get("properties", {}).get("definition")
+            for o in diag.objects
+            if o.get("obj_type") == "Part"
         }
-        base_y += 60.0
-        diag.objects.append(obj_dict)
-        added.append(obj_dict)
-        added += _add_ports_for_part(repo, diag, obj_dict, app=app)
-        if app:
-            for win in getattr(app, "ibd_windows", []):
-                if getattr(win, "diagram_id", None) == diag.diag_id:
-                    win.objects.append(SysMLObject(**obj_dict))
-                    win.redraw()
-                    win._sync_to_repository()
     return added
 
 
@@ -762,37 +792,43 @@ def _sync_ibd_aggregation_parts(
     base_y = 50.0 + 60.0 * len(existing_defs)
     for rel in rels:
         pid = rel.target
-        if pid in existing_defs:
-            continue
-        if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
-            part_elem = repo.elements[rel.properties["part_elem"]]
-        else:
-            part_elem = repo.create_element(
-                "Part",
-                name=repo.elements.get(pid).name or pid,
-                properties={"definition": pid},
-                owner=repo.root_package.elem_id,
-            )
-            rel.properties["part_elem"] = part_elem.elem_id
-        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
-        obj_dict = {
-            "obj_id": _get_next_id(),
-            "obj_type": "Part",
-            "x": base_x,
-            "y": base_y,
-            "element_id": part_elem.elem_id,
-            "properties": {"definition": pid},
+        multiplicity = _get_part_multiplicity(repo, block_id, pid)
+        if pid not in existing_defs:
+            if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
+                part_elem = repo.elements[rel.properties["part_elem"]]
+            else:
+                part_elem = repo.create_element(
+                    "Part",
+                    name=repo.elements.get(pid).name or pid,
+                    properties={"definition": pid},
+                    owner=repo.root_package.elem_id,
+                )
+                rel.properties["part_elem"] = part_elem.elem_id
+            repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+            obj_dict = {
+                "obj_id": _get_next_id(),
+                "obj_type": "Part",
+                "x": base_x,
+                "y": base_y,
+                "element_id": part_elem.elem_id,
+                "properties": {"definition": pid},
+            }
+            base_y += 60.0
+            diag.objects.append(obj_dict)
+            added.append(obj_dict)
+            added += _add_ports_for_part(repo, diag, obj_dict, app=app)
+            if app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag.diag_id:
+                        win.objects.append(SysMLObject(**obj_dict))
+                        win.redraw()
+                        win._sync_to_repository()
+        added += add_multiplicity_parts(repo, block_id, pid, multiplicity, app=app)
+        existing_defs = {
+            o.get("properties", {}).get("definition")
+            for o in diag.objects
+            if o.get("obj_type") == "Part"
         }
-        base_y += 60.0
-        diag.objects.append(obj_dict)
-        added.append(obj_dict)
-        added += _add_ports_for_part(repo, diag, obj_dict, app=app)
-        if app:
-            for win in getattr(app, "ibd_windows", []):
-                if getattr(win, "diagram_id", None) == diag.diag_id:
-                    win.objects.append(SysMLObject(**obj_dict))
-                    win.redraw()
-                    win._sync_to_repository()
     return added
 
 
