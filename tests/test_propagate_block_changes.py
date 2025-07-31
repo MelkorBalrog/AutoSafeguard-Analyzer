@@ -77,6 +77,23 @@ class PropagateBlockChangesTests(unittest.TestCase):
         req_ids = [r["id"] for r in d_child.objects[0].get("requirements", [])]
         self.assertIn("R2", req_ids)
 
+    def test_part_changes_propagate_to_child_ibd(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent", properties={"partProperties": "P"})
+        child = repo.create_element("Block", name="Child")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        part_blk = repo.create_element("Block", name="P")
+        ibd_child = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, ibd_child.diag_id)
+
+        inherit_block_properties(repo, child.elem_id)
+        propagate_block_changes(repo, parent.elem_id)
+
+        obj = next(
+            o for o in ibd_child.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id
+        )
+        self.assertFalse(obj.get("hidden", True))
+
 
 if __name__ == "__main__":
     unittest.main()

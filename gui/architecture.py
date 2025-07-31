@@ -809,6 +809,30 @@ def _sync_ibd_partproperty_parts(
                     win.objects.append(SysMLObject(**obj_dict))
                     win.redraw()
                     win._sync_to_repository()
+
+    boundary = next(
+        (o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None
+    )
+    if boundary and any(not a.get("hidden", False) for a in added):
+        b_obj = SysMLObject(**boundary)
+        objs = [SysMLObject(**o) for o in diag.objects]
+        ensure_boundary_contains_parts(b_obj, objs)
+        boundary["width"] = b_obj.width
+        boundary["height"] = b_obj.height
+        boundary["x"] = b_obj.x
+        boundary["y"] = b_obj.y
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    for obj in win.objects:
+                        if obj.obj_type == "Block Boundary":
+                            obj.width = b_obj.width
+                            obj.height = b_obj.height
+                            obj.x = b_obj.x
+                            obj.y = b_obj.y
+                            win.redraw()
+                            win._sync_to_repository()
+
     return added
 
 
@@ -1157,6 +1181,52 @@ def remove_aggregation_part(
             pid = rel.properties.pop("part_elem", None)
             if pid and pid in repo.elements:
                 repo.delete_element(pid)
+
+
+def remove_partproperty_entry(
+    repo: SysMLRepository, block_id: str, entry: str, app=None
+) -> None:
+    """Remove a part property entry and update descendant diagrams."""
+
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    prop_name, blk_name = parse_part_property(entry)
+    target_id = next(
+        (
+            eid
+            for eid, elem in repo.elements.items()
+            if elem.elem_type == "Block" and elem.name == blk_name
+        ),
+        None,
+    )
+    if not target_id:
+        return
+
+    parts = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    parts = [p for p in parts if _part_prop_key(p) != _part_prop_key(entry)]
+    if parts:
+        block.properties["partProperties"] = ", ".join(parts)
+    else:
+        block.properties.pop("partProperties", None)
+    for d in repo.diagrams.values():
+        for o in getattr(d, "objects", []):
+            if o.get("element_id") == block_id:
+                if parts:
+                    o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
+                else:
+                    o.setdefault("properties", {}).pop("partProperties", None)
+
+    _propagate_part_removal(
+        repo,
+        block_id,
+        prop_name,
+        target_id,
+        remove_object=True,
+        app=app,
+    )
+    _remove_parts_from_ibd(repo, block_id, target_id, app=app)
+    _propagate_ibd_part_removal(repo, block_id, target_id, app=app)
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
@@ -1815,6 +1885,7 @@ def propagate_block_changes(repo: SysMLRepository, block_id: str, visited: set[s
         inherit_block_properties(repo, child_id)
         propagate_block_port_changes(repo, child_id)
         _propagate_requirements(repo, reqs, child_id)
+        _sync_ibd_partproperty_parts(repo, child_id, hidden=False)
         propagate_block_changes(repo, child_id, visited)
 
 
@@ -5692,6 +5763,21 @@ class SysMLObjectDialog(simpledialog.Dialog):
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
                 repo.elements[self.obj.element_id].properties[prop] = var.get()
+        removed_parts = []
+        prev_parts = []
+        if (
+            self.obj.element_id
+            and self.obj.element_id in repo.elements
+            and "partProperties" in repo.elements[self.obj.element_id].properties
+        ):
+            prev_parts = [
+                p.strip()
+                for p in repo.elements[self.obj.element_id]
+                .properties.get("partProperties", "")
+                .split(",")
+                if p.strip()
+            ]
+
         for prop, lb in self.listboxes.items():
             if prop == "operations":
                 self.obj.properties[prop] = operations_to_json(self._operations)
@@ -5707,6 +5793,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 self.obj.properties[prop] = joined
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = joined
+                if prop == "partProperties" and prev_parts:
+                    prev_keys = {_part_prop_key(p) for p in prev_parts}
+                    new_keys = {_part_prop_key(i) for i in items}
+                    removed_parts = [p for p in prev_parts if _part_prop_key(p) not in new_keys]
 
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem_type = repo.elements[self.obj.element_id].elem_type
@@ -6303,7 +6393,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             # updating windows. We then insert the returned objects ourselves so
             # we can ensure they are visible immediately.
             added_props = _sync_ibd_partproperty_parts(
-                repo, block_id, names=to_add_names, app=None
+                repo, block_id, names=to_add_names, app=None, hidden=True
             )
             for data in added_props:
                 data["hidden"] = False
@@ -6329,6 +6419,10 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
+
+        boundary = getattr(self, "get_ibd_boundary", lambda: None)()
+        if boundary:
+            ensure_boundary_contains_parts(boundary, self.objects)
 
         self.redraw()
         self._sync_to_repository()
