@@ -6595,7 +6595,66 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 name = repo.elements[def_id].name or def_id
         if not name:
             name = obj.properties.get("component", "")
-        return name
+
+        def_id = obj.properties.get("definition")
+        def_name = ""
+        mult = ""
+        if def_id and def_id in repo.elements:
+            def_name = repo.elements[def_id].name or def_id
+            diag = repo.diagrams.get(self.diagram_id)
+            block_id = (
+                getattr(diag, "father", None)
+                or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id),
+                    None,
+                )
+            )
+            if block_id:
+                for rel in repo.relationships:
+                    if (
+                        rel.rel_type in ("Aggregation", "Composite Aggregation")
+                        and rel.source == block_id
+                        and rel.target == def_id
+                    ):
+                        mult = rel.properties.get("multiplicity", "")
+                        break
+
+        base = name
+        index = None
+        m = re.match(r"^(.*)\[(\d+)\]$", name)
+        if m:
+            base = m.group(1)
+            index = int(m.group(2))
+            base = f"{base} {index}"
+
+        label = base
+        if def_name:
+            if mult:
+                if ".." in mult:
+                    upper = mult.split("..", 1)[1] or "*"
+                    disp = f"{index or 1}..{upper}"
+                elif mult == "*":
+                    disp = f"{index or 1}..*"
+                else:
+                    disp = f"{index or 1}..{mult}"
+                label = f"{label} : {def_name} [{disp}]"
+            elif def_name != base:
+                label = f"{label} : {def_name}"
+
+        return label
+
+    def _get_part_key(self, obj: SysMLObject) -> str:
+        """Return canonical key for identifying ``obj`` regardless of renaming."""
+        repo = self.repo
+        def_id = obj.properties.get("definition")
+        if not def_id and obj.element_id and obj.element_id in repo.elements:
+            def_id = repo.elements[obj.element_id].properties.get("definition")
+        name = ""
+        if def_id and def_id in repo.elements:
+            name = repo.elements[def_id].name or def_id
+        else:
+            name = self._get_part_name(obj)
+        return _part_prop_key(name)
 
     def add_contained_parts(self) -> None:
         repo = self.repo
@@ -6630,11 +6689,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         for obj in self.objects:
             if obj.obj_type != "Part":
                 continue
-            name = self._get_part_name(obj)
+            key = getattr(self, "_get_part_key", self._get_part_name)(obj)
             if getattr(obj, "hidden", False):
-                hidden[name] = obj
+                hidden[key] = obj
             else:
-                visible[name] = obj
+                visible[key] = obj
 
         part_names = [n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()]
         comp_names = [c.name for c in comps]
@@ -6660,18 +6719,18 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         all_names = [n for n in sorted(set(part_names + comp_names + list(visible) + list(hidden))) if _part_prop_key(n) not in blocked]
 
-        dlg = SysMLObjectDialog.ManagePartsDialog(self, all_names, set(visible), set(hidden))
+        dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
         selected = dlg.result or []
         selected_keys = { _part_prop_key(n) for n in selected }
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
 
-        for name, obj in visible.items():
-            if name not in selected_keys:
+        for key, obj in visible.items():
+            if key not in selected_keys:
                 obj.hidden = True
-        for name, obj in hidden.items():
-            if name in selected_keys:
+        for key, obj in hidden.items():
+            if key in selected_keys:
                 obj.hidden = False
 
         base_x = 50.0
