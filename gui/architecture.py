@@ -215,6 +215,20 @@ def _aggregation_exists(repo: SysMLRepository, whole_id: str, part_id: str) -> b
     return False
 
 
+def _aggregation_rel_exists(repo: SysMLRepository, whole_id: str, part_id: str) -> bool:
+    """Return ``True`` if ``whole_id`` or its ancestors aggregate ``part_id`` via relationships."""
+
+    src_ids = [whole_id] + _collect_generalization_parents(repo, whole_id)
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+            and rel.target == part_id
+        ):
+            return True
+    return False
+
+
 def _reverse_aggregation_exists(
     repo: SysMLRepository, whole_id: str, part_id: str
 ) -> bool:
@@ -985,7 +999,9 @@ def remove_aggregation_part(
         if not child:
             continue
         child_parts = [
-            p.strip() for p in child.properties.get("partProperties", "").split(",") if p.strip()
+            p.strip()
+            for p in child.properties.get("partProperties", "").split(",")
+            if p.strip()
         ]
         child_parts = [p for p in child_parts if p.split("[")[0].strip() != name]
         if child_parts:
@@ -1041,6 +1057,52 @@ def remove_aggregation_part(
             pid = rel.properties.pop("part_elem", None)
             if pid and pid in repo.elements:
                 repo.delete_element(pid)
+
+        # remove inherited part objects from generalization children
+        for child_id in _find_generalization_children(repo, whole_id):
+            has_direct = any(
+                rel.rel_type in ("Aggregation", "Composite Aggregation")
+                and rel.source == child_id
+                and rel.target == part_id
+                for rel in repo.relationships
+            )
+            if has_direct:
+                continue
+            cdiag_id = repo.get_linked_diagram(child_id)
+            cdiag = repo.diagrams.get(cdiag_id)
+            if cdiag and cdiag.diag_type == "Internal Block Diagram":
+                cdiag.objects = getattr(cdiag, "objects", [])
+                removed_ids = {
+                    o.get("obj_id")
+                    for o in cdiag.objects
+                    if o.get("obj_type") == "Part"
+                    and o.get("properties", {}).get("definition") == part_id
+                }
+                if removed_ids:
+                    cdiag.objects = [
+                        o
+                        for o in cdiag.objects
+                        if o.get("obj_id") not in removed_ids
+                        and not (
+                            o.get("obj_type") == "Port"
+                            and o.get("properties", {}).get("parent") in {str(i) for i in removed_ids}
+                        )
+                    ]
+                    repo.touch_diagram(cdiag_id)
+                    if app:
+                        for win in getattr(app, "ibd_windows", []):
+                            if getattr(win, "diagram_id", None) == cdiag_id:
+                                win.objects = [
+                                    o
+                                    for o in win.objects
+                                    if o.obj_id not in removed_ids
+                                    and not (
+                                        o.obj_type == "Port"
+                                        and o.properties.get("parent") in {str(i) for i in removed_ids}
+                                    )
+                                ]
+                                win.redraw()
+                                win._sync_to_repository()
 
 
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
