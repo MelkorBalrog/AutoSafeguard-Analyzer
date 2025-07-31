@@ -23,6 +23,20 @@ class DummyWindow:
             architecture.update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             architecture._sync_block_parts_from_ibd(self.repo, self.diagram_id)
+            if diag.diag_type == "Internal Block Diagram":
+                block_id = (
+                    getattr(diag, "father", None)
+                    or next(
+                        (
+                            eid
+                            for eid, did in self.repo.element_diagrams.items()
+                            if did == self.diagram_id
+                        ),
+                        None,
+                    )
+                )
+                if block_id:
+                    architecture._enforce_ibd_multiplicity(self.repo, block_id)
 
     def redraw(self):
         pass
@@ -207,6 +221,37 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         architecture._sync_block_parts_from_ibd(repo, ibd.diag_id)
         props = repo.elements[whole.elem_id].properties.get("partProperties", "")
         self.assertEqual(props, "Part[2]")
+
+    def test_definition_change_enforces_multiplicity(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship(
+            "Composite Aggregation",
+            whole.elem_id,
+            part.elem_id,
+            properties={"multiplicity": "2"},
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        win = DummyWindow(ibd)
+        elem = repo.create_element("Part", name="P")
+        repo.add_element_to_diagram(ibd.diag_id, elem.elem_id)
+        obj = SysMLObject(1, "Part", 0, 0, element_id=elem.elem_id, properties={})
+        ibd.objects.append(obj.__dict__)
+        win.objects.append(obj)
+        obj.properties["definition"] = part.elem_id
+        repo.elements[elem.elem_id].properties["definition"] = part.elem_id
+        win._sync_to_repository()
+        parts = [
+            o
+            for o in repo.diagrams[ibd.diag_id].objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(parts), 2)
+        names = {repo.elements[o["element_id"]].name for o in parts}
+        self.assertIn("Part[1]", names)
+        self.assertIn("Part[2]", names)
 
 if __name__ == '__main__':
     unittest.main()
