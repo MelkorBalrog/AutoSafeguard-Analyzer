@@ -154,5 +154,39 @@ class AddContainedPartsRenderTests(unittest.TestCase):
             InternalBlockDiagramWindow.add_contained_parts(win)
         self.assertFalse(win.objects[0].hidden)
 
+    def test_multiplicity_limit_enforced(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship(
+            "Composite Aggregation",
+            whole.elem_id,
+            part.elem_id,
+            properties={"multiplicity": "2"},
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        win = DummyWindow(ibd)
+        architecture._sync_ibd_composite_parts(repo, whole.elem_id)
+        for obj in ibd.objects:
+            win.objects.append(SysMLObject(**obj))
+
+        class DummyDialog:
+            def __init__(self, parent, names, visible, hidden):
+                self.result = ["Part"]
+
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+
+        parts = [
+            o
+            for o in repo.diagrams[ibd.diag_id].objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(parts), 2)
+        names = {repo.elements[o["element_id"]].name for o in parts}
+        self.assertIn("Part[1]", names)
+        self.assertIn("Part[2]", names)
+
 if __name__ == '__main__':
     unittest.main()
