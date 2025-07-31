@@ -722,118 +722,83 @@ def _sync_ibd_aggregation_parts(
 
 
 def _sync_ibd_partproperty_parts(
-    repo: SysMLRepository,
-    block_id: str,
-    names: list[str] | None = None,
-    app=None,
-    *,
-    hide_new: bool = True,
+    repo: SysMLRepository, block_id: str, names: list[str] | None = None, app=None
 ) -> list[dict]:
-    """Ensure ``block_id``'s IBDs include parts for given ``names``.
+    """Ensure ``block_id``'s IBD includes parts for given ``names``.
 
     If *names* is ``None``, the block's ``partProperties`` attribute is parsed.
     Returns the list of added part object dictionaries."""
 
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return []
     block = repo.elements.get(block_id)
     if not block:
         return []
 
-    # gather all Internal Block Diagrams for this block
-    diag_ids = []
-    main_id = repo.get_linked_diagram(block_id)
-    if main_id and main_id in repo.diagrams:
-        diag_ids.append(main_id)
-    for d in repo.diagrams.values():
-        if (
-            d.diag_type == "Internal Block Diagram"
-            and getattr(d, "father", None) == block_id
-            and d.diag_id not in diag_ids
-        ):
-            diag_ids.append(d.diag_id)
-
-    if not diag_ids:
-        return []
-
+    diag.objects = getattr(diag, "objects", [])
+    existing_defs = {
+        o.get("properties", {}).get("definition")
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+    }
+    existing_props = {
+        repo.elements[o.get("element_id")].name
+        for o in diag.objects
+        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
+    }
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
         entries = [n for n in names if n.strip()]
     parsed = [parse_part_property(e) for e in entries]
-
-    added_total: list[dict] = []
-
-    for diag_id in diag_ids:
-        diag = repo.diagrams.get(diag_id)
-        if not diag or diag.diag_type != "Internal Block Diagram":
+    added: list[dict] = []
+    base_x = 50.0
+    base_y = 50.0 + 60.0 * len(existing_props)
+    for prop_name, block_name in parsed:
+        if prop_name in existing_props:
             continue
-        diag.objects = getattr(diag, "objects", [])
-        existing_defs = {
-            o.get("properties", {}).get("definition")
-            for o in diag.objects
-            if o.get("obj_type") == "Part"
+        target_id = next(
+            (
+                eid
+                for eid, elem in repo.elements.items()
+                if elem.elem_type == "Block" and elem.name == block_name
+            ),
+            None,
+        )
+        if not target_id:
+            continue
+        part_elem = repo.create_element(
+            "Part",
+            name=prop_name,
+            properties={"definition": target_id},
+            owner=repo.root_package.elem_id,
+        )
+        repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
+        obj_dict = {
+            "obj_id": _get_next_id(),
+            "obj_type": "Part",
+            "x": base_x,
+            "y": base_y,
+            "width": 80.0,
+            "height": 40.0,
+            "element_id": part_elem.elem_id,
+            "properties": {"definition": target_id},
+            "hidden": True,
         }
-        existing_props = {
-            repo.elements[o.get("element_id")].name
-            for o in diag.objects
-            if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
-        }
-
-        base_x = 50.0
-        base_y = 50.0 + 60.0 * len(existing_props)
-        for prop_name, block_name in parsed:
-            if prop_name in existing_props:
-                continue
-            target_id = next(
-                (
-                    eid
-                    for eid, elem in repo.elements.items()
-                    if elem.elem_type == "Block" and elem.name == block_name
-                ),
-                None,
-            )
-            if not target_id:
-                continue
-            part_elem = repo.create_element(
-                "Part",
-                name=prop_name,
-                properties={"definition": target_id},
-                owner=repo.root_package.elem_id,
-            )
-            repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
-            obj_dict = {
-                "obj_id": _get_next_id(),
-                "obj_type": "Part",
-                "x": base_x,
-                "y": base_y,
-                "width": 80.0,
-                "height": 40.0,
-                "element_id": part_elem.elem_id,
-                "properties": {"definition": target_id},
-            }
-            if hide_new:
-                obj_dict["hidden"] = True
-            base_y += 60.0
-            diag.objects.append(obj_dict)
-            added_total.append(obj_dict)
-            existing_props.add(prop_name)
-            existing_defs.add(target_id)
-            if app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag.diag_id:
-                        win.objects.append(SysMLObject(**obj_dict))
-                        win.redraw()
-                        win._sync_to_repository()
-
-        # expand boundary if needed
-        boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
-        if boundary:
-            b_obj = SysMLObject(**boundary)
-            objs = [SysMLObject(**o) for o in diag.objects]
-            ensure_boundary_contains_parts(b_obj, objs)
-            boundary["width"] = b_obj.width
-            boundary["height"] = b_obj.height
-
-    return added_total
+        base_y += 60.0
+        diag.objects.append(obj_dict)
+        added.append(obj_dict)
+        existing_props.add(prop_name)
+        existing_defs.add(target_id)
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects.append(SysMLObject(**obj_dict))
+                    win.redraw()
+                    win._sync_to_repository()
+    return added
 
 
 def _sync_block_parts_from_ibd(repo: SysMLRepository, diag_id: str) -> None:
@@ -5723,7 +5688,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     repo,
                     self.obj.element_id,
                     app=getattr(self.master, "app", None),
-                    hide_new=False,
                 )
         try:
             if self.obj.obj_type not in (
@@ -6286,13 +6250,10 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             # updating windows. We then insert the returned objects ourselves so
             # we can ensure they are visible immediately.
             added_props = _sync_ibd_partproperty_parts(
-                repo,
-                block_id,
-                names=to_add_names,
-                app=None,
-                hide_new=False,
+                repo, block_id, names=to_add_names, app=None
             )
             for data in added_props:
+                data["hidden"] = False
                 # Avoid duplicates if the sync function already populated this
                 # window via the application.
                 if not any(o.obj_id == data["obj_id"] for o in self.objects):
