@@ -31,5 +31,16 @@ class PartPropertyVisibilityTests(unittest.TestCase):
         self.assertGreater(part["width"], 0)
         self.assertGreater(part["height"], 0)
 
+    def test_partproperty_visible_flag(self):
+        repo = self.repo
+        blk = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(blk.elem_id, ibd.diag_id)
+        added = _sync_ibd_partproperty_parts(repo, blk.elem_id, hidden=False)
+        part = next(o for o in ibd.objects if o.get("properties", {}).get("definition") == part_blk.elem_id)
+        self.assertFalse(part.get("hidden", True))
+        self.assertTrue(any(not d.get("hidden", True) for d in added))
+
 if __name__ == "__main__":
     unittest.main()
