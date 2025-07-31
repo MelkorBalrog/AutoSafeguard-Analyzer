@@ -6560,6 +6560,19 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             name = obj.properties.get("component", "")
         return name
 
+    def _get_part_key(self, obj: SysMLObject) -> str:
+        """Return canonical key for identifying ``obj`` regardless of renaming."""
+        repo = self.repo
+        def_id = obj.properties.get("definition")
+        if not def_id and obj.element_id and obj.element_id in repo.elements:
+            def_id = repo.elements[obj.element_id].properties.get("definition")
+        name = ""
+        if def_id and def_id in repo.elements:
+            name = repo.elements[def_id].name or def_id
+        else:
+            name = self._get_part_name(obj)
+        return _part_prop_key(name)
+
     def add_contained_parts(self) -> None:
         repo = self.repo
         block_id = next((eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id), None)
@@ -6593,28 +6606,44 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         for obj in self.objects:
             if obj.obj_type != "Part":
                 continue
-            name = self._get_part_name(obj)
+            key = getattr(self, "_get_part_key", self._get_part_name)(obj)
             if getattr(obj, "hidden", False):
-                hidden[name] = obj
+                hidden[key] = obj
             else:
-                visible[name] = obj
+                visible[key] = obj
 
         part_names = [n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()]
         comp_names = [c.name for c in comps]
-        all_names = sorted(set(part_names + comp_names + list(visible) + list(hidden)))
+        prop_map = { _part_prop_key(n): n for n in part_names }
+        all_keys = set(prop_map) | set(visible) | set(hidden) | { _part_prop_key(n) for n in comp_names }
+        display_map: dict[str, str] = {}
+        for key in all_keys:
+            if key in prop_map:
+                display_map[key] = prop_map[key]
+            elif key in visible:
+                display_map[key] = self._get_part_name(visible[key])
+            elif key in hidden:
+                display_map[key] = self._get_part_name(hidden[key])
+            else:
+                comp = next((c for c in comps if _part_prop_key(c.name) == key), None)
+                display_map[key] = comp.name if comp else key
 
-        dlg = SysMLObjectDialog.ManagePartsDialog(self, all_names, set(visible), set(hidden))
+        names_list = [display_map[k] for k in sorted(display_map)]
+        visible_names = {display_map[k] for k in visible}
+        hidden_names = {display_map[k] for k in hidden}
+
+        dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
         selected = dlg.result or []
         selected_keys = { _part_prop_key(n) for n in selected }
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
 
-        for name, obj in visible.items():
-            if name not in selected_keys:
+        for key, obj in visible.items():
+            if key not in selected_keys:
                 obj.hidden = True
-        for name, obj in hidden.items():
-            if name in selected_keys:
+        for key, obj in hidden.items():
+            if key in selected_keys:
                 obj.hidden = False
 
         base_x = 50.0
