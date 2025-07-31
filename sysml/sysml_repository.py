@@ -311,6 +311,7 @@ class SysMLRepository:
             self.root_package = self.create_element("Package", name="Root")
 
         self._resolve_part_definition_ids()
+        self._migrate_part_relationships()
 
     def _resolve_part_definition_ids(self) -> None:
         """Ensure part definitions reference block IDs instead of names."""
@@ -336,6 +337,47 @@ class SysMLRepository:
                     mapped = name_map.get(def_val)
                     if mapped:
                         obj.setdefault("properties", {})["definition"] = mapped
+
+    def _migrate_part_relationships(self) -> None:
+        """Attach part elements to their aggregation relationships."""
+        for rel in self.relationships:
+            pid = rel.properties.get("part_elem")
+            if pid and pid in self.elements:
+                self.elements[pid].properties.setdefault("part_rel", rel.rel_id)
+        for diag in self.diagrams.values():
+            if diag.diag_type != "Internal Block Diagram":
+                continue
+            block_id = (
+                getattr(diag, "father", None)
+                or next((eid for eid, did in self.element_diagrams.items() if did == diag.diag_id), None)
+            )
+            if not block_id:
+                continue
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Part":
+                    continue
+                elem_id = obj.get("element_id")
+                if elem_id not in self.elements:
+                    continue
+                elem = self.elements[elem_id]
+                if "part_rel" in elem.properties:
+                    continue
+                def_id = obj.get("properties", {}).get("definition") or elem.properties.get("definition")
+                if not def_id:
+                    continue
+                rel = next(
+                    (
+                        r
+                        for r in self.relationships
+                        if r.rel_type in ("Aggregation", "Composite Aggregation")
+                        and r.source == block_id
+                        and r.target == def_id
+                    ),
+                    None,
+                )
+                if rel:
+                    elem.properties["part_rel"] = rel.rel_id
+                    rel.properties.setdefault("part_elem", elem_id)
 
     def get_activity_actions(self) -> list[str]:
         """Return all action names and activity diagram names."""
