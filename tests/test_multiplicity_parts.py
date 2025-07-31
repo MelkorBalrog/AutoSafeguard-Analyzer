@@ -87,5 +87,56 @@ class MultiplicityPartTests(unittest.TestCase):
         ]
         self.assertEqual(len(objs), 3)
 
+    def test_multiplicity_decrease_removes_parts(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "3")
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "1")
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part"
+            and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 1)
+        self.assertEqual(repo.elements[objs[0]["element_id"]].name, "Part[1]")
+
+    def test_add_parts_up_to_multiplicity(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "1..3")
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1..3", count=1)
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1..3", count=1)
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1..3", count=1)
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part"
+            and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 3)
+
+    def test_single_multiplicity_limit(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1", count=1)
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1", count=1)
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part"
+            and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 1)
+
 if __name__ == "__main__":
     unittest.main()

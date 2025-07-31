@@ -541,25 +541,6 @@ def add_multiplicity_parts(
     ]
     total = len(existing)
 
-    if low <= 1 and high == 1:
-        if total > 1:
-            for obj in existing[1:]:
-                diag.objects.remove(obj)
-                elem_id = obj.get("element_id")
-                if elem_id in repo.elements:
-                    repo.delete_element(elem_id)
-                if app:
-                    for win in getattr(app, "ibd_windows", []):
-                        if getattr(win, "diagram_id", None) == diag.diag_id:
-                            win.objects = [
-                                o
-                                for o in win.objects
-                                if getattr(o, "obj_id", None) != obj.get("obj_id")
-                            ]
-                            win.redraw()
-                            win._sync_to_repository()
-        return []
-
     desired = count if count is not None else low
     if high is not None:
         desired = min(desired, high)
@@ -573,6 +554,26 @@ def add_multiplicity_parts(
             target_total = low
         if high is not None and target_total > high:
             target_total = high
+
+    if total > target_total:
+        # remove excess parts starting from the end of the list
+        for obj in existing[target_total:]:
+            diag.objects.remove(obj)
+            elem_id = obj.get("element_id")
+            if elem_id in repo.elements:
+                repo.delete_element(elem_id)
+            if app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag.diag_id:
+                        win.objects = [
+                            o
+                            for o in win.objects
+                            if getattr(o, "obj_id", None) != obj.get("obj_id")
+                        ]
+                        win.redraw()
+                        win._sync_to_repository()
+        existing = existing[:target_total]
+        total = len(existing)
 
     if total > target_total:
         # remove excess parts starting from the end of the list
