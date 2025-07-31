@@ -418,7 +418,7 @@ def add_aggregation_part(
         part_elem = repo.create_element(
             "Part",
             name=repo.elements.get(part_id).name or part_id,
-            properties={"definition": part_id, "part_rel": rel.rel_id},
+            properties={"definition": part_id},
             owner=repo.root_package.elem_id,
         )
         rel.properties["part_elem"] = part_elem.elem_id
@@ -428,14 +428,7 @@ def add_aggregation_part(
         remove_inherited_block_properties(repo, child_id, whole_id)
         inherit_block_properties(repo, child_id)
     # ensure multiplicity instances if composite diagram exists
-    add_multiplicity_parts(
-        repo,
-        whole_id,
-        part_id,
-        multiplicity,
-        app=app,
-        rel_id=rel.rel_id if rel else None,
-    )
+    add_multiplicity_parts(repo, whole_id, part_id, multiplicity, app=app)
 
 
 def add_composite_aggregation_part(
@@ -467,7 +460,7 @@ def add_composite_aggregation_part(
             part_elem = repo.create_element(
                 "Part",
                 name=repo.elements.get(part_id).name or part_id,
-                properties={"definition": part_id, "force_ibd": "true", "part_rel": rel.rel_id},
+                properties={"definition": part_id, "force_ibd": "true"},
                 owner=repo.root_package.elem_id,
             )
             rel.properties["part_elem"] = part_elem.elem_id
@@ -488,12 +481,11 @@ def add_composite_aggregation_part(
     if rel and rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
         part_elem = repo.elements[rel.properties["part_elem"]]
         part_elem.properties["force_ibd"] = "true"
-        part_elem.properties.setdefault("part_rel", rel.rel_id)
     else:
         part_elem = repo.create_element(
             "Part",
             name=repo.elements.get(part_id).name or part_id,
-            properties={"definition": part_id, "force_ibd": "true", "part_rel": rel.rel_id if rel else ""},
+            properties={"definition": part_id, "force_ibd": "true"},
             owner=repo.root_package.elem_id,
         )
         if rel:
@@ -518,14 +510,7 @@ def add_composite_aggregation_part(
                 win._sync_to_repository()
 
     # ensure additional instances per multiplicity
-    add_multiplicity_parts(
-        repo,
-        whole_id,
-        part_id,
-        multiplicity,
-        app=app,
-        rel_id=rel.rel_id if rel else None,
-    )
+    add_multiplicity_parts(repo, whole_id, part_id, multiplicity, app=app)
 
     # propagate composite part addition to any generalization children
     for child_id in _find_generalization_children(repo, whole_id):
@@ -539,7 +524,6 @@ def add_multiplicity_parts(
     multiplicity: str,
     count: int | None = None,
     app=None,
-    rel_id: str | None = None,
 ) -> list[dict]:
     """Ensure ``count`` part instances exist according to ``multiplicity``."""
 
@@ -647,11 +631,7 @@ def add_multiplicity_parts(
         part_elem = repo.create_element(
             "Part",
             name=f"{base_name}[{i + 1}]",
-            properties={
-                "definition": part_id,
-                "force_ibd": "true",
-                **({"part_rel": rel_id} if rel_id else {}),
-            },
+            properties={"definition": part_id, "force_ibd": "true"},
             owner=repo.root_package.elem_id,
         )
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
@@ -661,10 +641,7 @@ def add_multiplicity_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {
-                "definition": part_id,
-                **({"part_rel": rel_id} if rel_id else {}),
-            },
+            "properties": {"definition": part_id},
             "locked": True,
         }
         base_y += 60.0
@@ -711,14 +688,7 @@ def _enforce_ibd_multiplicity(
             mult = rel.properties.get("multiplicity", "")
             if mult:
                 added.extend(
-                    add_multiplicity_parts(
-                        repo,
-                        block_id,
-                        rel.target,
-                        mult,
-                        app=app,
-                        rel_id=rel.rel_id,
-                    )
+                    add_multiplicity_parts(repo, block_id, rel.target, mult, app=app)
                 )
     return added
 
@@ -756,12 +726,11 @@ def _sync_ibd_composite_parts(
         if rel.properties.get("part_elem") and rel.properties["part_elem"] in repo.elements:
             part_elem = repo.elements[rel.properties["part_elem"]]
             part_elem.properties["force_ibd"] = "true"
-            part_elem.properties.setdefault("part_rel", rel.rel_id)
         else:
             part_elem = repo.create_element(
                 "Part",
                 name=repo.elements.get(pid).name or pid,
-                properties={"definition": pid, "force_ibd": "true", "part_rel": rel.rel_id},
+                properties={"definition": pid, "force_ibd": "true"},
                 owner=repo.root_package.elem_id,
             )
             rel.properties["part_elem"] = part_elem.elem_id
@@ -772,7 +741,7 @@ def _sync_ibd_composite_parts(
             "x": base_x,
             "y": base_y,
             "element_id": part_elem.elem_id,
-            "properties": {"definition": pid, "part_rel": rel.rel_id},
+            "properties": {"definition": pid},
             "locked": True,
         }
         base_y += 60.0
@@ -3902,12 +3871,6 @@ class SysMLDiagramWindow(tk.Frame):
                         ):
                             mult = rel.properties.get("multiplicity")
                             break
-                    if not mult and obj.element_id and obj.element_id in self.repo.elements:
-                        rel_id = self.repo.elements[obj.element_id].properties.get("part_rel")
-                        if rel_id:
-                            r = next((rr for rr in self.repo.relationships if rr.rel_id == rel_id), None)
-                            if r:
-                                mult = r.properties.get("multiplicity")
                 base = name
                 index = None
                 m = re.match(r"^(.*)\[(\d+)\]$", name)
@@ -6697,27 +6660,23 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         part_names = [n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()]
         comp_names = [c.name for c in comps]
+        prop_map = { _part_prop_key(n): n for n in part_names }
+        all_keys = set(prop_map) | set(visible) | set(hidden) | { _part_prop_key(n) for n in comp_names }
+        display_map: dict[str, str] = {}
+        for key in all_keys:
+            if key in prop_map:
+                display_map[key] = prop_map[key]
+            elif key in visible:
+                display_map[key] = self._get_part_name(visible[key])
+            elif key in hidden:
+                display_map[key] = self._get_part_name(hidden[key])
+            else:
+                comp = next((c for c in comps if _part_prop_key(c.name) == key), None)
+                display_map[key] = comp.name if comp else key
 
-        blocked: set[str] = set()
-        for rel in repo.relationships:
-            if (
-                rel.rel_type in ("Aggregation", "Composite Aggregation")
-                and rel.source == block_id
-            ):
-                _, high = _parse_multiplicity_range(rel.properties.get("multiplicity", ""))
-                if high is None:
-                    continue
-                count = sum(
-                    1
-                    for o in diag.objects
-                    if o.get("obj_type") == "Part"
-                    and o.get("properties", {}).get("definition") == rel.target
-                )
-                if count >= high:
-                    key = _part_prop_key(repo.elements.get(rel.target).name or rel.target)
-                    blocked.add(key)
-
-        all_names = [n for n in sorted(set(part_names + comp_names + list(visible) + list(hidden))) if _part_prop_key(n) not in blocked]
+        names_list = [display_map[k] for k in sorted(display_map)]
+        visible_names = {display_map[k] for k in visible}
+        hidden_names = {display_map[k] for k in hidden}
 
         dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
         selected = dlg.result or []
