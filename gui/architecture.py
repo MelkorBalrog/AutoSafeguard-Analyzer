@@ -55,6 +55,27 @@ def _parse_float(val: str | None, default: float) -> float:
         return default
 
 
+def _part_prop_key(raw: str) -> str:
+    """Return canonical property name for a raw part property entry."""
+    if not raw:
+        return ""
+    part = raw.split(":", 1)[0]
+    part = part.split("[", 1)[0]
+    return part.strip()
+
+
+def parse_part_property(raw: str) -> tuple[str, str]:
+    """Return (property name, block name) parsed from a part property entry."""
+    raw = raw.strip()
+    prop = raw
+    block = raw
+    if ":" in raw:
+        prop, block = raw.split(":", 1)
+    prop = prop.split("[", 1)[0].strip()
+    block = block.split("[", 1)[0].strip()
+    return (prop or block, block)
+
+
 def _find_parent_blocks(repo: SysMLRepository, block_id: str) -> set[str]:
     """Return all blocks that directly use ``block_id`` as a part or are
     associated with it."""
@@ -314,9 +335,10 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     for diag in repo.diagrams.values():
         updated = False
         for obj in getattr(diag, "objects", []):
-            if obj.get("obj_type") == "Block Boundary" and obj.get("element_id") == block_id:
-                obj.setdefault("properties", {})["name"] = new_name
-                updated = True
+            if obj.get("element_id") == block_id:
+                if obj.get("obj_type") == "Block Boundary" or obj.get("obj_type") == "Block":
+                    obj.setdefault("properties", {})["name"] = new_name
+                    updated = True
         if updated:
             repo.touch_diagram(diag.diag_id)
 
@@ -696,22 +718,11 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
     }
-    def _parse_entry(raw: str) -> tuple[str, str]:
-        """Return (property name, block name) for a raw part property entry."""
-        raw = raw.strip()
-        prop = raw
-        block = raw
-        if ":" in raw:
-            prop, block = raw.split(":", 1)
-        prop = prop.split("[")[0].strip()
-        block = block.split("[")[0].strip()
-        return prop or block, block
-
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
         entries = [n for n in names if n.strip()]
-    parsed = [_parse_entry(e) for e in entries]
+    parsed = [parse_part_property(e) for e in entries]
     added: list[dict] = []
     base_x = 50.0
     base_y = 50.0 + 60.0 * len(existing_props)
@@ -903,8 +914,19 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
-        joined = ", ".join(diag_names)
+    # Merge diagram names with existing properties without removing entries
+    # that no longer appear on the diagram. This prevents deleting parts from
+    # the block simply because their objects were removed from the IBD.
+    merged_names = list(existing)
+    bases = {n.split("[")[0].strip() for n in merged_names}
+    for name in diag_names:
+        base = name.split("[")[0].strip()
+        if base not in bases:
+            merged_names.append(name)
+            bases.add(base)
+
+    if merged_names != existing:
+        joined = ", ".join(merged_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
@@ -6044,15 +6066,16 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         dlg = SysMLObjectDialog.ManagePartsDialog(self, all_names, set(visible), set(hidden))
         selected = dlg.result or []
+        selected_keys = { _part_prop_key(n) for n in selected }
 
-        to_add_comps = [c for c in comps if c.name in selected and c.name not in visible and c.name not in hidden]
-        to_add_names = [n for n in part_names if n in selected and n not in visible and n not in hidden]
+        to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
+        to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
 
         for name, obj in visible.items():
-            if name not in selected:
+            if name not in selected_keys:
                 obj.hidden = True
         for name, obj in hidden.items():
-            if name in selected:
+            if name in selected_keys:
                 obj.hidden = False
 
         base_x = 50.0
