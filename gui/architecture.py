@@ -565,10 +565,14 @@ def add_multiplicity_parts(
         desired = min(desired, high)
     if count is not None:
         target_total = total + desired
+        if high is not None:
+            target_total = min(target_total, high)
     else:
-        target_total = max(total, desired)
-    if high is not None:
-        target_total = min(target_total, high)
+        target_total = total
+        if total < low:
+            target_total = low
+        if high is not None and target_total > high:
+            target_total = high
 
     if total > target_total:
         # remove excess parts starting from the end of the list
@@ -593,7 +597,25 @@ def add_multiplicity_parts(
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
 
-    # rename existing part elements so their names follow the indexing scheme
+    # remove extra part objects if multiplicity decreased
+    if total > target_total:
+        to_remove = existing[target_total:]
+        remove_ids = {o["obj_id"] for o in to_remove}
+        for obj in to_remove:
+            diag.objects.remove(obj)
+            repo.delete_element(obj.get("element_id"))
+        diag.objects = [
+            o
+            for o in diag.objects
+            if not (
+                o.get("obj_type") == "Port"
+                and o.get("properties", {}).get("parent") in {str(rid) for rid in remove_ids}
+            )
+        ]
+        existing = existing[:target_total]
+        total = target_total
+
+    # rename remaining part elements so their names follow the indexing scheme
     for idx, obj in enumerate(existing):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:

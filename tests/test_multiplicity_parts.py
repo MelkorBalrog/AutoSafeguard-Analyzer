@@ -51,7 +51,7 @@ class MultiplicityPartTests(unittest.TestCase):
             if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
         ]
         self.assertEqual(names, ["P[1]", "P[2]", "P[3]"])
-
+\
     def test_multiplicity_decrease_removes_parts(self):
         repo = self.repo
         whole = repo.create_element("Block", name="Whole")
