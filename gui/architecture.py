@@ -815,12 +815,20 @@ def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id:
             "properties": {"name": repo.elements.get(block_id).name or block_id},
         }
         diagram.objects.insert(0, obj_dict)
+        boundary = obj_dict
         added.append(obj_dict)
         added += _add_ports_for_boundary(repo, diagram, obj_dict, app=app)
     else:
         if boundary.get("element_id") != block_id:
             boundary["element_id"] = block_id
         added += _add_ports_for_boundary(repo, diagram, boundary, app=app)
+
+    # Sync boundary properties from the block so configuration shows block data
+    block = repo.elements.get(block_id)
+    if block:
+        boundary.setdefault("properties", {})
+        for prop, val in block.properties.items():
+            boundary["properties"][prop] = val
     return added
 
 
@@ -903,8 +911,13 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
-        joined = ", ".join(diag_names)
+    # Do not drop existing names when objects are removed from the diagram
+    names = existing[:]
+    for n in diag_names:
+        if n not in names:
+            names.append(n)
+    if names != existing:
+        joined = ", ".join(names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
@@ -2891,7 +2904,16 @@ class SysMLDiagramWindow(tk.Frame):
         menu.tk_popup(event.x_root, event.y_root)
 
     def _edit_object(self, obj):
-        SysMLObjectDialog(self, obj)
+        # Editing a Block Boundary should display the underlying Block
+        if obj.obj_type == "Block Boundary":
+            original_type = obj.obj_type
+            obj.obj_type = "Block"
+            try:
+                SysMLObjectDialog(self, obj)
+            finally:
+                obj.obj_type = original_type
+        else:
+            SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
