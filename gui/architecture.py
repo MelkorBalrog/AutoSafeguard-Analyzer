@@ -3,7 +3,6 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog, messagebox
-from collections import Counter
 import json
 import math
 import re
@@ -4604,23 +4603,76 @@ class SysMLDiagramWindow(tk.Frame):
             )
 
         if obj.obj_type not in ("Block", "System Boundary", "Block Boundary", "Port"):
-            label_lines = self._object_label_lines(obj)
-            if label_lines:
-                if obj.obj_type == "Actor":
-                    sy = obj.height / 40.0 * self.zoom
-                    lx, ly = x, y + 40 * sy + 10 * self.zoom
-                    anchor = "n"
-                elif obj.obj_type in ("Initial", "Final"):
-                    lx, ly = x, y + obj.height / 2 * self.zoom + 10 * self.zoom
-                    anchor = "n"
-                else:
-                    lx, ly = x, y
-                    anchor = "center"
+            name = obj.properties.get("name", obj.obj_type)
+            label = name
+            if obj.obj_type == "Part":
+                def_id = obj.properties.get("definition")
+                if def_id and def_id in self.repo.elements:
+                    def_name = self.repo.elements[def_id].name or def_id
+                    label = f"{name} : {def_name}" if name else def_name
+            diag_id = self.repo.get_linked_diagram(obj.element_id)
+            label_lines = []
+            if diag_id and diag_id in self.repo.diagrams:
+                diag = self.repo.diagrams[diag_id]
+                diag_name = diag.name or diag_id
+                label_lines.append(diag_name)
+            label_lines.append(label)
+            key = obj.obj_type.replace(" ", "")
+            if not key.endswith("Usage"):
+                key += "Usage"
+            for prop in SYSML_PROPERTIES.get(key, []):
+                if obj.obj_type == "Part" and prop in (
+                    "fit",
+                    "qualification",
+                    "failureModes",
+                    "asil",
+                ):
+                    continue
+                val = obj.properties.get(prop)
+                if val:
+                    label_lines.append(f"{prop}: {val}")
+            if obj.obj_type == "Part":
+                rel_items = []
+                for lbl, key in (
+                    ("ASIL", "asil"),
+                    ("FIT", "fit"),
+                    ("Qual", "qualification"),
+                    ("FM", "failureModes"),
+                ):
+                    val = obj.properties.get(key)
+                    if val:
+                        rel_items.append(f"{lbl}: {val}")
+                if rel_items:
+                    label_lines.extend(rel_items)
+                reqs = "; ".join(r.get("id") for r in obj.requirements)
+                if reqs:
+                    label_lines.append(f"Reqs: {reqs}")
+            if obj.obj_type == "Actor":
+                sy = obj.height / 40.0 * self.zoom
+                label_x = x
+                label_y = y + 40 * sy + 10 * self.zoom
                 self.canvas.create_text(
-                    lx,
-                    ly,
+                    label_x,
+                    label_y,
                     text="\n".join(label_lines),
-                    anchor=anchor,
+                    anchor="n",
+                    font=self.font,
+                )
+            elif obj.obj_type in ("Initial", "Final"):
+                label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
+                self.canvas.create_text(
+                    x,
+                    label_y,
+                    text="\n".join(label_lines),
+                    anchor="n",
+                    font=self.font,
+                )
+            else:
+                self.canvas.create_text(
+                    x,
+                    y,
+                    text="\n".join(label_lines),
+                    anchor="center",
                     font=self.font,
                 )
 
@@ -6626,12 +6678,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
-        desired_counts = Counter(
-            o.properties.get("definition")
-            for o in self.objects
-            if o.obj_type == "Part" and not getattr(o, "hidden", False)
-        )
-
         # enforce multiplicity for aggregated parts
         added_mult = _enforce_ibd_multiplicity(
             repo, block_id, app=getattr(self, "app", None)
@@ -6640,33 +6686,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             for data in added_mult:
                 if not any(o.obj_id == data["obj_id"] for o in self.objects):
                     self.objects.append(SysMLObject(**data))
-
-        final_counts = Counter(
-            o.properties.get("definition")
-            for o in self.objects
-            if o.obj_type == "Part" and not getattr(o, "hidden", False)
-        )
-        exceeded = False
-        for rel in repo.relationships:
-            if (
-                rel.rel_type in ("Aggregation", "Composite Aggregation")
-                and rel.source == block_id
-            ):
-                high = _parse_multiplicity_range(
-                    rel.properties.get("multiplicity", "")
-                )[1]
-                if (
-                    high is not None
-                    and final_counts.get(rel.target, 0)
-                    < desired_counts.get(rel.target, 0)
-                ):
-                    exceeded = True
-                    break
-        if exceeded:
-            messagebox.showwarning(
-                "Multiplicity Limit",
-                "Some parts exceeded their multiplicity and were not added.",
-            )
 
         boundary = getattr(self, "get_ibd_boundary", lambda: None)()
         if boundary:
