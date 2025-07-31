@@ -2927,6 +2927,8 @@ class SysMLDiagramWindow(tk.Frame):
         SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
+        if self.app:
+            self.app.update_views()
         self.update_property_view()
 
     def _open_linked_diagram(self, obj) -> bool:
