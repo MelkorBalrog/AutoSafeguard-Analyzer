@@ -76,6 +76,13 @@ def parse_part_property(raw: str) -> tuple[str, str]:
     return (prop or block, block)
 
 
+def _extract_multiplicity(entry: str) -> str:
+    """Return the multiplicity portion of a part property entry."""
+    if "[" in entry and "]" in entry:
+        return entry.split("[", 1)[1].split("]", 1)[0].strip()
+    return ""
+
+
 def _find_parent_blocks(repo: SysMLRepository, block_id: str) -> set[str]:
     """Return all blocks that directly use ``block_id`` as a part or are
     associated with it."""
@@ -670,6 +677,30 @@ def add_multiplicity_parts(
     return added
 
 
+def _enforce_block_multiplicity(repo: SysMLRepository, block_id: str, app=None) -> None:
+    """Ensure all parts of ``block_id`` satisfy their multiplicity."""
+
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    entries = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    for entry in entries:
+        mult = _extract_multiplicity(entry)
+        if not mult:
+            continue
+        _, blk_name = parse_part_property(entry)
+        part_id = next(
+            (
+                eid
+                for eid, elem in repo.elements.items()
+                if elem.elem_type == "Block" and elem.name == blk_name
+            ),
+            None,
+        )
+        if part_id:
+            add_multiplicity_parts(repo, block_id, part_id, mult, app=app)
+
+
 def _sync_ibd_composite_parts(
     repo: SysMLRepository, block_id: str, app=None
 ) -> list[dict]:
@@ -997,6 +1028,8 @@ def _sync_block_parts_from_ibd(repo: SysMLRepository, diag_id: str) -> None:
                     o.setdefault("properties", {})["partProperties"] = joined
         for child_id in _find_generalization_children(repo, block_id):
             inherit_block_properties(repo, child_id)
+
+    _enforce_block_multiplicity(repo, block_id)
 
 
 def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id: str, app=None) -> list[dict]:
