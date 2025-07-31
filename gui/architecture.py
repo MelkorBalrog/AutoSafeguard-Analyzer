@@ -252,6 +252,17 @@ def _parse_multiplicity_range(mult: str) -> tuple[int, int | None]:
     return 1, None
 
 
+def _is_default_part_name(def_name: str, part_name: str) -> bool:
+    """Return ``True`` if *part_name* is derived from ``def_name``."""
+
+    if not part_name:
+        return True
+    if part_name == def_name:
+        return True
+    pattern = re.escape(def_name) + r"\[\d+\]$"
+    return re.fullmatch(pattern, part_name) is not None
+
+
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -617,12 +628,12 @@ def add_multiplicity_parts(
         existing = existing[:target_total]
         total = target_total
 
-    # rename remaining part elements so their names follow the indexing scheme
+    # rename remaining part elements if they still have default names
     for idx, obj in enumerate(existing):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
             expected = f"{base_name}[{idx + 1}]"
-            if elem.name != expected:
+            if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
     base_x = 50.0
@@ -665,7 +676,7 @@ def add_multiplicity_parts(
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
             expected = f"{base_name}[{idx + 1}]"
-            if elem.name != expected:
+            if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
     return added
@@ -3836,10 +3847,16 @@ class SysMLDiagramWindow(tk.Frame):
 
         name = obj.properties.get("name", "")
         has_name = False
-        if not name and obj.element_id and obj.element_id in self.repo.elements:
+        def_id = obj.properties.get("definition")
+        if obj.element_id and obj.element_id in self.repo.elements:
             elem = self.repo.elements[obj.element_id]
             name = elem.name or elem.properties.get("component", "")
-            has_name = bool(elem.name or elem.properties.get("component"))
+            def_id = def_id or elem.properties.get("definition")
+            def_name = ""
+            if def_id and def_id in self.repo.elements:
+                def_name = self.repo.elements[def_id].name or def_id
+            has_name = bool(name) and not _is_default_part_name(def_name, name)
+
         if not has_name:
             name = ""
         if obj.obj_type == "Part":
@@ -6597,10 +6614,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         repo = self.repo
         name = ""
         has_name = False
+        def_id = obj.properties.get("definition")
         if obj.element_id and obj.element_id in repo.elements:
             elem = repo.elements[obj.element_id]
             name = elem.name or elem.properties.get("component", "")
-            has_name = bool(elem.name or elem.properties.get("component"))
+            def_id = def_id or elem.properties.get("definition")
+            def_name = ""
+            if def_id and def_id in repo.elements:
+                def_name = repo.elements[def_id].name or def_id
+            has_name = bool(name) and not _is_default_part_name(def_name, name)
         if not has_name:
             name = obj.properties.get("component", "")
 
