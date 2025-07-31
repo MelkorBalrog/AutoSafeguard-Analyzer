@@ -670,6 +670,28 @@ def add_multiplicity_parts(
     return added
 
 
+def _enforce_ibd_multiplicity(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD obeys aggregation multiplicities.
+
+    Returns a list of added part object dictionaries."""
+
+    added: list[dict] = []
+    src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+        ):
+            mult = rel.properties.get("multiplicity", "")
+            if mult:
+                added.extend(
+                    add_multiplicity_parts(repo, block_id, rel.target, mult, app=app)
+                )
+    return added
+
+
 def _sync_ibd_composite_parts(
     repo: SysMLRepository, block_id: str, app=None
 ) -> list[dict]:
@@ -1128,7 +1150,7 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         return
     block = repo.elements[block_id]
     existing = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    diag_names: list[str] = []
+    diag_entries: list[tuple[str, str]] = []
     diag_bases: set[str] = set()
     for obj in getattr(diagram, "objects", []):
         if obj.get("obj_type") != "Part":
@@ -1145,14 +1167,18 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if not name:
             name = obj.get("properties", {}).get("component", "")
         base = name.split("[")[0].strip() if name else ""
-        if base and base not in diag_bases:
-            diag_names.append(name or base)
-            diag_bases.add(base)
+        def_id = obj.get("properties", {}).get("definition")
+        base_def = ""
+        if def_id and def_id in repo.elements:
+            base_def = (repo.elements[def_id].name or def_id).split("[")[0].strip()
+        key = base_def or base
+        if key and key not in diag_bases:
+            diag_entries.append((key, name or key))
+            diag_bases.add(key)
 
     merged_names = list(existing)
     bases = {n.split("[")[0].strip() for n in merged_names}
-    for name in diag_names:
-        base = name.split("[")[0].strip()
+    for base, name in diag_entries:
         if base not in bases:
             merged_names.append(name)
             bases.add(base)
@@ -6583,6 +6609,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
+
+        # enforce multiplicity for aggregated parts
+        added_mult = _enforce_ibd_multiplicity(
+            repo, block_id, app=getattr(self, "app", None)
+        )
+        if added_mult and not self.app:
+            for data in added_mult:
+                if not any(o.obj_id == data["obj_id"] for o in self.objects):
+                    self.objects.append(SysMLObject(**data))
 
         boundary = getattr(self, "get_ibd_boundary", lambda: None)()
         if boundary:
