@@ -6558,7 +6558,53 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 name = repo.elements[def_id].name or def_id
         if not name:
             name = obj.properties.get("component", "")
-        return name
+
+        def_id = obj.properties.get("definition")
+        def_name = ""
+        mult = ""
+        if def_id and def_id in repo.elements:
+            def_name = repo.elements[def_id].name or def_id
+            diag = repo.diagrams.get(self.diagram_id)
+            block_id = (
+                getattr(diag, "father", None)
+                or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == self.diagram_id),
+                    None,
+                )
+            )
+            if block_id:
+                for rel in repo.relationships:
+                    if (
+                        rel.rel_type in ("Aggregation", "Composite Aggregation")
+                        and rel.source == block_id
+                        and rel.target == def_id
+                    ):
+                        mult = rel.properties.get("multiplicity", "")
+                        break
+
+        base = name
+        index = None
+        m = re.match(r"^(.*)\[(\d+)\]$", name)
+        if m:
+            base = m.group(1)
+            index = int(m.group(2))
+            base = f"{base} {index}"
+
+        label = base
+        if def_name:
+            if mult:
+                if ".." in mult:
+                    upper = mult.split("..", 1)[1] or "*"
+                    disp = f"{index or 1}..{upper}"
+                elif mult == "*":
+                    disp = f"{index or 1}..*"
+                else:
+                    disp = f"{index or 1}..{mult}"
+                label = f"{label} : {def_name} [{disp}]"
+            elif def_name != base:
+                label = f"{label} : {def_name}"
+
+        return label
 
     def _get_part_key(self, obj: SysMLObject) -> str:
         """Return canonical key for identifying ``obj`` regardless of renaming."""
