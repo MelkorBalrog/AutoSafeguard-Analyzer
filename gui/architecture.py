@@ -2830,7 +2830,10 @@ class SysMLDiagramWindow(tk.Frame):
             if self._open_linked_diagram(obj):
                 return
             SysMLObjectDialog(self, obj)
+            self._sync_to_repository()
             self.redraw()
+            if self.app:
+                self.app.update_views()
         else:
             conn = self.find_connection(x, y)
             if conn:
@@ -4646,7 +4649,33 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag and obj.element_id in diag.elements:
             diag.elements.remove(obj.element_id)
+
+        prev_parts = None
+        block_id = None
+        if obj.obj_type == "Part" and diag:
+            block_id = getattr(diag, "father", None) or next(
+                (eid for eid, did in self.repo.element_diagrams.items() if did == self.diagram_id),
+                None,
+            )
+            if block_id and block_id in self.repo.elements:
+                block = self.repo.elements[block_id]
+                prev_parts = block.properties.get("partProperties")
+
         self._sync_to_repository()
+
+        if prev_parts is not None and block_id and block_id in self.repo.elements:
+            block = self.repo.elements[block_id]
+            if prev_parts:
+                block.properties["partProperties"] = prev_parts
+            else:
+                block.properties.pop("partProperties", None)
+            for d in self.repo.diagrams.values():
+                for o in getattr(d, "objects", []):
+                    if o.get("element_id") == block_id:
+                        if prev_parts:
+                            o.setdefault("properties", {})["partProperties"] = prev_parts
+                        else:
+                            o.setdefault("properties", {}).pop("partProperties", None)
 
     # ------------------------------------------------------------
     # Part removal helpers
