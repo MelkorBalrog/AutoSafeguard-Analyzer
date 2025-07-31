@@ -320,6 +320,16 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
         if updated:
             repo.touch_diagram(diag.diag_id)
 
+    # update Block objects referencing this block
+    for diag in repo.diagrams.values():
+        updated = False
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") == "Block" and obj.get("element_id") == block_id:
+                obj.setdefault("properties", {})["name"] = new_name
+                updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
+
 
 def add_aggregation_part(
     repo: SysMLRepository,
@@ -903,8 +913,16 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
-        joined = ", ".join(diag_names)
+    merged_names = list(existing)
+    bases = {n.split("[")[0].strip() for n in merged_names}
+    for name in diag_names:
+        base = name.split("[")[0].strip()
+        if base not in bases:
+            merged_names.append(name)
+            bases.add(base)
+
+    if merged_names != existing:
+        joined = ", ".join(merged_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
