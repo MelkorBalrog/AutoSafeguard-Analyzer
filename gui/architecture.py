@@ -1092,6 +1092,52 @@ def remove_aggregation_part(
                 repo.delete_element(pid)
 
 
+def remove_partproperty_entry(
+    repo: SysMLRepository, block_id: str, entry: str, app=None
+) -> None:
+    """Remove a part property entry and update descendant diagrams."""
+
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    prop_name, blk_name = parse_part_property(entry)
+    target_id = next(
+        (
+            eid
+            for eid, elem in repo.elements.items()
+            if elem.elem_type == "Block" and elem.name == blk_name
+        ),
+        None,
+    )
+    if not target_id:
+        return
+
+    parts = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    parts = [p for p in parts if _part_prop_key(p) != _part_prop_key(entry)]
+    if parts:
+        block.properties["partProperties"] = ", ".join(parts)
+    else:
+        block.properties.pop("partProperties", None)
+    for d in repo.diagrams.values():
+        for o in getattr(d, "objects", []):
+            if o.get("element_id") == block_id:
+                if parts:
+                    o.setdefault("properties", {})["partProperties"] = ", ".join(parts)
+                else:
+                    o.setdefault("properties", {}).pop("partProperties", None)
+
+    _propagate_part_removal(
+        repo,
+        block_id,
+        prop_name,
+        target_id,
+        remove_object=True,
+        app=app,
+    )
+    _remove_parts_from_ibd(repo, block_id, target_id, app=app)
+    _propagate_ibd_part_removal(repo, block_id, target_id, app=app)
+
+
 def inherit_block_properties(repo: SysMLRepository, block_id: str) -> None:
     """Merge parent block properties into the given block."""
     extend_block_parts_with_parents(repo, block_id)
@@ -5626,6 +5672,21 @@ class SysMLObjectDialog(simpledialog.Dialog):
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
                 repo.elements[self.obj.element_id].properties[prop] = var.get()
+        removed_parts = []
+        prev_parts = []
+        if (
+            self.obj.element_id
+            and self.obj.element_id in repo.elements
+            and "partProperties" in repo.elements[self.obj.element_id].properties
+        ):
+            prev_parts = [
+                p.strip()
+                for p in repo.elements[self.obj.element_id]
+                .properties.get("partProperties", "")
+                .split(",")
+                if p.strip()
+            ]
+
         for prop, lb in self.listboxes.items():
             if prop == "operations":
                 self.obj.properties[prop] = operations_to_json(self._operations)
@@ -5641,6 +5702,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 self.obj.properties[prop] = joined
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties[prop] = joined
+                if prop == "partProperties" and prev_parts:
+                    prev_keys = {_part_prop_key(p) for p in prev_parts}
+                    new_keys = {_part_prop_key(i) for i in items}
+                    removed_parts = [p for p in prev_parts if _part_prop_key(p) not in new_keys]
 
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem_type = repo.elements[self.obj.element_id].elem_type
@@ -5654,6 +5719,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     app=getattr(self.master, "app", None),
                     hidden=False,
                 )
+                if removed_parts:
+                    app = getattr(self.master, "app", None)
+                    for val in removed_parts:
+                        remove_partproperty_entry(
+                            repo, self.obj.element_id, val, app=app
+                        )
         try:
             if self.obj.obj_type not in (
                 "Initial",
