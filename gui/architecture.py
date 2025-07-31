@@ -722,7 +722,12 @@ def _sync_ibd_aggregation_parts(
 
 
 def _sync_ibd_partproperty_parts(
-    repo: SysMLRepository, block_id: str, names: list[str] | None = None, app=None
+    repo: SysMLRepository,
+    block_id: str,
+    names: list[str] | None = None,
+    app=None,
+    *,
+    hidden: bool = True,
 ) -> list[dict]:
     """Ensure ``block_id``'s IBD includes parts for given ``names``.
 
@@ -785,7 +790,7 @@ def _sync_ibd_partproperty_parts(
             "height": 40.0,
             "element_id": part_elem.elem_id,
             "properties": {"definition": target_id},
-            "hidden": True,
+            "hidden": hidden,
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -798,6 +803,30 @@ def _sync_ibd_partproperty_parts(
                     win.objects.append(SysMLObject(**obj_dict))
                     win.redraw()
                     win._sync_to_repository()
+
+    boundary = next(
+        (o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None
+    )
+    if boundary and any(not a.get("hidden", False) for a in added):
+        b_obj = SysMLObject(**boundary)
+        objs = [SysMLObject(**o) for o in diag.objects]
+        ensure_boundary_contains_parts(b_obj, objs)
+        boundary["width"] = b_obj.width
+        boundary["height"] = b_obj.height
+        boundary["x"] = b_obj.x
+        boundary["y"] = b_obj.y
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    for obj in win.objects:
+                        if obj.obj_type == "Block Boundary":
+                            obj.width = b_obj.width
+                            obj.height = b_obj.height
+                            obj.x = b_obj.x
+                            obj.y = b_obj.y
+                            win.redraw()
+                            win._sync_to_repository()
+
     return added
 
 
@@ -1719,6 +1748,7 @@ def propagate_block_changes(repo: SysMLRepository, block_id: str, visited: set[s
         inherit_block_properties(repo, child_id)
         propagate_block_port_changes(repo, child_id)
         _propagate_requirements(repo, reqs, child_id)
+        _sync_ibd_partproperty_parts(repo, child_id, hidden=False)
         propagate_block_changes(repo, child_id, visited)
 
 
@@ -5622,6 +5652,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     repo,
                     self.obj.element_id,
                     app=getattr(self.master, "app", None),
+                    hidden=False,
                 )
         try:
             if self.obj.obj_type not in (
@@ -6184,7 +6215,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             # updating windows. We then insert the returned objects ourselves so
             # we can ensure they are visible immediately.
             added_props = _sync_ibd_partproperty_parts(
-                repo, block_id, names=to_add_names, app=None
+                repo, block_id, names=to_add_names, app=None, hidden=True
             )
             for data in added_props:
                 data["hidden"] = False
