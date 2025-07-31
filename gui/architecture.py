@@ -77,12 +77,6 @@ def parse_part_property(raw: str) -> tuple[str, str]:
     return (prop or block, block)
 
 
-def parse_part_multiplicity(raw: str) -> str:
-    """Return multiplicity string from a part property entry."""
-    m = re.search(r"\[(.*)\]", raw.strip())
-    return m.group(1) if m else ""
-
-
 def _find_parent_blocks(repo: SysMLRepository, block_id: str) -> set[str]:
     """Return all blocks that directly use ``block_id`` as a part or are
     associated with it."""
@@ -3877,21 +3871,6 @@ class SysMLDiagramWindow(tk.Frame):
                         ):
                             mult = rel.properties.get("multiplicity")
                             break
-                    if mult is None:
-                        block_elem = self.repo.elements.get(block_id)
-                        if block_elem:
-                            entries = [
-                                e.strip()
-                                for e in block_elem.properties.get("partProperties", "").split(",")
-                                if e.strip()
-                            ]
-                            base_key = _part_prop_key(name)
-                            for entry in entries:
-                                p_name, b_name = parse_part_property(entry)
-                                if p_name == base_key and b_name == def_name:
-                                    mult = parse_part_multiplicity(entry)
-                                    if mult:
-                                        break
                 base = name
                 index = None
                 m = re.match(r"^(.*)\[(\d+)\]$", name)
@@ -6191,46 +6170,6 @@ class SysMLObjectDialog(simpledialog.Dialog):
             name = self.def_var.get()
             def_id = self.def_map.get(name)
             if def_id:
-                if self.obj.obj_type == "Part":
-                    diag = repo.diagrams.get(self.master.diagram_id)
-                    block_id = (
-                        getattr(diag, "father", None)
-                        or next(
-                            (
-                                eid
-                                for eid, did in repo.element_diagrams.items()
-                                if did == self.master.diagram_id
-                            ),
-                            None,
-                        )
-                    )
-                    mult = None
-                    if block_id:
-                        for rel in repo.relationships:
-                            if (
-                                rel.rel_type in ("Aggregation", "Composite Aggregation")
-                                and rel.source == block_id
-                                and rel.target == def_id
-                            ):
-                                mult = rel.properties.get("multiplicity")
-                                break
-                    if mult:
-                        _low, high = _parse_multiplicity_range(mult)
-                        if high is not None:
-                            diag.objects = getattr(diag, "objects", [])
-                            existing = [
-                                o
-                                for o in diag.objects
-                                if o.get("obj_type") == "Part"
-                                and o.get("properties", {}).get("definition") == def_id
-                                and o.get("element_id") != self.obj.element_id
-                            ]
-                            if len(existing) >= high:
-                                messagebox.showerror(
-                                    "Multiplicity Limit",
-                                    f"Cannot add more than {high} parts of {name}",
-                                )
-                                return
                 self.obj.properties["definition"] = def_id
                 if self.obj.element_id and self.obj.element_id in repo.elements:
                     repo.elements[self.obj.element_id].properties["definition"] = def_id
@@ -6670,44 +6609,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
-
-        filtered_names: list[str] = []
-        diag = repo.diagrams.get(self.diagram_id)
-        for entry in to_add_names:
-            prop, blk_name = parse_part_property(entry)
-            blk_id = next(
-                (eid for eid, elem in repo.elements.items() if elem.elem_type == "Block" and elem.name == blk_name),
-                None,
-            )
-            if not blk_id:
-                filtered_names.append(entry)
-                continue
-            mult = None
-            for rel in repo.relationships:
-                if (
-                    rel.rel_type in ("Aggregation", "Composite Aggregation")
-                    and rel.source == block_id
-                    and rel.target == blk_id
-                ):
-                    mult = rel.properties.get("multiplicity")
-                    break
-            if mult:
-                _low, high = _parse_multiplicity_range(mult)
-                if high is not None:
-                    existing = [
-                        o
-                        for o in diag.objects
-                        if o.get("obj_type") == "Part"
-                        and o.get("properties", {}).get("definition") == blk_id
-                    ]
-                    if len(existing) >= high:
-                        messagebox.showerror(
-                            "Multiplicity Limit",
-                            f"Cannot add more than {high} parts of {blk_name}",
-                        )
-                        continue
-            filtered_names.append(entry)
-        to_add_names = filtered_names
 
         for name, obj in visible.items():
             if name not in selected_keys:
