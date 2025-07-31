@@ -670,6 +670,28 @@ def add_multiplicity_parts(
     return added
 
 
+def enforce_block_multiplicity(
+    repo: SysMLRepository, block_id: str, app=None
+) -> None:
+    """Ensure the internal block diagram reflects aggregated part multiplicity."""
+
+    block = repo.elements.get(block_id)
+    if not block:
+        return
+    entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+    for entry in entries:
+        mult = ""
+        if "[" in entry and entry.endswith("]"):
+            mult = entry.split("[", 1)[1][:-1]
+        _, blk_name = parse_part_property(entry)
+        part_id = next(
+            (eid for eid, elem in repo.elements.items() if elem.elem_type == "Block" and elem.name == blk_name),
+            None,
+        )
+        if part_id and mult:
+            add_multiplicity_parts(repo, block_id, part_id, mult, app=app)
+
+
 def _sync_ibd_composite_parts(
     repo: SysMLRepository, block_id: str, app=None
 ) -> list[dict]:
@@ -6184,6 +6206,13 @@ class SysMLObjectDialog(simpledialog.Dialog):
                             if hasattr(self.master, "_sync_to_repository"):
                                 self.master._sync_to_repository()
 
+                            if self.obj.obj_type in ("Block", "Block Boundary") and self.obj.element_id:
+                                enforce_block_multiplicity(
+                                    repo,
+                                    self.obj.element_id,
+                                    app=getattr(self.master, "app", None),
+                                )
+
 
 class ConnectionDialog(simpledialog.Dialog):
     """Edit connection style and custom routing points."""
@@ -6587,6 +6616,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         boundary = getattr(self, "get_ibd_boundary", lambda: None)()
         if boundary:
             ensure_boundary_contains_parts(boundary, self.objects)
+
+        enforce_block_multiplicity(repo, block_id, app=getattr(self, "app", None))
 
         self.redraw()
         self._sync_to_repository()
