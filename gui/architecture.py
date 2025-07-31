@@ -722,7 +722,11 @@ def _sync_ibd_aggregation_parts(
 
 
 def _sync_ibd_partproperty_parts(
-    repo: SysMLRepository, block_id: str, names: list[str] | None = None, app=None
+    repo: SysMLRepository,
+    block_id: str,
+    names: list[str] | None = None,
+    app=None,
+    visible: bool = False,
 ) -> list[dict]:
     """Ensure ``block_id``'s IBD includes parts for given ``names``.
 
@@ -754,8 +758,15 @@ def _sync_ibd_partproperty_parts(
         entries = [n for n in names if n.strip()]
     parsed = [parse_part_property(e) for e in entries]
     added: list[dict] = []
-    base_x = 50.0
-    base_y = 50.0 + 60.0 * len(existing_props)
+    boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
+    if boundary:
+        base_x = boundary["x"] - boundary["width"] / 2 + 30.0
+        base_y = (
+            boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * len(existing_props)
+        )
+    else:
+        base_x = 50.0
+        base_y = 50.0 + 60.0 * len(existing_props)
     for prop_name, block_name in parsed:
         if prop_name in existing_props:
             continue
@@ -772,7 +783,7 @@ def _sync_ibd_partproperty_parts(
         part_elem = repo.create_element(
             "Part",
             name=prop_name,
-            properties={"definition": target_id},
+            properties={"definition": target_id, "force_ibd": "true"},
             owner=repo.root_package.elem_id,
         )
         repo.add_element_to_diagram(diag.diag_id, part_elem.elem_id)
@@ -785,7 +796,7 @@ def _sync_ibd_partproperty_parts(
             "height": 40.0,
             "element_id": part_elem.elem_id,
             "properties": {"definition": target_id},
-            "hidden": True,
+            "hidden": not visible,
         }
         base_y += 60.0
         diag.objects.append(obj_dict)
@@ -799,6 +810,48 @@ def _sync_ibd_partproperty_parts(
                     win.redraw()
                     win._sync_to_repository()
     return added
+
+
+def _propagate_boundary_parts(
+    repo: SysMLRepository, block_id: str, parts: list[dict], app=None
+) -> None:
+    """Insert *parts* into diagrams containing boundaries for ``block_id``."""
+
+    for diag in repo.diagrams.values():
+        if diag.diag_type != "Internal Block Diagram":
+            continue
+        boundary = next(
+            (
+                o
+                for o in getattr(diag, "objects", [])
+                if o.get("obj_type") == "Block Boundary" and o.get("element_id") == block_id
+            ),
+            None,
+        )
+        if not boundary:
+            continue
+        diag.objects = getattr(diag, "objects", [])
+        existing = {o.get("element_id") for o in diag.objects if o.get("obj_type") == "Part"}
+        base_x = boundary["x"] - boundary["width"] / 2 + 30.0
+        base_y = boundary["y"] - boundary["height"] / 2 + 30.0
+        for obj in parts:
+            if obj.get("element_id") in existing:
+                continue
+            new_obj = obj.copy()
+            new_obj["obj_id"] = _get_next_id()
+            new_obj["x"] = base_x
+            new_obj["y"] = base_y
+            new_obj["hidden"] = False
+            diag.objects.append(new_obj)
+            repo.add_element_to_diagram(diag.diag_id, new_obj["element_id"])
+            base_y += 60.0
+            if app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag.diag_id:
+                        win.objects.append(SysMLObject(**new_obj))
+                        win.redraw()
+                        win._sync_to_repository()
+
 
 
 def _sync_block_parts_from_ibd(repo: SysMLRepository, diag_id: str) -> None:
@@ -864,6 +917,46 @@ def _ensure_ibd_boundary(repo: SysMLRepository, diagram: SysMLDiagram, block_id:
         if boundary.get("element_id") != block_id:
             boundary["element_id"] = block_id
         added += _add_ports_for_boundary(repo, diagram, boundary, app=app)
+    # propagate parts for the boundary from the block's own IBD or definition
+    diag_id = repo.get_linked_diagram(block_id)
+    src = repo.diagrams.get(diag_id)
+    parts: list[dict] = []
+    if src and src.diag_type == "Internal Block Diagram":
+        parts = [o for o in getattr(src, "objects", []) if o.get("obj_type") == "Part"]
+    else:
+        block = repo.elements.get(block_id)
+        if block:
+            entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
+            base_x = boundary["x"] - boundary["width"] / 2 + 30.0
+            base_y = boundary["y"] - boundary["height"] / 2 + 30.0
+            for prop_name, blk_name in [parse_part_property(e) for e in entries]:
+                target_id = next(
+                    (eid for eid, elem in repo.elements.items() if elem.elem_type == "Block" and elem.name == blk_name),
+                    None,
+                )
+                if not target_id:
+                    continue
+                part_elem = repo.create_element(
+                    "Part",
+                    name=prop_name,
+                    properties={"definition": target_id, "force_ibd": "true"},
+                    owner=repo.root_package.elem_id,
+                )
+                obj = {
+                    "obj_id": _get_next_id(),
+                    "obj_type": "Part",
+                    "x": base_x,
+                    "y": base_y,
+                    "width": 80.0,
+                    "height": 40.0,
+                    "element_id": part_elem.elem_id,
+                    "properties": {"definition": target_id},
+                    "hidden": False,
+                }
+                base_y += 60.0
+                parts.append(obj)
+    if parts:
+        _propagate_boundary_parts(repo, block_id, parts, app=app)
     return added
 
 
@@ -896,6 +989,9 @@ def set_ibd_father(
     added = _sync_ibd_composite_parts(repo, father_id, app=app) if father_id else []
     if father_id:
         added += _ensure_ibd_boundary(repo, diagram, father_id, app=app)
+        added += _sync_ibd_partproperty_parts(repo, father_id, app=app, visible=True)
+        parts = [o for o in getattr(diagram, "objects", []) if o.get("obj_type") == "Part"]
+        _propagate_boundary_parts(repo, father_id, parts, app=app)
     else:
         _remove_ibd_boundary(repo, diagram)
     return added
@@ -5618,11 +5714,34 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 propagate_block_port_changes(repo, self.obj.element_id)
                 propagate_block_part_changes(repo, self.obj.element_id)
                 propagate_block_changes(repo, self.obj.element_id)
-                _sync_ibd_partproperty_parts(
+                app_ref = getattr(self.master, "app", None)
+                added = _sync_ibd_partproperty_parts(
                     repo,
                     self.obj.element_id,
-                    app=getattr(self.master, "app", None),
+                    app=app_ref,
+                    visible=True,
                 )
+                for data in added:
+                    data["hidden"] = False
+                _propagate_boundary_parts(repo, self.obj.element_id, added, app=app_ref)
+                father_diag_id = repo.get_linked_diagram(self.obj.element_id)
+                for diag in repo.diagrams.values():
+                    if (
+                        diag.diag_type == "Internal Block Diagram"
+                        and getattr(diag, "father", None) == self.obj.element_id
+                        and diag.diag_id != father_diag_id
+                    ):
+                        added_child = inherit_father_parts(repo, diag)
+                        for obj in added_child:
+                            if obj.get("obj_type") == "Part":
+                                obj["hidden"] = False
+                        if app_ref:
+                            for win in getattr(app_ref, "ibd_windows", []):
+                                if getattr(win, "diagram_id", None) == diag.diag_id:
+                                    for obj in added_child:
+                                        win.objects.append(SysMLObject(**obj))
+                                    win.redraw()
+                                    win._sync_to_repository()
         try:
             if self.obj.obj_type not in (
                 "Initial",
