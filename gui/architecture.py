@@ -279,6 +279,26 @@ def _collect_generalization_parents(
     return parents
 
 
+def _shared_generalization_parent(
+    repo: SysMLRepository, a_id: str, b_id: str
+) -> bool:
+    """Return ``True`` if *a_id* and *b_id* share a common direct parent."""
+
+    a_parents = {
+        rel.target
+        for rel in repo.relationships
+        if rel.rel_type == "Generalization" and rel.source == a_id
+    }
+    if not a_parents:
+        return False
+    b_parents = {
+        rel.target
+        for rel in repo.relationships
+        if rel.rel_type == "Generalization" and rel.source == b_id
+    }
+    return bool(a_parents & b_parents)
+
+
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
     block = repo.elements.get(block_id)
@@ -1984,6 +2004,10 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Generalization":
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Generalizations in block diagrams must connect Blocks"
+                if _shared_generalization_parent(
+                    self.repo, src.element_id, dst.element_id
+                ):
+                    return False, "Blocks already share a generalized parent"
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
