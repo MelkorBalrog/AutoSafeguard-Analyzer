@@ -4882,7 +4882,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             canvas.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
             for name in self.names:
-                var = tk.BooleanVar(value=name in self.visible or name not in self.hidden)
+                var = tk.BooleanVar(value=name in self.visible)
                 self.selected[name] = var
                 ttk.Checkbutton(self.check_frame, text=name, variable=var).pack(
                     anchor="w", padx=2, pady=2
@@ -6082,11 +6082,18 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             added.append(comp.name)
 
         if to_add_names:
+            # Directly sync new part property parts to the repository without
+            # updating windows. We then insert the returned objects ourselves so
+            # we can ensure they are visible immediately.
             added_props = _sync_ibd_partproperty_parts(
-                repo, block_id, names=to_add_names, app=getattr(self, "app", None)
+                repo, block_id, names=to_add_names, app=None
             )
             for data in added_props:
-                self.objects.append(SysMLObject(**data))
+                data["hidden"] = False
+                # Avoid duplicates if the sync function already populated this
+                # window via the application.
+                if not any(o.obj_id == data["obj_id"] for o in self.objects):
+                    self.objects.append(SysMLObject(**data))
 
         if added:
             names = [
