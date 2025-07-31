@@ -70,5 +70,27 @@ class BlockBoundaryTests(unittest.TestCase):
         rename_block(repo, boundary["element_id"], "B2")
         self.assertEqual(block.name, "B2")
 
+    def test_edit_boundary_name_updates_block_object(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="B")
+        diag = repo.create_diagram("Block Diagram")
+        repo.add_element_to_diagram(diag.diag_id, block.elem_id)
+        diag.objects.append(
+            {
+                "obj_id": 1,
+                "obj_type": "Block",
+                "x": 0,
+                "y": 0,
+                "element_id": block.elem_id,
+                "properties": {"name": "B"},
+            }
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        set_ibd_father(repo, ibd, block.elem_id)
+        boundary = next(o for o in ibd.objects if o.get("obj_type") == "Block Boundary")
+        boundary.setdefault("properties", {})["name"] = "B2"
+        rename_block(repo, boundary["element_id"], "B2")
+        self.assertEqual(diag.objects[0]["properties"].get("name"), "B2")
+
 if __name__ == "__main__":
     unittest.main()

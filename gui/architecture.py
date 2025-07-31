@@ -342,6 +342,16 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
         if updated:
             repo.touch_diagram(diag.diag_id)
 
+    # update Block objects referencing this block
+    for diag in repo.diagrams.values():
+        updated = False
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") == "Block" and obj.get("element_id") == block_id:
+                obj.setdefault("properties", {})["name"] = new_name
+                updated = True
+        if updated:
+            repo.touch_diagram(diag.diag_id)
+
 
 def add_aggregation_part(
     repo: SysMLRepository,
@@ -914,9 +924,7 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    # Merge diagram names with existing properties without removing entries
-    # that no longer appear on the diagram. This prevents deleting parts from
-    # the block simply because their objects were removed from the IBD.
+
     merged_names = list(existing)
     bases = {n.split("[")[0].strip() for n in merged_names}
     for name in diag_names:
