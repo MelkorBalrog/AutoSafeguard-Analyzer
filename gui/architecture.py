@@ -5,6 +5,7 @@ import textwrap
 from tkinter import ttk, simpledialog, messagebox
 import json
 import math
+import re
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Tuple
 
@@ -373,6 +374,22 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
             repo.touch_diagram(diag.diag_id)
 
 
+def rename_part(repo: SysMLRepository, part_id: str, new_name: str) -> None:
+    """Rename ``part_id`` and update aggregation lists."""
+    part = repo.elements.get(part_id)
+    if not part or part.elem_type != "Part":
+        return
+    if part.name == new_name:
+        return
+    part.name = new_name
+    diag_id = repo.element_diagrams.get(part_id)
+    if diag_id and diag_id in repo.diagrams:
+        diag = repo.diagrams[diag_id]
+        update_block_parts_from_ibd(repo, diag)
+        _sync_block_parts_from_ibd(repo, diag_id)
+        repo.touch_diagram(diag_id)
+
+
 def add_aggregation_part(
     repo: SysMLRepository,
     whole_id: str,
@@ -667,6 +684,28 @@ def add_multiplicity_parts(
             if elem.name != expected:
                 elem.name = expected
 
+    return added
+
+
+def _enforce_ibd_multiplicity(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD obeys aggregation multiplicities.
+
+    Returns a list of added part object dictionaries."""
+
+    added: list[dict] = []
+    src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+        ):
+            mult = rel.properties.get("multiplicity", "")
+            if mult:
+                added.extend(
+                    add_multiplicity_parts(repo, block_id, rel.target, mult, app=app)
+                )
     return added
 
 
@@ -1128,7 +1167,7 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         return
     block = repo.elements[block_id]
     existing = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    diag_names: list[str] = []
+    diag_entries: list[tuple[str, str]] = []
     diag_bases: set[str] = set()
     for obj in getattr(diagram, "objects", []):
         if obj.get("obj_type") != "Part":
@@ -1145,14 +1184,18 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if not name:
             name = obj.get("properties", {}).get("component", "")
         base = name.split("[")[0].strip() if name else ""
-        if base and base not in diag_bases:
-            diag_names.append(name or base)
-            diag_bases.add(base)
+        def_id = obj.get("properties", {}).get("definition")
+        base_def = ""
+        if def_id and def_id in repo.elements:
+            base_def = (repo.elements[def_id].name or def_id).split("[")[0].strip()
+        key = base_def or base
+        if key and key not in diag_bases:
+            diag_entries.append((key, name or key))
+            diag_bases.add(key)
 
     merged_names = list(existing)
     bases = {n.split("[")[0].strip() for n in merged_names}
-    for name in diag_names:
-        base = name.split("[")[0].strip()
+    for base, name in diag_entries:
         if base not in bases:
             merged_names.append(name)
             bases.add(base)
@@ -3807,7 +3850,12 @@ class SysMLDiagramWindow(tk.Frame):
             # Blocks and ports use custom drawing logic
             return []
 
-        name = obj.properties.get("name", obj.obj_type)
+        name = obj.properties.get("name", "")
+        if not name and obj.element_id and obj.element_id in self.repo.elements:
+            elem = self.repo.elements[obj.element_id]
+            name = elem.name or elem.properties.get("component", obj.obj_type)
+        if not name:
+            name = obj.obj_type
         if obj.obj_type == "Part":
             asil = calculate_allocated_asil(obj.requirements)
             if obj.properties.get("asil") != asil:
@@ -3815,8 +3863,48 @@ class SysMLDiagramWindow(tk.Frame):
                 if obj.element_id and obj.element_id in self.repo.elements:
                     self.repo.elements[obj.element_id].properties["asil"] = asil
             def_id = obj.properties.get("definition")
+            mult = None
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
+                diag = self.repo.diagrams.get(self.diagram_id)
+                block_id = (
+                    getattr(diag, "father", None)
+                    or next(
+                        (
+                            eid
+                            for eid, did in self.repo.element_diagrams.items()
+                            if did == self.diagram_id
+                        ),
+                        None,
+                    )
+                )
+                if block_id:
+                    for rel in self.repo.relationships:
+                        if (
+                            rel.rel_type in ("Aggregation", "Composite Aggregation")
+                            and rel.source == block_id
+                            and rel.target == def_id
+                        ):
+                            mult = rel.properties.get("multiplicity")
+                            break
+                base = name
+                index = None
+                m = re.match(r"^(.*)\[(\d+)\]$", name)
+                if m:
+                    base = m.group(1)
+                    index = int(m.group(2))
+                if index is not None:
+                    base = f"{base} {index}"
+                name = base
+                if mult:
+                    if ".." in mult:
+                        upper = mult.split("..", 1)[1] or "*"
+                        disp = f"{index or 1}..{upper}"
+                    elif mult == "*":
+                        disp = f"{index or 1}..*"
+                    else:
+                        disp = f"{index or 1}..{mult}"
+                    def_name = f"{def_name} [{disp}]"
                 name = f"{name} : {def_name}" if name else def_name
 
         lines: list[str] = []
@@ -5135,6 +5223,28 @@ class SysMLDiagramWindow(tk.Frame):
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             _sync_block_parts_from_ibd(self.repo, self.diagram_id)
+            if diag.diag_type == "Internal Block Diagram":
+                block_id = (
+                    getattr(diag, "father", None)
+                    or next(
+                        (
+                            eid
+                            for eid, did in self.repo.element_diagrams.items()
+                            if did == self.diagram_id
+                        ),
+                        None,
+                    )
+                )
+                if block_id:
+                    added_mult = _enforce_ibd_multiplicity(
+                        self.repo, block_id, app=getattr(self, "app", None)
+                    )
+                    if added_mult and not getattr(self, "app", None):
+                        for data in added_mult:
+                            if not any(
+                                o.obj_id == data["obj_id"] for o in self.objects
+                            ):
+                                self.objects.append(SysMLObject(**data))
 
     def refresh_from_repository(self, _event=None) -> None:
         """Reload diagram objects from the repository and redraw."""
@@ -6584,6 +6694,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
 
+        # enforce multiplicity for aggregated parts
+        added_mult = _enforce_ibd_multiplicity(
+            repo, block_id, app=getattr(self, "app", None)
+        )
+        if added_mult and not self.app:
+            for data in added_mult:
+                if not any(o.obj_id == data["obj_id"] for o in self.objects):
+                    self.objects.append(SysMLObject(**data))
+
         boundary = getattr(self, "get_ibd_boundary", lambda: None)()
         if boundary:
             ensure_boundary_contains_parts(boundary, self.objects)
@@ -7082,6 +7201,8 @@ class ArchitectureManagerDialog(tk.Frame):
                 if name:
                     if elem.elem_type == "Block":
                         rename_block(self.repo, elem.elem_id, name)
+                    elif elem.elem_type == "Part":
+                        rename_part(self.repo, elem.elem_id, name)
                     else:
                         elem.name = name
                     self.populate()
