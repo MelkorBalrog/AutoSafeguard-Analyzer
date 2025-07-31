@@ -52,5 +52,34 @@ class MultiplicityPartTests(unittest.TestCase):
         ]
         self.assertEqual(names, ["P[1]", "P[2]", "P[3]"])
 
+    def test_multiplicity_reduction_and_increase(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="W")
+        part = repo.create_element("Block", name="P")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "1..3")
+        add_multiplicity_parts(repo, whole.elem_id, part.elem_id, "1..3", count=2)
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 3)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "1")
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 1)
+        add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "4")
+        objs = [
+            o
+            for o in ibd.objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id
+        ]
+        self.assertEqual(len(objs), 4)
+
 if __name__ == "__main__":
     unittest.main()

@@ -527,8 +527,7 @@ def add_multiplicity_parts(
     """Ensure ``count`` part instances exist according to ``multiplicity``."""
 
     low, high = _parse_multiplicity_range(multiplicity)
-    if low <= 1 and high == 1:
-        return []
+
     desired = count if count is not None else low
     if high is not None:
         desired = min(desired, high)
@@ -547,15 +546,37 @@ def add_multiplicity_parts(
     total = len(existing)
     if count is not None:
         target_total = total + desired
+        if high is not None:
+            target_total = min(target_total, high)
     else:
-        target_total = max(total, desired)
-    if high is not None:
-        target_total = min(target_total, high)
+        target_total = total
+        if total < low:
+            target_total = low
+        if high is not None and target_total > high:
+            target_total = high
 
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
 
-    # rename existing part elements so their names follow the indexing scheme
+    # remove extra part objects if multiplicity decreased
+    if total > target_total:
+        to_remove = existing[target_total:]
+        remove_ids = {o["obj_id"] for o in to_remove}
+        for obj in to_remove:
+            diag.objects.remove(obj)
+            repo.delete_element(obj.get("element_id"))
+        diag.objects = [
+            o
+            for o in diag.objects
+            if not (
+                o.get("obj_type") == "Port"
+                and o.get("properties", {}).get("parent") in {str(rid) for rid in remove_ids}
+            )
+        ]
+        existing = existing[:target_total]
+        total = target_total
+
+    # rename remaining part elements so their names follow the indexing scheme
     for idx, obj in enumerate(existing):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
