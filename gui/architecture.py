@@ -527,11 +527,6 @@ def add_multiplicity_parts(
     """Ensure ``count`` part instances exist according to ``multiplicity``."""
 
     low, high = _parse_multiplicity_range(multiplicity)
-    if low <= 1 and high == 1:
-        return []
-    desired = count if count is not None else low
-    if high is not None:
-        desired = min(desired, high)
 
     diag_id = repo.get_linked_diagram(whole_id)
     diag = repo.diagrams.get(diag_id)
@@ -545,12 +540,37 @@ def add_multiplicity_parts(
         and o.get("properties", {}).get("definition") == part_id
     ]
     total = len(existing)
+
+
+    desired = count if count is not None else low
+    if high is not None:
+        desired = min(desired, high)
     if count is not None:
         target_total = total + desired
     else:
         target_total = max(total, desired)
     if high is not None:
         target_total = min(target_total, high)
+
+    if total > target_total:
+        # remove excess parts starting from the end of the list
+        for obj in existing[target_total:]:
+            diag.objects.remove(obj)
+            elem_id = obj.get("element_id")
+            if elem_id in repo.elements:
+                repo.delete_element(elem_id)
+            if app:
+                for win in getattr(app, "ibd_windows", []):
+                    if getattr(win, "diagram_id", None) == diag.diag_id:
+                        win.objects = [
+                            o
+                            for o in win.objects
+                            if getattr(o, "obj_id", None) != obj.get("obj_id")
+                        ]
+                        win.redraw()
+                        win._sync_to_repository()
+        existing = existing[:target_total]
+        total = len(existing)
 
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
@@ -592,6 +612,20 @@ def add_multiplicity_parts(
                     win.redraw()
                     win._sync_to_repository()
         added.append(obj_dict)
+    # rename all part elements to ensure sequential numbering
+    all_objs = [
+        o
+        for o in diag.objects
+        if o.get("obj_type") == "Part"
+        and o.get("properties", {}).get("definition") == part_id
+    ]
+    for idx, obj in enumerate(all_objs):
+        elem = repo.elements.get(obj.get("element_id"))
+        if elem:
+            expected = f"{base_name}[{idx + 1}]"
+            if elem.name != expected:
+                elem.name = expected
+
     return added
 
 
