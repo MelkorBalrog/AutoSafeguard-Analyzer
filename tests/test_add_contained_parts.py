@@ -188,5 +188,25 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         self.assertIn("Part[1]", names)
         self.assertIn("Part[2]", names)
 
+    def test_rename_part_does_not_duplicate(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship(
+            "Composite Aggregation",
+            whole.elem_id,
+            part.elem_id,
+            properties={"multiplicity": "2"},
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        architecture.add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "2")
+        obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
+        repo.elements[obj["element_id"]].name = "Renamed"
+        architecture.update_block_parts_from_ibd(repo, ibd)
+        architecture._sync_block_parts_from_ibd(repo, ibd.diag_id)
+        props = repo.elements[whole.elem_id].properties.get("partProperties", "")
+        self.assertEqual(props, "Part[2]")
+
 if __name__ == '__main__':
     unittest.main()

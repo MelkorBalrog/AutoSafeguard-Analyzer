@@ -1150,7 +1150,7 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         return
     block = repo.elements[block_id]
     existing = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    diag_names: list[str] = []
+    diag_entries: list[tuple[str, str]] = []
     diag_bases: set[str] = set()
     for obj in getattr(diagram, "objects", []):
         if obj.get("obj_type") != "Part":
@@ -1167,14 +1167,18 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if not name:
             name = obj.get("properties", {}).get("component", "")
         base = name.split("[")[0].strip() if name else ""
-        if base and base not in diag_bases:
-            diag_names.append(name or base)
-            diag_bases.add(base)
+        def_id = obj.get("properties", {}).get("definition")
+        base_def = ""
+        if def_id and def_id in repo.elements:
+            base_def = (repo.elements[def_id].name or def_id).split("[")[0].strip()
+        key = base_def or base
+        if key and key not in diag_bases:
+            diag_entries.append((key, name or key))
+            diag_bases.add(key)
 
     merged_names = list(existing)
     bases = {n.split("[")[0].strip() for n in merged_names}
-    for name in diag_names:
-        base = name.split("[")[0].strip()
+    for base, name in diag_entries:
         if base not in bases:
             merged_names.append(name)
             bases.add(base)
