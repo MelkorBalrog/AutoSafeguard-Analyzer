@@ -903,8 +903,19 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
-        joined = ", ".join(diag_names)
+    # Merge diagram names with existing properties without removing entries that
+    # no longer appear on the diagram. This prevents deleting parts from the
+    # block simply because their objects were removed from the IBD.
+    merged_names = list(existing)
+    bases = {n.split("[")[0].strip() for n in merged_names}
+    for name in diag_names:
+        base = name.split("[")[0].strip()
+        if base not in bases:
+            merged_names.append(name)
+            bases.add(base)
+
+    if merged_names != existing:
+        joined = ", ".join(merged_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
@@ -2891,7 +2902,14 @@ class SysMLDiagramWindow(tk.Frame):
         menu.tk_popup(event.x_root, event.y_root)
 
     def _edit_object(self, obj):
-        SysMLObjectDialog(self, obj)
+        if obj.obj_type == "Block Boundary" and obj.element_id:
+            elem = self.repo.elements.get(obj.element_id)
+            if elem:
+                ElementPropertiesDialog(self, elem)
+            else:
+                SysMLObjectDialog(self, obj)
+        else:
+            SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
