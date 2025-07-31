@@ -311,6 +311,7 @@ class SysMLRepository:
             self.root_package = self.create_element("Package", name="Root")
 
         self._resolve_part_definition_ids()
+        self._resolve_part_associations()
 
     def _resolve_part_definition_ids(self) -> None:
         """Ensure part definitions reference block IDs instead of names."""
@@ -336,6 +337,24 @@ class SysMLRepository:
                     mapped = name_map.get(def_val)
                     if mapped:
                         obj.setdefault("properties", {})["definition"] = mapped
+
+    def _resolve_part_associations(self) -> None:
+        """Ensure part elements and objects link to their aggregation."""
+        for rel in self.relationships:
+            if rel.rel_type not in ("Aggregation", "Composite Aggregation"):
+                continue
+            pid = rel.properties.get("part_elem")
+            if pid and pid in self.elements:
+                self.elements[pid].properties.setdefault("aggregation", rel.rel_id)
+            for diag in self.diagrams.values():
+                for obj in getattr(diag, "objects", []):
+                    if obj.get("obj_type") != "Part":
+                        continue
+                    if obj.get("element_id") == pid or (
+                        obj.get("properties", {}).get("definition") == rel.target
+                        and obj.get("properties", {}).get("aggregation") in (None, "")
+                    ):
+                        obj.setdefault("properties", {})["aggregation"] = rel.rel_id
 
     def get_activity_actions(self) -> list[str]:
         """Return all action names and activity diagram names."""
