@@ -5292,12 +5292,14 @@ class SysMLObjectDialog(simpledialog.Dialog):
             key = "BlockUsage"
         list_props = {
             "ports",
-            "partProperties",
             "operations",
             "behaviors",
             "failureModes",
         }
-        editable_list_props = {"ports", "partProperties"}
+        editable_list_props = {"ports"}
+        if self.obj.obj_type != "Block":
+            list_props.add("partProperties")
+            editable_list_props.add("partProperties")
         reliability_props = {
             "analysis",
             "component",
@@ -5307,7 +5309,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
             "asil",
         }
         app = getattr(self.master, "app", None)
-        for prop in SYSML_PROPERTIES.get(key, []):
+        props = SYSML_PROPERTIES.get(key, [])
+        if self.obj.obj_type == "Block":
+            props = [p for p in props if p != "partProperties"]
+        for prop in props:
             frame = rel_frame if prop in reliability_props else prop_frame
             row = rel_row if prop in reliability_props else prop_row
             ttk.Label(frame, text=f"{prop}:").grid(row=row, column=0, sticky="e", padx=4, pady=2)
