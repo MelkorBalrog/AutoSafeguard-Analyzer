@@ -7,6 +7,7 @@ from sysml.sysml_repository import SysMLRepository
 
 class DummyWindow:
     _get_part_name = InternalBlockDiagramWindow._get_part_name
+    _get_part_key = InternalBlockDiagramWindow._get_part_key
 
     def __init__(self, diagram):
         self.repo = SysMLRepository.get_instance()
@@ -140,7 +141,7 @@ class AddContainedPartsRenderTests(unittest.TestCase):
             win.objects.append(SysMLObject(**obj_dict))
         class DummyDialog:
             def __init__(self, parent, names, visible, hidden):
-                self.result = ["B"]
+                self.result = [names[0]]
         with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
             InternalBlockDiagramWindow.add_contained_parts(win)
         self.assertFalse(win.objects[0].hidden)
@@ -163,7 +164,7 @@ class AddContainedPartsRenderTests(unittest.TestCase):
             win.objects.append(SysMLObject(**obj_dict))
         class DummyDialog:
             def __init__(self, parent, names, visible, hidden):
-                self.result = ["B"]
+                self.result = [names[0]]
         with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
             InternalBlockDiagramWindow.add_contained_parts(win)
         self.assertFalse(win.objects[0].hidden)
@@ -187,7 +188,7 @@ class AddContainedPartsRenderTests(unittest.TestCase):
 
         class DummyDialog:
             def __init__(self, parent, names, visible, hidden):
-                self.result = ["Part"]
+                self.result = [names[0]]
 
         with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
             InternalBlockDiagramWindow.add_contained_parts(win)
@@ -250,7 +251,7 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         ]
         self.assertEqual(len(parts), 2)
         names = {repo.elements[o["element_id"]].name for o in parts}
-        self.assertIn("Part[1]", names)
+        self.assertIn("P", names)
         self.assertIn("Part[2]", names)
 
 if __name__ == '__main__':
