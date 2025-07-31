@@ -727,11 +727,18 @@ def _sync_ibd_partproperty_parts(
     names: list[str] | None = None,
     app=None,
     visible: bool = False,
+    hidden: bool | None = None,
 ) -> list[dict]:
     """Ensure ``block_id``'s IBD includes parts for given ``names``.
 
     If *names* is ``None``, the block's ``partProperties`` attribute is parsed.
-    Returns the list of added part object dictionaries."""
+    Returns the list of added part object dictionaries.
+
+    ``hidden`` is provided for backwards compatibility and overrides the
+    ``visible`` flag when specified."""
+
+    if hidden is not None:
+        visible = not hidden
 
     diag_id = repo.get_linked_diagram(block_id)
     diag = repo.diagrams.get(diag_id)
@@ -1181,6 +1188,74 @@ def remove_aggregation_part(
             pid = rel.properties.pop("part_elem", None)
             if pid and pid in repo.elements:
                 repo.delete_element(pid)
+
+
+def _propagate_part_removal(
+    repo: SysMLRepository,
+    block_id: str,
+    prop_name: str,
+    target_id: str,
+    remove_object: bool = False,
+    app=None,
+) -> None:
+    """Helper used by :func:`remove_partproperty_entry` to drop a part.
+
+    This delegates to :func:`remove_aggregation_part` which already handles
+    updating descendant blocks and any diagrams linked to ``block_id`` when
+    ``remove_object`` is ``True``.
+    """
+
+    remove_aggregation_part(
+        repo,
+        block_id,
+        target_id,
+        remove_object=remove_object,
+        app=app,
+    )
+
+
+def _remove_parts_from_ibd(
+    repo: SysMLRepository, block_id: str, target_id: str, app=None
+) -> None:
+    """Remove part objects referencing ``target_id`` from ``block_id``'s IBD."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return
+    diag.objects = getattr(diag, "objects", [])
+    before = len(diag.objects)
+    diag.objects = [
+        o
+        for o in diag.objects
+        if not (
+            o.get("obj_type") == "Part"
+            and o.get("properties", {}).get("definition") == target_id
+        )
+    ]
+    if len(diag.objects) != before and app:
+        for win in getattr(app, "ibd_windows", []):
+            if getattr(win, "diagram_id", None) == diag_id:
+                win.objects = [
+                    o
+                    for o in win.objects
+                    if not (
+                        o.obj_type == "Part"
+                        and o.properties.get("definition") == target_id
+                    )
+                ]
+                win.redraw()
+                win._sync_to_repository()
+
+
+def _propagate_ibd_part_removal(
+    repo: SysMLRepository, block_id: str, target_id: str, app=None
+) -> None:
+    """Recursively remove part objects from descendants of ``block_id``."""
+
+    for child_id in _find_generalization_children(repo, block_id):
+        _remove_parts_from_ibd(repo, child_id, target_id, app=app)
+        _propagate_ibd_part_removal(repo, child_id, target_id, app=app)
 
 
 def remove_partproperty_entry(
