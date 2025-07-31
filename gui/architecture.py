@@ -903,8 +903,19 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
-        joined = ", ".join(diag_names)
+    # Merge diagram names with existing properties without removing entries that
+    # no longer appear on the diagram. This prevents deleting parts from the
+    # block simply because their objects were removed from the IBD.
+    merged_names = list(existing)
+    bases = {n.split("[")[0].strip() for n in merged_names}
+    for name in diag_names:
+        base = name.split("[")[0].strip()
+        if base not in bases:
+            merged_names.append(name)
+            bases.add(base)
+
+    if merged_names != existing:
+        joined = ", ".join(merged_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
             for o in getattr(d, "objects", []):
@@ -2830,7 +2841,10 @@ class SysMLDiagramWindow(tk.Frame):
             if self._open_linked_diagram(obj):
                 return
             SysMLObjectDialog(self, obj)
+            self._sync_to_repository()
             self.redraw()
+            if getattr(self, "app", None):
+                self.app.update_views()
         else:
             conn = self.find_connection(x, y)
             if conn:
@@ -2895,6 +2909,8 @@ class SysMLDiagramWindow(tk.Frame):
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
+        if getattr(self, "app", None):
+            self.app.update_views()
 
     def _open_linked_diagram(self, obj) -> bool:
         diag_id = self.repo.get_linked_diagram(obj.element_id)
@@ -5529,6 +5545,11 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 propagate_block_port_changes(repo, self.obj.element_id)
                 propagate_block_part_changes(repo, self.obj.element_id)
                 propagate_block_changes(repo, self.obj.element_id)
+                _sync_ibd_partproperty_parts(
+                    repo,
+                    self.obj.element_id,
+                    app=getattr(self.master, "app", None),
+                )
         try:
             if self.obj.obj_type not in (
                 "Initial",
