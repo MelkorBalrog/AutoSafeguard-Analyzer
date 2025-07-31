@@ -202,6 +202,35 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         self.assertIn("Part[1]", names)
         self.assertIn("Part[2]", names)
 
+    def test_dialog_hides_full_multiplicity_parts(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship(
+            "Aggregation",
+            whole.elem_id,
+            part.elem_id,
+            properties={"multiplicity": "1"},
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        architecture._sync_ibd_aggregation_parts(repo, whole.elem_id)
+        win = DummyWindow(ibd)
+        for obj in ibd.objects:
+            win.objects.append(SysMLObject(**obj))
+
+        captured = []
+
+        class CaptureDialog:
+            def __init__(self, parent, names, visible, hidden):
+                captured.extend(names)
+                self.result = []
+
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', CaptureDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+
+        self.assertNotIn("Part", captured)
+
     def test_rename_part_does_not_duplicate(self):
         repo = self.repo
         whole = repo.create_element("Block", name="Whole")
