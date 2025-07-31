@@ -114,5 +114,45 @@ class AddContainedPartsRenderTests(unittest.TestCase):
 
         self.assertIn("B", captured)
 
+    def test_unhide_existing_part(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(block.elem_id, ibd.diag_id)
+        added = architecture._sync_ibd_partproperty_parts(repo, block.elem_id)
+        win = DummyWindow(ibd)
+        for obj_dict in ibd.objects:
+            win.objects.append(SysMLObject(**obj_dict))
+        class DummyDialog:
+            def __init__(self, parent, names, visible, hidden):
+                self.result = ["B"]
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+        self.assertFalse(win.objects[0].hidden)
+
+    def test_unhide_part_with_app(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(block.elem_id, ibd.diag_id)
+        architecture._sync_ibd_partproperty_parts(repo, block.elem_id)
+        win = DummyWindow(ibd)
+        class DummyApp:
+            def __init__(self, win):
+                self.ibd_windows = [win]
+            def update_views(self):
+                pass
+        win.app = DummyApp(win)
+        for obj_dict in ibd.objects:
+            win.objects.append(SysMLObject(**obj_dict))
+        class DummyDialog:
+            def __init__(self, parent, names, visible, hidden):
+                self.result = ["B"]
+        with patch.object(architecture.SysMLObjectDialog, 'ManagePartsDialog', DummyDialog):
+            InternalBlockDiagramWindow.add_contained_parts(win)
+        self.assertFalse(win.objects[0].hidden)
+
 if __name__ == '__main__':
     unittest.main()
