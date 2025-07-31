@@ -222,6 +222,24 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         props = repo.elements[whole.elem_id].properties.get("partProperties", "")
         self.assertEqual(props, "Part[2]")
 
+    def test_rename_part_helper_updates_properties(self):
+        repo = self.repo
+        whole = repo.create_element("Block", name="Whole")
+        part = repo.create_element("Block", name="Part")
+        repo.create_relationship(
+            "Composite Aggregation",
+            whole.elem_id,
+            part.elem_id,
+            properties={"multiplicity": "2"},
+        )
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(whole.elem_id, ibd.diag_id)
+        architecture.add_composite_aggregation_part(repo, whole.elem_id, part.elem_id, "2")
+        obj = next(o for o in ibd.objects if o.get("obj_type") == "Part")
+        architecture.rename_part(repo, obj["element_id"], "New")
+        props = repo.elements[whole.elem_id].properties.get("partProperties", "")
+        self.assertEqual(props, "Part[2]")
+
     def test_definition_change_enforces_multiplicity(self):
         repo = self.repo
         whole = repo.create_element("Block", name="Whole")

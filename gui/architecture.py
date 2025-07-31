@@ -374,6 +374,22 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
             repo.touch_diagram(diag.diag_id)
 
 
+def rename_part(repo: SysMLRepository, part_id: str, new_name: str) -> None:
+    """Rename ``part_id`` and update aggregation lists."""
+    part = repo.elements.get(part_id)
+    if not part or part.elem_type != "Part":
+        return
+    if part.name == new_name:
+        return
+    part.name = new_name
+    diag_id = repo.element_diagrams.get(part_id)
+    if diag_id and diag_id in repo.diagrams:
+        diag = repo.diagrams[diag_id]
+        update_block_parts_from_ibd(repo, diag)
+        _sync_block_parts_from_ibd(repo, diag_id)
+        repo.touch_diagram(diag_id)
+
+
 def add_aggregation_part(
     repo: SysMLRepository,
     whole_id: str,
@@ -7189,6 +7205,8 @@ class ArchitectureManagerDialog(tk.Frame):
                 if name:
                     if elem.elem_type == "Block":
                         rename_block(self.repo, elem.elem_id, name)
+                    elif elem.elem_type == "Part":
+                        rename_part(self.repo, elem.elem_id, name)
                     else:
                         elem.name = name
                     self.populate()
