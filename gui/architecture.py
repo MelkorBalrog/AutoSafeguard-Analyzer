@@ -6804,6 +6804,10 @@ class ElementPropertiesDialog(simpledialog.Dialog):
         key = f"{self.element.elem_type.replace(' ', '')}Usage"
         row = 1
         for prop in SYSML_PROPERTIES.get(key, []):
+            if prop == "partProperties":
+                # Part properties are configured through dedicated dialogs.
+                # Skip them in the generic properties window.
+                continue
             ttk.Label(master, text=f"{prop}:").grid(row=row, column=0, sticky="e", padx=4, pady=2)
             var = tk.StringVar(value=self.element.properties.get(prop, ""))
             ttk.Entry(master, textvariable=var).grid(row=row, column=1, padx=4, pady=2)
