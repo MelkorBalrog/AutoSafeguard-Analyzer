@@ -3827,6 +3827,7 @@ class SysMLDiagramWindow(tk.Frame):
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
             has_name = bool(name) and not _is_default_part_name(def_name, name)
+
         if not has_name:
             name = ""
         if obj.obj_type == "Part":
