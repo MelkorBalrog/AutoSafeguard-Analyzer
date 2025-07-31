@@ -903,7 +903,7 @@ def update_block_parts_from_ibd(repo: SysMLRepository, diagram: SysMLDiagram) ->
         if base and base not in diag_bases:
             diag_names.append(name or base)
             diag_bases.add(base)
-    if diag_names != existing:
+    if diag_names and diag_names != existing:
         joined = ", ".join(diag_names)
         block.properties["partProperties"] = joined
         for d in repo.diagrams.values():
@@ -2829,8 +2829,13 @@ class SysMLDiagramWindow(tk.Frame):
         if obj:
             if self._open_linked_diagram(obj):
                 return
-            SysMLObjectDialog(self, obj)
-            self.redraw()
+            if obj.obj_type == "Block Boundary" and obj.element_id in self.repo.elements:
+                ElementPropertiesDialog(self, self.repo.elements[obj.element_id])
+                self._sync_to_repository()
+                self.redraw()
+            else:
+                SysMLObjectDialog(self, obj)
+                self.redraw()
         else:
             conn = self.find_connection(x, y)
             if conn:
@@ -2891,7 +2896,10 @@ class SysMLDiagramWindow(tk.Frame):
         menu.tk_popup(event.x_root, event.y_root)
 
     def _edit_object(self, obj):
-        SysMLObjectDialog(self, obj)
+        if obj.obj_type == "Block Boundary" and obj.element_id in self.repo.elements:
+            ElementPropertiesDialog(self, self.repo.elements[obj.element_id])
+        else:
+            SysMLObjectDialog(self, obj)
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
@@ -5529,6 +5537,17 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 propagate_block_port_changes(repo, self.obj.element_id)
                 propagate_block_part_changes(repo, self.obj.element_id)
                 propagate_block_changes(repo, self.obj.element_id)
+                if self.obj.obj_type == "Block Boundary":
+                    added = _sync_ibd_partproperty_parts(
+                        repo, self.obj.element_id, app=getattr(self.master, "app", None)
+                    )
+                    for data in added:
+                        data["hidden"] = False
+                        if not any(o.obj_id == data["obj_id"] for o in self.master.objects):
+                            self.master.objects.append(SysMLObject(**data))
+                    if added:
+                        self.master.redraw()
+                        self.master._sync_to_repository()
         try:
             if self.obj.obj_type not in (
                 "Initial",
