@@ -670,6 +670,28 @@ def add_multiplicity_parts(
     return added
 
 
+def _enforce_ibd_multiplicity(
+    repo: SysMLRepository, block_id: str, app=None
+) -> list[dict]:
+    """Ensure ``block_id``'s IBD obeys aggregation multiplicities.
+
+    Returns a list of added part object dictionaries."""
+
+    added: list[dict] = []
+    src_ids = [block_id] + _collect_generalization_parents(repo, block_id)
+    for rel in repo.relationships:
+        if (
+            rel.rel_type in ("Aggregation", "Composite Aggregation")
+            and rel.source in src_ids
+        ):
+            mult = rel.properties.get("multiplicity", "")
+            if mult:
+                added.extend(
+                    add_multiplicity_parts(repo, block_id, rel.target, mult, app=app)
+                )
+    return added
+
+
 def _sync_ibd_composite_parts(
     repo: SysMLRepository, block_id: str, app=None
 ) -> list[dict]:
@@ -6583,6 +6605,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 for o in getattr(d, "objects", []):
                     if o.get("element_id") == block_id:
                         o.setdefault("properties", {})["partProperties"] = joined
+
+        # enforce multiplicity for aggregated parts
+        added_mult = _enforce_ibd_multiplicity(
+            repo, block_id, app=getattr(self, "app", None)
+        )
+        if added_mult and not self.app:
+            for data in added_mult:
+                if not any(o.obj_id == data["obj_id"] for o in self.objects):
+                    self.objects.append(SysMLObject(**data))
 
         boundary = getattr(self, "get_ibd_boundary", lambda: None)()
         if boundary:
