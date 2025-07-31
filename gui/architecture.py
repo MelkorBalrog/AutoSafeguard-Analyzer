@@ -567,45 +567,6 @@ def add_multiplicity_parts(
         if high is not None and target_total > high:
             target_total = high
 
-    if total > target_total:
-        # remove excess parts starting from the end of the list
-        for obj in existing[target_total:]:
-            diag.objects.remove(obj)
-            elem_id = obj.get("element_id")
-            if elem_id in repo.elements:
-                repo.delete_element(elem_id)
-            if app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag.diag_id:
-                        win.objects = [
-                            o
-                            for o in win.objects
-                            if getattr(o, "obj_id", None) != obj.get("obj_id")
-                        ]
-                        win.redraw()
-                        win._sync_to_repository()
-        existing = existing[:target_total]
-        total = len(existing)
-
-    if total > target_total:
-        # remove excess parts starting from the end of the list
-        for obj in existing[target_total:]:
-            diag.objects.remove(obj)
-            elem_id = obj.get("element_id")
-            if elem_id in repo.elements:
-                repo.delete_element(elem_id)
-            if app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag.diag_id:
-                        win.objects = [
-                            o
-                            for o in win.objects
-                            if getattr(o, "obj_id", None) != obj.get("obj_id")
-                        ]
-                        win.redraw()
-                        win._sync_to_repository()
-        existing = existing[:target_total]
-        total = len(existing)
 
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
@@ -627,6 +588,16 @@ def add_multiplicity_parts(
         ]
         existing = existing[:target_total]
         total = target_total
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects = [
+                        o
+                        for o in win.objects
+                        if getattr(o, "obj_id", None) not in remove_ids
+                    ]
+                    win.redraw()
+                    win._sync_to_repository()
 
     # rename remaining part elements if they still have default names
     for idx, obj in enumerate(existing):
