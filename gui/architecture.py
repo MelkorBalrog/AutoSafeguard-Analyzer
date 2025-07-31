@@ -761,6 +761,8 @@ def _sync_ibd_partproperty_parts(
             "obj_type": "Part",
             "x": base_x,
             "y": base_y,
+            "width": 80.0,
+            "height": 40.0,
             "element_id": part_elem.elem_id,
             "properties": {"definition": target_id},
             "hidden": True,
