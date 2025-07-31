@@ -1012,6 +1012,17 @@ def remove_aggregation_part(
     part = repo.elements.get(part_id)
     if not whole or not part:
         return
+    rel = next(
+        (
+            r
+            for r in repo.relationships
+            if r.rel_type in ("Composite Aggregation", "Aggregation")
+            and r.source == whole_id
+            and r.target == part_id
+        ),
+        None,
+    )
+    part_elem = rel.properties.get("part_elem") if rel else None
     name = part.name or part_id
     parts = [p.strip() for p in whole.properties.get("partProperties", "").split(",") if p.strip()]
     new_parts = [p for p in parts if p.split("[")[0].strip() != name]
@@ -1028,53 +1039,18 @@ def remove_aggregation_part(
                     else:
                         o.setdefault("properties", {}).pop("partProperties", None)
 
-    # propagate removals to any generalization children
-    for child_id in _find_generalization_children(repo, whole_id):
-        child = repo.elements.get(child_id)
-        if not child:
-            continue
-        child_parts = [
-            p.strip() for p in child.properties.get("partProperties", "").split(",") if p.strip()
-        ]
-        child_parts = [p for p in child_parts if p.split("[")[0].strip() != name]
-        if child_parts:
-            child.properties["partProperties"] = ", ".join(child_parts)
-        else:
-            child.properties.pop("partProperties", None)
-        for d in repo.diagrams.values():
-            for o in getattr(d, "objects", []):
-                if o.get("element_id") == child_id:
-                    if child_parts:
-                        o.setdefault("properties", {})["partProperties"] = ", ".join(child_parts)
-                    else:
-                        o.setdefault("properties", {}).pop("partProperties", None)
+    _propagate_part_removal(
+        repo,
+        whole_id,
+        name,
+        part_id,
+        part_elem,
+        remove_object=remove_object,
+        app=app,
+    )
     if remove_object:
-        diag_id = repo.get_linked_diagram(whole_id)
-        diag = repo.diagrams.get(diag_id)
-        if diag and diag.diag_type == "Internal Block Diagram":
-            diag.objects = getattr(diag, "objects", [])
-            before = len(diag.objects)
-            diag.objects = [
-                o
-                for o in diag.objects
-                if not (
-                    o.get("obj_type") == "Part"
-                    and o.get("properties", {}).get("definition") == part_id
-                )
-            ]
-            if len(diag.objects) != before and app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag_id:
-                        win.objects = [
-                            o
-                            for o in win.objects
-                            if not (
-                                o.obj_type == "Part"
-                                and o.properties.get("definition") == part_id
-                            )
-                        ]
-                        win.redraw()
-                        win._sync_to_repository()
+        _remove_parts_from_ibd(repo, whole_id, part_id, part_elem, app=app)
+        _propagate_ibd_part_removal(repo, whole_id, part_id, part_elem, app=app)
         # remove stored part element if any
         rel = next(
             (
@@ -1326,6 +1302,127 @@ def remove_orphan_ports(objs: List[SysMLObject]) -> None:
                 continue
         filtered.append(o)
     objs[:] = filtered
+
+
+def _remove_parts_from_ibd(
+    repo: SysMLRepository,
+    block_id: str,
+    part_def: str,
+    part_elem: str | None = None,
+    app=None,
+) -> None:
+    """Delete part objects for ``part_def`` from ``block_id``'s IBD."""
+
+    diag_id = repo.get_linked_diagram(block_id)
+    diag = repo.diagrams.get(diag_id)
+    if not diag or diag.diag_type != "Internal Block Diagram":
+        return
+    diag.objects = getattr(diag, "objects", [])
+    removed_ids: list[str] = []
+    kept: list[dict] = []
+    for obj in diag.objects:
+        if obj.get("obj_type") == "Part" and (
+            obj.get("properties", {}).get("definition") == part_def
+            or (part_elem and obj.get("element_id") == part_elem)
+        ):
+            removed_ids.append(str(obj.get("obj_id")))
+            continue
+        kept.append(obj)
+    if not removed_ids:
+        return
+    diag.objects = [
+        o
+        for o in kept
+        if not (
+            o.get("obj_type") == "Port"
+            and o.get("properties", {}).get("parent") in removed_ids
+        )
+    ]
+    repo.touch_diagram(diag.diag_id)
+    if app:
+        for win in getattr(app, "ibd_windows", []):
+            if getattr(win, "diagram_id", None) != diag.diag_id:
+                continue
+            win.objects = [
+                o
+                for o in win.objects
+                if not (
+                    o.obj_type == "Part"
+                    and (
+                        o.properties.get("definition") == part_def
+                        or (part_elem and o.element_id == part_elem)
+                    )
+                )
+            ]
+            win.objects = [
+                o
+                for o in win.objects
+                if not (
+                    o.obj_type == "Port"
+                    and str(o.properties.get("parent")) in removed_ids
+                )
+            ]
+            remove_orphan_ports(win.objects)
+            win.redraw()
+            win._sync_to_repository()
+
+
+def _propagate_part_removal(
+    repo: SysMLRepository,
+    block_id: str,
+    part_name: str,
+    part_def: str,
+    part_elem: str | None = None,
+    remove_object: bool = False,
+    app=None,
+) -> None:
+    """Remove ``part_name`` from children of ``block_id`` and update diagrams."""
+
+    for child_id in _find_generalization_children(repo, block_id):
+        child = repo.elements.get(child_id)
+        if not child:
+            continue
+        child_parts = [
+            p.strip() for p in child.properties.get("partProperties", "").split(",") if p.strip()
+        ]
+        new_parts = [p for p in child_parts if p.split("[")[0].strip() != part_name]
+        if len(new_parts) != len(child_parts):
+            if new_parts:
+                child.properties["partProperties"] = ", ".join(new_parts)
+            else:
+                child.properties.pop("partProperties", None)
+            for d in repo.diagrams.values():
+                for o in getattr(d, "objects", []):
+                    if o.get("element_id") == child_id:
+                        if new_parts:
+                            o.setdefault("properties", {})["partProperties"] = ", ".join(new_parts)
+                        else:
+                            o.setdefault("properties", {}).pop("partProperties", None)
+        if remove_object:
+            _remove_parts_from_ibd(repo, child_id, part_def, part_elem, app=app)
+        _propagate_part_removal(
+            repo,
+            child_id,
+            part_name,
+            part_def,
+            part_elem,
+            remove_object=remove_object,
+            app=app,
+        )
+
+
+def _propagate_ibd_part_removal(
+    repo: SysMLRepository,
+    block_id: str,
+    part_def: str,
+    part_elem: str | None = None,
+    app=None,
+) -> None:
+    """Remove part objects from ``block_id`` and all its descendants."""
+
+    for child_id in _find_generalization_children(repo, block_id):
+        _remove_parts_from_ibd(repo, child_id, part_def, part_elem, app=app)
+        _propagate_ibd_part_removal(repo, child_id, part_def, part_elem, app=app)
 
 
 def snap_port_to_parent_obj(port: SysMLObject, parent: SysMLObject) -> None:
