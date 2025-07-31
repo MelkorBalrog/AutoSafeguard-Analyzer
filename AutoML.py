@@ -2154,6 +2154,9 @@ class FaultTreeApp:
         tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
         self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
+        # Maintain backwards compatibility with older code referencing
+        # ``self.treeview`` for the main explorer tree.
+        self.treeview = self.analysis_tree
 
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
@@ -3079,12 +3082,12 @@ class FaultTreeApp:
             self.close_page_diagram()
 
     def move_top_event_up(self):
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         if not sel:
             messagebox.showwarning("Move Up", "Select a top-level event to move.")
             return
         try:
-            node_id = int(self.treeview.item(sel[0], "tags")[0])
+            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
         except Exception:
             return
         # Find the index in the top_events list.
@@ -3100,12 +3103,12 @@ class FaultTreeApp:
         self.update_views()
 
     def move_top_event_down(self):
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         if not sel:
             messagebox.showwarning("Move Down", "Select a top-level event to move.")
             return
         try:
-            node_id = int(self.treeview.item(sel[0], "tags")[0])
+            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
         except Exception:
             return
         index = next((i for i, event in enumerate(self.top_events) if event.unique_id == node_id), None)
@@ -3568,11 +3571,11 @@ class FaultTreeApp:
                 te.controllability = sg_data[name]["cont"]
 
     def edit_selected(self):
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         target = None
         if sel:
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 return
             target = self.find_node_by_id_all(node_id)
@@ -7602,11 +7605,11 @@ class FaultTreeApp:
                 messagebox.showerror("Save Error", f"An error occurred: {e}")
 
     def on_treeview_click(self, event):
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         if not sel:
             return
         try:
-            node_id = int(self.treeview.item(sel[0], "tags")[0])
+            node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
         except (IndexError, ValueError):
             return
         node = self.find_node_by_id_all(node_id)
@@ -7788,7 +7791,7 @@ class FaultTreeApp:
             self.close_page_diagram()
 
         # Clear the tree view.
-        self.treeview.delete(*self.treeview.get_children())
+        self.analysis_tree.delete(*self.analysis_tree.get_children())
 
         # Destroy the old canvas_frame and re-create it.
         if self.canvas_frame:
@@ -8639,7 +8642,7 @@ class FaultTreeApp:
         # If the node has no parent (i.e. it's a top-level event), display it.
         if not node.parents or node.node_type.upper() == "TOP EVENT" or node.is_page:
             txt = node.name
-            item_id = self.treeview.insert(parent_item, "end", text=txt, open=True, tags=(str(node.unique_id),))
+            item_id = self.analysis_tree.insert(parent_item, "end", text=txt, open=True, tags=(str(node.unique_id),))
             # Recursively insert all children regardless of their type.
             for child in node.children:
                 self.insert_node_in_tree(item_id, child)
@@ -8927,10 +8930,10 @@ class FaultTreeApp:
                 return
             parent_node = self.selected_node
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if sel:
                 try:
-                    node_id = int(self.treeview.item(sel[0], "tags")[0])
+                    node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
                 except (IndexError, ValueError):
                     messagebox.showwarning("No selection", "Select a parent node from the tree.")
                     return
@@ -8989,12 +8992,12 @@ class FaultTreeApp:
                 messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
                 return
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if not sel:
                 messagebox.showwarning("No selection", "Select a parent node to paste into.")
                 return
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning("No selection", "Select a parent node from the tree.")
                 return
@@ -9029,12 +9032,12 @@ class FaultTreeApp:
                 messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
                 return
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if not sel:
                 messagebox.showwarning("No selection", "Select a parent node to paste into.")
                 return
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning("No selection", "Select a parent node from the tree.")
                 return
@@ -9069,12 +9072,12 @@ class FaultTreeApp:
                 messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
                 return
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if not sel:
                 messagebox.showwarning("No selection", "Select a parent node to paste into.")
                 return
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning("No selection", "Select a parent node from the tree.")
                 return
@@ -9092,10 +9095,10 @@ class FaultTreeApp:
 
 
     def remove_node(self):
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         target = None
         if sel:
-            tags = self.treeview.item(sel[0], "tags")
+            tags = self.analysis_tree.item(sel[0], "tags")
             target = self.find_node_by_id(self.root_node, int(tags[0]))
         elif self.selected_node:
             target = self.selected_node
@@ -9179,12 +9182,12 @@ class FaultTreeApp:
                 messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
                 return
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if not sel:
                 messagebox.showwarning("No selection", "Select a parent node to paste into.")
                 return
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning("No selection", "Select a parent node from the tree.")
                 return
@@ -9221,12 +9224,12 @@ class FaultTreeApp:
                 messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
                 return
         else:
-            sel = self.treeview.selection()
+            sel = self.analysis_tree.selection()
             if not sel:
                 messagebox.showwarning("No selection", "Select a parent node to paste into.")
                 return
             try:
-                node_id = int(self.treeview.item(sel[0], "tags")[0])
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
             except (IndexError, ValueError):
                 messagebox.showwarning("No selection", "Select a parent node from the tree.")
                 return
@@ -13212,9 +13215,9 @@ class FaultTreeApp:
     def paste_node(self):
         # 1) Determine target from selection or current selected node.
         target = None
-        sel = self.treeview.selection()
+        sel = self.analysis_tree.selection()
         if sel:
-            tags = self.treeview.item(sel[0], "tags")
+            tags = self.analysis_tree.item(sel[0], "tags")
             if tags:
                 target = self.find_node_by_id(self.root_node, int(tags[0]))
         if not target:
