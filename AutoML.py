@@ -2272,6 +2272,10 @@ class FaultTreeApp:
         self.doc_nb = ClosableNotebook(self.main_pane)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.main_pane.add(self.doc_nb, stretch="always")
+        # Tooltip helper for document tabs
+        self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
+        self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
+        self.doc_nb.bind("<Leave>", lambda _e: self._doc_tip.hide())
 
         self._create_fta_tab()
         self.root_node = FaultTreeNode("", "TOP EVENT")
@@ -7724,6 +7728,24 @@ class FaultTreeApp:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
 
+    def _on_doc_tab_motion(self, event):
+        """Show tooltip for document notebook tabs when hovering over them."""
+        try:
+            idx = self.doc_nb.index(f"@{event.x},{event.y}")
+        except tk.TclError:
+            self._doc_tip.hide()
+            return
+        text = self.doc_nb.tab(idx, "text")
+        bbox = self.doc_nb.bbox(idx)
+        if not bbox:
+            self._doc_tip.hide()
+            return
+        x = self.doc_nb.winfo_rootx() + bbox[0] + bbox[2] // 2
+        y = self.doc_nb.winfo_rooty() + bbox[1] + bbox[3]
+        if self._doc_tip.text != text:
+            self._doc_tip.text = text
+        self._doc_tip.show(x, y)
+
     def on_ctrl_mousewheel(self, event):
         if event.delta > 0:
             self.zoom_in()
@@ -12417,7 +12439,9 @@ class FaultTreeApp:
             def body(self, master):
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
-                ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
+                name_entry = ttk.Entry(master, textvariable=self.name_var)
+                name_entry.grid(row=0, column=1, sticky="ew")
+                ToolTip(name_entry, "Scenario library name.")
                 ttk.Label(master, text="ODD Libraries").grid(row=1, column=0, sticky="ne")
                 self.lb = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5)
                 for i, lib in enumerate(self.app.odd_libraries):
@@ -12425,6 +12449,7 @@ class FaultTreeApp:
                     if lib.get("name", "") in self.data.get("odds", []):
                         self.lb.selection_set(i)
                 self.lb.grid(row=1, column=1, sticky="nsew")
+                ToolTip(self.lb, "Libraries providing ODD elements used by scenarios.")
                 master.grid_rowconfigure(1, weight=1)
                 master.grid_columnconfigure(1, weight=1)
 
@@ -12451,15 +12476,21 @@ class FaultTreeApp:
             def body(self, master):
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
-                ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
+                name_entry = ttk.Entry(master, textvariable=self.name_var)
+                name_entry.grid(row=0, column=1, sticky="ew")
+                ToolTip(name_entry, "Short scenario identifier.")
 
                 ttk.Label(master, text="Other Road Users").grid(row=1, column=0, sticky="e")
                 self.beh_var = tk.StringVar(value=self.data.get("behavior", ""))
-                ttk.Entry(master, textvariable=self.beh_var).grid(row=1, column=1, sticky="ew")
+                beh_entry = ttk.Entry(master, textvariable=self.beh_var)
+                beh_entry.grid(row=1, column=1, sticky="ew")
+                ToolTip(beh_entry, "Participating vehicles, pedestrians, etc.")
 
                 ttk.Label(master, text="Scenery").grid(row=2, column=0, sticky="e")
                 self.sce_var = tk.StringVar(value=self.data.get("scenery", ""))
-                ttk.Entry(master, textvariable=self.sce_var).grid(row=2, column=1, sticky="ew")
+                sce_entry = ttk.Entry(master, textvariable=self.sce_var)
+                sce_entry.grid(row=2, column=1, sticky="ew")
+                ToolTip(sce_entry, "Static environment description.")
 
                 elems = []
                 for name in self.lib.get("odds", []):
@@ -12477,21 +12508,31 @@ class FaultTreeApp:
                 self.elem_var = tk.StringVar()
                 self.elem_combo = ttk.Combobox(master, textvariable=self.elem_var, values=elems, state="readonly")
                 self.elem_combo.grid(row=3, column=1, sticky="ew")
-                ttk.Button(master, text="To Scenery", command=self.insert_elem).grid(row=3, column=2, padx=2)
-                ttk.Button(master, text="To Desc", command=self.insert_desc_elem).grid(row=3, column=3, padx=2)
+                ToolTip(self.elem_combo, "Select an ODD element to insert.")
+                to_sce = ttk.Button(master, text="To Scenery", command=self.insert_elem)
+                to_sce.grid(row=3, column=2, padx=2)
+                ToolTip(to_sce, "Append the element to the Scenery field.")
+                to_desc = ttk.Button(master, text="To Desc", command=self.insert_desc_elem)
+                to_desc.grid(row=3, column=3, padx=2)
+                ToolTip(to_desc, "Insert the element into the description.")
 
                 tc_names = [n.user_name or f"TC {n.unique_id}" for n in self.app.get_all_triggering_conditions()]
                 fi_names = [n.user_name or f"FI {n.unique_id}" for n in self.app.get_all_functional_insufficiencies()]
                 ttk.Label(master, text="Triggering Condition").grid(row=4, column=0, sticky="e")
                 self.tc_var = tk.StringVar(value=self.data.get("tc", ""))
-                ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly").grid(row=4, column=1, sticky="ew")
+                tc_cb = ttk.Combobox(master, textvariable=self.tc_var, values=tc_names, state="readonly")
+                tc_cb.grid(row=4, column=1, sticky="ew")
+                ToolTip(tc_cb, "Associated triggering condition.")
                 ttk.Label(master, text="Functional Insufficiency").grid(row=5, column=0, sticky="e")
                 self.fi_var = tk.StringVar(value=self.data.get("fi", ""))
-                ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly").grid(row=5, column=1, sticky="ew")
+                fi_cb = ttk.Combobox(master, textvariable=self.fi_var, values=fi_names, state="readonly")
+                fi_cb.grid(row=5, column=1, sticky="ew")
+                ToolTip(fi_cb, "Functional insufficiency causing the hazard.")
 
                 ttk.Label(master, text="Description").grid(row=6, column=0, sticky="ne")
                 self.desc = tk.Text(master, height=4, width=40, wrap="word")
                 self.desc.grid(row=6, column=1, columnspan=3, sticky="nsew")
+                ToolTip(self.desc, "Detailed scenario description. Use [[name]] to link elements.")
                 self.load_desc_links()
                 master.grid_columnconfigure(1, weight=1)
 
@@ -12660,21 +12701,29 @@ class FaultTreeApp:
                 r = len(self.attr_rows)
                 k_var = tk.StringVar(value=key)
                 v_var = tk.StringVar(value=str(val))
-                ttk.Entry(self.attr_frame, textvariable=k_var).grid(row=r, column=0, padx=2, pady=2)
-                ttk.Entry(self.attr_frame, textvariable=v_var).grid(row=r, column=1, padx=2, pady=2)
+                k_entry = ttk.Entry(self.attr_frame, textvariable=k_var)
+                k_entry.grid(row=r, column=0, padx=2, pady=2)
+                ToolTip(k_entry, "Attribute name.")
+                v_entry = ttk.Entry(self.attr_frame, textvariable=v_var)
+                v_entry.grid(row=r, column=1, padx=2, pady=2)
+                ToolTip(v_entry, "Attribute value.")
                 self.attr_rows.append((k_var, v_var))
 
             def body(self, master):
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
-                ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
+                name_entry = ttk.Entry(master, textvariable=self.name_var)
+                name_entry.grid(row=0, column=1, sticky="ew")
+                ToolTip(name_entry, "Element name or ID.")
                 self.attr_frame = ttk.Frame(master)
                 self.attr_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
                 self.attr_rows = []
                 for k, v in self.data.items():
                     if k != "name":
                         self.add_attr_row(k, v)
-                ttk.Button(master, text="Add Attribute", command=self.add_attr_row).grid(row=2, column=0, columnspan=2, pady=5)
+                add_btn = ttk.Button(master, text="Add Attribute", command=self.add_attr_row)
+                add_btn.grid(row=2, column=0, columnspan=2, pady=5)
+                ToolTip(add_btn, "Add another attribute field.")
 
             def apply(self):
                 new_data = {"name": self.name_var.get()}
