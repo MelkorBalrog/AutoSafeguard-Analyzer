@@ -8251,6 +8251,7 @@ class FaultTreeApp:
         for doc in getattr(self, "hazop_docs", []):
             names.update(e.component for e in doc.entries if getattr(e, "component", ""))
         names.update(c.name for c in self.reliability_components)
+        names.update(self.get_all_part_names())
         for be in self.get_all_basic_events():
             comp = self.get_component_name_for_node(be)
             if comp:
@@ -8270,6 +8271,25 @@ class FaultTreeApp:
                 if comp:
                     names.add(comp)
         return sorted(n for n in names if n)
+
+    def get_all_part_names(self) -> list[str]:
+        """Return component names from all internal block diagrams."""
+        repo = SysMLRepository.get_instance()
+        names = set()
+        for diag in repo.diagrams.values():
+            if diag.diag_type != "Internal Block Diagram":
+                continue
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Part":
+                    continue
+                comp = obj.get("properties", {}).get("component", "")
+                if not comp:
+                    eid = obj.get("element_id")
+                    if eid and eid in repo.elements:
+                        comp = repo.elements[eid].properties.get("component", "")
+                if comp:
+                    names.add(comp)
+        return sorted(names)
 
     def get_all_malfunction_names(self):
         """Return unique malfunction names from HAZOP entries."""
@@ -10340,6 +10360,8 @@ class FaultTreeApp:
             else:
                 comp = getattr(self.node, "fmea_component", "")
             comp_names = {c.name for c in self.app.reliability_components}
+            part_names = set(self.app.get_all_part_names())
+            comp_names.update(part_names)
             # Gather failure modes from gates and FMEA/FMEDA tables only
             basic_events = self.app.get_non_basic_failure_modes()
             for be in basic_events:
@@ -10382,6 +10404,20 @@ class FaultTreeApp:
                                           values=mode_names, width=30)
             self.mode_combo.grid(row=1, column=1, padx=5, pady=5)
 
+            def auto_fault():
+                comp = self.comp_var.get().strip()
+                mode = self.mode_var.get().strip()
+                if not comp or not mode:
+                    return
+                if comp not in part_names:
+                    name = f"{comp} is {mode}"
+                    if name not in self.fault_names:
+                        self.cause_list.insert(tk.END, name)
+                        self.fault_names.append(name)
+                    idx = self.fault_names.index(name)
+                    self.cause_list.selection_clear(0, tk.END)
+                    self.cause_list.select_set(idx)
+
             def mode_sel(_):
                 label = self.mode_var.get()
                 src = self.mode_map.get(label)
@@ -10396,6 +10432,8 @@ class FaultTreeApp:
                         for i, name in enumerate(fault_names):
                             if name in faults:
                                 self.cause_list.select_set(i)
+                    else:
+                        auto_fault()
             
             self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
@@ -10407,8 +10445,9 @@ class FaultTreeApp:
                 self.effect_text.grid(row=row_next, column=1, padx=5, pady=5)
                 row_next += 1
 
-            ttk.Label(gen_frame, text="Potential Cause:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
-            fault_names = sorted(set(self.app.faults))
+            ttk.Label(gen_frame, text="Related Fault:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
+            fault_names = list(sorted(set(self.app.faults)))
+            self.fault_names = fault_names
             self.cause_list = tk.Listbox(gen_frame, selectmode=tk.MULTIPLE, height=4, exportselection=False)
             for name in fault_names:
                 self.cause_list.insert(tk.END, name)
@@ -10561,10 +10600,12 @@ class FaultTreeApp:
                 comp = next((c for c in self.app.reliability_components if c.name == name), None)
                 if comp is not None:
                     self.fit_var.set(comp.fit)
+                auto_fault()
 
             self.comp_combo.bind("<<ComboboxSelected>>", comp_sel)
             comp_sel()
             mode_sel(None)
+            auto_fault()
 
             row += 1
             ttk.Label(metric_frame, text="DC Target:").grid(row=row, column=0, sticky="e", padx=5, pady=5)

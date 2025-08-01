@@ -422,7 +422,9 @@ class ReliabilityWindow(tk.Frame):
         dialog.title("New Component")
         ttk.Label(dialog, text="Name").grid(row=0, column=0, padx=5, pady=5, sticky="e")
         name_var = tk.StringVar()
-        ttk.Entry(dialog, textvariable=name_var).grid(row=0, column=1, padx=5, pady=5)
+        part_names = self.app.get_all_part_names()
+        name_cb = ttk.Combobox(dialog, textvariable=name_var, values=part_names)
+        name_cb.grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(dialog, text="Type").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         type_var = tk.StringVar(value="capacitor")
         type_cb = ttk.Combobox(
