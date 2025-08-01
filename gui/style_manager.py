@@ -1,7 +1,12 @@
 import os
+import sys
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
-_DEFAULT_STYLE = os.path.join(os.path.dirname(__file__), '..', 'styles', 'pastel.xml')
+_DEFAULT_STYLE = Path(__file__).resolve().parent.parent / 'styles' / 'pastel.xml'
+if getattr(sys, 'frozen', False):
+    # When packaged by PyInstaller resources live under sys._MEIPASS
+    _DEFAULT_STYLE = Path(sys._MEIPASS) / 'styles' / 'pastel.xml'
 
 class StyleManager:
     """Singleton manager for diagram styles loaded from XML files."""
@@ -22,8 +27,10 @@ class StyleManager:
             cls._instance = StyleManager()
         return cls._instance
 
-    def load_style(self, path: str) -> None:
-        if not os.path.isfile(path):
+    def load_style(self, path) -> None:
+        """Load style definitions from *path* if it exists."""
+        path = Path(path)
+        if not path.is_file():
             return
         tree = ET.parse(path)
         root = tree.getroot()
