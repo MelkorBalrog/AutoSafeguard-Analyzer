@@ -283,9 +283,7 @@ def _multiplicity_limit_exceeded(
 
     limit: int | None = 0
     for rel in rels:
-        mult = rel.properties.get("multiplicity", "")
-        if not mult:
-            mult = "1"
+        mult = rel.properties.get("multiplicity", "1")
 
         low, high = _parse_multiplicity_range(mult)
         if high is None:
@@ -539,7 +537,24 @@ def add_aggregation_part(
         ),
         None,
     )
-    if rel and not rel.properties.get("part_elem"):
+    if not rel:
+        rel = next(
+            (
+                r
+                for r in repo.relationships
+                if r.rel_type == "Composite Aggregation"
+                and r.source == whole_id
+                and r.target == part_id
+            ),
+            None,
+        )
+    if not rel:
+        rel = repo.create_relationship("Aggregation", whole_id, part_id)
+    if multiplicity:
+        rel.properties["multiplicity"] = multiplicity
+    else:
+        rel.properties.pop("multiplicity", None)
+    if not rel.properties.get("part_elem"):
         part_elem = repo.create_element(
             "Part",
             name=repo.elements.get(part_id).name or part_id,
@@ -580,6 +595,12 @@ def add_composite_aggregation_part(
         ),
         None,
     )
+    if not rel:
+        rel = repo.create_relationship("Composite Aggregation", whole_id, part_id)
+    if multiplicity:
+        rel.properties["multiplicity"] = multiplicity
+    else:
+        rel.properties.pop("multiplicity", None)
     if not diag or diag.diag_type != "Internal Block Diagram":
         if rel and not rel.properties.get("part_elem"):
             part_elem = repo.create_element(
@@ -4004,7 +4025,9 @@ class SysMLDiagramWindow(tk.Frame):
                             and rel.source == block_id
                             and rel.target == def_id
                         ):
-                            mult = rel.properties.get("multiplicity") or "1"
+                            mult = rel.properties.get("multiplicity", "1")
+                            if mult in ("", "1"):
+                                mult = None
                             break
                 base = name
                 index = None
@@ -6814,7 +6837,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         and rel.source == block_id
                         and rel.target == def_id
                     ):
-                        mult = rel.properties.get("multiplicity", "") or "1"
+                        mult = rel.properties.get("multiplicity", "1")
+                        if mult in ("", "1"):
+                            mult = ""
                         break
 
         if obj.element_id and obj.element_id in repo.elements and not comp:
@@ -6959,9 +6984,6 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
-        for def_id, mult in selected_placeholders:
-            add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
-
         for def_id, mult in selected_placeholders:
             add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
 
