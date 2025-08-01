@@ -2010,6 +2010,8 @@ class FaultTreeApp:
         fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
 
         edit_menu = tk.Menu(menubar, tearoff=0)
+        edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
+        edit_menu.add_separator()
         edit_menu.add_command(label="Edit Selected", command=self.edit_selected)
         edit_menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(self.selected_node) if self.selected_node else None)
         edit_menu.add_command(label="Delete Node", command=lambda: self.delete_node_and_subtree(self.selected_node) if self.selected_node else None)
