@@ -2796,8 +2796,68 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
         )
         prefer = self.current_tool in conn_tools
-        obj = self.find_object(x, y, prefer_port=prefer)
         t = self.current_tool
+        if t in (None, "Select"):
+            conn = self.find_connection(x, y)
+            if conn:
+                if (event.state & 0x0001) and conn.style == "Custom":
+                    conn.points.append((x / self.zoom, y / self.zoom))
+                    self._sync_to_repository()
+                self.selected_conn = conn
+                self.selected_obj = None
+                self.selected_objs = []
+                self.dragging_point_index = None
+                self.dragging_endpoint = None
+                self.update_property_view()
+                if conn.style == "Custom":
+                    for idx, (px, py) in enumerate(conn.points):
+                        hx = px * self.zoom
+                        hy = py * self.zoom
+                        if abs(hx - x) <= 4 and abs(hy - y) <= 4:
+                            self.dragging_point_index = idx
+                            self.conn_drag_offset = (x - hx, y - hy)
+                            break
+                elif conn.style == "Squared":
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        mx = (
+                            conn.points[0][0] * self.zoom
+                            if conn.points
+                            else ((src_obj.x + dst_obj.x) / 2 * self.zoom)
+                        )
+                        my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, 0)
+                # check for dragging endpoints
+                src_obj = self.get_object(conn.src)
+                dst_obj = self.get_object(conn.dst)
+                if src_obj and dst_obj:
+                    sx, sy = self.edge_point(
+                        src_obj,
+                        dst_obj.x * self.zoom,
+                        dst_obj.y * self.zoom,
+                        conn.src_pos,
+                    )
+                    dxp, dyp = self.edge_point(
+                        dst_obj,
+                        src_obj.x * self.zoom,
+                        src_obj.y * self.zoom,
+                        conn.dst_pos,
+                    )
+                    if abs(sx - x) <= 6 and abs(sy - y) <= 6:
+                        self.dragging_endpoint = "src"
+                        self.conn_drag_offset = (x - sx, y - sy)
+                        self.endpoint_drag_pos = None
+                    elif abs(dxp - x) <= 6 and abs(dyp - y) <= 6:
+                        self.dragging_endpoint = "dst"
+                        self.conn_drag_offset = (x - dxp, y - dyp)
+                        self.endpoint_drag_pos = None
+                self.redraw()
+                return
+
+        obj = self.find_object(x, y, prefer_port=prefer)
 
         if obj and obj.obj_type == "Block" and t in (None, "Select"):
             hit = self.hit_compartment_toggle(obj, x, y)
@@ -3534,8 +3594,14 @@ class SysMLDiagramWindow(tk.Frame):
     def on_double_click(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        obj = self.find_object(x, y)
-        if obj:
+        conn = self.find_connection(x, y)
+        obj = None
+        if conn is None:
+            obj = self.find_object(x, y)
+        if conn:
+            ConnectionDialog(self, conn)
+            self.redraw()
+        elif obj:
             if self._open_linked_diagram(obj):
                 return
             SysMLObjectDialog(self, obj)
@@ -3543,11 +3609,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
             if getattr(self, "app", None):
                 self.app.update_views()
-        else:
-            conn = self.find_connection(x, y)
-            if conn:
-                ConnectionDialog(self, conn)
-                self.redraw()
 
     def on_rc_press(self, event):
         self.rc_dragged = False
@@ -3564,11 +3625,11 @@ class SysMLDiagramWindow(tk.Frame):
     def show_context_menu(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        obj = self.find_object(x, y)
-        conn = None
-        if not obj:
-            conn = self.find_connection(x, y)
-            if not conn:
+        conn = self.find_connection(x, y)
+        obj = None
+        if not conn:
+            obj = self.find_object(x, y)
+            if not obj:
                 diag = self.repo.diagrams.get(self.diagram_id)
                 if diag and diag.diag_type == "Internal Block Diagram":
                     menu = tk.Menu(self, tearoff=0)
