@@ -12020,7 +12020,24 @@ class FaultTreeApp:
                 G.add_node(tc, kind="tc")
                 G.add_edge(haz, tc)
 
-            pos = nx.spring_layout(G, seed=42)
+            # Layout from effect (hazard) on the left to root causes on the right
+            pos = {haz: (0, 0), mal: (1, 0)}
+            y_fm = 0
+            for fm in sorted(row["failure_modes"]):
+                pos[fm] = (2, y_fm)
+                y_fm += 1
+            y_fault = 0
+            for fault in sorted(row["faults"]):
+                pos[fault] = (3, y_fault)
+                y_fault += 1
+            y_fi = -1
+            for fi in sorted(row["fis"]):
+                pos[fi] = (1.5, y_fi)
+                y_fi -= 1
+            y_tc = -1 - len(row["fis"])
+            for tc in sorted(row["tcs"]):
+                pos[tc] = (1.5, y_tc)
+                y_tc -= 1
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -12031,6 +12048,8 @@ class FaultTreeApp:
             }
             node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
             labels = {n: textwrap.fill(str(n), 15) for n in G.nodes()}
+            edge_labels = {(u, v): "caused by" for u, v in G.edges()}
+
             plt.figure(figsize=(4, 3))
             nx.draw(
                 G,
@@ -12042,6 +12061,7 @@ class FaultTreeApp:
                 font_size=6,
                 arrows=True,
             )
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
             plt.axis("off")
             buf = BytesIO()
             plt.savefig(buf, format="PNG", dpi=120)
