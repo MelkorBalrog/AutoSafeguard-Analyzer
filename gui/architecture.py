@@ -262,7 +262,6 @@ def _is_default_part_name(def_name: str, part_name: str) -> bool:
     pattern = re.escape(def_name) + r"\[\d+\]$"
     return re.fullmatch(pattern, part_name) is not None
 
-
 def _multiplicity_limit_exceeded(
     repo: SysMLRepository,
     parent_id: str,
@@ -308,7 +307,6 @@ def _multiplicity_limit_exceeded(
             count += 1
 
     return count >= limit
-
 
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
@@ -3874,6 +3872,7 @@ class SysMLDiagramWindow(tk.Frame):
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
             has_name = bool(name) and not _is_default_part_name(def_name, name)
+
         if not has_name:
             name = ""
         if obj.obj_type == "Part":
