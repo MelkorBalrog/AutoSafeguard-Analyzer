@@ -31,14 +31,51 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 
 
+def apply_modern_theme() -> None:
+    """Create and activate a light modern ttk theme."""
+    style = ttk.Style()
+    if "azure" not in style.theme_names():
+        style.theme_create(
+            "azure",
+            parent="clam",
+            settings={
+                ".": {
+                    "configure": {
+                        "background": "#f2f2f2",
+                        "foreground": "#000000",
+                        "font": ("Segoe UI", 10),
+                    }
+                },
+                "TNotebook.Tab": {
+                    "configure": {"padding": [10, 5], "background": "#dfe3e6"},
+                    "map": {"background": [("selected", "#ffffff")]},
+                },
+                "TButton": {
+                    "configure": {
+                        "padding": 6,
+                        "relief": "flat",
+                        "background": "#0078d7",
+                        "foreground": "#ffffff",
+                    },
+                    "map": {
+                        "background": [
+                            ("pressed", "#005a9e"),
+                            ("active", "#005a9e"),
+                        ]
+                    },
+                },
+            },
+        )
+    try:
+        style.theme_use("azure")
+    except tk.TclError:
+        style.theme_use("clam")
+
+
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
     """Apply a consistent look to ttk.Treeview widgets used in analysis tables."""
     style = ttk.Style()
-    try:
-        style.theme_use("clam")
-    except tk.TclError:
-        pass
-    border_opts = {"bordercolor": "black", "borderwidth": 1, "relief": "solid"}
+    apply_modern_theme()
     style.configure(
         style_name,
         font=("Segoe UI", 10),
