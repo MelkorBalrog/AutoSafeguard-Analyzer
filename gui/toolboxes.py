@@ -331,7 +331,6 @@ class ReliabilityWindow(tk.Frame):
         )
         self.analysis_combo.pack(anchor="w", fill="x")
         self.analysis_combo.bind("<<ComboboxSelected>>", self.load_selected_analysis)
-        self.refresh_analysis_list()
 
         configure_table_style("Reliability.Treeview")
         column_opts = {
@@ -413,6 +412,10 @@ class ReliabilityWindow(tk.Frame):
         ToolTip(del_btn, "Remove the selected analysis from the project.")
         self.formula_label = ttk.Label(self, text="")
         self.formula_label.pack(anchor="w", padx=5, pady=5)
+
+        # populate analysis list after tree initialization to avoid missing
+        # widgets during early callbacks
+        self.refresh_analysis_list()
 
     def add_component(self):
         dialog = tk.Toplevel(self)

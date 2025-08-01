@@ -7004,7 +7004,8 @@ class BlockDiagramWindow(SysMLDiagramWindow):
             )
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
-        self._add_block_relationships()
+        if hasattr(self, "_add_block_relationships"):
+            self._add_block_relationships()
         self.redraw()
         self._sync_to_repository()
 
