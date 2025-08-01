@@ -240,6 +240,7 @@ class FaultPrioritizationWindow(tk.Frame):
             column_options=col_opts,
             edit_callback=self.on_cell_edit,
             requirement_columns=req_cols,
+            height=12,
         )
         vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.tree.xview)

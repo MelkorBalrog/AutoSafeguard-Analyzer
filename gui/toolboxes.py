@@ -1514,6 +1514,7 @@ class HazopWindow(tk.Frame):
             show="headings",
             style="Hazop.Treeview",
             edit_callback=self.on_cell_edit,
+            height=8,
         )
         vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(content, orient="horizontal", command=self.tree.xview)
@@ -1984,6 +1985,7 @@ class HaraWindow(tk.Frame):
             show="headings",
             style="Hara.Treeview",
             edit_callback=self.on_cell_edit,
+            height=8,
         )
         vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.tree.xview)
@@ -3055,6 +3057,7 @@ class HazardExplorerWindow(tk.Toplevel):
             show="headings",
             style="HazExp.Treeview",
             edit_callback=self.on_cell_edit,
+            height=10,
         )
         for c in columns:
             self.tree.heading(c, text=c)
@@ -3153,6 +3156,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
             show="headings",
             style="ReqExp.Treeview",
             edit_callback=self.on_cell_edit,
+            height=10,
         )
         for c in columns:
             self.tree.heading(c, text=c)
