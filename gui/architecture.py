@@ -972,6 +972,7 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
     }
+    existing_keys = {_part_prop_key(n) for n in existing_props}
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
@@ -996,7 +997,7 @@ def _sync_ibd_partproperty_parts(
         base_x = 50.0
         base_y = 50.0 + 60.0 * len(existing_props)
     for prop_name, block_name in parsed:
-        if prop_name in existing_props:
+        if _part_prop_key(prop_name) in existing_keys:
             continue
         target_id = next(
             (
@@ -1052,6 +1053,7 @@ def _sync_ibd_partproperty_parts(
         diag.objects.append(obj_dict)
         added.append(obj_dict)
         existing_props.add(prop_name)
+        existing_keys.add(_part_prop_key(prop_name))
         existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
