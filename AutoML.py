@@ -12544,6 +12544,9 @@ class FaultTreeApp:
         win.grid_rowconfigure(0, weight=1)
         win.grid_columnconfigure(1, weight=1)
 
+        if not hasattr(self, "scenario_icon"):
+            self.scenario_icon = self._create_icon("circle", "#1e90ff")
+
         def refresh_libs():
             lib_lb.delete(0, tk.END)
             for lib in self.scenario_libraries:
@@ -12568,7 +12571,13 @@ class FaultTreeApp:
                 else:
                     name = str(sc)
                     beh = sce = tc = fi = exp = desc = ""
-                scen_tree.insert("", tk.END, text=name, values=(beh, sce, tc, fi, exp, desc))
+                scen_tree.insert(
+                    "",
+                    tk.END,
+                    text=name,
+                    values=(beh, sce, tc, fi, exp, desc),
+                    image=self.scenario_icon,
+                )
 
         class LibraryDialog(simpledialog.Dialog):
             def __init__(self, parent, app, data=None):
@@ -12810,6 +12819,9 @@ class FaultTreeApp:
         win.grid_rowconfigure(0, weight=1)
         win.grid_columnconfigure(1, weight=1)
 
+        if not hasattr(self, "odd_elem_icon"):
+            self.odd_elem_icon = self._create_icon("rect", "#696969")
+
         def refresh_libs():
             lib_lb.delete(0, tk.END)
             for lib in self.odd_libraries:
@@ -12825,7 +12837,13 @@ class FaultTreeApp:
             for el in lib.get("elements", []):
                 name = el.get("name") or el.get("element") or el.get("id")
                 attrs = ", ".join(f"{k}={v}" for k, v in el.items() if k != "name")
-                elem_tree.insert("", tk.END, values=(attrs,), text=name)
+                elem_tree.insert(
+                    "",
+                    tk.END,
+                    values=(attrs,),
+                    text=name,
+                    image=self.odd_elem_icon,
+                )
 
         class ElementDialog(simpledialog.Dialog):
             def __init__(self, parent, data=None):
