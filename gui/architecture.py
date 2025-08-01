@@ -6,7 +6,7 @@ from tkinter import ttk, simpledialog, messagebox
 import json
 import math
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
@@ -2988,6 +2988,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
                 min_w, min_h = self._min_block_size(obj)
+            elif obj.obj_type in ("Action", "CallBehaviorAction"):
+                min_w, min_h = self._min_action_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
             if "e" in self.resize_edge or "w" in self.resize_edge:
@@ -3926,6 +3928,17 @@ class SysMLDiagramWindow(tk.Frame):
             width_px = max(width_px, self.font.measure(display) + 8 * self.zoom)
         height_px = (1 + len(compartments)) * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
+
+    def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
+        """Return minimum width and height to display Action text without wrapping."""
+        full_width_obj = replace(obj, width=10_000)
+        lines = self._object_label_lines(full_width_obj)
+        if not lines:
+            return (10.0, 10.0)
+        text_width = max(self.font.measure(line) for line in lines)
+        text_height = self.font.metrics("linespace") * len(lines)
+        padding = 6 * self.zoom
+        return (text_width + padding) / self.zoom, (text_height + padding) / self.zoom
 
     def _wrap_text_to_width(self, text: str, width_px: float) -> list[str]:
         """Return *text* wrapped to fit within *width_px* pixels."""
