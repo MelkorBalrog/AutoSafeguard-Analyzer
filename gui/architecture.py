@@ -4850,11 +4850,41 @@ class SysMLDiagramWindow(tk.Frame):
                         inside = half
                         outside = -half
                     if direction == "in":
-                        self.canvas.create_line(x + outside, y, x + inside, y, arrow=tk.LAST)
+                        self.canvas.create_line(
+                            x + outside,
+                            y,
+                            x + inside,
+                            y,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x + outside, y), (x + inside, y), tags="connection"
+                        )
                     elif direction == "out":
-                        self.canvas.create_line(x + inside, y, x + outside, y, arrow=tk.LAST)
+                        self.canvas.create_line(
+                            x + inside,
+                            y,
+                            x + outside,
+                            y,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x + inside, y), (x + outside, y), tags="connection"
+                        )
                     else:
-                        self.canvas.create_line(x - half, y, x + half, y, arrow=tk.BOTH)
+                        self.canvas.create_line(
+                            x - half,
+                            y,
+                            x + half,
+                            y,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x - half, y), (x + half, y), tags="connection"
+                        )
+                        self._draw_open_arrow(
+                            (x + half, y), (x - half, y), tags="connection"
+                        )
                 else:  # N or S
                     if side == "S":
                         inside = -half
@@ -4863,11 +4893,41 @@ class SysMLDiagramWindow(tk.Frame):
                         inside = half
                         outside = -half
                     if direction == "in":
-                        self.canvas.create_line(x, y + outside, x, y + inside, arrow=tk.LAST)
+                        self.canvas.create_line(
+                            x,
+                            y + outside,
+                            x,
+                            y + inside,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x, y + outside), (x, y + inside), tags="connection"
+                        )
                     elif direction == "out":
-                        self.canvas.create_line(x, y + inside, x, y + outside, arrow=tk.LAST)
+                        self.canvas.create_line(
+                            x,
+                            y + inside,
+                            x,
+                            y + outside,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x, y + inside), (x, y + outside), tags="connection"
+                        )
                     else:
-                        self.canvas.create_line(x, y - half, x, y + half, arrow=tk.BOTH)
+                        self.canvas.create_line(
+                            x,
+                            y - half,
+                            x,
+                            y + half,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x, y - half), (x, y + half), tags="connection"
+                        )
+                        self._draw_open_arrow(
+                            (x, y + half), (x, y - half), tags="connection"
+                        )
 
                 lx_off = _parse_float(obj.properties.get("labelX"), 8.0)
                 ly_off = _parse_float(obj.properties.get("labelY"), -8.0)
