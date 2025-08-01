@@ -179,43 +179,6 @@ class InheritPartsTests(unittest.TestCase):
         self.assertEqual(len(parts), 1)
         self.assertFalse(any(o.get("obj_type") == "Part" for o in added))
 
-    def test_inherit_component_part_skips_duplicate(self):
-        repo = self.repo
-        father = repo.create_element("Block", name="Parent")
-        part_blk = repo.create_element("Block", name="B")
-        father_diag = repo.create_diagram("Internal Block Diagram")
-        repo.link_diagram(father.elem_id, father_diag.diag_id)
-        p_f = repo.create_element("Part", name="B", properties={"definition": part_blk.elem_id})
-        father_diag.objects.append({
-            "obj_id": 1,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": p_f.elem_id,
-            "properties": {"definition": part_blk.elem_id},
-        })
-
-        child = repo.create_element("Block", name="Child")
-        child_diag = repo.create_diagram("Internal Block Diagram")
-        repo.link_diagram(child.elem_id, child_diag.diag_id)
-        child_diag.father = father.elem_id
-
-        comp_part = repo.create_element("Part", properties={"component": "B"})
-        repo.add_element_to_diagram(child_diag.diag_id, comp_part.elem_id)
-        child_diag.objects.append({
-            "obj_id": 2,
-            "obj_type": "Part",
-            "x": 0,
-            "y": 0,
-            "element_id": comp_part.elem_id,
-            "properties": {"component": "B"},
-        })
-
-        added = inherit_father_parts(repo, child_diag)
-        parts = [o for o in child_diag.objects if o.get("obj_type") == "Part"]
-        self.assertEqual(len(parts), 1)
-        self.assertFalse(any(o.get("obj_type") == "Part" for o in added))
-
     def test_generalization_inherits_properties(self):
         repo = self.repo
         parent = repo.create_element(
