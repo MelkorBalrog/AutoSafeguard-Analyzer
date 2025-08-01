@@ -4579,25 +4579,15 @@ class SysMLDiagramWindow(tk.Frame):
             end[0] - size * math.cos(angle + spread),
             end[1] - size * math.sin(angle + spread),
         )
-        # Draw the arrowhead using two lines instead of a filled triangle so
-        # the background does not show through as a white polygon. This keeps
-        # the arrow open while the center line from the connection touches the
-        # point.
-        self.canvas.create_line(
-            p1[0],
-            p1[1],
-            end[0],
-            end[1],
-            fill=color,
-            width=width,
-            tags=tags,
-        )
-        self.canvas.create_line(
-            p2[0],
-            p2[1],
-            end[0],
-            end[1],
-            fill=color,
+        # Draw the arrowhead as a small white triangle with the requested
+        # outline color. Using a filled polygon ensures the arrowhead remains
+        # visible regardless of the canvas background color.
+        self.canvas.create_polygon(
+            end,
+            p1,
+            p2,
+            fill="white",
+            outline=color,
             width=width,
             tags=tags,
         )
