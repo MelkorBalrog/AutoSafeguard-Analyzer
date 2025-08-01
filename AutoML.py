@@ -9087,6 +9087,8 @@ class FaultTreeApp:
         data.pop("unique_id", None)
         data["children"] = []
         new_node = FaultTreeNode.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
         self.update_views()
@@ -9127,6 +9129,8 @@ class FaultTreeApp:
         data.pop("unique_id", None)
         data["children"] = []
         new_node = FaultTreeNode.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
         self.update_views()
@@ -9167,6 +9171,8 @@ class FaultTreeApp:
         data.pop("unique_id", None)
         data["children"] = []
         new_node = FaultTreeNode.from_dict(data, parent_node)
+        if hasattr(selected, "unique_id"):
+            new_node.failure_mode_ref = selected.unique_id
         parent_node.children.append(new_node)
         new_node.parents.append(parent_node)
         self.update_views()
