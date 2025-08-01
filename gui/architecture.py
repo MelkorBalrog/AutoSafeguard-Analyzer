@@ -52,16 +52,27 @@ def _part_prop_key(raw: str) -> str:
     return part.strip()
 
 
-def _part_elem_key(elem) -> str:
-    """Return canonical key for a Part element."""
+def _part_elem_keys(elem) -> set[str]:
+    """Return canonical keys for a Part element."""
     if not elem:
-        return ""
+        return set()
     name = elem.name or ""
+    comp = elem.properties.get("component", "")
+    if comp and (not name or name.startswith("Part")):
+        name = comp
     if "_" in name and name.rsplit("_", 1)[1].isdigit():
         name = name.rsplit("_", 1)[0]
     base = _part_prop_key(name)
-    definition = elem.properties.get("definition", "")
-    return f"{base}:{definition}"
+    keys = {base}
+    definition = elem.properties.get("definition")
+    if definition:
+        keys.add(f"{base}:{definition}")
+    return keys
+
+def _part_elem_key(elem) -> str:
+    """Return a single canonical key (for backward compatibility)."""
+    keys = _part_elem_keys(elem)
+    return next(iter(keys), "")
 
 
 def parse_part_property(raw: str) -> tuple[str, str]:
@@ -979,12 +990,10 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
-    existing_props = {
-        repo.elements[o.get("element_id")].name
-        for o in diag.objects
-        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
-    }
-    existing_keys = {_part_prop_key(n) for n in existing_props}
+    existing_keys: set[str] = set()
+    for o in diag.objects:
+        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements:
+            existing_keys.update(_part_elem_keys(repo.elements[o.get("element_id")]))
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
@@ -1000,7 +1009,7 @@ def _sync_ibd_partproperty_parts(
         parsed.append((prop_name, block_name))
     added: list[dict] = []
     boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
-    existing_count = len(existing_props)
+    existing_count = sum(1 for o in diag.objects if o.get("obj_type") == "Part")
     if boundary:
         base_x = boundary["x"] - boundary["width"] / 2 + 30.0
         base_y = boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * existing_count
@@ -1008,8 +1017,6 @@ def _sync_ibd_partproperty_parts(
         base_x = 50.0
         base_y = 50.0 + 60.0 * existing_count
     for prop_name, block_name in parsed:
-        if _part_prop_key(prop_name) in existing_keys:
-            continue
         target_id = next(
             (
                 eid
@@ -1019,6 +1026,10 @@ def _sync_ibd_partproperty_parts(
             None,
         )
         if not target_id:
+            continue
+        base = _part_prop_key(prop_name)
+        cand_key = f"{base}:{target_id}"
+        if cand_key in existing_keys or base in existing_keys:
             continue
         # enforce multiplicity based on aggregation relationships
         limit = None
@@ -1063,8 +1074,7 @@ def _sync_ibd_partproperty_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
-        existing_props.add(prop_name)
-        existing_keys.add(_part_prop_key(prop_name))
+        existing_keys.update(_part_elem_keys(part_elem))
         existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
@@ -1696,30 +1706,12 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         return []
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
-    # Track existing parts by element id or definition to avoid duplicates
-    existing_ids = {
-        o.get("element_id")
-        for o in diagram.objects
-        if o.get("obj_type") == "Part"
-    }
-    existing_count: Dict[str, int] = {}
-    for o in diagram.objects:
-        if o.get("obj_type") != "Part":
-            continue
-        definition = o.get("properties", {}).get("definition")
-        if definition:
-            existing_count[definition] = existing_count.get(definition, 0) + 1
-
-    father_parts = [
-        o
-        for o in getattr(father_diag, "objects", [])
-        if o.get("obj_type") == "Part"
-    ]
-    father_count: Dict[str, int] = {}
-    for o in father_parts:
-        definition = o.get("properties", {}).get("definition")
-        if definition:
-            father_count[definition] = father_count.get(definition, 0) + 1
+    # Track existing parts by element id and canonical name to avoid duplicates
+    existing = {o.get("element_id") for o in diagram.objects if o.get("obj_type") == "Part"}
+    existing_keys: set[str] = set()
+    for eid in existing:
+        if eid in repo.elements:
+            existing_keys.update(_part_elem_keys(repo.elements[eid]))
 
     # Map of source part obj_id -> new obj_id so ports can be updated
     part_map: dict[int, int] = {}
@@ -1731,18 +1723,20 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         definition = obj.get("properties", {}).get("definition")
         if obj.get("element_id") in existing_ids:
             continue
-        if definition:
-            allowed = father_count.get(definition, 1)
-            if existing_count.get(definition, 0) >= allowed:
-                continue
+        key_set: set[str] = set()
+        if obj.get("element_id") in repo.elements:
+            key_set = _part_elem_keys(repo.elements[obj.get("element_id")])
+        if any(k in existing_keys for k in key_set):
+            continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
         added.append(new_obj)
         part_map[obj.get("obj_id")] = new_obj["obj_id"]
-        if definition:
-            existing_count[definition] = existing_count.get(definition, 0) + 1
+        existing.add(obj.get("element_id"))
+        if key_set:
+            existing_keys.update(key_set)
 
     # ------------------------------------------------------------------
     # Copy ports belonging to the inherited parts so orientation and other
