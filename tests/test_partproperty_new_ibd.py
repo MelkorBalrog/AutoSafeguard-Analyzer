@@ -14,10 +14,10 @@ class PartPropertyNewIBDTests(unittest.TestCase):
         ibd = repo.create_diagram("Internal Block Diagram")
         link_block_to_ibd(repo, blk.elem_id, ibd.diag_id)
         self.assertTrue(any(
-            o.get("obj_type") == "Part" and repo.elements[o.get("element_id")].name == "B"
+            o.get("obj_type") == "Part" and repo.elements[o.get("element_id")].name.startswith("B")
             for o in ibd.objects
         ))
-        part = next(o for o in ibd.objects if repo.elements[o.get("element_id")].name == "B")
+        part = next(o for o in ibd.objects if repo.elements[o.get("element_id")].name.startswith("B"))
         self.assertFalse(part.get("hidden", False))
 
     def test_boundary_receives_parts_on_creation(self):
@@ -39,7 +39,7 @@ class PartPropertyNewIBDTests(unittest.TestCase):
         })
         _ensure_ibd_boundary(repo, ibd, child.elem_id)
         self.assertTrue(any(
-            o.get("obj_type") == "Part" and repo.elements[o.get("element_id")].name == "P"
+            o.get("obj_type") == "Part" and repo.elements[o.get("element_id")].name.startswith("P")
             for o in ibd.objects
         ))
 

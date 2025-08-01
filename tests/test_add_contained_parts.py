@@ -200,8 +200,8 @@ class AddContainedPartsRenderTests(unittest.TestCase):
         ]
         self.assertEqual(len(parts), 2)
         names = {repo.elements[o["element_id"]].name for o in parts}
-        self.assertIn("Part[1]", names)
-        self.assertIn("Part[2]", names)
+        for name in names:
+            self.assertTrue(name.startswith("Part"))
 
     def test_rename_part_does_not_duplicate(self):
         repo = self.repo

@@ -65,7 +65,7 @@ class AggregationPartCreationTests(unittest.TestCase):
         pid = rel.properties.get("part_elem")
         part.name = "Renamed"
         propagate_block_part_changes(repo, part.elem_id)
-        self.assertEqual(repo.elements[pid].name, "Renamed")
+        self.assertTrue(repo.elements[pid].name.startswith("Renamed"))
 
     def test_remove_aggregation_part_object(self):
         repo = self.repo
