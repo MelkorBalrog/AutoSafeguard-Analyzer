@@ -1,6 +1,6 @@
 <style>
-  <object type="Actor" color="#B3E5FC" />
-  <object type="Use Case" color="#FFECB3" />
+  <object type="Actor" color="#BBDEFB" />
+  <object type="Use Case" color="#FFF9C4" />
   <object type="System Boundary" color="#CFD8DC" />
   <object type="Block Boundary" color="#F5F5F5" />
   <object type="Action Usage" color="#C8E6C9" />
