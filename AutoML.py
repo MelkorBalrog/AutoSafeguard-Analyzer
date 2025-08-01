@@ -7865,7 +7865,7 @@ class FaultTreeApp:
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
         }
-        self.apply_model_data({})
+        self.apply_model_data({}, ensure_root=False)
 
         # Remove any undo/redo history from the previous project
         self._undo_stack.clear()
@@ -13795,7 +13795,7 @@ class FaultTreeApp:
             data["versions"] = self.versions
         return data
 
-    def apply_model_data(self, data: dict):
+    def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
         repo_data = data.get("sysml_repository")
         if repo_data:
@@ -13810,11 +13810,11 @@ class FaultTreeApp:
         else:
             self.top_events = []
 
-        if not self.top_events:
+        if ensure_root and not self.top_events:
             new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
-        self.root_node = self.top_events[0]
+        self.root_node = self.top_events[0] if self.top_events else None
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
