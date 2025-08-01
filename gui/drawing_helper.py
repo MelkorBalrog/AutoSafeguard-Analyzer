@@ -72,20 +72,10 @@ class FTADrawingHelper:
         height = font_obj.metrics("linespace") * len(lines)
         return max_width, height
 
-    def draw_page_clone_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Node",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_page_clone_shape(self, canvas, x, y, scale=40.0,
+                              top_text="Desc:\n\nRationale:", bottom_text="Node",
+                              fill="lightgray", outline_color="dimgray",
+                              line_width=1, font_obj=None):
         # First, draw the main triangle using the existing triangle routine.
         self.draw_triangle_shape(
             canvas,
@@ -281,15 +271,11 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(
-            top_box_x,
-            top_y,
-            top_box_x + top_box_width,
-            top_y + top_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(top_box_x, top_y,
+                                top_box_x + top_box_width,
+                                top_y + top_box_height,
+                                fill="lightblue", outline=outline_color,
+                                width=line_width)
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text,
@@ -304,15 +290,11 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(
-            bottom_box_x,
-            bottom_y,
-            bottom_box_x + bottom_box_width,
-            bottom_y + bottom_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(bottom_box_x, bottom_y,
+                                bottom_box_x + bottom_box_width,
+                                bottom_y + bottom_box_height,
+                                fill="lightblue", outline=outline_color,
+                                width=line_width)
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -381,15 +363,10 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(
-            top_box_x,
-            top_y,
-            top_box_x + top_box_width,
-            top_y + top_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(top_box_x, top_y,
+                                top_box_x + top_box_width,
+                                top_y + top_box_height,
+                                fill="lightblue", outline=outline_color, width=line_width)
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text, font=font_obj, anchor="center",
@@ -402,15 +379,11 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(
-            bottom_box_x,
-            bottom_y,
-            bottom_box_x + bottom_box_width,
-            bottom_y + bottom_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(bottom_box_x, bottom_y,
+                                bottom_box_x + bottom_box_width,
+                                bottom_y + bottom_box_height,
+                                fill="lightblue", outline=outline_color,
+                                width=line_width)
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text, font=font_obj,
@@ -556,15 +529,10 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = min(v[1] for v in vertices) - top_box_height
-        canvas.create_rectangle(
-            top_box_x,
-            top_box_y,
-            top_box_x + top_box_width,
-            top_box_y + top_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(top_box_x, top_box_y,
+                                top_box_x + top_box_width,
+                                top_box_y + top_box_height,
+                                fill="lightblue", outline=outline_color, width=line_width)
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -575,15 +543,10 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = max(v[1] for v in vertices) + padding - 2 * bottom_box_height
-        canvas.create_rectangle(
-            bottom_box_x,
-            bottom_box_y,
-            bottom_box_x + bottom_box_width,
-            bottom_box_y + bottom_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(bottom_box_x, bottom_box_y,
+                                bottom_box_x + bottom_box_width,
+                                bottom_box_y + bottom_box_height,
+                                fill="lightblue", outline=outline_color, width=line_width)
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -638,15 +601,11 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = top - top_box_height
-        canvas.create_rectangle(
-            top_box_x,
-            top_box_y,
-            top_box_x + top_box_width,
-            top_box_y + top_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(top_box_x, top_box_y,
+                                top_box_x + top_box_width,
+                                top_box_y + top_box_height,
+                                fill="lightblue", outline=outline_color,
+                                width=line_width)
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -657,15 +616,11 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = bottom - 2 * bottom_box_height
-        canvas.create_rectangle(
-            bottom_box_x,
-            bottom_box_y,
-            bottom_box_x + bottom_box_width,
-            bottom_box_y + bottom_box_height,
-            fill=fill,
-            outline=outline_color,
-            width=line_width,
-        )
+        canvas.create_rectangle(bottom_box_x, bottom_box_y,
+                                bottom_box_x + bottom_box_width,
+                                bottom_box_y + bottom_box_height,
+                                fill="lightblue", outline=outline_color,
+                                width=line_width)
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -695,19 +650,10 @@ class FTADrawingHelper:
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         # Draw the base triangle.
-        self.draw_triangle_shape(
-            canvas,
-            x,
-            y,
-            scale=scale,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            obj_id=obj_id,
-        )
+        self.draw_triangle_shape(canvas, x, y, scale=scale,
+                                 top_text=top_text, bottom_text=bottom_text,
+                                 fill=fill, outline_color=outline_color,
+                                 line_width=line_width, font_obj=font_obj)
         # Compute the vertices of the big triangle.
         effective_scale = scale * 2  
         h = effective_scale * math.sqrt(3) / 2
