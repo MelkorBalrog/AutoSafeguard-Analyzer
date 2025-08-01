@@ -8595,6 +8595,17 @@ class FaultTreeApp:
             tau = 1.0
         fm = self.find_node_by_id_all(failure_mode_ref) if failure_mode_ref else self.get_failure_mode_node(node)
         fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
+        if fit <= 0:
+            comp_name = self.get_component_name_for_node(fm)
+            comp_fit = component_fit_map(self.reliability_components).get(comp_name)
+            if comp_fit is not None:
+                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
+                if frac > 1.0:
+                    frac /= 100.0
+                fit = comp_fit * frac
+                fm.fmeda_fit = fit
+                if node is not fm:
+                    node.fmeda_fit = fit
         t = tau
         formula = formula or getattr(node, "prob_formula", getattr(fm, "prob_formula", "linear"))
         f = str(formula).strip().lower()
