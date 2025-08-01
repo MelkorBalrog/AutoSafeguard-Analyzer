@@ -3972,29 +3972,34 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _block_compartments(self, obj: SysMLObject) -> list[tuple[str, str]]:
         """Return the list of compartments displayed for a Block."""
+        parts = "\n".join(
+            p.strip()
+            for p in obj.properties.get("partProperties", "").split(",")
+            if p.strip()
+        )
+        operations = "\n".join(
+            format_operation(op)
+            for op in parse_operations(obj.properties.get("operations", ""))
+        )
+        ports = "\n".join(
+            p.strip() for p in obj.properties.get("ports", "").split(",") if p.strip()
+        )
+        reliability = "\n".join(
+            f"{label}={obj.properties.get(key, '')}"
+            for label, key in (
+                ("FIT", "fit"),
+                ("Qual", "qualification"),
+                ("FM", "failureModes"),
+            )
+            if obj.properties.get(key, "")
+        )
+        requirements = "\n".join(r.get("id") for r in obj.requirements)
         return [
-            ("Parts", obj.properties.get("partProperties", "")),
-            (
-                "Operations",
-                "; ".join(
-                    format_operation(op)
-                    for op in parse_operations(obj.properties.get("operations", ""))
-                ),
-            ),
-            ("Ports", obj.properties.get("ports", "")),
-            (
-                "Reliability",
-                " ".join(
-                    f"{label}={obj.properties.get(key, '')}"
-                    for label, key in (
-                        ("FIT", "fit"),
-                        ("Qual", "qualification"),
-                        ("FM", "failureModes"),
-                    )
-                    if obj.properties.get(key, "")
-                ),
-            ),
-            ("Requirements", "; ".join(r.get("id") for r in obj.requirements)),
+            ("Parts", parts),
+            ("Operations", operations),
+            ("Ports", ports),
+            ("Reliability", reliability),
+            ("Requirements", requirements),
         ]
 
     def _min_block_size(self, obj: SysMLObject) -> tuple[float, float]:
@@ -4002,10 +4007,14 @@ class SysMLDiagramWindow(tk.Frame):
         header = f"<<block>> {obj.properties.get('name', '')}".strip()
         width_px = self.font.measure(header) + 8 * self.zoom
         compartments = self._block_compartments(obj)
+        total_lines = 1
         for label, text in compartments:
-            display = f"{label}: {text}" if text else f"{label}:"
-            width_px = max(width_px, self.font.measure(display) + 8 * self.zoom)
-        height_px = (1 + len(compartments)) * 20 * self.zoom
+            lines = text.splitlines() if text else [""]
+            for idx, line in enumerate(lines):
+                disp = f"{label}: {line}" if idx == 0 else line
+                width_px = max(width_px, self.font.measure(disp) + 8 * self.zoom)
+            total_lines += len(lines)
+        height_px = total_lines * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
     def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
@@ -4818,45 +4827,21 @@ class SysMLDiagramWindow(tk.Frame):
                 anchor="w",
                 font=self.font,
             )
-            compartments = [
-                ("Parts", obj.properties.get("partProperties", "")),
-                (
-                    "Operations",
-                    "; ".join(
-                        format_operation(op)
-                        for op in parse_operations(obj.properties.get("operations", ""))
-                    ),
-                ),
-                ("Ports", obj.properties.get("ports", "")),
-                (
-                    "Reliability",
-                    " ".join(
-                        f"{label}={obj.properties.get(key,'')}"
-                        for label, key in (
-                            ("FIT", "fit"),
-                            ("Qual", "qualification"),
-                            ("FM", "failureModes"),
-                        )
-                        if obj.properties.get(key, "")
-                    ),
-                ),
-                (
-                    "Requirements",
-                    "; ".join(r.get("id") for r in obj.requirements),
-                ),
-            ]
+            compartments = self._block_compartments(obj)
             cy = top + 20 * self.zoom
             for label, text in compartments:
+                lines = text.splitlines() if text else [""]
                 self.canvas.create_line(left, cy, right, cy)
-                display = f"{label}: {text}" if text else f"{label}:"
-                self.canvas.create_text(
-                    left + 4 * self.zoom,
-                    cy + 10 * self.zoom,
-                    text=display,
-                    anchor="w",
-                    font=self.font,
-                )
-                cy += 20 * self.zoom
+                for idx, line in enumerate(lines):
+                    display = f"{label}: {line}" if idx == 0 else line
+                    self.canvas.create_text(
+                        left + 4 * self.zoom,
+                        cy + 10 * self.zoom,
+                        text=display,
+                        anchor="w",
+                        font=self.font,
+                    )
+                    cy += 20 * self.zoom
         elif obj.obj_type in ("Initial", "Final"):
             if obj.obj_type == "Initial":
                 r = min(obj.width, obj.height) / 2 * self.zoom
