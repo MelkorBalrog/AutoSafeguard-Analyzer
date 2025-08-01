@@ -2362,6 +2362,9 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
+        # Keep references to gradient images used for element backgrounds
+        self.gradient_cache: dict[int, tk.PhotoImage] = {}
+
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_left_release)
@@ -4182,6 +4185,7 @@ class SysMLDiagramWindow(tk.Frame):
 
     def redraw(self):
         self.canvas.delete("all")
+        self.gradient_cache.clear()
         self.sort_objects()
         remove_orphan_ports(self.objects)
         for obj in list(self.objects):
@@ -4551,6 +4555,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
         elif obj.obj_type == "System Boundary":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
                 x - w,
                 y - h,
@@ -4559,7 +4564,7 @@ class SysMLDiagramWindow(tk.Frame):
                 radius=12 * self.zoom,
                 dash=(4, 2),
                 outline=outline,
-                fill=color,
+                fill="",
             )
             label = obj.properties.get("name", "")
             if label:
@@ -4596,18 +4601,18 @@ class SysMLDiagramWindow(tk.Frame):
                 )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
-            fill = color
             if obj.obj_type == "Part":
                 dash = (4, 2)
             if obj.obj_type == "Port":
                 side = obj.properties.get("side", "E")
                 sz = 6 * self.zoom
+                self._draw_gradient_rect(x - sz, y - sz, x + sz, y + sz, color, obj.obj_id)
                 self.canvas.create_rectangle(
                     x - sz,
                     y - sz,
                     x + sz,
                     y + sz,
-                    fill=color,
+                    fill="",
                     outline=outline,
                 )
                 arrow_len = sz * 1.2
@@ -4654,6 +4659,7 @@ class SysMLDiagramWindow(tk.Frame):
                 )
             else:
                 if obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                    self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
                     self._create_round_rect(
                         x - w,
                         y - h,
@@ -4661,29 +4667,31 @@ class SysMLDiagramWindow(tk.Frame):
                         y + h,
                         radius=8 * self.zoom,
                         dash=dash,
-                        fill=fill,
+                        fill="",
                         outline=outline,
                     )
                 else:
+                    self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
                     self.canvas.create_rectangle(
                         x - w,
                         y - h,
                         x + w,
                         y + h,
                         dash=dash,
-                        fill=fill,
+                        fill="",
                         outline=outline,
                     )
         elif obj.obj_type == "Block":
             left, top = x - w, y - h
             right, bottom = x + w, y + h
+            self._draw_gradient_rect(left, top, right, bottom, color, obj.obj_id)
             self._create_round_rect(
                 left,
                 top,
                 right,
                 bottom,
                 radius=6 * self.zoom,
-                fill=color,
+                fill="",
                 outline=outline,
             )
             header = f"<<block>> {obj.properties.get('name', '')}".strip()
@@ -7756,3 +7764,25 @@ class ArchitectureManagerDialog(tk.Frame):
         else:
             img.put(c, to=(2, 2, size - 2, size - 2))
         return img
+
+    def _create_gradient_image(self, width: int, height: int, color: str) -> tk.PhotoImage:
+        """Return a left-to-right gradient image from white to *color*."""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        img = tk.PhotoImage(width=width, height=height)
+        r = int(color[1:3], 16)
+        g = int(color[3:5], 16)
+        b = int(color[5:7], 16)
+        for x in range(width):
+            ratio = x / (width - 1) if width > 1 else 1
+            nr = int(255 * (1 - ratio) + r * ratio)
+            ng = int(255 * (1 - ratio) + g * ratio)
+            nb = int(255 * (1 - ratio) + b * ratio)
+            img.put(f"#{nr:02x}{ng:02x}{nb:02x}", to=(x, 0, x + 1, height))
+        return img
+
+    def _draw_gradient_rect(self, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: int) -> None:
+        """Draw a gradient rectangle on the canvas and cache the image."""
+        img = self._create_gradient_image(abs(int(x2 - x1)), abs(int(y2 - y1)), color)
+        self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
+        self.gradient_cache[obj_id] = img
