@@ -7847,34 +7847,26 @@ class FaultTreeApp:
         self.canvas.delete("all")
 
         global AutoML_Helper, unique_node_id_counter
-        # Reset the SysML repository so previous project data is discarded
+        # Reset all repositories and model data
         SysMLRepository.reset_instance()
         AutoML_Helper = AutoMLHelper()
         unique_node_id_counter = 1
         self.zoom = 1.0
         self.diagram_font.config(size=int(8 * self.zoom))
-        self.scenario_libraries = []
-        self.odd_libraries = []
-        self.update_odd_elements()
 
-        # Clear the explorer tree
+        # Reset project properties and clear every stored document or library
+        self.project_properties = {
+            "pdf_report_name": "AutoML-Analyzer PDF Report",
+            "pdf_detailed_formulas": True,
+        }
+        self.apply_model_data({})
+
+        # Remove any undo/redo history from the previous project
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+
+        # Clear the explorer tree and refresh the view
         self.analysis_tree.delete(*self.analysis_tree.get_children())
-        self.top_events = []
-        self.root_node = None
-        self.selected_node = None
-
-        new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
-        new_root.x, new_root.y = 300, 200
-        self.top_events.append(new_root)
-        self.root_node = new_root
-        self.fmea_entries = []
-        self.fmeas = []
-        self.fi2tc_docs = []
-        self.tc2fi_docs = []
-        self.active_fi2tc = None
-        self.active_tc2fi = None
-        self.fi2tc_entries = []
-        self.tc2fi_entries = []
         self.update_views()
         self.set_last_saved_state()
         self.canvas.update()
