@@ -8480,8 +8480,6 @@ class FaultTreeApp:
                 total += value
         return total
 
-
-
     def get_all_nodes(self, node=None):
         if node is None:
             result = []
@@ -8611,7 +8609,9 @@ class FaultTreeApp:
         if tau <= 0:
             tau = 1.0
         fm = self.find_node_by_id_all(failure_mode_ref) if failure_mode_ref else self.get_failure_mode_node(node)
-        if getattr(node, "fault_ref", "") and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
+        if getattr(node, "fmeda_entry_ref", None):
+            fit = self.get_fit_for_fmeda_entry(node.fmeda_entry_ref)
+        elif getattr(node, "fault_ref", "") and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
             fit = self.get_fit_for_fault(node.fault_ref)
         else:
             fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
@@ -9315,9 +9315,11 @@ class FaultTreeApp:
         self.update_views()
 
     def add_fault_event(self):
-        dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
-        fault = dialog.selected
-        if fault == "NEW":
+        options = self.get_fault_selection_options()
+        dialog = self.SelectFaultDialog(self.root, options, allow_new=True)
+        selection = dialog.selected
+        label = None
+        if selection == "NEW":
             fault = simpledialog.askstring("New Fault", "Name:")
             if not fault:
                 return
@@ -9325,6 +9327,13 @@ class FaultTreeApp:
             if not fault:
                 return
             self.add_fault(fault)
+            entry_id = None
+            label = fault
+        elif selection:
+            label, fault, entry_id = selection
+        else:
+            fault = None
+            entry_id = None
         if not fault:
             return
         if self.selected_node:
@@ -9350,17 +9359,9 @@ class FaultTreeApp:
         new_node.failure_prob = 0.0
         new_node.fault_ref = fault
         new_node.description = fault
-        # Pull FIT data from any FMEDA entries using this fault
-        fit_total = 0.0
-        for entry in self.get_all_fmea_entries():
-            causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
-            if fault in causes:
-                fit_total += getattr(entry, "fmeda_fit", 0.0)
-                if not getattr(new_node, "prob_formula", None):
-                    new_node.prob_formula = getattr(entry, "prob_formula", "linear")
-        if fit_total > 0:
-            new_node.fmeda_fit = fit_total
-            new_node.failure_prob = self.compute_failure_prob(new_node)
+        new_node.user_name = label or fault
+        if entry_id is not None:
+            new_node.fmeda_entry_ref = entry_id
         new_node.x = parent_node.x + 100
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
@@ -9386,16 +9387,23 @@ class FaultTreeApp:
         for be in self.get_all_basic_events():
             fm = self.get_failure_mode_node(be)
             fit = getattr(be, "fmeda_fit", None)
+            if (fit is None or fit == 0.0) and getattr(be, "fmeda_entry_ref", None):
+                fit = self.get_fit_for_fmeda_entry(be.fmeda_entry_ref)
             if fit is None or fit == 0.0:
                 fit = getattr(fm, "fmeda_fit", 0.0)
-                if (not fit) and getattr(be, "fault_ref", "") and getattr(be, "failure_mode_ref", None) is None:
-                    fault = be.fault_ref
-                    for entry in self.get_all_fmea_entries():
-                        causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
-                        if fault in causes:
-                            fit += getattr(entry, "fmeda_fit", 0.0)
-            dc = getattr(be, "fmeda_diag_cov", getattr(fm, "fmeda_diag_cov", 0.0))
-            if be.fmeda_fault_type == "permanent":
+            dc = getattr(be, "fmeda_diag_cov", None)
+            if (dc is None or dc == 0.0) and getattr(be, "fmeda_entry_ref", None):
+                entry = self.find_node_by_id_all(be.fmeda_entry_ref)
+                dc = getattr(entry, "fmeda_diag_cov", 0.0)
+            if dc is None:
+                dc = getattr(fm, "fmeda_diag_cov", 0.0)
+            ftype = getattr(be, "fmeda_fault_type", None)
+            if ftype is None and getattr(be, "fmeda_entry_ref", None):
+                entry = self.find_node_by_id_all(be.fmeda_entry_ref)
+                ftype = getattr(entry, "fmeda_fault_type", "permanent")
+            if ftype is None:
+                ftype = getattr(fm, "fmeda_fault_type", "permanent")
+            if ftype == "permanent":
                 spf += fit * (1 - dc)
             else:
                 lpf += fit * (1 - dc)
@@ -10857,6 +10865,7 @@ class FaultTreeApp:
 
     class SelectFaultDialog(simpledialog.Dialog):
         def __init__(self, parent, faults, allow_new=False):
+            # ``faults`` is a list of tuples (label, fault_name, entry_id)
             self.faults = faults
             self.allow_new = allow_new
             self.selected = None
@@ -10864,8 +10873,8 @@ class FaultTreeApp:
 
         def body(self, master):
             self.listbox = tk.Listbox(master, height=10, width=40)
-            for f in self.faults:
-                self.listbox.insert(tk.END, f)
+            for label, _, _ in self.faults:
+                self.listbox.insert(tk.END, label)
             if self.allow_new:
                 self.listbox.insert(tk.END, "<Create New Fault>")
             self.listbox.grid(row=0, column=0, padx=5, pady=5)
@@ -15740,6 +15749,9 @@ class FaultTreeNode:
         self.fmeda_dc_target = 0.0
         self.fmeda_spfm_target = 0.0
         self.fmeda_lpfm_target = 0.0
+        # Reference to a specific FMEDA entry when a basic event represents
+        # a particular failure: fault combination
+        self.fmeda_entry_ref = None
         # Reference to a unique failure mode this node represents
         self.failure_mode_ref = None
         # Reference to a fault represented by a basic event
@@ -15804,6 +15816,7 @@ class FaultTreeNode:
             "fmeda_dc_target": self.fmeda_dc_target,
             "fmeda_spfm_target": self.fmeda_spfm_target,
             "fmeda_lpfm_target": self.fmeda_lpfm_target,
+            "fmeda_entry_ref": self.fmeda_entry_ref,
             "failure_mode_ref": self.failure_mode_ref,
             "fault_ref": self.fault_ref,
             "malfunction": self.malfunction,
@@ -15864,6 +15877,7 @@ class FaultTreeNode:
         node.fmeda_dc_target = data.get("fmeda_dc_target", 0.0)
         node.fmeda_spfm_target = data.get("fmeda_spfm_target", 0.0)
         node.fmeda_lpfm_target = data.get("fmeda_lpfm_target", 0.0)
+        node.fmeda_entry_ref = data.get("fmeda_entry_ref")
         node.failure_mode_ref = data.get("failure_mode_ref")
         node.fault_ref = data.get("fault_ref", "")
         node.malfunction = data.get("malfunction", "")
