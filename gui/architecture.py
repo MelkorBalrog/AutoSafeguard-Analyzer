@@ -6906,60 +6906,105 @@ class BlockDiagramWindow(SysMLDiagramWindow):
             command=self.add_blocks,
         ).pack(fill=tk.X, padx=2, pady=2)
 
+    def _add_block_relationships(self) -> None:
+        """Add connections for any existing relationships between blocks."""
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        obj_map = {
+            o.element_id: o.obj_id
+            for o in self.objects
+            if o.obj_type == "Block" and o.element_id
+        }
+        existing = {
+            (c.src, c.dst, c.conn_type)
+            for c in self.connections
+        } | {
+            (c.dst, c.src, c.conn_type)
+            for c in self.connections
+        }
+        for rel in repo.relationships:
+            if rel.rel_type not in (
+                "Association",
+                "Generalization",
+                "Aggregation",
+                "Composite Aggregation",
+            ):
+                continue
+            if rel.source in obj_map and rel.target in obj_map:
+                src_id = obj_map[rel.source]
+                dst_id = obj_map[rel.target]
+                if (src_id, dst_id, rel.rel_type) in existing:
+                    continue
+                if (dst_id, src_id, rel.rel_type) in existing:
+                    continue
+                conn = DiagramConnection(
+                    src_id,
+                    dst_id,
+                    rel.rel_type,
+                    arrow="forward" if rel.rel_type == "Generalization" else "none",
+                )
+                self.connections.append(conn)
+                diag.connections.append(conn.__dict__)
+                repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+
     def add_blocks(self) -> None:
         repo = self.repo
         diag = repo.diagrams.get(self.diagram_id)
         if not diag:
             return
         existing = {
-            o.get("element_id")
-            for o in diag.objects
-            if o.get("obj_type") == "Block"
+            o.element_id
+            for o in self.objects
+            if o.obj_type == "Block" and o.element_id
         }
-        candidates: list[tuple[str, str]] = []
+        candidates = set()
         for d in repo.diagrams.values():
             if d.diag_type != "Block Diagram" or d.diag_id == self.diagram_id:
                 continue
             for obj in getattr(d, "objects", []):
-                if obj.get("obj_type") != "Block":
-                    continue
-                bid = obj.get("element_id")
-                if not bid or bid in existing:
-                    continue
-                elem = repo.elements.get(bid)
-                if not elem:
-                    continue
-                label = elem.name or bid
-                if all(eid != bid for _, eid in candidates):
-                    candidates.append((label, bid))
-        if not candidates:
+                if obj.get("obj_type") == "Block" and obj.get("element_id"):
+                    candidates.add(obj["element_id"])
+        names = []
+        id_map = {}
+        for bid in candidates:
+            if bid in existing or bid not in repo.elements:
+                continue
+            name = repo.elements[bid].name or bid
+            names.append(name)
+            id_map[name] = bid
+        if not names:
             messagebox.showinfo("Add Blocks", "No blocks available")
             return
-        names = [n for n, _ in candidates]
-        dlg = SysMLObjectDialog.SelectNamesDialog(self, names, title="Select Blocks")
+        dlg = SysMLObjectDialog.SelectNamesDialog(self, names, title="Add Blocks")
         selected = dlg.result or []
-        selected_ids = [bid for name, bid in candidates if name in selected]
-        if not selected_ids:
+        if not selected:
             return
         base_x = 50.0
         base_y = 50.0
-        offset = 60.0
-        for idx, bid in enumerate(selected_ids):
-            repo.add_element_to_diagram(self.diagram_id, bid)
-            elem = repo.elements.get(bid)
+        offset = 180.0
+        for idx, name in enumerate(selected):
+            blk_id = id_map.get(name)
+            if not blk_id:
+                continue
+            repo.add_element_to_diagram(self.diagram_id, blk_id)
+            elem = repo.elements.get(blk_id)
+            props = elem.properties.copy() if elem else {}
+            props["name"] = elem.name if elem else blk_id
             obj = SysMLObject(
                 _get_next_id(),
                 "Block",
                 base_x,
                 base_y + offset * idx,
-                element_id=bid,
-                properties={"name": elem.name if elem else bid},
+                element_id=blk_id,
+                width=160.0,
+                height=140.0,
+                properties=props,
             )
-            obj.width = 160.0
-            obj.height = 140.0
-            self.ensure_text_fits(obj)
             diag.objects.append(obj.__dict__)
             self.objects.append(obj)
+        self._add_block_relationships()
         self.redraw()
         self._sync_to_repository()
 
