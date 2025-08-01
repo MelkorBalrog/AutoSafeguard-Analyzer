@@ -52,6 +52,29 @@ def _part_prop_key(raw: str) -> str:
     return part.strip()
 
 
+def _part_elem_keys(elem) -> set[str]:
+    """Return canonical keys for a Part element."""
+    if not elem:
+        return set()
+    name = elem.name or ""
+    comp = elem.properties.get("component", "")
+    if comp and (not name or name.startswith("Part")):
+        name = comp
+    if "_" in name and name.rsplit("_", 1)[1].isdigit():
+        name = name.rsplit("_", 1)[0]
+    base = _part_prop_key(name)
+    keys = {base}
+    definition = elem.properties.get("definition")
+    if definition:
+        keys.add(f"{base}:{definition}")
+    return keys
+
+def _part_elem_key(elem) -> str:
+    """Return a single canonical key (for backward compatibility)."""
+    keys = _part_elem_keys(elem)
+    return next(iter(keys), "")
+
+
 def parse_part_property(raw: str) -> tuple[str, str]:
     """Return (property name, block name) parsed from a part property entry."""
     raw = raw.strip()
@@ -967,11 +990,10 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
-    existing_props = {
-        repo.elements[o.get("element_id")].name
-        for o in diag.objects
-        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
-    }
+    existing_keys: set[str] = set()
+    for o in diag.objects:
+        if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements:
+            existing_keys.update(_part_elem_keys(repo.elements[o.get("element_id")]))
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
@@ -987,17 +1009,14 @@ def _sync_ibd_partproperty_parts(
         parsed.append((prop_name, block_name))
     added: list[dict] = []
     boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
+    existing_count = sum(1 for o in diag.objects if o.get("obj_type") == "Part")
     if boundary:
         base_x = boundary["x"] - boundary["width"] / 2 + 30.0
-        base_y = (
-            boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * len(existing_props)
-        )
+        base_y = boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * existing_count
     else:
         base_x = 50.0
-        base_y = 50.0 + 60.0 * len(existing_props)
+        base_y = 50.0 + 60.0 * existing_count
     for prop_name, block_name in parsed:
-        if prop_name in existing_props:
-            continue
         target_id = next(
             (
                 eid
@@ -1007,6 +1026,10 @@ def _sync_ibd_partproperty_parts(
             None,
         )
         if not target_id:
+            continue
+        base = _part_prop_key(prop_name)
+        cand_key = f"{base}:{target_id}"
+        if cand_key in existing_keys or base in existing_keys:
             continue
         # enforce multiplicity based on aggregation relationships
         limit = None
@@ -1051,7 +1074,7 @@ def _sync_ibd_partproperty_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
-        existing_props.add(prop_name)
+        existing_keys.update(_part_elem_keys(part_elem))
         existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
@@ -1661,19 +1684,33 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         return []
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
-    # Track existing parts by element id to avoid duplicates
+    # Track existing parts by element id and canonical name to avoid duplicates
     existing = {o.get("element_id") for o in diagram.objects if o.get("obj_type") == "Part"}
+    existing_keys: set[str] = set()
+    for eid in existing:
+        if eid in repo.elements:
+            existing_keys.update(_part_elem_keys(repo.elements[eid]))
 
     # Map of source part obj_id -> new obj_id so ports can be updated
     part_map: dict[int, int] = {}
 
+    # Pre-filter father diagram objects so the logic matches older releases
+    father_parts = [
+        o for o in getattr(father_diag, "objects", []) if o.get("obj_type") == "Part"
+    ]
+
     # ------------------------------------------------------------------
     # Copy parts from the father diagram
     # ------------------------------------------------------------------
-    for obj in getattr(father_diag, "objects", []):
+    for obj in father_parts:
         if obj.get("obj_type") != "Part":
             continue
         if obj.get("element_id") in existing:
+            continue
+        key_set: set[str] = set()
+        if obj.get("element_id") in repo.elements:
+            key_set = _part_elem_keys(repo.elements[obj.get("element_id")])
+        if any(k in existing_keys for k in key_set):
             continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
@@ -1681,6 +1718,9 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
         added.append(new_obj)
         part_map[obj.get("obj_id")] = new_obj["obj_id"]
+        existing.add(obj.get("element_id"))
+        if key_set:
+            existing_keys.update(key_set)
 
     # ------------------------------------------------------------------
     # Copy ports belonging to the inherited parts so orientation and other
@@ -1893,27 +1933,37 @@ def update_ports_for_boundary(boundary: SysMLObject, objs: List[SysMLObject]) ->
 
 def _boundary_min_size(boundary: SysMLObject, objs: List[SysMLObject]) -> tuple[float, float]:
     """Return minimum width and height for *boundary* to contain all parts."""
-    parts = [o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)]
+    parts = [
+        o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)
+    ]
     if not parts:
         return (20.0, 20.0)
     pad = 20.0
-    max_dx = 0.0
-    max_dy = 0.0
-    for p in parts:
-        dx = abs(p.x - boundary.x) + p.width / 2
-        dy = abs(p.y - boundary.y) + p.height / 2
-        max_dx = max(max_dx, dx)
-        max_dy = max(max_dy, dy)
-    return max_dx * 2 + pad, max_dy * 2 + pad
+    left = min(p.x - p.width / 2 for p in parts)
+    right = max(p.x + p.width / 2 for p in parts)
+    top = min(p.y - p.height / 2 for p in parts)
+    bottom = max(p.y + p.height / 2 for p in parts)
+    return right - left + pad, bottom - top + pad
 
 
 def ensure_boundary_contains_parts(boundary: SysMLObject, objs: List[SysMLObject]) -> None:
     """Expand *boundary* if any part lies outside its borders."""
+    parts = [
+        o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)
+    ]
+    if not parts:
+        return
     min_w, min_h = _boundary_min_size(boundary, objs)
     if boundary.width < min_w:
         boundary.width = min_w
     if boundary.height < min_h:
         boundary.height = min_h
+    left = min(p.x - p.width / 2 for p in parts)
+    right = max(p.x + p.width / 2 for p in parts)
+    top = min(p.y - p.height / 2 for p in parts)
+    bottom = max(p.y + p.height / 2 for p in parts)
+    boundary.x = (left + right) / 2
+    boundary.y = (top + bottom) / 2
 
 
 def _add_ports_for_part(
