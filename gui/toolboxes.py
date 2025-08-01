@@ -2329,6 +2329,17 @@ class HaraWindow(tk.Frame):
                     return
             else:
                 setattr(entry, column, value)
+            if column == "scenario":
+                try:
+                    entry.exposure = int(self.app.get_scenario_exposure(value))
+                except (TypeError, ValueError):
+                    entry.exposure = 1
+            entry.asil = calc_asil(entry.severity, entry.controllability, entry.exposure)
+            if self.app.active_hara:
+                self.app.active_hara.status = "draft"
+                self.app.active_hara.approved = False
+                self.app.invalidate_reviews_for_hara(self.app.active_hara.name)
+                self.status_lbl.config(text=f"Status: {self.app.active_hara.status}")
         self.refresh()
 
     def approve_doc(self):
