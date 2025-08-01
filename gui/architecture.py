@@ -262,7 +262,6 @@ def _is_default_part_name(def_name: str, part_name: str) -> bool:
     pattern = re.escape(def_name) + r"\[\d+\]$"
     return re.fullmatch(pattern, part_name) is not None
 
-
 def _multiplicity_limit_exceeded(
     repo: SysMLRepository,
     parent_id: str,
@@ -377,7 +376,6 @@ def _part_name_exists(
                 return True
 
     return False
-
 
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
@@ -959,7 +957,15 @@ def _sync_ibd_partproperty_parts(
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
         entries = [n for n in names if n.strip()]
-    parsed = [parse_part_property(e) for e in entries]
+    parsed_raw = [parse_part_property(e) for e in entries]
+    seen_keys = set()
+    parsed = []
+    for prop_name, block_name in parsed_raw:
+        key = _part_prop_key(prop_name)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        parsed.append((prop_name, block_name))
     added: list[dict] = []
     boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
     if boundary:
@@ -983,6 +989,28 @@ def _sync_ibd_partproperty_parts(
         )
         if not target_id:
             continue
+        # enforce multiplicity based on aggregation relationships
+        limit = None
+        for rel in repo.relationships:
+            if (
+                rel.source == block_id
+                and rel.target == target_id
+                and rel.rel_type in ("Aggregation", "Composite Aggregation")
+            ):
+                mult = rel.properties.get("multiplicity", "")
+                low, high = _parse_multiplicity_range(mult)
+                if high is not None:
+                    limit = high
+                break
+        if limit is not None:
+            current = sum(
+                1
+                for o in diag.objects
+                if o.get("obj_type") == "Part"
+                and o.get("properties", {}).get("definition") == target_id
+            )
+            if current >= limit:
+                continue
         part_elem = repo.create_element(
             "Part",
             name=prop_name,
@@ -3943,6 +3971,7 @@ class SysMLDiagramWindow(tk.Frame):
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
             has_name = bool(name) and not _is_default_part_name(def_name, name)
+
         if not has_name:
             name = ""
         if obj.obj_type == "Part":
@@ -6930,6 +6959,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
+
         for def_id, mult in selected_placeholders:
             add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
 
