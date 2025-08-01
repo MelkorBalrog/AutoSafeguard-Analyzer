@@ -144,52 +144,6 @@ class FTADrawingHelper:
         canvas.create_line(child_pt[0], fixed_y, child_pt[0], child_pt[1],
                            fill=outline_color, width=line_width)
 
-    def _interpolate_color(self, color: str, ratio: float) -> str:
-        """Return color blended with white by *ratio* (0..1)."""
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        nr = int(255 * (1 - ratio) + r * ratio)
-        ng = int(255 * (1 - ratio) + g * ratio)
-        nb = int(255 * (1 - ratio) + b * ratio)
-        return f"#{nr:02x}{ng:02x}{nb:02x}"
-
-    def _fill_gradient_polygon(self, canvas, points, color):
-        """Fill *points* polygon with a horizontal white → color gradient."""
-        xs = [p[0] for p in points]
-        left, right = int(min(xs)), int(max(xs))
-        if right <= left:
-            return
-        for x in range(left, right + 1):
-            ratio = (x - left) / (right - left)
-            fill = self._interpolate_color(color, ratio)
-            yvals = []
-            for i in range(len(points)):
-                x1, y1 = points[i]
-                x2, y2 = points[(i + 1) % len(points)]
-                if (x1 <= x <= x2) or (x2 <= x <= x1):
-                    if x1 == x2:
-                        continue
-                    t = (x - x1) / (x2 - x1)
-                    yvals.append(y1 + t * (y2 - y1))
-            yvals.sort()
-            for j in range(0, len(yvals), 2):
-                if j + 1 < len(yvals):
-                    canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
-
-    def _fill_gradient_circle(self, canvas, cx, cy, radius, color):
-        """Fill circle with gradient from white to *color*."""
-        left = int(cx - radius)
-        right = int(cx + radius)
-        if right <= left:
-            return
-        for x in range(left, right + 1):
-            ratio = (x - left) / (right - left)
-            fill = self._interpolate_color(color, ratio)
-            dx = x - cx
-            dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
-            canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
-
     def compute_rotated_and_gate_vertices(self, scale):
         """Compute vertices for a rotated AND gate shape scaled by 'scale'."""
         vertices = [(0, 0), (0, 2), (1, 2)]
@@ -220,8 +174,7 @@ class FTADrawingHelper:
         ys = [v[1] for v in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        self._fill_gradient_polygon(canvas, final_points, fill)
-        canvas.create_polygon(final_points, fill="", outline=outline_color,
+        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
                                 width=line_width, smooth=False)
 
         # Draw the top label box
@@ -289,8 +242,7 @@ class FTADrawingHelper:
         ys = [p[1] for p in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        self._fill_gradient_polygon(canvas, final_points, fill)
-        canvas.create_polygon(final_points, fill="", outline=outline_color,
+        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
                                 width=line_width, smooth=True)
 
         # Draw the top label box
@@ -405,8 +357,7 @@ class FTADrawingHelper:
         vertices = [(x + v1[0], y + v1[1]),
                     (x + v2[0], y + v2[1]),
                     (x + v3[0], y + v3[1])]
-        self._fill_gradient_polygon(canvas, vertices, fill)
-        canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
+        canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
         
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -452,8 +403,7 @@ class FTADrawingHelper:
         top = y - radius
         right = x + radius
         bottom = y + radius
-        self._fill_gradient_circle(canvas, x, y, radius, fill)
-        canvas.create_oval(left, top, right, bottom, fill="",
+        canvas.create_oval(left, top, right, bottom, fill=fill,
                            outline=outline_color, width=line_width)
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
