@@ -8648,7 +8648,12 @@ class FaultTreeApp:
                 return 0.0
         if fit <= 0:
             return 0.0
-        lam = fit / 1e9
+        comp_name = self.get_component_name_for_node(fm)
+        qty = next((c.quantity for c in self.reliability_components
+                     if c.name == comp_name), 1)
+        if qty <= 0:
+            qty = 1
+        lam = (fit / qty) / 1e9
         if f == "exponential":
             return 1 - math.exp(-lam * t)
         else:
