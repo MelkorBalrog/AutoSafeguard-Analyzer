@@ -3706,12 +3706,50 @@ class FaultTreeApp:
         # Get the PostScript output for the region.
         ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
         ps_bytes = BytesIO(ps.encode("utf-8"))
-        
+
         try:
             img = Image.open(ps_bytes)
             img.load(scale=3)
         except Exception as e:
             print(f"Debug: Error loading image for page node {page_node.unique_id}: {e}")
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
+
+    def capture_sysml_diagram(self, diagram):
+        """Return a PIL Image of the given SysML diagram."""
+        from io import BytesIO
+        from PIL import Image
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        if diagram.diag_type == "Use Case Diagram":
+            win = UseCaseDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Activity Diagram":
+            win = ActivityDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Block Diagram":
+            win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Internal Block Diagram":
+            win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        else:
+            temp.destroy()
+            return None
+
+        win.redraw()
+        win.canvas.update()
+        bbox = win.canvas.bbox("all")
+        if not bbox:
+            temp.destroy()
+            return None
+
+        x, y, x2, y2 = bbox
+        width, height = x2 - x, y2 - y
+        ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception:
             img = None
         temp.destroy()
         return img.convert("RGB") if img else None
@@ -7030,13 +7068,41 @@ class FaultTreeApp:
         pdf_styles = getSampleStyleSheet()
         preformatted_style = ParagraphStyle(name="Preformatted", fontName="Courier", fontSize=10)
         pdf_styles.add(preformatted_style)
+
+        def scale_image(pil_img):
+            """Scale images so they fit within the doc page nicely."""
+            orig_width, orig_height = pil_img.size
+            scale_factor = 0.95 * min(doc.width / orig_width, doc.height / orig_height, 1)
+            return orig_width * scale_factor, orig_height * scale_factor
+
         Story = []
+
+        Story.append(Paragraph(report_title, pdf_styles["Title"]))
+        Story.append(Spacer(1, 12))
+
+        Story.append(Paragraph("Architecture", pdf_styles["Heading1"]))
+        Story.append(Spacer(1, 12))
+        repo = SysMLRepository.get_instance()
+        arch_diagrams = sorted(repo.diagrams.values(), key=lambda d: d.name or d.diag_id)
+        for diag in arch_diagrams:
+            img = self.capture_sysml_diagram(diag)
+            if img is None:
+                continue
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            buf.seek(0)
+            desired_width, desired_height = scale_image(img)
+            rl_img = RLImage(buf, width=desired_width, height=desired_height)
+            Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            Story.append(rl_img)
+            Story.append(Spacer(1, 12))
+        if arch_diagrams:
+            Story.append(PageBreak())
 
         # -------------------------------------------------------------
         # Executive Summary Page (First Page)
         # -------------------------------------------------------------
-        Story.append(Paragraph(report_title, pdf_styles["Title"]))
-        Story.append(Spacer(1, 12))
 
         if include_assurance:
             exec_summary_text = (
@@ -7234,13 +7300,6 @@ class FaultTreeApp:
             Story.append(PageBreak())
             
         # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
-        def scale_image(pil_img):
-            """Scale images so they fit within the doc page nicely."""
-            orig_width, orig_height = pil_img.size
-            scale_factor = 0.95 * min(doc.width / orig_width, doc.height / orig_height, 1)
-            desired_width = orig_width * scale_factor
-            desired_height = orig_height * scale_factor
-            return desired_width, desired_height
 
         processed_ids = set()
         for idx, event in enumerate(self.top_events, start=1):
