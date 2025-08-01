@@ -1918,8 +1918,6 @@ class FaultTreeApp:
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
-            "show_grid": False,
-            "black_white": False,
         }
         self.mission_profiles = []
         self.fmeda_components = []
@@ -3635,45 +3633,11 @@ class FaultTreeApp:
         chk = tk.Checkbutton(prop_win, text="Show Detailed Formulas in PDF Report", variable=var_detailed, font=dialog_font)
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
-        var_grid = tk.BooleanVar(value=self.project_properties.get("show_grid", False))
-        chk_grid = tk.Checkbutton(prop_win, text="Show Grid", variable=var_grid, font=dialog_font)
-        chk_grid.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
-        var_bw = tk.BooleanVar(value=self.project_properties.get("black_white", False))
-        chk_bw = tk.Checkbutton(prop_win, text="Black and White Diagram", variable=var_bw, font=dialog_font)
-        chk_bw.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-
         def save_props():
             new_name = pdf_entry.get().strip()
             if new_name:
                 self.project_properties["pdf_report_name"] = new_name
                 self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                self.project_properties["show_grid"] = var_grid.get()
-                self.project_properties["black_white"] = var_bw.get()
-                messagebox.showinfo("Project Properties", "Project properties updated.")
-            else:
-                messagebox.showwarning("Project Properties", "PDF Report Name cannot be empty.")
-            prop_win.destroy()
-
-        def save_props():
-            new_name = pdf_entry.get().strip()
-            if new_name:
-                self.project_properties["pdf_report_name"] = new_name
-                self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                self.project_properties["show_grid"] = var_grid.get()
-                self.project_properties["black_white"] = var_bw.get()
-                messagebox.showinfo("Project Properties", "Project properties updated.")
-            else:
-                messagebox.showwarning("Project Properties", "PDF Report Name cannot be empty.")
-            prop_win.destroy()
-
-        def save_props():
-            new_name = pdf_entry.get().strip()
-            if new_name:
-                self.project_properties["pdf_report_name"] = new_name
-                self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                self.project_properties["show_grid"] = var_grid.get()
-                self.project_properties["black_white"] = var_bw.get()
                 messagebox.showinfo("Project Properties", "Project properties updated.")
             else:
                 messagebox.showwarning("Project Properties", "PDF Report Name cannot be empty.")
@@ -7883,8 +7847,6 @@ class FaultTreeApp:
         return counts
 
     def get_node_fill_color(self, node):
-        if self.project_properties.get("black_white", False):
-            return "white"
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
@@ -8665,7 +8627,6 @@ class FaultTreeApp:
         self.canvas.delete("all")
         if hasattr(self, "fta_drawing_helper"):
             self.fta_drawing_helper.clear_cache()
-        self.draw_grid()
         drawn_ids = set()
         for top_event in self.top_events:
             self.draw_connections(top_event, drawn_ids)
@@ -8676,20 +8637,6 @@ class FaultTreeApp:
             self.draw_node(node)
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
-    def draw_grid(self):
-        if not self.project_properties.get("show_grid", False):
-            return
-        spacing = self.grid_size * self.zoom
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
-        if width < 10:
-            width = 800
-        if height < 10:
-            height = 600
-        for x in range(0, int(width), int(spacing)):
-            self.canvas.create_line(x, 0, x, height, fill="#ddd", tags="grid")
-        for y in range(0, int(height), int(spacing)):
-            self.canvas.create_line(0, y, width, y, fill="#ddd", tags="grid")
 
     def create_diagram_image_without_grid(self):
         if hasattr(self, "canvas") and self.canvas is not None and self.canvas.winfo_exists():
@@ -16114,7 +16061,6 @@ class PageDiagram:
         self.canvas.delete("all")
         if hasattr(self.app, "fta_drawing_helper"):
             self.app.fta_drawing_helper.clear_cache()
-        self.draw_grid()
         
         # Use the page's root node as the sole top-level event.
         drawn_ids = set()
@@ -16130,20 +16076,6 @@ class PageDiagram:
         # Update the scroll region.
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
-    def draw_grid(self):
-        if not self.project_properties.get("show_grid", False):
-            return
-        spacing = self.grid_size * self.zoom
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
-        if width < 10: 
-            width = 800
-        if height < 10: 
-            height = 600
-        for x in range(0, int(width), int(spacing)):
-            self.canvas.create_line(x, 0, x, height, fill="#ddd", tags="grid")
-        for y in range(0, int(height), int(spacing)):
-            self.canvas.create_line(0, y, width, y, fill="#ddd", tags="grid")
 
     def draw_connections(self, node, drawn_ids=set()):
         if id(node) in drawn_ids:

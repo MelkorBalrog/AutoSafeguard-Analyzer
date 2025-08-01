@@ -1,7 +1,8 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import math
 import tkinter.font as tkFont
-from PIL import Image, ImageDraw, ImageTk
+
+TEXT_BOX_COLOR = "#CFD8DC"
 
 class FTADrawingHelper:
     """
@@ -10,60 +11,68 @@ class FTADrawingHelper:
     onto a tkinter Canvas.
     """
     def __init__(self):
-        # Cache PhotoImage objects so Tkinter doesn't garbage collect them
-        self.gradient_cache: dict[str, ImageTk.PhotoImage] = {}
+        pass
 
     def clear_cache(self):
-        """Clear cached gradient images."""
-        self.gradient_cache.clear()
+        """No-op for API compatibility."""
+        pass
 
-    def _create_gradient_image(self, width: int, height: int, color: str) -> Image.Image:
-        """Return a Pillow Image with a left-to-right gradient from white to *color*."""
-        width = max(1, int(width))
-        height = max(1, int(height))
-        img = Image.new("RGB", (width, height), "white")
-        draw = ImageDraw.Draw(img)
+    def _interpolate_color(self, color: str, ratio: float) -> str:
+        """Return color blended with white by *ratio* (0..1)."""
         r = int(color[1:3], 16)
         g = int(color[3:5], 16)
         b = int(color[5:7], 16)
-        for x in range(width):
-            ratio = x / (width - 1) if width > 1 else 1
-            nr = int(255 * (1 - ratio) + r * ratio)
-            ng = int(255 * (1 - ratio) + g * ratio)
-            nb = int(255 * (1 - ratio) + b * ratio)
-            draw.line([(x, 0), (x, height)], fill=(nr, ng, nb))
-        return img
+        nr = int(255 * (1 - ratio) + r * ratio)
+        ng = int(255 * (1 - ratio) + g * ratio)
+        nb = int(255 * (1 - ratio) + b * ratio)
+        return f"#{nr:02x}{ng:02x}{nb:02x}"
 
-    def _draw_gradient_polygon(self, canvas, points, color: str, obj_id: str) -> None:
-        """Draw a gradient filled polygon on *canvas*."""
+    def _fill_gradient_polygon(self, canvas, points, color: str) -> None:
+        """Fill *points* polygon with a horizontal white → color gradient."""
         xs = [p[0] for p in points]
-        ys = [p[1] for p in points]
-        min_x = int(min(xs))
-        min_y = int(min(ys))
-        width = int(max(xs) - min_x)
-        height = int(max(ys) - min_y)
-        gradient = self._create_gradient_image(width, height, color)
-        mask = Image.new("L", (width, height), 0)
-        mdraw = ImageDraw.Draw(mask)
-        shifted = [(x - min_x, y - min_y) for x, y in points]
-        mdraw.polygon(shifted, fill=255)
-        gradient.putalpha(mask)
-        tk_img = ImageTk.PhotoImage(gradient)
-        canvas.create_image(min_x, min_y, anchor="nw", image=tk_img)
-        self.gradient_cache[obj_id] = tk_img
+        left, right = int(min(xs)), int(max(xs))
+        if right <= left:
+            return
+        for x in range(left, right + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            yvals = []
+            for i in range(len(points)):
+                x1, y1 = points[i]
+                x2, y2 = points[(i + 1) % len(points)]
+                if (x1 <= x <= x2) or (x2 <= x <= x1):
+                    if abs(x1 - x2) < 1e-6:
+                        if int(round(x1)) == x:
+                            yvals.extend([y1, y2])
+                        continue
+                    t = (x - x1) / (x2 - x1)
+                    yvals.append(y1 + t * (y2 - y1))
+            yvals.sort()
+            for j in range(0, len(yvals), 2):
+                if j + 1 < len(yvals):
+                    canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
 
-    def _draw_gradient_oval(self, canvas, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: str) -> None:
-        """Draw a gradient filled oval bounded by (x1, y1, x2, y2)."""
-        width = int(abs(x2 - x1))
-        height = int(abs(y2 - y1))
-        gradient = self._create_gradient_image(width, height, color)
-        mask = Image.new("L", (width, height), 0)
-        mdraw = ImageDraw.Draw(mask)
-        mdraw.ellipse((0, 0, width, height), fill=255)
-        gradient.putalpha(mask)
-        tk_img = ImageTk.PhotoImage(gradient)
-        canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=tk_img)
-        self.gradient_cache[obj_id] = tk_img
+    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
+        """Fill circle with gradient from white to *color*."""
+        left = int(cx - radius)
+        right = int(cx + radius)
+        if right <= left:
+            return
+        for x in range(left, right + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            dx = x - cx
+            dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
+            canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+
+    def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
+        """Fill rectangle with gradient from white to *color*."""
+        if right <= left:
+            return
+        for x in range(int(left), int(right) + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            canvas.create_line(x, top, x, bottom, fill=fill)
 
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
@@ -72,10 +81,20 @@ class FTADrawingHelper:
         height = font_obj.metrics("linespace") * len(lines)
         return max_width, height
 
-    def draw_page_clone_shape(self, canvas, x, y, scale=40.0,
-                              top_text="Desc:\n\nRationale:", bottom_text="Node",
-                              fill="lightgray", outline_color="dimgray",
-                              line_width=1, font_obj=None):
+    def draw_page_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Node",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         # First, draw the main triangle using the existing triangle routine.
         self.draw_triangle_shape(
             canvas,
@@ -246,23 +265,14 @@ class FTADrawingHelper:
         ys = [v[1] for v in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, final_points, fill, obj_id)
-            canvas.create_polygon(
-                final_points,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-                smooth=False,
-            )
-        else:
-            canvas.create_polygon(
-                final_points,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-                smooth=False,
-            )
+        self._fill_gradient_polygon(canvas, final_points, fill)
+        canvas.create_polygon(
+            final_points,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            smooth=False,
+        )
 
         # Draw the top label box
         t_width, t_height = self.get_text_size(top_text, font_obj)
@@ -271,11 +281,23 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(top_box_x, top_y,
-                                top_box_x + top_box_width,
-                                top_y + top_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text,
@@ -290,11 +312,23 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(bottom_box_x, bottom_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -338,23 +372,14 @@ class FTADrawingHelper:
         ys = [p[1] for p in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, final_points, fill, obj_id)
-            canvas.create_polygon(
-                final_points,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-                smooth=True,
-            )
-        else:
-            canvas.create_polygon(
-                final_points,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-                smooth=True,
-            )
+        self._fill_gradient_polygon(canvas, final_points, fill)
+        canvas.create_polygon(
+            final_points,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            smooth=True,
+        )
 
         # Draw the top label box
         padding = 6
@@ -363,10 +388,23 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(top_box_x, top_y,
-                                top_box_x + top_box_width,
-                                top_y + top_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text, font=font_obj, anchor="center",
@@ -379,11 +417,23 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(bottom_box_x, bottom_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text, font=font_obj,
@@ -517,11 +567,8 @@ class FTADrawingHelper:
             (x + v2[0], y + v2[1]),
             (x + v3[0], y + v3[1]),
         ]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, vertices, fill, obj_id)
-            canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
-        else:
-            canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
+        self._fill_gradient_polygon(canvas, vertices, fill)
+        canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
         
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -529,10 +576,23 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = min(v[1] for v in vertices) - top_box_height
-        canvas.create_rectangle(top_box_x, top_box_y,
-                                top_box_x + top_box_width,
-                                top_box_y + top_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -543,10 +603,23 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = max(v[1] for v in vertices) + padding - 2 * bottom_box_height
-        canvas.create_rectangle(bottom_box_x, bottom_box_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_box_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -574,38 +647,39 @@ class FTADrawingHelper:
         top = y - radius
         right = x + radius
         bottom = y + radius
-        if obj_id:
-            self._draw_gradient_oval(canvas, left, top, right, bottom, fill, obj_id)
-            canvas.create_oval(
-                left,
-                top,
-                right,
-                bottom,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-            )
-        else:
-            canvas.create_oval(
-                left,
-                top,
-                right,
-                bottom,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-            )
+        self._fill_gradient_circle(canvas, x, y, radius, fill)
+        canvas.create_oval(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
         top_box_width = t_width + 2 * padding
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = top - top_box_height
-        canvas.create_rectangle(top_box_x, top_box_y,
-                                top_box_x + top_box_width,
-                                top_box_y + top_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -616,11 +690,23 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = bottom - 2 * bottom_box_height
-        canvas.create_rectangle(bottom_box_x, bottom_box_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_box_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            "#CFD8DC",
+        )
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -650,10 +736,19 @@ class FTADrawingHelper:
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         # Draw the base triangle.
-        self.draw_triangle_shape(canvas, x, y, scale=scale,
-                                 top_text=top_text, bottom_text=bottom_text,
-                                 fill=fill, outline_color=outline_color,
-                                 line_width=line_width, font_obj=font_obj)
+        self.draw_triangle_shape(
+            canvas,
+            x,
+            y,
+            scale=scale,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
         # Compute the vertices of the big triangle.
         effective_scale = scale * 2  
         h = effective_scale * math.sqrt(3) / 2
