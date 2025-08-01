@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
+from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import global_requirements, ASIL_ORDER
@@ -17,23 +18,9 @@ from analysis.models import global_requirements, ASIL_ORDER
 # ---------------------------------------------------------------------------
 # Appearance customization
 # ---------------------------------------------------------------------------
-# Basic fill colors for different AutoML object types. This provides a simple
-# color palette so diagrams appear less bland and more professional.
-OBJECT_COLORS: dict[str, str] = {
-    "Actor": "#E0F7FA",
-    "Use Case": "#FFF3E0",
-    "System Boundary": "#ECEFF1",
-    "Block Boundary": "",
-    "Action Usage": "#E8F5E9",
-    "Action": "#E8F5E9",
-    "CallBehaviorAction": "#E8F5E9",
-    "Part": "#FFFDE7",
-    "Port": "#F3E5F5",
-    "Block": "#E0E0E0",
-    "Decision": "#E1F5FE",
-    "Merge": "#E1F5FE",
-    # Fork and Join bars remain black so are not listed here
-}
+# Colors for AutoML object types come from the global StyleManager so diagrams
+# can be easily re-themed.
+OBJECT_COLORS = StyleManager.get_instance().styles
 
 
 _next_obj_id = 1
@@ -4511,7 +4498,7 @@ class SysMLDiagramWindow(tk.Frame):
         y = obj.y * self.zoom
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
-        color = OBJECT_COLORS.get(obj.obj_type, "white")
+        color = StyleManager.get_instance().get_color(obj.obj_type)
         outline = "black"
         if obj.obj_type == "Actor":
             sx = obj.width / 80.0 * self.zoom
