@@ -1,6 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import math
 import tkinter.font as tkFont
+import tkinter as tk
 
 class FTADrawingHelper:
     """
@@ -9,7 +10,34 @@ class FTADrawingHelper:
     onto a tkinter Canvas.
     """
     def __init__(self):
-        pass
+        # Keep references to gradient images so they are not garbage collected
+        self.gradient_cache: list[tk.PhotoImage] = []
+
+    def clear_gradient_cache(self) -> None:
+        """Clear cached gradient images."""
+        self.gradient_cache.clear()
+
+    def _create_gradient_image(self, width: int, height: int, color: str) -> tk.PhotoImage:
+        """Return a left-to-right gradient image from white to *color*."""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        img = tk.PhotoImage(width=width, height=height)
+        r = int(color[1:3], 16)
+        g = int(color[3:5], 16)
+        b = int(color[5:7], 16)
+        for x in range(width):
+            ratio = x / (width - 1) if width > 1 else 1
+            nr = int(255 * (1 - ratio) + r * ratio)
+            ng = int(255 * (1 - ratio) + g * ratio)
+            nb = int(255 * (1 - ratio) + b * ratio)
+            img.put(f"#{nr:02x}{ng:02x}{nb:02x}", to=(x, 0, x + 1, height))
+        return img
+
+    def _draw_gradient_rect(self, canvas, x1: float, y1: float, x2: float, y2: float, color: str) -> None:
+        """Draw a gradient rectangle on *canvas* and keep a reference to the image."""
+        img = self._create_gradient_image(abs(int(x2 - x1)), abs(int(y2 - y1)), color)
+        canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
+        self.gradient_cache.append(img)
 
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
@@ -174,7 +202,12 @@ class FTADrawingHelper:
         ys = [v[1] for v in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
+        min_x = min(pt[0] for pt in final_points)
+        max_x = max(pt[0] for pt in final_points)
+        min_y = min(pt[1] for pt in final_points)
+        max_y = max(pt[1] for pt in final_points)
+        self._draw_gradient_rect(canvas, min_x, min_y, max_x, max_y, fill)
+        canvas.create_polygon(final_points, fill="", outline=outline_color,
                                 width=line_width, smooth=False)
 
         # Draw the top label box
@@ -242,7 +275,12 @@ class FTADrawingHelper:
         ys = [p[1] for p in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
+        min_x = min(pt[0] for pt in final_points)
+        max_x = max(pt[0] for pt in final_points)
+        min_y = min(pt[1] for pt in final_points)
+        max_y = max(pt[1] for pt in final_points)
+        self._draw_gradient_rect(canvas, min_x, min_y, max_x, max_y, fill)
+        canvas.create_polygon(final_points, fill="", outline=outline_color,
                                 width=line_width, smooth=True)
 
         # Draw the top label box
@@ -357,7 +395,12 @@ class FTADrawingHelper:
         vertices = [(x + v1[0], y + v1[1]),
                     (x + v2[0], y + v2[1]),
                     (x + v3[0], y + v3[1])]
-        canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
+        min_x = min(pt[0] for pt in vertices)
+        max_x = max(pt[0] for pt in vertices)
+        min_y = min(pt[1] for pt in vertices)
+        max_y = max(pt[1] for pt in vertices)
+        self._draw_gradient_rect(canvas, min_x, min_y, max_x, max_y, fill)
+        canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
         
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -403,7 +446,8 @@ class FTADrawingHelper:
         top = y - radius
         right = x + radius
         bottom = y + radius
-        canvas.create_oval(left, top, right, bottom, fill=fill,
+        self._draw_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_oval(left, top, right, bottom, fill="",
                            outline=outline_color, width=line_width)
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
