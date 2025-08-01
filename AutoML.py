@@ -10315,14 +10315,12 @@ class FaultTreeApp:
         ttk.Button(btn, text="Delete", command=del_mal).pack(fill=tk.X)
 
     class FMEARowDialog(simpledialog.Dialog):
-        def __init__(self, parent, node, app, fmea_entries, mechanisms=None,
-                     hide_diagnostics=False, is_passive=False, is_fmeda=False):
+        def __init__(self, parent, node, app, fmea_entries, mechanisms=None, hide_diagnostics=False, is_fmeda=False):
             self.node = node
             self.app = app
             self.fmea_entries = fmea_entries
             self.mechanisms = mechanisms or []
             self.hide_diagnostics = hide_diagnostics
-            self.is_passive = is_passive
             self.is_fmeda = is_fmeda
             super().__init__(parent, title="Edit FMEA Entry")
             self.app.selected_node = node
@@ -10399,10 +10397,7 @@ class FaultTreeApp:
                             if name in faults:
                                 self.cause_list.select_set(i)
             
-            self.mode_combo.bind(
-                "<<ComboboxSelected>>",
-                lambda e: (update_fault(), mode_sel(e))
-            )
+            self.mode_combo.bind("<<ComboboxSelected>>", mode_sel)
 
             self.effect_text = tk.Text(gen_frame, width=30, height=3)
             self.effect_text.insert("1.0", self.node.fmea_effect)
@@ -10422,21 +10417,7 @@ class FaultTreeApp:
                 if name in current_causes:
                     self.cause_list.select_set(i)
             self.cause_list.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
-            self.add_fault_btn = ttk.Button(gen_frame, text="Add Fault", command=self.add_fault)
-            self.add_fault_btn.grid(row=row_next, column=2, padx=5, pady=5)
-
-            def update_fault(*_):
-                if self.is_passive:
-                    fault = f"{self.comp_var.get()} is {self.mode_var.get()}"
-                    self.cause_list.delete(0, tk.END)
-                    self.cause_list.insert(tk.END, fault)
-                    self.cause_list.selection_set(0)
-
-            # update autofilled fault when component or failure mode changes
-            update_fault()
-            if self.is_passive:
-                self.cause_list.config(state='disabled')
-                self.add_fault_btn.config(state='disabled')
+            ttk.Button(gen_frame, text="Add Fault", command=self.add_fault).grid(row=row_next, column=2, padx=5, pady=5)
             row_next += 1
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
@@ -10581,10 +10562,7 @@ class FaultTreeApp:
                 if comp is not None:
                     self.fit_var.set(comp.fit)
 
-            self.comp_combo.bind(
-                "<<ComboboxSelected>>",
-                lambda e: (update_fault(), comp_sel())
-            )
+            self.comp_combo.bind("<<ComboboxSelected>>", comp_sel)
             comp_sel()
             mode_sel(None)
 
@@ -10640,22 +10618,16 @@ class FaultTreeApp:
             if self.node.fmea_effect and self.node.fmea_effect != new_effect:
                 self.app.rename_failure(self.node.fmea_effect, new_effect)
             self.node.fmea_effect = new_effect
-            if self.is_passive:
-                fault = f"{self.comp_var.get()} is {self.mode_var.get()}"
-                self.node.fmea_cause = fault
-                if fault not in self.app.faults:
-                    self.app.faults.append(fault)
-            else:
-                sel = [self.cause_list.get(i) for i in self.cause_list.curselection()]
-                old_causes = [c.strip() for c in getattr(self.node, "fmea_cause", "").split(";") if c.strip()]
-                self.node.fmea_cause = ";".join(sel)
-                if len(old_causes) == len(sel):
-                    for o, n in zip(old_causes, sel):
-                        if o != n:
-                            self.app.rename_fault(o, n)
-                for name in sel:
-                    if name and name not in self.app.faults:
-                        self.app.faults.append(name)
+            sel = [self.cause_list.get(i) for i in self.cause_list.curselection()]
+            old_causes = [c.strip() for c in getattr(self.node, "fmea_cause", "").split(";") if c.strip()]
+            self.node.fmea_cause = ";".join(sel)
+            if len(old_causes) == len(sel):
+                for o, n in zip(old_causes, sel):
+                    if o != n:
+                        self.app.rename_fault(o, n)
+            for name in sel:
+                if name and name not in self.app.faults:
+                    self.app.faults.append(name)
             try:
                 self.node.fmea_severity = int(self.sev_spin.get())
             except ValueError:
@@ -11322,9 +11294,7 @@ class FaultTreeApp:
                     mechs.extend(lib.mechanisms)
                 comp_name = self.get_component_name_for_node(node)
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs,
-                                   hide_diagnostics=is_passive,
-                                   is_passive=is_passive, is_fmeda=fmeda)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
                 refresh_tree()
 
         tree.bind("<Double-1>", on_double)
@@ -11340,9 +11310,7 @@ class FaultTreeApp:
                     mechs.extend(lib.mechanisms)
                 comp_name = getattr(node, "fmea_component", "")
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs,
-                                   hide_diagnostics=is_passive,
-                                   is_passive=is_passive, is_fmeda=fmeda)
+                self.FMEARowDialog(win, node, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             elif node:
                 # gather all failure modes under the same component/parent
                 if node.parents:
@@ -11371,9 +11339,7 @@ class FaultTreeApp:
                         mechs.extend(lib.mechanisms)
                     comp_name = self.get_component_name_for_node(be)
                 is_passive = any(c.name == comp_name and c.is_passive for c in self.reliability_components)
-                self.FMEARowDialog(win, be, self, entries, mechanisms=mechs,
-                                   hide_diagnostics=is_passive,
-                                   is_passive=is_passive, is_fmeda=fmeda)
+                self.FMEARowDialog(win, be, self, entries, mechanisms=mechs, hide_diagnostics=is_passive, is_fmeda=fmeda)
             refresh_tree()
             if fmea is not None:
                 self.touch_doc(fmea)
