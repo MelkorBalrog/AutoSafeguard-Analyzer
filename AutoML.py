@@ -3185,6 +3185,20 @@ class FaultTreeApp:
             doc.status = status
             doc.approved = status == "closed"
 
+    def update_fta_statuses(self):
+        """Update each FTA top event's status based on linked reviews."""
+        for te in self.top_events:
+            status = "draft"
+            for review in self.reviews:
+                if te.unique_id in getattr(review, "fta_ids", []):
+                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
+                        status = "closed"
+                        break
+                    else:
+                        status = "in review"
+            te.status = status
+            te.approved = status == "closed"
+
     def get_safety_goal_asil(self, sg_name):
         """Return the highest ASIL level for a safety goal name across approved HARAs."""
         best = "QM"
@@ -3567,27 +3581,42 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to safety goals when the HARA is approved."""
-        sg_data = {}
+        """Propagate HARA values to safety goals following review rules."""
+        sg_all = {}
+        sg_closed = {}
         for doc in getattr(self, "hara_docs", []):
-            if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
-                continue
+            is_closed = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
             for e in doc.entries:
                 if not e.safety_goal:
                     continue
-                data = sg_data.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
-                if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
-                    data["asil"] = e.asil
-                if e.severity > data["severity"]:
-                    data["severity"] = e.severity
-                if e.controllability > data["cont"]:
-                    data["cont"] = e.controllability
+                data_all = sg_all.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
+                if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data_all["asil"], 0):
+                    data_all["asil"] = e.asil
+                if e.severity > data_all["severity"]:
+                    data_all["severity"] = e.severity
+                if e.controllability > data_all["cont"]:
+                    data_all["cont"] = e.controllability
+                if is_closed:
+                    data_closed = sg_closed.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
+                    if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data_closed["asil"], 0):
+                        data_closed["asil"] = e.asil
+                    if e.severity > data_closed["severity"]:
+                        data_closed["severity"] = e.severity
+                    if e.controllability > data_closed["cont"]:
+                        data_closed["cont"] = e.controllability
         for te in self.top_events:
             name = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-            if name in sg_data:
-                te.safety_goal_asil = sg_data[name]["asil"]
-                te.severity = sg_data[name]["severity"]
-                te.controllability = sg_data[name]["cont"]
+            if te.status == "draft":
+                data = sg_all.get(name)
+            else:
+                data = sg_closed.get(name)
+                if data:
+                    te.status = "draft"
+                    te.approved = False
+            if data:
+                te.safety_goal_asil = data["asil"]
+                te.severity = data["severity"]
+                te.controllability = data["cont"]
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -14368,6 +14397,7 @@ class FaultTreeApp:
                 self.review_data = None
 
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.versions = data.get("versions", [])
 
         self.selected_node = None
@@ -15196,6 +15226,7 @@ class FaultTreeApp:
         if not self.review_data and self.reviews:
             self.review_data = self.reviews[0]
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.update_requirement_statuses()
         if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
             self.doc_nb.select(self._review_tab)
@@ -15632,6 +15663,7 @@ class FaultTreeApp:
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from HARAs and update requirement ASILs."""
+        self.update_fta_statuses()
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
@@ -15898,6 +15930,8 @@ class FaultTreeNode:
         self.ftti = ""
         self.acceptance_prob = 1.0
         self.acceptance_criteria = ""
+        self.status = "draft"
+        self.approved = False
         # Targets for safety goal metrics
         self.sg_dc_target = 0.0
         self.sg_spfm_target = 0.0
@@ -15970,6 +16004,8 @@ class FaultTreeNode:
             "ftti": self.ftti,
             "acceptance_prob": self.acceptance_prob,
             "acceptance_criteria": self.acceptance_criteria,
+            "status": self.status,
+            "approved": self.approved,
             "sg_dc_target": self.sg_dc_target,
             "sg_spfm_target": self.sg_spfm_target,
             "sg_lpfm_target": self.sg_lpfm_target,
@@ -16030,6 +16066,8 @@ class FaultTreeNode:
         node.ftti = data.get("ftti", "")
         node.acceptance_prob = data.get("acceptance_prob", 1.0)
         node.acceptance_criteria = data.get("acceptance_criteria", "")
+        node.status = data.get("status", "draft")
+        node.approved = data.get("approved", False)
         node.sg_dc_target = data.get("sg_dc_target", 0.0)
         node.sg_spfm_target = data.get("sg_spfm_target", 0.0)
         node.sg_lpfm_target = data.get("sg_lpfm_target", 0.0)

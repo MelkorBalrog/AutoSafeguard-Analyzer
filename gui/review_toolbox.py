@@ -740,6 +740,7 @@ class ReviewToolbox(tk.Frame):
                 r.closed = True
                 r.reviewed = True
                 self.app.update_hara_statuses()
+                self.app.update_fta_statuses()
                 self.app.update_requirement_statuses()
                 if hasattr(self.app, "_hara_window") and self.app._hara_window.winfo_exists():
                     self.app._hara_window.refresh_docs()
@@ -756,6 +757,7 @@ class ReviewToolbox(tk.Frame):
                 if newly_approved:
                     self.app.add_version()
                 self.app.update_hara_statuses()
+                self.app.update_fta_statuses()
                 self.app.update_requirement_statuses()
                 if not was_closed and r.closed:
                     self.app.ensure_asil_consistency()
