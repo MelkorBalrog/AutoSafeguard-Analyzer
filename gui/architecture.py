@@ -4857,6 +4857,19 @@ class SysMLDiagramWindow(tk.Frame):
             tags=tags,
         )
 
+    def _draw_subdiagram_marker(self, right: float, bottom: float) -> None:
+        """Draw a small indicator showing a linked lower level diagram."""
+
+        size = 8 * self.zoom
+        pad = 2 * self.zoom
+        x1 = right - size - pad
+        y1 = bottom - size - pad
+        x2 = right - pad
+        y2 = bottom - pad
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="white")
+        self.canvas.create_line((x1 + x2) / 2, y1 + 1 * self.zoom, (x1 + x2) / 2, y2 - 1 * self.zoom, fill="black")
+        self.canvas.create_line(x1 + 1 * self.zoom, (y1 + y2) / 2, x2 - 1 * self.zoom, (y1 + y2) / 2, fill="black")
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -5250,6 +5263,17 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="center",
                     font=self.font,
                 )
+
+        show_marker = False
+        if obj.obj_type in ("Block", "Action Usage", "Action", "CallBehaviorAction"):
+            diag_id = self.repo.get_linked_diagram(obj.element_id)
+            view_id = obj.properties.get("view")
+            show_marker = bool(
+                (diag_id and diag_id in self.repo.diagrams)
+                or (view_id and view_id in self.repo.diagrams)
+            )
+        if show_marker:
+            self._draw_subdiagram_marker(x + w, y + h)
 
         if obj in self.selected_objs:
             bx = x - w
