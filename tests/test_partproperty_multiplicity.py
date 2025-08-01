@@ -28,5 +28,23 @@ class PartPropertyMultiplicityTests(unittest.TestCase):
         parts = [o for o in ibd.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part.elem_id]
         self.assertEqual(len(parts), 1)
 
+    def test_skip_existing_bracketed_parts(self):
+        repo = self.repo
+        blk = repo.create_element("Block", name="A", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        ibd = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(blk.elem_id, ibd.diag_id)
+
+        p1 = repo.create_element("Part", name="B[1]", properties={"definition": part_blk.elem_id})
+        p2 = repo.create_element("Part", name="B[2]", properties={"definition": part_blk.elem_id})
+        repo.add_element_to_diagram(ibd.diag_id, p1.elem_id)
+        repo.add_element_to_diagram(ibd.diag_id, p2.elem_id)
+        ibd.objects.append({"obj_id": 1, "obj_type": "Part", "x": 0, "y": 0, "element_id": p1.elem_id, "properties": {"definition": part_blk.elem_id}})
+        ibd.objects.append({"obj_id": 2, "obj_type": "Part", "x": 0, "y": 0, "element_id": p2.elem_id, "properties": {"definition": part_blk.elem_id}})
+
+        _sync_ibd_partproperty_parts(repo, blk.elem_id, visible=True)
+        parts = [o for o in ibd.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id]
+        self.assertEqual(len(parts), 2)
+
 if __name__ == "__main__":
     unittest.main()
