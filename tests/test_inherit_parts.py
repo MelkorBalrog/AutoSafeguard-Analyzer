@@ -293,5 +293,31 @@ class InheritPartsTests(unittest.TestCase):
             )
         )
 
+    def test_inherit_father_parts_preserves_existing(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="Parent", properties={"partProperties": "B"})
+        child = repo.create_element("Block", name="Child")
+        part_blk = repo.create_element("Block", name="B")
+        df = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(parent.elem_id, df.diag_id)
+        _sync_ibd_partproperty_parts(repo, parent.elem_id, visible=True)
+
+        dc = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, dc.diag_id)
+        dc.father = parent.elem_id
+        inherit_father_parts(repo, dc)
+
+        # replace parent's part with a new element
+        df.objects = []
+        _sync_ibd_partproperty_parts(repo, parent.elem_id, visible=True)
+
+        inherit_father_parts(repo, dc)
+        parts = [
+            o
+            for o in dc.objects
+            if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id
+        ]
+        self.assertEqual(len(parts), 1)
+
 if __name__ == "__main__":
     unittest.main()

@@ -49,6 +49,7 @@ def _part_prop_key(raw: str) -> str:
         return ""
     part = raw.split(":", 1)[0]
     part = part.split("[", 1)[0]
+    part = re.sub(r"_\d+$", "", part)
     return part.strip()
 
 
@@ -972,6 +973,7 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
     }
+    existing_keys = {_part_prop_key(n) for n in existing_props}
     if names is None:
         entries = [p for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     else:
@@ -996,7 +998,7 @@ def _sync_ibd_partproperty_parts(
         base_x = 50.0
         base_y = 50.0 + 60.0 * len(existing_props)
     for prop_name, block_name in parsed:
-        if prop_name in existing_props:
+        if _part_prop_key(prop_name) in existing_keys:
             continue
         target_id = next(
             (
@@ -1052,6 +1054,7 @@ def _sync_ibd_partproperty_parts(
         diag.objects.append(obj_dict)
         added.append(obj_dict)
         existing_props.add(prop_name)
+        existing_keys.add(_part_prop_key(prop_name))
         existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
@@ -1662,7 +1665,16 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
     # Track existing parts by element id to avoid duplicates
-    existing = {o.get("element_id") for o in diagram.objects if o.get("obj_type") == "Part"}
+    existing = {
+        o.get("element_id")
+        for o in diagram.objects
+        if o.get("obj_type") == "Part"
+    }
+    existing_keys = {
+        _part_prop_key(repo.elements[eid].name)
+        for eid in existing
+        if eid in repo.elements
+    }
 
     # Map of source part obj_id -> new obj_id so ports can be updated
     part_map: dict[int, int] = {}
@@ -1673,14 +1685,20 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
     for obj in getattr(father_diag, "objects", []):
         if obj.get("obj_type") != "Part":
             continue
-        if obj.get("element_id") in existing:
+        elem_id = obj.get("element_id")
+        if elem_id in existing:
+            continue
+        name_key = _part_prop_key(repo.elements.get(elem_id).name if elem_id in repo.elements else "")
+        if name_key in existing_keys:
             continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
-        repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
+        repo.add_element_to_diagram(diagram.diag_id, elem_id)
         added.append(new_obj)
         part_map[obj.get("obj_id")] = new_obj["obj_id"]
+        existing.add(elem_id)
+        existing_keys.add(name_key)
 
     # ------------------------------------------------------------------
     # Copy ports belonging to the inherited parts so orientation and other
