@@ -383,6 +383,11 @@ class ReliabilityWindow(tk.Frame):
         )
         cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(cfg_btn, "Edit parameters of the selected component.")
+        del_comp_btn = ttk.Button(
+            btn_frame, text="Delete Component", command=self.delete_component
+        )
+        del_comp_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(del_comp_btn, "Remove the selected component from the table.")
         calc_btn = ttk.Button(
             btn_frame, text="Calculate FIT", command=self.calculate_fit
         )
@@ -690,6 +695,15 @@ class ReliabilityWindow(tk.Frame):
 
         ParamDialog(self)
         self.refresh_tree()
+
+    def delete_component(self):
+        sel = self.tree.selection()
+        for iid in sel:
+            idx = self.tree.index(iid)
+            if idx < len(self.components):
+                del self.components[idx]
+        self.refresh_tree()
+        self.formula_label.config(text="")
 
     def calculate_fit(self):
         prof_name = self.profile_var.get()
