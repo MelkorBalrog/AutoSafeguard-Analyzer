@@ -1631,15 +1631,34 @@ def remove_inherited_block_properties(repo: SysMLRepository, child_id: str, pare
         v.strip() for v in parent.properties.get("partProperties", "").split(",") if v.strip()
     ]
     parent_bases = {p.split("[")[0].strip() for p in parent_parts}
-    child_parts = [
-        v
-        for v in child_parts
-        if v.split("[")[0].strip() not in parent_bases
+
+    removed_parts = [
+        v for v in child_parts if v.split("[")[0].strip() in parent_bases
     ]
+
+    child_parts = [
+        v for v in child_parts if v.split("[")[0].strip() not in parent_bases
+    ]
+
     if child_parts:
         child.properties["partProperties"] = ", ".join(child_parts)
     else:
         child.properties.pop("partProperties", None)
+
+    # remove inherited part objects from child IBDs
+    for entry in removed_parts:
+        _pname, blk_name = parse_part_property(entry)
+        target_id = next(
+            (
+                eid
+                for eid, elem in repo.elements.items()
+                if elem.elem_type == "Block" and elem.name == blk_name
+            ),
+            None,
+        )
+        if target_id:
+            _remove_parts_from_ibd(repo, child_id, target_id)
+            _propagate_ibd_part_removal(repo, child_id, target_id)
 
     for prop in SYSML_PROPERTIES.get("BlockUsage", []):
         if prop == "partProperties":
@@ -1669,6 +1688,9 @@ def remove_inherited_block_properties(repo: SysMLRepository, child_id: str, pare
         for o in getattr(d, "objects", []):
             if o.get("element_id") == child_id:
                 o.setdefault("properties", {}).update(child.properties)
+
+    # ensure child's internal block diagram matches updated parts
+    _sync_ibd_partproperty_parts(repo, child_id, hidden=False)
 
 
 def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[dict]:
@@ -1787,6 +1809,7 @@ class SysMLObject:
     requirements: List[dict] = field(default_factory=list)
     locked: bool = False
     hidden: bool = False
+    collapsed: Dict[str, bool] = field(default_factory=dict)
 
 
 @dataclass
@@ -2469,6 +2492,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Keep references to gradient images used for element backgrounds
         self.gradient_cache: dict[int, tk.PhotoImage] = {}
+        # Track bounding boxes for compartment toggle buttons
+        self.compartment_buttons: list[tuple[int, str, tuple[float, float, float, float]]] = []
 
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
@@ -2749,6 +2774,14 @@ class SysMLDiagramWindow(tk.Frame):
         prefer = self.current_tool in conn_tools
         obj = self.find_object(x, y, prefer_port=prefer)
         t = self.current_tool
+
+        if obj and obj.obj_type == "Block" and t in (None, "Select"):
+            hit = self.hit_compartment_toggle(obj, x, y)
+            if hit:
+                obj.collapsed[hit] = not obj.collapsed.get(hit, False)
+                self._sync_to_repository()
+                self.redraw()
+                return
 
         if t in (
             "Association",
@@ -3719,6 +3752,13 @@ class SysMLDiagramWindow(tk.Frame):
             return "s"
         return None
 
+    def hit_compartment_toggle(self, obj: SysMLObject, x: float, y: float) -> str | None:
+        """Return the label of the compartment toggle hit at *(x, y)* or ``None``."""
+        for oid, label, (x1, y1, x2, y2) in self.compartment_buttons:
+            if oid == obj.obj_id and x1 <= x <= x2 and y1 <= y <= y2:
+                return label
+        return None
+
     def _dist_to_segment(self, p, a, b) -> float:
         px, py = p
         ax, ay = a
@@ -4012,29 +4052,34 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _block_compartments(self, obj: SysMLObject) -> list[tuple[str, str]]:
         """Return the list of compartments displayed for a Block."""
+        parts = "\n".join(
+            p.strip()
+            for p in obj.properties.get("partProperties", "").split(",")
+            if p.strip()
+        )
+        operations = "\n".join(
+            format_operation(op)
+            for op in parse_operations(obj.properties.get("operations", ""))
+        )
+        ports = "\n".join(
+            p.strip() for p in obj.properties.get("ports", "").split(",") if p.strip()
+        )
+        reliability = "\n".join(
+            f"{label}={obj.properties.get(key, '')}"
+            for label, key in (
+                ("FIT", "fit"),
+                ("Qual", "qualification"),
+                ("FM", "failureModes"),
+            )
+            if obj.properties.get(key, "")
+        )
+        requirements = "\n".join(r.get("id") for r in obj.requirements)
         return [
-            ("Parts", obj.properties.get("partProperties", "")),
-            (
-                "Operations",
-                "; ".join(
-                    format_operation(op)
-                    for op in parse_operations(obj.properties.get("operations", ""))
-                ),
-            ),
-            ("Ports", obj.properties.get("ports", "")),
-            (
-                "Reliability",
-                " ".join(
-                    f"{label}={obj.properties.get(key, '')}"
-                    for label, key in (
-                        ("FIT", "fit"),
-                        ("Qual", "qualification"),
-                        ("FM", "failureModes"),
-                    )
-                    if obj.properties.get(key, "")
-                ),
-            ),
-            ("Requirements", "; ".join(r.get("id") for r in obj.requirements)),
+            ("Parts", parts),
+            ("Operations", operations),
+            ("Ports", ports),
+            ("Reliability", reliability),
+            ("Requirements", requirements),
         ]
 
     def _min_block_size(self, obj: SysMLObject) -> tuple[float, float]:
@@ -4042,10 +4087,22 @@ class SysMLDiagramWindow(tk.Frame):
         header = f"<<block>> {obj.properties.get('name', '')}".strip()
         width_px = self.font.measure(header) + 8 * self.zoom
         compartments = self._block_compartments(obj)
+        total_lines = 1
+        button_w = 12 * self.zoom
         for label, text in compartments:
-            display = f"{label}: {text}" if text else f"{label}:"
-            width_px = max(width_px, self.font.measure(display) + 8 * self.zoom)
-        height_px = (1 + len(compartments)) * 20 * self.zoom
+            collapsed = obj.collapsed.get(label, False)
+            lines = text.splitlines() if text else [""]
+            if collapsed:
+                disp = f"{label}: {lines[0] if lines else ''}"
+                width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
+                total_lines += 1
+            else:
+                disp = f"{label}:"
+                width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
+                for line in lines:
+                    width_px = max(width_px, self.font.measure(line) + 8 * self.zoom)
+                total_lines += 1 + len(lines)
+        height_px = total_lines * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
     def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
@@ -4318,6 +4375,7 @@ class SysMLDiagramWindow(tk.Frame):
     def redraw(self):
         self.canvas.delete("all")
         self.gradient_cache.clear()
+        self.compartment_buttons = []
         self.sort_objects()
         remove_orphan_ports(self.objects)
         for obj in list(self.objects):
@@ -4858,45 +4916,48 @@ class SysMLDiagramWindow(tk.Frame):
                 anchor="w",
                 font=self.font,
             )
-            compartments = [
-                ("Parts", obj.properties.get("partProperties", "")),
-                (
-                    "Operations",
-                    "; ".join(
-                        format_operation(op)
-                        for op in parse_operations(obj.properties.get("operations", ""))
-                    ),
-                ),
-                ("Ports", obj.properties.get("ports", "")),
-                (
-                    "Reliability",
-                    " ".join(
-                        f"{label}={obj.properties.get(key,'')}"
-                        for label, key in (
-                            ("FIT", "fit"),
-                            ("Qual", "qualification"),
-                            ("FM", "failureModes"),
-                        )
-                        if obj.properties.get(key, "")
-                    ),
-                ),
-                (
-                    "Requirements",
-                    "; ".join(r.get("id") for r in obj.requirements),
-                ),
-            ]
+            compartments = self._block_compartments(obj)
             cy = top + 20 * self.zoom
             for label, text in compartments:
+                lines = text.splitlines() if text else [""]
+                collapsed = obj.collapsed.get(label, False)
                 self.canvas.create_line(left, cy, right, cy)
-                display = f"{label}: {text}" if text else f"{label}:"
-                self.canvas.create_text(
-                    left + 4 * self.zoom,
-                    cy + 10 * self.zoom,
-                    text=display,
-                    anchor="w",
-                    font=self.font,
-                )
-                cy += 20 * self.zoom
+                btn_sz = 8 * self.zoom
+                bx1 = left + 2 * self.zoom
+                by1 = cy + (20 * self.zoom - btn_sz) / 2
+                bx2 = bx1 + btn_sz
+                by2 = by1 + btn_sz
+                self.canvas.create_rectangle(bx1, by1, bx2, by2, outline="black", fill="white")
+                self.canvas.create_text((bx1 + bx2) / 2, (by1 + by2) / 2, text="-" if not collapsed else "+", font=self.font)
+                self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
+                tx = bx2 + 2 * self.zoom
+                if collapsed:
+                    self.canvas.create_text(
+                        tx,
+                        cy + 10 * self.zoom,
+                        text=f"{label}: {lines[0] if lines else ''}",
+                        anchor="w",
+                        font=self.font,
+                    )
+                    cy += 20 * self.zoom
+                else:
+                    self.canvas.create_text(
+                        tx,
+                        cy + 10 * self.zoom,
+                        text=f"{label}:",
+                        anchor="w",
+                        font=self.font,
+                    )
+                    cy += 20 * self.zoom
+                    for line in lines:
+                        self.canvas.create_text(
+                            left + 4 * self.zoom,
+                            cy + 10 * self.zoom,
+                            text=line,
+                            anchor="w",
+                            font=self.font,
+                        )
+                        cy += 20 * self.zoom
         elif obj.obj_type in ("Initial", "Final"):
             if obj.obj_type == "Initial":
                 r = min(obj.width, obj.height) / 2 * self.zoom
