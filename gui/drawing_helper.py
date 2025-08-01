@@ -2,6 +2,8 @@
 import math
 import tkinter.font as tkFont
 
+TEXT_BOX_COLOR = "#CFD8DC"
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
