@@ -338,19 +338,34 @@ class ReliabilityWindow(tk.Frame):
             "type": list(COMPONENT_ATTR_TEMPLATES.keys()),
             "qualification": QUALIFICATIONS,
         }
+
+        tree_frame = ttk.Frame(self)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+
         self.tree = EditableTreeview(
-            self,
+            tree_frame,
             columns=("name", "type", "qty", "fit", "qualification"),
             show="headings",
             style="Reliability.Treeview",
             column_options=column_opts,
             edit_callback=self.on_cell_edit,
+            height=6,
         )
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
         for col in ("name", "type", "qty", "fit", "qualification"):
             heading = "Qualification" if col == "qualification" else col.capitalize()
             self.tree.heading(col, text=heading)
             self.tree.column(col, width=120 if col == "qualification" else 100)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.columnconfigure(0, weight=1)
+        tree_frame.rowconfigure(0, weight=1)
+
         self.tree.bind("<<TreeviewSelect>>", self.show_formula)
 
         btn_frame = ttk.Frame(self)
