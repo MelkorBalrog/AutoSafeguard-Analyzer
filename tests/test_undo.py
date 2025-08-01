@@ -39,5 +39,20 @@ class UndoTests(unittest.TestCase):
             self.repo.elements[whole.elem_id].properties.get("partProperties", ""),
         )
 
+    def test_redo_creation(self):
+        elem = self.repo.create_element("Actor", name="User")
+        self.repo.undo()
+        self.assertNotIn(elem.elem_id, self.repo.elements)
+        self.assertTrue(self.repo.redo())
+        self.assertIn(elem.elem_id, self.repo.elements)
+
+    def test_redo_rename_block(self):
+        blk = self.repo.create_element("Block", name="A")
+        rename_block(self.repo, blk.elem_id, "B")
+        self.repo.undo()
+        self.assertEqual(self.repo.elements[blk.elem_id].name, "A")
+        self.assertTrue(self.repo.redo())
+        self.assertEqual(self.repo.elements[blk.elem_id].name, "B")
+
 if __name__ == '__main__':
     unittest.main()

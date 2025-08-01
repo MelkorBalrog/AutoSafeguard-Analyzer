@@ -68,8 +68,9 @@ class SysMLRepository:
         self.diagrams: Dict[str, SysMLDiagram] = {}
         # map element_id -> diagram_id for implementation links
         self.element_diagrams: Dict[str, str] = {}
-        # maintain a simple undo history of repository snapshots
+        # maintain undo and redo history of repository snapshots
         self._undo_stack: list[dict] = []
+        self._redo_stack: list[dict] = []
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -108,12 +109,29 @@ class SysMLRepository:
         # limit history to 50 states to avoid excessive memory use
         if len(self._undo_stack) > 50:
             self._undo_stack.pop(0)
+        self._redo_stack.clear()
 
     def undo(self) -> bool:
         """Revert to the most recent saved state."""
         if not self._undo_stack:
             return False
+        current = self.to_dict()
         state = self._undo_stack.pop()
+        self._redo_stack.append(current)
+        if len(self._redo_stack) > 50:
+            self._redo_stack.pop(0)
+        self.from_dict(state)
+        return True
+
+    def redo(self) -> bool:
+        """Restore the next state from the redo stack."""
+        if not self._redo_stack:
+            return False
+        current = self.to_dict()
+        state = self._redo_stack.pop()
+        self._undo_stack.append(current)
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
         self.from_dict(state)
         return True
 

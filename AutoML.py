@@ -1956,6 +1956,8 @@ class FaultTreeApp:
         self.review_window = None
         self.current_user = ""
         self.comment_target = None
+        self._undo_stack: list[dict] = []
+        self._redo_stack: list[dict] = []
         self.versions = []
         self.diff_nodes = []
         self.fi2tc_entries = []
@@ -2011,6 +2013,7 @@ class FaultTreeApp:
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
+        edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
         edit_menu.add_separator()
         edit_menu.add_command(label="Edit Selected", command=self.edit_selected)
         edit_menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(self.selected_node) if self.selected_node else None)
@@ -2035,7 +2038,6 @@ class FaultTreeApp:
         view_menu = tk.Menu(menubar, tearoff=0)
         view_menu.add_command(label="Zoom In", command=self.zoom_in, accelerator="Ctrl++")
         view_menu.add_command(label="Zoom Out", command=self.zoom_out, accelerator="Ctrl+-")
-        view_menu.add_command(label="Auto Arrange", command=self.auto_arrange, accelerator="Ctrl+A")
         view_menu.add_command(label="Style Editor", command=self.open_style_editor)
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
@@ -2116,7 +2118,6 @@ class FaultTreeApp:
         root.bind("<Control-m>", lambda event: self.calculate_pmfh())
         root.bind("<Control-=>", lambda event: self.zoom_in())
         root.bind("<Control-minus>", lambda event: self.zoom_out())
-        root.bind("<Control-a>", lambda event: self.auto_arrange())
         root.bind("<Control-u>", lambda event: self.edit_user_name())
         root.bind("<Control-d>", lambda event: self.edit_description())
         root.bind("<Control-l>", lambda event: self.edit_rationale())
@@ -2133,6 +2134,7 @@ class FaultTreeApp:
         root.bind("<Control-v>", lambda event: self.paste_node())
         root.bind("<Control-p>", lambda event: self.save_diagram_png())
         root.bind("<Control-z>", lambda event: self.undo())
+        root.bind("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
         self.main_pane.pack(fill=tk.BOTH, expand=True)
@@ -3234,6 +3236,7 @@ class FaultTreeApp:
 
     def add_malfunction(self, name: str) -> None:
         """Add a malfunction to the list if it does not already exist."""
+        self.push_undo_state()
         if not name:
             return
         name = name.strip()
@@ -3255,14 +3258,17 @@ class FaultTreeApp:
 
     def add_fault(self, name: str) -> None:
         """Add a fault to the list if not already present."""
+        self.push_undo_state()
         append_unique_insensitive(self.faults, name)
 
     def add_failure(self, name: str) -> None:
         """Add a failure to the list if not already present."""
+        self.push_undo_state()
         append_unique_insensitive(self.failures, name)
 
     def add_hazard(self, name: str, severity: int | str = 1) -> None:
         """Add a hazard to the list if not already present."""
+        self.push_undo_state()
         append_unique_insensitive(self.hazards, name)
         if isinstance(severity, str):
             try:
@@ -3302,6 +3308,7 @@ class FaultTreeApp:
 
     def rename_malfunction(self, old: str, new: str) -> None:
         """Rename a malfunction and update all references."""
+        self.push_undo_state()
         if not old or old == new:
             return
         for i, m in enumerate(self.malfunctions):
@@ -3325,6 +3332,7 @@ class FaultTreeApp:
         self.update_views()
 
     def rename_hazard(self, old: str, new: str) -> None:
+        self.push_undo_state()
         if not old or old == new:
             return
         for i, h in enumerate(self.hazards):
@@ -3363,6 +3371,7 @@ class FaultTreeApp:
         self.update_views()
 
     def rename_fault(self, old: str, new: str) -> None:
+        self.push_undo_state()
         if not old or old == new:
             return
         for i, f in enumerate(self.faults):
@@ -3383,6 +3392,7 @@ class FaultTreeApp:
         self.update_views()
 
     def rename_failure(self, old: str, new: str) -> None:
+        self.push_undo_state()
         if not old or old == new:
             return
         for i, fl in enumerate(self.failures):
@@ -3411,6 +3421,7 @@ class FaultTreeApp:
         return ";".join(parts) if changed else value
 
     def rename_triggering_condition(self, old: str, new: str) -> None:
+        self.push_undo_state()
         if not old or old == new:
             return
         for n in self.get_all_triggering_conditions():
@@ -3426,6 +3437,7 @@ class FaultTreeApp:
         self.update_views()
 
     def rename_functional_insufficiency(self, old: str, new: str) -> None:
+        self.push_undo_state()
         if not old or old == new:
             return
         for n in self.get_all_functional_insufficiencies():
@@ -7996,6 +8008,8 @@ class FaultTreeApp:
         self.redraw_canvas()
 
     def auto_arrange(self):
+        if self.root_node is None:
+            return
         horizontal_gap = 150
         vertical_gap = 100
         next_y = [100]
@@ -13591,15 +13605,50 @@ class FaultTreeApp:
         current_state = json.dumps(self.export_model_data(), sort_keys=True)
         return current_state != getattr(self, "last_saved_state", None)
 
+    def push_undo_state(self):
+        """Save the current model state for undo operations."""
+        self._undo_stack.append(self.export_model_data(include_versions=False))
+        if len(self._undo_stack) > 20:
+            self._undo_stack.pop(0)
+        self._redo_stack.clear()
+
     def undo(self):
-        """Revert the repository to the previous state and refresh views."""
+        """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
-        if repo.undo():
-            for tab in getattr(self, "diagram_tabs", {}).values():
-                for child in tab.winfo_children():
-                    if hasattr(child, "refresh_from_repository"):
-                        child.refresh_from_repository()
-            self.update_views()
+        current = self.export_model_data(include_versions=False)
+        repo.undo()
+        if self._undo_stack:
+            state = self._undo_stack.pop()
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
+            self.apply_model_data(state)
+        else:
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
+        for tab in getattr(self, "diagram_tabs", {}).values():
+            for child in tab.winfo_children():
+                if hasattr(child, "refresh_from_repository"):
+                    child.refresh_from_repository()
+        self.update_views()
+
+    def redo(self):
+        """Restore the next state from the redo stack."""
+        repo = SysMLRepository.get_instance()
+        current = self.export_model_data(include_versions=False)
+        repo.redo()
+        if self._redo_stack:
+            state = self._redo_stack.pop()
+            self._undo_stack.append(current)
+            if len(self._undo_stack) > 20:
+                self._undo_stack.pop(0)
+            self.apply_model_data(state)
+        for tab in getattr(self, "diagram_tabs", {}).values():
+            for child in tab.winfo_children():
+                if hasattr(child, "refresh_from_repository"):
+                    child.refresh_from_repository()
+        self.update_views()
 
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
@@ -13748,6 +13797,330 @@ class FaultTreeApp:
             data["versions"] = self.versions
         return data
 
+    def apply_model_data(self, data: dict):
+        """Load model state from a dictionary."""
+        repo_data = data.get("sysml_repository")
+        if repo_data:
+            repo = SysMLRepository.get_instance()
+            repo.from_dict(repo_data)
+
+        if "top_events" in data:
+            self.top_events = [FaultTreeNode.from_dict(e) for e in data["top_events"]]
+        elif "root_node" in data:
+            root = FaultTreeNode.from_dict(data["root_node"])
+            self.top_events = [root]
+        else:
+            self.top_events = []
+
+        if not self.top_events:
+            new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
+            new_root.x, new_root.y = 300, 200
+            self.top_events.append(new_root)
+        self.root_node = self.top_events[0]
+
+        self.fmeas = []
+        for fmea_data in data.get("fmeas", []):
+            entries = [FaultTreeNode.from_dict(e) for e in fmea_data.get("entries", [])]
+            self.fmeas.append({
+                "name": fmea_data.get("name", "FMEA"),
+                "file": fmea_data.get("file", f"fmea_{len(self.fmeas)}.csv"),
+                "entries": entries,
+                "created": fmea_data.get("created", datetime.datetime.now().isoformat()),
+                "author": fmea_data.get("author", CURRENT_USER_NAME),
+                "modified": fmea_data.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": fmea_data.get("modified_by", CURRENT_USER_NAME),
+            })
+        if not self.fmeas and "fmea_entries" in data:
+            entries = [FaultTreeNode.from_dict(e) for e in data.get("fmea_entries", [])]
+            self.fmeas.append({"name": "Default FMEA", "file": "fmea_default.csv", "entries": entries})
+
+        self.fmedas = []
+        for doc in data.get("fmedas", []):
+            entries = [FaultTreeNode.from_dict(e) for e in doc.get("entries", [])]
+            self.fmedas.append({
+                "name": doc.get("name", "FMEDA"),
+                "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
+                "entries": entries,
+                "bom": doc.get("bom", ""),
+                "created": doc.get("created", datetime.datetime.now().isoformat()),
+                "author": doc.get("author", CURRENT_USER_NAME),
+                "modified": doc.get("modified", datetime.datetime.now().isoformat()),
+                "modified_by": doc.get("modified_by", CURRENT_USER_NAME),
+            })
+
+        self.update_failure_list()
+
+        node_map = {}
+        for te in self.top_events:
+            for n in self.get_all_nodes(te):
+                node_map[n.unique_id] = n
+        for entry in self.get_all_fmea_entries():
+            orig = node_map.get(entry.unique_id)
+            if orig and entry is not orig:
+                entry.is_primary_instance = False
+                entry.original = orig
+
+        self.mechanism_libraries = []
+        for lib in data.get("mechanism_libraries", []):
+            mechs = [DiagnosticMechanism(**m) for m in lib.get("mechanisms", [])]
+            self.mechanism_libraries.append(MechanismLibrary(lib.get("name", ""), mechs))
+        self.selected_mechanism_libraries = []
+        for name in data.get("selected_mechanism_libraries", []):
+            found = next((l for l in self.mechanism_libraries if l.name == name), None)
+            if found:
+                self.selected_mechanism_libraries.append(found)
+        if not self.mechanism_libraries:
+            self.load_default_mechanisms()
+
+        self.mission_profiles = []
+        for mp_data in data.get("mission_profiles", []):
+            try:
+                mp = MissionProfile(**mp_data)
+                total = mp.tau_on + mp.tau_off
+                mp.duty_cycle = mp.tau_on / total if total else 0.0
+                self.mission_profiles.append(mp)
+            except TypeError:
+                pass
+
+        self.reliability_analyses = []
+        for ra in data.get("reliability_analyses", []):
+            def load_comp(cdata):
+                comp = ReliabilityComponent(
+                    cdata.get("name", ""),
+                    cdata.get("comp_type", ""),
+                    cdata.get("quantity", 1),
+                    cdata.get("attributes", {}),
+                    cdata.get("qualification", cdata.get("safety_req", "")),
+                    cdata.get("fit", 0.0),
+                    cdata.get("is_passive", False),
+                )
+                comp.sub_boms = [
+                    [load_comp(sc) for sc in bom]
+                    for bom in cdata.get("sub_boms", [])
+                ]
+                return comp
+
+            comps = [load_comp(c) for c in ra.get("components", [])]
+            self.reliability_analyses.append(
+                ReliabilityAnalysis(
+                    ra.get("name", ""),
+                    ra.get("standard", ""),
+                    ra.get("profile", ""),
+                    comps,
+                    ra.get("total_fit", 0.0),
+                    ra.get("spfm", 0.0),
+                    ra.get("lpfm", 0.0),
+                    ra.get("dc", 0.0),
+                )
+            )
+
+        self.hazop_docs = []
+        for d in data.get("hazops", []):
+            entries = []
+            for h in d.get("entries", []):
+                h["safety"] = boolify(h.get("safety", False), False)
+                h["covered"] = boolify(h.get("covered", False), False)
+                entries.append(HazopEntry(**h))
+            self.hazop_docs.append(
+                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
+            )
+        if not self.hazop_docs and "hazop_entries" in data:
+            entries = []
+            for h in data.get("hazop_entries", []):
+                h["safety"] = boolify(h.get("safety", False), False)
+                h["covered"] = boolify(h.get("covered", False), False)
+                entries.append(HazopEntry(**h))
+            self.hazop_docs.append(HazopDoc("Default", entries))
+        self.active_hazop = self.hazop_docs[0] if self.hazop_docs else None
+        self.hazop_entries = self.active_hazop.entries if self.active_hazop else []
+
+        self.hara_docs = []
+        for d in data.get("haras", []):
+            entries = [
+                HaraEntry(
+                    e.get("malfunction", ""),
+                    e.get("hazard", ""),
+                    e.get("scenario", ""),
+                    e.get("severity", 1),
+                    e.get("sev_rationale", ""),
+                    e.get("controllability", 1),
+                    e.get("cont_rationale", ""),
+                    e.get("exposure", 1),
+                    e.get("exp_rationale", ""),
+                    e.get("asil", "QM"),
+                    e.get("safety_goal", ""),
+                )
+                for e in d.get("entries", [])
+            ]
+            hazops = d.get("hazops")
+            if not hazops:
+                hazop = d.get("hazop")
+                hazops = [hazop] if hazop else []
+            self.hara_docs.append(
+                HaraDoc(
+                    d.get("name", f"HARA {len(self.hara_docs)+1}"),
+                    hazops,
+                    entries,
+                    d.get("approved", False),
+                    d.get("status", "draft"),
+                )
+            )
+        if not self.hara_docs and "hara_entries" in data:
+            hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
+            self.hara_docs.append(
+                HaraDoc(
+                    "Default",
+                    [hazop_name] if hazop_name else [],
+                    [
+                        HaraEntry(
+                            e.get("malfunction", ""),
+                            e.get("hazard", ""),
+                            e.get("scenario", ""),
+                            e.get("severity", 1),
+                            e.get("sev_rationale", ""),
+                            e.get("controllability", 1),
+                            e.get("cont_rationale", ""),
+                            e.get("exposure", 1),
+                            e.get("exp_rationale", ""),
+                            e.get("asil", "QM"),
+                            e.get("safety_goal", ""),
+                        )
+                        for e in data.get("hara_entries", [])
+                    ],
+                    False,
+                    "draft",
+                )
+            )
+        self.active_hara = self.hara_docs[0] if self.hara_docs else None
+        self.hara_entries = self.active_hara.entries if self.active_hara else []
+        self.update_hazard_list()
+
+        self.fi2tc_docs = []
+        for d in data.get("fi2tc_docs", []):
+            self.fi2tc_docs.append(
+                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
+            )
+        if not self.fi2tc_docs and "fi2tc_entries" in data:
+            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+        self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
+        self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
+
+        self.tc2fi_docs = []
+        for d in data.get("tc2fi_docs", []):
+            self.tc2fi_docs.append(
+                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
+            )
+        if not self.tc2fi_docs and "tc2fi_entries" in data:
+            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+        self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
+        self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
+        self.scenario_libraries = data.get("scenario_libraries", [])
+        self.odd_libraries = data.get("odd_libraries", [])
+        self.faults = data.get("faults", [])
+        for be in self.get_all_basic_events():
+            desc = be.description.strip()
+            if desc and desc not in self.faults:
+                self.faults.append(desc)
+        mals = []
+        for m in data.get("malfunctions", []):
+            append_unique_insensitive(mals, m)
+        self.malfunctions = mals
+        self.hazards = data.get("hazards", [])
+        self.failures = data.get("failures", [])
+        if not self.odd_libraries and "odd_elements" in data:
+            self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
+        self.update_odd_elements()
+
+        self.fmedas = []
+        for doc in data.get("fmedas", []):
+            entries = [FaultTreeNode.from_dict(e) for e in doc.get("entries", [])]
+            self.fmedas.append({
+                "name": doc.get("name", "FMEDA"),
+                "file": doc.get("file", f"fmeda_{len(self.fmedas)}.csv"),
+                "entries": entries,
+                "bom": doc.get("bom", ""),
+            })
+
+        for event in self.top_events:
+            AutoML_Helper.fix_clone_references(self.top_events)
+        AutoML_Helper.update_unique_id_counter_for_top_events(self.top_events)
+        for event in self.top_events:
+            self.update_global_requirements_from_nodes(event)
+        if hasattr(self, "hara_entries"):
+            self.sync_hara_to_safety_goals()
+        self.project_properties = data.get("project_properties", self.project_properties)
+        self.reviews = []
+        reviews_data = data.get("reviews")
+        if reviews_data:
+            for rd in reviews_data:
+                participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
+                comments = [ReviewComment(**c) for c in rd.get("comments", [])]
+                moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
+                if not moderators and rd.get("moderator"):
+                    moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
+                self.reviews.append(
+                    ReviewData(
+                        name=rd.get("name", ""),
+                        description=rd.get("description", ""),
+                        mode=rd.get("mode", "peer"),
+                        moderators=moderators,
+                        participants=participants,
+                        comments=comments,
+                        approved=rd.get("approved", False),
+                        reviewed=rd.get("reviewed", False),
+                        due_date=rd.get("due_date", ""),
+                        closed=rd.get("closed", False),
+                        fta_ids=rd.get("fta_ids", []),
+                        fmea_names=rd.get("fmea_names", []),
+                        fmeda_names=rd.get("fmeda_names", []),
+                        hazop_names=rd.get("hazop_names", []),
+                        hara_names=rd.get("hara_names", []),
+                    )
+                )
+            current = data.get("current_review")
+            self.review_data = None
+            for r in self.reviews:
+                if r.name == current:
+                    self.review_data = r
+                    break
+        else:
+            rd = data.get("review_data")
+            if rd:
+                participants = [ReviewParticipant(**p) for p in rd.get("participants", [])]
+                comments = [ReviewComment(**c) for c in rd.get("comments", [])]
+                moderators = [ReviewParticipant(**m) for m in rd.get("moderators", [])]
+                if not moderators and rd.get("moderator"):
+                    moderators = [ReviewParticipant(rd.get("moderator"), "", "moderator")]
+                review = ReviewData(
+                    name=rd.get("name", "Review 1"),
+                    description=rd.get("description", ""),
+                    mode=rd.get("mode", "peer"),
+                    moderators=moderators,
+                    participants=participants,
+                    comments=comments,
+                    approved=rd.get("approved", False),
+                    reviewed=rd.get("reviewed", False),
+                    due_date=rd.get("due_date", ""),
+                    closed=rd.get("closed", False),
+                    fta_ids=rd.get("fta_ids", []),
+                    fmea_names=rd.get("fmea_names", []),
+                    fmeda_names=rd.get("fmeda_names", []),
+                    hazop_names=rd.get("hazop_names", []),
+                    hara_names=rd.get("hara_names", []),
+                )
+                self.reviews = [review]
+                self.review_data = review
+            else:
+                self.review_data = None
+
+        self.update_hara_statuses()
+        self.versions = data.get("versions", [])
+
+        self.selected_node = None
+        if hasattr(self, "page_diagram") and self.page_diagram is not None:
+            self.close_page_diagram()
+        self.update_views()
+
     def save_model(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
         if path:
@@ -13791,6 +14164,10 @@ class FaultTreeApp:
                     f"Failed to parse JSON file:\n{exc}",
                 )
                 return
+
+        self.apply_model_data(data)
+        self.set_last_saved_state()
+        return
 
         repo_data = data.get("sysml_repository")
         if repo_data:
@@ -15701,6 +16078,8 @@ class PageDiagram:
         self.redraw_canvas()
 
     def auto_arrange(self):
+        if self.root_node is None:
+            return
         horizontal_gap = 150
         vertical_gap = 100
         next_y = [100]
