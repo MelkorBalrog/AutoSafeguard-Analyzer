@@ -227,7 +227,7 @@ import math
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
-import gui.logger as logger
+from gui.logger import init as init_logger
 from gui.tooltip import ToolTip
 from gui.review_toolbox import (
     ReviewToolbox,
@@ -16408,8 +16408,7 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
-    logger.init(root)
-    logger.info("Application started")
+    init_logger(root)
     # Prevent the main window from being resized so small that
     # widgets and toolbars become unusable.
     root.minsize(1200, 700)
