@@ -38,6 +38,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL values propagated throughout the model.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 flowchart TD
     subgraph ext [External inputs]
         X([BOM])
@@ -104,6 +105,7 @@ Requirements can also be attached to diagram elements to keep architecture and s
 Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class SysMLRepository {
         elements: Dict~str, SysMLElement~
@@ -210,6 +212,7 @@ HAZOP or HARA reference these elements so analyses remain linked to the
 architecture.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class SafetyGoal
     class Hazard
@@ -268,6 +271,7 @@ generic `SysMLElement` placeholder. Key classes include:
   interactions.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class BlockUsage
     class PartUsage
@@ -294,6 +298,7 @@ classDiagram
 Internal block diagrams provide structural views of a block. The diagram displays the block's parts and their ports so connectors can be drawn between them. Actions in activity diagrams may also reference an internal block diagram that explains the hardware interaction for that step.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class BlockUsage
     class PartUsage
@@ -316,6 +321,7 @@ SysML repository. These containers track the tables and diagrams loaded in the
 GUI so analyses remain linked to the architecture. Key data classes include:
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     SysMLRepository --> "*" ReliabilityAnalysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
@@ -378,6 +384,7 @@ objects that hold FMEA metrics, FMEDA values and traced requirements.
 The diagram below shows how reliability calculations flow into FMEDA tables and fault trees.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class BlockUsage
     class PartUsage
@@ -413,6 +420,7 @@ Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link 
 The next diagram traces how malfunctions detected in a HAZOP flow through the safety analyses. Actions in activity diagrams become `HazopEntry` malfunctions linked to operational `Scenario` objects and their `Scenery` from the ODD. Selected HAZOP rows populate `HaraEntry` items where Severity × Exposure × Controllability determine the ASIL and resulting `SafetyGoal`. Safety goals appear as the top level events in FTAs. FMEDA failure modes and architecture components create `FaultTreeNode` base events that generate safety `Requirement` objects. Requirements may be decomposed into children with reduced ASIL values when ISO 26262 decomposition rules apply.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class UseCase
     class ActivityUsage
@@ -541,6 +549,7 @@ Key attributes are:
 **BlockUsage** – extends `Block` with reliability fields like `analysis`, `fit`, `qualification` and `failureModes`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class BlockUsage {
         analysis
@@ -554,6 +563,7 @@ classDiagram
 **PartUsage** – extends `PartProperty` with `component`, `failureModes` and `asil` fields.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class PartUsage {
         component
@@ -566,6 +576,7 @@ classDiagram
 **SafetyGoal** – specialization of `Requirement` with `asil` and FMEDA metrics (`spfm`, `lpfm`, `dc`).
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class SafetyGoal {
         asil
@@ -579,6 +590,7 @@ classDiagram
 **Hazard** – extends `SysMLElement` to store the hazard `description` and HARA `severity`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Hazard {
         description
@@ -590,6 +602,7 @@ classDiagram
 **Scenario** – extends `SysMLElement` with a short `description` and linked `scenery`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Scenario {
         description
@@ -601,6 +614,7 @@ classDiagram
 **Scenery** – extends `SysMLElement` with an `odd_element` name and descriptive `attributes`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Scenery {
         odd_element
@@ -612,6 +626,7 @@ classDiagram
 **FaultTreeNode** – specialized `SysMLElement` capturing FMEA and FMEDA data for FTA events.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FaultTreeNode {
         fmea_effect
@@ -629,6 +644,7 @@ classDiagram
 **ReliabilityAnalysis** – extends `AnalysisDocument` to store mission profile and cumulative FIT metrics.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class ReliabilityAnalysis {
         standard
@@ -644,6 +660,7 @@ classDiagram
 
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class ReliabilityComponent {
         name
@@ -658,6 +675,7 @@ classDiagram
 
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class AnalysisDocument {
         name
@@ -670,6 +688,7 @@ classDiagram
 **FmeaDoc** – extends `AnalysisDocument` for FMEA tables with an `rpn_threshold`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FmeaDoc {
         rpn_threshold
@@ -680,6 +699,7 @@ classDiagram
 **FmeaEntry** – extends `SysMLElement` with failure mode data including `cause`, `effect`, `severity`, `occurrence` and `detection`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FmeaEntry {
         failure_mode
@@ -695,6 +715,7 @@ classDiagram
 **FmedaDoc** – another `AnalysisDocument` variant storing table-level `spfm`, `lpfm` and `dc` metrics.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FmedaDoc {
         spfm
@@ -707,6 +728,7 @@ classDiagram
 
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FaultTreeDiagram {
         phmf
@@ -718,6 +740,7 @@ classDiagram
 **TriggeringCondition** – extends `SysMLElement` with a `description`, linked `scenario` and associated acceptance criteria.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class TriggeringCondition {
         description
@@ -730,6 +753,7 @@ classDiagram
 **FunctionalInsufficiency** – extends `SysMLElement` with a failure `description`, linked `scenario` and impacted `safetyGoal`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FunctionalInsufficiency {
         description
@@ -742,6 +766,7 @@ classDiagram
 **FunctionalModification** – extends `SysMLElement` with mitigation `text` and linked acceptance criteria.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class FunctionalModification {
         text
@@ -753,6 +778,7 @@ classDiagram
 
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class AcceptanceCriteria {
         description
@@ -762,6 +788,7 @@ classDiagram
 **Fault** – extends `SysMLElement` to describe an underlying cause leading to a failure mode.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Fault {
         description
@@ -772,6 +799,7 @@ classDiagram
 **Failure** – extends `SysMLElement` to capture a malfunction effect and its `severity`.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Failure {
         description
@@ -831,6 +859,7 @@ All FI2TC and TC2FI documents appear in the *Hazard Analysis* section of the **A
 The following diagram shows how triggering conditions, functional insufficiencies and functional modifications connect scenarios to safety goals and fault trees. FI2TC and TC2FI tables cross‑reference these elements and record the acceptance criteria for each mitigation.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#90CAF9", "secondaryColor": "#ECEFF1", "edgeLabelBackground": "#ffffff", "fontFamily": "Helvetica,Arial,sans-serif"}} }%%
 classDiagram
     class Scenario
     class SafetyGoal
