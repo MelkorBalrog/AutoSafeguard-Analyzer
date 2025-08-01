@@ -2334,34 +2334,6 @@ class HaraWindow(tk.Frame):
                     entry.exposure = int(self.app.get_scenario_exposure(value))
                 except (TypeError, ValueError):
                     entry.exposure = 1
-            elif column == "malfunction":
-                hazop_names = getattr(self.app.active_hara, "hazops", []) or [
-                    d.name for d in self.app.hazop_docs
-                ]
-                hazard = None
-                scen = None
-                for hz_name in hazop_names:
-                    hz = self.app.get_hazop_by_name(hz_name)
-                    if not hz:
-                        continue
-                    for hz_entry in hz.entries:
-                        if hz_entry.malfunction == entry.malfunction:
-                            if hz_entry.hazard and not hazard:
-                                hazard = hz_entry.hazard
-                            if hz_entry.scenario and not scen:
-                                scen = hz_entry.scenario
-                            if hazard and scen:
-                                break
-                    if hazard and scen:
-                        break
-                if hazard and not entry.hazard:
-                    entry.hazard = hazard
-                if scen:
-                    entry.scenario = entry.scenario or scen
-                    try:
-                        entry.exposure = int(self.app.get_scenario_exposure(entry.scenario))
-                    except (TypeError, ValueError):
-                        entry.exposure = 1
             entry.asil = calc_asil(entry.severity, entry.controllability, entry.exposure)
             if self.app.active_hara:
                 self.app.active_hara.status = "draft"
