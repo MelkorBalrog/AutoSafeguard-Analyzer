@@ -373,6 +373,8 @@ class AutoMLHelper:
         return max(1, min(5, round(inverted)))
 
     def calculate_assurance_recursive(self, node, all_top_events, visited=None):
+        if node is None:
+            return 1
         if visited is None:
             visited = set()
         if node.unique_id in visited:
