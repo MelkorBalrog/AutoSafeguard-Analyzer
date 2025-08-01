@@ -8326,6 +8326,18 @@ class FaultTreeApp:
                 failures.append(eff)
         self.failures = failures
 
+    def update_fault_list(self) -> None:
+        """Ensure faults include failure modes of passive components."""
+        faults = list(self.faults)
+        for entry in self.get_all_fmea_entries():
+            desc = getattr(entry, "description", "").strip()
+            if not desc:
+                continue
+            comp = self.get_component_name_for_node(entry)
+            if self.is_passive_component(comp):
+                append_unique_insensitive(faults, desc)
+        self.faults = faults
+
     def update_triggering_condition_list(self):
         """Aggregate triggering conditions from docs and FTAs."""
         names: list[str] = []
@@ -8438,6 +8450,13 @@ class FaultTreeApp:
                 return parent.user_name
         return getattr(src, "fmea_component", "")
 
+    def is_passive_component(self, comp_name: str) -> bool:
+        """Return True if ``comp_name`` matches a passive component."""
+        for c in self.reliability_components:
+            if c.name == comp_name and c.is_passive:
+                return True
+        return False
+
     def format_failure_mode_label(self, node):
         comp = self.get_component_name_for_node(node)
         label = node.description if node.description else (node.user_name or f"Node {node.unique_id}")
@@ -8478,6 +8497,13 @@ class FaultTreeApp:
                     frac /= 100.0
                 value = base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
                 total += value
+        if total == 0.0:
+            for fm in self.get_all_fmea_entries():
+                desc = getattr(fm, "description", "").strip()
+                if desc == fault_name:
+                    comp = self.get_component_name_for_node(fm)
+                    if self.is_passive_component(comp):
+                        total += getattr(fm, "fmeda_fit", 0.0)
         return total
 
 
@@ -9358,6 +9384,15 @@ class FaultTreeApp:
                 fit_total += getattr(entry, "fmeda_fit", 0.0)
                 if not getattr(new_node, "prob_formula", None):
                     new_node.prob_formula = getattr(entry, "prob_formula", "linear")
+        if fit_total == 0.0:
+            for entry in self.get_all_fmea_entries():
+                desc = getattr(entry, "description", "").strip()
+                if desc == fault:
+                    comp = self.get_component_name_for_node(entry)
+                    if self.is_passive_component(comp):
+                        fit_total += getattr(entry, "fmeda_fit", 0.0)
+                        if not getattr(new_node, "prob_formula", None):
+                            new_node.prob_formula = getattr(entry, "prob_formula", "linear")
         if fit_total > 0:
             new_node.fmeda_fit = fit_total
             new_node.failure_prob = self.compute_failure_prob(new_node)
@@ -10613,6 +10648,10 @@ class FaultTreeApp:
                 self.node.parents[0].user_name = comp
             # Always store the component name so it can be restored on load
             self.node.fmea_component = comp
+            if self.app.is_passive_component(comp):
+                desc = self.mode_var.get().strip()
+                if desc:
+                    append_unique_insensitive(self.app.faults, desc)
             self.node.description = self.mode_var.get()
             new_effect = self.effect_text.get("1.0", "end-1c")
             if self.node.fmea_effect and self.node.fmea_effect != new_effect:
@@ -13917,6 +13956,7 @@ class FaultTreeApp:
             })
 
         self.update_failure_list()
+        self.update_fault_list()
 
         node_map = {}
         for te in self.top_events:
@@ -14290,6 +14330,7 @@ class FaultTreeApp:
             })
 
         self.update_failure_list()
+        self.update_fault_list()
 
         # Link FMEA entries to the fault tree nodes so edits propagate
         node_map = {}
