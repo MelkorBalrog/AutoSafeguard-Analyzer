@@ -19,10 +19,23 @@ python -m pip show pillow >NUL 2>&1 || (
     echo Missing required package 'pillow'. Install with: pip install pillow
     exit /b 1
 )
+
 for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
     python -m pip show %%P >NUL 2>&1 || (
         echo Missing required package '%%P'. Install with: pip install %%P
         exit /b 1
+    )
+)
+
+REM Ask the user for an optional icon to embed in the executable
+set "ICON_ARG="
+set /P "ICON_PATH=Enter path to .ico icon file (leave blank for none): "
+if defined ICON_PATH (
+    if exist "%ICON_PATH%" (
+        set "ICON_ARG=--icon \"%ICON_PATH%\""
+    ) else (
+        echo Icon not found: %ICON_PATH%
+        echo Continuing without a custom icon.
     )
 )
 
@@ -31,7 +44,8 @@ cd /d "%REPO_ROOT%"
 if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --exclude-module scipy ^
-    --hidden-import=PIL.ImageTk AutoML.py
+    --hidden-import=PIL.ImageTk ^
+    %ICON_ARG% AutoML.py
 if errorlevel 1 (
     echo Failed to build executable.
     exit /b %errorlevel%
