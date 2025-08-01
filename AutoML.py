@@ -8464,6 +8464,36 @@ class FaultTreeApp:
                     faults.append(fault)
         return sorted(set(faults))
 
+    def get_fit_for_fault(self, fault_name: str) -> float:
+        """Return total FIT for FMEDA entries referencing ``fault_name``."""
+        comp_fit = component_fit_map(self.reliability_components)
+        total = 0.0
+        for fm in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(fm, "fmea_cause", "").split(";") if c.strip()]
+            if fault_name in causes:
+                comp_name = self.get_component_name_for_node(fm)
+                base = comp_fit.get(comp_name)
+                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
+                if frac > 1.0:
+                    frac /= 100.0
+                value = base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
+                total += value
+        return total
+
+    def get_fit_for_fault_entry(self, entry_id: int) -> float:
+        """Return the FIT value for a specific FMEDA entry."""
+        comp_fit = component_fit_map(self.reliability_components)
+        for fm in self.get_all_fmea_entries():
+            if getattr(fm, "unique_id", None) == entry_id:
+                comp_name = self.get_component_name_for_node(fm)
+                base = comp_fit.get(comp_name)
+                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
+                if frac > 1.0:
+                    frac /= 100.0
+                return base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
+        return 0.0
+
+
 
     def get_all_nodes(self, node=None):
         if node is None:
@@ -8594,7 +8624,12 @@ class FaultTreeApp:
         if tau <= 0:
             tau = 1.0
         fm = self.find_node_by_id_all(failure_mode_ref) if failure_mode_ref else self.get_failure_mode_node(node)
-        fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
+        if getattr(node, "fault_entry_ref", None) is not None and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
+            fit = self.get_fit_for_fault_entry(node.fault_entry_ref)
+        elif getattr(node, "fault_ref", "") and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
+            fit = self.get_fit_for_fault(node.fault_ref)
+        else:
+            fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
         t = tau
         formula = formula or getattr(node, "prob_formula", getattr(fm, "prob_formula", "linear"))
         f = str(formula).strip().lower()
@@ -9295,9 +9330,23 @@ class FaultTreeApp:
         self.update_views()
 
     def add_fault_event(self):
-        dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
-        fault = dialog.selected
-        if fault == "NEW":
+        options = []
+        used_faults = set()
+        for entry in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
+            comp = self.get_component_name_for_node(entry)
+            fail = getattr(entry, "description", "") or getattr(entry, "user_name", f"FM {getattr(entry, 'unique_id', '')}")
+            label_base = f"{comp} - {fail}" if comp else fail
+            for cause in causes:
+                label = f"{label_base} - {cause}" if cause else label_base
+                options.append((label, getattr(entry, "unique_id", None), cause))
+                used_faults.add(cause)
+        for f in sorted(self.faults):
+            if f not in used_faults:
+                options.append((f, None, f))
+        dialog = self.SelectFaultDialog(self.root, options, allow_new=True)
+        selection = dialog.selected
+        if selection == "NEW":
             fault = simpledialog.askstring("New Fault", "Name:")
             if not fault:
                 return
@@ -9305,8 +9354,42 @@ class FaultTreeApp:
             if not fault:
                 return
             self.add_fault(fault)
-        if not fault:
+            entry_id = None
+            label = fault
+        elif not selection:
             return
+        else:
+            label, entry_id, fault = selection
+            self.add_fault(fault)
+        if self.selected_node:
+            parent_node = self.selected_node
+            if not parent_node.is_primary_instance:
+                messagebox.showwarning("Invalid Operation", "Cannot add to a clone node. Select the original.")
+                return
+        else:
+            sel = self.analysis_tree.selection()
+            if not sel:
+                messagebox.showwarning("No selection", "Select a parent node to paste into.")
+                return
+            try:
+                node_id = int(self.analysis_tree.item(sel[0], "tags")[0])
+            except (IndexError, ValueError):
+                messagebox.showwarning("No selection", "Select a parent node from the tree.")
+                return
+            parent_node = self.find_node_by_id_all(node_id)
+        if parent_node.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE", "BASIC EVENT"]:
+            messagebox.showwarning("Invalid", "Base events cannot have children.")
+            return
+        new_node = FaultTreeNode("", "Basic Event", parent=parent_node)
+        new_node.failure_prob = 0.0
+        new_node.fault_ref = fault
+        new_node.fault_entry_ref = entry_id
+        new_node.description = label
+        new_node.x = parent_node.x + 100
+        new_node.y = parent_node.y + 100
+        parent_node.children.append(new_node)
+        new_node.parents.append(parent_node)
+        self.update_views()
         if self.selected_node:
             parent_node = self.selected_node
             if not parent_node.is_primary_instance:
@@ -10819,16 +10902,17 @@ class FaultTreeApp:
                 self.selected = self.modes[sel[0]]
 
     class SelectFaultDialog(simpledialog.Dialog):
-        def __init__(self, parent, faults, allow_new=False):
-            self.faults = faults
+        def __init__(self, parent, options, allow_new=False):
+            # options is a list of tuples: (label, entry_id, fault_name)
+            self.options = options
             self.allow_new = allow_new
             self.selected = None
             super().__init__(parent, title="Select Fault")
 
         def body(self, master):
-            self.listbox = tk.Listbox(master, height=10, width=40)
-            for f in self.faults:
-                self.listbox.insert(tk.END, f)
+            self.listbox = tk.Listbox(master, height=10, width=60)
+            for label, *_ in self.options:
+                self.listbox.insert(tk.END, label)
             if self.allow_new:
                 self.listbox.insert(tk.END, "<Create New Fault>")
             self.listbox.grid(row=0, column=0, padx=5, pady=5)
@@ -10838,10 +10922,10 @@ class FaultTreeApp:
             sel = self.listbox.curselection()
             if sel:
                 idx = sel[0]
-                if self.allow_new and idx == len(self.faults):
+                if self.allow_new and idx == len(self.options):
                     self.selected = "NEW"
                 else:
-                    self.selected = self.faults[idx]
+                    self.selected = self.options[idx]
 
     class SelectSafetyGoalsDialog(simpledialog.Dialog):
         def __init__(self, parent, goals, initial=None):
@@ -15707,6 +15791,8 @@ class FaultTreeNode:
         self.failure_mode_ref = None
         # Reference to a fault represented by a basic event
         self.fault_ref = ""
+        # ID of the FMEDA entry corresponding to this fault (if any)
+        self.fault_entry_ref = None
         # Malfunction name for top level events
         self.malfunction = ""
         # Probability values for classical FTA calculations
@@ -15769,6 +15855,7 @@ class FaultTreeNode:
             "fmeda_lpfm_target": self.fmeda_lpfm_target,
             "failure_mode_ref": self.failure_mode_ref,
             "fault_ref": self.fault_ref,
+            "fault_entry_ref": self.fault_entry_ref,
             "malfunction": self.malfunction,
             # Save the safety requirements list (which now includes custom_id)
             "safety_requirements": self.safety_requirements,
@@ -15829,6 +15916,7 @@ class FaultTreeNode:
         node.fmeda_lpfm_target = data.get("fmeda_lpfm_target", 0.0)
         node.failure_mode_ref = data.get("failure_mode_ref")
         node.fault_ref = data.get("fault_ref", "")
+        node.fault_entry_ref = data.get("fault_entry_ref")
         node.malfunction = data.get("malfunction", "")
         # NEW: Load safety_requirements (or default to empty list)
         node.safety_requirements = data.get("safety_requirements", [])
