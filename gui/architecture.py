@@ -4092,13 +4092,16 @@ class SysMLDiagramWindow(tk.Frame):
         for label, text in compartments:
             collapsed = obj.collapsed.get(label, False)
             lines = text.splitlines() if text else [""]
-            first = lines[0] if lines else ""
-            disp = f"{label}: {first}"
-            width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
-            if not collapsed:
-                for line in lines[1:]:
+            if collapsed:
+                disp = f"{label}: {lines[0] if lines else ''}"
+                width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
+                total_lines += 1
+            else:
+                disp = f"{label}:"
+                width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
+                for line in lines:
                     width_px = max(width_px, self.font.measure(line) + 8 * self.zoom)
-            total_lines += 1 if collapsed else len(lines)
+                total_lines += 1 + len(lines)
         height_px = total_lines * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
@@ -4928,16 +4931,25 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.create_text((bx1 + bx2) / 2, (by1 + by2) / 2, text="-" if not collapsed else "+", font=self.font)
                 self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
                 tx = bx2 + 2 * self.zoom
-                self.canvas.create_text(
-                    tx,
-                    cy + 10 * self.zoom,
-                    text=f"{label}: {lines[0] if lines else ''}",
-                    anchor="w",
-                    font=self.font,
-                )
-                cy += 20 * self.zoom
-                if not collapsed:
-                    for line in lines[1:]:
+                if collapsed:
+                    self.canvas.create_text(
+                        tx,
+                        cy + 10 * self.zoom,
+                        text=f"{label}: {lines[0] if lines else ''}",
+                        anchor="w",
+                        font=self.font,
+                    )
+                    cy += 20 * self.zoom
+                else:
+                    self.canvas.create_text(
+                        tx,
+                        cy + 10 * self.zoom,
+                        text=f"{label}:",
+                        anchor="w",
+                        font=self.font,
+                    )
+                    cy += 20 * self.zoom
+                    for line in lines:
                         self.canvas.create_text(
                             left + 4 * self.zoom,
                             cy + 10 * self.zoom,
