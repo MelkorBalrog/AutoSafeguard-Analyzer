@@ -6,6 +6,7 @@ from gui.architecture import (
     update_ports_for_part,
     SysMLDiagramWindow,
     rename_port,
+    _get_next_id,
     set_ibd_father,
 )
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram
@@ -114,6 +115,25 @@ class PortUpdateTests(unittest.TestCase):
         self.assertNotIn("p", boundary.properties.get("ports", ""))
         self.assertNotIn("p", win.repo.elements[block_id].properties.get("ports", ""))
 
+    def test_sync_ports_removes_duplicates(self):
+        win, _ = self._create_window_with_port()
+        boundary = next(o for o in win.objects if o.obj_type == "Block Boundary")
+        port = next(o for o in win.objects if o.obj_type == "Port")
+        dup = SysMLObject(
+            _get_next_id(),
+            "Port",
+            port.x,
+            port.y,
+            properties=port.properties.copy(),
+        )
+        win.objects.append(dup)
+        win.sync_boundary_ports(boundary)
+        ports = [
+            o
+            for o in win.objects
+            if o.obj_type == "Port" and o.properties.get("parent") == str(boundary.obj_id)
+        ]
+        self.assertEqual(len(ports), 1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3882,11 +3882,18 @@ class SysMLDiagramWindow(tk.Frame):
                 [p.strip() for p in block_elem.properties.get("ports", "").split(",") if p.strip()]
             )
         names.extend([p.strip() for p in part.properties.get("ports", "").split(",") if p.strip()])
-        existing = {
-            o.properties.get("name"): o
+        existing_ports = [
+            o
             for o in self.objects
             if o.obj_type == "Port" and o.properties.get("parent") == str(part.obj_id)
-        }
+        ]
+        existing: dict[str, SysMLObject] = {}
+        for p in list(existing_ports):
+            name = p.properties.get("name")
+            if name in existing:
+                self.objects.remove(p)
+            else:
+                existing[name] = p
         for n in names:
             if n not in existing:
                 port = SysMLObject(
@@ -3918,11 +3925,18 @@ class SysMLDiagramWindow(tk.Frame):
             names.extend([
                 p.strip() for p in block_elem.properties.get("ports", "").split(",") if p.strip()
             ])
-        existing = {
-            o.properties.get("name"): o
+        existing_ports = [
+            o
             for o in self.objects
             if o.obj_type == "Port" and o.properties.get("parent") == str(boundary.obj_id)
-        }
+        ]
+        existing: dict[str, SysMLObject] = {}
+        for p in list(existing_ports):
+            name = p.properties.get("name")
+            if name in existing:
+                self.objects.remove(p)
+            else:
+                existing[name] = p
         for n in names:
             if n not in existing:
                 port = SysMLObject(
@@ -6346,6 +6360,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
             messagebox.showinfo("Add Part", "A part with that name already exists")
             new_name = self.obj.properties.get("name", "")
         new_name = repo.ensure_unique_element_name(new_name, self.obj.element_id)
+        if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
+            rename_port(repo, self.obj, self.master.objects, new_name)
         self.obj.properties["name"] = new_name
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
