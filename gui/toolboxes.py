@@ -1672,7 +1672,13 @@ class HazopWindow(tk.Frame):
             ToolTip(scen_lbl, "Operational scenario associated with this function.")
             scenarios = []
             for lib in self.app.scenario_libraries:
-                scenarios.extend(lib.get("scenarios", []))
+                for sc in lib.get("scenarios", []):
+                    if isinstance(sc, dict):
+                        name = sc.get("name", "")
+                    else:
+                        name = sc
+                    if name:
+                        scenarios.append(name)
             self.scen = tk.StringVar(value=self.row.scenario)
             scen_cb = ttk.Combobox(
                 master, textvariable=self.scen, values=scenarios, state="readonly"
@@ -2131,9 +2137,22 @@ class HaraWindow(tk.Frame):
                                     e.hazard
                                 )
                             if e.scenario:
-                                scenarios_map.setdefault(e.malfunction, []).append(
-                                    e.scenario
-                                )
+                                scen_name = e.scenario
+                                if isinstance(scen_name, dict):
+                                    scen_name = scen_name.get("name", "")
+                                elif isinstance(scen_name, str) and scen_name.strip().startswith("{"):
+                                    import ast
+
+                                    try:
+                                        val = ast.literal_eval(scen_name)
+                                        if isinstance(val, dict):
+                                            scen_name = val.get("name", scen_name)
+                                    except Exception:
+                                        pass
+                                if scen_name:
+                                    scenarios_map.setdefault(e.malfunction, []).append(
+                                        scen_name
+                                    )
             malfs = sorted(malfs)
             goals = [
                 te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
