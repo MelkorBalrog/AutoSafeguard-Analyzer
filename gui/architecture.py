@@ -4312,6 +4312,29 @@ class SysMLDiagramWindow(tk.Frame):
         ]
         return self.canvas.create_polygon(points, smooth=True, splinesteps=36, **kwargs)
 
+    def _create_gradient_image(self, width: int, height: int, color: str) -> tk.PhotoImage:
+        """Return a left-to-right gradient image from white to *color*."""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        img = tk.PhotoImage(width=width, height=height)
+        r = int(color[1:3], 16)
+        g = int(color[3:5], 16)
+        b = int(color[5:7], 16)
+        for x in range(width):
+            ratio = x / (width - 1) if width > 1 else 1
+            nr = int(255 * (1 - ratio) + r * ratio)
+            ng = int(255 * (1 - ratio) + g * ratio)
+            nb = int(255 * (1 - ratio) + b * ratio)
+            img.put(f"#{nr:02x}{ng:02x}{nb:02x}", to=(x, 0, x + 1, height))
+        return img
+
+    def _draw_gradient_rect(self, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: int) -> None:
+        """Draw a gradient rectangle on the canvas and cache the image."""
+        img = self._create_gradient_image(abs(int(x2 - x1)), abs(int(y2 - y1)), color)
+        self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
+        self.gradient_cache[obj_id] = img
+
+
     def _draw_open_arrow(
         self,
         start: Tuple[float, float],
@@ -7764,25 +7787,3 @@ class ArchitectureManagerDialog(tk.Frame):
         else:
             img.put(c, to=(2, 2, size - 2, size - 2))
         return img
-
-    def _create_gradient_image(self, width: int, height: int, color: str) -> tk.PhotoImage:
-        """Return a left-to-right gradient image from white to *color*."""
-        width = max(1, int(width))
-        height = max(1, int(height))
-        img = tk.PhotoImage(width=width, height=height)
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        for x in range(width):
-            ratio = x / (width - 1) if width > 1 else 1
-            nr = int(255 * (1 - ratio) + r * ratio)
-            ng = int(255 * (1 - ratio) + g * ratio)
-            nb = int(255 * (1 - ratio) + b * ratio)
-            img.put(f"#{nr:02x}{ng:02x}{nb:02x}", to=(x, 0, x + 1, height))
-        return img
-
-    def _draw_gradient_rect(self, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: int) -> None:
-        """Draw a gradient rectangle on the canvas and cache the image."""
-        img = self._create_gradient_image(abs(int(x2 - x1)), abs(int(y2 - y1)), color)
-        self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
-        self.gradient_cache[obj_id] = img
