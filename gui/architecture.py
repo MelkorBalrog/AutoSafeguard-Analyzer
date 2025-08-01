@@ -285,8 +285,8 @@ def _multiplicity_limit_exceeded(
     for rel in rels:
         mult = rel.properties.get("multiplicity", "")
         if not mult:
-            limit = None
-            break
+            mult = "1"
+
         low, high = _parse_multiplicity_range(mult)
         if high is None:
             limit = None
@@ -4004,7 +4004,7 @@ class SysMLDiagramWindow(tk.Frame):
                             and rel.source == block_id
                             and rel.target == def_id
                         ):
-                            mult = rel.properties.get("multiplicity")
+                            mult = rel.properties.get("multiplicity") or "1"
                             break
                 base = name
                 index = None
@@ -6814,7 +6814,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         and rel.source == block_id
                         and rel.target == def_id
                     ):
-                        mult = rel.properties.get("multiplicity", "")
+                        mult = rel.properties.get("multiplicity", "") or "1"
                         break
 
         if obj.element_id and obj.element_id in repo.elements and not comp:
@@ -6959,6 +6959,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
+        for def_id, mult in selected_placeholders:
+            add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
 
         for def_id, mult in selected_placeholders:
             add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
