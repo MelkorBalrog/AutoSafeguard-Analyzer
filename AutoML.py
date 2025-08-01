@@ -9289,11 +9289,16 @@ class FaultTreeApp:
         self.update_views()
 
     def add_fault_event(self):
-        if not self.faults:
-            messagebox.showinfo("No Faults", "No faults available.")
-            return
-        dialog = self.SelectFaultDialog(self.root, sorted(self.faults))
+        dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
         fault = dialog.selected
+        if fault == "NEW":
+            fault = simpledialog.askstring("New Fault", "Name:")
+            if not fault:
+                return
+            fault = fault.strip()
+            if not fault:
+                return
+            self.add_fault(fault)
         if not fault:
             return
         if self.selected_node:
@@ -10369,6 +10374,7 @@ class FaultTreeApp:
                 if name in current_causes:
                     self.cause_list.select_set(i)
             self.cause_list.grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+            ttk.Button(gen_frame, text="Add Fault", command=self.add_fault).grid(row=row_next, column=2, padx=5, pady=5)
             row_next += 1
 
             ttk.Label(gen_frame, text="Malfunction Effect:").grid(row=row_next, column=0, sticky="ne", padx=5, pady=5)
@@ -10677,6 +10683,20 @@ class FaultTreeApp:
             self.app.comment_target = ("fmea", self.node.unique_id)
             self.app.open_review_toolbox()
 
+        def add_fault(self):
+            name = simpledialog.askstring("Add Fault", "Name:")
+            if name:
+                name = name.strip()
+                if not name:
+                    return
+                if name not in self.app.faults:
+                    self.app.add_fault(name)
+                    self.cause_list.insert(tk.END, name)
+                for i, val in enumerate(self.cause_list.get(0, tk.END)):
+                    if val == name:
+                        self.cause_list.selection_set(i)
+                        break
+
 
         def add_safety_requirement(self):
             global global_requirements
@@ -10793,8 +10813,9 @@ class FaultTreeApp:
                 self.selected = self.modes[sel[0]]
 
     class SelectFaultDialog(simpledialog.Dialog):
-        def __init__(self, parent, faults):
+        def __init__(self, parent, faults, allow_new=False):
             self.faults = faults
+            self.allow_new = allow_new
             self.selected = None
             super().__init__(parent, title="Select Fault")
 
@@ -10802,13 +10823,19 @@ class FaultTreeApp:
             self.listbox = tk.Listbox(master, height=10, width=40)
             for f in self.faults:
                 self.listbox.insert(tk.END, f)
+            if self.allow_new:
+                self.listbox.insert(tk.END, "<Create New Fault>")
             self.listbox.grid(row=0, column=0, padx=5, pady=5)
             return self.listbox
 
         def apply(self):
             sel = self.listbox.curselection()
             if sel:
-                self.selected = self.faults[sel[0]]
+                idx = sel[0]
+                if self.allow_new and idx == len(self.faults):
+                    self.selected = "NEW"
+                else:
+                    self.selected = self.faults[idx]
 
     class SelectSafetyGoalsDialog(simpledialog.Dialog):
         def __init__(self, parent, goals, initial=None):
