@@ -5,6 +5,8 @@ from gui.architecture import (
     remove_orphan_ports,
     update_ports_for_part,
     SysMLDiagramWindow,
+    rename_port,
+    set_ibd_father,
 )
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
@@ -56,6 +58,61 @@ class DirectionValidationTests(unittest.TestCase):
         dst = SysMLObject(2, "Port", 0, 0, properties={"direction": "in"})
         valid, _ = SysMLDiagramWindow.validate_connection(win, src, dst, "Connector")
         self.assertFalse(valid)
+
+
+class PortUpdateTests(unittest.TestCase):
+    class DummyCanvas:
+        def delete(self, *args, **kwargs):
+            pass
+
+        def configure(self, **kw):
+            pass
+
+    def setUp(self):
+        SysMLRepository._instance = None
+        self.repo = SysMLRepository.get_instance()
+
+    def _create_window_with_port(self):
+        repo = self.repo
+        block = repo.create_element("Block", name="B", properties={"ports": "p"})
+        diag = repo.create_diagram("Internal Block Diagram")
+        set_ibd_father(repo, diag, block.elem_id)
+        win = SysMLDiagramWindow.__new__(SysMLDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        win.objects = [SysMLObject(**o) for o in diag.objects]
+        win.connections = []
+        win.zoom = 1.0
+        win.canvas = self.DummyCanvas()
+        win.sort_objects = SysMLDiagramWindow.sort_objects.__get__(win)
+        win.sync_ports = SysMLDiagramWindow.sync_ports.__get__(win)
+        win.sync_boundary_ports = SysMLDiagramWindow.sync_boundary_ports.__get__(win)
+        def sync():
+            d = repo.diagrams[win.diagram_id]
+            d.objects = [obj.__dict__ for obj in win.objects]
+        win._sync_to_repository = sync
+        win.redraw = SysMLDiagramWindow.redraw.__get__(win)
+        win.update_property_view = lambda: None
+        return win, block.elem_id
+
+    def test_rename_port_updates_parent(self):
+        win, block_id = self._create_window_with_port()
+        port = next(o for o in win.objects if o.obj_type == "Port")
+        rename_port(win.repo, port, win.objects, "q")
+        win._sync_to_repository()
+        boundary = next(o for o in win.objects if o.obj_type == "Block Boundary")
+        self.assertIn("q", boundary.properties.get("ports"))
+        self.assertNotIn("p", boundary.properties.get("ports"))
+        self.assertIn("q", win.repo.elements[block_id].properties.get("ports"))
+
+    def test_delete_port_updates_parent(self):
+        win, block_id = self._create_window_with_port()
+        port = next(o for o in win.objects if o.obj_type == "Port")
+        win.remove_object(port)
+        win._sync_to_repository()
+        boundary = next(o for o in win.objects if o.obj_type == "Block Boundary")
+        self.assertNotIn("p", boundary.properties.get("ports", ""))
+        self.assertNotIn("p", win.repo.elements[block_id].properties.get("ports", ""))
 
 
 if __name__ == '__main__':

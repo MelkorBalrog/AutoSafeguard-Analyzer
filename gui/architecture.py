@@ -1790,6 +1790,62 @@ def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     objs[:] = filtered
 
 
+def rename_port(
+    repo: SysMLRepository, port: SysMLObject, objs: List[SysMLObject], new_name: str
+) -> None:
+    """Rename *port* and update its parent's port list."""
+
+    old_name = port.properties.get("name", "")
+    if old_name == new_name:
+        return
+    port.properties["name"] = new_name
+    if port.element_id and port.element_id in repo.elements:
+        repo.elements[port.element_id].name = new_name
+        repo.elements[port.element_id].properties["name"] = new_name
+    parent_id = port.properties.get("parent")
+    if not parent_id:
+        return
+    try:
+        pid = int(parent_id)
+    except (TypeError, ValueError):
+        return
+    parent = next((o for o in objs if o.obj_id == pid), None)
+    if not parent:
+        return
+    ports = [p.strip() for p in parent.properties.get("ports", "").split(",") if p.strip()]
+    if old_name in ports:
+        ports[ports.index(old_name)] = new_name
+    elif new_name not in ports:
+        ports.append(new_name)
+    joined = ", ".join(ports)
+    parent.properties["ports"] = joined
+    if parent.element_id and parent.element_id in repo.elements:
+        repo.elements[parent.element_id].properties["ports"] = joined
+
+
+def remove_port(
+    repo: SysMLRepository, port: SysMLObject, objs: List[SysMLObject]
+) -> None:
+    """Remove *port* from *objs* and update the parent's port list."""
+
+    parent_id = port.properties.get("parent")
+    if parent_id:
+        try:
+            pid = int(parent_id)
+        except (TypeError, ValueError):
+            pid = None
+        if pid is not None:
+            parent = next((o for o in objs if o.obj_id == pid), None)
+            if parent:
+                ports = [p.strip() for p in parent.properties.get("ports", "").split(",") if p.strip()]
+                if port.properties.get("name") in ports:
+                    ports.remove(port.properties.get("name"))
+                    joined = ", ".join(ports)
+                    parent.properties["ports"] = joined
+                    if parent.element_id and parent.element_id in repo.elements:
+                        repo.elements[parent.element_id].properties["ports"] = joined
+
+
 def snap_port_to_parent_obj(port: SysMLObject, parent: SysMLObject) -> None:
     """Position *port* along the closest edge of *parent*."""
     px = port.x
@@ -5324,6 +5380,8 @@ class SysMLDiagramWindow(tk.Frame):
             before = {o.obj_id for o in self.objects}
             remove_orphan_ports(self.objects)
             removed_ids.update(before - {o.obj_id for o in self.objects})
+        elif obj.obj_type == "Port":
+            remove_port(self.repo, obj, self.objects)
         self.connections = [
             c for c in self.connections if c.src not in removed_ids and c.dst not in removed_ids
         ]
@@ -6295,6 +6353,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 rename_block(repo, elem.elem_id, new_name)
             else:
                 elem.name = new_name
+        if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
+            rename_port(repo, self.obj, self.master.objects, new_name)
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
