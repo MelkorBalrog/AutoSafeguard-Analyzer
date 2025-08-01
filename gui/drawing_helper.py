@@ -2,6 +2,8 @@
 import math
 import tkinter.font as tkFont
 
+TEXT_BOX_COLOR = "#CFD8DC"
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
@@ -28,7 +30,8 @@ class FTADrawingHelper:
     def _fill_gradient_polygon(self, canvas, points, color: str) -> None:
         """Fill *points* polygon with a horizontal white → color gradient."""
         xs = [p[0] for p in points]
-        left, right = int(min(xs)), int(max(xs))
+        left = int(math.floor(min(xs)))
+        right = int(math.ceil(max(xs)))
         if right <= left:
             return
         for x in range(left, right + 1):
@@ -38,15 +41,16 @@ class FTADrawingHelper:
             for i in range(len(points)):
                 x1, y1 = points[i]
                 x2, y2 = points[(i + 1) % len(points)]
+                if x1 == x2:
+                    if int(round(x1)) == x:
+                        yvals.extend([y1, y2])
+                    continue
                 if (x1 <= x <= x2) or (x2 <= x <= x1):
-                    if x1 == x2:
-                        continue
                     t = (x - x1) / (x2 - x1)
                     yvals.append(y1 + t * (y2 - y1))
             yvals.sort()
-            for j in range(0, len(yvals), 2):
-                if j + 1 < len(yvals):
-                    canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
+            for j in range(0, len(yvals) - 1, 2):
+                canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
 
     def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
         """Fill circle with gradient from white to *color*."""
@@ -273,7 +277,7 @@ class FTADrawingHelper:
             top_y,
             top_box_x + top_box_width,
             top_y + top_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -296,7 +300,7 @@ class FTADrawingHelper:
             bottom_y,
             bottom_box_x + bottom_box_width,
             bottom_y + bottom_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -364,7 +368,7 @@ class FTADrawingHelper:
             top_y,
             top_box_x + top_box_width,
             top_y + top_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -385,7 +389,7 @@ class FTADrawingHelper:
             bottom_y,
             bottom_box_x + bottom_box_width,
             bottom_y + bottom_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -536,7 +540,7 @@ class FTADrawingHelper:
             top_box_y,
             top_box_x + top_box_width,
             top_box_y + top_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -555,7 +559,7 @@ class FTADrawingHelper:
             bottom_box_y,
             bottom_box_x + bottom_box_width,
             bottom_box_y + bottom_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -607,7 +611,7 @@ class FTADrawingHelper:
             top_box_y,
             top_box_x + top_box_width,
             top_box_y + top_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
@@ -626,7 +630,7 @@ class FTADrawingHelper:
             bottom_box_y,
             bottom_box_x + bottom_box_width,
             bottom_box_y + bottom_box_height,
-            fill=fill,
+            fill=TEXT_BOX_COLOR,
             outline=outline_color,
             width=line_width,
         )
