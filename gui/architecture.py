@@ -6900,6 +6900,68 @@ class BlockDiagramWindow(SysMLDiagramWindow):
             "Composite Aggregation",
         ]
         super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
+        ttk.Button(
+            self.toolbox,
+            text="Add Blocks",
+            command=self.add_blocks,
+        ).pack(fill=tk.X, padx=2, pady=2)
+
+    def add_blocks(self) -> None:
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        existing = {
+            o.get("element_id")
+            for o in diag.objects
+            if o.get("obj_type") == "Block"
+        }
+        candidates: list[tuple[str, str]] = []
+        for d in repo.diagrams.values():
+            if d.diag_type != "Block Diagram" or d.diag_id == self.diagram_id:
+                continue
+            for obj in getattr(d, "objects", []):
+                if obj.get("obj_type") != "Block":
+                    continue
+                bid = obj.get("element_id")
+                if not bid or bid in existing:
+                    continue
+                elem = repo.elements.get(bid)
+                if not elem:
+                    continue
+                label = elem.name or bid
+                if all(eid != bid for _, eid in candidates):
+                    candidates.append((label, bid))
+        if not candidates:
+            messagebox.showinfo("Add Blocks", "No blocks available")
+            return
+        names = [n for n, _ in candidates]
+        dlg = SysMLObjectDialog.SelectNamesDialog(self, names, title="Select Blocks")
+        selected = dlg.result or []
+        selected_ids = [bid for name, bid in candidates if name in selected]
+        if not selected_ids:
+            return
+        base_x = 50.0
+        base_y = 50.0
+        offset = 60.0
+        for idx, bid in enumerate(selected_ids):
+            repo.add_element_to_diagram(self.diagram_id, bid)
+            elem = repo.elements.get(bid)
+            obj = SysMLObject(
+                _get_next_id(),
+                "Block",
+                base_x,
+                base_y + offset * idx,
+                element_id=bid,
+                properties={"name": elem.name if elem else bid},
+            )
+            obj.width = 160.0
+            obj.height = 140.0
+            self.ensure_text_fits(obj)
+            diag.objects.append(obj.__dict__)
+            self.objects.append(obj)
+        self.redraw()
+        self._sync_to_repository()
 
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
