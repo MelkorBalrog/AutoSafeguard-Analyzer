@@ -1476,6 +1476,20 @@ class EditNodeDialog(simpledialog.Dialog):
                     p.approved = False
         self.update_requirement_statuses()
 
+    def invalidate_reviews_for_fta(self, node_id):
+        """Reopen reviews associated with the given top level event."""
+        for r in self.reviews:
+            if node_id in getattr(r, "fta_ids", []):
+                r.closed = False
+                r.approved = False
+                r.reviewed = False
+                for p in r.participants:
+                    p.done = False
+                    p.approved = False
+        # FTA statuses are derived from reviews, so refresh requirement statuses
+        # to update any tables referencing them.
+        self.update_requirement_statuses()
+
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given HARA."""
         for r in self.reviews:
@@ -3567,27 +3581,63 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to safety goals when the HARA is approved."""
-        sg_data = {}
+        """Propagate HARA values to safety goals using the review-aware logic."""
+
+        # Collect safety goal values from all HARAs as well as from approved ones
+        all_data = {}
+        approved_data = {}
+
+        def update(target, entry):
+            data = target.setdefault(entry.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
+            if ASIL_ORDER.get(entry.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
+                data["asil"] = entry.asil
+            if entry.severity > data["severity"]:
+                data["severity"] = entry.severity
+            if entry.controllability > data["cont"]:
+                data["cont"] = entry.controllability
+
         for doc in getattr(self, "hara_docs", []):
-            if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
-                continue
             for e in doc.entries:
                 if not e.safety_goal:
                     continue
-                data = sg_data.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
-                if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
-                    data["asil"] = e.asil
-                if e.severity > data["severity"]:
-                    data["severity"] = e.severity
-                if e.controllability > data["cont"]:
-                    data["cont"] = e.controllability
+                update(all_data, e)
+                if getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed":
+                    update(approved_data, e)
+
+        def fta_has_joint_review(te):
+            return any(
+                r.mode == "joint" and te.unique_id in getattr(r, "fta_ids", [])
+                for r in self.reviews
+            )
+
+        def fta_joint_reviewed(te):
+            return any(
+                r.mode == "joint"
+                and r.approved
+                and self.review_is_closed_for(r)
+                and te.unique_id in getattr(r, "fta_ids", [])
+                for r in self.reviews
+            )
+
         for te in self.top_events:
             name = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-            if name in sg_data:
-                te.safety_goal_asil = sg_data[name]["asil"]
-                te.severity = sg_data[name]["severity"]
-                te.controllability = sg_data[name]["cont"]
+            if not name:
+                continue
+            # Determine which dataset to use based on review history
+            if fta_has_joint_review(te):
+                data = approved_data.get(name)
+                if data:
+                    te.safety_goal_asil = data["asil"]
+                    te.severity = data["severity"]
+                    te.controllability = data["cont"]
+                    if fta_joint_reviewed(te):
+                        self.invalidate_reviews_for_fta(te.unique_id)
+            else:
+                data = all_data.get(name)
+                if data:
+                    te.safety_goal_asil = data["asil"]
+                    te.severity = data["severity"]
+                    te.controllability = data["cont"]
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
