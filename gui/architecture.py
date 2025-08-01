@@ -52,6 +52,18 @@ def _part_prop_key(raw: str) -> str:
     return part.strip()
 
 
+def _part_elem_key(elem) -> str:
+    """Return canonical key for a Part element."""
+    if not elem:
+        return ""
+    name = elem.name or ""
+    if "_" in name and name.rsplit("_", 1)[1].isdigit():
+        name = name.rsplit("_", 1)[0]
+    base = _part_prop_key(name)
+    definition = elem.properties.get("definition", "")
+    return f"{base}:{definition}"
+
+
 def parse_part_property(raw: str) -> tuple[str, str]:
     """Return (property name, block name) parsed from a part property entry."""
     raw = raw.strip()
@@ -967,8 +979,8 @@ def _sync_ibd_partproperty_parts(
         for o in diag.objects
         if o.get("obj_type") == "Part"
     }
-    existing_props = {
-        repo.elements[o.get("element_id")].name
+    existing_keys = {
+        _part_elem_key(repo.elements[o.get("element_id")])
         for o in diag.objects
         if o.get("obj_type") == "Part" and o.get("element_id") in repo.elements
     }
@@ -987,17 +999,14 @@ def _sync_ibd_partproperty_parts(
         parsed.append((prop_name, block_name))
     added: list[dict] = []
     boundary = next((o for o in diag.objects if o.get("obj_type") == "Block Boundary"), None)
+    existing_count = sum(1 for o in diag.objects if o.get("obj_type") == "Part")
     if boundary:
         base_x = boundary["x"] - boundary["width"] / 2 + 30.0
-        base_y = (
-            boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * len(existing_props)
-        )
+        base_y = boundary["y"] - boundary["height"] / 2 + 30.0 + 60.0 * existing_count
     else:
         base_x = 50.0
-        base_y = 50.0 + 60.0 * len(existing_props)
+        base_y = 50.0 + 60.0 * existing_count
     for prop_name, block_name in parsed:
-        if prop_name in existing_props:
-            continue
         target_id = next(
             (
                 eid
@@ -1007,6 +1016,9 @@ def _sync_ibd_partproperty_parts(
             None,
         )
         if not target_id:
+            continue
+        cand_key = f"{_part_prop_key(prop_name)}:{target_id}"
+        if cand_key in existing_keys:
             continue
         # enforce multiplicity based on aggregation relationships
         limit = None
@@ -1051,7 +1063,7 @@ def _sync_ibd_partproperty_parts(
         base_y += 60.0
         diag.objects.append(obj_dict)
         added.append(obj_dict)
-        existing_props.add(prop_name)
+        existing_keys.add(_part_elem_key(part_elem))
         existing_defs.add(target_id)
         if app:
             for win in getattr(app, "ibd_windows", []):
@@ -1661,8 +1673,13 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         return []
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
-    # Track existing parts by element id to avoid duplicates
+    # Track existing parts by element id and canonical name to avoid duplicates
     existing = {o.get("element_id") for o in diagram.objects if o.get("obj_type") == "Part"}
+    existing_keys = {
+        _part_elem_key(repo.elements[eid])
+        for eid in existing
+        if eid in repo.elements
+    }
 
     # Map of source part obj_id -> new obj_id so ports can be updated
     part_map: dict[int, int] = {}
@@ -1675,12 +1692,20 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
             continue
         if obj.get("element_id") in existing:
             continue
+        key = None
+        if obj.get("element_id") in repo.elements:
+            key = _part_elem_key(repo.elements[obj.get("element_id")])
+        if key and key in existing_keys:
+            continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
         added.append(new_obj)
         part_map[obj.get("obj_id")] = new_obj["obj_id"]
+        existing.add(obj.get("element_id"))
+        if key:
+            existing_keys.add(key)
 
     # ------------------------------------------------------------------
     # Copy ports belonging to the inherited parts so orientation and other
