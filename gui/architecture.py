@@ -1956,27 +1956,37 @@ def update_ports_for_boundary(boundary: SysMLObject, objs: List[SysMLObject]) ->
 
 def _boundary_min_size(boundary: SysMLObject, objs: List[SysMLObject]) -> tuple[float, float]:
     """Return minimum width and height for *boundary* to contain all parts."""
-    parts = [o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)]
+    parts = [
+        o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)
+    ]
     if not parts:
         return (20.0, 20.0)
     pad = 20.0
-    max_dx = 0.0
-    max_dy = 0.0
-    for p in parts:
-        dx = abs(p.x - boundary.x) + p.width / 2
-        dy = abs(p.y - boundary.y) + p.height / 2
-        max_dx = max(max_dx, dx)
-        max_dy = max(max_dy, dy)
-    return max_dx * 2 + pad, max_dy * 2 + pad
+    left = min(p.x - p.width / 2 for p in parts)
+    right = max(p.x + p.width / 2 for p in parts)
+    top = min(p.y - p.height / 2 for p in parts)
+    bottom = max(p.y + p.height / 2 for p in parts)
+    return right - left + pad, bottom - top + pad
 
 
 def ensure_boundary_contains_parts(boundary: SysMLObject, objs: List[SysMLObject]) -> None:
     """Expand *boundary* if any part lies outside its borders."""
+    parts = [
+        o for o in objs if o.obj_type == "Part" and not getattr(o, "hidden", False)
+    ]
+    if not parts:
+        return
     min_w, min_h = _boundary_min_size(boundary, objs)
     if boundary.width < min_w:
         boundary.width = min_w
     if boundary.height < min_h:
         boundary.height = min_h
+    left = min(p.x - p.width / 2 for p in parts)
+    right = max(p.x + p.width / 2 for p in parts)
+    top = min(p.y - p.height / 2 for p in parts)
+    bottom = max(p.y + p.height / 2 for p in parts)
+    boundary.x = (left + right) / 2
+    boundary.y = (top + bottom) / 2
 
 
 def _add_ports_for_part(
