@@ -8480,43 +8480,6 @@ class FaultTreeApp:
                 total += value
         return total
 
-    def get_fit_for_fmeda_entry(self, entry_id: int) -> float:
-        """Return FIT for the FMEDA entry with ``entry_id``."""
-        entry = self.find_node_by_id_all(entry_id)
-        if entry is None:
-            return 0.0
-        comp_fit = component_fit_map(self.reliability_components)
-        comp = self.get_component_name_for_node(entry)
-        base = comp_fit.get(comp)
-        frac = getattr(entry, "fmeda_fault_fraction", 0.0)
-        if frac > 1.0:
-            frac /= 100.0
-        return base * frac if base is not None else getattr(entry, "fmeda_fit", 0.0)
-
-    def get_fault_selection_options(self) -> list[tuple[str, str, int | None]]:
-        """Return selectable fault options for FTA base events.
-
-        Each option is a tuple ``(label, fault_name, entry_id)`` where
-        ``entry_id`` may be ``None`` if the fault is not associated with a
-        specific FMEDA entry.
-        """
-        options: list[tuple[str, str, int | None]] = []
-        used: set[str] = set()
-        for fm in self.get_all_fmea_entries():
-            comp = self.get_component_name_for_node(fm)
-            failure = fm.description or fm.user_name
-            causes = [c.strip() for c in getattr(fm, "fmea_cause", "").split(";") if c.strip()]
-            for cause in causes:
-                label = f"{comp}: {failure}: {cause}" if comp else f"{failure}: {cause}"
-                options.append((label, cause, fm.unique_id))
-                used.add(cause)
-        for fault in self.faults:
-            if fault not in used:
-                options.append((fault, fault, None))
-        return options
-
-
-
     def get_all_nodes(self, node=None):
         if node is None:
             result = []
