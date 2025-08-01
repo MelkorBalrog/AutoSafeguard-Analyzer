@@ -2369,6 +2369,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.bind("<ButtonPress-3>", self.on_rc_press)
         self.canvas.bind("<B3-Motion>", self.on_rc_drag)
         self.canvas.bind("<ButtonRelease-3>", self.on_rc_release)
+        self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
         self.bind("<Control-c>", self.copy_selected)
@@ -3432,6 +3433,12 @@ class SysMLDiagramWindow(tk.Frame):
                     label="Remove Part from Model",
                     command=lambda: self.remove_part_model(obj),
                 )
+            menu.add_separator()
+            menu.add_command(label="Delete", command=self.delete_selected)
+        elif conn:
+            menu.add_command(label="Properties", command=lambda: ConnectionDialog(self, conn))
+            menu.add_separator()
+            menu.add_command(label="Delete", command=self.delete_selected)
         menu.tk_popup(event.x_root, event.y_root)
 
     def _edit_object(self, obj):
