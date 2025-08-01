@@ -1776,6 +1776,7 @@ class SysMLObject:
     requirements: List[dict] = field(default_factory=list)
     locked: bool = False
     hidden: bool = False
+    collapsed: Dict[str, bool] = field(default_factory=dict)
 
 
 @dataclass
@@ -2458,6 +2459,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Keep references to gradient images used for element backgrounds
         self.gradient_cache: dict[int, tk.PhotoImage] = {}
+        # Track bounding boxes for compartment toggle buttons
+        self.compartment_buttons: list[tuple[int, str, tuple[float, float, float, float]]] = []
 
         self.canvas.bind("<Button-1>", self.on_left_press)
         self.canvas.bind("<B1-Motion>", self.on_left_drag)
@@ -2738,6 +2741,14 @@ class SysMLDiagramWindow(tk.Frame):
         prefer = self.current_tool in conn_tools
         obj = self.find_object(x, y, prefer_port=prefer)
         t = self.current_tool
+
+        if obj and obj.obj_type == "Block" and t in (None, "Select"):
+            hit = self.hit_compartment_toggle(obj, x, y)
+            if hit:
+                obj.collapsed[hit] = not obj.collapsed.get(hit, False)
+                self._sync_to_repository()
+                self.redraw()
+                return
 
         if t in (
             "Association",
@@ -3708,6 +3719,13 @@ class SysMLDiagramWindow(tk.Frame):
             return "s"
         return None
 
+    def hit_compartment_toggle(self, obj: SysMLObject, x: float, y: float) -> str | None:
+        """Return the label of the compartment toggle hit at *(x, y)* or ``None``."""
+        for oid, label, (x1, y1, x2, y2) in self.compartment_buttons:
+            if oid == obj.obj_id and x1 <= x <= x2 and y1 <= y <= y2:
+                return label
+        return None
+
     def _dist_to_segment(self, p, a, b) -> float:
         px, py = p
         ax, ay = a
@@ -4037,12 +4055,17 @@ class SysMLDiagramWindow(tk.Frame):
         width_px = self.font.measure(header) + 8 * self.zoom
         compartments = self._block_compartments(obj)
         total_lines = 1
+        button_w = 12 * self.zoom
         for label, text in compartments:
+            collapsed = obj.collapsed.get(label, False)
             lines = text.splitlines() if text else [""]
-            for idx, line in enumerate(lines):
-                disp = f"{label}: {line}" if idx == 0 else line
-                width_px = max(width_px, self.font.measure(disp) + 8 * self.zoom)
-            total_lines += len(lines)
+            first = lines[0] if lines else ""
+            disp = f"{label}: {first}"
+            width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
+            if not collapsed:
+                for line in lines[1:]:
+                    width_px = max(width_px, self.font.measure(line) + 8 * self.zoom)
+            total_lines += 1 if collapsed else len(lines)
         height_px = total_lines * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
 
@@ -4316,6 +4339,7 @@ class SysMLDiagramWindow(tk.Frame):
     def redraw(self):
         self.canvas.delete("all")
         self.gradient_cache.clear()
+        self.compartment_buttons = []
         self.sort_objects()
         remove_orphan_ports(self.objects)
         for obj in list(self.objects):
@@ -4860,17 +4884,35 @@ class SysMLDiagramWindow(tk.Frame):
             cy = top + 20 * self.zoom
             for label, text in compartments:
                 lines = text.splitlines() if text else [""]
+                collapsed = obj.collapsed.get(label, False)
                 self.canvas.create_line(left, cy, right, cy)
-                for idx, line in enumerate(lines):
-                    display = f"{label}: {line}" if idx == 0 else line
-                    self.canvas.create_text(
-                        left + 4 * self.zoom,
-                        cy + 10 * self.zoom,
-                        text=display,
-                        anchor="w",
-                        font=self.font,
-                    )
-                    cy += 20 * self.zoom
+                btn_sz = 8 * self.zoom
+                bx1 = left + 2 * self.zoom
+                by1 = cy + (20 * self.zoom - btn_sz) / 2
+                bx2 = bx1 + btn_sz
+                by2 = by1 + btn_sz
+                self.canvas.create_rectangle(bx1, by1, bx2, by2, outline="black", fill="white")
+                self.canvas.create_text((bx1 + bx2) / 2, (by1 + by2) / 2, text="-" if not collapsed else "+", font=self.font)
+                self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
+                tx = bx2 + 2 * self.zoom
+                self.canvas.create_text(
+                    tx,
+                    cy + 10 * self.zoom,
+                    text=f"{label}: {lines[0] if lines else ''}",
+                    anchor="w",
+                    font=self.font,
+                )
+                cy += 20 * self.zoom
+                if not collapsed:
+                    for line in lines[1:]:
+                        self.canvas.create_text(
+                            left + 4 * self.zoom,
+                            cy + 10 * self.zoom,
+                            text=line,
+                            anchor="w",
+                            font=self.font,
+                        )
+                        cy += 20 * self.zoom
         elif obj.obj_type in ("Initial", "Final"):
             if obj.obj_type == "Initial":
                 r = min(obj.width, obj.height) / 2 * self.zoom
