@@ -2149,7 +2149,7 @@ class HaraWindow(tk.Frame):
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=1, column=1)
-            ttk.Label(master, text="Scenario").grid(row=2, column=0, sticky="e")
+            ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
             scen_names = self.app.get_all_scenario_names()
             self.scen_var = tk.StringVar(value=getattr(self.row, "scenario", ""))
             scen_cb = ttk.Combobox(
