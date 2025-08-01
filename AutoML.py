@@ -11926,12 +11926,18 @@ class FaultTreeApp:
         win = tk.Toplevel(self.root)
         win.title("Cause & Effect Chain")
 
-        # --- Layout: tree on the left, diagram canvas on the right ---
-        container = ttk.Frame(win)
-        container.pack(fill=tk.BOTH, expand=True)
-        container.columnconfigure(0, weight=1)
-        container.columnconfigure(1, weight=1)
-        container.rowconfigure(0, weight=1)
+        nb = ttk.Notebook(win)
+        nb.pack(fill=tk.BOTH, expand=True)
+
+        table_frame = ttk.Frame(nb)
+        diagram_frame = ttk.Frame(nb)
+        nb.add(table_frame, text="Table")
+        nb.add(diagram_frame, text="Diagram")
+
+        table_frame.columnconfigure(0, weight=1)
+        table_frame.rowconfigure(0, weight=1)
+        diagram_frame.columnconfigure(0, weight=1)
+        diagram_frame.rowconfigure(0, weight=1)
 
         cols = (
             "Hazard",
@@ -11942,14 +11948,21 @@ class FaultTreeApp:
             "TCs",
         )
 
-        tree = ttk.Treeview(container, columns=cols, show="headings")
-        vsb = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=vsb.set)
+        tree = ttk.Treeview(table_frame, columns=cols, show="headings")
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=0, sticky="nse")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
 
-        canvas = tk.Canvas(container, bg="white")
-        canvas.grid(row=0, column=1, sticky="nsew")
+        canvas = tk.Canvas(diagram_frame, bg="white")
+        cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
+        cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        cvs_vsb.grid(row=0, column=1, sticky="ns")
+        cvs_hsb.grid(row=1, column=0, sticky="ew")
 
         row_map = {}
         for row in data:
@@ -12000,8 +12013,16 @@ class FaultTreeApp:
                 "tc": "lightgreen",
             }
             node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
-            plt.figure(figsize=(6, 4))
-            nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=1500, font_size=8, arrows=True)
+            plt.figure(figsize=(4, 3))
+            nx.draw(
+                G,
+                pos,
+                with_labels=True,
+                node_color=node_colors,
+                node_size=500,
+                font_size=6,
+                arrows=True,
+            )
             plt.axis("off")
             buf = BytesIO()
             plt.savefig(buf, format="PNG", dpi=120)
