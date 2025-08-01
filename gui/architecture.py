@@ -4850,11 +4850,35 @@ class SysMLDiagramWindow(tk.Frame):
                         inside = half
                         outside = -half
                     if direction == "in":
-                        self.canvas.create_line(x + outside, y, x + inside, y, arrow=tk.LAST)
+                        self.canvas.create_line(x + outside, y, x + inside, y)
+                        self._draw_open_arrow(
+                            (x + outside, y),
+                            (x + inside, y),
+                            color=outline,
+                            tags="connection",
+                        )
                     elif direction == "out":
-                        self.canvas.create_line(x + inside, y, x + outside, y, arrow=tk.LAST)
+                        self.canvas.create_line(x + inside, y, x + outside, y)
+                        self._draw_open_arrow(
+                            (x + inside, y),
+                            (x + outside, y),
+                            color=outline,
+                            tags="connection",
+                        )
                     else:
-                        self.canvas.create_line(x - half, y, x + half, y, arrow=tk.BOTH)
+                        self.canvas.create_line(x - half, y, x + half, y)
+                        self._draw_open_arrow(
+                            (x, y),
+                            (x + half, y),
+                            color=outline,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x, y),
+                            (x - half, y),
+                            color=outline,
+                            tags="connection",
+                        )
                 else:  # N or S
                     if side == "S":
                         inside = -half
@@ -4863,11 +4887,35 @@ class SysMLDiagramWindow(tk.Frame):
                         inside = half
                         outside = -half
                     if direction == "in":
-                        self.canvas.create_line(x, y + outside, x, y + inside, arrow=tk.LAST)
+                        self.canvas.create_line(x, y + outside, x, y + inside)
+                        self._draw_open_arrow(
+                            (x, y + outside),
+                            (x, y + inside),
+                            color=outline,
+                            tags="connection",
+                        )
                     elif direction == "out":
-                        self.canvas.create_line(x, y + inside, x, y + outside, arrow=tk.LAST)
+                        self.canvas.create_line(x, y + inside, x, y + outside)
+                        self._draw_open_arrow(
+                            (x, y + inside),
+                            (x, y + outside),
+                            color=outline,
+                            tags="connection",
+                        )
                     else:
-                        self.canvas.create_line(x, y - half, x, y + half, arrow=tk.BOTH)
+                        self.canvas.create_line(x, y - half, x, y + half)
+                        self._draw_open_arrow(
+                            (x, y),
+                            (x, y + half),
+                            color=outline,
+                            tags="connection",
+                        )
+                        self._draw_open_arrow(
+                            (x, y),
+                            (x, y - half),
+                            color=outline,
+                            tags="connection",
+                        )
 
                 lx_off = _parse_float(obj.properties.get("labelX"), 8.0)
                 ly_off = _parse_float(obj.properties.get("labelY"), -8.0)
