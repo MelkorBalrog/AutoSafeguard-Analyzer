@@ -314,6 +314,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 # Import ReportLab for PDF export.
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
+from gui.style_editor import StyleEditor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -2033,6 +2034,7 @@ class FaultTreeApp:
         view_menu.add_command(label="Zoom In", command=self.zoom_in, accelerator="Ctrl++")
         view_menu.add_command(label="Zoom Out", command=self.zoom_out, accelerator="Ctrl+-")
         view_menu.add_command(label="Auto Arrange", command=self.auto_arrange, accelerator="Ctrl+A")
+        view_menu.add_command(label="Style Editor", command=self.open_style_editor)
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
@@ -2104,6 +2106,7 @@ class FaultTreeApp:
         menubar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menubar)
+        root.bind('<<StyleChanged>>', self.refresh_styles)
         root.bind("<Control-n>", lambda event: self.new_model())
         root.bind("<Control-s>", lambda event: self.save_model())
         root.bind("<Control-o>", lambda event: self.load_model())
@@ -12982,6 +12985,17 @@ class FaultTreeApp:
         self._fault_prio_tab = self._new_tab("Fault Prioritization")
         from gui.fault_prioritization import FaultPrioritizationWindow
         self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+
+    def open_style_editor(self):
+        """Open the diagram style editor window."""
+        StyleEditor(self.root)
+
+    def refresh_styles(self, event=None):
+        """Redraw all open diagram windows using current styles."""
+        for tab in getattr(self, 'diagram_tabs', {}).values():
+            for child in tab.winfo_children():
+                if hasattr(child, 'redraw'):
+                    child.redraw()
 
     def show_hazard_explorer(self):
         if hasattr(self, "_haz_exp_window") and self._haz_exp_window.winfo_exists():
