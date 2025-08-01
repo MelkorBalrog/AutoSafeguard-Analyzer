@@ -151,10 +151,27 @@ class SysMLRepository:
             suffix += 1
         return name
 
+    def _default_name(self, elem_type: str) -> str:
+        """Return a generated default name for ``elem_type``."""
+        base = elem_type.replace(" ", "") or "Element"
+        existing = {
+            e.name
+            for e in self.elements.values()
+            if e.name and e.name.startswith(base)
+        }
+        suffix = 1
+        name = f"{base}{suffix}"
+        while name in existing:
+            suffix += 1
+            name = f"{base}{suffix}"
+        return name
+
     def create_element(self, elem_type: str, name: str = "", properties: Optional[Dict[str, str]] = None, owner: Optional[str] = None) -> SysMLElement:
         self.push_undo_state()
         elem_id = str(uuid.uuid4())
-        unique_name = self.ensure_unique_element_name(name) if name else name
+        if not name:
+            name = self._default_name(elem_type)
+        unique_name = self.ensure_unique_element_name(name)
         elem = SysMLElement(
             elem_id,
             elem_type,

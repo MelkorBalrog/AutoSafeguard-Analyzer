@@ -26,6 +26,16 @@ class RepositoryTests(unittest.TestCase):
         self.assertEqual(rel.source, a.elem_id)
         self.assertEqual(rel.target, b.elem_id)
 
+    def test_default_element_names(self):
+        blk1 = self.repo.create_element("Block")
+        blk2 = self.repo.create_element("Block")
+        part = self.repo.create_element("Part")
+        act = self.repo.create_element("Action")
+        self.assertTrue(blk1.name)
+        self.assertTrue(part.name)
+        self.assertTrue(act.name)
+        self.assertNotEqual(blk1.name, blk2.name)
+
     def test_author_metadata(self):
         elem = self.repo.create_element("Block", name="Engine")
         diag = self.repo.create_diagram("Block Diagram", name="BD")
