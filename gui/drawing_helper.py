@@ -30,10 +30,12 @@ class FTADrawingHelper:
     def _fill_gradient_polygon(self, canvas, points, color: str) -> None:
         """Fill *points* polygon with a horizontal white → color gradient."""
         xs = [p[0] for p in points]
-        left, right = int(min(xs)), int(max(xs))
+        left = math.floor(min(xs))
+        right = math.ceil(max(xs))
         if right <= left:
             return
-        for x in range(left, right + 1):
+        x = left
+        while x <= right:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
             yvals = []
@@ -42,7 +44,7 @@ class FTADrawingHelper:
                 x2, y2 = points[(i + 1) % len(points)]
                 if (x1 <= x <= x2) or (x2 <= x <= x1):
                     if abs(x1 - x2) < 1e-6:
-                        if int(round(x1)) == x:
+                        if abs(x1 - x) < 0.25:
                             yvals.extend([y1, y2])
                         continue
                     t = (x - x1) / (x2 - x1)
@@ -51,28 +53,33 @@ class FTADrawingHelper:
             for j in range(0, len(yvals), 2):
                 if j + 1 < len(yvals):
                     canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
+            x += 0.5
 
     def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
         """Fill circle with gradient from white to *color*."""
-        left = int(cx - radius)
-        right = int(cx + radius)
+        left = math.floor(cx - radius)
+        right = math.ceil(cx + radius)
         if right <= left:
             return
-        for x in range(left, right + 1):
+        x = left
+        while x <= right:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
             dx = x - cx
             dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
             canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+            x += 0.5
 
     def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
         """Fill rectangle with gradient from white to *color*."""
         if right <= left:
             return
-        for x in range(int(left), int(right) + 1):
+        x = left
+        while x <= right:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
             canvas.create_line(x, top, x, bottom, fill=fill)
+            x += 0.5
 
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
