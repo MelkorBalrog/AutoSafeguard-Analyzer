@@ -7871,33 +7871,12 @@ class FaultTreeApp:
         return counts
 
     def get_node_fill_color(self, node):
-        # Use the original node's properties for clones.
-        base_node = node if node.is_primary_instance else node.original
+        # Use the original node's properties for clones (not currently used).
+        _ = node if node.is_primary_instance else node.original
         if self.project_properties.get("black_white", False):
             return "white"
-        label = base_node.display_label  # use original's display label
-        if "Prototype Assurance Level (PAL)" in label:
-            base_type = "Prototype Assurance Level (PAL)"
-        elif "Maturity" in label:
-            base_type = "Maturity"
-        elif "Rigor" in label:
-            base_type = "Rigor"
-        elif "Confidence" in label:
-            base_type = "Confidence"
-        elif "Robustness" in label:
-            base_type = "Robustness"
-        else:
-            base_type = "Other"
-        subtype = base_node.input_subtype if base_node.input_subtype else "Default"
-        color_mapping = {
-            "Confidence": {"Function": "lightpink", "Human Task": "lightgreen", "Default": "lightpink"},
-            "Robustness": {"Function": "orange", "Human Task": "pink", "Default": "orange"},
-            "Maturity": {"Functionality": "lightyellow", "Default": "lightyellow"},
-            "Rigor": {"Capability": "turquoise", "Safety Mechanism": "yellow", "Default": "turquoise"},
-            "Prototype Assurance Level (PAL)": {"Vehicle Level Function": "pink", "Functionality": "lightyellow","Capability": "turquoise", "Safety Mechanism": "yellow"},
-            "Other": {"Default": "lightblue"}
-        }
-        return color_mapping.get(base_type, {}).get(subtype, color_mapping.get(base_type, {}).get("Default", "lightblue"))
+        # All nodes use the same base color
+        return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
         self.canvas.scan_mark(event.x, event.y)
@@ -8673,6 +8652,7 @@ class FaultTreeApp:
         if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
+        fta_drawing_helper.clear_gradient_cache()
         self.draw_grid()
         drawn_ids = set()
         for top_event in self.top_events:
@@ -15680,6 +15660,7 @@ class PageDiagram:
         if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
+        fta_drawing_helper.clear_gradient_cache()
         self.draw_grid()
         
         # Use the page's root node as the sole top-level event.
