@@ -5912,9 +5912,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
             cur_id = self.obj.properties.get("definition", "")
             cur_name = next((n for n, i in idmap.items() if i == cur_id), "")
             self.def_var = tk.StringVar(value=cur_name)
-            ttk.Combobox(link_frame, textvariable=self.def_var, values=list(idmap.keys())).grid(
-                row=link_row, column=1, padx=4, pady=2
+            self.def_cb = ttk.Combobox(
+                link_frame, textvariable=self.def_var, values=list(idmap.keys())
             )
+            self.def_cb.grid(row=link_row, column=1, padx=4, pady=2)
+            self.def_cb.bind("<<ComboboxSelected>>", self._on_def_selected)
+            self._current_def_id = cur_id
             link_row += 1
 
         # Requirement allocation section
@@ -6152,6 +6155,44 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     if label:
                         modes.add(label)
         return ", ".join(sorted(modes))
+
+    def _on_def_selected(self, event=None):
+        """Callback when the definition combobox is changed."""
+        repo = SysMLRepository.get_instance()
+        name = self.def_var.get()
+        def_id = self.def_map.get(name)
+        if not def_id:
+            self._current_def_id = ""
+            return
+
+        parent_id = None
+        if hasattr(self.master, "diagram_id"):
+            diag = repo.diagrams.get(self.master.diagram_id)
+            if diag and diag.diag_type == "Internal Block Diagram":
+                parent_id = getattr(diag, "father", None) or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                    None,
+                )
+
+        if parent_id and _multiplicity_limit_exceeded(
+            repo,
+            parent_id,
+            def_id,
+            getattr(self.master, "objects", []),
+            self.obj.element_id,
+        ):
+            messagebox.showinfo(
+                "Add Part",
+                "Maximum number of parts of that type has been reached",
+            )
+            prev_name = next(
+                (n for n, i in self.def_map.items() if i == self._current_def_id),
+                "",
+            )
+            self.def_var.set(prev_name)
+            return
+
+        self._current_def_id = def_id
 
     def apply(self):
         new_name = self.name_var.get()
@@ -6918,17 +6959,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
-        added_placeholders: list[dict] = []
+
         for def_id, mult in selected_placeholders:
-            added_placeholders.extend(
-                add_multiplicity_parts(
-                    repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None)
-                )
-            )
-        if added_placeholders and not self.app:
-            for data in added_placeholders:
-                if not any(o.obj_id == data["obj_id"] for o in self.objects):
-                    self.objects.append(SysMLObject(**data))
+            add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
 
         for key, obj in visible.items():
             if key not in selected_keys:
