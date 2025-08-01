@@ -12049,6 +12049,7 @@ class FaultTreeApp:
             node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
             labels = {n: textwrap.fill(str(n), 15) for n in G.nodes()}
             edge_labels = {(u, v): "caused by" for u, v in G.edges()}
+
             plt.figure(figsize=(4, 3))
             nx.draw(
                 G,
