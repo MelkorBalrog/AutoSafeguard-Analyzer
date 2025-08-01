@@ -135,6 +135,5 @@ class PortUpdateTests(unittest.TestCase):
         ]
         self.assertEqual(len(ports), 1)
 
-
 if __name__ == '__main__':
     unittest.main()

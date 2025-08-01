@@ -6369,6 +6369,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 rename_block(repo, elem.elem_id, new_name)
             else:
                 elem.name = new_name
+        if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
+            rename_port(repo, self.obj, self.master.objects, new_name)
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
