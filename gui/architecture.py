@@ -7510,8 +7510,13 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     placeholder_map[label] = (target, mult)
                     names_list.append(label)
 
-        dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
-        selected = dlg.result or []
+        dlg = SysMLObjectDialog.ManagePartsDialog(
+            self, names_list, visible_names, hidden_names
+        )
+        selected = dlg.result
+        if selected is None:
+            # User cancelled the dialog -> keep current visibility unchanged
+            return
         selected_keys = { _part_prop_key(n) for n in selected if n not in placeholder_map }
         selected_placeholders = [placeholder_map[n] for n in selected if n in placeholder_map]
 
