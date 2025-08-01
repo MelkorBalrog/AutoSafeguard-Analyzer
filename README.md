@@ -1,4 +1,4 @@
-version: 0.1.4
+version: 0.1.3
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -985,7 +985,6 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.1.4 - Introduced a modern "azure" theme for a refreshed look.
 - 0.1.3 - Added context menu actions to remove parts from a diagram or from the model.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
