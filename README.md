@@ -1,4 +1,4 @@
-version: 0.1.4
+version: 0.1.5
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -930,10 +930,11 @@ prompt instead so any error messages remain visible.
 
 ## Diagram Styles
 
-Several example style files are provided in the `styles` directory:
-`modern.xml`, `dark.xml`, `light.xml` and `vibrant.xml`. Load these from the
-Style Editor to quickly switch the color scheme or create your own based on
-them.
+Several XML files in the `styles` directory control the colors used for
+diagram elements. The default `modern.xml` uses a Material-inspired palette.
+`pastel.xml` provides softer tones like peach actions and steel-blue nodes.
+Open the Style Editor via **View → Style Editor**, click **Load** and choose
+the desired style. All open diagrams update immediately.
 
 ## License
 
@@ -964,7 +965,8 @@ and run the build again if you hit this issue.
 
 
 ## Version History
-- 0.1.4 - Added example style files and documentation.
+- 0.1.5 - Added a pastel style with peach actions and steel-blue nodes.
+- 0.1.4 - Initial diagram style support documented.
 - 0.1.3 - Added context menu actions to remove parts from a diagram or from the model.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.

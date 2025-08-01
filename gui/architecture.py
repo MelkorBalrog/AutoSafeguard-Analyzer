@@ -7787,4 +7787,3 @@ class ArchitectureManagerDialog(tk.Frame):
         else:
             img.put(c, to=(2, 2, size - 2, size - 2))
         return img
-
