@@ -1,0 +1,14 @@
+<style>
+  <object type="Actor" color="#0D47A1" />
+  <object type="Use Case" color="#FF8F00" />
+  <object type="System Boundary" color="#37474F" />
+  <object type="Block Boundary" color="#263238" />
+  <object type="Action Usage" color="#1B5E20" />
+  <object type="Action" color="#1B5E20" />
+  <object type="CallBehaviorAction" color="#1B5E20" />
+  <object type="Part" color="#F57F17" />
+  <object type="Port" color="#4A148C" />
+  <object type="Block" color="#455A64" />
+  <object type="Decision" color="#006064" />
+  <object type="Merge" color="#006064" />
+</style>
