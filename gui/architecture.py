@@ -1661,8 +1661,30 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
         return []
     diagram.objects = getattr(diagram, "objects", [])
     added: list[dict] = []
-    # Track existing parts by element id to avoid duplicates
-    existing = {o.get("element_id") for o in diagram.objects if o.get("obj_type") == "Part"}
+    # Track existing parts by element id or definition to avoid duplicates
+    existing_ids = {
+        o.get("element_id")
+        for o in diagram.objects
+        if o.get("obj_type") == "Part"
+    }
+    existing_count: Dict[str, int] = {}
+    for o in diagram.objects:
+        if o.get("obj_type") != "Part":
+            continue
+        definition = o.get("properties", {}).get("definition")
+        if definition:
+            existing_count[definition] = existing_count.get(definition, 0) + 1
+
+    father_parts = [
+        o
+        for o in getattr(father_diag, "objects", [])
+        if o.get("obj_type") == "Part"
+    ]
+    father_count: Dict[str, int] = {}
+    for o in father_parts:
+        definition = o.get("properties", {}).get("definition")
+        if definition:
+            father_count[definition] = father_count.get(definition, 0) + 1
 
     # Map of source part obj_id -> new obj_id so ports can be updated
     part_map: dict[int, int] = {}
@@ -1670,17 +1692,22 @@ def inherit_father_parts(repo: SysMLRepository, diagram: SysMLDiagram) -> list[d
     # ------------------------------------------------------------------
     # Copy parts from the father diagram
     # ------------------------------------------------------------------
-    for obj in getattr(father_diag, "objects", []):
-        if obj.get("obj_type") != "Part":
+    for obj in father_parts:
+        definition = obj.get("properties", {}).get("definition")
+        if obj.get("element_id") in existing_ids:
             continue
-        if obj.get("element_id") in existing:
-            continue
+        if definition:
+            allowed = father_count.get(definition, 1)
+            if existing_count.get(definition, 0) >= allowed:
+                continue
         new_obj = obj.copy()
         new_obj["obj_id"] = _get_next_id()
         diagram.objects.append(new_obj)
         repo.add_element_to_diagram(diagram.diag_id, obj.get("element_id"))
         added.append(new_obj)
         part_map[obj.get("obj_id")] = new_obj["obj_id"]
+        if definition:
+            existing_count[definition] = existing_count.get(definition, 0) + 1
 
     # ------------------------------------------------------------------
     # Copy ports belonging to the inherited parts so orientation and other
