@@ -8464,6 +8464,23 @@ class FaultTreeApp:
                     faults.append(fault)
         return sorted(set(faults))
 
+    def get_fit_for_fault(self, fault_name: str) -> float:
+        """Return total FIT for FMEDA entries referencing ``fault_name``."""
+        comp_fit = component_fit_map(self.reliability_components)
+        total = 0.0
+        for fm in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(fm, "fmea_cause", "").split(";") if c.strip()]
+            if fault_name in causes:
+                comp_name = self.get_component_name_for_node(fm)
+                base = comp_fit.get(comp_name)
+                frac = getattr(fm, "fmeda_fault_fraction", 0.0)
+                if frac > 1.0:
+                    frac /= 100.0
+                value = base * frac if base is not None else getattr(fm, "fmeda_fit", 0.0)
+                total += value
+        return total
+
+
 
     def get_all_nodes(self, node=None):
         if node is None:
@@ -8594,7 +8611,10 @@ class FaultTreeApp:
         if tau <= 0:
             tau = 1.0
         fm = self.find_node_by_id_all(failure_mode_ref) if failure_mode_ref else self.get_failure_mode_node(node)
-        fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
+        if getattr(node, "fault_ref", "") and failure_mode_ref is None and getattr(node, "failure_mode_ref", None) is None:
+            fit = self.get_fit_for_fault(node.fault_ref)
+        else:
+            fit = getattr(fm, "fmeda_fit", getattr(node, "fmeda_fit", 0.0))
         t = tau
         formula = formula or getattr(node, "prob_formula", getattr(fm, "prob_formula", "linear"))
         f = str(formula).strip().lower()
