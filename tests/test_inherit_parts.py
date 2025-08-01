@@ -178,7 +178,7 @@ class InheritPartsTests(unittest.TestCase):
         parts = [o for o in dc.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id]
         self.assertEqual(len(parts), 1)
         self.assertFalse(any(o.get("obj_type") == "Part" for o in added))
-        
+
     def test_generalization_inherits_properties(self):
         repo = self.repo
         parent = repo.create_element(
