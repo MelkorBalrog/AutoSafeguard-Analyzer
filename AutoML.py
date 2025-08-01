@@ -8494,7 +8494,6 @@ class FaultTreeApp:
         return 0.0
 
 
-
     def get_all_nodes(self, node=None):
         if node is None:
             result = []
@@ -9413,6 +9412,17 @@ class FaultTreeApp:
         new_node.failure_prob = 0.0
         new_node.fault_ref = fault
         new_node.description = fault
+        # Pull FIT data from any FMEDA entries using this fault
+        fit_total = 0.0
+        for entry in self.get_all_fmea_entries():
+            causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
+            if fault in causes:
+                fit_total += getattr(entry, "fmeda_fit", 0.0)
+                if not getattr(new_node, "prob_formula", None):
+                    new_node.prob_formula = getattr(entry, "prob_formula", "linear")
+        if fit_total > 0:
+            new_node.fmeda_fit = fit_total
+            new_node.failure_prob = self.compute_failure_prob(new_node)
         new_node.x = parent_node.x + 100
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
@@ -9440,6 +9450,12 @@ class FaultTreeApp:
             fit = getattr(be, "fmeda_fit", None)
             if fit is None or fit == 0.0:
                 fit = getattr(fm, "fmeda_fit", 0.0)
+                if (not fit) and getattr(be, "fault_ref", "") and getattr(be, "failure_mode_ref", None) is None:
+                    fault = be.fault_ref
+                    for entry in self.get_all_fmea_entries():
+                        causes = [c.strip() for c in getattr(entry, "fmea_cause", "").split(";") if c.strip()]
+                        if fault in causes:
+                            fit += getattr(entry, "fmeda_fit", 0.0)
             dc = getattr(be, "fmeda_diag_cov", getattr(fm, "fmeda_diag_cov", 0.0))
             if be.fmeda_fault_type == "permanent":
                 spf += fit * (1 - dc)
