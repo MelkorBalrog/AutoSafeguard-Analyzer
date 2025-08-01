@@ -68,6 +68,8 @@ class SysMLRepository:
         self.diagrams: Dict[str, SysMLDiagram] = {}
         # map element_id -> diagram_id for implementation links
         self.element_diagrams: Dict[str, str] = {}
+        # maintain a simple undo history of repository snapshots
+        self._undo_stack: list[dict] = []
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -97,6 +99,24 @@ class SysMLRepository:
             cls._instance = SysMLRepository()
         return cls._instance
 
+    # ------------------------------------------------------------
+    # Undo support
+    # ------------------------------------------------------------
+    def push_undo_state(self) -> None:
+        """Save the current repository state for undo."""
+        self._undo_stack.append(self.to_dict())
+        # limit history to 50 states to avoid excessive memory use
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
+
+    def undo(self) -> bool:
+        """Revert to the most recent saved state."""
+        if not self._undo_stack:
+            return False
+        state = self._undo_stack.pop()
+        self.from_dict(state)
+        return True
+
     def ensure_unique_element_name(self, name: str, self_elem_id: str | None = None) -> str:
         """Return a unique element name based on *name* across all elements."""
         if not name:
@@ -114,6 +134,7 @@ class SysMLRepository:
         return name
 
     def create_element(self, elem_type: str, name: str = "", properties: Optional[Dict[str, str]] = None, owner: Optional[str] = None) -> SysMLElement:
+        self.push_undo_state()
         elem_id = str(uuid.uuid4())
         unique_name = self.ensure_unique_element_name(name) if name else name
         elem = SysMLElement(
@@ -149,6 +170,7 @@ class SysMLRepository:
         color: str = "#FFFFFF",
         father: Optional[str] = None,
     ) -> SysMLDiagram:
+        self.push_undo_state()
         if diag_id is None:
             diag_id = str(uuid.uuid4())
         if package is None:
@@ -183,15 +205,18 @@ class SysMLRepository:
     def add_element_to_diagram(self, diag_id: str, elem_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and elem_id not in diag.elements:
+            self.push_undo_state()
             diag.elements.append(elem_id)
 
     def add_relationship_to_diagram(self, diag_id: str, rel_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and rel_id not in diag.relationships:
+            self.push_undo_state()
             diag.relationships.append(rel_id)
 
     def delete_element(self, elem_id: str) -> None:
         """Remove an element and any relationships referencing it."""
+        self.push_undo_state()
         if elem_id in self.elements:
             del self.elements[elem_id]
         self.relationships = [r for r in self.relationships if r.source != elem_id and r.target != elem_id]
@@ -201,6 +226,7 @@ class SysMLRepository:
         pkg = self.elements.get(pkg_id)
         if not pkg or pkg.elem_type != "Package" or pkg_id == self.root_package.elem_id:
             return
+        self.push_undo_state()
         parent = pkg.owner or self.root_package.elem_id
         for elem in self.elements.values():
             if elem.owner == pkg_id:
@@ -211,6 +237,7 @@ class SysMLRepository:
         self.delete_element(pkg_id)
 
     def delete_diagram(self, diag_id: str) -> None:
+        self.push_undo_state()
         if diag_id in self.diagrams:
             del self.diagrams[diag_id]
         # remove any element links to this diagram

@@ -2130,6 +2130,7 @@ class FaultTreeApp:
         root.bind("<Control-x>", lambda event: self.cut_node())
         root.bind("<Control-v>", lambda event: self.paste_node())
         root.bind("<Control-p>", lambda event: self.save_diagram_png())
+        root.bind("<Control-z>", lambda event: self.undo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
         self.main_pane.pack(fill=tk.BOTH, expand=True)
@@ -13498,6 +13499,16 @@ class FaultTreeApp:
         """Return True if the model differs from the last saved state."""
         current_state = json.dumps(self.export_model_data(), sort_keys=True)
         return current_state != getattr(self, "last_saved_state", None)
+
+    def undo(self):
+        """Revert the repository to the previous state and refresh views."""
+        repo = SysMLRepository.get_instance()
+        if repo.undo():
+            for tab in getattr(self, "diagram_tabs", {}).values():
+                for child in tab.winfo_children():
+                    if hasattr(child, "refresh_from_repository"):
+                        child.refresh_from_repository()
+            self.update_views()
 
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""

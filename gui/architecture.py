@@ -2374,6 +2374,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.bind("<Control-c>", self.copy_selected)
         self.bind("<Control-x>", self.cut_selected)
         self.bind("<Control-v>", self.paste_selected)
+        if self.app:
+            self.bind("<Control-z>", lambda e: self.app.undo())
         self.bind("<Delete>", self.delete_selected)
         # Refresh from the repository whenever the window gains focus
         self.bind("<FocusIn>", self.refresh_from_repository)
@@ -5361,6 +5363,7 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _sync_to_repository(self) -> None:
         """Persist current objects and connections back to the repository."""
+        self.repo.push_undo_state()
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
             diag.objects = [obj.__dict__ for obj in self.objects]
