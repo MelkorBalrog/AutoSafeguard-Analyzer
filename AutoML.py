@@ -8462,12 +8462,6 @@ class FaultTreeApp:
                 fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
                 if fault:
                     faults.append(fault)
-        # Treat passive component failure modes as faults themselves
-        comp = self.get_component_name_for_node(fm_node)
-        if comp and any(c.name == comp and c.is_passive for c in self.reliability_components):
-            label = self.format_failure_mode_label(fm_node)
-            if label:
-                faults.append(label)
         return sorted(set(faults))
 
     def get_fit_for_fault(self, fault_name: str) -> float:
