@@ -2,7 +2,8 @@
 import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
-from tkinter import ttk, simpledialog, messagebox
+from tkinter import ttk, simpledialog
+from gui import messagebox
 import json
 import math
 import re
