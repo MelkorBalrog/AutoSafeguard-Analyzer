@@ -6918,8 +6918,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         comps = list(ra.components) if ra_name and ra and ra.components else []
 
         # existing parts on the diagram
-        visible: dict[str, SysMLObject] = {}
-        hidden: dict[str, SysMLObject] = {}
+        visible: dict[str, list[SysMLObject]] = {}
+        hidden: dict[str, list[SysMLObject]] = {}
         def_objs: dict[str, list[SysMLObject]] = {}
         for obj in self.objects:
             if obj.obj_type != "Part":
@@ -6928,9 +6928,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             def_id = obj.properties.get("definition")
             def_objs.setdefault(def_id or "", []).append(obj)
             if getattr(obj, "hidden", False):
-                hidden[key] = obj
+                hidden.setdefault(key, []).append(obj)
             else:
-                visible[key] = obj
+                visible.setdefault(key, []).append(obj)
 
         part_names = [n.strip() for n in block.properties.get("partProperties", "").split(",") if n.strip()]
         comp_names = [c.name for c in comps]
@@ -6941,9 +6941,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
             if key in prop_map:
                 display_map[key] = prop_map[key]
             elif key in visible:
-                display_map[key] = self._get_part_name(visible[key])
+                display_map[key] = self._get_part_name(visible[key][0])
             elif key in hidden:
-                display_map[key] = self._get_part_name(hidden[key])
+                display_map[key] = self._get_part_name(hidden[key][0])
             else:
                 comp = next((c for c in comps if _part_prop_key(c.name) == key), None)
                 display_map[key] = comp.name if comp else key
@@ -6984,15 +6984,26 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
+        added_ph: list[dict] = []
         for def_id, mult in selected_placeholders:
-            add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
+            added_ph.extend(
+                add_multiplicity_parts(
+                    repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None)
+                )
+            )
+        if added_ph and not self.app:
+            for data in added_ph:
+                if not any(o.obj_id == data["obj_id"] for o in self.objects):
+                    self.objects.append(SysMLObject(**data))
 
-        for key, obj in visible.items():
+        for key, objs in visible.items():
             if key not in selected_keys:
-                obj.hidden = True
-        for key, obj in hidden.items():
+                for obj in objs:
+                    obj.hidden = True
+        for key, objs in hidden.items():
             if key in selected_keys:
-                obj.hidden = False
+                for obj in objs:
+                    obj.hidden = False
 
         base_x = 50.0
         base_y = 50.0
