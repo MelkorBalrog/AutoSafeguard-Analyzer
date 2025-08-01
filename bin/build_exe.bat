@@ -45,6 +45,7 @@ if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --exclude-module scipy ^
     --hidden-import=PIL.ImageTk ^
+    --add-data "styles;styles" ^
     %ICON_ARG% AutoML.py
 if errorlevel 1 (
     echo Failed to build executable.

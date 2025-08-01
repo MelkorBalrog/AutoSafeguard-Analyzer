@@ -34,7 +34,8 @@ rm -f AutoML.spec
 pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
     --exclude-module scipy \
-    --hidden-import=PIL.ImageTk AutoML.py
+    --hidden-import=PIL.ImageTk \
+    --add-data "styles:styles" AutoML.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin
