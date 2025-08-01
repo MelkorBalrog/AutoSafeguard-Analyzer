@@ -7816,56 +7816,47 @@ class FaultTreeApp:
             self.zoom_out()
 
     def new_model(self):
-        if not messagebox.askyesno("New Model", "This will close the current project and start a new one. Continue?"):
-            return
+        """Reset the application state and start a new model."""
 
-        global AutoML_Helper
+        if self.has_unsaved_changes():
+            result = messagebox.askyesnocancel(
+                "Unsaved Changes",
+                "Save changes before starting a new model?",
+            )
+            if result is None:
+                return
+            if result:
+                self.save_model()
+
+        # Close page diagrams if any
+        if hasattr(self, "page_diagram") and self.page_diagram is not None:
+            self.close_page_diagram()
+
+        # Close all open document tabs
+        for tab_id in list(self.doc_nb.tabs()):
+            self.doc_nb._closing_tab = tab_id
+            self.doc_nb.event_generate("<<NotebookTabClosed>>")
+            if tab_id in self.doc_nb.tabs():
+                try:
+                    self.doc_nb.forget(tab_id)
+                except tk.TclError:
+                    pass
+
+        # Recreate the FTA tab and canvas
+        self._create_fta_tab()
+        self.canvas.delete("all")
+
+        global AutoML_Helper, unique_node_id_counter
         AutoML_Helper = AutoMLHelper()
+        unique_node_id_counter = 1
         self.zoom = 1.0
         self.diagram_font.config(size=int(8 * self.zoom))
         self.scenario_libraries = []
         self.odd_libraries = []
         self.update_odd_elements()
 
-        # Close any open page diagrams.
-        if hasattr(self, "page_diagram") and self.page_diagram is not None:
-            self.close_page_diagram()
-
-        # Clear the tree view.
+        # Clear the explorer tree
         self.analysis_tree.delete(*self.analysis_tree.get_children())
-
-        # Destroy the old canvas_frame and re-create it.
-        if self.canvas_frame:
-            self.canvas_frame.destroy()
-        self.canvas_frame = ttk.Frame(self.main_pane)
-        self.main_pane.add(self.canvas_frame, stretch="always")
-
-        # Use grid (instead of pack) to add the canvas and scrollbars.
-        self.canvas = tk.Canvas(self.canvas_frame, bg="white")
-        self.canvas.grid(row=0, column=0, sticky="nsew")
-        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        self.hbar.grid(row=1, column=0, sticky="ew")
-        self.vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.vbar.grid(row=0, column=1, sticky="ns")
-        self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set,
-                           scrollregion=(0, 0, 2000, 2000))
-        
-        # Configure grid weights so that the canvas expands.
-        self.canvas_frame.rowconfigure(0, weight=1)
-        self.canvas_frame.columnconfigure(0, weight=1)
-
-        # Rebind canvas events.
-        self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
-        self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-        self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
-
-        global unique_node_id_counter
-        unique_node_id_counter = 1
         self.top_events = []
         self.root_node = None
         self.selected_node = None

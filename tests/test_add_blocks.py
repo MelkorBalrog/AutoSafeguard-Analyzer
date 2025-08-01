@@ -5,17 +5,22 @@ from gui.architecture import BlockDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
 
 class DummyWindow:
+    _add_block_relationships = BlockDiagramWindow._add_block_relationships
+
     def __init__(self, diagram):
         self.repo = SysMLRepository.get_instance()
         self.diagram_id = diagram.diag_id
         self.objects = []
         self.connections = []
         self.app = None
+
     def _sync_to_repository(self):
         diag = self.repo.diagrams[self.diagram_id]
         diag.objects = [obj.__dict__ for obj in self.objects]
+
     def redraw(self):
         pass
+
     def ensure_text_fits(self, obj):
         pass
 
