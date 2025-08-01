@@ -198,6 +198,11 @@ class RepositoryTests(unittest.TestCase):
         d2 = self.repo.create_diagram("Use Case Diagram", name="UC")
         self.assertNotEqual(d1.name, d2.name)
 
+    def test_unique_element_names(self):
+        e1 = self.repo.create_element("Block", name="Dup")
+        e2 = self.repo.create_element("Actor", name="Dup")
+        self.assertNotEqual(e1.name, e2.name)
+
     def test_to_from_dict(self):
         diag = self.repo.create_diagram("Use Case Diagram", name="UC")
         actor = self.repo.create_element("Actor", name="User")

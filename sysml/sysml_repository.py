@@ -97,12 +97,29 @@ class SysMLRepository:
             cls._instance = SysMLRepository()
         return cls._instance
 
+    def ensure_unique_element_name(self, name: str, self_elem_id: str | None = None) -> str:
+        """Return a unique element name based on *name* across all elements."""
+        if not name:
+            return name
+        existing = {
+            e.name
+            for eid, e in self.elements.items()
+            if eid != self_elem_id and e.name
+        }
+        base = name
+        suffix = 1
+        while name in existing:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        return name
+
     def create_element(self, elem_type: str, name: str = "", properties: Optional[Dict[str, str]] = None, owner: Optional[str] = None) -> SysMLElement:
         elem_id = str(uuid.uuid4())
+        unique_name = self.ensure_unique_element_name(name) if name else name
         elem = SysMLElement(
             elem_id,
             elem_type,
-            name,
+            unique_name,
             properties or {},
             owner=owner,
             author=user_config.CURRENT_USER_NAME,

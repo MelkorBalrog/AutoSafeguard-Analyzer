@@ -429,6 +429,7 @@ def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     if not block or block.elem_type != "Block":
         return
     old_name = block.name
+    new_name = repo.ensure_unique_element_name(new_name, block_id)
     if old_name == new_name:
         return
     block.name = new_name
@@ -738,7 +739,9 @@ def add_multiplicity_parts(
     for idx, obj in enumerate(existing):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
-            expected = f"{base_name}[{idx + 1}]"
+            expected = repo.ensure_unique_element_name(
+                f"{base_name}[{idx + 1}]", elem.elem_id
+            )
             if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
@@ -781,7 +784,9 @@ def add_multiplicity_parts(
     for idx, obj in enumerate(all_objs):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
-            expected = f"{base_name}[{idx + 1}]"
+            expected = repo.ensure_unique_element_name(
+                f"{base_name}[{idx + 1}]", elem.elem_id
+            )
             if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
@@ -2132,7 +2137,7 @@ def propagate_block_part_changes(repo: SysMLRepository, block_id: str) -> None:
     for elem in repo.elements.values():
         if elem.elem_type != "Part" or elem.properties.get("definition") != block_id:
             continue
-        elem.name = block.name
+        elem.name = repo.ensure_unique_element_name(block.name, elem.elem_id)
 
         for prop in props:
             if prop in block.properties:
@@ -6231,6 +6236,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         if parent_id and _part_name_exists(repo, parent_id, new_name, self.obj.element_id):
             messagebox.showinfo("Add Part", "A part with that name already exists")
             new_name = self.obj.properties.get("name", "")
+        new_name = repo.ensure_unique_element_name(new_name, self.obj.element_id)
         self.obj.properties["name"] = new_name
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
@@ -7564,6 +7570,7 @@ class ArchitectureManagerDialog(tk.Frame):
             if elem:
                 name = simpledialog.askstring("Rename", "Name:", initialvalue=elem.name)
                 if name:
+                    name = self.repo.ensure_unique_element_name(name, elem.elem_id)
                     if elem.elem_type == "Block":
                         rename_block(self.repo, elem.elem_id, name)
                     else:

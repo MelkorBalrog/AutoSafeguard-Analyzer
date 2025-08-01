@@ -271,7 +271,7 @@ class InheritPartsTests(unittest.TestCase):
         self.assertTrue(
             any(
                 o.get("obj_type") == "Part"
-                and repo.elements[o.get("element_id")].name == "B"
+                and repo.elements[o.get("element_id")].name.startswith("B")
                 and o.get("properties", {}).get("definition") == part_blk.elem_id
                 for o in ibd.objects
             )
