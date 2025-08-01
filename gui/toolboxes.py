@@ -1,6 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import ttk, filedialog, simpledialog
+from gui import messagebox
 import csv
 import copy
 import textwrap

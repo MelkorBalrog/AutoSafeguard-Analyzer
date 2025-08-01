@@ -5,7 +5,6 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from tkinter import messagebox
 
-
 class _LogWindow:
     """Bottom panel used to display log messages."""
 
