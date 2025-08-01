@@ -226,7 +226,8 @@ import re
 import math
 import sys
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import ttk, filedialog, simpledialog
+from gui import messagebox, logger
 from gui.tooltip import ToolTip
 from gui.review_toolbox import (
     ReviewToolbox,
@@ -2135,7 +2136,9 @@ class FaultTreeApp:
         root.bind("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
-        self.main_pane.pack(fill=tk.BOTH, expand=True)
+        self.log_frame = logger.init_log_window(root)
+        self.log_frame.pack(side=tk.BOTTOM, fill=tk.BOTH)
+        self.main_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.explorer_nb = ttk.Notebook(self.main_pane)
         self.main_pane.add(self.explorer_nb, width=300)

@@ -17,7 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import tkinter as tk
-from tkinter import simpledialog, messagebox, ttk
+from tkinter import simpledialog, ttk
+from gui import messagebox
 from dataclasses import dataclass, field
 from typing import List
 import difflib
