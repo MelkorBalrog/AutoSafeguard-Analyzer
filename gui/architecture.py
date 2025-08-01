@@ -6948,7 +6948,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
                 self.connections.append(conn)
                 diag.connections.append(conn.__dict__)
                 repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
-        
+
     def add_blocks(self) -> None:
         repo = self.repo
         diag = repo.diagrams.get(self.diagram_id)

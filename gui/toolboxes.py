@@ -338,19 +338,34 @@ class ReliabilityWindow(tk.Frame):
             "type": list(COMPONENT_ATTR_TEMPLATES.keys()),
             "qualification": QUALIFICATIONS,
         }
+
+        tree_frame = ttk.Frame(self)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+
         self.tree = EditableTreeview(
-            self,
+            tree_frame,
             columns=("name", "type", "qty", "fit", "qualification"),
             show="headings",
             style="Reliability.Treeview",
             column_options=column_opts,
             edit_callback=self.on_cell_edit,
+            height=6,
         )
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
         for col in ("name", "type", "qty", "fit", "qualification"):
             heading = "Qualification" if col == "qualification" else col.capitalize()
             self.tree.heading(col, text=heading)
             self.tree.column(col, width=120 if col == "qualification" else 100)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.columnconfigure(0, weight=1)
+        tree_frame.rowconfigure(0, weight=1)
+
         self.tree.bind("<<TreeviewSelect>>", self.show_formula)
 
         btn_frame = ttk.Frame(self)
@@ -368,6 +383,11 @@ class ReliabilityWindow(tk.Frame):
         )
         cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(cfg_btn, "Edit parameters of the selected component.")
+        del_comp_btn = ttk.Button(
+            btn_frame, text="Delete Component", command=self.delete_component
+        )
+        del_comp_btn.pack(side=tk.LEFT, padx=2, pady=2)
+        ToolTip(del_comp_btn, "Remove the selected component from the table.")
         calc_btn = ttk.Button(
             btn_frame, text="Calculate FIT", command=self.calculate_fit
         )
@@ -675,6 +695,15 @@ class ReliabilityWindow(tk.Frame):
 
         ParamDialog(self)
         self.refresh_tree()
+
+    def delete_component(self):
+        sel = self.tree.selection()
+        for iid in sel:
+            idx = self.tree.index(iid)
+            if idx < len(self.components):
+                del self.components[idx]
+        self.refresh_tree()
+        self.formula_label.config(text="")
 
     def calculate_fit(self):
         prof_name = self.profile_var.get()
@@ -1672,7 +1701,13 @@ class HazopWindow(tk.Frame):
             ToolTip(scen_lbl, "Operational scenario associated with this function.")
             scenarios = []
             for lib in self.app.scenario_libraries:
-                scenarios.extend(lib.get("scenarios", []))
+                for sc in lib.get("scenarios", []):
+                    if isinstance(sc, dict):
+                        name = sc.get("name", "")
+                    else:
+                        name = sc
+                    if name:
+                        scenarios.append(name)
             self.scen = tk.StringVar(value=self.row.scenario)
             scen_cb = ttk.Combobox(
                 master, textvariable=self.scen, values=scenarios, state="readonly"
@@ -2131,9 +2166,22 @@ class HaraWindow(tk.Frame):
                                     e.hazard
                                 )
                             if e.scenario:
-                                scenarios_map.setdefault(e.malfunction, []).append(
-                                    e.scenario
-                                )
+                                scen_name = e.scenario
+                                if isinstance(scen_name, dict):
+                                    scen_name = scen_name.get("name", "")
+                                elif isinstance(scen_name, str) and scen_name.strip().startswith("{"):
+                                    import ast
+
+                                    try:
+                                        val = ast.literal_eval(scen_name)
+                                        if isinstance(val, dict):
+                                            scen_name = val.get("name", scen_name)
+                                    except Exception:
+                                        pass
+                                if scen_name:
+                                    scenarios_map.setdefault(e.malfunction, []).append(
+                                        scen_name
+                                    )
             malfs = sorted(malfs)
             goals = [
                 te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
@@ -2149,7 +2197,7 @@ class HaraWindow(tk.Frame):
             self.haz = tk.Text(master, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=1, column=1)
-            ttk.Label(master, text="Scenario").grid(row=2, column=0, sticky="e")
+            ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
             scen_names = self.app.get_all_scenario_names()
             self.scen_var = tk.StringVar(value=getattr(self.row, "scenario", ""))
             scen_cb = ttk.Combobox(
@@ -2212,6 +2260,30 @@ class HaraWindow(tk.Frame):
                 master, textvariable=self.sg_var, values=goals, state="readonly"
             ).grid(row=10, column=1)
 
+            def recalc(_=None):
+                try:
+                    s = int(self.sev_var.get())
+                    c = int(self.cont_var.get())
+                    e = int(self.exp_var.get())
+                except ValueError:
+                    self.asil_var.set("QM")
+                    return
+                self.asil_var.set(calc_asil(s, c, e))
+
+
+            sev_cb.bind("<<ComboboxSelected>>", recalc)
+            cont_cb.bind("<<ComboboxSelected>>", recalc)
+            exp_cb.bind("<<ComboboxSelected>>", recalc)
+
+            def update_exposure(_=None):
+                scen = self.scen_var.get()
+                if scen:
+                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
+                recalc()
+
+            scen_cb.bind("<<ComboboxSelected>>", update_exposure)
+            update_exposure()
+
             def auto_hazard(_=None):
                 mal = self.mal_var.get()
                 if not mal:
@@ -2232,30 +2304,6 @@ class HaraWindow(tk.Frame):
 
             mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
             auto_hazard()
-
-            def recalc(_=None):
-                try:
-                    s = int(self.sev_var.get())
-                    c = int(self.cont_var.get())
-                    e = int(self.exp_var.get())
-                except ValueError:
-                    self.asil_var.set("QM")
-                    return
-                self.asil_var.set(calc_asil(s, c, e))
-
-            sev_cb.bind("<<ComboboxSelected>>", recalc)
-            cont_cb.bind("<<ComboboxSelected>>", recalc)
-            exp_cb.bind("<<ComboboxSelected>>", recalc)
-            recalc()
-
-            def update_exposure(_=None):
-                scen = self.scen_var.get()
-                if scen:
-                    self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
-                recalc()
-
-            scen_cb.bind("<<ComboboxSelected>>", update_exposure)
-            update_exposure()
 
         def apply(self):
             old_mal = self.row.malfunction
@@ -2329,6 +2377,17 @@ class HaraWindow(tk.Frame):
                     return
             else:
                 setattr(entry, column, value)
+            if column == "scenario":
+                try:
+                    entry.exposure = int(self.app.get_scenario_exposure(value))
+                except (TypeError, ValueError):
+                    entry.exposure = 1
+            entry.asil = calc_asil(entry.severity, entry.controllability, entry.exposure)
+            if self.app.active_hara:
+                self.app.active_hara.status = "draft"
+                self.app.active_hara.approved = False
+                self.app.invalidate_reviews_for_hara(self.app.active_hara.name)
+                self.status_lbl.config(text=f"Status: {self.app.active_hara.status}")
         self.refresh()
 
     def approve_doc(self):
