@@ -4640,6 +4640,56 @@ class SysMLDiagramWindow(tk.Frame):
             tags=tags,
         )
 
+    def _draw_line_arrow(
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        color: str = "black",
+        width: int = 1,
+        tags: str = "connection",
+    ) -> None:
+        """Draw an open arrow using only line segments.
+
+        The arrow head is composed of two lines so that the center line of
+        the connection meets the arrow tip directly, providing a cleaner
+        look for port direction indicators.
+        """
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        # Use a tiny arrow head so the indicator does not dwarf the port.
+        size = 3 * self.zoom
+        angle = math.atan2(dy, dx)
+        spread = math.radians(20)
+        p1 = (
+            end[0] - size * math.cos(angle - spread),
+            end[1] - size * math.sin(angle - spread),
+        )
+        p2 = (
+            end[0] - size * math.cos(angle + spread),
+            end[1] - size * math.sin(angle + spread),
+        )
+        self.canvas.create_line(
+            end[0],
+            end[1],
+            p1[0],
+            p1[1],
+            fill=color,
+            width=width,
+            tags=tags,
+        )
+        self.canvas.create_line(
+            end[0],
+            end[1],
+            p2[0],
+            p2[1],
+            fill=color,
+            width=width,
+            tags=tags,
+        )
+
     def _draw_filled_arrow(
         self,
         start: Tuple[float, float],
