@@ -252,6 +252,133 @@ def _parse_multiplicity_range(mult: str) -> tuple[int, int | None]:
     return 1, None
 
 
+def _is_default_part_name(def_name: str, part_name: str) -> bool:
+    """Return ``True`` if *part_name* is derived from ``def_name``."""
+
+    if not part_name:
+        return True
+    if part_name == def_name:
+        return True
+    pattern = re.escape(def_name) + r"\[\d+\]$"
+    return re.fullmatch(pattern, part_name) is not None
+
+
+def _multiplicity_limit_exceeded(
+    repo: SysMLRepository,
+    parent_id: str,
+    def_id: str,
+    diagram_objects: list,
+    self_elem_id: str | None = None,
+) -> bool:
+    """Return ``True`` if assigning *def_id* would exceed multiplicity."""
+
+    rels = [
+        r
+        for r in repo.relationships
+        if r.source == parent_id
+        and r.target == def_id
+        and r.rel_type in ("Aggregation", "Composite Aggregation")
+    ]
+    if not rels:
+        return False
+
+    limit: int | None = 0
+    for rel in rels:
+        mult = rel.properties.get("multiplicity", "")
+        if not mult:
+            limit = None
+            break
+        low, high = _parse_multiplicity_range(mult)
+        if high is None:
+            limit = None
+            break
+        limit += high
+
+    if limit is None:
+        return False
+
+    # gather all diagrams containing parts for this block
+    diag_ids: set[str] = set()
+    linked = repo.get_linked_diagram(parent_id)
+    if linked:
+        diag_ids.add(linked)
+    for d in repo.diagrams.values():
+        if d.diag_type != "Internal Block Diagram":
+            continue
+        for o in getattr(d, "objects", []):
+            if o.get("obj_type") == "Block Boundary" and o.get("element_id") == parent_id:
+                diag_ids.add(d.diag_id)
+                break
+
+    seen: set[str] = set()
+    count = 0
+    for did in diag_ids:
+        diag = repo.diagrams.get(did)
+        if not diag:
+            continue
+        for o in getattr(diag, "objects", []):
+            if (
+                o.get("obj_type") == "Part"
+                and o.get("properties", {}).get("definition") == def_id
+            ):
+                elem_id = o.get("element_id")
+                if elem_id != self_elem_id and elem_id not in seen:
+                    seen.add(elem_id)
+                    count += 1
+
+    for obj in diagram_objects:
+        data = obj.__dict__ if hasattr(obj, "__dict__") else obj
+        if (
+            data.get("obj_type") == "Part"
+            and data.get("properties", {}).get("definition") == def_id
+        ):
+            elem_id = data.get("element_id")
+            if elem_id != self_elem_id and elem_id not in seen:
+                seen.add(elem_id)
+                count += 1
+
+    return count >= limit
+
+
+def _part_name_exists(
+    repo: SysMLRepository,
+    parent_id: str,
+    name: str,
+    self_elem_id: str | None = None,
+) -> bool:
+    """Return ``True`` if another part with ``name`` already exists."""
+
+    if not name:
+        return False
+
+    diag_ids: set[str] = set()
+    linked = repo.get_linked_diagram(parent_id)
+    if linked:
+        diag_ids.add(linked)
+    for d in repo.diagrams.values():
+        if d.diag_type != "Internal Block Diagram":
+            continue
+        for o in getattr(d, "objects", []):
+            if o.get("obj_type") == "Block Boundary" and o.get("element_id") == parent_id:
+                diag_ids.add(d.diag_id)
+                break
+
+    for did in diag_ids:
+        diag = repo.diagrams.get(did)
+        if not diag:
+            continue
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") != "Part":
+                continue
+            if obj.get("element_id") == self_elem_id:
+                continue
+            elem_id = obj.get("element_id")
+            if elem_id in repo.elements and repo.elements[elem_id].name == name:
+                return True
+
+    return False
+
+
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
     children: set[str] = set()
@@ -556,45 +683,6 @@ def add_multiplicity_parts(
         if high is not None and target_total > high:
             target_total = high
 
-    if total > target_total:
-        # remove excess parts starting from the end of the list
-        for obj in existing[target_total:]:
-            diag.objects.remove(obj)
-            elem_id = obj.get("element_id")
-            if elem_id in repo.elements:
-                repo.delete_element(elem_id)
-            if app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag.diag_id:
-                        win.objects = [
-                            o
-                            for o in win.objects
-                            if getattr(o, "obj_id", None) != obj.get("obj_id")
-                        ]
-                        win.redraw()
-                        win._sync_to_repository()
-        existing = existing[:target_total]
-        total = len(existing)
-
-    if total > target_total:
-        # remove excess parts starting from the end of the list
-        for obj in existing[target_total:]:
-            diag.objects.remove(obj)
-            elem_id = obj.get("element_id")
-            if elem_id in repo.elements:
-                repo.delete_element(elem_id)
-            if app:
-                for win in getattr(app, "ibd_windows", []):
-                    if getattr(win, "diagram_id", None) == diag.diag_id:
-                        win.objects = [
-                            o
-                            for o in win.objects
-                            if getattr(o, "obj_id", None) != obj.get("obj_id")
-                        ]
-                        win.redraw()
-                        win._sync_to_repository()
-        existing = existing[:target_total]
-        total = len(existing)
 
     added: list[dict] = []
     base_name = repo.elements.get(part_id).name or part_id
@@ -616,13 +704,23 @@ def add_multiplicity_parts(
         ]
         existing = existing[:target_total]
         total = target_total
+        if app:
+            for win in getattr(app, "ibd_windows", []):
+                if getattr(win, "diagram_id", None) == diag.diag_id:
+                    win.objects = [
+                        o
+                        for o in win.objects
+                        if getattr(o, "obj_id", None) not in remove_ids
+                    ]
+                    win.redraw()
+                    win._sync_to_repository()
 
-    # rename remaining part elements so their names follow the indexing scheme
+    # rename remaining part elements if they still have default names
     for idx, obj in enumerate(existing):
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
             expected = f"{base_name}[{idx + 1}]"
-            if elem.name != expected:
+            if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
     base_x = 50.0
@@ -665,7 +763,7 @@ def add_multiplicity_parts(
         elem = repo.elements.get(obj.get("element_id"))
         if elem:
             expected = f"{base_name}[{idx + 1}]"
-            if elem.name != expected:
+            if _is_default_part_name(base_name, elem.name) and elem.name != expected:
                 elem.name = expected
 
     return added
@@ -3835,11 +3933,18 @@ class SysMLDiagramWindow(tk.Frame):
             return []
 
         name = obj.properties.get("name", "")
-        if not name and obj.element_id and obj.element_id in self.repo.elements:
+        has_name = False
+        def_id = obj.properties.get("definition")
+        if obj.element_id and obj.element_id in self.repo.elements:
             elem = self.repo.elements[obj.element_id]
-            name = elem.name or elem.properties.get("component", obj.obj_type)
-        if not name:
-            name = obj.obj_type
+            name = elem.name or elem.properties.get("component", "")
+            def_id = def_id or elem.properties.get("definition")
+            def_name = ""
+            if def_id and def_id in self.repo.elements:
+                def_name = self.repo.elements[def_id].name or def_id
+            has_name = bool(name) and not _is_default_part_name(def_name, name)
+        if not has_name:
+            name = ""
         if obj.obj_type == "Part":
             asil = calculate_allocated_asil(obj.requirements)
             if obj.properties.get("asil") != asil:
@@ -3848,6 +3953,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo.elements[obj.element_id].properties["asil"] = asil
             def_id = obj.properties.get("definition")
             mult = None
+            comp = obj.properties.get("component", "")
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
                 diag = self.repo.diagrams.get(self.diagram_id)
@@ -3880,6 +3986,10 @@ class SysMLDiagramWindow(tk.Frame):
                 if index is not None:
                     base = f"{base} {index}"
                 name = base
+                if obj.element_id and obj.element_id in self.repo.elements and not comp:
+                    comp = self.repo.elements[obj.element_id].properties.get("component", "")
+                if comp and comp == def_name:
+                    comp = ""
                 if mult:
                     if ".." in mult:
                         upper = mult.split("..", 1)[1] or "*"
@@ -3888,8 +3998,15 @@ class SysMLDiagramWindow(tk.Frame):
                         disp = f"{index or 1}..*"
                     else:
                         disp = f"{index or 1}..{mult}"
-                    def_name = f"{def_name} [{disp}]"
-                name = f"{name} : {def_name}" if name else def_name
+                    def_part = f"{def_name} [{disp}]"
+                else:
+                    def_part = def_name
+                if comp:
+                    def_part = f"{comp} / {def_part}"
+                if name and def_part != name:
+                    name = f"{name} : {def_part}"
+                elif not name:
+                    name = f" : {def_part}"
 
         lines: list[str] = []
         diag_id = self.repo.get_linked_diagram(obj.element_id)
@@ -5766,9 +5883,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
             cur_id = self.obj.properties.get("definition", "")
             cur_name = next((n for n, i in idmap.items() if i == cur_id), "")
             self.def_var = tk.StringVar(value=cur_name)
-            ttk.Combobox(link_frame, textvariable=self.def_var, values=list(idmap.keys())).grid(
-                row=link_row, column=1, padx=4, pady=2
+            self.def_cb = ttk.Combobox(
+                link_frame, textvariable=self.def_var, values=list(idmap.keys())
             )
+            self.def_cb.grid(row=link_row, column=1, padx=4, pady=2)
+            self.def_cb.bind("<<ComboboxSelected>>", self._on_def_selected)
+            self._current_def_id = cur_id
             link_row += 1
 
         # Requirement allocation section
@@ -6007,10 +6127,59 @@ class SysMLObjectDialog(simpledialog.Dialog):
                         modes.add(label)
         return ", ".join(sorted(modes))
 
+    def _on_def_selected(self, event=None):
+        """Callback when the definition combobox is changed."""
+        repo = SysMLRepository.get_instance()
+        name = self.def_var.get()
+        def_id = self.def_map.get(name)
+        if not def_id:
+            self._current_def_id = ""
+            return
+
+        parent_id = None
+        if hasattr(self.master, "diagram_id"):
+            diag = repo.diagrams.get(self.master.diagram_id)
+            if diag and diag.diag_type == "Internal Block Diagram":
+                parent_id = getattr(diag, "father", None) or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                    None,
+                )
+
+        if parent_id and _multiplicity_limit_exceeded(
+            repo,
+            parent_id,
+            def_id,
+            getattr(self.master, "objects", []),
+            self.obj.element_id,
+        ):
+            messagebox.showinfo(
+                "Add Part",
+                "Maximum number of parts of that type has been reached",
+            )
+            prev_name = next(
+                (n for n, i in self.def_map.items() if i == self._current_def_id),
+                "",
+            )
+            self.def_var.set(prev_name)
+            return
+
+        self._current_def_id = def_id
+
     def apply(self):
         new_name = self.name_var.get()
-        self.obj.properties["name"] = new_name
         repo = SysMLRepository.get_instance()
+        parent_id = None
+        if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
+            diag = repo.diagrams.get(self.master.diagram_id)
+            if diag and diag.diag_type == "Internal Block Diagram":
+                parent_id = getattr(diag, "father", None) or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                    None,
+                )
+        if parent_id and _part_name_exists(repo, parent_id, new_name, self.obj.element_id):
+            messagebox.showinfo("Add Part", "A part with that name already exists")
+            new_name = self.obj.properties.get("name", "")
+        self.obj.properties["name"] = new_name
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
             if self.obj.obj_type in ("Block", "Block Boundary") and elem.elem_type == "Block":
@@ -6170,9 +6339,42 @@ class SysMLObjectDialog(simpledialog.Dialog):
             name = self.def_var.get()
             def_id = self.def_map.get(name)
             if def_id:
-                self.obj.properties["definition"] = def_id
-                if self.obj.element_id and self.obj.element_id in repo.elements:
-                    repo.elements[self.obj.element_id].properties["definition"] = def_id
+                parent_id = None
+                if hasattr(self.master, "diagram_id"):
+                    diag = repo.diagrams.get(self.master.diagram_id)
+                    if diag and diag.diag_type == "Internal Block Diagram":
+                        parent_id = getattr(diag, "father", None) or next(
+                            (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                            None,
+                        )
+                if parent_id:
+                    rel = next(
+                        (
+                            r
+                            for r in repo.relationships
+                            if r.source == parent_id
+                            and r.target == def_id
+                            and r.rel_type in ("Aggregation", "Composite Aggregation")
+                        ),
+                        None,
+                    )
+                    limit_exceeded = _multiplicity_limit_exceeded(
+                        repo,
+                        parent_id,
+                        def_id,
+                        getattr(self.master, "objects", []),
+                        self.obj.element_id,
+                    )
+                    if limit_exceeded:
+                        messagebox.showinfo(
+                            "Add Part",
+                            "Maximum number of parts of that type has been reached",
+                        )
+                        def_id = None
+                if def_id:
+                    self.obj.properties["definition"] = def_id
+                    if self.obj.element_id and self.obj.element_id in repo.elements:
+                        repo.elements[self.obj.element_id].properties["definition"] = def_id
         if hasattr(self, "ucdef_var"):
             name = self.ucdef_var.get()
             def_id = self.ucdef_map.get(name)
@@ -6549,19 +6751,23 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
     def _get_part_name(self, obj: SysMLObject) -> str:
         repo = self.repo
         name = ""
+        has_name = False
+        def_id = obj.properties.get("definition")
         if obj.element_id and obj.element_id in repo.elements:
             elem = repo.elements[obj.element_id]
             name = elem.name or elem.properties.get("component", "")
-        if not name:
-            def_id = obj.properties.get("definition")
+            def_id = def_id or elem.properties.get("definition")
+            def_name = ""
             if def_id and def_id in repo.elements:
-                name = repo.elements[def_id].name or def_id
-        if not name:
+                def_name = repo.elements[def_id].name or def_id
+            has_name = bool(name) and not _is_default_part_name(def_name, name)
+        if not has_name:
             name = obj.properties.get("component", "")
 
         def_id = obj.properties.get("definition")
         def_name = ""
         mult = ""
+        comp = obj.properties.get("component", "")
         if def_id and def_id in repo.elements:
             def_name = repo.elements[def_id].name or def_id
             diag = repo.diagrams.get(self.diagram_id)
@@ -6582,6 +6788,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                         mult = rel.properties.get("multiplicity", "")
                         break
 
+        if obj.element_id and obj.element_id in repo.elements and not comp:
+            comp = repo.elements[obj.element_id].properties.get("component", "")
+        if comp and comp == def_name:
+            comp = ""
+
         base = name
         index = None
         m = re.match(r"^(.*)\[(\d+)\]$", name)
@@ -6600,9 +6811,15 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     disp = f"{index or 1}..*"
                 else:
                     disp = f"{index or 1}..{mult}"
-                label = f"{label} : {def_name} [{disp}]"
-            elif def_name != base:
-                label = f"{label} : {def_name}"
+                def_part = f"{def_name} [{disp}]"
+            else:
+                def_part = def_name
+            if comp:
+                def_part = f"{comp} / {def_part}"
+            if label and def_part != label:
+                label = f"{label} : {def_part}"
+            elif not label:
+                label = f" : {def_part}"
 
         return label
 
@@ -6649,10 +6866,13 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         # existing parts on the diagram
         visible: dict[str, SysMLObject] = {}
         hidden: dict[str, SysMLObject] = {}
+        def_objs: dict[str, list[SysMLObject]] = {}
         for obj in self.objects:
             if obj.obj_type != "Part":
                 continue
             key = getattr(self, "_get_part_key", self._get_part_name)(obj)
+            def_id = obj.properties.get("definition")
+            def_objs.setdefault(def_id or "", []).append(obj)
             if getattr(obj, "hidden", False):
                 hidden[key] = obj
             else:
@@ -6678,12 +6898,40 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         visible_names = {display_map[k] for k in visible}
         hidden_names = {display_map[k] for k in hidden}
 
+        placeholder_map: dict[str, tuple[str, str]] = {}
+        for rel in repo.relationships:
+            if rel.rel_type in ("Aggregation", "Composite Aggregation") and rel.source == block_id:
+                mult = rel.properties.get("multiplicity", "")
+                if not mult:
+                    continue
+                target = rel.target
+                low, high = _parse_multiplicity_range(mult)
+                expected = high if high is not None else low
+                existing = def_objs.get(target, [])
+                for i in range(len(existing), expected):
+                    def_name = repo.elements[target].name or target
+                    if ".." in mult:
+                        upper = mult.split("..", 1)[1] or "*"
+                        disp = f"{i+1}..{upper}"
+                    elif mult == "*":
+                        disp = f"{i+1}..*"
+                    elif mult.isdigit() and mult == str(expected):
+                        disp = mult
+                    else:
+                        disp = f"{i+1}..{mult}"
+                    label = f" : {def_name} [{disp}]"
+                    placeholder_map[label] = (target, mult)
+                    names_list.append(label)
+
         dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
         selected = dlg.result or []
-        selected_keys = { _part_prop_key(n) for n in selected }
+        selected_keys = { _part_prop_key(n) for n in selected if n not in placeholder_map }
+        selected_placeholders = [placeholder_map[n] for n in selected if n in placeholder_map]
 
         to_add_comps = [c for c in comps if _part_prop_key(c.name) in selected_keys and _part_prop_key(c.name) not in visible and _part_prop_key(c.name) not in hidden]
         to_add_names = [n for n in part_names if _part_prop_key(n) in selected_keys and _part_prop_key(n) not in visible and _part_prop_key(n) not in hidden]
+        for def_id, mult in selected_placeholders:
+            add_multiplicity_parts(repo, block_id, def_id, mult, count=1, app=getattr(self, "app", None))
 
         for key, obj in visible.items():
             if key not in selected_keys:
