@@ -6900,6 +6900,110 @@ class BlockDiagramWindow(SysMLDiagramWindow):
             "Composite Aggregation",
         ]
         super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
+        ttk.Button(
+            self.toolbox,
+            text="Add Blocks",
+            command=self.add_blocks,
+        ).pack(fill=tk.X, padx=2, pady=2)
+
+    def _add_block_relationships(self) -> None:
+        """Add connections for any existing relationships between blocks."""
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        obj_map = {
+            o.element_id: o.obj_id
+            for o in self.objects
+            if o.obj_type == "Block" and o.element_id
+        }
+        existing = {
+            (c.src, c.dst, c.conn_type)
+            for c in self.connections
+        } | {
+            (c.dst, c.src, c.conn_type)
+            for c in self.connections
+        }
+        for rel in repo.relationships:
+            if rel.rel_type not in (
+                "Association",
+                "Generalization",
+                "Aggregation",
+                "Composite Aggregation",
+            ):
+                continue
+            if rel.source in obj_map and rel.target in obj_map:
+                src_id = obj_map[rel.source]
+                dst_id = obj_map[rel.target]
+                if (src_id, dst_id, rel.rel_type) in existing:
+                    continue
+                if (dst_id, src_id, rel.rel_type) in existing:
+                    continue
+                conn = DiagramConnection(
+                    src_id,
+                    dst_id,
+                    rel.rel_type,
+                    arrow="forward" if rel.rel_type == "Generalization" else "none",
+                )
+                self.connections.append(conn)
+                diag.connections.append(conn.__dict__)
+                repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+        
+    def add_blocks(self) -> None:
+        repo = self.repo
+        diag = repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        existing = {
+            o.element_id
+            for o in self.objects
+            if o.obj_type == "Block" and o.element_id
+        }
+        candidates = set()
+        for d in repo.diagrams.values():
+            if d.diag_type != "Block Diagram" or d.diag_id == self.diagram_id:
+                continue
+            for obj in getattr(d, "objects", []):
+                if obj.get("obj_type") == "Block" and obj.get("element_id"):
+                    candidates.add(obj["element_id"])
+        names = []
+        id_map = {}
+        for bid in candidates:
+            if bid in existing or bid not in repo.elements:
+                continue
+            name = repo.elements[bid].name or bid
+            names.append(name)
+            id_map[name] = bid
+        if not names:
+            messagebox.showinfo("Add Blocks", "No blocks available")
+            return
+        dlg = SysMLObjectDialog.SelectNamesDialog(self, names, title="Add Blocks")
+        selected = dlg.result or []
+        if not selected:
+            return
+        base_x = 50.0
+        base_y = 50.0
+        offset = 180.0
+        for idx, name in enumerate(selected):
+            blk_id = id_map.get(name)
+            if not blk_id:
+                continue
+            repo.add_element_to_diagram(self.diagram_id, blk_id)
+            obj = SysMLObject(
+                _get_next_id(),
+                "Block",
+                base_x,
+                base_y + offset * idx,
+                element_id=blk_id,
+                width=160.0,
+                height=140.0,
+                properties={"name": repo.elements[blk_id].name or blk_id},
+            )
+            diag.objects.append(obj.__dict__)
+            self.objects.append(obj)
+        self._add_block_relationships()
+        self.redraw()
+        self._sync_to_repository()
 
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
