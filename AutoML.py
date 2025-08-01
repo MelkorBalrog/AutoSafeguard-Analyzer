@@ -8132,18 +8132,18 @@ class FaultTreeApp:
 
     def get_scenario_exposure(self, name: str) -> int:
         """Return exposure level for the given scenario name."""
-        name = (name or "").strip()
+        name = (name or "").strip().lower()
         for lib in self.scenario_libraries:
             for sc in lib.get("scenarios", []):
                 if isinstance(sc, dict):
-                    sc_name = (sc.get("name", "") or "").strip()
+                    sc_name = (sc.get("name", "") or "").strip().lower()
                     if sc_name == name:
                         try:
                             return int(sc.get("exposure", 1))
                         except (TypeError, ValueError):
                             return 1
                 else:
-                    if str(sc).strip() == name:
+                    if str(sc).strip().lower() == name:
                         return 1
         return 1
 
