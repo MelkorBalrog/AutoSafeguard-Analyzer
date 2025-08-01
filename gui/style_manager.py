@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 
-_DEFAULT_STYLE = os.path.join(os.path.dirname(__file__), '..', 'styles', 'modern.xml')
+_DEFAULT_STYLE = os.path.join(os.path.dirname(__file__), '..', 'styles', 'pastel.xml')
 
 class StyleManager:
     """Singleton manager for diagram styles loaded from XML files."""

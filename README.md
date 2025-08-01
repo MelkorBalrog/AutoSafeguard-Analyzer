@@ -931,9 +931,9 @@ prompt instead so any error messages remain visible.
 ## Diagram Styles
 
 Several XML files in the `styles` directory control the colors used for
-diagram elements. The default `modern.xml` uses a Material-inspired palette.
-`pastel.xml` provides softer tones like peach actions and steel-blue nodes.
-Open the Style Editor via **View → Style Editor**, click **Load** and choose
+diagram elements. The default style `pastel.xml` provides softer tones like
+peach actions and steel-blue nodes. `modern.xml` offers a Material-inspired
+palette for a different look. Open the Style Editor via **View → Style Editor**, click **Load** and choose
 the desired style. All open diagrams update immediately.
 
 ## License
