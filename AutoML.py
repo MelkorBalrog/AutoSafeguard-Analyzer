@@ -11906,13 +11906,29 @@ class FaultTreeApp:
                         info["fis"].update(fis)
                         info["tcs"].update(tcs)
 
-        # Add failure modes and faults per malfunction
+        # Add failure modes and faults per malfunction from FMEDA links
         for be in self.get_all_basic_events():
             mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
             for (hz, mal), info in rows.items():
                 if mal in mals:
                     info["failure_modes"].add(self.format_failure_mode_label(be))
                     info["faults"].update(self.get_faults_for_failure_mode(be))
+
+        # Include FTA basic events linked via their top event malfunction
+        for te in self.top_events:
+            te_mal = getattr(te, "malfunction", "").strip()
+            if not te_mal:
+                continue
+            basic_nodes = [n for n in self.get_all_nodes_table(te) if n.node_type.upper() == "BASIC EVENT"]
+            for be in basic_nodes:
+                for (hz, mal), info in rows.items():
+                    if mal == te_mal:
+                        info["failure_modes"].add(self.format_failure_mode_label(be))
+                        faults = set(self.get_faults_for_failure_mode(be))
+                        fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
+                        if fault:
+                            faults.add(fault)
+                        info["faults"].update(faults)
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
 
@@ -11983,6 +11999,7 @@ class FaultTreeApp:
         def draw_row(row):
             """Render a small network diagram for *row* on the canvas."""
             import matplotlib.pyplot as plt
+            import textwrap
             from io import BytesIO
             G = nx.DiGraph()
             haz = row["hazard"]
@@ -12003,7 +12020,25 @@ class FaultTreeApp:
                 G.add_node(tc, kind="tc")
                 G.add_edge(haz, tc)
 
-            pos = nx.spring_layout(G, seed=42)
+            # Layout from effect (hazard) on the left to root causes on the right
+            # Use generous spacing so wrapped text remains readable
+            pos = {haz: (0, 0), mal: (4, 0)}
+            y_fm = 0
+            for fm in sorted(row["failure_modes"]):
+                pos[fm] = (8, y_fm * 2)
+                y_fm += 1
+            y_fault = 0
+            for fault in sorted(row["faults"]):
+                pos[fault] = (12, y_fault * 2)
+                y_fault += 1
+            y_fi = -2
+            for fi in sorted(row["fis"]):
+                pos[fi] = (2, y_fi)
+                y_fi -= 2
+            y_tc = y_fi
+            for tc in sorted(row["tcs"]):
+                pos[tc] = (2, y_tc)
+                y_tc -= 2
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -12013,16 +12048,20 @@ class FaultTreeApp:
                 "tc": "lightgreen",
             }
             node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
-            plt.figure(figsize=(4, 3))
+            labels = {n: textwrap.fill(str(n), 20) for n in G.nodes()}
+            edge_labels = {(u, v): "caused by" for u, v in G.edges()}
+            plt.figure(figsize=(6, 4))
             nx.draw(
                 G,
                 pos,
                 with_labels=True,
+                labels=labels,
                 node_color=node_colors,
-                node_size=500,
+                node_size=1200,
                 font_size=6,
                 arrows=True,
             )
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
             plt.axis("off")
             buf = BytesIO()
             plt.savefig(buf, format="PNG", dpi=120)
