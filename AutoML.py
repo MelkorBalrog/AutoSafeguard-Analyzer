@@ -9429,6 +9429,7 @@ class FaultTreeApp:
             if fit_total > 0:
                 new_node.fmeda_fit = fit_total
                 new_node.failure_prob = self.compute_failure_prob(new_node)
+                
         new_node.x = parent_node.x + 100
         new_node.y = parent_node.y + 100
         parent_node.children.append(new_node)
@@ -10686,6 +10687,7 @@ class FaultTreeApp:
                 if desc:
                     label = f"{comp}: {desc}" if comp else desc
                     append_unique_insensitive(self.app.faults, label)
+
             self.node.description = self.mode_var.get()
             new_effect = self.effect_text.get("1.0", "end-1c")
             if self.node.fmea_effect and self.node.fmea_effect != new_effect:
