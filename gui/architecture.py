@@ -296,17 +296,86 @@ def _multiplicity_limit_exceeded(
     if limit is None:
         return False
 
+    # gather all diagrams containing parts for this block
+    diag_ids: set[str] = set()
+    linked = repo.get_linked_diagram(parent_id)
+    if linked:
+        diag_ids.add(linked)
+    for d in repo.diagrams.values():
+        if d.diag_type != "Internal Block Diagram":
+            continue
+        for o in getattr(d, "objects", []):
+            if o.get("obj_type") == "Block Boundary" and o.get("element_id") == parent_id:
+                diag_ids.add(d.diag_id)
+                break
+
+    seen: set[str] = set()
     count = 0
+    for did in diag_ids:
+        diag = repo.diagrams.get(did)
+        if not diag:
+            continue
+        for o in getattr(diag, "objects", []):
+            if (
+                o.get("obj_type") == "Part"
+                and o.get("properties", {}).get("definition") == def_id
+            ):
+                elem_id = o.get("element_id")
+                if elem_id != self_elem_id and elem_id not in seen:
+                    seen.add(elem_id)
+                    count += 1
+
     for obj in diagram_objects:
         data = obj.__dict__ if hasattr(obj, "__dict__") else obj
         if (
             data.get("obj_type") == "Part"
             and data.get("properties", {}).get("definition") == def_id
-            and data.get("element_id") != self_elem_id
         ):
-            count += 1
+            elem_id = data.get("element_id")
+            if elem_id != self_elem_id and elem_id not in seen:
+                seen.add(elem_id)
+                count += 1
 
     return count >= limit
+
+
+def _part_name_exists(
+    repo: SysMLRepository,
+    parent_id: str,
+    name: str,
+    self_elem_id: str | None = None,
+) -> bool:
+    """Return ``True`` if another part with ``name`` already exists."""
+
+    if not name:
+        return False
+
+    diag_ids: set[str] = set()
+    linked = repo.get_linked_diagram(parent_id)
+    if linked:
+        diag_ids.add(linked)
+    for d in repo.diagrams.values():
+        if d.diag_type != "Internal Block Diagram":
+            continue
+        for o in getattr(d, "objects", []):
+            if o.get("obj_type") == "Block Boundary" and o.get("element_id") == parent_id:
+                diag_ids.add(d.diag_id)
+                break
+
+    for did in diag_ids:
+        diag = repo.diagrams.get(did)
+        if not diag:
+            continue
+        for obj in getattr(diag, "objects", []):
+            if obj.get("obj_type") != "Part":
+                continue
+            if obj.get("element_id") == self_elem_id:
+                continue
+            elem_id = obj.get("element_id")
+            if elem_id in repo.elements and repo.elements[elem_id].name == name:
+                return True
+
+    return False
 
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
@@ -3883,6 +3952,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo.elements[obj.element_id].properties["asil"] = asil
             def_id = obj.properties.get("definition")
             mult = None
+            comp = obj.properties.get("component", "")
             if def_id and def_id in self.repo.elements:
                 def_name = self.repo.elements[def_id].name or def_id
                 diag = self.repo.diagrams.get(self.diagram_id)
@@ -3915,6 +3985,10 @@ class SysMLDiagramWindow(tk.Frame):
                 if index is not None:
                     base = f"{base} {index}"
                 name = base
+                if obj.element_id and obj.element_id in self.repo.elements and not comp:
+                    comp = self.repo.elements[obj.element_id].properties.get("component", "")
+                if comp and comp == def_name:
+                    comp = ""
                 if mult:
                     if ".." in mult:
                         upper = mult.split("..", 1)[1] or "*"
@@ -3926,6 +4000,8 @@ class SysMLDiagramWindow(tk.Frame):
                     def_part = f"{def_name} [{disp}]"
                 else:
                     def_part = def_name
+                if comp:
+                    def_part = f"{comp} / {def_part}"
                 if name and def_part != name:
                     name = f"{name} : {def_part}"
                 elif not name:
@@ -6049,8 +6125,19 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
     def apply(self):
         new_name = self.name_var.get()
-        self.obj.properties["name"] = new_name
         repo = SysMLRepository.get_instance()
+        parent_id = None
+        if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
+            diag = repo.diagrams.get(self.master.diagram_id)
+            if diag and diag.diag_type == "Internal Block Diagram":
+                parent_id = getattr(diag, "father", None) or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                    None,
+                )
+        if parent_id and _part_name_exists(repo, parent_id, new_name, self.obj.element_id):
+            messagebox.showinfo("Add Part", "A part with that name already exists")
+            new_name = self.obj.properties.get("name", "")
+        self.obj.properties["name"] = new_name
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem = repo.elements[self.obj.element_id]
             if self.obj.obj_type in ("Block", "Block Boundary") and elem.elem_type == "Block":
@@ -6638,6 +6725,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         def_id = obj.properties.get("definition")
         def_name = ""
         mult = ""
+        comp = obj.properties.get("component", "")
         if def_id and def_id in repo.elements:
             def_name = repo.elements[def_id].name or def_id
             diag = repo.diagrams.get(self.diagram_id)
@@ -6657,6 +6745,11 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     ):
                         mult = rel.properties.get("multiplicity", "")
                         break
+
+        if obj.element_id and obj.element_id in repo.elements and not comp:
+            comp = repo.elements[obj.element_id].properties.get("component", "")
+        if comp and comp == def_name:
+            comp = ""
 
         base = name
         index = None
@@ -6679,6 +6772,8 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 def_part = f"{def_name} [{disp}]"
             else:
                 def_part = def_name
+            if comp:
+                def_part = f"{comp} / {def_part}"
             if label and def_part != label:
                 label = f"{label} : {def_part}"
             elif not label:
