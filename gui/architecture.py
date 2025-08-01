@@ -4544,12 +4544,7 @@ class SysMLDiagramWindow(tk.Frame):
         width: int = 1,
         tags: str = "connection",
     ) -> None:
-        """Draw an open triangular arrow head from *start* to *end*.
-
-        This helper creates the classic hollow triangle used for
-        generalization relationships. The interior is filled with the
-        canvas background so the outline color defines the arrow shape.
-        """
+        """Draw an open arrow head from *start* to *end*."""
         dx = end[0] - start[0]
         dy = end[1] - start[1]
         length = math.hypot(dx, dy)
@@ -4572,55 +4567,6 @@ class SysMLDiagramWindow(tk.Frame):
             p2,
             fill=self.canvas.cget("background"),
             outline=color,
-            width=width,
-            tags=tags,
-        )
-
-    def _draw_line_arrow(
-        self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-        color: str = "black",
-        width: int = 1,
-        tags: str = "connection",
-    ) -> None:
-        """Draw an open arrow using only line segments.
-
-        The arrow head is composed of two lines so that the center line of
-        the connection meets the arrow tip directly, providing a cleaner
-        look for port direction indicators.
-        """
-        dx = end[0] - start[0]
-        dy = end[1] - start[1]
-        length = math.hypot(dx, dy)
-        if length == 0:
-            return
-        size = 10 * self.zoom
-        angle = math.atan2(dy, dx)
-        spread = math.radians(20)
-        p1 = (
-            end[0] - size * math.cos(angle - spread),
-            end[1] - size * math.sin(angle - spread),
-        )
-        p2 = (
-            end[0] - size * math.cos(angle + spread),
-            end[1] - size * math.sin(angle + spread),
-        )
-        self.canvas.create_line(
-            end[0],
-            end[1],
-            p1[0],
-            p1[1],
-            fill=color,
-            width=width,
-            tags=tags,
-        )
-        self.canvas.create_line(
-            end[0],
-            end[1],
-            p2[0],
-            p2[1],
-            fill=color,
             width=width,
             tags=tags,
         )
@@ -4906,7 +4852,7 @@ class SysMLDiagramWindow(tk.Frame):
                         outside = -half
                     if direction == "in":
                         self.canvas.create_line(x + outside, y, x + inside, y)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x + outside, y),
                             (x + inside, y),
                             color=outline,
@@ -4914,7 +4860,7 @@ class SysMLDiagramWindow(tk.Frame):
                         )
                     elif direction == "out":
                         self.canvas.create_line(x + inside, y, x + outside, y)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x + inside, y),
                             (x + outside, y),
                             color=outline,
@@ -4922,13 +4868,13 @@ class SysMLDiagramWindow(tk.Frame):
                         )
                     else:
                         self.canvas.create_line(x - half, y, x + half, y)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y),
                             (x + half, y),
                             color=outline,
                             tags="connection",
                         )
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y),
                             (x - half, y),
                             color=outline,
@@ -4943,7 +4889,7 @@ class SysMLDiagramWindow(tk.Frame):
                         outside = -half
                     if direction == "in":
                         self.canvas.create_line(x, y + outside, x, y + inside)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y + outside),
                             (x, y + inside),
                             color=outline,
@@ -4951,7 +4897,7 @@ class SysMLDiagramWindow(tk.Frame):
                         )
                     elif direction == "out":
                         self.canvas.create_line(x, y + inside, x, y + outside)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y + inside),
                             (x, y + outside),
                             color=outline,
@@ -4959,13 +4905,13 @@ class SysMLDiagramWindow(tk.Frame):
                         )
                     else:
                         self.canvas.create_line(x, y - half, x, y + half)
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y),
                             (x, y + half),
                             color=outline,
                             tags="connection",
                         )
-                        self._draw_line_arrow(
+                        self._draw_open_arrow(
                             (x, y),
                             (x, y - half),
                             color=outline,
