@@ -145,6 +145,40 @@ class InheritPartsTests(unittest.TestCase):
         port_added = [o for o in added if o.get("obj_type") == "Port"]
         self.assertEqual(len(port_added), 2)
 
+    def test_inherit_father_parts_skips_existing(self):
+        repo = self.repo
+        father = repo.create_element("Block", name="Parent", properties={"partProperties": "B"})
+        part_blk = repo.create_element("Block", name="B")
+        child = repo.create_element("Block", name="Child")
+        df = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(father.elem_id, df.diag_id)
+        p_f = repo.create_element("Part", name="B[1]", properties={"definition": part_blk.elem_id})
+        df.objects.append({
+            "obj_id": 1,
+            "obj_type": "Part",
+            "x": 0,
+            "y": 0,
+            "element_id": p_f.elem_id,
+            "properties": {"definition": part_blk.elem_id},
+        })
+        dc = repo.create_diagram("Internal Block Diagram")
+        repo.link_diagram(child.elem_id, dc.diag_id)
+        dc.father = father.elem_id
+        p_c = repo.create_element("Part", name="B", properties={"definition": part_blk.elem_id})
+        repo.add_element_to_diagram(dc.diag_id, p_c.elem_id)
+        dc.objects.append({
+            "obj_id": 2,
+            "obj_type": "Part",
+            "x": 0,
+            "y": 0,
+            "element_id": p_c.elem_id,
+            "properties": {"definition": part_blk.elem_id},
+        })
+        added = inherit_father_parts(repo, dc)
+        parts = [o for o in dc.objects if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == part_blk.elem_id]
+        self.assertEqual(len(parts), 1)
+        self.assertFalse(any(o.get("obj_type") == "Part" for o in added))
+
     def test_generalization_inherits_properties(self):
         repo = self.repo
         parent = repo.create_element(
