@@ -2,6 +2,8 @@
 import math
 import tkinter.font as tkFont
 
+TEXT_BOX_COLOR = "#CFD8DC"
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
@@ -11,6 +13,58 @@ class FTADrawingHelper:
     def __init__(self):
         pass
 
+    def clear_cache(self):
+        """No-op for API compatibility."""
+        pass
+
+    def _interpolate_color(self, color: str, ratio: float) -> str:
+        """Return color blended with white by *ratio* (0..1)."""
+        r = int(color[1:3], 16)
+        g = int(color[3:5], 16)
+        b = int(color[5:7], 16)
+        nr = int(255 * (1 - ratio) + r * ratio)
+        ng = int(255 * (1 - ratio) + g * ratio)
+        nb = int(255 * (1 - ratio) + b * ratio)
+        return f"#{nr:02x}{ng:02x}{nb:02x}"
+
+    def _fill_gradient_polygon(self, canvas, points, color: str) -> None:
+        """Fill *points* polygon with a horizontal white → color gradient."""
+        xs = [p[0] for p in points]
+        left = int(math.floor(min(xs)))
+        right = int(math.ceil(max(xs)))
+        if right <= left:
+            return
+        for x in range(left, right + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            yvals = []
+            for i in range(len(points)):
+                x1, y1 = points[i]
+                x2, y2 = points[(i + 1) % len(points)]
+                if x1 == x2:
+                    if int(round(x1)) == x:
+                        yvals.extend([y1, y2])
+                    continue
+                if (x1 <= x <= x2) or (x2 <= x <= x1):
+                    t = (x - x1) / (x2 - x1)
+                    yvals.append(y1 + t * (y2 - y1))
+            yvals.sort()
+            for j in range(0, len(yvals) - 1, 2):
+                canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
+
+    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
+        """Fill circle with gradient from white to *color*."""
+        left = int(cx - radius)
+        right = int(cx + radius)
+        if right <= left:
+            return
+        for x in range(left, right + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            dx = x - cx
+            dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
+            canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
         lines = text.split("\n")
@@ -18,15 +72,34 @@ class FTADrawingHelper:
         height = font_obj.metrics("linespace") * len(lines)
         return max_width, height
 
-    def draw_page_clone_shape(self, canvas, x, y, scale=40.0,
-                              top_text="Desc:\n\nRationale:", bottom_text="Node",
-                              fill="lightgray", outline_color="dimgray",
-                              line_width=1, font_obj=None):
+    def draw_page_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Node",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         # First, draw the main triangle using the existing triangle routine.
-        self.draw_triangle_shape(canvas, x, y, scale=scale,
-                                 top_text=top_text, bottom_text=bottom_text,
-                                 fill=fill, outline_color=outline_color,
-                                 line_width=line_width, font_obj=font_obj)
+        self.draw_triangle_shape(
+            canvas,
+            x,
+            y,
+            scale=scale,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
         # Determine a baseline for the bottom of the triangle.
         # (You may need to adjust this value to match your triangle's dimensions.)
         bottom_y = y + scale * 0.75  
@@ -160,11 +233,20 @@ class FTADrawingHelper:
         scaled = [(vx * scale, vy * scale) for (vx, vy) in translated]
         return scaled
 
-    def draw_rotated_and_gate_shape(self, canvas, x, y, scale=40.0,
-                                      top_text="Desc:\n\nRationale:",
-                                      bottom_text="Event",
-                                      fill="lightgray", outline_color="dimgray",
-                                      line_width=1, font_obj=None):
+    def draw_rotated_and_gate_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Event",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         """Draw a rotated AND gate shape with top and bottom text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -174,8 +256,14 @@ class FTADrawingHelper:
         ys = [v[1] for v in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
-                                width=line_width, smooth=False)
+        self._fill_gradient_polygon(canvas, final_points, fill)
+        canvas.create_polygon(
+            final_points,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            smooth=False,
+        )
 
         # Draw the top label box
         t_width, t_height = self.get_text_size(top_text, font_obj)
@@ -184,11 +272,15 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(top_box_x, top_y,
-                                top_box_x + top_box_width,
-                                top_y + top_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        canvas.create_rectangle(
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text,
@@ -203,11 +295,15 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(bottom_box_x, bottom_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text,
@@ -215,11 +311,20 @@ class FTADrawingHelper:
                            anchor="center",
                            width=bottom_box_width)
 
-    def draw_rotated_or_gate_shape(self, canvas, x, y, scale=40.0,
-                                     top_text="Desc:\n\nRationale:",
-                                     bottom_text="Event",
-                                     fill="lightgray", outline_color="dimgray",
-                                     line_width=1, font_obj=None):
+    def draw_rotated_or_gate_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Event",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         """Draw a rotated OR gate shape with text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -242,8 +347,14 @@ class FTADrawingHelper:
         ys = [p[1] for p in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
-                                width=line_width, smooth=True)
+        self._fill_gradient_polygon(canvas, final_points, fill)
+        canvas.create_polygon(
+            final_points,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            smooth=True,
+        )
 
         # Draw the top label box
         padding = 6
@@ -252,10 +363,15 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
-        canvas.create_rectangle(top_box_x, top_y,
-                                top_box_x + top_box_width,
-                                top_y + top_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        canvas.create_rectangle(
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text, font=font_obj, anchor="center",
@@ -268,25 +384,48 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
-        canvas.create_rectangle(bottom_box_x, bottom_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text, font=font_obj,
                            anchor="center", width=bottom_box_width)
 
-    def draw_rotated_and_gate_clone_shape(self, canvas, x, y, scale=40.0,
-                                            top_text="Desc:\n\nRationale:", bottom_text="Node",
-                                            fill="lightgray", outline_color="dimgray",
-                                            line_width=1, font_obj=None):
+    def draw_rotated_and_gate_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Node",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         """Draw a rotated AND gate shape with additional clone details."""
-        self.draw_rotated_and_gate_shape(canvas, x, y, scale=scale,
-                                         top_text=top_text, bottom_text=bottom_text,
-                                         fill=fill, outline_color=outline_color,
-                                         line_width=line_width, font_obj=font_obj)
+        self.draw_rotated_and_gate_shape(
+            canvas,
+            x,
+            y,
+            scale=scale,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
@@ -310,15 +449,34 @@ class FTADrawingHelper:
                            x + scale/2, bottom_y + final_line_offset,
                            fill=outline_color, width=line_width)
 
-    def draw_rotated_or_gate_clone_shape(self, canvas, x, y, scale=40.0,
-                                           top_text="Desc:\n\nRationale:", bottom_text="Node",
-                                           fill="lightgray", outline_color="dimgray",
-                                           line_width=1, font_obj=None):
+    def draw_rotated_or_gate_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Node",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         """Draw a rotated OR gate shape with additional clone details."""
-        self.draw_rotated_or_gate_shape(canvas, x, y, scale=scale,
-                                        top_text=top_text, bottom_text=bottom_text,
-                                        fill=fill, outline_color=outline_color,
-                                        line_width=line_width, font_obj=font_obj)
+        self.draw_rotated_or_gate_shape(
+            canvas,
+            x,
+            y,
+            scale=scale,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
@@ -342,11 +500,20 @@ class FTADrawingHelper:
                            x + scale/2, bottom_y + final_line_offset,
                            fill=outline_color, width=line_width)
 
-    def draw_triangle_shape(self, canvas, x, y, scale=40.0,
-                              top_text="Desc:\n\nRationale:",
-                              bottom_text="Event",
-                              fill="lightgray", outline_color="dimgray",
-                              line_width=1, font_obj=None):
+    def draw_triangle_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Event",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         effective_scale = scale * 2  
@@ -354,10 +521,13 @@ class FTADrawingHelper:
         v1 = (0, -2 * h / 3)
         v2 = (-effective_scale / 2, h / 3)
         v3 = (effective_scale / 2, h / 3)
-        vertices = [(x + v1[0], y + v1[1]),
-                    (x + v2[0], y + v2[1]),
-                    (x + v3[0], y + v3[1])]
-        canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
+        vertices = [
+            (x + v1[0], y + v1[1]),
+            (x + v2[0], y + v2[1]),
+            (x + v3[0], y + v3[1]),
+        ]
+        self._fill_gradient_polygon(canvas, vertices, fill)
+        canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
         
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -365,10 +535,15 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = min(v[1] for v in vertices) - top_box_height
-        canvas.create_rectangle(top_box_x, top_box_y,
-                                top_box_x + top_box_width,
-                                top_box_y + top_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        canvas.create_rectangle(
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -379,23 +554,35 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = max(v[1] for v in vertices) + padding - 2 * bottom_box_height
-        canvas.create_rectangle(bottom_box_x, bottom_box_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_box_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color, width=line_width)
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
                            font=font_obj, anchor="center", width=bottom_box_width)
                            
-    def draw_circle_event_shape(self, canvas, x, y, radius,
-                                top_text="",
-                                bottom_text="",
-                                fill="lightyellow",
-                                outline_color="dimgray",
-                                line_width=1,
-                                font_obj=None,
-                                base_event=False):
+    def draw_circle_event_shape(
+        self,
+        canvas,
+        x,
+        y,
+        radius,
+        top_text="",
+        bottom_text="",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        base_event=False,
+        obj_id: str = "",
+    ):
         """Draw a circular event shape with optional text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -403,19 +590,31 @@ class FTADrawingHelper:
         top = y - radius
         right = x + radius
         bottom = y + radius
-        canvas.create_oval(left, top, right, bottom, fill=fill,
-                           outline=outline_color, width=line_width)
+        self._fill_gradient_circle(canvas, x, y, radius, fill)
+        canvas.create_oval(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+        )
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
         top_box_width = t_width + 2 * padding
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = top - top_box_height
-        canvas.create_rectangle(top_box_x, top_box_y,
-                                top_box_x + top_box_width,
-                                top_box_y + top_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        canvas.create_rectangle(
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
@@ -426,21 +625,35 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = bottom - 2 * bottom_box_height
-        canvas.create_rectangle(bottom_box_x, bottom_box_y,
-                                bottom_box_x + bottom_box_width,
-                                bottom_box_y + bottom_box_height,
-                                fill="lightblue", outline=outline_color,
-                                width=line_width)
+        canvas.create_rectangle(
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            fill=TEXT_BOX_COLOR,
+            outline=outline_color,
+            width=line_width,
+        )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
                            font=font_obj, anchor="center",
                            width=bottom_box_width)
                            
-    def draw_triangle_clone_shape(self, canvas, x, y, scale=40.0,
-                                  top_text="Desc:\n\nRationale:", bottom_text="Node",
-                                  fill="lightgray", outline_color="dimgray",
-                                  line_width=1, font_obj=None):
+    def draw_triangle_clone_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Desc:\n\nRationale:",
+        bottom_text="Node",
+        fill="lightgray",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
         """
         Draws the same triangle as draw_triangle_shape but then adds two horizontal lines
         at the bottom and a small triangle on the right side as clone indicators.
@@ -450,10 +663,19 @@ class FTADrawingHelper:
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         # Draw the base triangle.
-        self.draw_triangle_shape(canvas, x, y, scale=scale,
-                                 top_text=top_text, bottom_text=bottom_text,
-                                 fill=fill, outline_color=outline_color,
-                                 line_width=line_width, font_obj=font_obj)
+        self.draw_triangle_shape(
+            canvas,
+            x,
+            y,
+            scale=scale,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            obj_id=obj_id,
+        )
         # Compute the vertices of the big triangle.
         effective_scale = scale * 2  
         h = effective_scale * math.sqrt(3) / 2

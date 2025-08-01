@@ -7869,33 +7869,9 @@ class FaultTreeApp:
         return counts
 
     def get_node_fill_color(self, node):
-        # Use the original node's properties for clones.
-        base_node = node if node.is_primary_instance else node.original
         if self.project_properties.get("black_white", False):
             return "white"
-        label = base_node.display_label  # use original's display label
-        if "Prototype Assurance Level (PAL)" in label:
-            base_type = "Prototype Assurance Level (PAL)"
-        elif "Maturity" in label:
-            base_type = "Maturity"
-        elif "Rigor" in label:
-            base_type = "Rigor"
-        elif "Confidence" in label:
-            base_type = "Confidence"
-        elif "Robustness" in label:
-            base_type = "Robustness"
-        else:
-            base_type = "Other"
-        subtype = base_node.input_subtype if base_node.input_subtype else "Default"
-        color_mapping = {
-            "Confidence": {"Function": "lightpink", "Human Task": "lightgreen", "Default": "lightpink"},
-            "Robustness": {"Function": "orange", "Human Task": "pink", "Default": "orange"},
-            "Maturity": {"Functionality": "lightyellow", "Default": "lightyellow"},
-            "Rigor": {"Capability": "turquoise", "Safety Mechanism": "yellow", "Default": "turquoise"},
-            "Prototype Assurance Level (PAL)": {"Vehicle Level Function": "pink", "Functionality": "lightyellow","Capability": "turquoise", "Safety Mechanism": "yellow"},
-            "Other": {"Default": "lightblue"}
-        }
-        return color_mapping.get(base_type, {}).get(subtype, color_mapping.get(base_type, {}).get("Default", "lightblue"))
+        return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
         self.canvas.scan_mark(event.x, event.y)
@@ -8659,6 +8635,8 @@ class FaultTreeApp:
         if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
+        if hasattr(self, "fta_drawing_helper"):
+            self.fta_drawing_helper.clear_cache()
         self.draw_grid()
         drawn_ids = set()
         for top_event in self.top_events:
@@ -8781,78 +8759,148 @@ class FaultTreeApp:
             # For clones, draw them in a “clone” style.
             if source.is_page:
                 fta_drawing_helper.draw_triangle_shape(
-                    self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                    top_text=top_text, bottom_text=bottom_text,
-                    fill=fill_color, outline_color=outline_color,
-                    line_width=line_width, font_obj=font_obj
+                    self.canvas,
+                    eff_x,
+                    eff_y,
+                    scale=40 * self.zoom,
+                    top_text=top_text,
+                    bottom_text=bottom_text,
+                    fill=fill_color,
+                    outline_color=outline_color,
+                    line_width=line_width,
+                    font_obj=font_obj,
+                    obj_id=node.unique_id,
                 )
             elif node_type_upper in GATE_NODE_TYPES:
                 if source.gate_type.upper() == "OR":
                     fta_drawing_helper.draw_rotated_or_gate_clone_shape(
-                        self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                        top_text=top_text, bottom_text=bottom_text,
-                        fill=fill_color, outline_color=outline_color,
-                        line_width=line_width, font_obj=font_obj
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        scale=40 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                        obj_id=node.unique_id,
                     )
                 else:
                     fta_drawing_helper.draw_rotated_and_gate_clone_shape(
-                        self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                        top_text=top_text, bottom_text=bottom_text,
-                        fill=fill_color, outline_color=outline_color,
-                        line_width=line_width, font_obj=font_obj
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        scale=40 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                        obj_id=node.unique_id,
                     )
             elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
                 fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas, eff_x, eff_y, 45 * self.zoom,
-                    top_text=top_text, bottom_text=bottom_text,
-                    fill=fill_color, outline_color=outline_color,
-                    line_width=line_width, font_obj=font_obj
+                    self.canvas,
+                    eff_x,
+                    eff_y,
+                    45 * self.zoom,
+                    top_text=top_text,
+                    bottom_text=bottom_text,
+                    fill=fill_color,
+                    outline_color=outline_color,
+                    line_width=line_width,
+                    font_obj=font_obj,
+                    obj_id=node.unique_id,
                 )
             else:
                 fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas, eff_x, eff_y, 45 * self.zoom,
-                    top_text=top_text, bottom_text=bottom_text,
-                    fill=fill_color, outline_color=outline_color,
-                    line_width=line_width, font_obj=font_obj
+                    self.canvas,
+                    eff_x,
+                    eff_y,
+                    45 * self.zoom,
+                    top_text=top_text,
+                    bottom_text=bottom_text,
+                    fill=fill_color,
+                    outline_color=outline_color,
+                    line_width=line_width,
+                    font_obj=font_obj,
+                    obj_id=node.unique_id,
                 )
         else:
             # Primary node: use normal drawing routines.
             if node_type_upper in GATE_NODE_TYPES:
                 if source.is_page and source != self.root_node:
                     fta_drawing_helper.draw_triangle_shape(
-                        self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                        top_text=top_text, bottom_text=bottom_text,
-                        fill=fill_color, outline_color=outline_color,
-                        line_width=line_width, font_obj=font_obj
+                        self.canvas,
+                        eff_x,
+                        eff_y,
+                        scale=40 * self.zoom,
+                        top_text=top_text,
+                        bottom_text=bottom_text,
+                        fill=fill_color,
+                        outline_color=outline_color,
+                        line_width=line_width,
+                        font_obj=font_obj,
+                        obj_id=node.unique_id,
                     )
                 else:
                     if source.gate_type.upper() == "OR":
                         fta_drawing_helper.draw_rotated_or_gate_shape(
-                            self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                            top_text=top_text, bottom_text=bottom_text,
-                            fill=fill_color, outline_color=outline_color,
-                            line_width=line_width, font_obj=font_obj
+                            self.canvas,
+                            eff_x,
+                            eff_y,
+                            scale=40 * self.zoom,
+                            top_text=top_text,
+                            bottom_text=bottom_text,
+                            fill=fill_color,
+                            outline_color=outline_color,
+                            line_width=line_width,
+                            font_obj=font_obj,
+                            obj_id=node.unique_id,
                         )
                     else:
                         fta_drawing_helper.draw_rotated_and_gate_shape(
-                            self.canvas, eff_x, eff_y, scale=40 * self.zoom,
-                            top_text=top_text, bottom_text=bottom_text,
-                            fill=fill_color, outline_color=outline_color,
-                            line_width=line_width, font_obj=font_obj
+                            self.canvas,
+                            eff_x,
+                            eff_y,
+                            scale=40 * self.zoom,
+                            top_text=top_text,
+                            bottom_text=bottom_text,
+                            fill=fill_color,
+                            outline_color=outline_color,
+                            line_width=line_width,
+                            font_obj=font_obj,
+                            obj_id=node.unique_id,
                         )
             elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
                 fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas, eff_x, eff_y, 45 * self.zoom,
-                    top_text=top_text, bottom_text=bottom_text,
-                    fill=fill_color, outline_color=outline_color,
-                    line_width=line_width, font_obj=font_obj
+                    self.canvas,
+                    eff_x,
+                    eff_y,
+                    45 * self.zoom,
+                    top_text=top_text,
+                    bottom_text=bottom_text,
+                    fill=fill_color,
+                    outline_color=outline_color,
+                    line_width=line_width,
+                    font_obj=font_obj,
+                    obj_id=node.unique_id,
                 )
             else:
                 fta_drawing_helper.draw_circle_event_shape(
-                    self.canvas, eff_x, eff_y, 45 * self.zoom,
-                    top_text=top_text, bottom_text=bottom_text,
-                    fill=fill_color, outline_color=outline_color,
-                    line_width=line_width, font_obj=font_obj
+                    self.canvas,
+                    eff_x,
+                    eff_y,
+                    45 * self.zoom,
+                    top_text=top_text,
+                    bottom_text=bottom_text,
+                    fill=fill_color,
+                    outline_color=outline_color,
+                    line_width=line_width,
+                    font_obj=font_obj,
+                    obj_id=node.unique_id,
                 )
 
         # Draw any additional text (such as equations) from the source.
@@ -14222,6 +14270,7 @@ class FaultTreeApp:
                 outline_color=outline_color,
                 line_width=line_width,
                 font_obj=self.diagram_font,
+                obj_id=node.unique_id,
             )
         else:
             node_type_upper = node.node_type.upper()
@@ -14237,6 +14286,7 @@ class FaultTreeApp:
                         fill=fill_color,
                         outline_color=outline_color,
                         line_width=line_width,
+                        obj_id=node.unique_id,
                     )
                 else:
                     fta_drawing_helper.draw_rotated_and_gate_shape(
@@ -14249,6 +14299,7 @@ class FaultTreeApp:
                         fill=fill_color,
                         outline_color=outline_color,
                         line_width=line_width,
+                        obj_id=node.unique_id,
                     )
             elif node_type_upper in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
                 fta_drawing_helper.draw_circle_event_shape(
@@ -14261,6 +14312,7 @@ class FaultTreeApp:
                     fill=fill_color,
                     outline_color=outline_color,
                     line_width=line_width,
+                    obj_id=node.unique_id,
                 )
             else:
                 fta_drawing_helper.draw_circle_event_shape(
@@ -14273,6 +14325,7 @@ class FaultTreeApp:
                     fill=fill_color,
                     outline_color=outline_color,
                     line_width=line_width,
+                    obj_id=node.unique_id,
                 )
 
         if self.review_data:
@@ -15648,6 +15701,8 @@ class PageDiagram:
         if not hasattr(self, "canvas") or self.canvas is None or not self.canvas.winfo_exists():
             return
         self.canvas.delete("all")
+        if hasattr(self.app, "fta_drawing_helper"):
+            self.app.fta_drawing_helper.clear_cache()
         self.draw_grid()
         
         # Use the page's root node as the sole top-level event.
