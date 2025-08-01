@@ -2498,8 +2498,17 @@ class SysMLDiagramWindow(tk.Frame):
         self.prop_view.column("value", width=120, anchor="w")
         self.prop_view.pack(fill=tk.BOTH, expand=True)
 
-        self.canvas = tk.Canvas(self, bg="white")
-        self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        canvas_frame = ttk.Frame(self)
+        canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(canvas_frame, bg="white")
+        vbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
+        hbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        vbar.grid(row=0, column=1, sticky="ns")
+        hbar.grid(row=1, column=0, sticky="ew")
+        canvas_frame.columnconfigure(0, weight=1)
+        canvas_frame.rowconfigure(0, weight=1)
 
         # Keep references to gradient images used for element backgrounds
         self.gradient_cache: dict[int, tk.PhotoImage] = {}
@@ -2513,6 +2522,10 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.bind("<ButtonPress-3>", self.on_rc_press)
         self.canvas.bind("<B3-Motion>", self.on_rc_drag)
         self.canvas.bind("<ButtonRelease-3>", self.on_rc_release)
+        self.canvas.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
         self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
