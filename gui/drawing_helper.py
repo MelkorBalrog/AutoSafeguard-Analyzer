@@ -1,7 +1,6 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import math
 import tkinter.font as tkFont
-from PIL import Image, ImageDraw, ImageTk
 
 class FTADrawingHelper:
     """
@@ -10,60 +9,7 @@ class FTADrawingHelper:
     onto a tkinter Canvas.
     """
     def __init__(self):
-        # Cache PhotoImage objects so Tkinter doesn't garbage collect them
-        self.gradient_cache: dict[str, ImageTk.PhotoImage] = {}
-
-    def clear_cache(self):
-        """Clear cached gradient images."""
-        self.gradient_cache.clear()
-
-    def _create_gradient_image(self, width: int, height: int, color: str) -> Image.Image:
-        """Return a Pillow Image with a left-to-right gradient from white to *color*."""
-        width = max(1, int(width))
-        height = max(1, int(height))
-        img = Image.new("RGB", (width, height), "white")
-        draw = ImageDraw.Draw(img)
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        for x in range(width):
-            ratio = x / (width - 1) if width > 1 else 1
-            nr = int(255 * (1 - ratio) + r * ratio)
-            ng = int(255 * (1 - ratio) + g * ratio)
-            nb = int(255 * (1 - ratio) + b * ratio)
-            draw.line([(x, 0), (x, height)], fill=(nr, ng, nb))
-        return img
-
-    def _draw_gradient_polygon(self, canvas, points, color: str, obj_id: str) -> None:
-        """Draw a gradient filled polygon on *canvas*."""
-        xs = [p[0] for p in points]
-        ys = [p[1] for p in points]
-        min_x = int(min(xs))
-        min_y = int(min(ys))
-        width = int(max(xs) - min_x)
-        height = int(max(ys) - min_y)
-        gradient = self._create_gradient_image(width, height, color)
-        mask = Image.new("L", (width, height), 0)
-        mdraw = ImageDraw.Draw(mask)
-        shifted = [(x - min_x, y - min_y) for x, y in points]
-        mdraw.polygon(shifted, fill=255)
-        gradient.putalpha(mask)
-        tk_img = ImageTk.PhotoImage(gradient)
-        canvas.create_image(min_x, min_y, anchor="nw", image=tk_img)
-        self.gradient_cache[obj_id] = tk_img
-
-    def _draw_gradient_oval(self, canvas, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: str) -> None:
-        """Draw a gradient filled oval bounded by (x1, y1, x2, y2)."""
-        width = int(abs(x2 - x1))
-        height = int(abs(y2 - y1))
-        gradient = self._create_gradient_image(width, height, color)
-        mask = Image.new("L", (width, height), 0)
-        mdraw = ImageDraw.Draw(mask)
-        mdraw.ellipse((0, 0, width, height), fill=255)
-        gradient.putalpha(mask)
-        tk_img = ImageTk.PhotoImage(gradient)
-        canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=tk_img)
-        self.gradient_cache[obj_id] = tk_img
+        pass
 
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
@@ -77,19 +23,10 @@ class FTADrawingHelper:
                               fill="lightgray", outline_color="dimgray",
                               line_width=1, font_obj=None):
         # First, draw the main triangle using the existing triangle routine.
-        self.draw_triangle_shape(
-            canvas,
-            x,
-            y,
-            scale=scale,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            obj_id=obj_id,
-        )
+        self.draw_triangle_shape(canvas, x, y, scale=scale,
+                                 top_text=top_text, bottom_text=bottom_text,
+                                 fill=fill, outline_color=outline_color,
+                                 line_width=line_width, font_obj=font_obj)
         # Determine a baseline for the bottom of the triangle.
         # (You may need to adjust this value to match your triangle's dimensions.)
         bottom_y = y + scale * 0.75  
@@ -223,20 +160,11 @@ class FTADrawingHelper:
         scaled = [(vx * scale, vy * scale) for (vx, vy) in translated]
         return scaled
 
-    def draw_rotated_and_gate_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Event",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_rotated_and_gate_shape(self, canvas, x, y, scale=40.0,
+                                      top_text="Desc:\n\nRationale:",
+                                      bottom_text="Event",
+                                      fill="lightgray", outline_color="dimgray",
+                                      line_width=1, font_obj=None):
         """Draw a rotated AND gate shape with top and bottom text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -246,23 +174,8 @@ class FTADrawingHelper:
         ys = [v[1] for v in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, final_points, fill, obj_id)
-            canvas.create_polygon(
-                final_points,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-                smooth=False,
-            )
-        else:
-            canvas.create_polygon(
-                final_points,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-                smooth=False,
-            )
+        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
+                                width=line_width, smooth=False)
 
         # Draw the top label box
         t_width, t_height = self.get_text_size(top_text, font_obj)
@@ -302,20 +215,11 @@ class FTADrawingHelper:
                            anchor="center",
                            width=bottom_box_width)
 
-    def draw_rotated_or_gate_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Event",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_rotated_or_gate_shape(self, canvas, x, y, scale=40.0,
+                                     top_text="Desc:\n\nRationale:",
+                                     bottom_text="Event",
+                                     fill="lightgray", outline_color="dimgray",
+                                     line_width=1, font_obj=None):
         """Draw a rotated OR gate shape with text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -338,23 +242,8 @@ class FTADrawingHelper:
         ys = [p[1] for p in flipped]
         cx, cy = (sum(xs) / len(xs), sum(ys) / len(ys))
         final_points = [(vx - cx + x, vy - cy + y) for (vx, vy) in flipped]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, final_points, fill, obj_id)
-            canvas.create_polygon(
-                final_points,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-                smooth=True,
-            )
-        else:
-            canvas.create_polygon(
-                final_points,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-                smooth=True,
-            )
+        canvas.create_polygon(final_points, fill=fill, outline=outline_color,
+                                width=line_width, smooth=True)
 
         # Draw the top label box
         padding = 6
@@ -389,34 +278,15 @@ class FTADrawingHelper:
                            text=bottom_text, font=font_obj,
                            anchor="center", width=bottom_box_width)
 
-    def draw_rotated_and_gate_clone_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Node",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_rotated_and_gate_clone_shape(self, canvas, x, y, scale=40.0,
+                                            top_text="Desc:\n\nRationale:", bottom_text="Node",
+                                            fill="lightgray", outline_color="dimgray",
+                                            line_width=1, font_obj=None):
         """Draw a rotated AND gate shape with additional clone details."""
-        self.draw_rotated_and_gate_shape(
-            canvas,
-            x,
-            y,
-            scale=scale,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            obj_id=obj_id,
-        )
+        self.draw_rotated_and_gate_shape(canvas, x, y, scale=scale,
+                                         top_text=top_text, bottom_text=bottom_text,
+                                         fill=fill, outline_color=outline_color,
+                                         line_width=line_width, font_obj=font_obj)
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
@@ -440,34 +310,15 @@ class FTADrawingHelper:
                            x + scale/2, bottom_y + final_line_offset,
                            fill=outline_color, width=line_width)
 
-    def draw_rotated_or_gate_clone_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Node",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_rotated_or_gate_clone_shape(self, canvas, x, y, scale=40.0,
+                                           top_text="Desc:\n\nRationale:", bottom_text="Node",
+                                           fill="lightgray", outline_color="dimgray",
+                                           line_width=1, font_obj=None):
         """Draw a rotated OR gate shape with additional clone details."""
-        self.draw_rotated_or_gate_shape(
-            canvas,
-            x,
-            y,
-            scale=scale,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            obj_id=obj_id,
-        )
+        self.draw_rotated_or_gate_shape(canvas, x, y, scale=scale,
+                                        top_text=top_text, bottom_text=bottom_text,
+                                        fill=fill, outline_color=outline_color,
+                                        line_width=line_width, font_obj=font_obj)
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
@@ -491,20 +342,11 @@ class FTADrawingHelper:
                            x + scale/2, bottom_y + final_line_offset,
                            fill=outline_color, width=line_width)
 
-    def draw_triangle_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Event",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_triangle_shape(self, canvas, x, y, scale=40.0,
+                              top_text="Desc:\n\nRationale:",
+                              bottom_text="Event",
+                              fill="lightgray", outline_color="dimgray",
+                              line_width=1, font_obj=None):
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         effective_scale = scale * 2  
@@ -512,16 +354,10 @@ class FTADrawingHelper:
         v1 = (0, -2 * h / 3)
         v2 = (-effective_scale / 2, h / 3)
         v3 = (effective_scale / 2, h / 3)
-        vertices = [
-            (x + v1[0], y + v1[1]),
-            (x + v2[0], y + v2[1]),
-            (x + v3[0], y + v3[1]),
-        ]
-        if obj_id:
-            self._draw_gradient_polygon(canvas, vertices, fill, obj_id)
-            canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
-        else:
-            canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
+        vertices = [(x + v1[0], y + v1[1]),
+                    (x + v2[0], y + v2[1]),
+                    (x + v3[0], y + v3[1])]
+        canvas.create_polygon(vertices, fill=fill, outline=outline_color, width=line_width)
         
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -552,21 +388,14 @@ class FTADrawingHelper:
                            text=bottom_text,
                            font=font_obj, anchor="center", width=bottom_box_width)
                            
-    def draw_circle_event_shape(
-        self,
-        canvas,
-        x,
-        y,
-        radius,
-        top_text="",
-        bottom_text="",
-        fill="lightyellow",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        base_event=False,
-        obj_id: str = "",
-    ):
+    def draw_circle_event_shape(self, canvas, x, y, radius,
+                                top_text="",
+                                bottom_text="",
+                                fill="lightyellow",
+                                outline_color="dimgray",
+                                line_width=1,
+                                font_obj=None,
+                                base_event=False):
         """Draw a circular event shape with optional text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
@@ -574,27 +403,8 @@ class FTADrawingHelper:
         top = y - radius
         right = x + radius
         bottom = y + radius
-        if obj_id:
-            self._draw_gradient_oval(canvas, left, top, right, bottom, fill, obj_id)
-            canvas.create_oval(
-                left,
-                top,
-                right,
-                bottom,
-                fill="",
-                outline=outline_color,
-                width=line_width,
-            )
-        else:
-            canvas.create_oval(
-                left,
-                top,
-                right,
-                bottom,
-                fill=fill,
-                outline=outline_color,
-                width=line_width,
-            )
+        canvas.create_oval(left, top, right, bottom, fill=fill,
+                           outline=outline_color, width=line_width)
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
         top_box_width = t_width + 2 * padding
@@ -627,20 +437,10 @@ class FTADrawingHelper:
                            font=font_obj, anchor="center",
                            width=bottom_box_width)
                            
-    def draw_triangle_clone_shape(
-        self,
-        canvas,
-        x,
-        y,
-        scale=40.0,
-        top_text="Desc:\n\nRationale:",
-        bottom_text="Node",
-        fill="lightgray",
-        outline_color="dimgray",
-        line_width=1,
-        font_obj=None,
-        obj_id: str = "",
-    ):
+    def draw_triangle_clone_shape(self, canvas, x, y, scale=40.0,
+                                  top_text="Desc:\n\nRationale:", bottom_text="Node",
+                                  fill="lightgray", outline_color="dimgray",
+                                  line_width=1, font_obj=None):
         """
         Draws the same triangle as draw_triangle_shape but then adds two horizontal lines
         at the bottom and a small triangle on the right side as clone indicators.
