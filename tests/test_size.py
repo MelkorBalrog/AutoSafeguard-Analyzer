@@ -18,6 +18,7 @@ class DummyWindow:
     ensure_text_fits = SysMLDiagramWindow.ensure_text_fits
     _object_label_lines = SysMLDiagramWindow._object_label_lines
     _min_block_size = SysMLDiagramWindow._min_block_size
+    _min_action_size = SysMLDiagramWindow._min_action_size
     _wrap_text_to_width = SysMLDiagramWindow._wrap_text_to_width
 
 class EnsureTextFitsTests(unittest.TestCase):
@@ -54,6 +55,24 @@ class EnsureTextFitsTests(unittest.TestCase):
         action.requirements = []
         win.ensure_text_fits(action)
         self.assertEqual(action.width, 10)
+
+    def test_action_min_size(self):
+        win = DummyWindow()
+        elem = win.repo.create_element("Action", name="Act")
+        action = SysMLObject(
+            1,
+            "Action",
+            0,
+            0,
+            element_id=elem.elem_id,
+            width=10,
+            height=10,
+            properties={"name": "Act"},
+        )
+        action.requirements = []
+        min_w, min_h = win._min_action_size(action)
+        self.assertEqual(min_w, len("Act") + 6)
+        self.assertEqual(min_h, 7)
 
     def test_decision_and_merge_sizes_remain_fixed(self):
         win = DummyWindow()

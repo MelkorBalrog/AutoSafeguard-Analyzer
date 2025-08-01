@@ -912,6 +912,13 @@ class FI2TCWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
+        severity_colors = {
+            "1": "#d4edda",
+            "2": "#fff3cd",
+            "3": "#f8d7da",
+        }
+        for sev, color in severity_colors.items():
+            self.tree.tag_configure(f"sev_{sev}", background=color)
         self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
@@ -936,8 +943,9 @@ class FI2TCWindow(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         for row in self.app.fi2tc_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
-            self.tree.insert("", "end", values=vals)
-        stripe_rows(self.tree)
+            sev = str(row.get("severity", ""))
+            tag = f"sev_{sev}" if sev else ""
+            self.tree.insert("", "end", values=vals, tags=(tag,))
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):
@@ -1488,6 +1496,14 @@ class HazopWindow(tk.Frame):
         content.columnconfigure(0, weight=1)
         content.rowconfigure(0, weight=1)
 
+        hazop_colors = {
+            "safe_covered": "#d4edda",
+            "safe_uncovered": "#f8d7da",
+            "not_safe": "#e2e3e5",
+        }
+        for tag, color in hazop_colors.items():
+            self.tree.tag_configure(tag, background=color)
+
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         hara_add_btn = ttk.Button(btn, text="Add", command=self.add_row)
@@ -1579,8 +1595,11 @@ class HazopWindow(tk.Frame):
                 "Yes" if row.covered else "No",
                 row.covered_by,
             ]
-            self.tree.insert("", "end", values=vals)
-        stripe_rows(self.tree)
+            if row.safety:
+                tag = "safe_covered" if row.covered else "safe_uncovered"
+            else:
+                tag = "not_safe"
+            self.tree.insert("", "end", values=vals, tags=(tag,))
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
@@ -1937,6 +1956,17 @@ class HaraWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         table_frame.columnconfigure(0, weight=1)
         table_frame.rowconfigure(0, weight=1)
+
+        asil_colors = {
+            "QM": "#ffffff",
+            "A": "#d4edda",
+            "B": "#fff3cd",
+            "C": "#f8d7da",
+            "D": "#f5c6cb",
+        }
+        for level, color in asil_colors.items():
+            self.tree.tag_configure(f"asil_{level}", background=color)
+
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         ttk.Button(btn, text="Add", command=self.add_row).pack(
@@ -2070,8 +2100,9 @@ class HaraWindow(tk.Frame):
                 row.asil,
                 row.safety_goal,
             ]
-            self.tree.insert("", "end", values=vals)
-        stripe_rows(self.tree)
+            tag = f"asil_{row.asil}" if row.asil else ""
+            self.tree.insert("", "end", values=vals, tags=(tag,))
+        self.app.sync_hara_to_safety_goals()
         self.app.sync_hara_to_safety_goals()
 
     class RowDialog(simpledialog.Dialog):
@@ -2373,6 +2404,13 @@ class TC2FIWindow(tk.Frame):
         hsb.grid(row=1, column=0, sticky="ew")
         tree_frame.grid_columnconfigure(0, weight=1)
         tree_frame.grid_rowconfigure(0, weight=1)
+        severity_colors = {
+            "1": "#d4edda",
+            "2": "#fff3cd",
+            "3": "#f8d7da",
+        }
+        for sev, color in severity_colors.items():
+            self.tree.tag_configure(f"sev_{sev}", background=color)
         self.tree.bind("<Double-1>", lambda e: self.edit_row())
         btn = ttk.Frame(self)
         btn.pack()
@@ -2397,8 +2435,9 @@ class TC2FIWindow(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         for row in self.app.tc2fi_entries:
             vals = [_wrap_val(row.get(k, "")) for k in self.COLS]
-            self.tree.insert("", "end", values=vals)
-        stripe_rows(self.tree)
+            sev = str(row.get("severity", ""))
+            tag = f"sev_{sev}" if sev else ""
+            self.tree.insert("", "end", values=vals, tags=(tag,))
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, data=None):

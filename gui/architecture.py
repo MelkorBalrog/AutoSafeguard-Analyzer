@@ -6,7 +6,7 @@ from tkinter import ttk, simpledialog, messagebox
 import json
 import math
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
@@ -412,6 +412,7 @@ def _shared_generalization_parent(
 
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
+    repo.push_undo_state()
     block = repo.elements.get(block_id)
     if not block or block.elem_type != "Block":
         return
@@ -493,6 +494,7 @@ def add_aggregation_part(
     app=None,
 ) -> None:
     """Add *part_id* as a part of *whole_id* block."""
+    repo.push_undo_state()
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
@@ -549,6 +551,7 @@ def add_aggregation_part(
             properties={"definition": part_id},
             owner=repo.root_package.elem_id,
         )
+        repo._undo_stack.pop()
         rel.properties["part_elem"] = part_elem.elem_id
 
     # propagate changes to any generalization children
@@ -568,6 +571,7 @@ def add_composite_aggregation_part(
 ) -> None:
     """Add *part_id* as a composite part of *whole_id* block and create the
     part object in the whole's Internal Block Diagram if present."""
+    repo.push_undo_state()
 
     add_aggregation_part(repo, whole_id, part_id, multiplicity, app=app)
     diag_id = repo.get_linked_diagram(whole_id)
@@ -597,6 +601,7 @@ def add_composite_aggregation_part(
                 properties={"definition": part_id, "force_ibd": "true"},
                 owner=repo.root_package.elem_id,
             )
+            repo._undo_stack.pop()
             rel.properties["part_elem"] = part_elem.elem_id
         elif rel and rel.properties.get("part_elem"):
             pid = rel.properties["part_elem"]
@@ -701,6 +706,7 @@ def add_multiplicity_parts(
         for obj in to_remove:
             diag.objects.remove(obj)
             repo.delete_element(obj.get("element_id"))
+            repo._undo_stack.pop()
         diag.objects = [
             o
             for o in diag.objects
@@ -1347,6 +1353,7 @@ def remove_aggregation_part(
     If *remove_object* is True, also delete any part object representing
     *part_id* in the Internal Block Diagram linked to *whole_id*.
     """
+    repo.push_undo_state()
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
@@ -1429,6 +1436,7 @@ def remove_aggregation_part(
             pid = rel.properties.pop("part_elem", None)
             if pid and pid in repo.elements:
                 repo.delete_element(pid)
+                repo._undo_stack.pop()
 
 
 def _propagate_part_removal(
@@ -1503,6 +1511,7 @@ def remove_partproperty_entry(
     repo: SysMLRepository, block_id: str, entry: str, app=None
 ) -> None:
     """Remove a part property entry and update descendant diagrams."""
+    repo.push_undo_state()
 
     block = repo.elements.get(block_id)
     if not block:
@@ -2988,6 +2997,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
                 min_w, min_h = self._min_block_size(obj)
+            elif obj.obj_type in ("Action", "CallBehaviorAction"):
+                min_w, min_h = self._min_action_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
             if "e" in self.resize_edge or "w" in self.resize_edge:
@@ -3926,6 +3937,17 @@ class SysMLDiagramWindow(tk.Frame):
             width_px = max(width_px, self.font.measure(display) + 8 * self.zoom)
         height_px = (1 + len(compartments)) * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
+
+    def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
+        """Return minimum width and height to display Action text without wrapping."""
+        full_width_obj = replace(obj, width=10_000)
+        lines = self._object_label_lines(full_width_obj)
+        if not lines:
+            return (10.0, 10.0)
+        text_width = max(self.font.measure(line) for line in lines)
+        text_height = self.font.metrics("linespace") * len(lines)
+        padding = 6 * self.zoom
+        return (text_width + padding) / self.zoom, (text_height + padding) / self.zoom
 
     def _wrap_text_to_width(self, text: str, width_px: float) -> list[str]:
         """Return *text* wrapped to fit within *width_px* pixels."""
@@ -5395,6 +5417,7 @@ class SysMLDiagramWindow(tk.Frame):
                         else:
                             o.setdefault("properties", {}).pop("partProperties", None)
         repo.delete_element(part_id)
+        repo._undo_stack.pop()
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
