@@ -39,7 +39,9 @@ class FTADrawingHelper:
                 x1, y1 = points[i]
                 x2, y2 = points[(i + 1) % len(points)]
                 if (x1 <= x <= x2) or (x2 <= x <= x1):
-                    if x1 == x2:
+                    if abs(x1 - x2) < 1e-6:
+                        if int(round(x1)) == x:
+                            yvals.extend([y1, y2])
                         continue
                     t = (x - x1) / (x2 - x1)
                     yvals.append(y1 + t * (y2 - y1))
@@ -60,6 +62,15 @@ class FTADrawingHelper:
             dx = x - cx
             dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
             canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+
+    def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
+        """Fill rectangle with gradient from white to *color*."""
+        if right <= left:
+            return
+        for x in range(int(left), int(right) + 1):
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            canvas.create_line(x, top, x, bottom, fill=fill)
 
     def get_text_size(self, text, font_obj):
         """Return the (width, height) in pixels needed to render the text with the given font."""
@@ -268,12 +279,20 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             top_box_x,
             top_y,
             top_box_x + top_box_width,
             top_y + top_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -291,12 +310,20 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             bottom_box_x,
             bottom_y,
             bottom_box_x + bottom_box_width,
             bottom_y + bottom_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -359,12 +386,20 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_y = min(pt[1] for pt in final_points) - top_box_height - 5
         top_box_x = x - top_box_width / 2
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_y,
+            top_box_x + top_box_width,
+            top_y + top_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             top_box_x,
             top_y,
             top_box_x + top_box_width,
             top_y + top_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -380,12 +415,20 @@ class FTADrawingHelper:
         shape_lowest_y = max(pt[1] for pt in final_points)
         bottom_y = shape_lowest_y - (2 * bottom_box_height)
         bottom_box_x = x - bottom_box_width / 2
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_y,
+            bottom_box_x + bottom_box_width,
+            bottom_y + bottom_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             bottom_box_x,
             bottom_y,
             bottom_box_x + bottom_box_width,
             bottom_y + bottom_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -531,12 +574,20 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = min(v[1] for v in vertices) - top_box_height
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             top_box_x,
             top_box_y,
             top_box_x + top_box_width,
             top_box_y + top_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -550,12 +601,20 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = max(v[1] for v in vertices) + padding - 2 * bottom_box_height
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             bottom_box_x,
             bottom_box_y,
             bottom_box_x + bottom_box_width,
             bottom_box_y + bottom_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -602,12 +661,20 @@ class FTADrawingHelper:
         top_box_height = t_height + 2 * padding
         top_box_x = x - top_box_width / 2
         top_box_y = top - top_box_height
+        self._fill_gradient_rect(
+            canvas,
+            top_box_x,
+            top_box_y,
+            top_box_x + top_box_width,
+            top_box_y + top_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             top_box_x,
             top_box_y,
             top_box_x + top_box_width,
             top_box_y + top_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
@@ -621,12 +688,20 @@ class FTADrawingHelper:
         bottom_box_height = b_height + 2 * padding
         bottom_box_x = x - bottom_box_width / 2
         bottom_box_y = bottom - 2 * bottom_box_height
+        self._fill_gradient_rect(
+            canvas,
+            bottom_box_x,
+            bottom_box_y,
+            bottom_box_x + bottom_box_width,
+            bottom_box_y + bottom_box_height,
+            "#CFD8DC",
+        )
         canvas.create_rectangle(
             bottom_box_x,
             bottom_box_y,
             bottom_box_x + bottom_box_width,
             bottom_box_y + bottom_box_height,
-            fill=fill,
+            fill="",
             outline=outline_color,
             width=line_width,
         )
