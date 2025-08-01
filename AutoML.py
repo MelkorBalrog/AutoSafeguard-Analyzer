@@ -11429,7 +11429,8 @@ class FaultTreeApp:
                 )
 
         class SGDialog(simpledialog.Dialog):
-            def __init__(self, parent, title, initial=None):
+            def __init__(self, parent, app, title, initial=None):
+                self.app = app
                 self.initial = initial
                 super().__init__(parent, title=title)
 
@@ -11448,11 +11449,21 @@ class FaultTreeApp:
 
                 ttk.Label(master, text="FTTI:").grid(row=3, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
-                tk.Entry(master, textvariable=self.ftti_var, validate="key", validatecommand=(master.register(parent.validate_float), "%P")).grid(row=3, column=1, padx=5, pady=5)
+                tk.Entry(
+                    master,
+                    textvariable=self.ftti_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=3, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="Acceptance Prob:").grid(row=4, column=0, sticky="e")
                 self.prob_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_prob", 1.0)))
-                tk.Entry(master, textvariable=self.prob_var, validate="key", validatecommand=(master.register(parent.validate_float), "%P")).grid(row=4, column=1, padx=5, pady=5)
+                tk.Entry(
+                    master,
+                    textvariable=self.prob_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=4, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="Acceptance Criteria:").grid(row=5, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
@@ -11477,7 +11488,7 @@ class FaultTreeApp:
                 }
 
         def add_sg():
-            dlg = SGDialog(win, "Add Safety Goal")
+            dlg = SGDialog(win, self, "Add Safety Goal")
             if dlg.result:
                 node = FaultTreeNode(dlg.result["id"], "TOP EVENT")
                 node.safety_goal_asil = dlg.result["asil"]
@@ -11499,7 +11510,7 @@ class FaultTreeApp:
                 return
             uid = int(sel[0])
             sg = self.find_node_by_id_all(uid)
-            dlg = SGDialog(win, "Edit Safety Goal", sg)
+            dlg = SGDialog(win, self, "Edit Safety Goal", sg)
             if dlg.result:
                 sg.user_name = dlg.result["id"]
                 sg.safety_goal_asil = dlg.result["asil"]
