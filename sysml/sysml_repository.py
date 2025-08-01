@@ -100,6 +100,12 @@ class SysMLRepository:
             cls._instance = SysMLRepository()
         return cls._instance
 
+    @classmethod
+    def reset_instance(cls) -> "SysMLRepository":
+        """Return a fresh repository instance, clearing all current data."""
+        cls._instance = SysMLRepository()
+        return cls._instance
+
     # ------------------------------------------------------------
     # Undo support
     # ------------------------------------------------------------
