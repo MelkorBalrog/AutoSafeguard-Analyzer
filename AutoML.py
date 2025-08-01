@@ -8542,6 +8542,18 @@ class FaultTreeApp:
         for be in self.get_all_basic_events():
             be.failure_prob = self.compute_failure_prob(be)
 
+    def validate_float(self, value):
+        """Return ``True`` if ``value`` can be parsed as a float or is an
+        intermediate input allowed by Tk validation."""
+
+        if value in ("", "-", "+", ".", "-.", "+."):
+            return True
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
+
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):
         """Return probability of failure for ``node`` based on FIT rate.
 
