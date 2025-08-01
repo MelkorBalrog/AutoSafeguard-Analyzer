@@ -2136,7 +2136,9 @@ class FaultTreeApp:
         root.bind("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
-        self.main_pane.pack(fill=tk.BOTH, expand=True)
+        self.log_frame = logger.init_log_window(root)
+        self.log_frame.pack(side=tk.BOTTOM, fill=tk.BOTH)
+        self.main_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.explorer_nb = ttk.Notebook(self.main_pane)
         self.main_pane.add(self.explorer_nb, width=300)
@@ -8646,7 +8648,12 @@ class FaultTreeApp:
                 return 0.0
         if fit <= 0:
             return 0.0
-        lam = fit / 1e9
+        comp_name = self.get_component_name_for_node(fm)
+        qty = next((c.quantity for c in self.reliability_components
+                     if c.name == comp_name), 1)
+        if qty <= 0:
+            qty = 1
+        lam = (fit / qty) / 1e9
         if f == "exponential":
             return 1 - math.exp(-lam * t)
         else:

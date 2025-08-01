@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import colorchooser, filedialog, messagebox
+from tkinter import colorchooser, filedialog
+from gui import messagebox
 from .style_manager import StyleManager
 
 class StyleEditor(tk.Toplevel):
