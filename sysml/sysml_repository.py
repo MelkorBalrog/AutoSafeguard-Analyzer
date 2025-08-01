@@ -154,6 +154,8 @@ class SysMLRepository:
     def create_element(self, elem_type: str, name: str = "", properties: Optional[Dict[str, str]] = None, owner: Optional[str] = None) -> SysMLElement:
         self.push_undo_state()
         elem_id = str(uuid.uuid4())
+        if not name and elem_type != "Part":
+            name = elem_type
         unique_name = self.ensure_unique_element_name(name) if name else name
         elem = SysMLElement(
             elem_id,
