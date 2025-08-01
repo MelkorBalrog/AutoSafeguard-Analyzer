@@ -262,6 +262,51 @@ def _is_default_part_name(def_name: str, part_name: str) -> bool:
     pattern = re.escape(def_name) + r"\[\d+\]$"
     return re.fullmatch(pattern, part_name) is not None
 
+def _multiplicity_limit_exceeded(
+    repo: SysMLRepository,
+    parent_id: str,
+    def_id: str,
+    diagram_objects: list,
+    self_elem_id: str | None = None,
+) -> bool:
+    """Return ``True`` if assigning *def_id* would exceed multiplicity."""
+
+    rels = [
+        r
+        for r in repo.relationships
+        if r.source == parent_id
+        and r.target == def_id
+        and r.rel_type in ("Aggregation", "Composite Aggregation")
+    ]
+    if not rels:
+        return False
+
+    limit: int | None = 0
+    for rel in rels:
+        mult = rel.properties.get("multiplicity", "")
+        if not mult:
+            limit = None
+            break
+        low, high = _parse_multiplicity_range(mult)
+        if high is None:
+            limit = None
+            break
+        limit += high
+
+    if limit is None:
+        return False
+
+    count = 0
+    for obj in diagram_objects:
+        data = obj.__dict__ if hasattr(obj, "__dict__") else obj
+        if (
+            data.get("obj_type") == "Part"
+            and data.get("properties", {}).get("definition") == def_id
+            and data.get("element_id") != self_elem_id
+        ):
+            count += 1
+
+    return count >= limit
 
 def _find_generalization_children(repo: SysMLRepository, parent_id: str) -> set[str]:
     """Return all blocks that generalize ``parent_id``."""
@@ -6184,26 +6229,19 @@ class SysMLObjectDialog(simpledialog.Dialog):
                         ),
                         None,
                     )
-                    limit = None
-                    if rel:
-                        mult = rel.properties.get("multiplicity", "")
-                        if mult:
-                            low, high = _parse_multiplicity_range(mult)
-                            limit = high if high is not None else low
-                    if limit is not None:
-                        existing = [
-                            o
-                            for o in repo.diagrams.get(diag.diag_id).objects
-                            if o.get("obj_type") == "Part"
-                            and o.get("properties", {}).get("definition") == def_id
-                            and o.get("element_id") != self.obj.element_id
-                        ]
-                        if len(existing) >= limit:
-                            messagebox.showinfo(
-                                "Add Part",
-                                "Maximum number of parts of that type has been reached",
-                            )
-                            def_id = None
+                    limit_exceeded = _multiplicity_limit_exceeded(
+                        repo,
+                        parent_id,
+                        def_id,
+                        getattr(self.master, "objects", []),
+                        self.obj.element_id,
+                    )
+                    if limit_exceeded:
+                        messagebox.showinfo(
+                            "Add Part",
+                            "Maximum number of parts of that type has been reached",
+                        )
+                        def_id = None
                 if def_id:
                     self.obj.properties["definition"] = def_id
                     if self.obj.element_id and self.obj.element_id in repo.elements:

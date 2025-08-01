@@ -39,15 +39,14 @@ class PartDefinitionLimitTests(unittest.TestCase):
         ibd.objects.append(new_obj.__dict__)
         win.objects.append(new_obj)
         with patch.object(architecture.messagebox, "showinfo") as info:
-            rel = next(r for r in repo.relationships if r.rel_type == "Composite Aggregation")
-            mult = rel.properties.get("multiplicity", "")
-            low, high = architecture._parse_multiplicity_range(mult)
-            limit = high if high is not None else low
-            existing = [
-                o for o in ibd.objects
-                if o.get("obj_type") == "Part" and o.get("properties", {}).get("definition") == b.elem_id
-            ]
-            if len(existing) >= limit:
+            exceeded = architecture._multiplicity_limit_exceeded(
+                repo,
+                a.elem_id,
+                b.elem_id,
+                win.objects,
+                new_obj.element_id,
+            )
+            if exceeded:
                 architecture.messagebox.showinfo(
                     "Add Part",
                     "Maximum number of parts of that type has been reached",
