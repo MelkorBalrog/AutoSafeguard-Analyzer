@@ -1,4 +1,4 @@
-version: 0.1.3
+version: 0.1.4
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -29,6 +29,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [Safety Goal Export](#safety-goal-export)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
+- [Diagram Styles](#diagram-styles)
 - [License](#license)
 - [Building the Executable](#building-the-executable)
 - [Version History](#version-history)
@@ -956,6 +957,15 @@ bundled correctly.
 If double‑clicking `AutoML.py` closes immediately, launch it from a command
 prompt instead so any error messages remain visible.
 
+## Diagram Styles
+
+Several XML files in the `styles` directory control the colors used for
+diagram elements. The default `modern.xml` uses a Material-inspired palette.
+For a look similar to IBM Rhapsody load `rhapsody.xml` from the Style Editor.
+Likewise, `ea.xml` gives the appearance of Enterprise Architect. Open the
+editor via **View → Style Editor**, click **Load** and choose the desired
+style. All open diagrams update immediately.
+
 ## License
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
@@ -985,6 +995,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.4 - Added Rhapsody and Enterprise Architect style files and documentation.
 - 0.1.3 - Added context menu actions to remove parts from a diagram or from the model.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
