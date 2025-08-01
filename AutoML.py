@@ -7847,6 +7847,8 @@ class FaultTreeApp:
         self.canvas.delete("all")
 
         global AutoML_Helper, unique_node_id_counter
+        # Reset the SysML repository so previous project data is discarded
+        SysMLRepository.reset_instance()
         AutoML_Helper = AutoMLHelper()
         unique_node_id_counter = 1
         self.zoom = 1.0
