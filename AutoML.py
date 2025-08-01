@@ -1955,6 +1955,7 @@ class FaultTreeApp:
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
+        self._redo_stack: list[dict] = []
         self.versions = []
         self.diff_nodes = []
         self.fi2tc_entries = []
@@ -2010,6 +2011,7 @@ class FaultTreeApp:
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Undo", command=self.undo, accelerator="Ctrl+Z")
+        edit_menu.add_command(label="Redo", command=self.redo, accelerator="Ctrl+Y")
         edit_menu.add_separator()
         edit_menu.add_command(label="Edit Selected", command=self.edit_selected)
         edit_menu.add_command(label="Remove Connection", command=lambda: self.remove_connection(self.selected_node) if self.selected_node else None)
@@ -2130,6 +2132,7 @@ class FaultTreeApp:
         root.bind("<Control-v>", lambda event: self.paste_node())
         root.bind("<Control-p>", lambda event: self.save_diagram_png())
         root.bind("<Control-z>", lambda event: self.undo())
+        root.bind("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
         self.main_pane.pack(fill=tk.BOTH, expand=True)
@@ -13554,13 +13557,39 @@ class FaultTreeApp:
         self._undo_stack.append(self.export_model_data(include_versions=False))
         if len(self._undo_stack) > 20:
             self._undo_stack.pop(0)
+        self._redo_stack.clear()
 
     def undo(self):
         """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
+        current = self.export_model_data(include_versions=False)
         repo.undo()
         if self._undo_stack:
             state = self._undo_stack.pop()
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
+            self.apply_model_data(state)
+        else:
+            self._redo_stack.append(current)
+            if len(self._redo_stack) > 20:
+                self._redo_stack.pop(0)
+        for tab in getattr(self, "diagram_tabs", {}).values():
+            for child in tab.winfo_children():
+                if hasattr(child, "refresh_from_repository"):
+                    child.refresh_from_repository()
+        self.update_views()
+
+    def redo(self):
+        """Restore the next state from the redo stack."""
+        repo = SysMLRepository.get_instance()
+        current = self.export_model_data(include_versions=False)
+        repo.redo()
+        if self._redo_stack:
+            state = self._redo_stack.pop()
+            self._undo_stack.append(current)
+            if len(self._undo_stack) > 20:
+                self._undo_stack.pop(0)
             self.apply_model_data(state)
         for tab in getattr(self, "diagram_tabs", {}).values():
             for child in tab.winfo_children():
