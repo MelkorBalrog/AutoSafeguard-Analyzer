@@ -7854,6 +7854,12 @@ class FaultTreeApp:
         self.zoom = 1.0
         self.diagram_font.config(size=int(8 * self.zoom))
 
+        # Remove all previous FTA information
+        self.top_events = []
+        self.root_node = None
+        self.selected_node = None
+        self.page_history = []
+
         # Reset project properties and clear every stored document or library
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
