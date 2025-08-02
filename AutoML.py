@@ -11963,8 +11963,7 @@ class FaultTreeApp:
                     "malfunction": mal,
                     "fis": set(),
                     "tcs": set(),
-                    "failure_modes": set(),
-                    "faults": set(),
+                    "failure_modes": {},  # map failure mode label -> set of fault names
                 })
 
         # Add FI/TC info per hazard
@@ -11985,8 +11984,9 @@ class FaultTreeApp:
             mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
             for (hz, mal), info in rows.items():
                 if mal in mals:
-                    info["failure_modes"].add(self.format_failure_mode_label(be))
-                    info["faults"].update(self.get_faults_for_failure_mode(be))
+                    label = self.format_failure_mode_label(be)
+                    faults = set(self.get_faults_for_failure_mode(be))
+                    info["failure_modes"].setdefault(label, set()).update(faults)
 
         # Include FTA basic events linked via their top event malfunction
         for te in self.top_events:
@@ -11997,12 +11997,12 @@ class FaultTreeApp:
             for be in basic_nodes:
                 for (hz, mal), info in rows.items():
                     if mal == te_mal:
-                        info["failure_modes"].add(self.format_failure_mode_label(be))
+                        label = self.format_failure_mode_label(be)
                         faults = set(self.get_faults_for_failure_mode(be))
                         fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
                         if fault:
                             faults.add(fault)
-                        info["faults"].update(faults)
+                        info["failure_modes"].setdefault(label, set()).update(faults)
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
 
@@ -12056,14 +12056,16 @@ class FaultTreeApp:
 
         row_map = {}
         for row in data:
+            failure_modes = row["failure_modes"]
+            faults = sorted({f for fset in failure_modes.values() for f in fset})
             iid = tree.insert(
                 "",
                 "end",
                 values=(
                     row["hazard"],
                     row["malfunction"],
-                    ", ".join(sorted(row["failure_modes"])),
-                    ", ".join(sorted(row["faults"])),
+                    ", ".join(sorted(failure_modes.keys())),
+                    ", ".join(faults),
                     ", ".join(sorted(row["fis"])),
                     ", ".join(sorted(row["tcs"])),
                 ),
@@ -12098,14 +12100,14 @@ class FaultTreeApp:
             nodes[mal_id] = (mal_label, "malfunction")
             edges.append((haz_id, mal_id))
 
-            for fm in sorted(row["failure_modes"]):
+            for fm, faults in sorted(row["failure_modes"].items()):
                 fm_id = f"fm:{fm}"
                 nodes[fm_id] = (fm, "failure_mode")
                 edges.append((mal_id, fm_id))
-            for fault in sorted(row["faults"]):
-                fault_id = f"fault:{fault}"
-                nodes[fault_id] = (fault, "fault")
-                edges.append((mal_id, fault_id))
+                for fault in sorted(faults):
+                    fault_id = f"fault:{fault}"
+                    nodes[fault_id] = (fault, "fault")
+                    edges.append((fm_id, fault_id))
             for fi in sorted(row["fis"]):
                 fi_id = f"fi:{fi}"
                 nodes[fi_id] = (fi, "fi")
@@ -12119,13 +12121,14 @@ class FaultTreeApp:
             # right.  Use generous spacing so wrapped text remains readable.
             pos = {haz_id: (0, 0), mal_id: (4, 0)}
             y_fm = 0
-            for fm in sorted(row["failure_modes"]):
-                pos[f"fm:{fm}"] = (8, y_fm * 2)
-                y_fm += 1
-            y_fault = 0
-            for fault in sorted(row["faults"]):
-                pos[f"fault:{fault}"] = (12, y_fault * 2)
-                y_fault += 1
+            for fm, faults in sorted(row["failure_modes"].items()):
+                fm_id = f"fm:{fm}"
+                pos[fm_id] = (8, y_fm * 2)
+                y_fault = 0
+                for fault in sorted(faults):
+                    pos[f"fault:{fault}"] = (12, y_fm * 2 + y_fault * 2)
+                    y_fault += 1
+                y_fm += max(1, y_fault)
             y_fi = -2
             for fi in sorted(row["fis"]):
                 pos[f"fi:{fi}"] = (2, y_fi)
