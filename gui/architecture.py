@@ -523,6 +523,12 @@ def add_aggregation_part(
     part = repo.elements.get(part_id)
     if not whole or not part:
         return
+    if part_id == whole_id:
+        return
+    if part_id in _collect_generalization_parents(repo, whole_id):
+        return
+    if _reverse_aggregation_exists(repo, whole_id, part_id):
+        return
     name = part.name or part_id
     entry = f"{name}[{multiplicity}]" if multiplicity else name
     parts = [p.strip() for p in whole.properties.get("partProperties", "").split(",") if p.strip()]

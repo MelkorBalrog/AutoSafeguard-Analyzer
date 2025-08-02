@@ -3,6 +3,7 @@ from gui.architecture import (
     _aggregation_exists,
     SysMLDiagramWindow,
     SysMLObject,
+    add_aggregation_part,
 )
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
@@ -88,6 +89,41 @@ class ReciprocalAggregationTests(unittest.TestCase):
         dst = SysMLObject(2, "Block", 0, 0, element_id=a.elem_id)
         valid, _ = SysMLDiagramWindow.validate_connection(win, src, dst, "Composite Aggregation")
         self.assertFalse(valid)
+
+
+class AggregationSanityTests(unittest.TestCase):
+    def setUp(self):
+        SysMLRepository._instance = None
+        self.repo = SysMLRepository.get_instance()
+
+    def test_parent_as_part_ignored(self):
+        repo = self.repo
+        parent = repo.create_element("Block", name="P")
+        child = repo.create_element("Block", name="C")
+        repo.create_relationship("Generalization", child.elem_id, parent.elem_id)
+        add_aggregation_part(repo, child.elem_id, parent.elem_id)
+        props = repo.elements[child.elem_id].properties.get("partProperties", "")
+        self.assertNotIn("P", props)
+        self.assertFalse(
+            any(
+                r.rel_type in ("Aggregation", "Composite Aggregation")
+                and r.source == child.elem_id
+                and r.target == parent.elem_id
+                for r in repo.relationships
+            )
+        )
+
+    def test_self_part_ignored(self):
+        repo = self.repo
+        blk = repo.create_element("Block", name="Self")
+        add_aggregation_part(repo, blk.elem_id, blk.elem_id)
+        props = repo.elements[blk.elem_id].properties.get("partProperties", "")
+        self.assertEqual(props, "")
+        self.assertFalse(
+            any(
+                r.source == blk.elem_id and r.target == blk.elem_id for r in repo.relationships
+            )
+        )
 
 if __name__ == "__main__":
     unittest.main()
