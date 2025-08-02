@@ -2747,7 +2747,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
-                if abs(src.x - dst.x) > 1e-6:
+                tolerance = 5 / getattr(self, "zoom", 1)
+                if abs(src.x - dst.x) > tolerance:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
@@ -5127,7 +5128,7 @@ class SysMLDiagramWindow(tk.Frame):
             element = self.repo.elements.get(obj.element_id)
             if element:
                 color = StyleManager.get_instance().get_color(element.elem_type)
-                outline = color
+            outline = color
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
                 x - w,
@@ -5135,6 +5136,7 @@ class SysMLDiagramWindow(tk.Frame):
                 x + w,
                 y + h,
                 radius=12 * self.zoom,
+                dash=(),
                 outline=outline,
                 fill="",
             )
