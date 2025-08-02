@@ -325,7 +325,6 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO, StringIO
-import base64
 from email.utils import make_msgid
 import html
 import datetime
@@ -12162,10 +12161,17 @@ class FaultTreeApp:
             plt.savefig(buf, format="PNG", dpi=120)
             plt.close()
             buf.seek(0)
-            img_data = base64.b64encode(buf.getvalue()).decode("ascii")
+
+            # Convert the matplotlib buffer to a Tk-compatible image using
+            # Pillow.  ``tk.PhotoImage`` expects base64 encoded GIF/PPM data,
+            # which can lead to ``TclError`` on some platforms when fed raw
+            # PNG bytes.  Opening the image with Pillow and then wrapping it in
+            # ``ImageTk.PhotoImage`` provides a reliable cross-platform
+            # solution for displaying the diagram.
+            pil_img = Image.open(buf)
+            photo = ImageTk.PhotoImage(pil_img)
 
             canvas.delete("all")
-            photo = tk.PhotoImage(data=img_data, format="png")
             canvas.image = photo  # keep reference
             canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
