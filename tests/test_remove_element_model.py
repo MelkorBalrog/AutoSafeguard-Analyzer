@@ -43,8 +43,10 @@ class RemoveElementModelTests(unittest.TestCase):
         repo.diagrams[diag2.diag_id] = diag2
 
         block = repo.create_element("Block", name="B")
+        part = repo.create_element("Part", name="x", properties={"definition": block.elem_id})
+        part.name = "B"
         obj1 = SysMLObject(1, "Block", 0, 0, element_id=block.elem_id)
-        obj2 = {"obj_id": 2, "obj_type": "Block", "x": 0, "y": 0, "element_id": block.elem_id}
+        obj2 = {"obj_id": 2, "obj_type": "Part", "x": 0, "y": 0, "element_id": part.elem_id}
         diag2.objects.append(obj2)
 
         win = DummyWindow(diag1)
@@ -54,8 +56,11 @@ class RemoveElementModelTests(unittest.TestCase):
         SysMLDiagramWindow.remove_element_model(win, obj1)
 
         self.assertNotIn(block.elem_id, repo.elements)
+        self.assertNotIn(part.elem_id, repo.elements)
         self.assertEqual(len(diag2.objects), 0)
 
+        new_block = repo.create_element("Block", name="B")
+        self.assertEqual(new_block.name, "B")
 
 if __name__ == "__main__":
     unittest.main()

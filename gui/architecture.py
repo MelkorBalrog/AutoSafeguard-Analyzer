@@ -5916,8 +5916,32 @@ class SysMLDiagramWindow(tk.Frame):
                 ]
             if elem_id in getattr(diag, "elements", []):
                 diag.elements.remove(elem_id)
+        # remove part elements that reference this element
+        to_delete = [
+            eid
+            for eid, e in repo.elements.items()
+            if e.elem_type == "Part" and e.properties.get("definition") == elem_id
+        ]
+        for pid in to_delete:
+            for diag in repo.diagrams.values():
+                removed = [o.get("obj_id") for o in getattr(diag, "objects", []) if o.get("element_id") == pid]
+                if removed:
+                    diag.objects = [o for o in diag.objects if o.get("element_id") != pid]
+                    diag.connections = [
+                        c
+                        for c in getattr(diag, "connections", [])
+                        if c.get("src") not in removed and c.get("dst") not in removed
+                    ]
+                if pid in getattr(diag, "elements", []):
+                    diag.elements.remove(pid)
+            repo.delete_element(pid)
+            if repo._undo_stack:
+                repo._undo_stack.pop()
+
         repo.delete_element(elem_id)
-        repo._undo_stack.pop()
+        if repo._undo_stack:
+            repo._undo_stack.pop()
+
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
