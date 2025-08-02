@@ -5717,12 +5717,33 @@ class SysMLDiagramWindow(tk.Frame):
     def delete_selected(self, _event=None):
         if self.selected_objs:
             for obj in list(self.selected_objs):
-                self.remove_object(obj)
+                if obj.element_id:
+                    if obj.obj_type == "Part":
+                        msg = (
+                            "Delete part from model?\nChoose No to remove only from diagram."
+                        )
+                        ans = messagebox.askyesnocancel("Delete Part", msg)
+                        if ans is None:
+                            return
+                        if ans:
+                            self.remove_part_model(obj)
+                        else:
+                            self.remove_part_diagram(obj)
+                    else:
+                        msg = (
+                            "Delete element from model?\nChoose No to remove only from diagram."
+                        )
+                        ans = messagebox.askyesnocancel("Delete Element", msg)
+                        if ans is None:
+                            return
+                        if ans:
+                            self.remove_element_model(obj)
+                        else:
+                            self.remove_object(obj)
+                else:
+                    self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
-            self._sync_to_repository()
-            self.redraw()
-            self.update_property_view()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -5883,6 +5904,27 @@ class SysMLDiagramWindow(tk.Frame):
                         else:
                             o.setdefault("properties", {}).pop("partProperties", None)
         repo.delete_element(part_id)
+        repo._undo_stack.pop()
+        self._sync_to_repository()
+        self.redraw()
+        self.update_property_view()
+
+    def remove_element_model(self, obj: SysMLObject) -> None:
+        """Remove *obj* and its element from the repository and all diagrams."""
+        elem_id = obj.element_id
+        if not elem_id:
+            self.remove_object(obj)
+            self._sync_to_repository()
+            self.redraw()
+            self.update_property_view()
+            return
+        self.remove_object(obj)
+        repo = self.repo
+        for diag in repo.diagrams.values():
+            diag.objects = [o for o in getattr(diag, "objects", []) if o.get("element_id") != elem_id]
+            if elem_id in getattr(diag, "elements", []):
+                diag.elements.remove(elem_id)
+        repo.delete_element(elem_id)
         repo._undo_stack.pop()
         self._sync_to_repository()
         self.redraw()
