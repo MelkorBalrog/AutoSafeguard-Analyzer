@@ -2680,6 +2680,12 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo, src.element_id, dst.element_id
                 ):
                     return False, "Blocks already share a generalized parent"
+                if dst.element_id in _collect_generalization_parents(
+                    self.repo, src.element_id
+                ) or src.element_id in _collect_generalization_parents(
+                    self.repo, dst.element_id
+                ):
+                    return False, "Blocks cannot generalize each other"
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
