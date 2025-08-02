@@ -12063,23 +12063,24 @@ class FaultTreeApp:
                 G.add_edge(haz, tc)
 
             # Layout from effect (hazard) on the left to root causes on the right
-            pos = {haz: (0, 0), mal: (1, 0)}
+            # Use generous spacing so wrapped text remains readable
+            pos = {haz: (0, 0), mal: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
-                pos[fm] = (2, y_fm)
+                pos[fm] = (8, y_fm * 2)
                 y_fm += 1
             y_fault = 0
             for fault in sorted(row["faults"]):
-                pos[fault] = (3, y_fault)
+                pos[fault] = (12, y_fault * 2)
                 y_fault += 1
-            y_fi = -1
+            y_fi = -2
             for fi in sorted(row["fis"]):
-                pos[fi] = (1.5, y_fi)
-                y_fi -= 1
-            y_tc = -1 - len(row["fis"])
+                pos[fi] = (2, y_fi)
+                y_fi -= 2
+            y_tc = y_fi
             for tc in sorted(row["tcs"]):
-                pos[tc] = (1.5, y_tc)
-                y_tc -= 1
+                pos[tc] = (2, y_tc)
+                y_tc -= 2
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -12089,17 +12090,16 @@ class FaultTreeApp:
                 "tc": "lightgreen",
             }
             node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
-            labels = {n: textwrap.fill(str(n), 15) for n in G.nodes()}
+            labels = {n: textwrap.fill(str(n), 20) for n in G.nodes()}
             edge_labels = {(u, v): "caused by" for u, v in G.edges()}
-
-            plt.figure(figsize=(4, 3))
+            plt.figure(figsize=(6, 4))
             nx.draw(
                 G,
                 pos,
                 with_labels=True,
                 labels=labels,
                 node_color=node_colors,
-                node_size=500,
+                node_size=1200,
                 font_size=6,
                 arrows=True,
             )
@@ -15677,6 +15677,7 @@ class FaultTreeApp:
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from HARAs and update requirement ASILs."""
+        self.update_fta_statuses()
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
@@ -15944,6 +15945,8 @@ class FaultTreeNode:
         self.ftti = ""
         self.acceptance_prob = 1.0
         self.acceptance_criteria = ""
+        self.status = "draft"
+        self.approved = False
         # Targets for safety goal metrics
         self.sg_dc_target = 0.0
         self.sg_spfm_target = 0.0
@@ -16018,6 +16021,8 @@ class FaultTreeNode:
             "ftti": self.ftti,
             "acceptance_prob": self.acceptance_prob,
             "acceptance_criteria": self.acceptance_criteria,
+            "status": self.status,
+            "approved": self.approved,
             "sg_dc_target": self.sg_dc_target,
             "sg_spfm_target": self.sg_spfm_target,
             "sg_lpfm_target": self.sg_lpfm_target,
@@ -16079,6 +16084,8 @@ class FaultTreeNode:
         node.ftti = data.get("ftti", "")
         node.acceptance_prob = data.get("acceptance_prob", 1.0)
         node.acceptance_criteria = data.get("acceptance_criteria", "")
+        node.status = data.get("status", "draft")
+        node.approved = data.get("approved", False)
         node.sg_dc_target = data.get("sg_dc_target", 0.0)
         node.sg_spfm_target = data.get("sg_spfm_target", 0.0)
         node.sg_lpfm_target = data.get("sg_lpfm_target", 0.0)
