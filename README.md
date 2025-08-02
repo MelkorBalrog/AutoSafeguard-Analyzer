@@ -104,6 +104,8 @@ Requirements can also be attached to diagram elements to keep architecture and s
 
 Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
 
+Every element, relationship and diagram records creation and modification metadata such as the author, email and timestamps. Blocks and parts expose additional reliability fields (`analysis`, `fit`, `qualification` and `failureModes`, plus `component` and `asil` on parts) so architecture elements remain linked to safety analyses.
+
 ```mermaid
 classDiagram
     class SysMLRepository {
@@ -122,6 +124,12 @@ classDiagram
         properties: Dict~str, str~
         stereotypes: Dict~str, str~
         owner: str
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLRelationship {
         rel_id: str
@@ -130,6 +138,12 @@ classDiagram
         target: str
         stereotype: str
         properties: Dict~str, str~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLDiagram {
         diag_id: str
@@ -138,10 +152,17 @@ classDiagram
         package: str
         description: str
         color: str
+        father: str
         elements: List~str~
         relationships: List~str~
         objects: List~SysMLObject~
         connections: List~DiagramConnection~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLObject {
         obj_id: int
@@ -155,6 +176,7 @@ classDiagram
         requirements: List~dict~
         locked: bool
         hidden: bool
+        collapsed: Dict~str, bool~
     }
     class DiagramConnection {
         src: int
