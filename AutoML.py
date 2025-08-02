@@ -12196,6 +12196,10 @@ class FaultTreeApp:
             canvas.tag_raise("node")
 
             canvas.config(scrollregion=canvas.bbox("all"))
+            # Ensure the drawing appears immediately in environments where
+            # the Tk event loop has not yet run. Without this call the canvas
+            # may show up blank until the user interacts with the window.
+            canvas.update_idletasks()
 
         def on_select(event):
             sel = tree.selection()
