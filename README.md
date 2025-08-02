@@ -102,7 +102,9 @@ Requirements can also be attached to diagram elements to keep architecture and s
 
 ## Metamodel Overview
 
-Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship, diagram and review so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+
+Every element, relationship and diagram records creation and modification metadata such as the author, email and timestamps. Blocks and parts expose additional reliability fields (`analysis`, `fit`, `qualification` and `failureModes`, plus `component` and `asil` on parts) so architecture elements remain linked to safety analyses.
 
 ```mermaid
 classDiagram
@@ -111,6 +113,8 @@ classDiagram
         relationships: List~SysMLRelationship~
         diagrams: Dict~str, SysMLDiagram~
         element_diagrams: Dict~str, str~
+        reviews: List~ReviewData~
+        current_review: ReviewData
         +create_element()
         +create_relationship()
         +create_diagram()
@@ -122,6 +126,12 @@ classDiagram
         properties: Dict~str, str~
         stereotypes: Dict~str, str~
         owner: str
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLRelationship {
         rel_id: str
@@ -130,6 +140,12 @@ classDiagram
         target: str
         stereotype: str
         properties: Dict~str, str~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLDiagram {
         diag_id: str
@@ -138,10 +154,17 @@ classDiagram
         package: str
         description: str
         color: str
+        father: str
         elements: List~str~
         relationships: List~str~
         objects: List~SysMLObject~
         connections: List~DiagramConnection~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLObject {
         obj_id: int
@@ -155,6 +178,7 @@ classDiagram
         requirements: List~dict~
         locked: bool
         hidden: bool
+        collapsed: Dict~str, bool~
     }
     class DiagramConnection {
         src: int
@@ -178,6 +202,7 @@ classDiagram
     class Hazard
     class Scenario
     class FaultTreeNode
+    class ReviewData
     SysMLRepository --> "*" BlockUsage
     SysMLRepository --> "*" PartUsage
     SysMLRepository --> "*" PortUsage
@@ -187,6 +212,7 @@ classDiagram
     SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" Scenario
     SysMLRepository --> "*" FaultTreeNode
+    SysMLRepository --> "*" ReviewData
     SysMLRepository --> "*" SysMLRelationship
     SysMLRepository --> "*" SysMLDiagram
     SysMLDiagram --> "*" SysMLObject
@@ -318,11 +344,15 @@ GUI so analyses remain linked to the architecture. Key data classes include:
 
 ```mermaid
 classDiagram
+    SysMLRepository --> "*" MissionProfile
+    SysMLRepository --> "*" MechanismLibrary
+    MechanismLibrary --> "*" DiagnosticMechanism
     SysMLRepository --> "*" ReliabilityAnalysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
     SysMLRepository --> "*" MissionProfile
     SysMLRepository --> "*" MechanismLibrary
     MechanismLibrary --> "*" DiagnosticMechanism
+    ReliabilityAnalysis --> MissionProfile : profile
     SysMLRepository --> "*" HazopDoc
     HazopDoc --> "*" HazopEntry
     SysMLRepository --> "*" HaraDoc
@@ -359,6 +389,7 @@ classDiagram
     SysMLRepository --> "*" FunctionalInsufficiency
     SysMLRepository --> "*" Fault
     SysMLRepository --> "*" Failure
+    SysMLRepository --> "*" ReviewData
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -376,6 +407,7 @@ classDiagram
     class ScenarioLibrary
     class OddLibrary
     class Scenery
+    class ReviewData
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -470,6 +502,52 @@ classDiagram
     Requirement --> "0..*" Requirement : decomposedInto
 ```
 
+#### Review Data Structure
+
+```mermaid
+classDiagram
+    SysMLRepository --> "*" ReviewData
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewComment : comments
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+```
+
+Each review stores its moderators, participants and comment threads along with
+the names or IDs of the analyses being evaluated.
+
 #### Differences From Standard SysML
 
 - **BlockUsage** – extends the standard `Block` with reliability information:
@@ -523,6 +601,8 @@ classDiagram
   same operational contexts.
 - **OddLibrary** – lists `Scenery` elements describing ODD attributes such as
   road features or environmental limits.
+- **ReviewData** – stores peer or joint review sessions with moderators,
+  participants, review comments and lists of referenced analyses.
 
 ### Extended AutoML Element Attributes
 
@@ -538,16 +618,29 @@ Key attributes are:
   `hazards`.
 - **Scenery** – stores the `odd_element` name and an open-ended set of
   context attributes describing that element.
-- **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
-  `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
-  `failure_prob` and a list of `safety_requirements`.
+- **FaultTreeNode** – FMEA fields (`fmea_effect`, `fmea_cause`, `fmea_severity`,
+  `fmea_occurrence`, `fmea_detection`, `fmea_component`), FMEDA metrics
+  (`fmeda_malfunction`, `fmeda_safety_goal`, `fmeda_diag_cov`, `fmeda_fit`,
+  `fmeda_spfm`, `fmeda_lpfm`, `fmeda_fault_type`, `fmeda_fault_fraction`,
+  `fmeda_dc_target`, `fmeda_spfm_target`, `fmeda_lpfm_target`), safety goal data
+  (`safety_goal_description`, `safety_goal_asil`, `safe_state`, `ftti`,
+  `acceptance_prob`, `acceptance_criteria`, `sg_dc_target`, `sg_spfm_target`,
+  `sg_lpfm_target`), probability attributes (`failure_prob`, `probability`,
+  `prob_formula`), plus `fault_ref`, `malfunction` and linked
+  `safety_requirements`.
 - **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **MissionProfile** – `tau_on`, `tau_off`, board and ambient temperature
+  ranges, `humidity`, `duty_cycle` and optional `notes` describing operating
+  conditions.
 - **FmeaDoc** – failure mode table with occurrence and detection ratings.
 - **FmedaDoc** – table-level metrics `spfm`, `lpfm` and `dc` calculated from
   failure mode FIT values.
+- **MechanismLibrary** – named collection of diagnostic mechanisms.
+- **DiagnosticMechanism** – mechanism `name`, expected `coverage` and
+  descriptive fields `description`, `detail` and `requirement`.
 - **FaultTreeDiagram** – overall fault tree probability `phmf` and Prototype
   Assurance Level `pal`.
 - **TriggeringCondition** – `description`, related `scenario` and any allocated
@@ -571,6 +664,8 @@ Key attributes are:
   attributes.
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
+- **ReviewData** - review `mode`, lists of `moderators` and `participants`,
+  referenced analysis names and a collection of `comments`.
 - **SysMLObject** – drawn object with coordinates, size and an optional linked
   element. The `locked` flag prevents editing while `hidden` temporarily removes
   the object from the diagram.
@@ -694,6 +789,48 @@ classDiagram
     }
     SysMLElement <|-- ReliabilityComponent
 ```
+**MissionProfile** – records operating and environmental conditions for reliability calculations.
+
+```mermaid
+classDiagram
+    class MissionProfile {
+        tau_on
+        tau_off
+        board_temp
+        board_temp_min
+        board_temp_max
+        ambient_temp
+        ambient_temp_min
+        ambient_temp_max
+        humidity
+        duty_cycle
+        notes
+    }
+```
+
+**MechanismLibrary** – collection of diagnostic mechanisms with coverage data.
+
+```mermaid
+classDiagram
+    class MechanismLibrary {
+        name
+        mechanisms
+    }
+```
+
+**DiagnosticMechanism** – individual safety mechanism and its expected coverage.
+
+```mermaid
+classDiagram
+    class DiagnosticMechanism {
+        name
+        coverage
+        description
+        detail
+        requirement
+    }
+```
+
 **AnalysisDocument** – base class for safety tables with `name`, `date` and `description`.
 
 
@@ -818,6 +955,51 @@ classDiagram
         severity
     }
     SysMLElement <|-- Failure
+```
+
+**ReviewData** – captures the participants and comments for peer or joint reviews.
+
+```mermaid
+classDiagram
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        moderators
+        participants
+        comments
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewComment : comments
 ```
 
 ## BOM Integration with AutoML Diagrams

@@ -1,20 +1,5 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
-from dataclasses import dataclass, field
-
-@dataclass
-class DiagnosticMechanism:
-    """Diagnostic mechanism from ISO 26262-5 Annex D."""
-    name: str
-    coverage: float
-    description: str = ""
-    detail: str = ""
-    requirement: str = ""
-
-@dataclass
-class MechanismLibrary:
-    """Collection of diagnostic mechanisms."""
-    name: str
-    mechanisms: list = field(default_factory=list)
+from analysis.models import DiagnosticMechanism, MechanismLibrary
 
 # Complete list of diagnostic mechanisms from ISO 26262-5:2018 Annex D
 ANNEX_D_MECHANISMS = [
