@@ -12071,14 +12071,6 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* directly on the Tk canvas.
-
-            Earlier versions rendered diagrams to a temporary PNG and then loaded
-            that image with ``tk.PhotoImage``.  On some systems the image loader
-            would raise ``TclError`` and crash the GUI.  The current approach
-            avoids image files entirely by drawing basic shapes straight onto the
-            canvas using Tk primitives.
-            """
             import textwrap
 
             # Build a simple graph structure without relying on external
