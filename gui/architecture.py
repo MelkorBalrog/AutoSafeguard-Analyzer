@@ -2477,13 +2477,14 @@ def format_control_flow_label(
         "Feedback",
     ):
         if conn.guard:
-            parts: List[str] = []
+            lines: List[str] = []
             for i, g in enumerate(conn.guard):
-                parts.append(g)
-                if i < len(conn.guard) - 1:
-                    op = conn.guard_ops[i] if i < len(conn.guard_ops) else "AND"
-                    parts.append(op)
-            guard_text = " ".join(parts)
+                if i == 0:
+                    lines.append(g)
+                else:
+                    op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
+                    lines.append(f"{op} {g}")
+            guard_text = "\n".join(lines)
             return f"[{guard_text}] / {label}" if label else f"[{guard_text}]"
     return label
 
