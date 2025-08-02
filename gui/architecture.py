@@ -435,6 +435,38 @@ def _collect_generalization_parents(
     return parents
 
 
+def _collect_generalization_children(
+    repo: SysMLRepository, block_id: str, visited: set[str] | None = None
+) -> list[str]:
+    """Return all child blocks of ``block_id`` reachable through generalizations."""
+
+    if visited is None:
+        visited = set()
+    children: list[str] = []
+    for rel in repo.relationships:
+        if rel.rel_type == "Generalization" and rel.target == block_id:
+            child = rel.source
+            if child in visited:
+                continue
+            visited.add(child)
+            children.append(child)
+            children.extend(
+                _collect_generalization_children(repo, child, visited)
+            )
+    return children
+
+
+def _creates_generalization_cycle(
+    repo: SysMLRepository, child_id: str, parent_id: str
+) -> bool:
+    """Return ``True`` if adding ``child_id`` -> ``parent_id`` forms a cycle."""
+
+    if child_id == parent_id:
+        return True
+    return child_id in _collect_generalization_children(repo, parent_id)
+
+
+
 def _shared_generalization_parent(
     repo: SysMLRepository, a_id: str, b_id: str
 ) -> bool:
@@ -2680,6 +2712,10 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo, src.element_id, dst.element_id
                 ):
                     return False, "Blocks already share a generalized parent"
+                if _creates_generalization_cycle(
+                    self.repo, src.element_id, dst.element_id
+                ):
+                    return False, "Blocks cannot form generalization cycles"
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
