@@ -2900,6 +2900,25 @@ class SysMLDiagramWindow(tk.Frame):
                             adjusted_x = other.x - max_diff
         return adjusted_x
 
+    def _constrain_control_flow_x(
+        self, conn: DiagramConnection, new_x: float
+    ) -> float:
+        """Clamp connector x within the horizontal overlap of its objects."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Control Flow Diagram":
+            return new_x
+        src = next((o for o in self.objects if o.obj_id == conn.src), None)
+        dst = next((o for o in self.objects if o.obj_id == conn.dst), None)
+        if not src or not dst:
+            return new_x
+        min_x = max(src.x - src.width / 2, dst.x - dst.width / 2)
+        max_x = min(src.x + src.width / 2, dst.x + dst.width / 2)
+        if new_x < min_x:
+            return min_x
+        if new_x > max_x:
+            return max_x
+        return new_x
+
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -2948,6 +2967,37 @@ class SysMLDiagramWindow(tk.Frame):
                             if conn.points
                             else ((src_obj.x + dst_obj.x) / 2 * self.zoom)
                         )
+                        my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, 0)
+                elif (
+                    self.repo.diagrams.get(self.diagram_id).diag_type
+                    == "Control Flow Diagram"
+                    and conn.conn_type in ("Control Action", "Feedback")
+                ):
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        x_val = (
+                            conn.points[0][0]
+                            if conn.points
+                            else (
+                                max(
+                                    src_obj.x - src_obj.width / 2,
+                                    dst_obj.x - dst_obj.width / 2,
+                                )
+                                + min(
+                                    src_obj.x + src_obj.width / 2,
+                                    dst_obj.x + dst_obj.width / 2,
+                                )
+                            )
+                            / 2
+                        )
+                        x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                            self, conn, x_val
+                        )
+                        mx = x_val * self.zoom
                         my = (src_obj.y + dst_obj.y) / 2 * self.zoom
                         if abs(mx - x) <= 4 and abs(my - y) <= 4:
                             self.dragging_point_index = 0
@@ -3339,6 +3389,18 @@ class SysMLDiagramWindow(tk.Frame):
             px = (x - self.conn_drag_offset[0]) / self.zoom
             py = (y - self.conn_drag_offset[1]) / self.zoom
             if self.selected_conn.style == "Squared":
+                if not self.selected_conn.points:
+                    self.selected_conn.points.append((px, 0))
+                else:
+                    self.selected_conn.points[0] = (px, 0)
+            elif (
+                self.repo.diagrams.get(self.diagram_id).diag_type
+                == "Control Flow Diagram"
+                and self.selected_conn.conn_type in ("Control Action", "Feedback")
+            ):
+                px = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, self.selected_conn, px
+                )
                 if not self.selected_conn.points:
                     self.selected_conn.points.append((px, 0))
                 else:
@@ -4075,11 +4137,19 @@ class SysMLDiagramWindow(tk.Frame):
                 "Control Action",
                 "Feedback",
             ):
-                a_left = (src.x - src.width / 2) * self.zoom
-                a_right = (src.x + src.width / 2) * self.zoom
-                b_left = (dst.x - dst.width / 2) * self.zoom
-                b_right = (dst.x + dst.width / 2) * self.zoom
-                cx = (max(a_left, b_left) + min(a_right, b_right)) / 2
+                a_left = src.x - src.width / 2
+                a_right = src.x + src.width / 2
+                b_left = dst.x - dst.width / 2
+                b_right = dst.x + dst.width / 2
+                cx_val = (
+                    conn.points[0][0]
+                    if conn.points
+                    else (max(a_left, b_left) + min(a_right, b_right)) / 2
+                )
+                cx_val = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, conn, cx_val
+                )
+                cx = cx_val * self.zoom
                 ayc = src.y * self.zoom
                 byc = dst.y * self.zoom
                 if ayc <= byc:
@@ -5608,11 +5678,21 @@ class SysMLDiagramWindow(tk.Frame):
             conn, self.repo, diag.diag_type if diag else None
         )
         if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
-            a_left = (a.x - a.width / 2) * self.zoom
-            a_right = (a.x + a.width / 2) * self.zoom
-            b_left = (b.x - b.width / 2) * self.zoom
-            b_right = (b.x + b.width / 2) * self.zoom
-            x = (max(a_left, b_left) + min(a_right, b_right)) / 2
+            a_left = a.x - a.width / 2
+            a_right = a.x + a.width / 2
+            b_left = b.x - b.width / 2
+            b_right = b.x + b.width / 2
+            x_val = (
+                conn.points[0][0]
+                if conn.points
+                else (max(a_left, b_left) + min(a_right, b_right)) / 2
+            )
+            x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                self, conn, x_val
+            )
+            if conn.points:
+                conn.points[0] = (x_val, 0)
+            x = x_val * self.zoom
             if ayc <= byc:
                 y1 = ayc + a.height / 2 * self.zoom
                 y2 = byc - b.height / 2 * self.zoom
@@ -5642,7 +5722,7 @@ class SysMLDiagramWindow(tk.Frame):
                 )
             if selected:
                 s = 3
-                for hx, hy in [(x, y1), (x, y2)]:
+                for hx, hy in [(x, y1), (x, y2), (x, (y1 + y2) / 2)]:
                     self.canvas.create_rectangle(
                         hx - s,
                         hy - s,
