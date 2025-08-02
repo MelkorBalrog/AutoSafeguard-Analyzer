@@ -4025,11 +4025,39 @@ class SysMLDiagramWindow(tk.Frame):
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
 
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
+        diag = self.repo.diagrams.get(self.diagram_id)
         for conn in self.connections:
             src = self.get_object(conn.src)
             dst = self.get_object(conn.dst)
             if not src or not dst:
                 continue
+            # Control flow connectors are drawn as a vertical line between
+            # elements. Mirror that behavior so they can be located when
+            # selecting.
+            if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in (
+                "Control Action",
+                "Feedback",
+            ):
+                a_left = (src.x - src.width / 2) * self.zoom
+                a_right = (src.x + src.width / 2) * self.zoom
+                b_left = (dst.x - dst.width / 2) * self.zoom
+                b_right = (dst.x + dst.width / 2) * self.zoom
+                cx = (max(a_left, b_left) + min(a_right, b_right)) / 2
+                ayc = src.y * self.zoom
+                byc = dst.y * self.zoom
+                if ayc <= byc:
+                    cy1 = ayc + src.height / 2 * self.zoom
+                    cy2 = byc - dst.height / 2 * self.zoom
+                else:
+                    cy1 = ayc - src.height / 2 * self.zoom
+                    cy2 = byc + dst.height / 2 * self.zoom
+                if (
+                    self._dist_to_segment((x, y), (cx, cy1), (cx, cy2))
+                    <= CONNECTION_SELECT_RADIUS
+                ):
+                    return conn
+                continue
+
             sx, sy = self.edge_point(
                 src,
                 dst.x * self.zoom,
