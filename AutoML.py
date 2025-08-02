@@ -310,7 +310,6 @@ except ModuleNotFoundError:
     Image = ImageDraw = ImageFont = None
 import os
 import types
-import tempfile
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -12087,53 +12086,65 @@ class FaultTreeApp:
             except Exception:  # Pillow may not be installed
                 Image = ImageTk = None
 
-            # Build a simple graph structure without relying on the external
-            # ``networkx`` package.  The lightweight stub bundled with the
-            # repository does not implement the drawing helpers used
-            # previously, so we assemble the diagram manually using
-            # matplotlib primitives.
+            # Build a simple graph structure without relying on external
+            # drawing helpers.  We will render the diagram using basic Tk
+            # canvas primitives such as lines and rectangles.
             nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
-            haz = row["hazard"]
-            mal = row["malfunction"]
-            nodes[haz] = "hazard"
-            nodes[mal] = "malfunction"
-            edges.append((haz, mal))
+            # Use unique internal identifiers for each node so hazards and
+            # malfunctions with the same label don't collapse into a single
+            # vertex.  The displayed label is stored separately from the key.
+            haz_label = row["hazard"]
+            mal_label = row["malfunction"]
+            haz_id = f"haz:{haz_label}"
+            mal_id = f"mal:{mal_label}"
+            nodes[haz_id] = (haz_label, "hazard")
+            nodes[mal_id] = (mal_label, "malfunction")
+            edges.append((haz_id, mal_id))
 
             for fm in sorted(row["failure_modes"]):
-                nodes[fm] = "failure_mode"
-                edges.append((mal, fm))
+                fm_id = f"fm:{fm}"
+                nodes[fm_id] = (fm, "failure_mode")
+                edges.append((mal_id, fm_id))
             for fault in sorted(row["faults"]):
-                nodes[fault] = "fault"
-                edges.append((mal, fault))
+                fault_id = f"fault:{fault}"
+                nodes[fault_id] = (fault, "fault")
+                edges.append((mal_id, fault_id))
             for fi in sorted(row["fis"]):
-                nodes[fi] = "fi"
-                edges.append((haz, fi))
+                fi_id = f"fi:{fi}"
+                nodes[fi_id] = (fi, "fi")
+                edges.append((haz_id, fi_id))
             for tc in sorted(row["tcs"]):
-                nodes[tc] = "tc"
-                edges.append((haz, tc))
+                tc_id = f"tc:{tc}"
+                nodes[tc_id] = (tc, "tc")
+                edges.append((haz_id, tc_id))
 
-            # Layout from effect (hazard) on the left to root causes on the right
-            # Use generous spacing so wrapped text remains readable
-            pos = {haz: (0, 0), mal: (4, 0)}
+            # Layout from effect (hazard) on the left to root causes on the
+            # right.  Use generous spacing so wrapped text remains readable.
+            pos = {haz_id: (0, 0), mal_id: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
-                pos[fm] = (8, y_fm * 2)
+                pos[f"fm:{fm}"] = (8, y_fm * 2)
                 y_fm += 1
             y_fault = 0
             for fault in sorted(row["faults"]):
-                pos[fault] = (12, y_fault * 2)
+                pos[f"fault:{fault}"] = (12, y_fault * 2)
                 y_fault += 1
             y_fi = -2
             for fi in sorted(row["fis"]):
-                pos[fi] = (2, y_fi)
+                pos[f"fi:{fi}"] = (2, y_fi)
                 y_fi -= 2
             y_tc = y_fi
             for tc in sorted(row["tcs"]):
-                pos[tc] = (2, y_tc)
+                pos[f"tc:{tc}"] = (2, y_tc)
                 y_tc -= 2
 
+            # Use hexadecimal color codes so the palette works on all Tk
+            # platforms.  Some Windows installs reject X11 color names (e.g.
+            # ``lightcoral``) which previously resulted in only the arrows
+            # being drawn.  Hex codes are universally recognised and ensure
+            # that every node receives a visible fill colour.
             color_map = {
                 "hazard": "#F08080",       # light coral
                 "malfunction": "#ADD8E6",  # light blue
@@ -12143,23 +12154,56 @@ class FaultTreeApp:
                 "tc": "#90EE90",           # light green
             }
 
-            plt.figure(figsize=(6, 4))
-            ax = plt.gca()
+            # Clear any existing drawing
+            canvas.delete("all")
 
-            # Draw arrows for each edge
+            # Scaling factors to convert the logical layout coordinates to
+            # pixels on the canvas.
+            scale = 80
+            x_off = 50
+            y_off = 50
+            box_w = 80
+            box_h = 40
+
+            def to_canvas(x: float, y: float) -> tuple[float, float]:
+                return x_off + scale * x, y_off + scale * y
+
+            # Draw connections with arrows and labels
             for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                            arrowprops=dict(arrowstyle="->"))
+                x1, y1 = to_canvas(*pos[u])
+                x2, y2 = to_canvas(*pos[v])
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
+                canvas.create_text(
+                    (x1 + x2) / 2,
+                    (y1 + y2) / 2,
+                    text="caused by",
+                    font=("TkDefaultFont", 8),
+                    tags="edge",
+                )
 
-            # Draw the nodes with labels
+            # Draw the nodes as rectangles with wrapped text
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                ax.scatter([x], [y], s=1200, c=color, edgecolors="black")
+                cx, cy = to_canvas(x, y)
+                canvas.create_rectangle(
+                    cx - box_w / 2,
+                    cy - box_h / 2,
+                    cx + box_w / 2,
+                    cy + box_h / 2,
+                    fill=color,
+                    outline="black",
+                    tags="node",
+                )
                 label = textwrap.fill(str(n), 20)
-                ax.text(x, y, label, fontsize=6, ha="center", va="center")
+                canvas.create_text(
+                    cx,
+                    cy,
+                    text=label,
+                    width=box_w - 10,
+                    font=("TkDefaultFont", 8),
+                    tags="node",
+                )
 
             # Edge labels ("caused by") halfway between nodes
             for u, v in edges:
@@ -12192,10 +12236,11 @@ class FaultTreeApp:
                 except OSError:
                     pass
 
-            canvas.delete("all")
-            canvas.image = photo  # keep reference
-            canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
+            # Ensure the drawing appears immediately in environments where
+            # the Tk event loop has not yet run. Without this call the canvas
+            # may show up blank until the user interacts with the window.
+            canvas.update_idletasks()
 
         def on_select(event):
             sel = tree.selection()
