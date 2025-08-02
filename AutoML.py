@@ -326,6 +326,7 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO, StringIO
+import base64
 from email.utils import make_msgid
 import html
 import datetime
@@ -12139,10 +12140,10 @@ class FaultTreeApp:
             plt.savefig(buf, format="PNG", dpi=120)
             plt.close()
             buf.seek(0)
-            img = Image.open(buf)
+            img_data = base64.b64encode(buf.getvalue()).decode("ascii")
 
             canvas.delete("all")
-            photo = ImageTk.PhotoImage(img)
+            photo = tk.PhotoImage(data=img_data)
             canvas.image = photo  # keep reference
             canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
@@ -12153,6 +12154,10 @@ class FaultTreeApp:
                 row = row_map.get(sel[0])
                 if row:
                     draw_row(row)
+                    # Automatically show the diagram tab whenever a row is
+                    # selected so the rendered network is visible without the
+                    # user needing to switch tabs manually.
+                    nb.select(diagram_frame)
 
         tree.bind("<<TreeviewSelect>>", on_select)
 
@@ -12160,6 +12165,8 @@ class FaultTreeApp:
             first_iid = next(iter(row_map))
             tree.selection_set(first_iid)
             draw_row(row_map[first_iid])
+            # Ensure the initial diagram is visible when the window opens.
+            nb.select(diagram_frame)
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
