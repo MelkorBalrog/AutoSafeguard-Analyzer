@@ -12073,24 +12073,33 @@ class FaultTreeApp:
             import matplotlib.pyplot as plt
             import textwrap
             from io import BytesIO
-            G = nx.DiGraph()
+
+            # Build a simple graph structure without relying on the external
+            # ``networkx`` package.  The lightweight stub bundled with the
+            # repository does not implement the drawing helpers used
+            # previously, so we assemble the diagram manually using
+            # matplotlib primitives.
+            nodes: dict[str, str] = {}
+            edges: list[tuple[str, str]] = []
+
             haz = row["hazard"]
             mal = row["malfunction"]
-            G.add_node(haz, kind="hazard")
-            G.add_node(mal, kind="malfunction")
-            G.add_edge(haz, mal)
+            nodes[haz] = "hazard"
+            nodes[mal] = "malfunction"
+            edges.append((haz, mal))
+
             for fm in sorted(row["failure_modes"]):
-                G.add_node(fm, kind="failure_mode")
-                G.add_edge(mal, fm)
+                nodes[fm] = "failure_mode"
+                edges.append((mal, fm))
             for fault in sorted(row["faults"]):
-                G.add_node(fault, kind="fault")
-                G.add_edge(mal, fault)
+                nodes[fault] = "fault"
+                edges.append((mal, fault))
             for fi in sorted(row["fis"]):
-                G.add_node(fi, kind="fi")
-                G.add_edge(haz, fi)
+                nodes[fi] = "fi"
+                edges.append((haz, fi))
             for tc in sorted(row["tcs"]):
-                G.add_node(tc, kind="tc")
-                G.add_edge(haz, tc)
+                nodes[tc] = "tc"
+                edges.append((haz, tc))
 
             # Layout from effect (hazard) on the left to root causes on the right
             # Use generous spacing so wrapped text remains readable
@@ -12111,6 +12120,7 @@ class FaultTreeApp:
             for tc in sorted(row["tcs"]):
                 pos[tc] = (2, y_tc)
                 y_tc -= 2
+
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -12119,22 +12129,32 @@ class FaultTreeApp:
                 "fi": "lightyellow",
                 "tc": "lightgreen",
             }
-            node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
-            labels = {n: textwrap.fill(str(n), 20) for n in G.nodes()}
-            edge_labels = {(u, v): "caused by" for u, v in G.edges()}
+
             plt.figure(figsize=(6, 4))
-            nx.draw(
-                G,
-                pos,
-                with_labels=True,
-                labels=labels,
-                node_color=node_colors,
-                node_size=1200,
-                font_size=6,
-                arrows=True,
-            )
-            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=6)
-            plt.axis("off")
+            ax = plt.gca()
+
+            # Draw arrows for each edge
+            for u, v in edges:
+                x1, y1 = pos[u]
+                x2, y2 = pos[v]
+                ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                            arrowprops=dict(arrowstyle="->"))
+
+            # Draw the nodes with labels
+            for n, (x, y) in pos.items():
+                kind = nodes.get(n, "")
+                color = color_map.get(kind, "white")
+                ax.scatter([x], [y], s=1200, c=color, edgecolors="black")
+                label = textwrap.fill(str(n), 20)
+                ax.text(x, y, label, fontsize=6, ha="center", va="center")
+
+            # Edge labels ("caused by") halfway between nodes
+            for u, v in edges:
+                x1, y1 = pos[u]
+                x2, y2 = pos[v]
+                ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
+
+            ax.axis("off")
             buf = BytesIO()
             plt.savefig(buf, format="PNG", dpi=120)
             plt.close()
