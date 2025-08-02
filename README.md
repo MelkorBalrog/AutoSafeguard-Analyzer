@@ -320,6 +320,9 @@ GUI so analyses remain linked to the architecture. Key data classes include:
 classDiagram
     SysMLRepository --> "*" ReliabilityAnalysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
+    SysMLRepository --> "*" MissionProfile
+    SysMLRepository --> "*" MechanismLibrary
+    MechanismLibrary --> "*" DiagnosticMechanism
     SysMLRepository --> "*" HazopDoc
     HazopDoc --> "*" HazopEntry
     SysMLRepository --> "*" HaraDoc
@@ -344,6 +347,10 @@ classDiagram
     TC2FIEntry --> FunctionalInsufficiency
     TC2FIEntry --> Hazard : hazard
     TC2FIEntry --> HaraEntry : severity
+    SysMLRepository --> "*" ScenarioLibrary
+    ScenarioLibrary --> "*" Scenario
+    SysMLRepository --> "*" OddLibrary
+    OddLibrary --> "*" Scenery
     SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" FunctionalModification
     FunctionalModification --> "*" AcceptanceCriteria
@@ -363,16 +370,28 @@ classDiagram
     class FaultTreeNode
     class Fault
     class Failure
+    class MechanismLibrary
+    class DiagnosticMechanism
+    class MissionProfile
+    class ScenarioLibrary
+    class OddLibrary
+    class Scenery
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
 FIT results. Each `ReliabilityComponent` lists attributes like qualification,
-quantity and a dictionary of part‑specific parameters. HAZOP and HARA tables use
-`HazopDoc`/`HazopEntry` and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA
-and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
-`FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
-diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
-objects that hold FMEA metrics, FMEDA values and traced requirements.
+quantity and a dictionary of part‑specific parameters. `MissionProfile`
+instances capture on/off times and temperature ranges used when converting FIT
+rates to probabilities. `MechanismLibrary` collections hold
+`DiagnosticMechanism` entries from ISO 26262 Annex D so FMEDAs can select the
+appropriate diagnostic coverage. `ScenarioLibrary` and `OddLibrary` objects
+group reusable scenarios and ODD elements so HAZOP, HARA and FI2TC/TC2FI tables
+share a consistent context. HAZOP and HARA tables use `HazopDoc`/`HazopEntry`
+and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
+stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
+dictionaries capturing the failure mode, cause, detection rating and diagnostic
+coverage. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
+FMEA metrics, FMEDA values and traced requirements.
 
 #### Analysis Relationships
 
@@ -495,6 +514,15 @@ classDiagram
   a failure mode.
 - **Failure** – extends `SysMLElement` to record the malfunction effect used as
   an FMEA failure mode and FTA event.
+- **MechanismLibrary** – aggregates `DiagnosticMechanism` definitions that can
+  be referenced by FMEDAs. Each mechanism stores a `coverage` value along with a
+  short `description`, implementation `detail` and optional `requirement`.
+- **MissionProfile** – captures the on/off time, temperatures and other
+  environmental parameters for reliability calculations.
+- **ScenarioLibrary** – groups reusable `Scenario` entries so analyses share the
+  same operational contexts.
+- **OddLibrary** – lists `Scenery` elements describing ODD attributes such as
+  road features or environmental limits.
 
 ### Extended AutoML Element Attributes
 
@@ -530,6 +558,17 @@ Key attributes are:
   `acceptanceCriteria` used to verify the change.
 - **AcceptanceCriteria** – measurable condition proving a functional
   modification resolves the hazard.
+- **MechanismLibrary** – library `name` and list of `DiagnosticMechanism`
+  definitions that provide diagnostic coverage values.
+- **DiagnosticMechanism** – `coverage`, `description`, implementation `detail`
+  and optional `requirement` text.
+- **MissionProfile** – `tau_on`, `tau_off`, `board_temp`, `ambient_temp`,
+  `humidity`, `duty_cycle` and free-form `notes` describing operating
+  conditions.
+- **ScenarioLibrary** – `name` plus a list of `scenarios` and referenced ODD
+  elements.
+- **OddLibrary** – `name` and collection of `Scenery` entries describing ODD
+  attributes.
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
 - **SysMLObject** – drawn object with coordinates, size and an optional linked
