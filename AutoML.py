@@ -12153,6 +12153,10 @@ class FaultTreeApp:
                 row = row_map.get(sel[0])
                 if row:
                     draw_row(row)
+                    # Automatically show the diagram tab whenever a row is
+                    # selected so the rendered network is visible without the
+                    # user needing to switch tabs manually.
+                    nb.select(diagram_frame)
 
         tree.bind("<<TreeviewSelect>>", on_select)
 
@@ -12160,6 +12164,8 @@ class FaultTreeApp:
             first_iid = next(iter(row_map))
             tree.selection_set(first_iid)
             draw_row(row_map[first_iid])
+            # Ensure the initial diagram is visible when the window opens.
+            nb.select(diagram_frame)
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
