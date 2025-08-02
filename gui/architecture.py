@@ -2748,8 +2748,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
-                tolerance = 5 / getattr(self, "zoom", 1)
-                if abs(src.x - dst.x) > tolerance:
+                max_offset = (src.width + dst.width) / 2
+                if abs(src.x - dst.x) > max_offset:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
@@ -2833,6 +2833,7 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         if not diag or diag.diag_type != "Control Flow Diagram":
             return new_x
+        adjusted_x = new_x
         for conn in self.connections:
             if conn.conn_type in ("Control Action", "Feedback") and (
                 conn.src == obj.obj_id or conn.dst == obj.obj_id
@@ -2840,8 +2841,13 @@ class SysMLDiagramWindow(tk.Frame):
                 other_id = conn.dst if conn.src == obj.obj_id else conn.src
                 for other in self.objects:
                     if other.obj_id == other_id:
-                        return other.x
-        return new_x
+                        max_diff = (obj.width + other.width) / 2
+                        diff = adjusted_x - other.x
+                        if diff > max_diff:
+                            adjusted_x = other.x + max_diff
+                        elif diff < -max_diff:
+                            adjusted_x = other.x - max_diff
+        return adjusted_x
 
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
@@ -5160,17 +5166,19 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = obj.properties.get("name", "")
-            if label:
-                lx = x
-                ly = y - h - 4 * self.zoom
-                self.canvas.create_text(
-                    lx,
-                    ly,
-                    text=label,
-                    anchor="s",
-                    font=self.font,
-                )
+            diag = self.repo.diagrams.get(self.diagram_id)
+            if not diag or diag.diag_type != "Control Flow Diagram":
+                label = obj.properties.get("name", "")
+                if label:
+                    lx = x
+                    ly = y - h - 4 * self.zoom
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        anchor="s",
+                        font=self.font,
+                    )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             if obj.obj_type == "Part":
@@ -5515,8 +5523,6 @@ class SysMLDiagramWindow(tk.Frame):
     ):
         axc, ayc = a.x * self.zoom, a.y * self.zoom
         bxc, byc = b.x * self.zoom, b.y * self.zoom
-        ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
-        bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         dash = ()
         label = conn.name or None
         if conn.conn_type == "Control Action" and not label and conn.element_id:
@@ -5525,16 +5531,24 @@ class SysMLDiagramWindow(tk.Frame):
                 label = elem.name
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
-            x = (ax + bx) / 2
-            top = min(ay, by)
-            bottom = max(ay, by)
+            a_left = (a.x - a.width / 2) * self.zoom
+            a_right = (a.x + a.width / 2) * self.zoom
+            b_left = (b.x - b.width / 2) * self.zoom
+            b_right = (b.x + b.width / 2) * self.zoom
+            x = (max(a_left, b_left) + min(a_right, b_right)) / 2
+            if ayc <= byc:
+                y1 = ayc + a.height / 2 * self.zoom
+                y2 = byc - b.height / 2 * self.zoom
+            else:
+                y1 = ayc - a.height / 2 * self.zoom
+                y2 = byc + b.height / 2 * self.zoom
             color = "red" if selected else "black"
             width = 2 if selected else 1
             self.canvas.create_line(
                 x,
-                bottom,
+                y1,
                 x,
-                top,
+                y2,
                 arrow=tk.LAST,
                 dash=(),
                 fill=color,
@@ -5560,7 +5574,7 @@ class SysMLDiagramWindow(tk.Frame):
                 )
             if selected:
                 s = 3
-                for hx, hy in [(x, bottom), (x, top)]:
+                for hx, hy in [(x, y1), (x, y2)]:
                     self.canvas.create_rectangle(
                         hx - s,
                         hy - s,
@@ -5571,6 +5585,8 @@ class SysMLDiagramWindow(tk.Frame):
                         tags="connection",
                     )
             return
+        ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
+        bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
