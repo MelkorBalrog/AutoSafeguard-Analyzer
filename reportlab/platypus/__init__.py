@@ -1,23 +1,44 @@
 class Table:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def setStyle(self, *args, **kwargs):
+        pass
+
 
 class TableStyle:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class SimpleDocTemplate:
-    pass
+    def __init__(self, filename, **kwargs):
+        self.filename = filename
+        self.kwargs = kwargs
+
+    def build(self, flowables):
+        pass
+
 
 class Paragraph:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class Spacer:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class Image:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class PageBreak:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
 
-class LongTable:
+
+class LongTable(Table):
     pass
