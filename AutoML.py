@@ -12071,19 +12071,18 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small cause/effect diagram directly onto ``canvas``.
+            """Render a small network diagram for *row* using Tk canvas primitives.
 
-            The previous implementation generated a temporary PNG using
-            :mod:`matplotlib` and then loaded that image into Tk.  Aside from
-            being slow, systems without the optional Pillow dependency would
-            raise ``TclError`` when the image failed to load.  Drawing the
-            diagram with basic canvas primitives avoids those issues entirely
-            and keeps the on-screen representation lightweight.
+            Matplotlib-based rendering previously used here required an
+            ``ax`` object and temporary image files.  Those imports have been
+            removed in favour of drawing directly onto the Tk canvas, which
+            keeps the GUI lightweight and avoids missing variable errors.
             """
             import textwrap
 
-            # Build a simple graph structure.  The arrangement mirrors the PDF
-            # export so the user sees the same layout in both places.
+            # Build a simple graph structure without relying on external
+            # drawing helpers.  We will render the diagram using basic Tk
+            # canvas primitives such as lines and rectangles.
             nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
@@ -12091,7 +12090,8 @@ class FaultTreeApp:
             mal = row["malfunction"]
             nodes[haz] = "hazard"
             nodes[mal] = "malfunction"
-            edges.append((mal, haz))  # malfunction leads to hazard
+            # A malfunction leads to a hazard
+            edges.append((mal, haz))
 
             # Failure modes and faults are upstream causes
             for fm in sorted(row["failure_modes"]):
@@ -12105,8 +12105,8 @@ class FaultTreeApp:
                 else:
                     edges.append((fault, mal))
 
-            # Functional insufficiencies and triggering conditions contribute
-            # directly to the hazard
+            # Functional insufficiencies and triggering conditions are direct
+            # contributors to the hazard
             for fi in sorted(row["fis"]):
                 nodes[fi] = "fi"
                 edges.append((fi, haz))
@@ -12115,9 +12115,8 @@ class FaultTreeApp:
                 edges.append((tc, haz))
 
             # Layout from effect (hazard) on the left to root causes on the
-            # right.  Positions are arbitrary units which we'll scale to pixels
-            # later.
-            pos = {haz: (0, 0), mal: (4, 0)}
+            # right.  Use generous spacing so wrapped text remains readable.
+            pos = {haz_id: (0, 0), mal_id: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
                 pos[f"fm:{fm}"] = (8, y_fm * 2)
@@ -12149,51 +12148,54 @@ class FaultTreeApp:
                 "tc": "#90EE90",           # light green
             }
 
+            # Clear any existing drawing
             canvas.delete("all")
 
-            scale_x = 80
-            scale_y = 40
-            margin = 20
-            min_y = min(y for _, y in pos.values())
+            # Scaling factors to convert the logical layout coordinates to
+            # pixels on the canvas.
+            scale = 80
+            x_off = 50
+            y_off = 50
+            box_w = 80
+            box_h = 40
 
-            def to_pixel(x: float, y: float) -> tuple[float, float]:
-                px = x * scale_x + margin
-                py = (y - min_y) * scale_y + margin
-                return px, py
+            def to_canvas(x: float, y: float) -> tuple[float, float]:
+                return x_off + scale * x, y_off + scale * y
 
-            # Draw connecting arrows first so they appear underneath the nodes
+            # Draw connections with arrows and labels
             for u, v in edges:
-                x1, y1 = to_pixel(*pos[u])
-                x2, y2 = to_pixel(*pos[v])
-                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+                x1, y1 = to_canvas(*pos[u])
+                x2, y2 = to_canvas(*pos[v])
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
                 canvas.create_text(
                     (x1 + x2) / 2,
                     (y1 + y2) / 2,
                     text="caused by",
-                    font=("TkDefaultFont", 6),
+                    font=("TkDefaultFont", 8),
+                    tags="edge",
                 )
 
-            node_w = 100
-            node_h = 30
+            # Draw the nodes as colored rectangles with labels
+            import matplotlib.patches as patches
+
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                px, py = to_pixel(x, y)
-                canvas.create_rectangle(
-                    px - node_w / 2,
-                    py - node_h / 2,
-                    px + node_w / 2,
-                    py + node_h / 2,
-                    fill=color,
-                    outline="black",
+                rect = patches.FancyBboxPatch(
+                    (x - 1, y - 0.5), 2, 1,
+                    boxstyle="round,pad=0.1",
+                    facecolor=color,
+                    edgecolor="black",
                 )
+                ax.add_patch(rect)
                 label = textwrap.fill(str(n), 20)
                 canvas.create_text(
-                    px,
-                    py,
+                    cx,
+                    cy,
                     text=label,
-                    width=node_w - 4,
-                    font=("TkDefaultFont", 6),
+                    width=box_w - 10,
+                    font=("TkDefaultFont", 8),
+                    tags="node",
                 )
 
             canvas.config(scrollregion=canvas.bbox("all"))
