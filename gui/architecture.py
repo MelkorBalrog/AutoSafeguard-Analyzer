@@ -157,22 +157,7 @@ def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> Non
         return
 
     def _parent_parts() -> list[str]:
-        parts: list[str] = []
-        for parent in _collect_generalization_parents(repo, block_id):
-            elem = repo.elements.get(parent)
-            if elem:
-                parts.extend(
-                    [
-                        p.strip()
-                        for p in elem.properties.get("partProperties", "").split(",")
-                        if p.strip()
-                    ]
-                )
-        seen: list[str] = []
-        for p in parts:
-            if p not in seen:
-                seen.append(p)
-        return seen
+        return _collect_parent_parts(repo, block_id)
 
     names = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
     for p in _parent_parts():
@@ -2433,8 +2418,38 @@ class DiagramConnection:
     arrow: str = "none"  # none, forward, backward, both
     mid_arrow: bool = False
     guard: List[str] = field(default_factory=list)
+    guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
     multiplicity: str = ""
+
+
+def format_control_flow_label(
+    conn: DiagramConnection, repo: "SysMLRepository", diag_type: str | None
+) -> str:
+    """Return the label to display for a connection.
+
+    For control flow diagrams, guards are combined with configured logical
+    operators and shown before the action or activity name.
+    """
+    label = conn.name or ""
+    if conn.conn_type == "Control Action" and not label and conn.element_id:
+        elem = repo.elements.get(conn.element_id)
+        if elem:
+            label = elem.name or ""
+    if diag_type == "Control Flow Diagram" and conn.conn_type in (
+        "Control Action",
+        "Feedback",
+    ):
+        if conn.guard:
+            parts: List[str] = []
+            for i, g in enumerate(conn.guard):
+                parts.append(g)
+                if i < len(conn.guard) - 1:
+                    op = conn.guard_ops[i] if i < len(conn.guard_ops) else "AND"
+                    parts.append(op)
+            guard_text = " ".join(parts)
+            return f"[{guard_text}] / {label}" if label else f"[{guard_text}]"
+    return label
 
 
 class SysMLDiagramWindow(tk.Frame):
@@ -5523,12 +5538,10 @@ class SysMLDiagramWindow(tk.Frame):
         axc, ayc = a.x * self.zoom, a.y * self.zoom
         bxc, byc = b.x * self.zoom, b.y * self.zoom
         dash = ()
-        label = conn.name or None
-        if conn.conn_type == "Control Action" and not label and conn.element_id:
-            elem = self.repo.elements.get(conn.element_id)
-            if elem:
-                label = elem.name
         diag = self.repo.diagrams.get(self.diagram_id)
+        label = format_control_flow_label(
+            conn, self.repo, diag.diag_type if diag else None
+        )
         if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
             a_left = (a.x - a.width / 2) * self.zoom
             a_right = (a.x + a.width / 2) * self.zoom
@@ -7408,6 +7421,10 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
             ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
             row += 1
+            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
+            self.guard_ops_var = tk.StringVar(value=", ".join(self.connection.guard_ops))
+            ttk.Entry(master, textvariable=self.guard_ops_var).grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             ttk.Label(master, text="Multiplicity:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
@@ -7457,6 +7474,11 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
+        if hasattr(self, "guard_ops_var"):
+            txt = self.guard_ops_var.get()
+            self.connection.guard_ops = [
+                op.strip().upper() for op in txt.split(",") if op.strip()
+            ]
         if hasattr(self, "elem_var"):
             sel = self.elem_var.get()
             self.connection.element_id = self.elem_map.get(sel, "")
