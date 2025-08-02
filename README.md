@@ -102,7 +102,7 @@ Requirements can also be attached to diagram elements to keep architecture and s
 
 ## Metamodel Overview
 
-Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship, diagram and review so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
 
 ```mermaid
 classDiagram
@@ -111,6 +111,8 @@ classDiagram
         relationships: List~SysMLRelationship~
         diagrams: Dict~str, SysMLDiagram~
         element_diagrams: Dict~str, str~
+        reviews: List~ReviewData~
+        current_review: ReviewData
         +create_element()
         +create_relationship()
         +create_diagram()
@@ -178,6 +180,7 @@ classDiagram
     class Hazard
     class Scenario
     class FaultTreeNode
+    class ReviewData
     SysMLRepository --> "*" BlockUsage
     SysMLRepository --> "*" PartUsage
     SysMLRepository --> "*" PortUsage
@@ -187,6 +190,7 @@ classDiagram
     SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" Scenario
     SysMLRepository --> "*" FaultTreeNode
+    SysMLRepository --> "*" ReviewData
     SysMLRepository --> "*" SysMLRelationship
     SysMLRepository --> "*" SysMLDiagram
     SysMLDiagram --> "*" SysMLObject
@@ -352,6 +356,7 @@ classDiagram
     SysMLRepository --> "*" FunctionalInsufficiency
     SysMLRepository --> "*" Fault
     SysMLRepository --> "*" Failure
+    SysMLRepository --> "*" ReviewData
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -363,6 +368,7 @@ classDiagram
     class FaultTreeNode
     class Fault
     class Failure
+    class ReviewData
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -373,6 +379,8 @@ and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
 `FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
 diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
 objects that hold FMEA metrics, FMEDA values and traced requirements.
+Peer and joint reviews are saved as `ReviewData` objects containing moderators,
+participants, comments and the analyses under review.
 
 #### Analysis Relationships
 
@@ -451,6 +459,52 @@ classDiagram
     Requirement --> "0..*" Requirement : decomposedInto
 ```
 
+#### Review Data Structure
+
+```mermaid
+classDiagram
+    SysMLRepository --> "*" ReviewData
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewComment : comments
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+```
+
+Each review stores its moderators, participants and comment threads along with
+the names or IDs of the analyses being evaluated.
+
 #### Differences From Standard SysML
 
 - **BlockUsage** – extends the standard `Block` with reliability information:
@@ -495,6 +549,8 @@ classDiagram
   a failure mode.
 - **Failure** – extends `SysMLElement` to record the malfunction effect used as
   an FMEA failure mode and FTA event.
+- **ReviewData** – stores peer or joint review sessions with moderators,
+  participants, review comments and lists of referenced analyses.
 
 ### Extended AutoML Element Attributes
 
@@ -532,6 +588,8 @@ Key attributes are:
   modification resolves the hazard.
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
+- **ReviewData** - review `mode`, lists of `moderators` and `participants`,
+  referenced analysis names and a collection of `comments`.
 - **SysMLObject** – drawn object with coordinates, size and an optional linked
   element. The `locked` flag prevents editing while `hidden` temporarily removes
   the object from the diagram.
@@ -779,6 +837,51 @@ classDiagram
         severity
     }
     SysMLElement <|-- Failure
+```
+
+**ReviewData** – captures the participants and comments for peer or joint reviews.
+
+```mermaid
+classDiagram
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        moderators
+        participants
+        comments
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewComment : comments
 ```
 
 ## BOM Integration with AutoML Diagrams
