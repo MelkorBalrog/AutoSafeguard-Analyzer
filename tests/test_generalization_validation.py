@@ -31,6 +31,34 @@ class GeneralizationValidationTests(unittest.TestCase):
         )
         self.assertFalse(valid)
 
+    def test_reciprocal_generalization_invalid(self):
+        repo = self.repo
+        a = repo.create_element("Block", name="A")
+        b = repo.create_element("Block", name="B")
+        repo.create_relationship("Generalization", a.elem_id, b.elem_id)
+        win = DummyWindow()
+        src = SysMLObject(1, "Block", 0, 0, element_id=b.elem_id)
+        dst = SysMLObject(2, "Block", 0, 0, element_id=a.elem_id)
+        valid, _ = SysMLDiagramWindow.validate_connection(
+            win, src, dst, "Generalization"
+        )
+        self.assertFalse(valid)
+
+    def test_cycle_generalization_invalid(self):
+        repo = self.repo
+        a = repo.create_element("Block", name="A")
+        b = repo.create_element("Block", name="B")
+        c = repo.create_element("Block", name="C")
+        repo.create_relationship("Generalization", b.elem_id, a.elem_id)
+        repo.create_relationship("Generalization", c.elem_id, b.elem_id)
+        win = DummyWindow()
+        src = SysMLObject(3, "Block", 0, 0, element_id=a.elem_id)
+        dst = SysMLObject(4, "Block", 0, 0, element_id=c.elem_id)
+        valid, _ = SysMLDiagramWindow.validate_connection(
+            win, src, dst, "Generalization"
+        )
+        self.assertFalse(valid)
+
 
 if __name__ == "__main__":
     unittest.main()
