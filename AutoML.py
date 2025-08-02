@@ -307,8 +307,7 @@ import tkinter.font as tkFont
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageTk
 except ModuleNotFoundError:
-    print("Error: Pillow package is required for image support. Please install pillow.")
-    sys.exit(1)
+    Image = ImageDraw = ImageFont = ImageTk = None
 import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
@@ -330,7 +329,10 @@ import base64
 from email.utils import make_msgid
 import html
 import datetime
-import PIL.Image as PILImage
+try:
+    import PIL.Image as PILImage
+except ModuleNotFoundError:
+    PILImage = None
 from reportlab.platypus import LongTable
 from email.message import EmailMessage
 import smtplib
@@ -12163,7 +12165,7 @@ class FaultTreeApp:
             img_data = base64.b64encode(buf.getvalue()).decode("ascii")
 
             canvas.delete("all")
-            photo = tk.PhotoImage(data=img_data)
+            photo = tk.PhotoImage(data=img_data, format="png")
             canvas.image = photo  # keep reference
             canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
