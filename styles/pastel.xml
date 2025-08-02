@@ -3,6 +3,7 @@
   <object type="Use Case" color="#B0E0E6" />
   <object type="System Boundary" color="#CFD8DC" />
   <object type="Block Boundary" color="#F5F5F5" />
+  <object type="Existing Element" color="#F5F5F5" />
   <object type="Action Usage" color="#FAD7A0" />
   <object type="Action" color="#FAD7A0" />
   <object type="CallBehaviorAction" color="#FAD7A0" />
