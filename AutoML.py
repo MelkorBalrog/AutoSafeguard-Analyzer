@@ -12158,16 +12158,27 @@ class FaultTreeApp:
 
             ax.axis("off")
 
-            # Save the diagram to a temporary file and let Tk load it from
-            # disk.  This avoids in-memory image format quirks and uses only
-            # the standard ``tk.PhotoImage`` loader.
+            # Save the diagram to a temporary file and load it into Tk.  Some
+            # installations ship with a ``tk.PhotoImage`` that struggles with
+            # PNG files, so we prefer Pillow's ``ImageTk`` if available and
+            # fall back to the built-in loader otherwise.
             tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
             tmp_path = tmp_file.name
             tmp_file.close()
             plt.savefig(tmp_path, format="PNG", dpi=120)
             plt.close()
-            photo = tk.PhotoImage(file=tmp_path)
-            os.unlink(tmp_path)
+
+            photo = None
+            try:
+                from PIL import Image, ImageTk  # type: ignore
+
+                img = Image.open(tmp_path)
+                photo = ImageTk.PhotoImage(img)
+            except Exception:
+                # Pillow not available or failed to load; use Tk's loader
+                photo = tk.PhotoImage(file=tmp_path)
+            finally:
+                os.unlink(tmp_path)
 
             canvas.delete("all")
             canvas.image = photo  # keep reference
