@@ -4205,7 +4205,13 @@ class SysMLDiagramWindow(tk.Frame):
             collapsed = obj.collapsed.get(label, False)
             lines = text.splitlines() if text else [""]
             if collapsed:
-                disp = f"{label}: {lines[0] if lines else ''}"
+                # When collapsed only show the compartment name, not the first
+                # element. Previously the first line of the compartment content
+                # was appended which caused the label to display e.g.
+                # "Parts: Motor". The design has changed to only display the
+                # compartment title when collapsed so that it simply reads
+                # "Parts".
+                disp = f"{label}:"
                 width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
                 total_lines += 1
             else:
@@ -5214,10 +5220,14 @@ class SysMLDiagramWindow(tk.Frame):
                 self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
                 tx = bx2 + 2 * self.zoom
                 if collapsed:
+                    # Only display the compartment title when collapsed rather
+                    # than showing the first item's text. This keeps the
+                    # collapsed view concise and avoids confusion when the
+                    # compartment contains multiple elements.
                     self.canvas.create_text(
                         tx,
                         cy + 10 * self.zoom,
-                        text=f"{label}: {lines[0] if lines else ''}",
+                        text=f"{label}:",
                         anchor="w",
                         font=self.font,
                     )
