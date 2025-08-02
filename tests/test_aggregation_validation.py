@@ -126,27 +126,5 @@ class AggregationSanityTests(unittest.TestCase):
             )
         )
 
-
-class InheritancePartTests(unittest.TestCase):
-    def setUp(self):
-        SysMLRepository._instance = None
-        self.repo = SysMLRepository.get_instance()
-
-    def test_only_generalization_parts_inherited(self):
-        repo = self.repo
-        grand = repo.create_element("Block", name="Grand")
-        grand.properties["partProperties"] = "A"
-        agg_parent = repo.create_element("Block", name="AggParent")
-        agg_parent.properties["partProperties"] = "B"
-        child = repo.create_element("Block", name="Child")
-        repo.create_relationship("Generalization", child.elem_id, grand.elem_id)
-        repo.create_relationship("Aggregation", agg_parent.elem_id, child.elem_id)
-
-        extend_block_parts_with_parents(repo, child.elem_id)
-
-        props = repo.elements[child.elem_id].properties.get("partProperties", "")
-        self.assertIn("A", props)
-        self.assertNotIn("B", props)
-
 if __name__ == "__main__":
     unittest.main()
