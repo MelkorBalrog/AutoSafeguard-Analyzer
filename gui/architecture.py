@@ -2405,6 +2405,42 @@ def behaviors_to_json(behaviors: List[BehaviorAssignment]) -> str:
     return json.dumps([asdict(b) for b in behaviors])
 
 
+def get_block_behavior_elements(repo: "SysMLRepository", block_id: str) -> List["SysMLElement"]:
+    """Return Action, Activity and Operation elements that define behaviors of ``block_id``."""
+    elements: List["SysMLElement"] = []
+    block = repo.elements.get(block_id)
+    if not block:
+        return elements
+    behaviors = parse_behaviors(block.properties.get("behaviors", ""))
+    for beh in behaviors:
+        # operations with matching name
+        for elem in repo.elements.values():
+            if elem.elem_type == "Operation" and elem.name == beh.operation:
+                elements.append(elem)
+        diag = repo.diagrams.get(beh.diagram)
+        if not diag:
+            continue
+        # elements referenced in the diagram
+        for obj in getattr(diag, "objects", []):
+            elem_id = obj.get("element_id")
+            typ = obj.get("obj_type") or obj.get("type")
+            if elem_id and typ in ("Action", "Action Usage", "CallBehaviorAction", "Activity"):
+                elem = repo.elements.get(elem_id)
+                if elem:
+                    elements.append(elem)
+        for elem_id in getattr(diag, "elements", []):
+            elem = repo.elements.get(elem_id)
+            if elem and elem.elem_type in ("Action", "Activity"):
+                elements.append(elem)
+    seen: set[str] = set()
+    unique = []
+    for e in elements:
+        if e.elem_id not in seen:
+            unique.append(e)
+            seen.add(e.elem_id)
+    return unique
+
+
 @dataclass
 class DiagramConnection:
     src: int
@@ -2763,7 +2799,10 @@ class SysMLDiagramWindow(tk.Frame):
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
                 max_offset = (src.width + dst.width) / 2
-                if abs(src.x - dst.x) > max_offset:
+                diff = abs(src.x - dst.x)
+                if diff <= 1 or abs(diff - max_offset) < 1e-6:
+                    pass
+                else:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
@@ -2856,10 +2895,12 @@ class SysMLDiagramWindow(tk.Frame):
                 for other in self.objects:
                     if other.obj_id == other_id:
                         max_diff = (obj.width + other.width) / 2
-                        diff = adjusted_x - other.x
-                        if diff > max_diff:
+                        diff = new_x - other.x
+                        if abs(diff) <= max_diff:
+                            adjusted_x = other.x
+                        elif diff > 0:
                             adjusted_x = other.x + max_diff
-                        elif diff < -max_diff:
+                        else:
                             adjusted_x = other.x - max_diff
         return adjusted_x
 
@@ -7393,12 +7434,9 @@ class ConnectionDialog(simpledialog.Dialog):
         row = 4
         if self.connection.conn_type == "Control Action":
             repo = SysMLRepository.get_instance()
-            elems = [
-                e
-                for e in repo.elements.values()
-                if e.elem_type in ("Action", "Activity", "Operation")
-            ]
-            self.elem_map = {e.name or e.elem_id: e.elem_id for e in elems}
+            src_obj = self.master.get_object(self.connection.src)
+            beh_elems = get_block_behavior_elements(repo, getattr(src_obj, "element_id", ""))
+            self.elem_map = {e.name or e.elem_id: e.elem_id for e in beh_elems}
             ttk.Label(master, text="Element:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
             cur_name = next(
                 (n for n, i in self.elem_map.items() if i == self.connection.element_id),
@@ -7421,9 +7459,17 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
             ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
             row += 1
-            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
-            self.guard_ops_var = tk.StringVar(value=", ".join(self.connection.guard_ops))
-            ttk.Entry(master, textvariable=self.guard_ops_var).grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+            self.guard_ops_list = tk.Listbox(master, height=4)
+            for op in self.connection.guard_ops:
+                self.guard_ops_list.insert(tk.END, op)
+            self.guard_ops_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            opbtn = ttk.Frame(master)
+            opbtn.grid(row=row, column=2, padx=2)
+            self.guard_op_choice = tk.StringVar(value="AND")
+            ttk.Combobox(opbtn, textvariable=self.guard_op_choice, values=["AND", "OR"], state="readonly").pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
             row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
@@ -7456,6 +7502,15 @@ class ConnectionDialog(simpledialog.Dialog):
         for idx in reversed(sel):
             self.guard_list.delete(idx)
 
+    def add_guard_op(self):
+        op = self.guard_op_choice.get()
+        self.guard_ops_list.insert(tk.END, op)
+
+    def remove_guard_op(self):
+        sel = list(self.guard_ops_list.curselection())
+        for idx in reversed(sel):
+            self.guard_ops_list.delete(idx)
+
     def apply(self):
         self.connection.name = self.name_var.get()
         self.connection.style = self.style_var.get()
@@ -7474,10 +7529,9 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
-        if hasattr(self, "guard_ops_var"):
-            txt = self.guard_ops_var.get()
+        if hasattr(self, "guard_ops_list"):
             self.connection.guard_ops = [
-                op.strip().upper() for op in txt.split(",") if op.strip()
+                self.guard_ops_list.get(i) for i in range(self.guard_ops_list.size())
             ]
         if hasattr(self, "elem_var"):
             sel = self.elem_var.get()
