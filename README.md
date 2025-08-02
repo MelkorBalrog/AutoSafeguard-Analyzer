@@ -1192,3 +1192,43 @@ and run the build again if you hit this issue.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
 - 0.1.0 - Added Help menu and version tracking.
+## Example Safety Analysis Tables
+
+The following example demonstrates how safety information flows from hazard identification to detailed analysis using the **Stop at Intersection** scenario from the sample model.
+
+### HAZOP
+
+| Function | Malfunction | Scenario | Hazard | Rationale |
+|----------|-------------|----------|--------|-----------|
+| Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
+
+### HARA
+
+| Malfunction | Hazard | Scenario | Severity | Controllability | Exposure | ASIL | Safety Goal |
+|-------------|--------|----------|----------|----------------|----------|------|-------------|
+| Does not stop at intersection | Run over VRUs | Pedestrians crossing | 3 | 1 | 4 | B | Prevent no braking |
+
+### Fault Tree
+
+| Node | Type | Description | Probability | Safety Goal |
+|------|------|-------------|-------------|-------------|
+| Prevent no braking | TOP EVENT (AND) | Does not stop at intersection | 0.01277 | Prevent no braking |
+| Node 5 | Basic Event | capacitor is open | 0.09227 | Prevent no braking |
+| Node 8 | Basic Event | capacitor is shorted | 0.13841 | Prevent no braking |
+
+### FMEDA
+
+| ID | Description | FMEA Cause | Malfunction | Safety Goal | Fault Type | FIT | SPFM | LPFM | Diagnostic Cov. |
+|----|-------------|------------|-------------|-------------|------------|-----|------|------|-----------------|
+| 4 | open | capacitor is open | Does not stop at intersection | Prevent no braking | permanent | 3844.68 | 38.4468 | 0 | 0.99 |
+| 6 | shorted | capacitor is shorted | — | — | transient | 5767.02 | 0 | 1441.755 | 0.75 |
+
+### Reliability Analysis
+
+| Component | Type | Qty | FIT |
+|-----------|------|-----|-----|
+| resistor | resistor | 20 | 297.505 |
+| capacitor | capacitor | 10 | 961.17 |
+
+This end-to-end flow links HAZOP findings to HARA ratings, fault trees and FMEDA metrics for a coherent safety case.
+
