@@ -5102,7 +5102,7 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
-        elif obj.obj_type == "Block Boundary":
+        elif obj.obj_type in ("Block Boundary", "Existing Element"):
             self._create_round_rect(
                 x - w,
                 y - h,
