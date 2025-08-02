@@ -71,3 +71,7 @@ if 'actionDefinition' in SYSML_PROPERTIES.get('ActionUsage', []):
 for prop in ('component', 'failureModes', 'asil'):
     if prop not in SYSML_PROPERTIES['PartUsage']:
         SYSML_PROPERTIES['PartUsage'].append(prop)
+
+# Keep BlockBoundaryUsage in sync with BlockUsage properties, including
+# reliability annotations.
+SYSML_PROPERTIES['BlockBoundaryUsage'] = list(SYSML_PROPERTIES['BlockUsage'])
