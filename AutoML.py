@@ -12092,33 +12092,33 @@ class FaultTreeApp:
             nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
-            haz = row["hazard"]
-            mal = row["malfunction"]
-            nodes[haz] = "hazard"
-            nodes[mal] = "malfunction"
-            # A malfunction leads to a hazard
-            edges.append((mal, haz))
+            # Use unique internal identifiers for each node so hazards and
+            # malfunctions with the same label don't collapse into a single
+            # vertex.  The displayed label is stored separately from the key.
+            haz_label = row["hazard"]
+            mal_label = row["malfunction"]
+            haz_id = f"haz:{haz_label}"
+            mal_id = f"mal:{mal_label}"
+            nodes[haz_id] = (haz_label, "hazard")
+            nodes[mal_id] = (mal_label, "malfunction")
+            edges.append((haz_id, mal_id))
 
-            # Failure modes and faults are upstream causes
             for fm in sorted(row["failure_modes"]):
-                nodes[fm] = "failure_mode"
-                edges.append((fm, mal))
+                fm_id = f"fm:{fm}"
+                nodes[fm_id] = (fm, "failure_mode")
+                edges.append((mal_id, fm_id))
             for fault in sorted(row["faults"]):
-                nodes[fault] = "fault"
-                if row["failure_modes"]:
-                    for fm in sorted(row["failure_modes"]):
-                        edges.append((fault, fm))
-                else:
-                    edges.append((fault, mal))
-
-            # Functional insufficiencies and triggering conditions are direct
-            # contributors to the hazard
+                fault_id = f"fault:{fault}"
+                nodes[fault_id] = (fault, "fault")
+                edges.append((mal_id, fault_id))
             for fi in sorted(row["fis"]):
-                nodes[fi] = "fi"
-                edges.append((fi, haz))
+                fi_id = f"fi:{fi}"
+                nodes[fi_id] = (fi, "fi")
+                edges.append((haz_id, fi_id))
             for tc in sorted(row["tcs"]):
-                nodes[tc] = "tc"
-                edges.append((tc, haz))
+                tc_id = f"tc:{tc}"
+                nodes[tc_id] = (tc, "tc")
+                edges.append((haz_id, tc_id))
 
             # Layout from effect (hazard) on the left to root causes on the
             # right.  Use generous spacing so wrapped text remains readable.
@@ -12181,19 +12181,20 @@ class FaultTreeApp:
                     tags="edge",
                 )
 
-            # Draw the nodes as colored rectangles with labels
-            import matplotlib.patches as patches
-
+            # Draw the nodes as rectangles with wrapped text
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                rect = patches.FancyBboxPatch(
-                    (x - 1, y - 0.5), 2, 1,
-                    boxstyle="round,pad=0.1",
-                    facecolor=color,
-                    edgecolor="black",
+                cx, cy = to_canvas(x, y)
+                canvas.create_rectangle(
+                    cx - box_w / 2,
+                    cy - box_h / 2,
+                    cx + box_w / 2,
+                    cy + box_h / 2,
+                    fill=color,
+                    outline="black",
+                    tags="node",
                 )
-                ax.add_patch(rect)
                 label = textwrap.fill(str(n), 20)
                 canvas.create_text(
                     cx,
@@ -12220,20 +12221,6 @@ class FaultTreeApp:
             tmp_file.close()
             plt.savefig(tmp_path, format="PNG", dpi=120)
             plt.close()
-
-            try:
-                if Image and ImageTk:
-                    pil_img = Image.open(tmp_path)
-                    photo = ImageTk.PhotoImage(pil_img)
-                else:  # Pillow not installed
-                    raise Exception
-            except Exception:
-                photo = tk.PhotoImage(file=tmp_path)
-            finally:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
 
             try:
                 if Image and ImageTk:
