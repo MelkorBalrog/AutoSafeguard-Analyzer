@@ -12071,13 +12071,12 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* directly on the Tk canvas."""
             import textwrap
 
             # Build a simple graph structure without relying on external
             # drawing helpers.  We will render the diagram using basic Tk
             # canvas primitives such as lines and rectangles.
-            nodes: dict[str, tuple[str, str]] = {}
+            nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
             # Use unique internal identifiers for each node so hazards and
@@ -12128,13 +12127,18 @@ class FaultTreeApp:
                 pos[f"tc:{tc}"] = (2, y_tc)
                 y_tc -= 2
 
+            # Use hexadecimal color codes so the palette works on all Tk
+            # platforms.  Some Windows installs reject X11 color names (e.g.
+            # ``lightcoral``) which previously resulted in only the arrows
+            # being drawn.  Hex codes are universally recognised and ensure
+            # that every node receives a visible fill colour.
             color_map = {
-                "hazard": "lightcoral",
-                "malfunction": "lightblue",
-                "failure_mode": "orange",
-                "fault": "lightgray",
-                "fi": "lightyellow",
-                "tc": "lightgreen",
+                "hazard": "#F08080",       # light coral
+                "malfunction": "#ADD8E6",  # light blue
+                "failure_mode": "#FFA500",  # orange
+                "fault": "#D3D3D3",        # light gray
+                "fi": "#FFFFE0",           # light yellow
+                "tc": "#90EE90",           # light green
             }
 
             # Clear any existing drawing
@@ -12155,15 +12159,18 @@ class FaultTreeApp:
             for u, v in edges:
                 x1, y1 = to_canvas(*pos[u])
                 x2, y2 = to_canvas(*pos[v])
-                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
-                canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, "caused by",
-                                    font=("TkDefaultFont", 8))
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, tags="edge")
+                canvas.create_text(
+                    (x1 + x2) / 2,
+                    (y1 + y2) / 2,
+                    "caused by",
+                    font=("TkDefaultFont", 8),
+                    tags="edge",
+                )
 
-            # Draw the nodes as rectangles with wrapped text.  Each entry in
-            # ``nodes`` maps an internal identifier to a ``(label, kind)``
-            # tuple.  ``pos`` uses the same internal identifiers.
-            for node_id, (x, y) in pos.items():
-                label, kind = nodes.get(node_id, ("", ""))
+            # Draw the nodes as rectangles with wrapped text
+            for n, (x, y) in pos.items():
+                kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
                 cx, cy = to_canvas(x, y)
                 canvas.create_rectangle(
@@ -12173,15 +12180,20 @@ class FaultTreeApp:
                     cy + box_h / 2,
                     fill=color,
                     outline="black",
+                    tags="node",
                 )
-                wrapped = textwrap.fill(str(label), 20)
+                label = textwrap.fill(str(n), 20)
                 canvas.create_text(
                     cx,
                     cy,
-                    text=wrapped,
+                    text=label,
                     width=box_w - 10,
                     font=("TkDefaultFont", 8),
+                    tags="node",
                 )
+
+            # Ensure nodes are drawn above connecting lines
+            canvas.tag_raise("node")
 
             canvas.config(scrollregion=canvas.bbox("all"))
 
