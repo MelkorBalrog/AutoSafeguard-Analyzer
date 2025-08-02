@@ -12072,15 +12072,19 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* on the canvas."""
-            import matplotlib.pyplot as plt
+            """Render a small cause/effect diagram directly onto ``canvas``.
+
+            The previous implementation generated a temporary PNG using
+            :mod:`matplotlib` and then loaded that image into Tk.  Aside from
+            being slow, systems without the optional Pillow dependency would
+            raise ``TclError`` when the image failed to load.  Drawing the
+            diagram with basic canvas primitives avoids those issues entirely
+            and keeps the on-screen representation lightweight.
+            """
             import textwrap
 
-            # Build a simple graph structure without relying on the external
-            # ``networkx`` package.  The lightweight stub bundled with the
-            # repository does not implement the drawing helpers used
-            # previously, so we assemble the diagram manually using
-            # matplotlib primitives.
+            # Build a simple graph structure.  The arrangement mirrors the PDF
+            # export so the user sees the same layout in both places.
             nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
@@ -12088,23 +12092,31 @@ class FaultTreeApp:
             mal = row["malfunction"]
             nodes[haz] = "hazard"
             nodes[mal] = "malfunction"
-            edges.append((haz, mal))
+            edges.append((mal, haz))  # malfunction leads to hazard
 
             for fm in sorted(row["failure_modes"]):
                 nodes[fm] = "failure_mode"
-                edges.append((mal, fm))
+                edges.append((fm, mal))
             for fault in sorted(row["faults"]):
                 nodes[fault] = "fault"
-                edges.append((mal, fault))
+                if row["failure_modes"]:
+                    for fm in sorted(row["failure_modes"]):
+                        edges.append((fault, fm))
+                else:
+                    edges.append((fault, mal))
+
+            # Functional insufficiencies and triggering conditions contribute
+            # directly to the hazard
             for fi in sorted(row["fis"]):
                 nodes[fi] = "fi"
-                edges.append((haz, fi))
+                edges.append((fi, haz))
             for tc in sorted(row["tcs"]):
                 nodes[tc] = "tc"
-                edges.append((haz, tc))
+                edges.append((tc, haz))
 
-            # Layout from effect (hazard) on the left to root causes on the right
-            # Use generous spacing so wrapped text remains readable
+            # Layout from effect (hazard) on the left to root causes on the
+            # right.  Positions are arbitrary units which we'll scale to pixels
+            # later.
             pos = {haz: (0, 0), mal: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
@@ -12124,54 +12136,61 @@ class FaultTreeApp:
                 y_tc -= 2
 
             color_map = {
-                "hazard": "lightcoral",
-                "malfunction": "lightblue",
-                "failure_mode": "orange",
-                "fault": "lightgray",
-                "fi": "lightyellow",
-                "tc": "lightgreen",
+                "hazard": "#F08080",       # light coral
+                "malfunction": "#ADD8E6",  # light blue
+                "failure_mode": "#FFA500",  # orange
+                "fault": "#D3D3D3",        # light gray
+                "fi": "#FFFFE0",           # light yellow
+                "tc": "#90EE90",           # light green
             }
 
-            plt.figure(figsize=(6, 4))
-            ax = plt.gca()
+            canvas.delete("all")
 
-            # Draw arrows for each edge
+            scale_x = 80
+            scale_y = 40
+            margin = 20
+            min_y = min(y for _, y in pos.values())
+
+            def to_pixel(x: float, y: float) -> tuple[float, float]:
+                px = x * scale_x + margin
+                py = (y - min_y) * scale_y + margin
+                return px, py
+
+            # Draw connecting arrows first so they appear underneath the nodes
             for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                            arrowprops=dict(arrowstyle="->"))
+                x1, y1 = to_pixel(*pos[u])
+                x2, y2 = to_pixel(*pos[v])
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+                canvas.create_text(
+                    (x1 + x2) / 2,
+                    (y1 + y2) / 2,
+                    text="caused by",
+                    font=("TkDefaultFont", 6),
+                )
 
-            # Draw the nodes with labels
+            node_w = 100
+            node_h = 30
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                ax.scatter([x], [y], s=1200, c=color, edgecolors="black")
+                px, py = to_pixel(x, y)
+                canvas.create_rectangle(
+                    px - node_w / 2,
+                    py - node_h / 2,
+                    px + node_w / 2,
+                    py + node_h / 2,
+                    fill=color,
+                    outline="black",
+                )
                 label = textwrap.fill(str(n), 20)
-                ax.text(x, y, label, fontsize=6, ha="center", va="center")
+                canvas.create_text(
+                    px,
+                    py,
+                    text=label,
+                    width=node_w - 4,
+                    font=("TkDefaultFont", 6),
+                )
 
-            # Edge labels ("caused by") halfway between nodes
-            for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
-
-            ax.axis("off")
-
-            # Save the diagram to a temporary file and let Tk load it from
-            # disk.  This avoids in-memory image format quirks and uses only
-            # the standard ``tk.PhotoImage`` loader.
-            tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp_path = tmp_file.name
-            tmp_file.close()
-            plt.savefig(tmp_path, format="PNG", dpi=120)
-            plt.close()
-            photo = tk.PhotoImage(file=tmp_path)
-            os.unlink(tmp_path)
-
-            canvas.delete("all")
-            canvas.image = photo  # keep reference
-            canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
 
         def on_select(event):
