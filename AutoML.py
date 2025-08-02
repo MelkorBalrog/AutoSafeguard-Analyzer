@@ -11914,16 +11914,52 @@ class FaultTreeApp:
                     info["failure_modes"].add(self.format_failure_mode_label(be))
                     info["faults"].update(self.get_faults_for_failure_mode(be))
 
+        # Include basic events connected to top events even when they have no
+        # explicit malfunction reference. This shows faults tied directly to the
+        # top level event.
+        for te in self.top_events:
+            mal = getattr(te, "malfunction", "").strip()
+            if not mal:
+                continue
+            for node in self.get_all_nodes_table(te):
+                if getattr(node, "node_type", "").upper() != "BASIC EVENT":
+                    continue
+                mals = [m.strip() for m in getattr(node, "fmeda_malfunction", "").split(";") if m.strip()]
+                if mals:
+                    continue
+                for (hz, row_mal), info in rows.items():
+                    if row_mal == mal:
+                        info["failure_modes"].add(self.format_failure_mode_label(node))
+                        info["faults"].update(self.get_faults_for_failure_mode(node))
+                        fault = getattr(node, "fault_ref", "").strip()
+                        if fault:
+                            info["faults"].add(fault)
+
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
 
     def show_cause_effect_chain(self):
-        """Display a table linking hazards to downstream events."""
+        """Display a table linking hazards to downstream events with an optional diagram."""
         data = self.build_cause_effect_data()
         if not data:
             messagebox.showinfo("Cause & Effect", "No data available")
             return
+
         win = tk.Toplevel(self.root)
         win.title("Cause & Effect Chain")
+
+        nb = ttk.Notebook(win)
+        nb.pack(fill=tk.BOTH, expand=True)
+
+        table_frame = ttk.Frame(nb)
+        diagram_frame = ttk.Frame(nb)
+        nb.add(table_frame, text="Table")
+        nb.add(diagram_frame, text="Diagram")
+
+        table_frame.columnconfigure(0, weight=1)
+        table_frame.rowconfigure(0, weight=1)
+        diagram_frame.columnconfigure(0, weight=1)
+        diagram_frame.rowconfigure(0, weight=1)
+
         cols = (
             "Hazard",
             "Malfunction",
@@ -11932,14 +11968,26 @@ class FaultTreeApp:
             "FIs",
             "TCs",
         )
-        tree = ttk.Treeview(win, columns=cols, show="headings")
-        for c in cols:
-            tree.heading(c, text=c)
-            tree.column(c, width=180 if c in ("Hazard", "Malfunction") else 150)
-        tree.pack(fill=tk.BOTH, expand=True)
 
+        tree = ttk.Treeview(table_frame, columns=cols, show="headings")
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+        canvas = tk.Canvas(diagram_frame, bg="white")
+        cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
+        cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        cvs_vsb.grid(row=0, column=1, sticky="ns")
+        cvs_hsb.grid(row=1, column=0, sticky="ew")
+
+        row_map = {}
         for row in data:
-            tree.insert(
+            iid = tree.insert(
                 "",
                 "end",
                 values=(
@@ -11951,6 +11999,96 @@ class FaultTreeApp:
                     ", ".join(sorted(row["tcs"])),
                 ),
             )
+            row_map[iid] = row
+
+        def _wrap(text: str, limit: int = 15) -> str:
+            words = text.split()
+            lines = []
+            cur = ""
+            for w in words:
+                if len(cur) + len(w) + (1 if cur else 0) > limit:
+                    lines.append(cur)
+                    cur = w
+                else:
+                    cur = f"{cur} {w}".strip()
+            if cur:
+                lines.append(cur)
+            return "\n".join(lines)
+
+        def draw_row(row):
+            """Render a small network diagram for *row* on the canvas."""
+            import matplotlib.pyplot as plt
+            from io import BytesIO
+            G = nx.DiGraph()
+            haz = row["hazard"]
+            mal = row["malfunction"]
+            G.add_node(haz, kind="hazard", label=_wrap(haz))
+            G.add_node(mal, kind="malfunction", label=_wrap(mal))
+            G.add_edge(mal, haz)
+            for fm in sorted(row["failure_modes"]):
+                G.add_node(fm, kind="failure_mode", label=_wrap(fm))
+                G.add_edge(fm, mal)
+            for fault in sorted(row["faults"]):
+                G.add_node(fault, kind="fault", label=_wrap(fault))
+                if row["failure_modes"]:
+                    G.add_edge(fault, sorted(row["failure_modes"])[0])
+                else:
+                    G.add_edge(fault, mal)
+            for fi in sorted(row["fis"]):
+                G.add_node(fi, kind="fi", label=_wrap(fi))
+                G.add_edge(fi, haz)
+            for tc in sorted(row["tcs"]):
+                G.add_node(tc, kind="tc", label=_wrap(tc))
+                G.add_edge(tc, haz)
+
+            pos = nx.spring_layout(G, seed=42)
+            color_map = {
+                "hazard": "lightcoral",
+                "malfunction": "lightblue",
+                "failure_mode": "orange",
+                "fault": "lightgray",
+                "fi": "lightyellow",
+                "tc": "lightgreen",
+            }
+            node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
+            labels = {n: G.nodes[n].get("label", n) for n in G.nodes()}
+            plt.figure(figsize=(4, 3))
+            nx.draw(
+                G,
+                pos,
+                with_labels=True,
+                labels=labels,
+                node_color=node_colors,
+                node_size=300,
+                font_size=6,
+                arrows=True,
+            )
+            plt.axis("off")
+            buf = BytesIO()
+            plt.savefig(buf, format="PNG", dpi=120)
+            plt.close()
+            buf.seek(0)
+            img = Image.open(buf)
+
+            canvas.delete("all")
+            photo = ImageTk.PhotoImage(img)
+            canvas.image = photo  # keep reference
+            canvas.create_image(0, 0, image=photo, anchor="nw")
+            canvas.config(scrollregion=canvas.bbox("all"))
+
+        def on_select(event):
+            sel = tree.selection()
+            if sel:
+                row = row_map.get(sel[0])
+                if row:
+                    draw_row(row)
+
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        if row_map:
+            first_iid = next(iter(row_map))
+            tree.selection_set(first_iid)
+            draw_row(row_map[first_iid])
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
