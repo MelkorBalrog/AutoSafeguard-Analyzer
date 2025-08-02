@@ -12071,6 +12071,7 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
+            """Render a small network diagram for *row* directly on the Tk canvas."""
             import textwrap
 
             # Build a simple graph structure without relying on external
