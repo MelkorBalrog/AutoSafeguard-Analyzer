@@ -2825,6 +2825,23 @@ class SysMLDiagramWindow(tk.Frame):
 
         return True, ""
 
+    def _constrain_horizontal_movement(
+        self, obj: SysMLObject, new_x: float
+    ) -> float:
+        """Return adjusted x to keep control flow connectors vertical."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Control Flow Diagram":
+            return new_x
+        for conn in self.connections:
+            if conn.conn_type in ("Control Action", "Feedback") and (
+                conn.src == obj.obj_id or conn.dst == obj.obj_id
+            ):
+                other_id = conn.dst if conn.src == obj.obj_id else conn.src
+                for other in self.objects:
+                    if other.obj_id == other_id:
+                        return other.x
+        return new_x
+
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -3325,7 +3342,9 @@ class SysMLDiagramWindow(tk.Frame):
         else:
             old_x = self.selected_obj.x
             old_y = self.selected_obj.y
-            self.selected_obj.x = x / self.zoom - self.drag_offset[0]
+            new_x = x / self.zoom - self.drag_offset[0]
+            new_x = self._constrain_horizontal_movement(self.selected_obj, new_x)
+            self.selected_obj.x = new_x
             self.selected_obj.y = y / self.zoom - self.drag_offset[1]
             dx = self.selected_obj.x - old_x
             dy = self.selected_obj.y - old_y
@@ -5102,7 +5121,7 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
-        elif obj.obj_type in ("Block Boundary", "Existing Element"):
+        elif obj.obj_type == "Block Boundary":
             self._create_round_rect(
                 x - w,
                 y - h,
@@ -5503,6 +5522,45 @@ class SysMLDiagramWindow(tk.Frame):
             elem = self.repo.elements.get(conn.element_id)
             if elem:
                 label = elem.name
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
+            x = (ax + bx) / 2
+            top = min(ay, by)
+            bottom = max(ay, by)
+            color = "red" if selected else "black"
+            width = 2 if selected else 1
+            self.canvas.create_line(
+                x,
+                bottom,
+                x,
+                top,
+                arrow=tk.LAST,
+                dash=(),
+                fill=color,
+                width=width,
+                tags="connection",
+            )
+            if label:
+                self.canvas.create_text(
+                    x,
+                    (top + bottom) / 2 - 10 * self.zoom,
+                    text=label,
+                    font=self.font,
+                    tags="connection",
+                )
+            if selected:
+                s = 3
+                for hx, hy in [(x, bottom), (x, top)]:
+                    self.canvas.create_rectangle(
+                        hx - s,
+                        hy - s,
+                        hx + s,
+                        hy + s,
+                        outline="red",
+                        fill="white",
+                        tags="connection",
+                    )
+            return
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
