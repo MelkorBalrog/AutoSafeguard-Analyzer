@@ -5159,17 +5159,19 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = obj.properties.get("name", "")
-            if label:
-                lx = x
-                ly = y - h - 4 * self.zoom
-                self.canvas.create_text(
-                    lx,
-                    ly,
-                    text=label,
-                    anchor="s",
-                    font=self.font,
-                )
+            diag = self.repo.diagrams.get(self.diagram_id)
+            if not diag or diag.diag_type != "Control Flow Diagram":
+                label = obj.properties.get("name", "")
+                if label:
+                    lx = x
+                    ly = y - h - 4 * self.zoom
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        anchor="s",
+                        font=self.font,
+                    )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             if obj.obj_type == "Part":
