@@ -11988,21 +11988,26 @@ class FaultTreeApp:
                     info["failure_modes"].add(self.format_failure_mode_label(be))
                     info["faults"].update(self.get_faults_for_failure_mode(be))
 
-        # Include FTA basic events linked via their top event malfunction
+        # Include basic events connected to top events even when they have no
+        # explicit malfunction reference. This shows faults tied directly to the
+        # top level event.
         for te in self.top_events:
-            te_mal = getattr(te, "malfunction", "").strip()
-            if not te_mal:
+            mal = getattr(te, "malfunction", "").strip()
+            if not mal:
                 continue
-            basic_nodes = [n for n in self.get_all_nodes_table(te) if n.node_type.upper() == "BASIC EVENT"]
-            for be in basic_nodes:
-                for (hz, mal), info in rows.items():
-                    if mal == te_mal:
-                        info["failure_modes"].add(self.format_failure_mode_label(be))
-                        faults = set(self.get_faults_for_failure_mode(be))
-                        fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
+            for node in self.get_all_nodes_table(te):
+                if getattr(node, "node_type", "").upper() != "BASIC EVENT":
+                    continue
+                mals = [m.strip() for m in getattr(node, "fmeda_malfunction", "").split(";") if m.strip()]
+                if mals:
+                    continue
+                for (hz, row_mal), info in rows.items():
+                    if row_mal == mal:
+                        info["failure_modes"].add(self.format_failure_mode_label(node))
+                        info["faults"].update(self.get_faults_for_failure_mode(node))
+                        fault = getattr(node, "fault_ref", "").strip()
                         if fault:
-                            faults.add(fault)
-                        info["faults"].update(faults)
+                            info["faults"].add(fault)
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
 
@@ -12070,55 +12075,48 @@ class FaultTreeApp:
             )
             row_map[iid] = row
 
+        def _wrap(text: str, limit: int = 15) -> str:
+            words = text.split()
+            lines = []
+            cur = ""
+            for w in words:
+                if len(cur) + len(w) + (1 if cur else 0) > limit:
+                    lines.append(cur)
+                    cur = w
+                else:
+                    cur = f"{cur} {w}".strip()
+            if cur:
+                lines.append(cur)
+            return "\n".join(lines)
+
         def draw_row(row):
-            """Render a small network diagram for *row* directly on the Tk canvas."""
-            import textwrap
-
-            # Build a simple graph structure without relying on external
-            # drawing helpers.  We will render the diagram using basic Tk
-            # canvas primitives such as lines and rectangles.
-            nodes: dict[str, str] = {}
-            edges: list[tuple[str, str]] = []
-
+            """Render a small network diagram for *row* on the canvas."""
+            import matplotlib.pyplot as plt
+            from io import BytesIO
+            G = nx.DiGraph()
             haz = row["hazard"]
             mal = row["malfunction"]
-            nodes[haz] = "hazard"
-            nodes[mal] = "malfunction"
-            edges.append((haz, mal))
-
+            G.add_node(haz, kind="hazard", label=_wrap(haz))
+            G.add_node(mal, kind="malfunction", label=_wrap(mal))
+            G.add_edge(mal, haz)
             for fm in sorted(row["failure_modes"]):
-                nodes[fm] = "failure_mode"
-                edges.append((mal, fm))
+                G.add_node(fm, kind="failure_mode", label=_wrap(fm))
+                G.add_edge(fm, mal)
             for fault in sorted(row["faults"]):
-                nodes[fault] = "fault"
-                edges.append((mal, fault))
+                G.add_node(fault, kind="fault", label=_wrap(fault))
+                if row["failure_modes"]:
+                    G.add_edge(fault, sorted(row["failure_modes"])[0])
+                else:
+                    G.add_edge(fault, mal)
             for fi in sorted(row["fis"]):
-                nodes[fi] = "fi"
-                edges.append((haz, fi))
+                G.add_node(fi, kind="fi", label=_wrap(fi))
+                G.add_edge(fi, haz)
             for tc in sorted(row["tcs"]):
-                nodes[tc] = "tc"
-                edges.append((haz, tc))
+                G.add_node(tc, kind="tc", label=_wrap(tc))
+                G.add_edge(tc, haz)
 
-            # Layout from effect (hazard) on the left to root causes on the right
-            # Use generous spacing so wrapped text remains readable
-            pos = {haz: (0, 0), mal: (4, 0)}
-            y_fm = 0
-            for fm in sorted(row["failure_modes"]):
-                pos[fm] = (8, y_fm * 2)
-                y_fm += 1
-            y_fault = 0
-            for fault in sorted(row["faults"]):
-                pos[fault] = (12, y_fault * 2)
-                y_fault += 1
-            y_fi = -2
-            for fi in sorted(row["fis"]):
-                pos[fi] = (2, y_fi)
-                y_fi -= 2
-            y_tc = y_fi
-            for tc in sorted(row["tcs"]):
-                pos[tc] = (2, y_tc)
-                y_tc -= 2
-
+            pos = nx.spring_layout(G, seed=42)
+            
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -12127,51 +12125,30 @@ class FaultTreeApp:
                 "fi": "lightyellow",
                 "tc": "lightgreen",
             }
+            node_colors = [color_map.get(G.nodes[n].get("kind"), "white") for n in G.nodes()]
+            labels = {n: G.nodes[n].get("label", n) for n in G.nodes()}
+            plt.figure(figsize=(4, 3))
+            nx.draw(
+                G,
+                pos,
+                with_labels=True,
+                labels=labels,
+                node_color=node_colors,
+                node_size=300,
+                font_size=6,
+                arrows=True,
+            )
+            plt.axis("off")
+            buf = BytesIO()
+            plt.savefig(buf, format="PNG", dpi=120)
+            plt.close()
+            buf.seek(0)
+            img = Image.open(buf)
 
-            # Clear any existing drawing
             canvas.delete("all")
-
-            # Scaling factors to convert the logical layout coordinates to
-            # pixels on the canvas.
-            scale = 80
-            x_off = 50
-            y_off = 50
-            box_w = 80
-            box_h = 40
-
-            def to_canvas(x: float, y: float) -> tuple[float, float]:
-                return x_off + scale * x, y_off + scale * y
-
-            # Draw connections with arrows and labels
-            for u, v in edges:
-                x1, y1 = to_canvas(*pos[u])
-                x2, y2 = to_canvas(*pos[v])
-                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
-                canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, "caused by",
-                                    font=("TkDefaultFont", 8))
-
-            # Draw the nodes as rectangles with wrapped text
-            for n, (x, y) in pos.items():
-                kind = nodes.get(n, "")
-                color = color_map.get(kind, "white")
-                cx, cy = to_canvas(x, y)
-                canvas.create_rectangle(
-                    cx - box_w / 2,
-                    cy - box_h / 2,
-                    cx + box_w / 2,
-                    cy + box_h / 2,
-                    fill=color,
-                    outline="black",
-                )
-                label = textwrap.fill(str(n), 20)
-                canvas.create_text(
-                    cx,
-                    cy,
-                    text=label,
-                    width=box_w - 10,
-                    font=("TkDefaultFont", 8),
-                )
-
+            photo = ImageTk.PhotoImage(img)
+            canvas.image = photo  # keep reference
+            canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
 
         def on_select(event):
@@ -12180,10 +12157,6 @@ class FaultTreeApp:
                 row = row_map.get(sel[0])
                 if row:
                     draw_row(row)
-                    # Automatically show the diagram tab whenever a row is
-                    # selected so the rendered network is visible without the
-                    # user needing to switch tabs manually.
-                    nb.select(diagram_frame)
 
         tree.bind("<<TreeviewSelect>>", on_select)
 
@@ -12191,8 +12164,6 @@ class FaultTreeApp:
             first_iid = next(iter(row_map))
             tree.selection_set(first_iid)
             draw_row(row_map[first_iid])
-            # Ensure the initial diagram is visible when the window opens.
-            nb.select(diagram_frame)
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
