@@ -296,6 +296,7 @@ from gui.architecture import (
     ActivityDiagramWindow,
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
+    ControlFlowDiagramWindow,
     ArchitectureManagerDialog,
     parse_behaviors,
 )
@@ -1926,6 +1927,7 @@ class FaultTreeApp:
             "Activity Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
+            "Control Flow Diagram": self._create_icon("arrow", "red"),
         }
         self.clipboard_node = None
         self.cut_mode = False
@@ -2072,6 +2074,7 @@ class FaultTreeApp:
         architecture_menu.add_command(label="Activity Diagram", command=self.open_activity_diagram)
         architecture_menu.add_command(label="Block Diagram", command=self.open_block_diagram)
         architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
+        architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
         architecture_menu.add_separator()
         architecture_menu.add_command(label="AutoML Explorer", command=self.manage_architecture)
 
@@ -3795,6 +3798,8 @@ class FaultTreeApp:
             win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         elif diagram.diag_type == "Internal Block Diagram":
             win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Control Flow Diagram":
+            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         else:
             temp.destroy()
             return None
@@ -13605,6 +13610,18 @@ class FaultTreeApp:
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
+    def open_control_flow_diagram(self):
+        """Prompt for a diagram name then open a new control flow diagram."""
+        name = simpledialog.askstring("New Control Flow Diagram", "Enter diagram name:")
+        if not name:
+            return
+        repo = SysMLRepository.get_instance()
+        diag = repo.create_diagram("Control Flow Diagram", name=name, package=repo.root_package.elem_id)
+        tab = self._new_tab(self._format_diag_title(diag))
+        self.diagram_tabs[diag.diag_id] = tab
+        ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.update_views()
+
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
             self.doc_nb.select(self._arch_tab)
@@ -13637,6 +13654,8 @@ class FaultTreeApp:
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
             InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Control Flow Diagram":
+            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         
     def copy_node(self):
         if self.selected_node and self.selected_node != self.root_node:
