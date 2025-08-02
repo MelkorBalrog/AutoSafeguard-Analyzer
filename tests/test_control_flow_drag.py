@@ -38,6 +38,18 @@ class ControlFlowDragTests(unittest.TestCase):
         new_x = SysMLDiagramWindow._constrain_horizontal_movement(win, obj, 80)
         self.assertEqual(new_x, 80)
 
+    def test_connector_move_unrestricted(self):
+        win = DummyWindow()
+        conn = win.connections[0]
+        new_x = SysMLDiagramWindow._constrain_control_flow_x(win, conn, 20)
+        self.assertEqual(new_x, 20)
+
+    def test_connector_move_constrained(self):
+        win = DummyWindow()
+        conn = win.connections[0]
+        new_x = SysMLDiagramWindow._constrain_control_flow_x(win, conn, 100)
+        self.assertEqual(new_x, 40)
+
 
 if __name__ == "__main__":
     unittest.main()
