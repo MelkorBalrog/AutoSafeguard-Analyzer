@@ -5208,8 +5208,15 @@ class SysMLDiagramWindow(tk.Frame):
         x2 = right - pad
         y2 = bottom - pad
         self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="white")
-        self.canvas.create_line((x1 + x2) / 2, y1 + 1 * self.zoom, (x1 + x2) / 2, y2 - 1 * self.zoom, fill="black")
-        self.canvas.create_line(x1 + 1 * self.zoom, (y1 + y2) / 2, x2 - 1 * self.zoom, (y1 + y2) / 2, fill="black")
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        self.canvas.create_text(
+            cx,
+            cy,
+            text="∞",
+            font=("Arial", int(6 * self.zoom)),
+            fill="black",
+        )
 
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom

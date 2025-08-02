@@ -310,7 +310,6 @@ except ModuleNotFoundError:
     Image = ImageDraw = ImageFont = None
 import os
 import types
-import tempfile
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -12094,6 +12093,7 @@ class FaultTreeApp:
             nodes[mal] = "malfunction"
             edges.append((mal, haz))  # malfunction leads to hazard
 
+            # Failure modes and faults are upstream causes
             for fm in sorted(row["failure_modes"]):
                 nodes[fm] = "failure_mode"
                 edges.append((fm, mal))
@@ -12120,21 +12120,26 @@ class FaultTreeApp:
             pos = {haz: (0, 0), mal: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
-                pos[fm] = (8, y_fm * 2)
+                pos[f"fm:{fm}"] = (8, y_fm * 2)
                 y_fm += 1
             y_fault = 0
             for fault in sorted(row["faults"]):
-                pos[fault] = (12, y_fault * 2)
+                pos[f"fault:{fault}"] = (12, y_fault * 2)
                 y_fault += 1
             y_fi = -2
             for fi in sorted(row["fis"]):
-                pos[fi] = (2, y_fi)
+                pos[f"fi:{fi}"] = (2, y_fi)
                 y_fi -= 2
             y_tc = y_fi
             for tc in sorted(row["tcs"]):
-                pos[tc] = (2, y_tc)
+                pos[f"tc:{tc}"] = (2, y_tc)
                 y_tc -= 2
 
+            # Use hexadecimal color codes so the palette works on all Tk
+            # platforms.  Some Windows installs reject X11 color names (e.g.
+            # ``lightcoral``) which previously resulted in only the arrows
+            # being drawn.  Hex codes are universally recognised and ensure
+            # that every node receives a visible fill colour.
             color_map = {
                 "hazard": "#F08080",       # light coral
                 "malfunction": "#ADD8E6",  # light blue
@@ -12192,6 +12197,10 @@ class FaultTreeApp:
                 )
 
             canvas.config(scrollregion=canvas.bbox("all"))
+            # Ensure the drawing appears immediately in environments where
+            # the Tk event loop has not yet run. Without this call the canvas
+            # may show up blank until the user interacts with the window.
+            canvas.update_idletasks()
 
         def on_select(event):
             sel = tree.selection()
