@@ -25,11 +25,11 @@ class ControlFlowDragTests(unittest.TestCase):
     def setUp(self):
         reset_repo()
 
-    def test_horizontal_move_restricted(self):
+    def test_horizontal_move_unrestricted(self):
         win = DummyWindow()
         obj = win.objects[1]
         new_x = SysMLDiagramWindow._constrain_horizontal_movement(win, obj, 50)
-        self.assertEqual(new_x, win.objects[0].x)
+        self.assertEqual(new_x, 50)
 
     def test_unconnected_move_free(self):
         win = DummyWindow()
@@ -37,6 +37,18 @@ class ControlFlowDragTests(unittest.TestCase):
         win.objects.append(obj)
         new_x = SysMLDiagramWindow._constrain_horizontal_movement(win, obj, 80)
         self.assertEqual(new_x, 80)
+
+    def test_connector_move_unrestricted(self):
+        win = DummyWindow()
+        conn = win.connections[0]
+        new_x = SysMLDiagramWindow._constrain_control_flow_x(win, conn, 20)
+        self.assertEqual(new_x, 20)
+
+    def test_connector_move_constrained(self):
+        win = DummyWindow()
+        conn = win.connections[0]
+        new_x = SysMLDiagramWindow._constrain_control_flow_x(win, conn, 100)
+        self.assertEqual(new_x, 40)
 
 
 if __name__ == "__main__":

@@ -2405,6 +2405,42 @@ def behaviors_to_json(behaviors: List[BehaviorAssignment]) -> str:
     return json.dumps([asdict(b) for b in behaviors])
 
 
+def get_block_behavior_elements(repo: "SysMLRepository", block_id: str) -> List["SysMLElement"]:
+    """Return Action, Activity and Operation elements that define behaviors of ``block_id``."""
+    elements: List["SysMLElement"] = []
+    block = repo.elements.get(block_id)
+    if not block:
+        return elements
+    behaviors = parse_behaviors(block.properties.get("behaviors", ""))
+    for beh in behaviors:
+        # operations with matching name
+        for elem in repo.elements.values():
+            if elem.elem_type == "Operation" and elem.name == beh.operation:
+                elements.append(elem)
+        diag = repo.diagrams.get(beh.diagram)
+        if not diag:
+            continue
+        # elements referenced in the diagram
+        for obj in getattr(diag, "objects", []):
+            elem_id = obj.get("element_id")
+            typ = obj.get("obj_type") or obj.get("type")
+            if elem_id and typ in ("Action", "Action Usage", "CallBehaviorAction", "Activity"):
+                elem = repo.elements.get(elem_id)
+                if elem:
+                    elements.append(elem)
+        for elem_id in getattr(diag, "elements", []):
+            elem = repo.elements.get(elem_id)
+            if elem and elem.elem_type in ("Action", "Activity"):
+                elements.append(elem)
+    seen: set[str] = set()
+    unique = []
+    for e in elements:
+        if e.elem_id not in seen:
+            unique.append(e)
+            seen.add(e.elem_id)
+    return unique
+
+
 @dataclass
 class DiagramConnection:
     src: int
@@ -2441,13 +2477,14 @@ def format_control_flow_label(
         "Feedback",
     ):
         if conn.guard:
-            parts: List[str] = []
+            lines: List[str] = []
             for i, g in enumerate(conn.guard):
-                parts.append(g)
-                if i < len(conn.guard) - 1:
-                    op = conn.guard_ops[i] if i < len(conn.guard_ops) else "AND"
-                    parts.append(op)
-            guard_text = " ".join(parts)
+                if i == 0:
+                    lines.append(g)
+                else:
+                    op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
+                    lines.append(f"{op} {g}")
+            guard_text = "\n".join(lines)
             return f"[{guard_text}] / {label}" if label else f"[{guard_text}]"
     return label
 
@@ -2762,9 +2799,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
-                dx = abs(src.x - dst.x)
                 max_offset = (src.width + dst.width) / 2
-                if dx > 1 and dx != max_offset:
+                if abs(src.x - dst.x) > max_offset:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
@@ -2854,17 +2890,34 @@ class SysMLDiagramWindow(tk.Frame):
                 conn.src == obj.obj_id or conn.dst == obj.obj_id
             ):
                 other_id = conn.dst if conn.src == obj.obj_id else conn.src
-                other = next((o for o in self.objects if o.obj_id == other_id), None)
-                if other:
-                    max_diff = (obj.width + other.width) / 2
-                    if new_x > other.x + max_diff:
-                        adjusted_x = other.x + max_diff
-                    elif new_x < other.x - max_diff:
-                        adjusted_x = other.x - max_diff
-                    else:
-                        adjusted_x = other.x
-                    break
+                for other in self.objects:
+                    if other.obj_id == other_id:
+                        max_diff = (obj.width + other.width) / 2
+                        diff = adjusted_x - other.x
+                        if diff > max_diff:
+                            adjusted_x = other.x + max_diff
+                        elif diff < -max_diff:
+                            adjusted_x = other.x - max_diff
         return adjusted_x
+
+    def _constrain_control_flow_x(
+        self, conn: DiagramConnection, new_x: float
+    ) -> float:
+        """Clamp connector x within the horizontal overlap of its objects."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Control Flow Diagram":
+            return new_x
+        src = next((o for o in self.objects if o.obj_id == conn.src), None)
+        dst = next((o for o in self.objects if o.obj_id == conn.dst), None)
+        if not src or not dst:
+            return new_x
+        min_x = max(src.x - src.width / 2, dst.x - dst.width / 2)
+        max_x = min(src.x + src.width / 2, dst.x + dst.width / 2)
+        if new_x < min_x:
+            return min_x
+        if new_x > max_x:
+            return max_x
+        return new_x
 
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
@@ -2914,6 +2967,37 @@ class SysMLDiagramWindow(tk.Frame):
                             if conn.points
                             else ((src_obj.x + dst_obj.x) / 2 * self.zoom)
                         )
+                        my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, 0)
+                elif (
+                    self.repo.diagrams.get(self.diagram_id).diag_type
+                    == "Control Flow Diagram"
+                    and conn.conn_type in ("Control Action", "Feedback")
+                ):
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        x_val = (
+                            conn.points[0][0]
+                            if conn.points
+                            else (
+                                max(
+                                    src_obj.x - src_obj.width / 2,
+                                    dst_obj.x - dst_obj.width / 2,
+                                )
+                                + min(
+                                    src_obj.x + src_obj.width / 2,
+                                    dst_obj.x + dst_obj.width / 2,
+                                )
+                            )
+                            / 2
+                        )
+                        x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                            self, conn, x_val
+                        )
+                        mx = x_val * self.zoom
                         my = (src_obj.y + dst_obj.y) / 2 * self.zoom
                         if abs(mx - x) <= 4 and abs(my - y) <= 4:
                             self.dragging_point_index = 0
@@ -3305,6 +3389,18 @@ class SysMLDiagramWindow(tk.Frame):
             px = (x - self.conn_drag_offset[0]) / self.zoom
             py = (y - self.conn_drag_offset[1]) / self.zoom
             if self.selected_conn.style == "Squared":
+                if not self.selected_conn.points:
+                    self.selected_conn.points.append((px, 0))
+                else:
+                    self.selected_conn.points[0] = (px, 0)
+            elif (
+                self.repo.diagrams.get(self.diagram_id).diag_type
+                == "Control Flow Diagram"
+                and self.selected_conn.conn_type in ("Control Action", "Feedback")
+            ):
+                px = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, self.selected_conn, px
+                )
                 if not self.selected_conn.points:
                     self.selected_conn.points.append((px, 0))
                 else:
@@ -4034,27 +4130,41 @@ class SysMLDiagramWindow(tk.Frame):
             dst = self.get_object(conn.dst)
             if not src or not dst:
                 continue
-            if (
-                diag
-                and diag.diag_type == "Control Flow Diagram"
-                and conn.conn_type in ("Control Action", "Feedback")
+            # Control flow connectors are drawn as a vertical line between
+            # elements. Mirror that behavior so they can be located when
+            # selecting.
+            if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in (
+                "Control Action",
+                "Feedback",
             ):
-                a_left = (src.x - src.width / 2) * self.zoom
-                a_right = (src.x + src.width / 2) * self.zoom
-                b_left = (dst.x - dst.width / 2) * self.zoom
-                b_right = (dst.x + dst.width / 2) * self.zoom
-                vx = (max(a_left, b_left) + min(a_right, b_right)) / 2
+                a_left = src.x - src.width / 2
+                a_right = src.x + src.width / 2
+                b_left = dst.x - dst.width / 2
+                b_right = dst.x + dst.width / 2
+                cx_val = (
+                    conn.points[0][0]
+                    if conn.points
+                    else (max(a_left, b_left) + min(a_right, b_right)) / 2
+                )
+                cx_val = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, conn, cx_val
+                )
+                cx = cx_val * self.zoom
                 ayc = src.y * self.zoom
                 byc = dst.y * self.zoom
                 if ayc <= byc:
-                    y1 = ayc + src.height / 2 * self.zoom
-                    y2 = byc - dst.height / 2 * self.zoom
+                    cy1 = ayc + src.height / 2 * self.zoom
+                    cy2 = byc - dst.height / 2 * self.zoom
                 else:
-                    y1 = ayc - src.height / 2 * self.zoom
-                    y2 = byc + dst.height / 2 * self.zoom
-                if self._dist_to_segment((x, y), (vx, y1), (vx, y2)) <= CONNECTION_SELECT_RADIUS:
+                    cy1 = ayc - src.height / 2 * self.zoom
+                    cy2 = byc + dst.height / 2 * self.zoom
+                if (
+                    self._dist_to_segment((x, y), (cx, cy1), (cx, cy2))
+                    <= CONNECTION_SELECT_RADIUS
+                ):
                     return conn
                 continue
+
             sx, sy = self.edge_point(
                 src,
                 dst.x * self.zoom,
@@ -5568,11 +5678,21 @@ class SysMLDiagramWindow(tk.Frame):
             conn, self.repo, diag.diag_type if diag else None
         )
         if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
-            a_left = (a.x - a.width / 2) * self.zoom
-            a_right = (a.x + a.width / 2) * self.zoom
-            b_left = (b.x - b.width / 2) * self.zoom
-            b_right = (b.x + b.width / 2) * self.zoom
-            x = (max(a_left, b_left) + min(a_right, b_right)) / 2
+            a_left = a.x - a.width / 2
+            a_right = a.x + a.width / 2
+            b_left = b.x - b.width / 2
+            b_right = b.x + b.width / 2
+            x_val = (
+                conn.points[0][0]
+                if conn.points
+                else (max(a_left, b_left) + min(a_right, b_right)) / 2
+            )
+            x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                self, conn, x_val
+            )
+            if conn.points:
+                conn.points[0] = (x_val, 0)
+            x = x_val * self.zoom
             if ayc <= byc:
                 y1 = ayc + a.height / 2 * self.zoom
                 y2 = byc - b.height / 2 * self.zoom
@@ -5602,7 +5722,7 @@ class SysMLDiagramWindow(tk.Frame):
                 )
             if selected:
                 s = 3
-                for hx, hy in [(x, y1), (x, y2)]:
+                for hx, hy in [(x, y1), (x, y2), (x, (y1 + y2) / 2)]:
                     self.canvas.create_rectangle(
                         hx - s,
                         hy - s,
@@ -7418,41 +7538,9 @@ class ConnectionDialog(simpledialog.Dialog):
         row = 4
         if self.connection.conn_type == "Control Action":
             repo = SysMLRepository.get_instance()
-            diag = repo.diagrams.get(self.master.diagram_id)
-            blk_id = None
-            if diag:
-                blk_id = diag.father or next(
-                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
-                    None,
-                )
-            elems: list[SysMLElement] = []
-            if blk_id:
-                blk = repo.elements.get(blk_id)
-                beh_diags = {
-                    b.diagram for b in parse_behaviors(blk.properties.get("behaviors", ""))
-                }
-                beh_elem_ids: set[str] = set()
-                for d_id in beh_diags:
-                    d_obj = repo.diagrams.get(d_id)
-                    if d_obj:
-                        beh_elem_ids.update(d_obj.elements)
-                elems = [
-                    repo.elements[eid]
-                    for eid in beh_elem_ids
-                    if repo.elements[eid].elem_type in ("Action", "Activity")
-                ]
-                elems += [
-                    e
-                    for e in repo.elements.values()
-                    if e.elem_type == "Operation" and e.owner == blk_id
-                ]
-            else:
-                elems = [
-                    e
-                    for e in repo.elements.values()
-                    if e.elem_type in ("Action", "Activity", "Operation")
-                ]
-            self.elem_map = {e.name or e.elem_id: e.elem_id for e in elems}
+            src_obj = self.master.get_object(self.connection.src)
+            beh_elems = get_block_behavior_elements(repo, getattr(src_obj, "element_id", ""))
+            self.elem_map = {e.name or e.elem_id: e.elem_id for e in beh_elems}
             ttk.Label(master, text="Element:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
             cur_name = next(
                 (n for n, i in self.elem_map.items() if i == self.connection.element_id),
@@ -7475,11 +7563,17 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
             ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
             row += 1
-            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
-            self.guard_ops_frame = ttk.Frame(master)
-            self.guard_ops_frame.grid(row=row, column=1, padx=4, pady=4, sticky="w")
-            self.guard_ops_vars: list[tk.StringVar] = []
-            self.refresh_guard_ops_controls()
+            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+            self.guard_ops_list = tk.Listbox(master, height=4)
+            for op in self.connection.guard_ops:
+                self.guard_ops_list.insert(tk.END, op)
+            self.guard_ops_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            opbtn = ttk.Frame(master)
+            opbtn.grid(row=row, column=2, padx=2)
+            self.guard_op_choice = tk.StringVar(value="AND")
+            ttk.Combobox(opbtn, textvariable=self.guard_op_choice, values=["AND", "OR"], state="readonly").pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
             row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
@@ -7506,33 +7600,20 @@ class ConnectionDialog(simpledialog.Dialog):
         txt = simpledialog.askstring("Guard", "Condition:", parent=self)
         if txt:
             self.guard_list.insert(tk.END, txt)
-            self.refresh_guard_ops_controls()
 
     def remove_guard(self):
         sel = list(self.guard_list.curselection())
         for idx in reversed(sel):
             self.guard_list.delete(idx)
-        self.refresh_guard_ops_controls()
 
-    def refresh_guard_ops_controls(self):
-        if not hasattr(self, "guard_ops_frame"):
-            return
-        for child in self.guard_ops_frame.winfo_children():
-            child.destroy()
-        self.guard_ops_vars = []
-        needed = max(self.guard_list.size() - 1, 0) if hasattr(self, "guard_list") else 0
-        for i in range(needed):
-            val = (
-                self.connection.guard_ops[i]
-                if i < len(self.connection.guard_ops)
-                else "AND"
-            )
-            var = tk.StringVar(value=val)
-            cb = ttk.Combobox(
-                self.guard_ops_frame, textvariable=var, values=["AND", "OR"], width=5
-            )
-            cb.pack(side=tk.LEFT, padx=2)
-            self.guard_ops_vars.append(var)
+    def add_guard_op(self):
+        op = self.guard_op_choice.get()
+        self.guard_ops_list.insert(tk.END, op)
+
+    def remove_guard_op(self):
+        sel = list(self.guard_ops_list.curselection())
+        for idx in reversed(sel):
+            self.guard_ops_list.delete(idx)
 
     def apply(self):
         self.connection.name = self.name_var.get()
@@ -7552,8 +7633,10 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
-        if hasattr(self, "guard_ops_vars"):
-            self.connection.guard_ops = [var.get().upper() or "AND" for var in self.guard_ops_vars]
+        if hasattr(self, "guard_ops_list"):
+            self.connection.guard_ops = [
+                self.guard_ops_list.get(i) for i in range(self.guard_ops_list.size())
+            ]
         if hasattr(self, "elem_var"):
             sel = self.elem_var.get()
             self.connection.element_id = self.elem_map.get(sel, "")
