@@ -1192,3 +1192,87 @@ and run the build again if you hit this issue.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
 - 0.1.0 - Added Help menu and version tracking.
+## Example Safety Analysis Tables
+
+The following example shows how to build a small project from scratch so you can
+follow the full safety workflow yourself. Start with these setup steps:
+
+### Project Setup
+
+1. Install the required packages:
+   ```
+   pip install pillow openpyxl networkx matplotlib reportlab adjustText
+   ```
+2. Launch AutoML with `python AutoML.py` and choose **File → New Project**.
+3. Create an activity diagram named **Stop at Intersection**:
+   - **Diagram → Activity → New**
+   - Add an initial node, an action called *Braking*, and a final node.
+   - Save the diagram. HAZOP entries reference actions from activity diagrams,
+     so the HAZOP table cannot be created without this step.
+4. Add a scenario library via **Libraries → Scenario Library** and create the
+   *Detroit* library with a scenario named *Pedestrians crossing* (exposure 4).
+
+With the project prepared, the following sections illustrate each analysis.
+
+### HAZOP
+
+Steps to reproduce:
+1. Navigate to **Safety → HAZOP**.
+2. Click **Add Entry** and fill in the fields as shown.
+3. Save the document.
+
+| Function | Malfunction | Scenario | Hazard | Rationale |
+|----------|-------------|----------|--------|-----------|
+| Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
+
+### HARA
+
+Steps to reproduce:
+1. Open **Safety → HARA** and create a new document linked to the HAZOP entry.
+2. Set Severity = 3, Controllability = 3, Exposure = 4; AutoML computes ASIL D.
+3. Export or save to view the table.
+
+| Malfunction | Hazard | Scenario | Severity | Controllability | Exposure | ASIL | Safety Goal |
+|-------------|--------|----------|----------|----------------|----------|------|-------------|
+| Does not stop at intersection | Run over VRUs | Pedestrians crossing | 3 | 3 | 4 | D | Prevent no braking |
+
+### Fault Tree
+
+Steps to reproduce:
+1. Go to **Analysis → Fault Tree**.
+2. Create the top event "Prevent no braking" with an AND gate.
+3. Add basic events for "capacitor is open" and "capacitor is shorted".
+4. Run the probability calculation.
+
+| Node | Type | Description | Probability | Safety Goal |
+|------|------|-------------|-------------|-------------|
+| Prevent no braking | TOP EVENT (AND) | Does not stop at intersection | 0.01277 | Prevent no braking |
+| Node 5 | Basic Event | capacitor is open | 0.09227 | Prevent no braking |
+| Node 8 | Basic Event | capacitor is shorted | 0.13841 | Prevent no braking |
+
+### FMEDA
+
+Steps to reproduce:
+1. Open **Safety → FMEDA** and create a document named "ADS_FMEDA".
+2. Add failure modes with diagnostic coverage and FIT values.
+3. AutoML computes SPFM and LPFM; export the table.
+
+| ID | Description | FMEA Cause | Malfunction | Safety Goal | Fault Type | FIT | SPFM | LPFM | Diagnostic Cov. |
+|----|-------------|------------|-------------|-------------|------------|-----|------|------|-----------------|
+| 4 | open | capacitor is open | Does not stop at intersection | Prevent no braking | permanent | 3844.68 | 38.4468 | 0 | 0.99 |
+| 6 | shorted | capacitor is shorted | — | — | transient | 5767.02 | 0 | 1441.755 | 0.75 |
+
+### Reliability Analysis
+
+Steps to reproduce:
+1. Navigate to **Analysis → Reliability** and create an "ADS_BOM" analysis.
+2. Add components with their quantity and attributes.
+3. Run the FIT calculation and export the results.
+
+| Component | Type | Qty | FIT |
+|-----------|------|-----|-----|
+| resistor | resistor | 20 | 297.505 |
+| capacitor | capacitor | 10 | 961.17 |
+
+This end-to-end flow links HAZOP findings to HARA ratings, fault trees and FMEDA metrics for a coherent safety case.
+
