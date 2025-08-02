@@ -2762,8 +2762,9 @@ class SysMLDiagramWindow(tk.Frame):
 
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
+                dx = abs(src.x - dst.x)
                 max_offset = (src.width + dst.width) / 2
-                if abs(src.x - dst.x) > max_offset:
+                if dx > 1 and dx != max_offset:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
@@ -2853,14 +2854,16 @@ class SysMLDiagramWindow(tk.Frame):
                 conn.src == obj.obj_id or conn.dst == obj.obj_id
             ):
                 other_id = conn.dst if conn.src == obj.obj_id else conn.src
-                for other in self.objects:
-                    if other.obj_id == other_id:
-                        max_diff = (obj.width + other.width) / 2
-                        diff = adjusted_x - other.x
-                        if diff > max_diff:
-                            adjusted_x = other.x + max_diff
-                        elif diff < -max_diff:
-                            adjusted_x = other.x - max_diff
+                other = next((o for o in self.objects if o.obj_id == other_id), None)
+                if other:
+                    max_diff = (obj.width + other.width) / 2
+                    if new_x > other.x + max_diff:
+                        adjusted_x = other.x + max_diff
+                    elif new_x < other.x - max_diff:
+                        adjusted_x = other.x - max_diff
+                    else:
+                        adjusted_x = other.x
+                    break
         return adjusted_x
 
     def on_left_press(self, event):
@@ -4025,10 +4028,32 @@ class SysMLDiagramWindow(tk.Frame):
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
 
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
+        diag = self.repo.diagrams.get(self.diagram_id)
         for conn in self.connections:
             src = self.get_object(conn.src)
             dst = self.get_object(conn.dst)
             if not src or not dst:
+                continue
+            if (
+                diag
+                and diag.diag_type == "Control Flow Diagram"
+                and conn.conn_type in ("Control Action", "Feedback")
+            ):
+                a_left = (src.x - src.width / 2) * self.zoom
+                a_right = (src.x + src.width / 2) * self.zoom
+                b_left = (dst.x - dst.width / 2) * self.zoom
+                b_right = (dst.x + dst.width / 2) * self.zoom
+                vx = (max(a_left, b_left) + min(a_right, b_right)) / 2
+                ayc = src.y * self.zoom
+                byc = dst.y * self.zoom
+                if ayc <= byc:
+                    y1 = ayc + src.height / 2 * self.zoom
+                    y2 = byc - dst.height / 2 * self.zoom
+                else:
+                    y1 = ayc - src.height / 2 * self.zoom
+                    y2 = byc + dst.height / 2 * self.zoom
+                if self._dist_to_segment((x, y), (vx, y1), (vx, y2)) <= CONNECTION_SELECT_RADIUS:
+                    return conn
                 continue
             sx, sy = self.edge_point(
                 src,
@@ -7393,11 +7418,40 @@ class ConnectionDialog(simpledialog.Dialog):
         row = 4
         if self.connection.conn_type == "Control Action":
             repo = SysMLRepository.get_instance()
-            elems = [
-                e
-                for e in repo.elements.values()
-                if e.elem_type in ("Action", "Activity", "Operation")
-            ]
+            diag = repo.diagrams.get(self.master.diagram_id)
+            blk_id = None
+            if diag:
+                blk_id = diag.father or next(
+                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                    None,
+                )
+            elems: list[SysMLElement] = []
+            if blk_id:
+                blk = repo.elements.get(blk_id)
+                beh_diags = {
+                    b.diagram for b in parse_behaviors(blk.properties.get("behaviors", ""))
+                }
+                beh_elem_ids: set[str] = set()
+                for d_id in beh_diags:
+                    d_obj = repo.diagrams.get(d_id)
+                    if d_obj:
+                        beh_elem_ids.update(d_obj.elements)
+                elems = [
+                    repo.elements[eid]
+                    for eid in beh_elem_ids
+                    if repo.elements[eid].elem_type in ("Action", "Activity")
+                ]
+                elems += [
+                    e
+                    for e in repo.elements.values()
+                    if e.elem_type == "Operation" and e.owner == blk_id
+                ]
+            else:
+                elems = [
+                    e
+                    for e in repo.elements.values()
+                    if e.elem_type in ("Action", "Activity", "Operation")
+                ]
             self.elem_map = {e.name or e.elem_id: e.elem_id for e in elems}
             ttk.Label(master, text="Element:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
             cur_name = next(
@@ -7422,8 +7476,10 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
             row += 1
             ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
-            self.guard_ops_var = tk.StringVar(value=", ".join(self.connection.guard_ops))
-            ttk.Entry(master, textvariable=self.guard_ops_var).grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            self.guard_ops_frame = ttk.Frame(master)
+            self.guard_ops_frame.grid(row=row, column=1, padx=4, pady=4, sticky="w")
+            self.guard_ops_vars: list[tk.StringVar] = []
+            self.refresh_guard_ops_controls()
             row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
@@ -7450,11 +7506,33 @@ class ConnectionDialog(simpledialog.Dialog):
         txt = simpledialog.askstring("Guard", "Condition:", parent=self)
         if txt:
             self.guard_list.insert(tk.END, txt)
+            self.refresh_guard_ops_controls()
 
     def remove_guard(self):
         sel = list(self.guard_list.curselection())
         for idx in reversed(sel):
             self.guard_list.delete(idx)
+        self.refresh_guard_ops_controls()
+
+    def refresh_guard_ops_controls(self):
+        if not hasattr(self, "guard_ops_frame"):
+            return
+        for child in self.guard_ops_frame.winfo_children():
+            child.destroy()
+        self.guard_ops_vars = []
+        needed = max(self.guard_list.size() - 1, 0) if hasattr(self, "guard_list") else 0
+        for i in range(needed):
+            val = (
+                self.connection.guard_ops[i]
+                if i < len(self.connection.guard_ops)
+                else "AND"
+            )
+            var = tk.StringVar(value=val)
+            cb = ttk.Combobox(
+                self.guard_ops_frame, textvariable=var, values=["AND", "OR"], width=5
+            )
+            cb.pack(side=tk.LEFT, padx=2)
+            self.guard_ops_vars.append(var)
 
     def apply(self):
         self.connection.name = self.name_var.get()
@@ -7474,11 +7552,8 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
-        if hasattr(self, "guard_ops_var"):
-            txt = self.guard_ops_var.get()
-            self.connection.guard_ops = [
-                op.strip().upper() for op in txt.split(",") if op.strip()
-            ]
+        if hasattr(self, "guard_ops_vars"):
+            self.connection.guard_ops = [var.get().upper() or "AND" for var in self.guard_ops_vars]
         if hasattr(self, "elem_var"):
             sel = self.elem_var.get()
             self.connection.element_id = self.elem_map.get(sel, "")
