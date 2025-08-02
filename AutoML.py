@@ -310,7 +310,6 @@ except ModuleNotFoundError:
     Image = ImageDraw = ImageFont = None
 import os
 import types
-import tempfile
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -12072,15 +12071,12 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* on the canvas."""
-            import matplotlib.pyplot as plt
+            """Render a small network diagram for *row* directly on the Tk canvas."""
             import textwrap
 
-            # Build a simple graph structure without relying on the external
-            # ``networkx`` package.  The lightweight stub bundled with the
-            # repository does not implement the drawing helpers used
-            # previously, so we assemble the diagram manually using
-            # matplotlib primitives.
+            # Build a simple graph structure without relying on external
+            # drawing helpers.  We will render the diagram using basic Tk
+            # canvas primitives such as lines and rectangles.
             nodes: dict[str, str] = {}
             edges: list[tuple[str, str]] = []
 
@@ -12132,46 +12128,50 @@ class FaultTreeApp:
                 "tc": "lightgreen",
             }
 
-            plt.figure(figsize=(6, 4))
-            ax = plt.gca()
+            # Clear any existing drawing
+            canvas.delete("all")
 
-            # Draw arrows for each edge
+            # Scaling factors to convert the logical layout coordinates to
+            # pixels on the canvas.
+            scale = 80
+            x_off = 50
+            y_off = 50
+            box_w = 80
+            box_h = 40
+
+            def to_canvas(x: float, y: float) -> tuple[float, float]:
+                return x_off + scale * x, y_off + scale * y
+
+            # Draw connections with arrows and labels
             for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                            arrowprops=dict(arrowstyle="->"))
+                x1, y1 = to_canvas(*pos[u])
+                x2, y2 = to_canvas(*pos[v])
+                canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+                canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, "caused by",
+                                    font=("TkDefaultFont", 8))
 
-            # Draw the nodes with labels
+            # Draw the nodes as rectangles with wrapped text
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                ax.scatter([x], [y], s=1200, c=color, edgecolors="black")
+                cx, cy = to_canvas(x, y)
+                canvas.create_rectangle(
+                    cx - box_w / 2,
+                    cy - box_h / 2,
+                    cx + box_w / 2,
+                    cy + box_h / 2,
+                    fill=color,
+                    outline="black",
+                )
                 label = textwrap.fill(str(n), 20)
-                ax.text(x, y, label, fontsize=6, ha="center", va="center")
+                canvas.create_text(
+                    cx,
+                    cy,
+                    text=label,
+                    width=box_w - 10,
+                    font=("TkDefaultFont", 8),
+                )
 
-            # Edge labels ("caused by") halfway between nodes
-            for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
-
-            ax.axis("off")
-
-            # Save the diagram to a temporary file and let Tk load it from
-            # disk.  This avoids in-memory image format quirks and uses only
-            # the standard ``tk.PhotoImage`` loader.
-            tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp_path = tmp_file.name
-            tmp_file.close()
-            plt.savefig(tmp_path, format="PNG", dpi=120)
-            plt.close()
-            photo = tk.PhotoImage(file=tmp_path)
-            os.unlink(tmp_path)
-
-            canvas.delete("all")
-            canvas.image = photo  # keep reference
-            canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
 
         def on_select(event):
