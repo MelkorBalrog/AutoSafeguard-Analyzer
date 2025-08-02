@@ -2764,7 +2764,9 @@ class SysMLDiagramWindow(tk.Frame):
             if conn_type in ("Control Action", "Feedback"):
                 dx = abs(src.x - dst.x)
                 max_offset = (src.width + dst.width) / 2
-                if dx > 1 and dx != max_offset:
+                tolerance_center = 10
+                tolerance_offset = 0.5
+                if dx > tolerance_center and abs(dx - max_offset) > tolerance_offset:
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":

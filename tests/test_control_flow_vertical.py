@@ -21,6 +21,13 @@ class ControlFlowConnectionTests(unittest.TestCase):
         valid, _ = SysMLDiagramWindow.validate_connection(win, src, dst, "Control Action")
         self.assertTrue(valid)
 
+    def test_slight_offset_still_valid(self):
+        win = DummyWindow()
+        src = SysMLObject(1, "Existing Element", 0, 0)
+        dst = SysMLObject(2, "Existing Element", 5, 100)
+        valid, _ = SysMLDiagramWindow.validate_connection(win, src, dst, "Control Action")
+        self.assertTrue(valid)
+
     def test_non_vertical_connection_invalid(self):
         win = DummyWindow()
         src = SysMLObject(1, "Existing Element", 0, 0)
