@@ -150,14 +150,20 @@ def _collect_parent_parts(repo: SysMLRepository, block_id: str, visited=None) ->
 
 
 def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> None:
-    """Merge parent block parts into the given block's ``partProperties``."""
+    """Merge parts from generalization parents into ``block_id``."""
+
     block = repo.elements.get(block_id)
     if not block:
         return
+
+    def _parent_parts() -> list[str]:
+        return _collect_parent_parts(repo, block_id)
+
     names = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    for p in _collect_parent_parts(repo, block_id):
+    for p in _parent_parts():
         if p not in names:
             names.append(p)
+
     joined = ", ".join(names)
     block.properties["partProperties"] = joined
     for d in repo.diagrams.values():
@@ -522,6 +528,12 @@ def add_aggregation_part(
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
+        return
+    if part_id == whole_id:
+        return
+    if part_id in _collect_generalization_parents(repo, whole_id):
+        return
+    if _reverse_aggregation_exists(repo, whole_id, part_id):
         return
     name = part.name or part_id
     entry = f"{name}[{multiplicity}]" if multiplicity else name
@@ -2393,6 +2405,42 @@ def behaviors_to_json(behaviors: List[BehaviorAssignment]) -> str:
     return json.dumps([asdict(b) for b in behaviors])
 
 
+def get_block_behavior_elements(repo: "SysMLRepository", block_id: str) -> List["SysMLElement"]:
+    """Return Action, Activity and Operation elements that define behaviors of ``block_id``."""
+    elements: List["SysMLElement"] = []
+    block = repo.elements.get(block_id)
+    if not block:
+        return elements
+    behaviors = parse_behaviors(block.properties.get("behaviors", ""))
+    for beh in behaviors:
+        # operations with matching name
+        for elem in repo.elements.values():
+            if elem.elem_type == "Operation" and elem.name == beh.operation:
+                elements.append(elem)
+        diag = repo.diagrams.get(beh.diagram)
+        if not diag:
+            continue
+        # elements referenced in the diagram
+        for obj in getattr(diag, "objects", []):
+            elem_id = obj.get("element_id")
+            typ = obj.get("obj_type") or obj.get("type")
+            if elem_id and typ in ("Action", "Action Usage", "CallBehaviorAction", "Activity"):
+                elem = repo.elements.get(elem_id)
+                if elem:
+                    elements.append(elem)
+        for elem_id in getattr(diag, "elements", []):
+            elem = repo.elements.get(elem_id)
+            if elem and elem.elem_type in ("Action", "Activity"):
+                elements.append(elem)
+    seen: set[str] = set()
+    unique = []
+    for e in elements:
+        if e.elem_id not in seen:
+            unique.append(e)
+            seen.add(e.elem_id)
+    return unique
+
+
 @dataclass
 class DiagramConnection:
     src: int
@@ -2405,7 +2453,40 @@ class DiagramConnection:
     name: str = ""
     arrow: str = "none"  # none, forward, backward, both
     mid_arrow: bool = False
+    guard: List[str] = field(default_factory=list)
+    guard_ops: List[str] = field(default_factory=list)
+    element_id: str = ""
     multiplicity: str = ""
+
+
+def format_control_flow_label(
+    conn: DiagramConnection, repo: "SysMLRepository", diag_type: str | None
+) -> str:
+    """Return the label to display for a connection.
+
+    For control flow diagrams, guards are combined with configured logical
+    operators and shown before the action or activity name.
+    """
+    label = conn.name or ""
+    if conn.conn_type == "Control Action" and not label and conn.element_id:
+        elem = repo.elements.get(conn.element_id)
+        if elem:
+            label = elem.name or ""
+    if diag_type == "Control Flow Diagram" and conn.conn_type in (
+        "Control Action",
+        "Feedback",
+    ):
+        if conn.guard:
+            lines: List[str] = []
+            for i, g in enumerate(conn.guard):
+                if i == 0:
+                    lines.append(g)
+                else:
+                    op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
+                    lines.append(f"{op} {g}")
+            guard_text = "\n".join(lines)
+            return f"[{guard_text}] / {label}" if label else f"[{guard_text}]"
+    return label
 
 
 class SysMLDiagramWindow(tk.Frame):
@@ -2498,8 +2579,17 @@ class SysMLDiagramWindow(tk.Frame):
         self.prop_view.column("value", width=120, anchor="w")
         self.prop_view.pack(fill=tk.BOTH, expand=True)
 
-        self.canvas = tk.Canvas(self, bg="white")
-        self.canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        canvas_frame = ttk.Frame(self)
+        canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(canvas_frame, bg="white")
+        vbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
+        hbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        vbar.grid(row=0, column=1, sticky="ns")
+        hbar.grid(row=1, column=0, sticky="ew")
+        canvas_frame.columnconfigure(0, weight=1)
+        canvas_frame.rowconfigure(0, weight=1)
 
         # Keep references to gradient images used for element backgrounds
         self.gradient_cache: dict[int, tk.PhotoImage] = {}
@@ -2513,6 +2603,10 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.bind("<ButtonPress-3>", self.on_rc_press)
         self.canvas.bind("<B3-Motion>", self.on_rc_drag)
         self.canvas.bind("<ButtonRelease-3>", self.on_rc_release)
+        self.canvas.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
         self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
@@ -2580,6 +2674,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Communication Path",
                     "Aggregation",
                     "Composite Aggregation",
+                    "Control Action",
+                    "Feedback",
                 )
                 else "tcross"
             )
@@ -2607,6 +2703,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
@@ -2640,6 +2738,12 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo, src.element_id, dst.element_id
                 ):
                     return False, "Blocks already share a generalized parent"
+                if dst.element_id in _collect_generalization_parents(
+                    self.repo, src.element_id
+                ) or src.element_id in _collect_generalization_parents(
+                    self.repo, dst.element_id
+                ):
+                    return False, "Blocks cannot generalize each other"
             elif conn_type in ("Aggregation", "Composite Aggregation"):
                 if src.obj_type != "Block" or dst.obj_type != "Block":
                     return False, "Aggregations must connect Blocks"
@@ -2692,6 +2796,12 @@ class SysMLDiagramWindow(tk.Frame):
                             ex = flow_dir(c, dst.obj_id)
                             if ex and ex != new_dir_b:
                                 return False, "Inconsistent data flow on port"
+
+        elif diag_type == "Control Flow Diagram":
+            if conn_type in ("Control Action", "Feedback"):
+                max_offset = (src.width + dst.width) / 2
+                if abs(src.x - dst.x) > max_offset:
+                    return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
             # Basic control flow rules
@@ -2767,6 +2877,48 @@ class SysMLDiagramWindow(tk.Frame):
 
         return True, ""
 
+    def _constrain_horizontal_movement(
+        self, obj: SysMLObject, new_x: float
+    ) -> float:
+        """Return adjusted x to keep control flow connectors vertical."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Control Flow Diagram":
+            return new_x
+        adjusted_x = new_x
+        for conn in self.connections:
+            if conn.conn_type in ("Control Action", "Feedback") and (
+                conn.src == obj.obj_id or conn.dst == obj.obj_id
+            ):
+                other_id = conn.dst if conn.src == obj.obj_id else conn.src
+                for other in self.objects:
+                    if other.obj_id == other_id:
+                        max_diff = (obj.width + other.width) / 2
+                        diff = adjusted_x - other.x
+                        if diff > max_diff:
+                            adjusted_x = other.x + max_diff
+                        elif diff < -max_diff:
+                            adjusted_x = other.x - max_diff
+        return adjusted_x
+
+    def _constrain_control_flow_x(
+        self, conn: DiagramConnection, new_x: float
+    ) -> float:
+        """Clamp connector x within the horizontal overlap of its objects."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag or diag.diag_type != "Control Flow Diagram":
+            return new_x
+        src = next((o for o in self.objects if o.obj_id == conn.src), None)
+        dst = next((o for o in self.objects if o.obj_id == conn.dst), None)
+        if not src or not dst:
+            return new_x
+        min_x = max(src.x - src.width / 2, dst.x - dst.width / 2)
+        max_x = min(src.x + src.width / 2, dst.x + dst.width / 2)
+        if new_x < min_x:
+            return min_x
+        if new_x > max_x:
+            return max_x
+        return new_x
+
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
@@ -2781,10 +2933,103 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         )
         prefer = self.current_tool in conn_tools
-        obj = self.find_object(x, y, prefer_port=prefer)
         t = self.current_tool
+        if t in (None, "Select"):
+            conn = self.find_connection(x, y)
+            if conn:
+                if (event.state & 0x0001) and conn.style == "Custom":
+                    conn.points.append((x / self.zoom, y / self.zoom))
+                    self._sync_to_repository()
+                self.selected_conn = conn
+                self.selected_obj = None
+                self.selected_objs = []
+                self.dragging_point_index = None
+                self.dragging_endpoint = None
+                self.update_property_view()
+                if conn.style == "Custom":
+                    for idx, (px, py) in enumerate(conn.points):
+                        hx = px * self.zoom
+                        hy = py * self.zoom
+                        if abs(hx - x) <= 4 and abs(hy - y) <= 4:
+                            self.dragging_point_index = idx
+                            self.conn_drag_offset = (x - hx, y - hy)
+                            break
+                elif conn.style == "Squared":
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        mx = (
+                            conn.points[0][0] * self.zoom
+                            if conn.points
+                            else ((src_obj.x + dst_obj.x) / 2 * self.zoom)
+                        )
+                        my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, 0)
+                elif (
+                    self.repo.diagrams.get(self.diagram_id).diag_type
+                    == "Control Flow Diagram"
+                    and conn.conn_type in ("Control Action", "Feedback")
+                ):
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        x_val = (
+                            conn.points[0][0]
+                            if conn.points
+                            else (
+                                max(
+                                    src_obj.x - src_obj.width / 2,
+                                    dst_obj.x - dst_obj.width / 2,
+                                )
+                                + min(
+                                    src_obj.x + src_obj.width / 2,
+                                    dst_obj.x + dst_obj.width / 2,
+                                )
+                            )
+                            / 2
+                        )
+                        x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                            self, conn, x_val
+                        )
+                        mx = x_val * self.zoom
+                        my = (src_obj.y + dst_obj.y) / 2 * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, 0)
+                # check for dragging endpoints
+                src_obj = self.get_object(conn.src)
+                dst_obj = self.get_object(conn.dst)
+                if src_obj and dst_obj:
+                    sx, sy = self.edge_point(
+                        src_obj,
+                        dst_obj.x * self.zoom,
+                        dst_obj.y * self.zoom,
+                        conn.src_pos,
+                    )
+                    dxp, dyp = self.edge_point(
+                        dst_obj,
+                        src_obj.x * self.zoom,
+                        src_obj.y * self.zoom,
+                        conn.dst_pos,
+                    )
+                    if abs(sx - x) <= 6 and abs(sy - y) <= 6:
+                        self.dragging_endpoint = "src"
+                        self.conn_drag_offset = (x - sx, y - sy)
+                        self.endpoint_drag_pos = None
+                    elif abs(dxp - x) <= 6 and abs(dyp - y) <= 6:
+                        self.dragging_endpoint = "dst"
+                        self.conn_drag_offset = (x - dxp, y - dyp)
+                        self.endpoint_drag_pos = None
+                self.redraw()
+                return
+
+        obj = self.find_object(x, y, prefer_port=prefer)
 
         if obj and obj.obj_type == "Block" and t in (None, "Select"):
             hit = self.hit_compartment_toggle(obj, x, y)
@@ -2805,6 +3050,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             if self.start is None:
                 if obj:
@@ -2818,17 +3065,20 @@ class SysMLDiagramWindow(tk.Frame):
                 if obj and obj != self.start:
                     valid, msg = self.validate_connection(self.start, obj, t)
                     if valid:
-                        arrow_default = (
-                            "forward"
-                            if t in (
-                                "Flow",
-                                "Generalize",
-                                "Generalization",
-                                "Include",
-                                "Extend",
-                            )
-                            else "none"
-                        )
+                        if t == "Control Action":
+                            arrow_default = "forward"
+                        elif t == "Feedback":
+                            arrow_default = "backward"
+                        elif t in (
+                            "Flow",
+                            "Generalize",
+                            "Generalization",
+                            "Include",
+                            "Extend",
+                        ):
+                            arrow_default = "forward"
+                        else:
+                            arrow_default = "none"
                         conn = DiagramConnection(
                             self.start.obj_id,
                             obj.obj_id,
@@ -2854,28 +3104,57 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.configure(cursor="arrow")
                 self.redraw()
         elif t and t != "Select":
-            if t == "Port":
-                parent_obj = (
-                    obj if obj and obj.obj_type in ("Part", "Block Boundary") else None
-                )
-                if parent_obj is None:
-                    # Default to the IBD boundary if present
-                    parent_obj = next(
-                        (o for o in self.objects if o.obj_type == "Block Boundary"),
-                        None,
-                    )
-                if parent_obj is None:
+            if t == "Existing Element":
+                names = []
+                id_map = {}
+                diag = self.repo.diagrams.get(self.diagram_id)
+                allowed = {"Actor", "Block"} if diag and diag.diag_type == "Control Flow Diagram" else None
+                for eid, el in self.repo.elements.items():
+                    if el.elem_type != "Package" and (not allowed or el.elem_type in allowed):
+                        name = el.name or eid
+                        names.append(name)
+                        id_map[name] = eid
+                if not names:
+                    messagebox.showinfo("Add Element", "No elements available")
                     return
-            pkg = self.repo.diagrams[self.diagram_id].package
-            element = self.repo.create_element(t, owner=pkg)
-            self.repo.add_element_to_diagram(self.diagram_id, element.elem_id)
-            new_obj = SysMLObject(
-                _get_next_id(),
-                t,
-                x / self.zoom,
-                y / self.zoom,
-                element_id=element.elem_id,
-            )
+                dlg = SysMLObjectDialog.SelectElementDialog(self, names, title="Select Element")
+                selected = dlg.result
+                if not selected:
+                    return
+                elem_id = id_map[selected]
+                element = self.repo.elements.get(elem_id)
+                self.repo.add_element_to_diagram(self.diagram_id, elem_id)
+                new_obj = SysMLObject(
+                    _get_next_id(),
+                    "Existing Element",
+                    x / self.zoom,
+                    y / self.zoom,
+                    element_id=elem_id,
+                    properties={"name": element.name if element else selected},
+                )
+            else:
+                if t == "Port":
+                    parent_obj = (
+                        obj if obj and obj.obj_type in ("Part", "Block Boundary") else None
+                    )
+                    if parent_obj is None:
+                        # Default to the IBD boundary if present
+                        parent_obj = next(
+                            (o for o in self.objects if o.obj_type == "Block Boundary"),
+                            None,
+                        )
+                    if parent_obj is None:
+                        return
+                pkg = self.repo.diagrams[self.diagram_id].package
+                element = self.repo.create_element(t, owner=pkg)
+                self.repo.add_element_to_diagram(self.diagram_id, element.elem_id)
+                new_obj = SysMLObject(
+                    _get_next_id(),
+                    t,
+                    x / self.zoom,
+                    y / self.zoom,
+                    element_id=element.elem_id,
+                )
             if t == "Block":
                 new_obj.height = 140.0
                 new_obj.width = 160.0
@@ -3050,6 +3329,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -3112,6 +3393,18 @@ class SysMLDiagramWindow(tk.Frame):
                     self.selected_conn.points.append((px, 0))
                 else:
                     self.selected_conn.points[0] = (px, 0)
+            elif (
+                self.repo.diagrams.get(self.diagram_id).diag_type
+                == "Control Flow Diagram"
+                and self.selected_conn.conn_type in ("Control Action", "Feedback")
+            ):
+                px = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, self.selected_conn, px
+                )
+                if not self.selected_conn.points:
+                    self.selected_conn.points.append((px, 0))
+                else:
+                    self.selected_conn.points[0] = (px, 0)
             else:
                 self.selected_conn.points[self.dragging_point_index] = (px, py)
             self.redraw()
@@ -3145,7 +3438,7 @@ class SysMLDiagramWindow(tk.Frame):
                 desired_w = 2 * abs(x - cx) / self.zoom
                 new_w = max(min_w, desired_w)
             if "n" in self.resize_edge or "s" in self.resize_edge:
-                if obj.obj_type not in ("Fork", "Join"):
+                if obj.obj_type not in ("Fork", "Join", "Existing Element"):
                     desired_h = 2 * abs(y - cy) / self.zoom
                     new_h = max(min_h, desired_h)
             if obj.obj_type in ("Initial", "Final"):
@@ -3169,7 +3462,9 @@ class SysMLDiagramWindow(tk.Frame):
         else:
             old_x = self.selected_obj.x
             old_y = self.selected_obj.y
-            self.selected_obj.x = x / self.zoom - self.drag_offset[0]
+            new_x = x / self.zoom - self.drag_offset[0]
+            new_x = self._constrain_horizontal_movement(self.selected_obj, new_x)
+            self.selected_obj.x = new_x
             self.selected_obj.y = y / self.zoom - self.drag_offset[1]
             dx = self.selected_obj.x - old_x
             dy = self.selected_obj.y - old_y
@@ -3186,7 +3481,13 @@ class SysMLDiagramWindow(tk.Frame):
                     if o.obj_type == "Part":
                         o.x += dx
                         o.y += dy
-                        update_ports_for_part(o, self.objects)
+                        for p in self.objects:
+                            if (
+                                p.obj_type == "Port"
+                                and p.properties.get("parent") == str(o.obj_id)
+                            ):
+                                p.x += dx
+                                p.y += dy
             if self.selected_obj.obj_type == "System Boundary":
                 for o in self.objects:
                     if o.properties.get("boundary") == str(self.selected_obj.obj_id):
@@ -3223,6 +3524,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -3234,18 +3537,20 @@ class SysMLDiagramWindow(tk.Frame):
             if obj and obj != self.start:
                 valid, msg = self.validate_connection(self.start, obj, self.current_tool)
                 if valid:
-                    arrow_default = (
-                        "forward"
-                        if self.current_tool
-                        in (
-                            "Flow",
-                            "Generalize",
-                            "Generalization",
-                            "Include",
-                            "Extend",
-                        )
-                        else "none"
-                    )
+                    if self.current_tool == "Control Action":
+                        arrow_default = "forward"
+                    elif self.current_tool == "Feedback":
+                        arrow_default = "backward"
+                    elif self.current_tool in (
+                        "Flow",
+                        "Generalize",
+                        "Generalization",
+                        "Include",
+                        "Extend",
+                    ):
+                        arrow_default = "forward"
+                    else:
+                        arrow_default = "none"
                     conn = DiagramConnection(
                         self.start.obj_id,
                         obj.obj_id,
@@ -3494,6 +3799,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -3512,6 +3819,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Communication Path",
             "Aggregation",
             "Composite Aggregation",
+            "Control Action",
+            "Feedback",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -3521,8 +3830,14 @@ class SysMLDiagramWindow(tk.Frame):
     def on_double_click(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        obj = self.find_object(x, y)
-        if obj:
+        conn = self.find_connection(x, y)
+        obj = None
+        if conn is None:
+            obj = self.find_object(x, y)
+        if conn:
+            ConnectionDialog(self, conn)
+            self.redraw()
+        elif obj:
             if self._open_linked_diagram(obj):
                 return
             SysMLObjectDialog(self, obj)
@@ -3530,11 +3845,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
             if getattr(self, "app", None):
                 self.app.update_views()
-        else:
-            conn = self.find_connection(x, y)
-            if conn:
-                ConnectionDialog(self, conn)
-                self.redraw()
 
     def on_rc_press(self, event):
         self.rc_dragged = False
@@ -3551,11 +3861,11 @@ class SysMLDiagramWindow(tk.Frame):
     def show_context_menu(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        obj = self.find_object(x, y)
-        conn = None
-        if not obj:
-            conn = self.find_connection(x, y)
-            if not conn:
+        conn = self.find_connection(x, y)
+        obj = None
+        if not conn:
+            obj = self.find_object(x, y)
+            if not obj:
                 diag = self.repo.diagrams.get(self.diagram_id)
                 if diag and diag.diag_type == "Internal Block Diagram":
                     menu = tk.Menu(self, tearoff=0)
@@ -3814,11 +4124,47 @@ class SysMLDiagramWindow(tk.Frame):
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
 
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
+        diag = self.repo.diagrams.get(self.diagram_id)
         for conn in self.connections:
             src = self.get_object(conn.src)
             dst = self.get_object(conn.dst)
             if not src or not dst:
                 continue
+            # Control flow connectors are drawn as a vertical line between
+            # elements. Mirror that behavior so they can be located when
+            # selecting.
+            if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in (
+                "Control Action",
+                "Feedback",
+            ):
+                a_left = src.x - src.width / 2
+                a_right = src.x + src.width / 2
+                b_left = dst.x - dst.width / 2
+                b_right = dst.x + dst.width / 2
+                cx_val = (
+                    conn.points[0][0]
+                    if conn.points
+                    else (max(a_left, b_left) + min(a_right, b_right)) / 2
+                )
+                cx_val = SysMLDiagramWindow._constrain_control_flow_x(
+                    self, conn, cx_val
+                )
+                cx = cx_val * self.zoom
+                ayc = src.y * self.zoom
+                byc = dst.y * self.zoom
+                if ayc <= byc:
+                    cy1 = ayc + src.height / 2 * self.zoom
+                    cy2 = byc - dst.height / 2 * self.zoom
+                else:
+                    cy1 = ayc - src.height / 2 * self.zoom
+                    cy2 = byc + dst.height / 2 * self.zoom
+                if (
+                    self._dist_to_segment((x, y), (cx, cy1), (cx, cy2))
+                    <= CONNECTION_SELECT_RADIUS
+                ):
+                    return conn
+                continue
+
             sx, sy = self.edge_point(
                 src,
                 dst.x * self.zoom,
@@ -4104,7 +4450,13 @@ class SysMLDiagramWindow(tk.Frame):
             collapsed = obj.collapsed.get(label, False)
             lines = text.splitlines() if text else [""]
             if collapsed:
-                disp = f"{label}: {lines[0] if lines else ''}"
+                # When collapsed only show the compartment name, not the first
+                # element. Previously the first line of the compartment content
+                # was appended which caused the label to display e.g.
+                # "Parts: Motor". The design has changed to only display the
+                # compartment title when collapsed so that it simply reads
+                # "Parts".
+                disp = f"{label}:"
                 width_px = max(width_px, self.font.measure(disp) + button_w + 8 * self.zoom)
                 total_lines += 1
             else:
@@ -4366,7 +4718,7 @@ class SysMLDiagramWindow(tk.Frame):
         """Order objects so boundaries render behind and their ports above."""
 
         def key(o: SysMLObject) -> int:
-            if o.obj_type in ("System Boundary", "Block Boundary"):
+            if o.obj_type in ("System Boundary", "Block Boundary", "Existing Element"):
                 return 0
             if o.obj_type == "Port":
                 parent_id = o.properties.get("parent")
@@ -4472,6 +4824,8 @@ class SysMLDiagramWindow(tk.Frame):
                 "Communication Path",
                 "Aggregation",
                 "Composite Aggregation",
+                "Control Action",
+                "Feedback",
             )
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
@@ -4566,25 +4920,15 @@ class SysMLDiagramWindow(tk.Frame):
             end[0] - size * math.cos(angle + spread),
             end[1] - size * math.sin(angle + spread),
         )
-        # Draw the arrowhead using two lines instead of a filled triangle so
-        # the background does not show through as a white polygon. This keeps
-        # the arrow open while the center line from the connection touches the
-        # point.
-        self.canvas.create_line(
-            p1[0],
-            p1[1],
-            end[0],
-            end[1],
-            fill=color,
-            width=width,
-            tags=tags,
-        )
-        self.canvas.create_line(
-            p2[0],
-            p2[1],
-            end[0],
-            end[1],
-            fill=color,
+        # Draw the arrowhead as a small white triangle with the requested
+        # outline color. Using a filled polygon ensures the arrowhead remains
+        # visible regardless of the canvas background color.
+        self.canvas.create_polygon(
+            end,
+            p1,
+            p2,
+            fill="white",
+            outline=color,
             width=width,
             tags=tags,
         )
@@ -4854,6 +5198,19 @@ class SysMLDiagramWindow(tk.Frame):
             tags=tags,
         )
 
+    def _draw_subdiagram_marker(self, right: float, bottom: float) -> None:
+        """Draw a small indicator showing a linked lower level diagram."""
+
+        size = 8 * self.zoom
+        pad = 2 * self.zoom
+        x1 = right - size - pad
+        y1 = bottom - size - pad
+        x2 = right - pad
+        y2 = bottom - pad
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="white")
+        self.canvas.create_line((x1 + x2) / 2, y1 + 1 * self.zoom, (x1 + x2) / 2, y2 - 1 * self.zoom, fill="black")
+        self.canvas.create_line(x1 + 1 * self.zoom, (y1 + y2) / 2, x2 - 1 * self.zoom, (y1 + y2) / 2, fill="black")
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -4942,6 +5299,35 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
+        elif obj.obj_type == "Existing Element":
+            element = self.repo.elements.get(obj.element_id)
+            if element:
+                color = StyleManager.get_instance().get_color(element.elem_type)
+            outline = color
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self._create_round_rect(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                radius=12 * self.zoom,
+                dash=(),
+                outline=outline,
+                fill="",
+            )
+            diag = self.repo.diagrams.get(self.diagram_id)
+            if not diag or diag.diag_type != "Control Flow Diagram":
+                label = obj.properties.get("name", "")
+                if label:
+                    lx = x
+                    ly = y - h - 4 * self.zoom
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        anchor="s",
+                        font=self.font,
+                    )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             if obj.obj_type == "Part":
@@ -5110,10 +5496,14 @@ class SysMLDiagramWindow(tk.Frame):
                 self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
                 tx = bx2 + 2 * self.zoom
                 if collapsed:
+                    # Only display the compartment title when collapsed rather
+                    # than showing the first item's text. This keeps the
+                    # collapsed view concise and avoids confusion when the
+                    # compartment contains multiple elements.
                     self.canvas.create_text(
                         tx,
                         cy + 10 * self.zoom,
-                        text=f"{label}: {lines[0] if lines else ''}",
+                        text=f"{label}:",
                         anchor="w",
                         font=self.font,
                     )
@@ -5248,6 +5638,17 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
 
+        show_marker = False
+        if obj.obj_type in ("Block", "Action Usage", "Action", "CallBehaviorAction"):
+            diag_id = self.repo.get_linked_diagram(obj.element_id)
+            view_id = obj.properties.get("view")
+            show_marker = bool(
+                (diag_id and diag_id in self.repo.diagrams)
+                or (view_id and view_id in self.repo.diagrams)
+            )
+        if show_marker:
+            self._draw_subdiagram_marker(x + w, y + h)
+
         if obj in self.selected_objs:
             bx = x - w
             by = y - h
@@ -5271,10 +5672,69 @@ class SysMLDiagramWindow(tk.Frame):
     ):
         axc, ayc = a.x * self.zoom, a.y * self.zoom
         bxc, byc = b.x * self.zoom, b.y * self.zoom
+        dash = ()
+        diag = self.repo.diagrams.get(self.diagram_id)
+        label = format_control_flow_label(
+            conn, self.repo, diag.diag_type if diag else None
+        )
+        if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
+            a_left = a.x - a.width / 2
+            a_right = a.x + a.width / 2
+            b_left = b.x - b.width / 2
+            b_right = b.x + b.width / 2
+            x_val = (
+                conn.points[0][0]
+                if conn.points
+                else (max(a_left, b_left) + min(a_right, b_right)) / 2
+            )
+            x_val = SysMLDiagramWindow._constrain_control_flow_x(
+                self, conn, x_val
+            )
+            if conn.points:
+                conn.points[0] = (x_val, 0)
+            x = x_val * self.zoom
+            if ayc <= byc:
+                y1 = ayc + a.height / 2 * self.zoom
+                y2 = byc - b.height / 2 * self.zoom
+            else:
+                y1 = ayc - a.height / 2 * self.zoom
+                y2 = byc + b.height / 2 * self.zoom
+            color = "red" if selected else "black"
+            width = 2 if selected else 1
+            self.canvas.create_line(
+                x,
+                y1,
+                x,
+                y2,
+                arrow=tk.LAST,
+                dash=(),
+                fill=color,
+                width=width,
+                tags="connection",
+            )
+            if label:
+                self.canvas.create_text(
+                    x,
+                    (y1 + y2) / 2 - 10 * self.zoom,
+                    text=label,
+                    font=self.font,
+                    tags="connection",
+                )
+            if selected:
+                s = 3
+                for hx, hy in [(x, y1), (x, y2), (x, (y1 + y2) / 2)]:
+                    self.canvas.create_rectangle(
+                        hx - s,
+                        hy - s,
+                        hx + s,
+                        hy + s,
+                        outline="red",
+                        fill="white",
+                        tags="connection",
+                    )
+            return
         ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
         bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
-        dash = ()
-        label = conn.name or None
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
@@ -5601,13 +6061,22 @@ class SysMLDiagramWindow(tk.Frame):
 
     def delete_selected(self, _event=None):
         if self.selected_objs:
+            result = messagebox.askyesnocancel(
+                "Delete",
+                "Remove element from model?\nYes = Model, No = Diagram",
+            )
+            if result is None:
+                return
             for obj in list(self.selected_objs):
-                self.remove_object(obj)
+                if result:
+                    if obj.obj_type == "Part":
+                        self.remove_part_model(obj)
+                    else:
+                        self.remove_element_model(obj)
+                else:
+                    self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
-            self._sync_to_repository()
-            self.redraw()
-            self.update_property_view()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -5769,6 +6238,55 @@ class SysMLDiagramWindow(tk.Frame):
                             o.setdefault("properties", {}).pop("partProperties", None)
         repo.delete_element(part_id)
         repo._undo_stack.pop()
+        self._sync_to_repository()
+        self.redraw()
+        self.update_property_view()
+
+    def remove_element_model(self, obj: SysMLObject) -> None:
+        """Remove *obj* and its element from all diagrams and the repository."""
+        elem_id = obj.element_id
+        if not elem_id:
+            self.remove_object(obj)
+            return
+        self.remove_object(obj)
+        repo = self.repo
+        for diag in repo.diagrams.values():
+            removed_ids = [o.get("obj_id") for o in getattr(diag, "objects", []) if o.get("element_id") == elem_id]
+            if removed_ids:
+                diag.objects = [o for o in diag.objects if o.get("element_id") != elem_id]
+                diag.connections = [
+                    c
+                    for c in getattr(diag, "connections", [])
+                    if c.get("src") not in removed_ids and c.get("dst") not in removed_ids
+                ]
+            if elem_id in getattr(diag, "elements", []):
+                diag.elements.remove(elem_id)
+        # remove part elements that reference this element
+        to_delete = [
+            eid
+            for eid, e in repo.elements.items()
+            if e.elem_type == "Part" and e.properties.get("definition") == elem_id
+        ]
+        for pid in to_delete:
+            for diag in repo.diagrams.values():
+                removed = [o.get("obj_id") for o in getattr(diag, "objects", []) if o.get("element_id") == pid]
+                if removed:
+                    diag.objects = [o for o in diag.objects if o.get("element_id") != pid]
+                    diag.connections = [
+                        c
+                        for c in getattr(diag, "connections", [])
+                        if c.get("src") not in removed and c.get("dst") not in removed
+                    ]
+                if pid in getattr(diag, "elements", []):
+                    diag.elements.remove(pid)
+            repo.delete_element(pid)
+            if repo._undo_stack:
+                repo._undo_stack.pop()
+
+        repo.delete_element(elem_id)
+        if repo._undo_stack:
+            repo._undo_stack.pop()
+
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
@@ -5944,6 +6462,27 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         def apply(self):
             self.result = [n for n, var in self.selected.items() if var.get()]
+
+    class SelectElementDialog(simpledialog.Dialog):
+        """Dialog to choose a single existing element."""
+
+        def __init__(self, parent, names, title="Select Element"):
+            self.names = names
+            self.result = None
+            super().__init__(parent, title=title)
+
+        def body(self, master):
+            ttk.Label(master, text="Select element:").pack(padx=5, pady=5)
+            self.listbox = tk.Listbox(master)
+            for name in self.names:
+                self.listbox.insert(tk.END, name)
+            self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            return self.listbox
+
+        def apply(self):
+            sel = self.listbox.curselection()
+            if sel:
+                self.result = self.names[sel[0]]
 
     class ManagePartsDialog(simpledialog.Dialog):
         """Dialog to toggle visibility of contained parts."""
@@ -6996,15 +7535,55 @@ class ConnectionDialog(simpledialog.Dialog):
         ):
             self.arrow_cb.configure(state="disabled")
             self.mid_check.configure(state="disabled")
+        row = 4
+        if self.connection.conn_type == "Control Action":
+            repo = SysMLRepository.get_instance()
+            src_obj = self.master.get_object(self.connection.src)
+            beh_elems = get_block_behavior_elements(repo, getattr(src_obj, "element_id", ""))
+            self.elem_map = {e.name or e.elem_id: e.elem_id for e in beh_elems}
+            ttk.Label(master, text="Element:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
+            cur_name = next(
+                (n for n, i in self.elem_map.items() if i == self.connection.element_id),
+                "",
+            )
+            self.elem_var = tk.StringVar(value=cur_name)
+            ttk.Combobox(
+                master,
+                textvariable=self.elem_var,
+                values=list(self.elem_map.keys()),
+            ).grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            row += 1
+            ttk.Label(master, text="Guard:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+            self.guard_list = tk.Listbox(master, height=4)
+            for g in self.connection.guard:
+                self.guard_list.insert(tk.END, g)
+            self.guard_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            gbtn = ttk.Frame(master)
+            gbtn.grid(row=row, column=2, padx=2)
+            ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
+            ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
+            row += 1
+            ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+            self.guard_ops_list = tk.Listbox(master, height=4)
+            for op in self.connection.guard_ops:
+                self.guard_ops_list.insert(tk.END, op)
+            self.guard_ops_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            opbtn = ttk.Frame(master)
+            opbtn.grid(row=row, column=2, padx=2)
+            self.guard_op_choice = tk.StringVar(value="AND")
+            ttk.Combobox(opbtn, textvariable=self.guard_op_choice, values=["AND", "OR"], state="readonly").pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
+            ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
+            row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
-            ttk.Label(master, text="Multiplicity:").grid(row=4, column=0, sticky="e", padx=4, pady=4)
+            ttk.Label(master, text="Multiplicity:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
             self.mult_var = tk.StringVar(value=self.connection.multiplicity)
             ttk.Combobox(
                 master,
                 textvariable=self.mult_var,
                 values=["1", "0..1", "1..*", "0..*", "2", "3", "4", "5"],
-            ).grid(row=4, column=1, padx=4, pady=4, sticky="we")
+            ).grid(row=row, column=1, padx=4, pady=4, sticky="we")
 
     def add_point(self):
         x = simpledialog.askfloat("Point", "X:", parent=self)
@@ -7016,6 +7595,25 @@ class ConnectionDialog(simpledialog.Dialog):
         sel = list(self.point_list.curselection())
         for idx in reversed(sel):
             self.point_list.delete(idx)
+
+    def add_guard(self):
+        txt = simpledialog.askstring("Guard", "Condition:", parent=self)
+        if txt:
+            self.guard_list.insert(tk.END, txt)
+
+    def remove_guard(self):
+        sel = list(self.guard_list.curselection())
+        for idx in reversed(sel):
+            self.guard_list.delete(idx)
+
+    def add_guard_op(self):
+        op = self.guard_op_choice.get()
+        self.guard_ops_list.insert(tk.END, op)
+
+    def remove_guard_op(self):
+        sel = list(self.guard_ops_list.curselection())
+        for idx in reversed(sel):
+            self.guard_ops_list.delete(idx)
 
     def apply(self):
         self.connection.name = self.name_var.get()
@@ -7033,6 +7631,24 @@ class ConnectionDialog(simpledialog.Dialog):
         self.connection.mid_arrow = self.mid_var.get()
         if hasattr(self, "mult_var"):
             self.connection.multiplicity = self.mult_var.get()
+        if hasattr(self, "guard_list"):
+            self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
+        if hasattr(self, "guard_ops_list"):
+            self.connection.guard_ops = [
+                self.guard_ops_list.get(i) for i in range(self.guard_ops_list.size())
+            ]
+        if hasattr(self, "elem_var"):
+            sel = self.elem_var.get()
+            self.connection.element_id = self.elem_map.get(sel, "")
+            if self.connection.element_id:
+                repo = SysMLRepository.get_instance()
+                elem = repo.elements.get(self.connection.element_id)
+                if elem and not self.connection.name:
+                    self.connection.name = elem.name
+                if hasattr(self.master, "repo"):
+                    self.master.repo.add_element_to_diagram(
+                        self.master.diagram_id, self.connection.element_id
+                    )
         if hasattr(self.master, "_sync_to_repository"):
             self.master._sync_to_repository()
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
@@ -7497,8 +8113,13 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                     placeholder_map[label] = (target, mult)
                     names_list.append(label)
 
-        dlg = SysMLObjectDialog.ManagePartsDialog(self, names_list, visible_names, hidden_names)
-        selected = dlg.result or []
+        dlg = SysMLObjectDialog.ManagePartsDialog(
+            self, names_list, visible_names, hidden_names
+        )
+        selected = dlg.result
+        if selected is None:
+            # User cancelled the dialog -> keep current visibility unchanged
+            return
         selected_keys = { _part_prop_key(n) for n in selected if n not in placeholder_map }
         selected_placeholders = [placeholder_map[n] for n in selected if n in placeholder_map]
 
@@ -7604,6 +8225,17 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
         if self.app:
             self.app.update_views()
 
+
+class ControlFlowDiagramWindow(SysMLDiagramWindow):
+    def __init__(self, master, app, diagram_id: str | None = None, history=None):
+        tools = [
+            "Existing Element",
+            "Control Action",
+            "Feedback",
+        ]
+        super().__init__(master, "Control Flow Diagram", tools, diagram_id, app=app, history=history)
+
+
 class NewDiagramDialog(simpledialog.Dialog):
     """Dialog to create a new diagram and assign a name and type."""
 
@@ -7626,6 +8258,7 @@ class NewDiagramDialog(simpledialog.Dialog):
                 "Activity Diagram",
                 "Block Diagram",
                 "Internal Block Diagram",
+                "Control Flow Diagram",
             ],
         ).grid(row=1, column=1, padx=4, pady=4)
 

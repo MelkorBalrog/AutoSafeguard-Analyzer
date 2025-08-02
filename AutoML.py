@@ -296,6 +296,7 @@ from gui.architecture import (
     ActivityDiagramWindow,
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
+    ControlFlowDiagramWindow,
     ArchitectureManagerDialog,
     parse_behaviors,
 )
@@ -304,10 +305,9 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageTk
+    from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
-    print("Error: Pillow package is required for image support. Please install pillow.")
-    sys.exit(1)
+    Image = ImageDraw = ImageFont = None
 import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
@@ -328,7 +328,10 @@ from io import BytesIO, StringIO
 from email.utils import make_msgid
 import html
 import datetime
-import PIL.Image as PILImage
+try:
+    import PIL.Image as PILImage
+except ModuleNotFoundError:
+    PILImage = None
 from reportlab.platypus import LongTable
 from email.message import EmailMessage
 import smtplib
@@ -1463,6 +1466,19 @@ class EditNodeDialog(simpledialog.Dialog):
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
+
+    def invalidate_reviews_for_fta(self, node_id):
+        """Reopen reviews that include the given FTA top event."""
+        for r in self.reviews:
+            if node_id in getattr(r, "fta_ids", []):
+                r.closed = False
+                r.approved = False
+                r.reviewed = False
+                for p in r.participants:
+                    p.done = False
+                    p.approved = False
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -1487,6 +1503,7 @@ class EditNodeDialog(simpledialog.Dialog):
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -1912,6 +1929,7 @@ class FaultTreeApp:
             "Activity Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
+            "Control Flow Diagram": self._create_icon("arrow", "red"),
         }
         self.clipboard_node = None
         self.cut_mode = False
@@ -2058,6 +2076,7 @@ class FaultTreeApp:
         architecture_menu.add_command(label="Activity Diagram", command=self.open_activity_diagram)
         architecture_menu.add_command(label="Block Diagram", command=self.open_block_diagram)
         architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
+        architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
         architecture_menu.add_separator()
         architecture_menu.add_command(label="AutoML Explorer", command=self.manage_architecture)
 
@@ -3185,6 +3204,19 @@ class FaultTreeApp:
             doc.status = status
             doc.approved = status == "closed"
 
+    def update_fta_statuses(self):
+        """Update status for each top level event based on linked reviews."""
+        for te in self.top_events:
+            status = "draft"
+            for review in self.reviews:
+                if te.unique_id in getattr(review, "fta_ids", []):
+                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
+                        status = "closed"
+                        break
+                    else:
+                        status = "in review"
+            te.status = status
+
     def get_safety_goal_asil(self, sg_name):
         """Return the highest ASIL level for a safety goal name across approved HARAs."""
         best = "QM"
@@ -3198,6 +3230,15 @@ class FaultTreeApp:
             if sg_name and (sg_name == te.user_name or sg_name == te.safety_goal_description):
                 if ASIL_ORDER.get(te.safety_goal_asil or "QM", 0) > ASIL_ORDER.get(best, 0):
                     best = te.safety_goal_asil or "QM"
+        return best
+
+    def get_hara_goal_asil(self, sg_name):
+        """Return highest ASIL from all HARA entries for the given safety goal."""
+        best = "QM"
+        for doc in getattr(self, "hara_docs", []):
+            for e in doc.entries:
+                if sg_name and sg_name == e.safety_goal and ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
+                    best = e.asil
         return best
 
     def get_top_event_safety_goals(self, node):
@@ -3567,27 +3608,52 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to safety goals when the HARA is approved."""
+        """Propagate HARA values to top events, inheriting ASILs from HARA rows."""
         sg_data = {}
+        sg_asil = {}
         for doc in getattr(self, "hara_docs", []):
-            if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
-                continue
+            approved = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
             for e in doc.entries:
-                if not e.safety_goal:
+                mal = getattr(e, "malfunction", "")
+                if not mal:
                     continue
-                data = sg_data.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
+                data = sg_data.setdefault(
+                    mal,
+                    {"asil": "QM", "severity": 1, "cont": 1, "sg": "", "approved": False},
+                )
                 if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
                     data["asil"] = e.asil
+                    data["sg"] = e.safety_goal
                 if e.severity > data["severity"]:
                     data["severity"] = e.severity
                 if e.controllability > data["cont"]:
                     data["cont"] = e.controllability
+                if approved:
+                    data["approved"] = True
+                if e.safety_goal:
+                    best = sg_asil.get(e.safety_goal, "QM")
+                    if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
+                        sg_asil[e.safety_goal] = e.asil
+
         for te in self.top_events:
-            name = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-            if name in sg_data:
-                te.safety_goal_asil = sg_data[name]["asil"]
-                te.severity = sg_data[name]["severity"]
-                te.controllability = sg_data[name]["cont"]
+            mal = getattr(te, "malfunction", "")
+            data = sg_data.get(mal)
+            if data:
+                propagate = False
+                if getattr(te, "status", "draft") != "closed":
+                    propagate = True
+                elif data.get("approved"):
+                    propagate = True
+                    te.status = "draft"
+                    self.invalidate_reviews_for_fta(te.unique_id)
+                if propagate:
+                    te.safety_goal_description = data["sg"]
+                    te.severity = data["severity"]
+                    te.controllability = data["cont"]
+            sg_name = te.safety_goal_description
+            asil = sg_asil.get(sg_name)
+            if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
+                te.safety_goal_asil = asil
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -3734,6 +3800,8 @@ class FaultTreeApp:
             win = BlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         elif diagram.diag_type == "Internal Block Diagram":
             win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Control Flow Diagram":
+            win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         else:
             temp.destroy()
             return None
@@ -11607,6 +11675,8 @@ class FaultTreeApp:
         def refresh_tree():
             tree.delete(*tree.get_children())
             for sg in self.top_events:
+                name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
+                sg.safety_goal_asil = self.get_hara_goal_asil(name)
                 tree.insert(
                     "",
                     "end",
@@ -11634,8 +11704,9 @@ class FaultTreeApp:
                 tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="ASIL:").grid(row=1, column=0, sticky="e")
-                self.asil_var = tk.StringVar(value=getattr(self.initial, "safety_goal_asil", "QM"))
-                ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=1, column=1, padx=5, pady=5)
+                name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
+                self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
+                ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
                 ttk.Label(master, text="Safe State:").grid(row=2, column=0, sticky="e")
                 self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
@@ -11671,14 +11742,17 @@ class FaultTreeApp:
                 return master
 
             def apply(self):
+                desc = self.desc_text.get("1.0", "end-1c").strip()
+                sg_name = desc or self.id_var.get().strip()
+                asil = self.app.get_hara_goal_asil(sg_name)
                 self.result = {
                     "id": self.id_var.get().strip(),
-                    "asil": self.asil_var.get().strip(),
+                    "asil": asil,
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
                     "prob": self.prob_var.get().strip(),
                     "accept": self.acc_text.get("1.0", "end-1c"),
-                    "desc": self.desc_text.get("1.0", "end-1c"),
+                    "desc": desc,
                 }
 
         def add_sg():
@@ -11906,7 +11980,7 @@ class FaultTreeApp:
                         info["fis"].update(fis)
                         info["tcs"].update(tcs)
 
-        # Add failure modes and faults per malfunction
+        # Add failure modes and faults per malfunction from FMEDA links
         for be in self.get_all_basic_events():
             mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
             for (hz, mal), info in rows.items():
@@ -12042,6 +12116,7 @@ class FaultTreeApp:
                 G.add_edge(tc, haz)
 
             pos = nx.spring_layout(G, seed=42)
+            
             color_map = {
                 "hazard": "lightcoral",
                 "malfunction": "lightblue",
@@ -13539,6 +13614,18 @@ class FaultTreeApp:
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.update_views()
 
+    def open_control_flow_diagram(self):
+        """Prompt for a diagram name then open a new control flow diagram."""
+        name = simpledialog.askstring("New Control Flow Diagram", "Enter diagram name:")
+        if not name:
+            return
+        repo = SysMLRepository.get_instance()
+        diag = repo.create_diagram("Control Flow Diagram", name=name, package=repo.root_package.elem_id)
+        tab = self._new_tab(self._format_diag_title(diag))
+        self.diagram_tabs[diag.diag_id] = tab
+        ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.update_views()
+
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
             self.doc_nb.select(self._arch_tab)
@@ -13571,6 +13658,8 @@ class FaultTreeApp:
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
             InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Control Flow Diagram":
+            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         
     def copy_node(self):
         if self.selected_node and self.selected_node != self.root_node:
@@ -14369,6 +14458,7 @@ class FaultTreeApp:
                 self.review_data = None
 
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.versions = data.get("versions", [])
 
         self.selected_node = None
@@ -14755,6 +14845,7 @@ class FaultTreeApp:
                 self.review_data = None
 
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
         self.versions = data.get("versions", [])
 
@@ -15197,6 +15288,7 @@ class FaultTreeApp:
         if not self.review_data and self.reviews:
             self.review_data = self.reviews[0]
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.update_requirement_statuses()
         if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
             self.doc_nb.select(self._review_tab)
@@ -15633,6 +15725,7 @@ class FaultTreeApp:
 
     def ensure_asil_consistency(self):
         """Sync safety goal ASILs from HARAs and update requirement ASILs."""
+        self.update_fta_statuses()
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
         self.update_all_requirement_asil()
@@ -15649,6 +15742,7 @@ class FaultTreeApp:
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -15899,6 +15993,8 @@ class FaultTreeNode:
         self.ftti = ""
         self.acceptance_prob = 1.0
         self.acceptance_criteria = ""
+        self.status = "draft"
+        self.approved = False
         # Targets for safety goal metrics
         self.sg_dc_target = 0.0
         self.sg_spfm_target = 0.0
@@ -15938,6 +16034,8 @@ class FaultTreeNode:
         self.probability = 0.0
         # Formula used to derive probability from FIT rate
         self.prob_formula = "linear"  # linear, exponential, or constant
+        # Review status for top events
+        self.status = "draft"
 
     @property
     def name(self):
@@ -15971,6 +16069,8 @@ class FaultTreeNode:
             "ftti": self.ftti,
             "acceptance_prob": self.acceptance_prob,
             "acceptance_criteria": self.acceptance_criteria,
+            "status": self.status,
+            "approved": self.approved,
             "sg_dc_target": self.sg_dc_target,
             "sg_spfm_target": self.sg_spfm_target,
             "sg_lpfm_target": self.sg_lpfm_target,
@@ -15999,6 +16099,7 @@ class FaultTreeNode:
             "failure_prob": self.failure_prob,
             "probability": self.probability,
             "prob_formula": self.prob_formula,
+            "status": self.status,
             "children": [child.to_dict() for child in self.children]
         }
         if not self.is_primary_instance and self.original and (self.original.unique_id != self.unique_id):
@@ -16031,6 +16132,8 @@ class FaultTreeNode:
         node.ftti = data.get("ftti", "")
         node.acceptance_prob = data.get("acceptance_prob", 1.0)
         node.acceptance_criteria = data.get("acceptance_criteria", "")
+        node.status = data.get("status", "draft")
+        node.approved = data.get("approved", False)
         node.sg_dc_target = data.get("sg_dc_target", 0.0)
         node.sg_spfm_target = data.get("sg_spfm_target", 0.0)
         node.sg_lpfm_target = data.get("sg_lpfm_target", 0.0)
@@ -16059,6 +16162,7 @@ class FaultTreeNode:
         node.failure_prob = data.get("failure_prob", 0.0)
         node.probability = data.get("probability", 0.0)
         node.prob_formula = data.get("prob_formula", "linear")
+        node.status = data.get("status", "draft")
         node.display_label = ""
         node.equation = ""
         node.detailed_equation = ""

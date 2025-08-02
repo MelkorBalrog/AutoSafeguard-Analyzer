@@ -2,7 +2,7 @@ version: 0.1.5
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
-AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab organized into *System Design*, *Hazard Analysis*, *Risk Assessment* and *Safety Analysis* sections so documents and diagrams can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
+AutoML is an automotive modeling language. It lets you model items, operating scenarios, functions, structure and interfaces. The tool also performs **systems safety analyses**, including cybersecurity, following ISO 26262, ISO 21448, ISO 21434 and ISO 8800 standards. Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab organized into *System Design*, *Hazard Analysis*, *Risk Assessment* and *Safety Analysis* sections so documents and diagrams can be opened directly. Architecture objects can now be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. **Deleting objects on a diagram now asks whether to remove them from the model or only from the current view. Removing from the model also deletes any part elements referencing it so names can be reused.** New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
 
 ## Index
 
@@ -102,7 +102,9 @@ Requirements can also be attached to diagram elements to keep architecture and s
 
 ## Metamodel Overview
 
-Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship and diagram so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+Internally, AutoML stores all model elements inside a lightweight SysML repository. Each element is saved with its specific type—`BlockUsage`, `PartUsage`, `PortUsage`, `ActivityUsage`, `ActionUsage`, `UseCase`, `Actor` and so on. Links between these typed elements use the `SysMLRelationship` class. Diagrams such as use case or block diagrams are stored as `SysMLDiagram` objects containing the drawn **objects** and their **connections**. The singleton `SysMLRepository` manages every element, relationship, diagram and review so analyses stay consistent across the application. Each element ID is listed in an `element_diagrams` mapping so name or property updates propagate to every diagram where that element appears.
+
+Every element, relationship and diagram records creation and modification metadata such as the author, email and timestamps. Blocks and parts expose additional reliability fields (`analysis`, `fit`, `qualification` and `failureModes`, plus `component` and `asil` on parts) so architecture elements remain linked to safety analyses.
 
 ```mermaid
 classDiagram
@@ -111,6 +113,8 @@ classDiagram
         relationships: List~SysMLRelationship~
         diagrams: Dict~str, SysMLDiagram~
         element_diagrams: Dict~str, str~
+        reviews: List~ReviewData~
+        current_review: ReviewData
         +create_element()
         +create_relationship()
         +create_diagram()
@@ -122,6 +126,12 @@ classDiagram
         properties: Dict~str, str~
         stereotypes: Dict~str, str~
         owner: str
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLRelationship {
         rel_id: str
@@ -130,6 +140,12 @@ classDiagram
         target: str
         stereotype: str
         properties: Dict~str, str~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLDiagram {
         diag_id: str
@@ -138,10 +154,17 @@ classDiagram
         package: str
         description: str
         color: str
+        father: str
         elements: List~str~
         relationships: List~str~
         objects: List~SysMLObject~
         connections: List~DiagramConnection~
+        created: str
+        author: str
+        author_email: str
+        modified: str
+        modified_by: str
+        modified_by_email: str
     }
     class SysMLObject {
         obj_id: int
@@ -155,6 +178,7 @@ classDiagram
         requirements: List~dict~
         locked: bool
         hidden: bool
+        collapsed: Dict~str, bool~
     }
     class DiagramConnection {
         src: int
@@ -178,6 +202,7 @@ classDiagram
     class Hazard
     class Scenario
     class FaultTreeNode
+    class ReviewData
     SysMLRepository --> "*" BlockUsage
     SysMLRepository --> "*" PartUsage
     SysMLRepository --> "*" PortUsage
@@ -187,6 +212,7 @@ classDiagram
     SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" Scenario
     SysMLRepository --> "*" FaultTreeNode
+    SysMLRepository --> "*" ReviewData
     SysMLRepository --> "*" SysMLRelationship
     SysMLRepository --> "*" SysMLDiagram
     SysMLDiagram --> "*" SysMLObject
@@ -318,8 +344,15 @@ GUI so analyses remain linked to the architecture. Key data classes include:
 
 ```mermaid
 classDiagram
+    SysMLRepository --> "*" MissionProfile
+    SysMLRepository --> "*" MechanismLibrary
+    MechanismLibrary --> "*" DiagnosticMechanism
     SysMLRepository --> "*" ReliabilityAnalysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
+    SysMLRepository --> "*" MissionProfile
+    SysMLRepository --> "*" MechanismLibrary
+    MechanismLibrary --> "*" DiagnosticMechanism
+    ReliabilityAnalysis --> MissionProfile : profile
     SysMLRepository --> "*" HazopDoc
     HazopDoc --> "*" HazopEntry
     SysMLRepository --> "*" HaraDoc
@@ -344,6 +377,10 @@ classDiagram
     TC2FIEntry --> FunctionalInsufficiency
     TC2FIEntry --> Hazard : hazard
     TC2FIEntry --> HaraEntry : severity
+    SysMLRepository --> "*" ScenarioLibrary
+    ScenarioLibrary --> "*" Scenario
+    SysMLRepository --> "*" OddLibrary
+    OddLibrary --> "*" Scenery
     SysMLRepository --> "*" Hazard
     SysMLRepository --> "*" FunctionalModification
     FunctionalModification --> "*" AcceptanceCriteria
@@ -352,6 +389,7 @@ classDiagram
     SysMLRepository --> "*" FunctionalInsufficiency
     SysMLRepository --> "*" Fault
     SysMLRepository --> "*" Failure
+    SysMLRepository --> "*" ReviewData
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -363,16 +401,29 @@ classDiagram
     class FaultTreeNode
     class Fault
     class Failure
+    class MechanismLibrary
+    class DiagnosticMechanism
+    class MissionProfile
+    class ScenarioLibrary
+    class OddLibrary
+    class Scenery
+    class ReviewData
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
 FIT results. Each `ReliabilityComponent` lists attributes like qualification,
-quantity and a dictionary of part‑specific parameters. HAZOP and HARA tables use
-`HazopDoc`/`HazopEntry` and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA
-and FMEDA tables are stored as `FmeaDoc` and `FmedaDoc` with lists of generic
-`FmeaEntry` dictionaries capturing the failure mode, cause, detection rating and
-diagnostic coverage. Fault tree diagrams consist of nested `FaultTreeNode`
-objects that hold FMEA metrics, FMEDA values and traced requirements.
+quantity and a dictionary of part‑specific parameters. `MissionProfile`
+instances capture on/off times and temperature ranges used when converting FIT
+rates to probabilities. `MechanismLibrary` collections hold
+`DiagnosticMechanism` entries from ISO 26262 Annex D so FMEDAs can select the
+appropriate diagnostic coverage. `ScenarioLibrary` and `OddLibrary` objects
+group reusable scenarios and ODD elements so HAZOP, HARA and FI2TC/TC2FI tables
+share a consistent context. HAZOP and HARA tables use `HazopDoc`/`HazopEntry`
+and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
+stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
+dictionaries capturing the failure mode, cause, detection rating and diagnostic
+coverage. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
+FMEA metrics, FMEDA values and traced requirements.
 
 #### Analysis Relationships
 
@@ -451,6 +502,52 @@ classDiagram
     Requirement --> "0..*" Requirement : decomposedInto
 ```
 
+#### Review Data Structure
+
+```mermaid
+classDiagram
+    SysMLRepository --> "*" ReviewData
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewComment : comments
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+```
+
+Each review stores its moderators, participants and comment threads along with
+the names or IDs of the analyses being evaluated.
+
 #### Differences From Standard SysML
 
 - **BlockUsage** – extends the standard `Block` with reliability information:
@@ -495,6 +592,17 @@ classDiagram
   a failure mode.
 - **Failure** – extends `SysMLElement` to record the malfunction effect used as
   an FMEA failure mode and FTA event.
+- **MechanismLibrary** – aggregates `DiagnosticMechanism` definitions that can
+  be referenced by FMEDAs. Each mechanism stores a `coverage` value along with a
+  short `description`, implementation `detail` and optional `requirement`.
+- **MissionProfile** – captures the on/off time, temperatures and other
+  environmental parameters for reliability calculations.
+- **ScenarioLibrary** – groups reusable `Scenario` entries so analyses share the
+  same operational contexts.
+- **OddLibrary** – lists `Scenery` elements describing ODD attributes such as
+  road features or environmental limits.
+- **ReviewData** – stores peer or joint review sessions with moderators,
+  participants, review comments and lists of referenced analyses.
 
 ### Extended AutoML Element Attributes
 
@@ -510,16 +618,29 @@ Key attributes are:
   `hazards`.
 - **Scenery** – stores the `odd_element` name and an open-ended set of
   context attributes describing that element.
-- **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
-  `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
-  `failure_prob` and a list of `safety_requirements`.
+- **FaultTreeNode** – FMEA fields (`fmea_effect`, `fmea_cause`, `fmea_severity`,
+  `fmea_occurrence`, `fmea_detection`, `fmea_component`), FMEDA metrics
+  (`fmeda_malfunction`, `fmeda_safety_goal`, `fmeda_diag_cov`, `fmeda_fit`,
+  `fmeda_spfm`, `fmeda_lpfm`, `fmeda_fault_type`, `fmeda_fault_fraction`,
+  `fmeda_dc_target`, `fmeda_spfm_target`, `fmeda_lpfm_target`), safety goal data
+  (`safety_goal_description`, `safety_goal_asil`, `safe_state`, `ftti`,
+  `acceptance_prob`, `acceptance_criteria`, `sg_dc_target`, `sg_spfm_target`,
+  `sg_lpfm_target`), probability attributes (`failure_prob`, `probability`,
+  `prob_formula`), plus `fault_ref`, `malfunction` and linked
+  `safety_requirements`.
 - **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **MissionProfile** – `tau_on`, `tau_off`, board and ambient temperature
+  ranges, `humidity`, `duty_cycle` and optional `notes` describing operating
+  conditions.
 - **FmeaDoc** – failure mode table with occurrence and detection ratings.
 - **FmedaDoc** – table-level metrics `spfm`, `lpfm` and `dc` calculated from
   failure mode FIT values.
+- **MechanismLibrary** – named collection of diagnostic mechanisms.
+- **DiagnosticMechanism** – mechanism `name`, expected `coverage` and
+  descriptive fields `description`, `detail` and `requirement`.
 - **FaultTreeDiagram** – overall fault tree probability `phmf` and Prototype
   Assurance Level `pal`.
 - **TriggeringCondition** – `description`, related `scenario` and any allocated
@@ -530,8 +651,21 @@ Key attributes are:
   `acceptanceCriteria` used to verify the change.
 - **AcceptanceCriteria** – measurable condition proving a functional
   modification resolves the hazard.
+- **MechanismLibrary** – library `name` and list of `DiagnosticMechanism`
+  definitions that provide diagnostic coverage values.
+- **DiagnosticMechanism** – `coverage`, `description`, implementation `detail`
+  and optional `requirement` text.
+- **MissionProfile** – `tau_on`, `tau_off`, `board_temp`, `ambient_temp`,
+  `humidity`, `duty_cycle` and free-form `notes` describing operating
+  conditions.
+- **ScenarioLibrary** – `name` plus a list of `scenarios` and referenced ODD
+  elements.
+- **OddLibrary** – `name` and collection of `Scenery` entries describing ODD
+  attributes.
 - **Fault** - underlying cause leading to a failure mode.
 - **Failure** - malfunction effect used as an FMEA failure mode and FTA event.
+- **ReviewData** - review `mode`, lists of `moderators` and `participants`,
+  referenced analysis names and a collection of `comments`.
 - **SysMLObject** – drawn object with coordinates, size and an optional linked
   element. The `locked` flag prevents editing while `hidden` temporarily removes
   the object from the diagram.
@@ -655,6 +789,48 @@ classDiagram
     }
     SysMLElement <|-- ReliabilityComponent
 ```
+**MissionProfile** – records operating and environmental conditions for reliability calculations.
+
+```mermaid
+classDiagram
+    class MissionProfile {
+        tau_on
+        tau_off
+        board_temp
+        board_temp_min
+        board_temp_max
+        ambient_temp
+        ambient_temp_min
+        ambient_temp_max
+        humidity
+        duty_cycle
+        notes
+    }
+```
+
+**MechanismLibrary** – collection of diagnostic mechanisms with coverage data.
+
+```mermaid
+classDiagram
+    class MechanismLibrary {
+        name
+        mechanisms
+    }
+```
+
+**DiagnosticMechanism** – individual safety mechanism and its expected coverage.
+
+```mermaid
+classDiagram
+    class DiagnosticMechanism {
+        name
+        coverage
+        description
+        detail
+        requirement
+    }
+```
+
 **AnalysisDocument** – base class for safety tables with `name`, `date` and `description`.
 
 
@@ -779,6 +955,51 @@ classDiagram
         severity
     }
     SysMLElement <|-- Failure
+```
+
+**ReviewData** – captures the participants and comments for peer or joint reviews.
+
+```mermaid
+classDiagram
+    class ReviewParticipant {
+        name
+        email
+        role
+        done
+        approved
+        reject_reason
+    }
+    class ReviewComment {
+        comment_id
+        node_id
+        text
+        reviewer
+        target_type
+        req_id
+        field
+        resolved
+        resolution
+    }
+    class ReviewData {
+        name
+        description
+        mode
+        moderators
+        participants
+        comments
+        fta_ids
+        fmea_names
+        fmeda_names
+        hazop_names
+        hara_names
+        due_date
+        closed
+        approved
+        reviewed
+    }
+    ReviewData --> "*" ReviewParticipant : participants
+    ReviewData --> "*" ReviewParticipant : moderators
+    ReviewData --> "*" ReviewComment : comments
 ```
 
 ## BOM Integration with AutoML Diagrams
@@ -971,3 +1192,87 @@ and run the build again if you hit this issue.
 - 0.1.2 - Clarified systems safety focus in description and About dialog.
 - 0.1.1 - Updated description and About dialog.
 - 0.1.0 - Added Help menu and version tracking.
+## Example Safety Analysis Tables
+
+The following example shows how to build a small project from scratch so you can
+follow the full safety workflow yourself. Start with these setup steps:
+
+### Project Setup
+
+1. Install the required packages:
+   ```
+   pip install pillow openpyxl networkx matplotlib reportlab adjustText
+   ```
+2. Launch AutoML with `python AutoML.py` and choose **File → New Project**.
+3. Create an activity diagram named **Stop at Intersection**:
+   - **Diagram → Activity → New**
+   - Add an initial node, an action called *Braking*, and a final node.
+   - Save the diagram. HAZOP entries reference actions from activity diagrams,
+     so the HAZOP table cannot be created without this step.
+4. Add a scenario library via **Libraries → Scenario Library** and create the
+   *Detroit* library with a scenario named *Pedestrians crossing* (exposure 4).
+
+With the project prepared, the following sections illustrate each analysis.
+
+### HAZOP
+
+Steps to reproduce:
+1. Navigate to **Safety → HAZOP**.
+2. Click **Add Entry** and fill in the fields as shown.
+3. Save the document.
+
+| Function | Malfunction | Scenario | Hazard | Rationale |
+|----------|-------------|----------|--------|-----------|
+| Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
+
+### HARA
+
+Steps to reproduce:
+1. Open **Safety → HARA** and create a new document linked to the HAZOP entry.
+2. Set Severity = 3, Controllability = 3, Exposure = 4; AutoML computes ASIL D.
+3. Export or save to view the table.
+
+| Malfunction | Hazard | Scenario | Severity | Controllability | Exposure | ASIL | Safety Goal |
+|-------------|--------|----------|----------|----------------|----------|------|-------------|
+| Does not stop at intersection | Run over VRUs | Pedestrians crossing | 3 | 3 | 4 | D | Prevent no braking |
+
+### Fault Tree
+
+Steps to reproduce:
+1. Go to **Analysis → Fault Tree**.
+2. Create the top event "Prevent no braking" with an AND gate.
+3. Add basic events for "capacitor is open" and "capacitor is shorted".
+4. Run the probability calculation.
+
+| Node | Type | Description | Probability | Safety Goal |
+|------|------|-------------|-------------|-------------|
+| Prevent no braking | TOP EVENT (AND) | Does not stop at intersection | 0.01277 | Prevent no braking |
+| Node 5 | Basic Event | capacitor is open | 0.09227 | Prevent no braking |
+| Node 8 | Basic Event | capacitor is shorted | 0.13841 | Prevent no braking |
+
+### FMEDA
+
+Steps to reproduce:
+1. Open **Safety → FMEDA** and create a document named "ADS_FMEDA".
+2. Add failure modes with diagnostic coverage and FIT values.
+3. AutoML computes SPFM and LPFM; export the table.
+
+| ID | Description | FMEA Cause | Malfunction | Safety Goal | Fault Type | FIT | SPFM | LPFM | Diagnostic Cov. |
+|----|-------------|------------|-------------|-------------|------------|-----|------|------|-----------------|
+| 4 | open | capacitor is open | Does not stop at intersection | Prevent no braking | permanent | 3844.68 | 38.4468 | 0 | 0.99 |
+| 6 | shorted | capacitor is shorted | — | — | transient | 5767.02 | 0 | 1441.755 | 0.75 |
+
+### Reliability Analysis
+
+Steps to reproduce:
+1. Navigate to **Analysis → Reliability** and create an "ADS_BOM" analysis.
+2. Add components with their quantity and attributes.
+3. Run the FIT calculation and export the results.
+
+| Component | Type | Qty | FIT |
+|-----------|------|-----|-----|
+| resistor | resistor | 20 | 297.505 |
+| capacitor | capacitor | 10 | 961.17 |
+
+This end-to-end flow links HAZOP findings to HARA ratings, fault trees and FMEDA metrics for a coherent safety case.
+
