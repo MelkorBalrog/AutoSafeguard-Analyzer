@@ -12072,9 +12072,20 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* on the canvas."""
+            """Render a small network diagram for *row* using matplotlib.
+
+            The PDF export uses the same matplotlib styling; generating the
+            image here ensures the on-screen diagram matches the PDF exactly.
+            The temporary PNG is loaded via Pillow when available and falls
+            back to Tk's ``PhotoImage`` otherwise to avoid the ``TclError``
+            reported on some systems.
+            """
             import matplotlib.pyplot as plt
-            import textwrap
+            import tempfile, textwrap
+            try:
+                from PIL import Image, ImageTk  # type: ignore
+            except Exception:  # Pillow may not be installed
+                Image = ImageTk = None
 
             # Build a simple graph structure without relying on the external
             # ``networkx`` package.  The lightweight stub bundled with the
@@ -12088,20 +12099,29 @@ class FaultTreeApp:
             mal = row["malfunction"]
             nodes[haz] = "hazard"
             nodes[mal] = "malfunction"
-            edges.append((haz, mal))
+            # A malfunction leads to a hazard
+            edges.append((mal, haz))
 
+            # Failure modes and faults are upstream causes
             for fm in sorted(row["failure_modes"]):
                 nodes[fm] = "failure_mode"
-                edges.append((mal, fm))
+                edges.append((fm, mal))
             for fault in sorted(row["faults"]):
                 nodes[fault] = "fault"
-                edges.append((mal, fault))
+                if row["failure_modes"]:
+                    for fm in sorted(row["failure_modes"]):
+                        edges.append((fault, fm))
+                else:
+                    edges.append((fault, mal))
+
+            # Functional insufficiencies and triggering conditions are direct
+            # contributors to the hazard
             for fi in sorted(row["fis"]):
                 nodes[fi] = "fi"
-                edges.append((haz, fi))
+                edges.append((fi, haz))
             for tc in sorted(row["tcs"]):
                 nodes[tc] = "tc"
-                edges.append((haz, tc))
+                edges.append((tc, haz))
 
             # Layout from effect (hazard) on the left to root causes on the right
             # Use generous spacing so wrapped text remains readable
@@ -12124,12 +12144,12 @@ class FaultTreeApp:
                 y_tc -= 2
 
             color_map = {
-                "hazard": "lightcoral",
-                "malfunction": "lightblue",
-                "failure_mode": "orange",
-                "fault": "lightgray",
-                "fi": "lightyellow",
-                "tc": "lightgreen",
+                "hazard": "#F08080",       # light coral
+                "malfunction": "#ADD8E6",  # light blue
+                "failure_mode": "#FFA500",  # orange
+                "fault": "#D3D3D3",        # light gray
+                "fi": "#FFFFE0",           # light yellow
+                "tc": "#90EE90",           # light green
             }
 
             plt.figure(figsize=(6, 4))
@@ -12142,11 +12162,19 @@ class FaultTreeApp:
                 ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
                             arrowprops=dict(arrowstyle="->"))
 
-            # Draw the nodes with labels
+            # Draw the nodes as colored rectangles with labels
+            import matplotlib.patches as patches
+
             for n, (x, y) in pos.items():
                 kind = nodes.get(n, "")
                 color = color_map.get(kind, "white")
-                ax.scatter([x], [y], s=1200, c=color, edgecolors="black")
+                rect = patches.FancyBboxPatch(
+                    (x - 1, y - 0.5), 2, 1,
+                    boxstyle="round,pad=0.1",
+                    facecolor=color,
+                    edgecolor="black",
+                )
+                ax.add_patch(rect)
                 label = textwrap.fill(str(n), 20)
                 ax.text(x, y, label, fontsize=6, ha="center", va="center")
 
@@ -12159,15 +12187,27 @@ class FaultTreeApp:
             ax.axis("off")
 
             # Save the diagram to a temporary file and let Tk load it from
-            # disk.  This avoids in-memory image format quirks and uses only
-            # the standard ``tk.PhotoImage`` loader.
+            # disk.  Using a real file keeps image handling simple and
+            # consistent with the PDF export.
             tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
             tmp_path = tmp_file.name
             tmp_file.close()
             plt.savefig(tmp_path, format="PNG", dpi=120)
             plt.close()
-            photo = tk.PhotoImage(file=tmp_path)
-            os.unlink(tmp_path)
+
+            try:
+                if Image and ImageTk:
+                    pil_img = Image.open(tmp_path)
+                    photo = ImageTk.PhotoImage(pil_img)
+                else:  # Pillow not installed
+                    raise Exception
+            except Exception:
+                photo = tk.PhotoImage(file=tmp_path)
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
             canvas.delete("all")
             canvas.image = photo  # keep reference
