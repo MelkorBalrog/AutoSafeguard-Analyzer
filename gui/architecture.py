@@ -2433,6 +2433,7 @@ class DiagramConnection:
     arrow: str = "none"  # none, forward, backward, both
     mid_arrow: bool = False
     guard: List[str] = field(default_factory=list)
+    element_id: str = ""
     multiplicity: str = ""
 
 
@@ -2980,8 +2981,10 @@ class SysMLDiagramWindow(tk.Frame):
             if t == "Existing Element":
                 names = []
                 id_map = {}
+                diag = self.repo.diagrams.get(self.diagram_id)
+                allowed = {"Actor", "Block"} if diag and diag.diag_type == "Control Flow Diagram" else None
                 for eid, el in self.repo.elements.items():
-                    if el.elem_type != "Package":
+                    if el.elem_type != "Package" and (not allowed or el.elem_type in allowed):
                         name = el.name or eid
                         names.append(name)
                         id_map[name] = eid
@@ -5120,6 +5123,32 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
+        elif obj.obj_type == "Existing Element":
+            element = self.repo.elements.get(obj.element_id)
+            if element:
+                color = StyleManager.get_instance().get_color(element.elem_type)
+                outline = color
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self._create_round_rect(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                radius=12 * self.zoom,
+                outline=outline,
+                fill="",
+            )
+            label = obj.properties.get("name", "")
+            if label:
+                lx = x
+                ly = y - h - 4 * self.zoom
+                self.canvas.create_text(
+                    lx,
+                    ly,
+                    text=label,
+                    anchor="s",
+                    font=self.font,
+                )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             if obj.obj_type == "Part":
@@ -5468,6 +5497,10 @@ class SysMLDiagramWindow(tk.Frame):
         bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         dash = ()
         label = conn.name or None
+        if conn.conn_type == "Control Action" and not label and conn.element_id:
+            elem = self.repo.elements.get(conn.element_id)
+            if elem:
+                label = elem.name
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
@@ -7270,6 +7303,25 @@ class ConnectionDialog(simpledialog.Dialog):
             self.mid_check.configure(state="disabled")
         row = 4
         if self.connection.conn_type == "Control Action":
+            repo = SysMLRepository.get_instance()
+            elems = [
+                e
+                for e in repo.elements.values()
+                if e.elem_type in ("Action", "Activity", "Operation")
+            ]
+            self.elem_map = {e.name or e.elem_id: e.elem_id for e in elems}
+            ttk.Label(master, text="Element:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
+            cur_name = next(
+                (n for n, i in self.elem_map.items() if i == self.connection.element_id),
+                "",
+            )
+            self.elem_var = tk.StringVar(value=cur_name)
+            ttk.Combobox(
+                master,
+                textvariable=self.elem_var,
+                values=list(self.elem_map.keys()),
+            ).grid(row=row, column=1, padx=4, pady=4, sticky="we")
+            row += 1
             ttk.Label(master, text="Guard:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
             self.guard_list = tk.Listbox(master, height=4)
             for g in self.connection.guard:
@@ -7329,6 +7381,18 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
+        if hasattr(self, "elem_var"):
+            sel = self.elem_var.get()
+            self.connection.element_id = self.elem_map.get(sel, "")
+            if self.connection.element_id:
+                repo = SysMLRepository.get_instance()
+                elem = repo.elements.get(self.connection.element_id)
+                if elem and not self.connection.name:
+                    self.connection.name = elem.name
+                if hasattr(self.master, "repo"):
+                    self.master.repo.add_element_to_diagram(
+                        self.master.diagram_id, self.connection.element_id
+                    )
         if hasattr(self.master, "_sync_to_repository"):
             self.master._sync_to_repository()
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
