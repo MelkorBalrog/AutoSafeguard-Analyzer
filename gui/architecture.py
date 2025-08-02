@@ -150,14 +150,35 @@ def _collect_parent_parts(repo: SysMLRepository, block_id: str, visited=None) ->
 
 
 def extend_block_parts_with_parents(repo: SysMLRepository, block_id: str) -> None:
-    """Merge parent block parts into the given block's ``partProperties``."""
+    """Merge parts from generalization parents into ``block_id``."""
+
     block = repo.elements.get(block_id)
     if not block:
         return
+
+    def _parent_parts() -> list[str]:
+        parts: list[str] = []
+        for parent in _collect_generalization_parents(repo, block_id):
+            elem = repo.elements.get(parent)
+            if elem:
+                parts.extend(
+                    [
+                        p.strip()
+                        for p in elem.properties.get("partProperties", "").split(",")
+                        if p.strip()
+                    ]
+                )
+        seen: list[str] = []
+        for p in parts:
+            if p not in seen:
+                seen.append(p)
+        return seen
+
     names = [p.strip() for p in block.properties.get("partProperties", "").split(",") if p.strip()]
-    for p in _collect_parent_parts(repo, block_id):
+    for p in _parent_parts():
         if p not in names:
             names.append(p)
+
     joined = ", ".join(names)
     block.properties["partProperties"] = joined
     for d in repo.diagrams.values():
@@ -522,6 +543,12 @@ def add_aggregation_part(
     whole = repo.elements.get(whole_id)
     part = repo.elements.get(part_id)
     if not whole or not part:
+        return
+    if part_id == whole_id:
+        return
+    if part_id in _collect_generalization_parents(repo, whole_id):
+        return
+    if _reverse_aggregation_exists(repo, whole_id, part_id):
         return
     name = part.name or part_id
     entry = f"{name}[{multiplicity}]" if multiplicity else name
