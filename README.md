@@ -318,8 +318,12 @@ GUI so analyses remain linked to the architecture. Key data classes include:
 
 ```mermaid
 classDiagram
+    SysMLRepository --> "*" MissionProfile
+    SysMLRepository --> "*" MechanismLibrary
+    MechanismLibrary --> "*" DiagnosticMechanism
     SysMLRepository --> "*" ReliabilityAnalysis
     ReliabilityAnalysis --> "*" ReliabilityComponent
+    ReliabilityAnalysis --> MissionProfile : profile
     SysMLRepository --> "*" HazopDoc
     HazopDoc --> "*" HazopEntry
     SysMLRepository --> "*" HaraDoc
@@ -363,6 +367,9 @@ classDiagram
     class FaultTreeNode
     class Fault
     class Failure
+    class MissionProfile
+    class MechanismLibrary
+    class DiagnosticMechanism
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -510,16 +517,29 @@ Key attributes are:
   `hazards`.
 - **Scenery** – stores the `odd_element` name and an open-ended set of
   context attributes describing that element.
-- **FaultTreeNode** – FMEA fields `fmea_effect` and `fmea_cause`, FMEDA metrics
-  `fmeda_fit`, `fmeda_diag_cov`, `fmeda_spfm`, `fmeda_lpfm`, the calculated
-  `failure_prob` and a list of `safety_requirements`.
+- **FaultTreeNode** – FMEA fields (`fmea_effect`, `fmea_cause`, `fmea_severity`,
+  `fmea_occurrence`, `fmea_detection`, `fmea_component`), FMEDA metrics
+  (`fmeda_malfunction`, `fmeda_safety_goal`, `fmeda_diag_cov`, `fmeda_fit`,
+  `fmeda_spfm`, `fmeda_lpfm`, `fmeda_fault_type`, `fmeda_fault_fraction`,
+  `fmeda_dc_target`, `fmeda_spfm_target`, `fmeda_lpfm_target`), safety goal data
+  (`safety_goal_description`, `safety_goal_asil`, `safe_state`, `ftti`,
+  `acceptance_prob`, `acceptance_criteria`, `sg_dc_target`, `sg_spfm_target`,
+  `sg_lpfm_target`), probability attributes (`failure_prob`, `probability`,
+  `prob_formula`), plus `fault_ref`, `malfunction` and linked
+  `safety_requirements`.
 - **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
   `total_fit` and resulting `spfm`, `lpfm` and `dc` values.
 - **ReliabilityComponent** – component `name`, qualification certificate,
   `quantity`, parameter `attributes` and computed `fit` rate.
+- **MissionProfile** – `tau_on`, `tau_off`, board and ambient temperature
+  ranges, `humidity`, `duty_cycle` and optional `notes` describing operating
+  conditions.
 - **FmeaDoc** – failure mode table with occurrence and detection ratings.
 - **FmedaDoc** – table-level metrics `spfm`, `lpfm` and `dc` calculated from
   failure mode FIT values.
+- **MechanismLibrary** – named collection of diagnostic mechanisms.
+- **DiagnosticMechanism** – mechanism `name`, expected `coverage` and
+  descriptive fields `description`, `detail` and `requirement`.
 - **FaultTreeDiagram** – overall fault tree probability `phmf` and Prototype
   Assurance Level `pal`.
 - **TriggeringCondition** – `description`, related `scenario` and any allocated
@@ -655,6 +675,48 @@ classDiagram
     }
     SysMLElement <|-- ReliabilityComponent
 ```
+**MissionProfile** – records operating and environmental conditions for reliability calculations.
+
+```mermaid
+classDiagram
+    class MissionProfile {
+        tau_on
+        tau_off
+        board_temp
+        board_temp_min
+        board_temp_max
+        ambient_temp
+        ambient_temp_min
+        ambient_temp_max
+        humidity
+        duty_cycle
+        notes
+    }
+```
+
+**MechanismLibrary** – collection of diagnostic mechanisms with coverage data.
+
+```mermaid
+classDiagram
+    class MechanismLibrary {
+        name
+        mechanisms
+    }
+```
+
+**DiagnosticMechanism** – individual safety mechanism and its expected coverage.
+
+```mermaid
+classDiagram
+    class DiagnosticMechanism {
+        name
+        coverage
+        description
+        detail
+        requirement
+    }
+```
+
 **AnalysisDocument** – base class for safety tables with `name`, `date` and `description`.
 
 
