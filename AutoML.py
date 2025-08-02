@@ -12163,7 +12163,7 @@ class FaultTreeApp:
                 canvas.create_text(
                     (x1 + x2) / 2,
                     (y1 + y2) / 2,
-                    "caused by",
+                    text="caused by",
                     font=("TkDefaultFont", 8),
                     tags="edge",
                 )
