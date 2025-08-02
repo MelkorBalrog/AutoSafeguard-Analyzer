@@ -1463,6 +1463,19 @@ class EditNodeDialog(simpledialog.Dialog):
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
+
+    def invalidate_reviews_for_fta(self, node_id):
+        """Reopen reviews that include the given FTA top event."""
+        for r in self.reviews:
+            if node_id in getattr(r, "fta_ids", []):
+                r.closed = False
+                r.approved = False
+                r.reviewed = False
+                for p in r.participants:
+                    p.done = False
+                    p.approved = False
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -1487,6 +1500,7 @@ class EditNodeDialog(simpledialog.Dialog):
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -3185,6 +3199,19 @@ class FaultTreeApp:
             doc.status = status
             doc.approved = status == "closed"
 
+    def update_fta_statuses(self):
+        """Update status for each top level event based on linked reviews."""
+        for te in self.top_events:
+            status = "draft"
+            for review in self.reviews:
+                if te.unique_id in getattr(review, "fta_ids", []):
+                    if review.mode == "joint" and review.approved and self.review_is_closed_for(review):
+                        status = "closed"
+                        break
+                    else:
+                        status = "in review"
+            te.status = status
+
     def get_safety_goal_asil(self, sg_name):
         """Return the highest ASIL level for a safety goal name across approved HARAs."""
         best = "QM"
@@ -3567,27 +3594,42 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to safety goals when the HARA is approved."""
+        """Propagate HARA values to top events, including safety goal names."""
         sg_data = {}
         for doc in getattr(self, "hara_docs", []):
-            if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
-                continue
+            approved = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
             for e in doc.entries:
-                if not e.safety_goal:
+                mal = getattr(e, "malfunction", "")
+                if not mal:
                     continue
-                data = sg_data.setdefault(e.safety_goal, {"asil": "QM", "severity": 1, "cont": 1})
+                data = sg_data.setdefault(mal, {"asil": "QM", "severity": 1, "cont": 1, "sg": "", "approved": False})
                 if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
                     data["asil"] = e.asil
+                    data["sg"] = e.safety_goal
                 if e.severity > data["severity"]:
                     data["severity"] = e.severity
                 if e.controllability > data["cont"]:
                     data["cont"] = e.controllability
+                if approved:
+                    data["approved"] = True
+
         for te in self.top_events:
-            name = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
-            if name in sg_data:
-                te.safety_goal_asil = sg_data[name]["asil"]
-                te.severity = sg_data[name]["severity"]
-                te.controllability = sg_data[name]["cont"]
+            mal = getattr(te, "malfunction", "")
+            data = sg_data.get(mal)
+            if not data:
+                continue
+            propagate = False
+            if getattr(te, "status", "draft") != "closed":
+                propagate = True
+            elif data.get("approved"):
+                propagate = True
+                te.status = "draft"
+                self.invalidate_reviews_for_fta(te.unique_id)
+            if propagate:
+                te.safety_goal_description = data["sg"]
+                te.safety_goal_asil = data["asil"]
+                te.severity = data["severity"]
+                te.controllability = data["cont"]
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -14368,6 +14410,7 @@ class FaultTreeApp:
                 self.review_data = None
 
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.versions = data.get("versions", [])
 
         self.selected_node = None
@@ -14754,6 +14797,7 @@ class FaultTreeApp:
                 self.review_data = None
 
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
         self.versions = data.get("versions", [])
 
@@ -15196,6 +15240,7 @@ class FaultTreeApp:
         if not self.review_data and self.reviews:
             self.review_data = self.reviews[0]
         self.update_hara_statuses()
+        self.update_fta_statuses()
         self.update_requirement_statuses()
         if hasattr(self, "_review_tab") and self._review_tab.winfo_exists():
             self.doc_nb.select(self._review_tab)
@@ -15648,6 +15693,7 @@ class FaultTreeApp:
                     p.done = False
                     p.approved = False
         self.update_hara_statuses()
+        self.update_fta_statuses()
 
     def invalidate_reviews_for_requirement(self, req_id):
         """Reopen reviews that include the given requirement."""
@@ -15937,6 +15983,8 @@ class FaultTreeNode:
         self.probability = 0.0
         # Formula used to derive probability from FIT rate
         self.prob_formula = "linear"  # linear, exponential, or constant
+        # Review status for top events
+        self.status = "draft"
 
     @property
     def name(self):
@@ -15998,6 +16046,7 @@ class FaultTreeNode:
             "failure_prob": self.failure_prob,
             "probability": self.probability,
             "prob_formula": self.prob_formula,
+            "status": self.status,
             "children": [child.to_dict() for child in self.children]
         }
         if not self.is_primary_instance and self.original and (self.original.unique_id != self.unique_id):
@@ -16058,6 +16107,7 @@ class FaultTreeNode:
         node.failure_prob = data.get("failure_prob", 0.0)
         node.probability = data.get("probability", 0.0)
         node.prob_formula = data.get("prob_formula", "linear")
+        node.status = data.get("status", "draft")
         node.display_label = ""
         node.equation = ""
         node.detailed_equation = ""
