@@ -305,11 +305,12 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageTk
+    from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
-    Image = ImageDraw = ImageFont = ImageTk = None
+    Image = ImageDraw = ImageFont = None
 import os
 import types
+import tempfile
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -325,7 +326,6 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO, StringIO
-import base64
 from email.utils import make_msgid
 import html
 import datetime
@@ -12075,7 +12075,6 @@ class FaultTreeApp:
             """Render a small network diagram for *row* on the canvas."""
             import matplotlib.pyplot as plt
             import textwrap
-            from io import BytesIO
 
             # Build a simple graph structure without relying on the external
             # ``networkx`` package.  The lightweight stub bundled with the
@@ -12158,14 +12157,19 @@ class FaultTreeApp:
                 ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
 
             ax.axis("off")
-            buf = BytesIO()
-            plt.savefig(buf, format="PNG", dpi=120)
+
+            # Save the diagram to a temporary file and let Tk load it from
+            # disk.  This avoids in-memory image format quirks and uses only
+            # the standard ``tk.PhotoImage`` loader.
+            tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            tmp_path = tmp_file.name
+            tmp_file.close()
+            plt.savefig(tmp_path, format="PNG", dpi=120)
             plt.close()
-            buf.seek(0)
-            img_data = base64.b64encode(buf.getvalue()).decode("ascii")
+            photo = tk.PhotoImage(file=tmp_path)
+            os.unlink(tmp_path)
 
             canvas.delete("all")
-            photo = tk.PhotoImage(data=img_data, format="png")
             canvas.image = photo  # keep reference
             canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
