@@ -5717,7 +5717,35 @@ class SysMLDiagramWindow(tk.Frame):
     def delete_selected(self, _event=None):
         if self.selected_objs:
             for obj in list(self.selected_objs):
-                self.remove_object(obj)
+                if obj.element_id:
+                    resp = messagebox.askyesnocancel(
+                        "Delete Element",
+                        "Delete element from model?\nYes = delete from model, No = remove from diagram",
+                    )
+                    if resp is None:
+                        continue
+                    if resp:
+                        if obj.obj_type == "Part":
+                            self.remove_part_model(obj)
+                        else:
+                            self.remove_object(obj)
+                            self.repo.delete_element(obj.element_id)
+                            self.repo._undo_stack.pop()
+                            for d in self.repo.diagrams.values():
+                                d.objects = [
+                                    o
+                                    for o in getattr(d, "objects", [])
+                                    if o.get("element_id") != obj.element_id
+                                ]
+                                if obj.element_id in getattr(d, "elements", []):
+                                    d.elements.remove(obj.element_id)
+                    else:
+                        if obj.obj_type == "Part":
+                            self.remove_part_diagram(obj)
+                        else:
+                            self.remove_object(obj)
+                else:
+                    self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
             self._sync_to_repository()
