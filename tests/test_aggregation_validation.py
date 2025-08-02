@@ -4,6 +4,7 @@ from gui.architecture import (
     SysMLDiagramWindow,
     SysMLObject,
     add_aggregation_part,
+    extend_block_parts_with_parents,
 )
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
