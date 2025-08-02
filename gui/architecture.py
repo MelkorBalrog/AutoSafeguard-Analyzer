@@ -5716,13 +5716,22 @@ class SysMLDiagramWindow(tk.Frame):
 
     def delete_selected(self, _event=None):
         if self.selected_objs:
+            result = messagebox.askyesnocancel(
+                "Delete",
+                "Remove element from model?\nYes = Model, No = Diagram",
+            )
+            if result is None:
+                return
             for obj in list(self.selected_objs):
-                self.remove_object(obj)
+                if result:
+                    if obj.obj_type == "Part":
+                        self.remove_part_model(obj)
+                    else:
+                        self.remove_element_model(obj)
+                else:
+                    self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
-            self._sync_to_repository()
-            self.redraw()
-            self.update_property_view()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -5883,6 +5892,31 @@ class SysMLDiagramWindow(tk.Frame):
                         else:
                             o.setdefault("properties", {}).pop("partProperties", None)
         repo.delete_element(part_id)
+        repo._undo_stack.pop()
+        self._sync_to_repository()
+        self.redraw()
+        self.update_property_view()
+
+    def remove_element_model(self, obj: SysMLObject) -> None:
+        """Remove *obj* and its element from all diagrams and the repository."""
+        elem_id = obj.element_id
+        if not elem_id:
+            self.remove_object(obj)
+            return
+        self.remove_object(obj)
+        repo = self.repo
+        for diag in repo.diagrams.values():
+            removed_ids = [o.get("obj_id") for o in getattr(diag, "objects", []) if o.get("element_id") == elem_id]
+            if removed_ids:
+                diag.objects = [o for o in diag.objects if o.get("element_id") != elem_id]
+                diag.connections = [
+                    c
+                    for c in getattr(diag, "connections", [])
+                    if c.get("src") not in removed_ids and c.get("dst") not in removed_ids
+                ]
+            if elem_id in getattr(diag, "elements", []):
+                diag.elements.remove(elem_id)
+        repo.delete_element(elem_id)
         repo._undo_stack.pop()
         self._sync_to_repository()
         self.redraw()
