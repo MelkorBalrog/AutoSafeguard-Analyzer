@@ -4,8 +4,28 @@ def figure(*args, **kwargs):
 def title(*args, **kwargs):
     pass
 
-def savefig(*args, **kwargs):
-    pass
+def savefig(fname, *args, **kwargs):
+    """Write a tiny placeholder PNG image.
+
+    The real ``matplotlib`` library serializes the current figure to the
+    provided file or file-like object.  The test environment only needs a
+    valid image container, so this stub writes a 1x1 transparent PNG.  The
+    function accepts both file paths and binary file objects to mirror the
+    behaviour used in the project.
+    """
+
+    import base64
+
+    # A base64 encoded 1x1 pixel transparent PNG.
+    png_bytes = base64.b64decode(
+        b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBAF8+CJkAAAAASUVORK5CYII="
+    )
+
+    if hasattr(fname, "write"):
+        fname.write(png_bytes)
+    else:
+        with open(fname, "wb") as f:
+            f.write(png_bytes)
 
 def close(*args, **kwargs):
     pass
