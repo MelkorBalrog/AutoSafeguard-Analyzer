@@ -12072,9 +12072,20 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* on the canvas."""
+            """Render a small network diagram for *row* using matplotlib.
+
+            The PDF export uses the same matplotlib styling; generating the
+            image here ensures the on-screen diagram matches the PDF exactly.
+            The temporary PNG is loaded via Pillow when available and falls
+            back to Tk's ``PhotoImage`` otherwise to avoid the ``TclError``
+            reported on some systems.
+            """
             import matplotlib.pyplot as plt
-            import textwrap
+            import tempfile, textwrap
+            try:
+                from PIL import Image, ImageTk  # type: ignore
+            except Exception:  # Pillow may not be installed
+                Image = ImageTk = None
 
             # Build a simple graph structure without relying on the external
             # ``networkx`` package.  The lightweight stub bundled with the
@@ -12124,12 +12135,12 @@ class FaultTreeApp:
                 y_tc -= 2
 
             color_map = {
-                "hazard": "lightcoral",
-                "malfunction": "lightblue",
-                "failure_mode": "orange",
-                "fault": "lightgray",
-                "fi": "lightyellow",
-                "tc": "lightgreen",
+                "hazard": "#F08080",       # light coral
+                "malfunction": "#ADD8E6",  # light blue
+                "failure_mode": "#FFA500",  # orange
+                "fault": "#D3D3D3",        # light gray
+                "fi": "#FFFFE0",           # light yellow
+                "tc": "#90EE90",           # light green
             }
 
             plt.figure(figsize=(6, 4))
@@ -12159,15 +12170,27 @@ class FaultTreeApp:
             ax.axis("off")
 
             # Save the diagram to a temporary file and let Tk load it from
-            # disk.  This avoids in-memory image format quirks and uses only
-            # the standard ``tk.PhotoImage`` loader.
+            # disk.  Using a real file keeps image handling simple and
+            # consistent with the PDF export.
             tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
             tmp_path = tmp_file.name
             tmp_file.close()
             plt.savefig(tmp_path, format="PNG", dpi=120)
             plt.close()
-            photo = tk.PhotoImage(file=tmp_path)
-            os.unlink(tmp_path)
+
+            try:
+                if Image and ImageTk:
+                    pil_img = Image.open(tmp_path)
+                    photo = ImageTk.PhotoImage(pil_img)
+                else:  # Pillow not installed
+                    raise Exception
+            except Exception:
+                photo = tk.PhotoImage(file=tmp_path)
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
             canvas.delete("all")
             canvas.image = photo  # keep reference
