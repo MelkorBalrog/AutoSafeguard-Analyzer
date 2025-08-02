@@ -2433,7 +2433,6 @@ class DiagramConnection:
     arrow: str = "none"  # none, forward, backward, both
     mid_arrow: bool = False
     guard: List[str] = field(default_factory=list)
-    guard_operator: str = "AND"
     element_id: str = ""
     multiplicity: str = ""
 
@@ -5555,20 +5554,11 @@ class SysMLDiagramWindow(tk.Frame):
                 width=width,
                 tags="connection",
             )
-            guard_text = ""
-            if conn.guard:
-                sep = f" {conn.guard_operator} "
-                guard_text = f"[{sep.join(conn.guard)}]"
-            full_label = label or ""
-            if guard_text and full_label:
-                full_label = f"{guard_text} / {full_label}"
-            elif guard_text:
-                full_label = guard_text
-            if full_label:
+            if label:
                 self.canvas.create_text(
                     x,
-                    (top + bottom) / 2 - 10 * self.zoom,
-                    text=full_label,
+                    (y1 + y2) / 2 - 10 * self.zoom,
+                    text=label,
                     font=self.font,
                     tags="connection",
                 )
@@ -7418,10 +7408,6 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
             ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
             row += 1
-            ttk.Label(master, text="Guard Operator:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
-            self.guard_op_var = tk.StringVar(value=self.connection.guard_operator)
-            ttk.Combobox(master, textvariable=self.guard_op_var, values=["AND", "OR"]).grid(row=row, column=1, padx=4, pady=4, sticky="we")
-            row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             ttk.Label(master, text="Multiplicity:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
@@ -7471,8 +7457,6 @@ class ConnectionDialog(simpledialog.Dialog):
             self.connection.multiplicity = self.mult_var.get()
         if hasattr(self, "guard_list"):
             self.connection.guard = [self.guard_list.get(i) for i in range(self.guard_list.size())]
-        if hasattr(self, "guard_op_var"):
-            self.connection.guard_operator = self.guard_op_var.get()
         if hasattr(self, "elem_var"):
             sel = self.elem_var.get()
             self.connection.element_id = self.elem_map.get(sel, "")
