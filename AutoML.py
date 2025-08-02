@@ -307,8 +307,7 @@ import tkinter.font as tkFont
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageTk
 except ModuleNotFoundError:
-    print("Error: Pillow package is required for image support. Please install pillow.")
-    sys.exit(1)
+    Image = ImageDraw = ImageFont = ImageTk = None
 import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
@@ -326,10 +325,14 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO, StringIO
+import base64
 from email.utils import make_msgid
 import html
 import datetime
-import PIL.Image as PILImage
+try:
+    import PIL.Image as PILImage
+except ModuleNotFoundError:
+    PILImage = None
 from reportlab.platypus import LongTable
 from email.message import EmailMessage
 import smtplib
@@ -12139,10 +12142,10 @@ class FaultTreeApp:
             plt.savefig(buf, format="PNG", dpi=120)
             plt.close()
             buf.seek(0)
-            img = Image.open(buf)
+            img_data = base64.b64encode(buf.getvalue()).decode("ascii")
 
             canvas.delete("all")
-            photo = ImageTk.PhotoImage(img)
+            photo = tk.PhotoImage(data=img_data, format="png")
             canvas.image = photo  # keep reference
             canvas.create_image(0, 0, image=photo, anchor="nw")
             canvas.config(scrollregion=canvas.bbox("all"))
@@ -12153,6 +12156,10 @@ class FaultTreeApp:
                 row = row_map.get(sel[0])
                 if row:
                     draw_row(row)
+                    # Automatically show the diagram tab whenever a row is
+                    # selected so the rendered network is visible without the
+                    # user needing to switch tabs manually.
+                    nb.select(diagram_frame)
 
         tree.bind("<<TreeviewSelect>>", on_select)
 
@@ -12160,6 +12167,8 @@ class FaultTreeApp:
             first_iid = next(iter(row_map))
             tree.selection_set(first_iid)
             draw_row(row_map[first_iid])
+            # Ensure the initial diagram is visible when the window opens.
+            nb.select(diagram_frame)
 
         def export_csv():
             path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
