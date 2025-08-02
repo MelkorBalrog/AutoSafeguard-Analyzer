@@ -172,6 +172,25 @@ class TC2FIDoc:
     entries: list
     meta: Metadata = field(default_factory=Metadata)
 
+
+@dataclass
+class DiagnosticMechanism:
+    """Diagnostic mechanism such as those from ISO 26262 Annex D."""
+
+    name: str
+    coverage: float
+    description: str = ""
+    detail: str = ""
+    requirement: str = ""
+
+
+@dataclass
+class MechanismLibrary:
+    """Collection of diagnostic mechanisms."""
+
+    name: str
+    mechanisms: list = field(default_factory=list)
+
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {
         "dielectric": ["ceramic", "electrolytic", "tantalum"],
