@@ -12077,46 +12077,55 @@ class FaultTreeApp:
             # Build a simple graph structure without relying on external
             # drawing helpers.  We will render the diagram using basic Tk
             # canvas primitives such as lines and rectangles.
-            nodes: dict[str, str] = {}
+            nodes: dict[str, tuple[str, str]] = {}
             edges: list[tuple[str, str]] = []
 
-            haz = row["hazard"]
-            mal = row["malfunction"]
-            nodes[haz] = "hazard"
-            nodes[mal] = "malfunction"
-            edges.append((haz, mal))
+            # Use unique internal identifiers for each node so hazards and
+            # malfunctions with the same label don't collapse into a single
+            # vertex.  The displayed label is stored separately from the key.
+            haz_label = row["hazard"]
+            mal_label = row["malfunction"]
+            haz_id = f"haz:{haz_label}"
+            mal_id = f"mal:{mal_label}"
+            nodes[haz_id] = (haz_label, "hazard")
+            nodes[mal_id] = (mal_label, "malfunction")
+            edges.append((haz_id, mal_id))
 
             for fm in sorted(row["failure_modes"]):
-                nodes[fm] = "failure_mode"
-                edges.append((mal, fm))
+                fm_id = f"fm:{fm}"
+                nodes[fm_id] = (fm, "failure_mode")
+                edges.append((mal_id, fm_id))
             for fault in sorted(row["faults"]):
-                nodes[fault] = "fault"
-                edges.append((mal, fault))
+                fault_id = f"fault:{fault}"
+                nodes[fault_id] = (fault, "fault")
+                edges.append((mal_id, fault_id))
             for fi in sorted(row["fis"]):
-                nodes[fi] = "fi"
-                edges.append((haz, fi))
+                fi_id = f"fi:{fi}"
+                nodes[fi_id] = (fi, "fi")
+                edges.append((haz_id, fi_id))
             for tc in sorted(row["tcs"]):
-                nodes[tc] = "tc"
-                edges.append((haz, tc))
+                tc_id = f"tc:{tc}"
+                nodes[tc_id] = (tc, "tc")
+                edges.append((haz_id, tc_id))
 
-            # Layout from effect (hazard) on the left to root causes on the right
-            # Use generous spacing so wrapped text remains readable
-            pos = {haz: (0, 0), mal: (4, 0)}
+            # Layout from effect (hazard) on the left to root causes on the
+            # right.  Use generous spacing so wrapped text remains readable.
+            pos = {haz_id: (0, 0), mal_id: (4, 0)}
             y_fm = 0
             for fm in sorted(row["failure_modes"]):
-                pos[fm] = (8, y_fm * 2)
+                pos[f"fm:{fm}"] = (8, y_fm * 2)
                 y_fm += 1
             y_fault = 0
             for fault in sorted(row["faults"]):
-                pos[fault] = (12, y_fault * 2)
+                pos[f"fault:{fault}"] = (12, y_fault * 2)
                 y_fault += 1
             y_fi = -2
             for fi in sorted(row["fis"]):
-                pos[fi] = (2, y_fi)
+                pos[f"fi:{fi}"] = (2, y_fi)
                 y_fi -= 2
             y_tc = y_fi
             for tc in sorted(row["tcs"]):
-                pos[tc] = (2, y_tc)
+                pos[f"tc:{tc}"] = (2, y_tc)
                 y_tc -= 2
 
             color_map = {
@@ -12150,9 +12159,11 @@ class FaultTreeApp:
                 canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, "caused by",
                                     font=("TkDefaultFont", 8))
 
-            # Draw the nodes as rectangles with wrapped text
-            for n, (x, y) in pos.items():
-                kind = nodes.get(n, "")
+            # Draw the nodes as rectangles with wrapped text.  Each entry in
+            # ``nodes`` maps an internal identifier to a ``(label, kind)``
+            # tuple.  ``pos`` uses the same internal identifiers.
+            for node_id, (x, y) in pos.items():
+                label, kind = nodes.get(node_id, ("", ""))
                 color = color_map.get(kind, "white")
                 cx, cy = to_canvas(x, y)
                 canvas.create_rectangle(
@@ -12163,11 +12174,11 @@ class FaultTreeApp:
                     fill=color,
                     outline="black",
                 )
-                label = textwrap.fill(str(n), 20)
+                wrapped = textwrap.fill(str(label), 20)
                 canvas.create_text(
                     cx,
                     cy,
-                    text=label,
+                    text=wrapped,
                     width=box_w - 10,
                     font=("TkDefaultFont", 8),
                 )
