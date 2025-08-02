@@ -62,7 +62,6 @@ class RemoveElementModelTests(unittest.TestCase):
         new_block = repo.create_element("Block", name="B")
         self.assertEqual(new_block.name, "B")
 
-
 if __name__ == "__main__":
     unittest.main()
 

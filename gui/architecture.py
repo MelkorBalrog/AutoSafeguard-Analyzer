@@ -5941,6 +5941,7 @@ class SysMLDiagramWindow(tk.Frame):
         repo.delete_element(elem_id)
         if repo._undo_stack:
             repo._undo_stack.pop()
+
         self._sync_to_repository()
         self.redraw()
         self.update_property_view()
