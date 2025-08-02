@@ -12071,20 +12071,14 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* using matplotlib.
+            """Render a small network diagram for *row* using Tk canvas primitives.
 
-            The PDF export uses the same matplotlib styling; generating the
-            image here ensures the on-screen diagram matches the PDF exactly.
-            The temporary PNG is loaded via Pillow when available and falls
-            back to Tk's ``PhotoImage`` otherwise to avoid the ``TclError``
-            reported on some systems.
+            Matplotlib-based rendering previously used here required an
+            ``ax`` object and temporary image files.  Those imports have been
+            removed in favour of drawing directly onto the Tk canvas, which
+            keeps the GUI lightweight and avoids missing variable errors.
             """
-            import matplotlib.pyplot as plt
-            import tempfile, textwrap
-            try:
-                from PIL import Image, ImageTk  # type: ignore
-            except Exception:  # Pillow may not be installed
-                Image = ImageTk = None
+            import textwrap
 
             # Build a simple graph structure without relying on external
             # drawing helpers.  We will render the diagram using basic Tk
@@ -12203,51 +12197,6 @@ class FaultTreeApp:
                     font=("TkDefaultFont", 8),
                     tags="node",
                 )
-
-            # Edge labels ("caused by") halfway between nodes
-            for u, v in edges:
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
-
-            ax.axis("off")
-
-            # Save the diagram to a temporary file and let Tk load it from
-            # disk.  Using a real file keeps image handling simple and
-            # consistent with the PDF export.
-            tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            tmp_path = tmp_file.name
-            tmp_file.close()
-            plt.savefig(tmp_path, format="PNG", dpi=120)
-            plt.close()
-
-            try:
-                if Image and ImageTk:
-                    pil_img = Image.open(tmp_path)
-                    photo = ImageTk.PhotoImage(pil_img)
-                else:  # Pillow not installed
-                    raise Exception
-            except Exception:
-                photo = tk.PhotoImage(file=tmp_path)
-            finally:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
-
-            try:
-                if Image and ImageTk:
-                    pil_img = Image.open(tmp_path)
-                    photo = ImageTk.PhotoImage(pil_img)
-                else:  # Pillow not installed
-                    raise Exception
-            except Exception:
-                photo = tk.PhotoImage(file=tmp_path)
-            finally:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
 
             canvas.config(scrollregion=canvas.bbox("all"))
             # Ensure the drawing appears immediately in environments where

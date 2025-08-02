@@ -1,23 +1,42 @@
 class Table:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class TableStyle:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class SimpleDocTemplate:
-    pass
+    def __init__(self, *args, pagesize=(0, 0), **kwargs):
+        self.pagesize = pagesize
+        self.width, self.height = pagesize
+
+    def build(self, story):
+        pass
+
 
 class Paragraph:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class Spacer:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class Image:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class PageBreak:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
+
 
 class LongTable:
-    pass
+    def __init__(self, *args, **kwargs):
+        pass
