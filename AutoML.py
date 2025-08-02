@@ -11958,14 +11958,25 @@ class FaultTreeApp:
                 if not haz or not mal:
                     continue
                 key = (haz, mal)
-                rows.setdefault(key, {
-                    "hazard": haz,
-                    "malfunction": mal,
-                    "fis": set(),
-                    "tcs": set(),
-                    "failure_modes": set(),
-                    "faults": set(),
-                })
+                rows.setdefault(
+                    key,
+                    {
+                        "hazard": haz,
+                        "malfunction": mal,
+                        "fis": set(),
+                        "tcs": set(),
+                        # Store a mapping of failure mode label -> set of
+                        # faults that cause it.  Keeping the association lets
+                        # us draw edges from a malfunction to its failure
+                        # modes and then on to their underlying faults rather
+                        # than connecting all faults directly to the
+                        # malfunction.
+                        "failure_modes": {},
+                        # Maintain a flat set of all faults so the table view
+                        # can continue to show a comma separated list.
+                        "faults": set(),
+                    },
+                )
 
         # Add FI/TC info per hazard
         for doc in self.fi2tc_docs + self.tc2fi_docs:
@@ -11985,8 +11996,10 @@ class FaultTreeApp:
             mals = [m.strip() for m in getattr(be, "fmeda_malfunction", "").split(";") if m.strip()]
             for (hz, mal), info in rows.items():
                 if mal in mals:
-                    info["failure_modes"].add(self.format_failure_mode_label(be))
-                    info["faults"].update(self.get_faults_for_failure_mode(be))
+                    fm_label = self.format_failure_mode_label(be)
+                    faults = set(self.get_faults_for_failure_mode(be))
+                    info["failure_modes"].setdefault(fm_label, set()).update(faults)
+                    info["faults"].update(faults)
 
         # Include FTA basic events linked via their top event malfunction
         for te in self.top_events:
@@ -11997,11 +12010,12 @@ class FaultTreeApp:
             for be in basic_nodes:
                 for (hz, mal), info in rows.items():
                     if mal == te_mal:
-                        info["failure_modes"].add(self.format_failure_mode_label(be))
+                        fm_label = self.format_failure_mode_label(be)
                         faults = set(self.get_faults_for_failure_mode(be))
                         fault = getattr(be, "fault_ref", "") or getattr(be, "description", "")
                         if fault:
                             faults.add(fault)
+                        info["failure_modes"].setdefault(fm_label, set()).update(faults)
                         info["faults"].update(faults)
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
@@ -12062,7 +12076,7 @@ class FaultTreeApp:
                 values=(
                     row["hazard"],
                     row["malfunction"],
-                    ", ".join(sorted(row["failure_modes"])),
+                    ", ".join(sorted(row["failure_modes"].keys())),
                     ", ".join(sorted(row["faults"])),
                     ", ".join(sorted(row["fis"])),
                     ", ".join(sorted(row["tcs"])),
@@ -12098,14 +12112,14 @@ class FaultTreeApp:
             nodes[mal_id] = (mal_label, "malfunction")
             edges.append((haz_id, mal_id))
 
-            for fm in sorted(row["failure_modes"]):
+            for fm, faults in sorted(row["failure_modes"].items()):
                 fm_id = f"fm:{fm}"
                 nodes[fm_id] = (fm, "failure_mode")
                 edges.append((mal_id, fm_id))
-            for fault in sorted(row["faults"]):
-                fault_id = f"fault:{fault}"
-                nodes[fault_id] = (fault, "fault")
-                edges.append((mal_id, fault_id))
+                for fault in sorted(faults):
+                    fault_id = f"fault:{fault}"
+                    nodes[fault_id] = (fault, "fault")
+                    edges.append((fm_id, fault_id))
             for fi in sorted(row["fis"]):
                 fi_id = f"fi:{fi}"
                 nodes[fi_id] = (fi, "fi")
@@ -12119,13 +12133,14 @@ class FaultTreeApp:
             # right.  Use generous spacing so wrapped text remains readable.
             pos = {haz_id: (0, 0), mal_id: (4, 0)}
             y_fm = 0
-            for fm in sorted(row["failure_modes"]):
-                pos[f"fm:{fm}"] = (8, y_fm * 2)
+            for fm, faults in sorted(row["failure_modes"].items()):
+                fm_y = y_fm * 4
+                pos[f"fm:{fm}"] = (8, fm_y)
+                y_fault = fm_y
+                for fault in sorted(faults):
+                    pos[f"fault:{fault}"] = (12, y_fault)
+                    y_fault += 2
                 y_fm += 1
-            y_fault = 0
-            for fault in sorted(row["faults"]):
-                pos[f"fault:{fault}"] = (12, y_fault * 2)
-                y_fault += 1
             y_fi = -2
             for fi in sorted(row["fis"]):
                 pos[f"fi:{fi}"] = (2, y_fi)
@@ -12178,7 +12193,7 @@ class FaultTreeApp:
 
             # Draw the nodes as rectangles with wrapped text
             for n, (x, y) in pos.items():
-                kind = nodes.get(n, "")
+                label, kind = nodes.get(n, (n, ""))
                 color = color_map.get(kind, "white")
                 cx, cy = to_canvas(x, y)
                 canvas.create_rectangle(
@@ -12190,7 +12205,7 @@ class FaultTreeApp:
                     outline="black",
                     tags="node",
                 )
-                label = textwrap.fill(str(n), 20)
+                label = textwrap.fill(str(label), 20)
                 canvas.create_text(
                     cx,
                     cy,
