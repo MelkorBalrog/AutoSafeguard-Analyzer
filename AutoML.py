@@ -305,11 +305,12 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageTk
+    from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
-    Image = ImageDraw = ImageFont = ImageTk = None
+    Image = ImageDraw = ImageFont = None
 import os
 import types
+import tempfile
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -12074,7 +12075,6 @@ class FaultTreeApp:
             """Render a small network diagram for *row* on the canvas."""
             import matplotlib.pyplot as plt
             import textwrap
-            from io import BytesIO
 
             # Build a simple graph structure without relying on the external
             # ``networkx`` package.  The lightweight stub bundled with the
@@ -12157,19 +12157,17 @@ class FaultTreeApp:
                 ax.text((x1 + x2) / 2, (y1 + y2) / 2, "caused by", fontsize=6)
 
             ax.axis("off")
-            buf = BytesIO()
-            plt.savefig(buf, format="PNG", dpi=120)
-            plt.close()
-            buf.seek(0)
 
-            # Convert the matplotlib buffer to a Tk-compatible image using
-            # Pillow.  ``tk.PhotoImage`` expects base64 encoded GIF/PPM data,
-            # which can lead to ``TclError`` on some platforms when fed raw
-            # PNG bytes.  Opening the image with Pillow and then wrapping it in
-            # ``ImageTk.PhotoImage`` provides a reliable cross-platform
-            # solution for displaying the diagram.
-            pil_img = Image.open(buf)
-            photo = ImageTk.PhotoImage(pil_img)
+            # Save the diagram to a temporary file and let Tk load it from
+            # disk.  This avoids in-memory image format quirks and uses only
+            # the standard ``tk.PhotoImage`` loader.
+            tmp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            tmp_path = tmp_file.name
+            tmp_file.close()
+            plt.savefig(tmp_path, format="PNG", dpi=120)
+            plt.close()
+            photo = tk.PhotoImage(file=tmp_path)
+            os.unlink(tmp_path)
 
             canvas.delete("all")
             canvas.image = photo  # keep reference
