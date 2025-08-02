@@ -2437,6 +2437,17 @@ class DiagramConnection:
     multiplicity: str = ""
 
 
+def format_control_flow_label(name: str, guard: List[str]) -> str:
+    """Return a connection label with guard in [] and name in {}."""
+    guard_text = " and ".join(guard)
+    parts: List[str] = []
+    if guard_text:
+        parts.append(f"[{guard_text}]")
+    if name:
+        parts.append(f"{{{name}}}")
+    return " ".join(parts)
+
+
 class SysMLDiagramWindow(tk.Frame):
     """Base frame for AutoML diagrams with zoom and pan support."""
 
@@ -5126,6 +5137,7 @@ class SysMLDiagramWindow(tk.Frame):
                 )
         elif obj.obj_type == "Existing Element":
             element = self.repo.elements.get(obj.element_id)
+            color = StyleManager.get_instance().get_color(obj.obj_type)
             if element:
                 color = StyleManager.get_instance().get_color(element.elem_type)
             outline = color
@@ -5136,21 +5148,9 @@ class SysMLDiagramWindow(tk.Frame):
                 x + w,
                 y + h,
                 radius=12 * self.zoom,
-                dash=(),
                 outline=outline,
                 fill="",
             )
-            label = obj.properties.get("name", "")
-            if label:
-                lx = x
-                ly = y - h - 4 * self.zoom
-                self.canvas.create_text(
-                    lx,
-                    ly,
-                    text=label,
-                    anchor="s",
-                    font=self.font,
-                )
         elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction", "Part", "Port"):
             dash = ()
             if obj.obj_type == "Part":
@@ -5505,10 +5505,17 @@ class SysMLDiagramWindow(tk.Frame):
                 label = elem.name
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
-            incl_label = f"<<{conn.conn_type.lower()}>>"
-            label = f"{incl_label}\n{label}" if label else incl_label
         elif conn.conn_type in ("Generalize", "Generalization", "Communication Path"):
             dash = (2, 2)
+        if conn.conn_type == "Control Action" and not label and conn.element_id:
+            elem = self.repo.elements.get(conn.element_id)
+            if elem:
+                label = elem.name
+        if conn.conn_type in ("Include", "Extend"):
+            incl_label = f"<<{conn.conn_type.lower()}>>"
+            label = f"{incl_label}\n{label}" if label else incl_label
+        elif conn.conn_type in ("Control Action", "Feedback"):
+            label = format_control_flow_label(label or "", conn.guard) or None
         src_flow = a.properties.get("flow") if a.obj_type == "Port" else None
         dst_flow = b.properties.get("flow") if b.obj_type == "Port" else None
         points = [(ax, ay)]
