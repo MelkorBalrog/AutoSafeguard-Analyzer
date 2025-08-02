@@ -1198,17 +1198,34 @@ The following example demonstrates how safety information flows from hazard iden
 
 ### HAZOP
 
+Steps to reproduce:
+1. Launch AutoML and load the sample project.
+2. Navigate to **Safety → HAZOP**.
+3. Click **Add Entry** and fill in the fields as shown.
+4. Save the document.
+
 | Function | Malfunction | Scenario | Hazard | Rationale |
 |----------|-------------|----------|--------|-----------|
 | Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
 
 ### HARA
 
+Steps to reproduce:
+1. Open **Safety → HARA** and create a new document linked to the HAZOP entry.
+2. Set Severity = 3, Controllability = 3, Exposure = 4; AutoML computes ASIL D.
+3. Export or save to view the table.
+
 | Malfunction | Hazard | Scenario | Severity | Controllability | Exposure | ASIL | Safety Goal |
 |-------------|--------|----------|----------|----------------|----------|------|-------------|
-| Does not stop at intersection | Run over VRUs | Pedestrians crossing | 3 | 1 | 4 | B | Prevent no braking |
+| Does not stop at intersection | Run over VRUs | Pedestrians crossing | 3 | 3 | 4 | D | Prevent no braking |
 
 ### Fault Tree
+
+Steps to reproduce:
+1. Go to **Analysis → Fault Tree**.
+2. Create the top event "Prevent no braking" with an AND gate.
+3. Add basic events for "capacitor is open" and "capacitor is shorted".
+4. Run the probability calculation.
 
 | Node | Type | Description | Probability | Safety Goal |
 |------|------|-------------|-------------|-------------|
@@ -1218,12 +1235,22 @@ The following example demonstrates how safety information flows from hazard iden
 
 ### FMEDA
 
+Steps to reproduce:
+1. Open **Safety → FMEDA** and load the "ADS_FMEDA" document.
+2. Add failure modes with diagnostic coverage and FIT values.
+3. AutoML computes SPFM and LPFM; export the table.
+
 | ID | Description | FMEA Cause | Malfunction | Safety Goal | Fault Type | FIT | SPFM | LPFM | Diagnostic Cov. |
 |----|-------------|------------|-------------|-------------|------------|-----|------|------|-----------------|
 | 4 | open | capacitor is open | Does not stop at intersection | Prevent no braking | permanent | 3844.68 | 38.4468 | 0 | 0.99 |
 | 6 | shorted | capacitor is shorted | — | — | transient | 5767.02 | 0 | 1441.755 | 0.75 |
 
 ### Reliability Analysis
+
+Steps to reproduce:
+1. Navigate to **Analysis → Reliability** and create an "ADS_BOM" analysis.
+2. Add components with their quantity and attributes.
+3. Run the FIT calculation and export the results.
 
 | Component | Type | Qty | FIT |
 |-----------|------|-----|-----|
