@@ -5113,7 +5113,7 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
-        elif obj.obj_type == "Block Boundary":
+        elif obj.obj_type in ("Block Boundary", "Existing Element"):
             self._create_round_rect(
                 x - w,
                 y - h,
@@ -5499,6 +5499,10 @@ class SysMLDiagramWindow(tk.Frame):
         bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         dash = ()
         label = conn.name or None
+        if conn.conn_type == "Control Action" and not label and conn.element_id:
+            elem = self.repo.elements.get(conn.element_id)
+            if elem:
+                label = elem.name
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
         elif conn.conn_type in ("Generalize", "Generalization", "Communication Path"):
