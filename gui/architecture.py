@@ -3322,7 +3322,13 @@ class SysMLDiagramWindow(tk.Frame):
                     if o.obj_type == "Part":
                         o.x += dx
                         o.y += dy
-                        update_ports_for_part(o, self.objects)
+                        for p in self.objects:
+                            if (
+                                p.obj_type == "Port"
+                                and p.properties.get("parent") == str(o.obj_id)
+                            ):
+                                p.x += dx
+                                p.y += dy
             if self.selected_obj.obj_type == "System Boundary":
                 for o in self.objects:
                     if o.properties.get("boundary") == str(self.selected_obj.obj_id):
