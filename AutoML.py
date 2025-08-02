@@ -3227,6 +3227,15 @@ class FaultTreeApp:
                     best = te.safety_goal_asil or "QM"
         return best
 
+    def get_hara_goal_asil(self, sg_name):
+        """Return highest ASIL from all HARA entries for the given safety goal."""
+        best = "QM"
+        for doc in getattr(self, "hara_docs", []):
+            for e in doc.entries:
+                if sg_name and sg_name == e.safety_goal and ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
+                    best = e.asil
+        return best
+
     def get_top_event_safety_goals(self, node):
         """Return names of safety goals for top events containing ``node``."""
         result = []
@@ -3594,15 +3603,19 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to top events, including safety goal names."""
+        """Propagate HARA values to top events, inheriting ASILs from HARA rows."""
         sg_data = {}
+        sg_asil = {}
         for doc in getattr(self, "hara_docs", []):
             approved = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
             for e in doc.entries:
                 mal = getattr(e, "malfunction", "")
                 if not mal:
                     continue
-                data = sg_data.setdefault(mal, {"asil": "QM", "severity": 1, "cont": 1, "sg": "", "approved": False})
+                data = sg_data.setdefault(
+                    mal,
+                    {"asil": "QM", "severity": 1, "cont": 1, "sg": "", "approved": False},
+                )
                 if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(data["asil"], 0):
                     data["asil"] = e.asil
                     data["sg"] = e.safety_goal
@@ -3612,24 +3625,30 @@ class FaultTreeApp:
                     data["cont"] = e.controllability
                 if approved:
                     data["approved"] = True
+                if e.safety_goal:
+                    best = sg_asil.get(e.safety_goal, "QM")
+                    if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
+                        sg_asil[e.safety_goal] = e.asil
 
         for te in self.top_events:
             mal = getattr(te, "malfunction", "")
             data = sg_data.get(mal)
-            if not data:
-                continue
-            propagate = False
-            if getattr(te, "status", "draft") != "closed":
-                propagate = True
-            elif data.get("approved"):
-                propagate = True
-                te.status = "draft"
-                self.invalidate_reviews_for_fta(te.unique_id)
-            if propagate:
-                te.safety_goal_description = data["sg"]
-                te.safety_goal_asil = data["asil"]
-                te.severity = data["severity"]
-                te.controllability = data["cont"]
+            if data:
+                propagate = False
+                if getattr(te, "status", "draft") != "closed":
+                    propagate = True
+                elif data.get("approved"):
+                    propagate = True
+                    te.status = "draft"
+                    self.invalidate_reviews_for_fta(te.unique_id)
+                if propagate:
+                    te.safety_goal_description = data["sg"]
+                    te.severity = data["severity"]
+                    te.controllability = data["cont"]
+            sg_name = te.safety_goal_description
+            asil = sg_asil.get(sg_name)
+            if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
+                te.safety_goal_asil = asil
 
     def edit_selected(self):
         sel = self.analysis_tree.selection()
@@ -11649,6 +11668,8 @@ class FaultTreeApp:
         def refresh_tree():
             tree.delete(*tree.get_children())
             for sg in self.top_events:
+                name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
+                sg.safety_goal_asil = self.get_hara_goal_asil(name)
                 tree.insert(
                     "",
                     "end",
@@ -11676,8 +11697,9 @@ class FaultTreeApp:
                 tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
 
                 ttk.Label(master, text="ASIL:").grid(row=1, column=0, sticky="e")
-                self.asil_var = tk.StringVar(value=getattr(self.initial, "safety_goal_asil", "QM"))
-                ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=1, column=1, padx=5, pady=5)
+                name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
+                self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
+                ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
                 ttk.Label(master, text="Safe State:").grid(row=2, column=0, sticky="e")
                 self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
@@ -11713,14 +11735,17 @@ class FaultTreeApp:
                 return master
 
             def apply(self):
+                desc = self.desc_text.get("1.0", "end-1c").strip()
+                sg_name = desc or self.id_var.get().strip()
+                asil = self.app.get_hara_goal_asil(sg_name)
                 self.result = {
                     "id": self.id_var.get().strip(),
-                    "asil": self.asil_var.get().strip(),
+                    "asil": asil,
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
                     "prob": self.prob_var.get().strip(),
                     "accept": self.acc_text.get("1.0", "end-1c"),
-                    "desc": self.desc_text.get("1.0", "end-1c"),
+                    "desc": desc,
                 }
 
         def add_sg():
