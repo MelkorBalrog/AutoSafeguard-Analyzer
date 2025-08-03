@@ -7405,16 +7405,16 @@ class FaultTreeApp:
             
         # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
 
+        cause_effect_rows = self.build_cause_effect_data()
         processed_ids = set()
         for idx, event in enumerate(self.top_events, start=1):
             if event.unique_id in processed_ids:
                 continue
             processed_ids.add(event.unique_id)
-            
+
             Story.append(Paragraph(f"Top-Level Event #{idx}: {event.name}", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
-            
-            # Argumentation text
+
             argumentation_text = self.generate_argumentation_report(event)
             if isinstance(argumentation_text, list):
                 argumentation_text = "\n".join(str(x) for x in argumentation_text)
@@ -7422,7 +7422,6 @@ class FaultTreeApp:
             Story.append(Paragraph(argumentation_text, preformatted_style))
             Story.append(Spacer(1, 12))
 
-            # (A) "Detailed" event diagram (the subtree as captured in code)
             event_img = self.capture_event_diagram(event)
             if event_img is not None:
                 buf = BytesIO()
@@ -7435,23 +7434,20 @@ class FaultTreeApp:
                 Story.append(rl_img)
                 Story.append(Spacer(1, 12))
 
-            # (B) "Cause and Effect" BFS diagram: build a single-root model for THIS event only
-            fta_model = self.build_simplified_fta_model(event)
-            temp_diagram_path = f"temp_fta_diagram_{idx}.png"
-            self.auto_generate_fta_diagram(fta_model, temp_diagram_path)
-            try:
-                with open(temp_diagram_path, "rb") as img_file:
-                    buf = BytesIO(img_file.read())
-                pil_img = PILImage.open(buf)
-                desired_width, desired_height = scale_image(pil_img)
+            malfunction = getattr(event, "malfunction", "").strip()
+            row = next((r for r in cause_effect_rows if r["malfunction"] == malfunction), None)
+            if row:
+                ce_img = self.generate_cause_effect_diagram_image(row)
+                buf = BytesIO()
+                ce_img.save(buf, format="PNG")
                 buf.seek(0)
+                desired_width, desired_height = scale_image(ce_img)
                 rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph("Cause and Effect Diagram (Single Root):", pdf_styles["Heading3"]))
+                Story.append(Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"]))
                 Story.append(Spacer(1, 12))
                 Story.append(rl_img2)
                 Story.append(Spacer(1, 12))
-            except Exception as e:
-                Story.append(Paragraph(f"Error generating BFS diagram for {event.name}: {e}", pdf_styles["Normal"]))
+
             Story.append(PageBreak())
         
         # --- Insert Page Diagrams (for 'page gates') ---
@@ -12052,6 +12048,123 @@ class FaultTreeApp:
                         info["faults"].update(faults)
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
+
+    def generate_cause_effect_diagram_image(self, row):
+        """Create a PIL image for a single cause-and-effect chain row."""
+        from PIL import Image, ImageDraw, ImageFont
+        import textwrap
+
+        nodes = {}
+        edges = []
+
+        haz_label = row["hazard"]
+        mal_label = row["malfunction"]
+        haz_id = f"haz:{haz_label}"
+        mal_id = f"mal:{mal_label}"
+        nodes[haz_id] = (haz_label, "hazard")
+        nodes[mal_id] = (mal_label, "malfunction")
+        edges.append((haz_id, mal_id))
+
+        for fm, faults in sorted(row["failure_modes"].items()):
+            fm_id = f"fm:{fm}"
+            nodes[fm_id] = (fm, "failure_mode")
+            edges.append((mal_id, fm_id))
+            for fault in sorted(faults):
+                fault_id = f"fault:{fault}"
+                nodes[fault_id] = (fault, "fault")
+                edges.append((fm_id, fault_id))
+        for fi in sorted(row["fis"]):
+            fi_id = f"fi:{fi}"
+            nodes[fi_id] = (fi, "fi")
+            edges.append((haz_id, fi_id))
+        for tc in sorted(row["tcs"]):
+            tc_id = f"tc:{tc}"
+            nodes[tc_id] = (tc, "tc")
+            edges.append((haz_id, tc_id))
+
+        pos = {haz_id: (0, 0), mal_id: (4, 0)}
+        y_fm = 0
+        for fm, faults in sorted(row["failure_modes"].items()):
+            fm_y = y_fm * 4
+            pos[f"fm:{fm}"] = (8, fm_y)
+            y_fault = fm_y
+            for fault in sorted(faults):
+                pos[f"fault:{fault}"] = (12, y_fault)
+                y_fault += 2
+            y_fm += 1
+        y_fi = -2
+        for fi in sorted(row["fis"]):
+            pos[f"fi:{fi}"] = (2, y_fi)
+            y_fi -= 2
+        y_tc = y_fi
+        for tc in sorted(row["tcs"]):
+            pos[f"tc:{tc}"] = (2, y_tc)
+            y_tc -= 2
+
+        min_x = min(x for x, _ in pos.values())
+        min_y = min(y for _, y in pos.values())
+        if min_x < 0 or min_y < 0:
+            for key, (x, y) in list(pos.items()):
+                pos[key] = (x - min_x, y - min_y)
+
+        color_map = {
+            "hazard": "#F08080",
+            "malfunction": "#ADD8E6",
+            "failure_mode": "#FFA500",
+            "fault": "#D3D3D3",
+            "fi": "#FFFFE0",
+            "tc": "#90EE90",
+        }
+
+        scale = 80
+        x_off = 50
+        y_off = 50
+        box_w = 80
+        box_h = 40
+
+        max_x = max(x for x, _ in pos.values())
+        max_y = max(y for _, y in pos.values())
+        width = int(x_off + scale * (max_x + 1))
+        height = int(y_off + scale * (max_y + 1))
+        img = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        def to_canvas(x, y):
+            return x_off + scale * x, y_off + scale * y
+
+        for u, v in edges:
+            x1, y1 = to_canvas(*pos[u])
+            x2, y2 = to_canvas(*pos[v])
+            draw.line((x1, y1, x2, y2), fill="black", width=1)
+            angle = math.atan2(y2 - y1, x2 - x1)
+            arrow = [
+                (x2, y2),
+                (x2 - 5 * math.cos(angle - math.pi / 6), y2 - 5 * math.sin(angle - math.pi / 6)),
+                (x2 - 5 * math.cos(angle + math.pi / 6), y2 - 5 * math.sin(angle + math.pi / 6)),
+            ]
+            draw.polygon(arrow, fill="black")
+            mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+            label = "caused by"
+            tw, th = draw.textsize(label, font=font)
+            draw.text((mx - tw / 2, my - th / 2), label, fill="black", font=font)
+
+        for n, (label, kind) in nodes.items():
+            cx, cy = to_canvas(*pos[n])
+            x0 = cx - box_w / 2
+            y0 = cy - box_h / 2
+            x1 = cx + box_w / 2
+            y1 = cy + box_h / 2
+            draw.rectangle((x0, y0, x1, y1), fill=color_map.get(kind, "white"), outline="black")
+            text = textwrap.fill(str(label), 20)
+            try:
+                bbox = draw.multiline_textbbox((0, 0), text, font=font, align="center")
+                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            except AttributeError:
+                tw, th = draw.textsize(text, font=font)
+            draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, fill="black", align="center")
+
+        return img
 
     def show_cause_effect_chain(self):
         """Display a table linking hazards to downstream events with an optional diagram."""
