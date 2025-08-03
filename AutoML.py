@@ -2006,7 +2006,6 @@ class FaultTreeApp:
         file_menu.add_command(label="Load AutoML Model", command=self.load_model, accelerator="Ctrl+O")
         file_menu.add_command(label="Project Properties", command=self.edit_project_properties)
         file_menu.add_command(label="Save PDF Report", command=self.generate_pdf_report)
-        file_menu.add_command(label="Save PDF Without Assurance", command=self.generate_pdf_without_assurance)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.confirm_close)
 
@@ -7507,6 +7506,52 @@ class FaultTreeApp:
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
+        # --- FMEDA Tables ---
+        if self.fmedas:
+            Story.append(PageBreak())
+            Story.append(Paragraph("FMEDA Tables", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for fmeda in self.fmedas:
+                Story.append(Paragraph(fmeda['name'], pdf_styles["Heading3"]))
+                data = [["Component", "Parent", "Failure Mode", "Failure Effect", "Cause", "S", "O", "D", "RPN", "Requirements", "Malfunction", "Safety Goal", "FaultType", "Fraction", "FIT", "DiagCov", "Mechanism"]]
+                for be in fmeda['entries']:
+                    src = self.get_failure_mode_node(be)
+                    comp = self.get_component_name_for_node(src) or "N/A"
+                    parent = src.parents[0] if src.parents else None
+                    parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
+                    req_ids = "; ".join([r.get("id") for r in getattr(be, 'safety_requirements', [])])
+                    rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
+                    failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
+                    row = [
+                        comp,
+                        parent_name,
+                        failure_mode,
+                        be.fmea_effect,
+                        getattr(be, 'fmea_cause', ''),
+                        be.fmea_severity,
+                        be.fmea_occurrence,
+                        be.fmea_detection,
+                        rpn,
+                        req_ids,
+                        getattr(be, 'fmeda_malfunction', ''),
+                        getattr(be, 'fmeda_safety_goal', ''),
+                        getattr(be, 'fmeda_fault_type', ''),
+                        getattr(be, 'fmeda_fault_fraction', ''),
+                        getattr(be, 'fmeda_fit', ''),
+                        getattr(be, 'fmeda_diag_cov', ''),
+                        getattr(be, 'fmeda_mechanism', ''),
+                    ]
+                    data.append(row)
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
         # --- FTA-FMEA Traceability Matrix ---
         basic_events = [n for n in self.get_all_nodes(self.root_node) if n.node_type.upper() == "BASIC EVENT"]
         if basic_events:
@@ -7525,6 +7570,150 @@ class FaultTreeApp:
             Story.append(table)
             Story.append(Spacer(1, 12))
 
+        # --- HAZOP Analyses ---
+        if getattr(self, 'hazop_docs', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("HAZOP Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.hazop_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["Function", "Malfunction", "Type", "Scenario", "Conditions", "Hazard", "Safety", "Covered", "Covered By", "Rationale"]]
+                for e in doc.entries:
+                    data.append([
+                        e.function,
+                        e.malfunction,
+                        e.mtype,
+                        e.scenario,
+                        e.conditions,
+                        e.hazard,
+                        "Yes" if e.safety else "No",
+                        "Yes" if e.covered else "No",
+                        e.covered_by,
+                        e.rationale,
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- HARA Analyses ---
+        if getattr(self, 'hara_docs', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("HARA Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.hara_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["Malfunction", "Hazard", "Scenario", "Severity", "Controllability", "Exposure", "ASIL", "Safety Goal"]]
+                for e in doc.entries:
+                    data.append([
+                        e.malfunction,
+                        e.hazard,
+                        e.scenario,
+                        e.severity,
+                        e.controllability,
+                        e.exposure,
+                        e.asil,
+                        e.safety_goal,
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- FI2TC Analyses ---
+        if getattr(self, 'fi2tc_docs', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("FI2TC Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.fi2tc_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["ID", "System Function", "Functional Insufficiencies", "Scenario", "Vehicle Effect", "Severity", "Mitigation"]]
+                for row in doc.entries:
+                    data.append([
+                        row.get("id", ""),
+                        row.get("system_function", ""),
+                        row.get("functional_insufficiencies", ""),
+                        row.get("scenario", ""),
+                        row.get("vehicle_effect", ""),
+                        row.get("severity", ""),
+                        row.get("mitigation", ""),
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- TC2FI Analyses ---
+        if getattr(self, 'tc2fi_docs', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("TC2FI Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.tc2fi_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["ID", "Known Use Case", "Impacted Function", "Scenario", "Vehicle Effect", "Severity", "Mitigation"]]
+                for row in doc.entries:
+                    data.append([
+                        row.get("id", ""),
+                        row.get("known_use_case", ""),
+                        row.get("impacted_function", ""),
+                        row.get("scenario", ""),
+                        row.get("vehicle_effect", ""),
+                        row.get("severity", ""),
+                        row.get("mitigation", ""),
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- Minimal Cut Sets ---
+        if getattr(self, 'top_events', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("Minimal Cut Sets", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for event in self.top_events:
+                Story.append(Paragraph(event.name, pdf_styles["Heading3"]))
+                cut_sets = self.calculate_cut_sets(event)
+                if cut_sets:
+                    for idx, cs in enumerate(cut_sets, start=1):
+                        cs_names = ", ".join([n.user_name or f"Node {n.unique_id}" for n in cs])
+                        Story.append(Paragraph(f"Cut Set {idx}: {cs_names}", pdf_styles["Normal"]))
+                else:
+                    Story.append(Paragraph("No cut sets found.", pdf_styles["Normal"]))
+                Story.append(Spacer(1, 12))
+
+        # --- Common Cause Analysis ---
+        if getattr(self, 'top_events', []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("Common Cause Analysis", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for event in self.top_events:
+                Story.append(Paragraph(event.name, pdf_styles["Heading3"]))
+                lines = self.analyze_common_causes(event).split("\n")
+                for line in lines[1:]:
+                    Story.append(Paragraph(line, pdf_styles["Normal"]))
+                Story.append(Spacer(1, 12))
+
         # --- Final Build ---
         try:
             doc.build(Story)
@@ -7539,10 +7728,6 @@ class FaultTreeApp:
 
     def generate_pdf_report(self):
         self._generate_pdf_report(include_assurance=True)
-
-    def generate_pdf_without_assurance(self):
-        """Generate a PDF report without the Prototype Assurance Level (PAL) pages."""
-        self._generate_pdf_report(include_assurance=False)
 
     def capture_event_diagram(self, event_node):
         temp = tk.Toplevel(self.root)
