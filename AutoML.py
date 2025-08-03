@@ -6707,12 +6707,9 @@ class FaultTreeApp:
         but draw the arrows in reverse (child -> parent).
         """
         import networkx as nx
-        import matplotlib.pyplot as plt
-        try:
-            from adjustText import adjust_text
-        except ImportError:
-            adjust_text = None
+        from PIL import Image, ImageDraw, ImageFont
         import numpy as np
+        import math
 
         # --- 1) Build the directed graph (parent->child) ---
         G = nx.DiGraph()
@@ -6755,11 +6752,10 @@ class FaultTreeApp:
         if fta_model["nodes"]:
             top_event_id = fta_model["nodes"][0]["id"]
         else:
-            # If empty, just bail out
-            plt.figure(figsize=(8,6))
-            plt.title("No nodes to display")
-            plt.savefig(output_path)
-            plt.close()
+            img = Image.new("RGB", (400, 300), "white")
+            draw = ImageDraw.Draw(img)
+            draw.text((200, 150), "No nodes to display", fill="black", anchor="mm")
+            img.save(output_path)
             return
 
         # --- 3) BFS layering from top_event to find each node's layer ---
@@ -6839,45 +6835,62 @@ class FaultTreeApp:
                         pos[n2] = tuple(p2 - shift)
 
         # --- 6) Draw the diagram with REVERSED edges (child->parent) ---
-        plt.figure(figsize=(12,8))
+        # Convert layout coordinates to image pixels
+        xs = [p[0] for p in pos.values()]
+        ys = [p[1] for p in pos.values()]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
 
-        # Build reversed edge list for drawing:
-        reversed_edges = [(t, s) for (s, t) in G.edges()]
+        scale = 150
+        margin = 50
+        width = int((max_x - min_x) * scale) + 2 * margin
+        height = int((max_y - min_y) * scale) + 2 * margin
 
-        nx.draw_networkx_edges(
-            G, pos,
-            edgelist=reversed_edges,    # <--- Inverted direction
-            arrowstyle='-|>',
-            arrowsize=20,
-            edge_color='gray',
-            connectionstyle="arc3,rad=0.0",
-            min_source_margin=15,
-            min_target_margin=15
-        )
+        def to_px(pt):
+            x, y = pt
+            px = int((x - min_x) * scale) + margin
+            py = int((max_y - y) * scale) + margin
+            return px, py
 
-        # Keep your node colors from node_colors
-        node_color_list = [node_colors[n] for n in G.nodes()]
-        nx.draw_networkx_nodes(G, pos,
-                               node_color=node_color_list,
-                               node_size=1200,
-                               edgecolors="black")
+        px_pos = {n: to_px(pos[n]) for n in pos}
 
-        # Draw labels
-        text_items = []
-        for n, (x, y) in pos.items():
+        img = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        # Draw reversed edges (child -> parent)
+        for src, tgt in G.edges():
+            start = px_pos[tgt]
+            end = px_pos[src]
+            draw.line([start, end], fill="gray", width=2)
+
+            dx = end[0] - start[0]
+            dy = end[1] - start[1]
+            length = math.hypot(dx, dy)
+            if length:
+                ux, uy = dx / length, dy / length
+                arrow = 10
+                left = (end[0] - ux * arrow - uy * arrow / 2,
+                        end[1] - uy * arrow + ux * arrow / 2)
+                right = (end[0] - ux * arrow + uy * arrow / 2,
+                         end[1] - uy * arrow - ux * arrow / 2)
+                draw.polygon([end, left, right], fill="gray")
+
+        # Draw nodes
+        node_w, node_h = 120, 60
+        for n, (x, y) in px_pos.items():
+            left = x - node_w / 2
+            top = y - node_h / 2
+            right = x + node_w / 2
+            bottom = y + node_h / 2
+            draw.rectangle([left, top, right, bottom], fill=node_colors[n], outline="black")
             lbl = node_labels.get(n, str(n))
-            txt = plt.text(x, y, lbl, fontsize=9, ha='center', va='center', wrap=True)
-            text_items.append(txt)
+            bbox = draw.multiline_textbbox((0, 0), lbl, font=font, align="center")
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            draw.multiline_text((x - tw/2, y - th/2), lbl, font=font, fill="black", align="center")
 
-        # Optionally adjust text to avoid overlap
-        if adjust_text:
-            adjust_text(text_items, arrowprops=dict(arrowstyle="-", color="gray"))
-
-        plt.title("Cause and Effect Diagram")
-        plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(output_path, dpi=150)
-        plt.close()
+        img.save(output_path)
 
     def build_dynamic_recommendations_table(events, app):
         """
@@ -7143,7 +7156,10 @@ class FaultTreeApp:
         def scale_image(pil_img):
             """Scale images so they fit within the doc page nicely."""
             orig_width, orig_height = pil_img.size
-            scale_factor = 0.95 * min(doc.width / orig_width, doc.height / orig_height, 1)
+            page_width, page_height = doc.pagesize
+            available_width = page_width - doc.leftMargin - doc.rightMargin
+            available_height = page_height - doc.topMargin - doc.bottomMargin
+            scale_factor = 0.95 * min(available_width / orig_width, available_height / orig_height, 1)
             return orig_width * scale_factor, orig_height * scale_factor
 
         Story = []
