@@ -7137,6 +7137,7 @@ class FaultTreeApp:
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib import colors
             from io import BytesIO
+            import PIL.Image as PILImage
         except ImportError:
             messagebox.showerror(
                 "Report",
@@ -7434,24 +7435,23 @@ class FaultTreeApp:
                 Story.append(rl_img)
                 Story.append(Spacer(1, 12))
 
-            # (B) "Cause and Effect" diagram: reuse the same captured image so the
-            # PDF output mirrors the on-screen tool exactly.  Previously a
-            # networkx-generated layout was embedded here which produced a
-            # different visual style from the diagram displayed in the
-            # application.  By reusing the screenshot produced above, the PDF
-            # now shows an identical cause-and-effect representation.
-            if event_img is not None:
-                buf = BytesIO()
-                event_img.save(buf, format="PNG")
+            # (B) "Cause and Effect" BFS diagram: build a single-root model for THIS event only
+            fta_model = self.build_simplified_fta_model(event)
+            temp_diagram_path = f"temp_fta_diagram_{idx}.png"
+            self.auto_generate_fta_diagram(fta_model, temp_diagram_path)
+            try:
+                with open(temp_diagram_path, "rb") as img_file:
+                    buf = BytesIO(img_file.read())
+                pil_img = PILImage.open(buf)
+                desired_width, desired_height = scale_image(pil_img)
                 buf.seek(0)
-                desired_width, desired_height = scale_image(event_img)
                 rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"]))
+                Story.append(Paragraph("Cause and Effect Diagram (Single Root):", pdf_styles["Heading3"]))
                 Story.append(Spacer(1, 12))
                 Story.append(rl_img2)
                 Story.append(Spacer(1, 12))
-            else:
-                Story.append(Paragraph(f"Error generating diagram for {event.name}", pdf_styles["Normal"]))
+            except Exception as e:
+                Story.append(Paragraph(f"Error generating BFS diagram for {event.name}: {e}", pdf_styles["Normal"]))
             Story.append(PageBreak())
         
         # --- Insert Page Diagrams (for 'page gates') ---
