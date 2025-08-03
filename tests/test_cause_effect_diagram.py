@@ -90,7 +90,6 @@ numpy_stub = types.ModuleType("numpy")
 numpy_stub.array = _array
 numpy_stub.linalg = types.SimpleNamespace(norm=_norm)
 sys.modules.setdefault("numpy", numpy_stub)
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import FaultTreeApp
@@ -134,7 +133,6 @@ class CauseEffectDiagramTests(unittest.TestCase):
         node_map = {n["id"]: n for n in model["nodes"]}
         self.assertEqual(node_map["1"]["x"], 150)
         self.assertEqual(node_map["2"]["y"], 100)
-
         edge_pairs = {(e["source"], e["target"]) for e in model["edges"]}
         self.assertEqual(edge_pairs, {("1", "2"), ("1", "3")})
 
@@ -160,7 +158,6 @@ class CauseEffectDiagramTests(unittest.TestCase):
         width, height = created_sizes[0]
         self.assertGreater(width, 1000)
         self.assertGreater(height, 1000)
-
 
 if __name__ == "__main__":
     unittest.main()

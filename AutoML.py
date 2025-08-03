@@ -6922,7 +6922,6 @@ class FaultTreeApp:
         ys = [p[1] for p in pos.values()]
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
-
         node_w, node_h = 120, 60
         scale = 150
         margin_x = int(node_w / 2) + 20
