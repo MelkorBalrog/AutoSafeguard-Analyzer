@@ -6674,28 +6674,37 @@ class FaultTreeApp:
         """
         nodes = []
         edges = []
-        
+
+        visited = set()
+
         def traverse(node):
+            if node.unique_id in visited:
+                return
+            visited.add(node.unique_id)
+
             node_type_up = node.node_type.upper()
-            if node_type_up in GATE_NODE_TYPES:
-                final_gate_type = node.gate_type  # e.g. "AND" or "OR"
+            node_info = {
+                "id": str(node.unique_id),
+                "label": node.name,
+            }
 
-                node_info = {
-                    "id": str(node.unique_id),
-                    "label": node.name,
-                    "gate_type": final_gate_type,   # store it only if not all children are base
-                }
-                if node.input_subtype:
-                    node_info["subtype"] = node.input_subtype
-                
-                nodes.append(node_info)
+            # Include gate type only when the node itself is a gate and it has
+            # at least one non-base child.  Previously only gate nodes were
+            # added to the model which meant that basic events—the actual
+            # causes in the chain—were omitted from the generated diagram. As a
+            # result the PDF report often displayed just the top event with no
+            # contributing causes.  By recording every node and linking it to
+            # its parent, all causes now appear in the output.
+            if node_type_up in GATE_NODE_TYPES and not self.all_children_are_base_events(node):
+                node_info["gate_type"] = node.gate_type
+            if getattr(node, "input_subtype", ""):
+                node_info["subtype"] = node.input_subtype
 
-                # Only traverse children that are also gates or top events
-                for child in node.children:
-                    child_type = child.node_type.upper()
-                    if child_type in GATE_NODE_TYPES:
-                        edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
-                        traverse(child)
+            nodes.append(node_info)
+
+            for child in getattr(node, "children", []):
+                edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
+                traverse(child)
 
         traverse(top_event)
         return {"nodes": nodes, "edges": edges}
