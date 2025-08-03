@@ -2006,7 +2006,6 @@ class FaultTreeApp:
         file_menu.add_command(label="Load AutoML Model", command=self.load_model, accelerator="Ctrl+O")
         file_menu.add_command(label="Project Properties", command=self.edit_project_properties)
         file_menu.add_command(label="Save PDF Report", command=self.generate_pdf_report)
-        file_menu.add_command(label="Save PDF Without Assurance", command=self.generate_pdf_without_assurance)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.confirm_close)
 
@@ -7116,7 +7115,7 @@ class FaultTreeApp:
         )
         return summary_sentence
 
-    def _generate_pdf_report(self, include_assurance=True):
+    def _generate_pdf_report(self):
         report_title = self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report")
         path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF files", "*.pdf")])
         if not path:
@@ -7208,201 +7207,200 @@ class FaultTreeApp:
         # Executive Summary Page (First Page)
         # -------------------------------------------------------------
 
-        if include_assurance:
-            exec_summary_text = (
-            "<b>Executive Summary: Manual Calculation of Prototype Assurance Level (PAL)</b><br/><br/>"
-                "This document provides a step-by-step procedure to manually calculate the Prototype Assurance Level (PAL) for a subsystem in an "
-                "autonomous system. The Prototype Assurance Level (PAL) is a single metric ranging from 1 to 5 (mapped to qualitative labels: "
-                "PAL1 through PAL5). Follow these instructions using the provided tables.<br/><br/>"
+        exec_summary_text = (
+        "<b>Executive Summary: Manual Calculation of Prototype Assurance Level (PAL)</b><br/><br/>"
+            "This document provides a step-by-step procedure to manually calculate the Prototype Assurance Level (PAL) for a subsystem in an "
+            "autonomous system. The Prototype Assurance Level (PAL) is a single metric ranging from 1 to 5 (mapped to qualitative labels: "
+            "PAL1 through PAL5). Follow these instructions using the provided tables.<br/><br/>"
+            
+            "<b>Calculation Instructions:</b><br/>"
+            "1. <u>Base Assurance Derivation</u>:<br/>"
+            " a. Assign a Confidence Level (CL) and a Robustness Score (RS) to the component, each on a scale from 1 (PAL1) to 5 (PAL5).<br/>"
+            " b. Using Table 1 (Base Assurance Inversion Matrix), locate the cell at the intersection of the CL (row) and RS (column).<br/>"
+            "  For example, a CL of 1 and an RS of 1 yields a base assurance value of 5, indicating a very high requirement for additional safety measures.<br/><br/>"
+            "2. <u>Combining Multiple Components</u>:<br/>"
+            " a. If the subsystem consists of multiple components, first compute the base assurance value for each component individually as described above.<br/>"
+            " b. Then, combine these values based on how the components interact:<br/>"
+            "  - If the components must all perform reliably (an AND configuration), use a complement-product method as outlined in Table 3 (AND Decomposition Guidelines).<br/>"
+            "  - If the components function as alternative options (an OR configuration), simply compute the average of their assurance values (see Table 4 for OR Decomposition Guidelines).<br/>"
+            " c. When both types of inputs are present, average the base-derived values with the aggregated values to obtain a combined score.<br/><br/>"
+            "3. <u>Severity Adjustment</u>:<br/>"
+            " a. Adjust the combined assurance value to reflect hazard severity.<br/>"
+            " b. For most subsystems, take the highest severity rating from the related elements and compute the average with the combined assurance score.<br/>"
+            " c. For vehicle-level functions, use the formula: <br/>"
+            "  Final Assurance = (Combined Value + Severity) / 2 <br/>"
+            " Ensure the final score remains within the 1 to 5 range.<br/><br/>"
+            "4. <u>Final Discretization</u>:<br/>"
+            " a. Round the adjusted assurance value to the nearest 0.5.<br/>"
+            " b. Refer to Table 2 (Output Discretization Mapping) to map the rounded value to one of the five discrete Prototype Assurance Levels (PAL), "
+            "(PAL1 through PAL5).<br/><br/>"
+            "By following these steps—deriving a base assurance from individual Confidence and Robustness ratings, combining multiple values "
+            "through averaging or using complement-product methods (depending on the configuration), adjusting for hazard severity, and finally "
+            "discretizing the result—you can manually calculate the Prototype Assurance Level (PAL) for any subsystem in a clear and systematic manner."
+        )
+        Story.append(Paragraph(exec_summary_text, pdf_styles["Normal"]))
+        Story.append(Spacer(1, 12))
+        
+        # --- Table 1: Base Assurance Inversion Matrix ---
+        header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
+        base_matrix_data = [
+            [Paragraph("<b>Robustness \\ Confidence</b>", header_style),
+             Paragraph("<b>1 (Level 1)</b>", header_style),
+             Paragraph("<b>2 (Level 2)</b>", header_style),
+             Paragraph("<b>3 (Level 3)</b>", header_style),
+             Paragraph("<b>4 (Level 4)</b>", header_style),
+             Paragraph("<b>5 (Level 5)</b>", header_style)],
+            [Paragraph("<b>1 (Level 1)</b>", header_style),
+             Paragraph("PAL5", pdf_styles["Normal"]),
+             Paragraph("PAL5", pdf_styles["Normal"]),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL4", pdf_styles["Normal"])],
+            [Paragraph("<b>2 (Level 2)</b>", header_style),
+             Paragraph("PAL5", pdf_styles["Normal"]),
+             Paragraph("PAL5", pdf_styles["Normal"]),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"])],
+            [Paragraph("<b>3 (Level 3)</b>", header_style),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"])],
+            [Paragraph("<b>4 (Level 4)</b>", header_style),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"])],
+            [Paragraph("<b>5 (Level 5)</b>", header_style),
+             Paragraph("PAL4", pdf_styles["Normal"]),
+             Paragraph("PAL3", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"]),
+             Paragraph("PAL1", pdf_styles["Normal"])]
+        ]
+        base_matrix_table = Table(base_matrix_data, colWidths=[80, 70, 70, 70, 70, 70])
+        base_matrix_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightblue),
+            ('BACKGROUND', (0,0), (0,-1), colors.lightblue),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTSIZE', (0,0), (-1,-1), 8)
+        ]))
+        Story.append(Paragraph("Table 1: Base Assurance Inversion Matrix", pdf_styles["Heading3"]))
+        Story.append(Spacer(1, 6))
+        Story.append(base_matrix_table)
+        Story.append(Spacer(1, 12))
+        
+        # --- Table 2: Output Discretization Mapping ---
+        discretization_data = [
+            [Paragraph("<b>Continuous Value (Rounded)</b>", header_style),
+             Paragraph("<b>Prototype Assurance Level (PAL)</b>", header_style)],
+            [Paragraph("< 1.5", header_style), Paragraph("Level 1 (PAL1)", pdf_styles["Normal"])],
+            [Paragraph("1.5 – < 2.5", header_style), Paragraph("Level 2 (PAL2)", pdf_styles["Normal"])],
+            [Paragraph("2.5 – < 3.5", header_style), Paragraph("Level 3 (PAL3)", pdf_styles["Normal"])],
+            [Paragraph("3.5 – < 4.5", header_style), Paragraph("Level 4 (PAL4)", pdf_styles["Normal"])],
+            [Paragraph("≥ 4.5", header_style), Paragraph("Level 5 (PAL5)", pdf_styles["Normal"])]
+        ]
+        discretization_table = Table(discretization_data, colWidths=[150, 200])
+        discretization_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightblue),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTSIZE', (0,0), (-1,-1), 8)
+        ]))
+        Story.append(Paragraph("Table 2: Output Discretization Mapping", pdf_styles["Heading3"]))
+        Story.append(Spacer(1, 6))
+        Story.append(discretization_table)
+        Story.append(Spacer(1, 12))
+        
+        # Define mapping from numeric level to qualitative label.
+        level_labels = {1: "PAL1", 2: "PAL2", 3: "PAL3", 4: "PAL4", 5: "PAL5"}
+    
+        # ------------------------------------------------------------------
+        # Helper: Get the highest Prototype Assurance Level (PAL) from immediate parents.
+        # For a given node (or its clone), this returns the maximum assurance (as an integer 1-5)
+        # among all its immediate parents. If no parent exists, it returns the node's own assurance.
+        def get_immediate_parent_assurance(node):
+            if node.parents:
+                assurances = []
+                for p in node.parents:
+                    # For clones, use the original parent's assurance value.
+                    parent = p if p.is_primary_instance else p.original
+                    try:
+                        val = int(parent.quant_value)
+                    except (TypeError, ValueError):
+                        val = 1
+                    assurances.append(val)
+                return max(assurances) if assurances else int(node.quant_value if node.quant_value is not None else 1)
+            else:
+                return int(node.quant_value if node.quant_value is not None else 1)
+        # ------------------------------------------------------------------
+    
+        # --- Safety Goals Summary Table ---
+        safety_goals_data = []
+        header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
+        safety_goals_data.append([
+            Paragraph("<b>Safety Goal</b>", header_style),
+            Paragraph("<b>Highest Immediate Parent Assurance</b>", header_style),
+            Paragraph("<b>Linked Recommendations</b>", header_style)
+        ])
                 
-                "<b>Calculation Instructions:</b><br/>"
-                "1. <u>Base Assurance Derivation</u>:<br/>"
-                " a. Assign a Confidence Level (CL) and a Robustness Score (RS) to the component, each on a scale from 1 (PAL1) to 5 (PAL5).<br/>"
-                " b. Using Table 1 (Base Assurance Inversion Matrix), locate the cell at the intersection of the CL (row) and RS (column).<br/>"
-                "  For example, a CL of 1 and an RS of 1 yields a base assurance value of 5, indicating a very high requirement for additional safety measures.<br/><br/>"
-                "2. <u>Combining Multiple Components</u>:<br/>"
-                " a. If the subsystem consists of multiple components, first compute the base assurance value for each component individually as described above.<br/>"
-                " b. Then, combine these values based on how the components interact:<br/>"
-                "  - If the components must all perform reliably (an AND configuration), use a complement-product method as outlined in Table 3 (AND Decomposition Guidelines).<br/>"
-                "  - If the components function as alternative options (an OR configuration), simply compute the average of their assurance values (see Table 4 for OR Decomposition Guidelines).<br/>"
-                " c. When both types of inputs are present, average the base-derived values with the aggregated values to obtain a combined score.<br/><br/>"
-                "3. <u>Severity Adjustment</u>:<br/>"
-                " a. Adjust the combined assurance value to reflect hazard severity.<br/>"
-                " b. For most subsystems, take the highest severity rating from the related elements and compute the average with the combined assurance score.<br/>"
-                " c. For vehicle-level functions, use the formula: <br/>"
-                "  Final Assurance = (Combined Value + Severity) / 2 <br/>"
-                " Ensure the final score remains within the 1 to 5 range.<br/><br/>"
-                "4. <u>Final Discretization</u>:<br/>"
-                " a. Round the adjusted assurance value to the nearest 0.5.<br/>"
-                " b. Refer to Table 2 (Output Discretization Mapping) to map the rounded value to one of the five discrete Prototype Assurance Levels (PAL), "
-                "(PAL1 through PAL5).<br/><br/>"
-                "By following these steps—deriving a base assurance from individual Confidence and Robustness ratings, combining multiple values "
-                "through averaging or using complement-product methods (depending on the configuration), adjusting for hazard severity, and finally "
-                "discretizing the result—you can manually calculate the Prototype Assurance Level (PAL) for any subsystem in a clear and systematic manner."
-            )
-            Story.append(Paragraph(exec_summary_text, pdf_styles["Normal"]))
-            Story.append(Spacer(1, 12))
-            
-            # --- Table 1: Base Assurance Inversion Matrix ---
-            header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
-            base_matrix_data = [
-                [Paragraph("<b>Robustness \\ Confidence</b>", header_style),
-                 Paragraph("<b>1 (Level 1)</b>", header_style),
-                 Paragraph("<b>2 (Level 2)</b>", header_style),
-                 Paragraph("<b>3 (Level 3)</b>", header_style),
-                 Paragraph("<b>4 (Level 4)</b>", header_style),
-                 Paragraph("<b>5 (Level 5)</b>", header_style)],
-                [Paragraph("<b>1 (Level 1)</b>", header_style),
-                 Paragraph("PAL5", pdf_styles["Normal"]),
-                 Paragraph("PAL5", pdf_styles["Normal"]),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL4", pdf_styles["Normal"])],
-                [Paragraph("<b>2 (Level 2)</b>", header_style),
-                 Paragraph("PAL5", pdf_styles["Normal"]),
-                 Paragraph("PAL5", pdf_styles["Normal"]),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"])],
-                [Paragraph("<b>3 (Level 3)</b>", header_style),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"])],
-                [Paragraph("<b>4 (Level 4)</b>", header_style),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"])],
-                [Paragraph("<b>5 (Level 5)</b>", header_style),
-                 Paragraph("PAL4", pdf_styles["Normal"]),
-                 Paragraph("PAL3", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"]),
-                 Paragraph("PAL1", pdf_styles["Normal"])]
-            ]
-            base_matrix_table = Table(base_matrix_data, colWidths=[80, 70, 70, 70, 70, 70])
-            base_matrix_table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.lightblue),
-                ('BACKGROUND', (0,0), (0,-1), colors.lightblue),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('FONTSIZE', (0,0), (-1,-1), 8)
-            ]))
-            Story.append(Paragraph("Table 1: Base Assurance Inversion Matrix", pdf_styles["Heading3"]))
-            Story.append(Spacer(1, 6))
-            Story.append(base_matrix_table)
-            Story.append(Spacer(1, 12))
-            
-            # --- Table 2: Output Discretization Mapping ---
-            discretization_data = [
-                [Paragraph("<b>Continuous Value (Rounded)</b>", header_style),
-                 Paragraph("<b>Prototype Assurance Level (PAL)</b>", header_style)],
-                [Paragraph("< 1.5", header_style), Paragraph("Level 1 (PAL1)", pdf_styles["Normal"])],
-                [Paragraph("1.5 – < 2.5", header_style), Paragraph("Level 2 (PAL2)", pdf_styles["Normal"])],
-                [Paragraph("2.5 – < 3.5", header_style), Paragraph("Level 3 (PAL3)", pdf_styles["Normal"])],
-                [Paragraph("3.5 – < 4.5", header_style), Paragraph("Level 4 (PAL4)", pdf_styles["Normal"])],
-                [Paragraph("≥ 4.5", header_style), Paragraph("Level 5 (PAL5)", pdf_styles["Normal"])]
-            ]
-            discretization_table = Table(discretization_data, colWidths=[150, 200])
-            discretization_table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.lightblue),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('FONTSIZE', (0,0), (-1,-1), 8)
-            ]))
-            Story.append(Paragraph("Table 2: Output Discretization Mapping", pdf_styles["Heading3"]))
-            Story.append(Spacer(1, 6))
-            Story.append(discretization_table)
-            Story.append(Spacer(1, 12))
-            
-            # Define mapping from numeric level to qualitative label.
-            level_labels = {1: "PAL1", 2: "PAL2", 3: "PAL3", 4: "PAL4", 5: "PAL5"}
+        # Instead of iterating over only top-level events,
+        # we iterate over all nodes that have safety requirements.
+        grouped_by_linked = {}
+        for node in self.get_all_nodes_in_model():
+            if hasattr(node, "safety_requirements") and node.safety_requirements:
+                # Determine the safety goal from the node.
+                safety_goal = node.safety_goal_description.strip() if node.safety_goal_description.strip() != "" else node.name
+                # Get the highest assurance from its immediate parent(s)
+                parent_assur = get_immediate_parent_assurance(node)
+                assurance_str = f"Level {parent_assur} ({level_labels.get(parent_assur, 'N/A')})"
+                # Use the node's description to generate a linked recommendation.
+                # (You can adjust this method as needed.)
+                linked_rec = self.generate_recommendations_for_top_event(node)
+                extra_recs = self.get_extra_recommendations_list(node.description,
+                                                                  AutoML_Helper.discretize_level(node.quant_value))
+                if not extra_recs:
+                    extra_recs = ["No Extra Recommendation"]
+                # Group by the linked recommendation text.
+                grouped_by_linked.setdefault(linked_rec, {})
+                for extra in extra_recs:
+                    grouped_by_linked[linked_rec].setdefault(extra, [])
+                    grouped_by_linked[linked_rec][extra].append(f"- {safety_goal} (Assurance: {assurance_str})")
     
-            # ------------------------------------------------------------------
-            # Helper: Get the highest Prototype Assurance Level (PAL) from immediate parents.
-            # For a given node (or its clone), this returns the maximum assurance (as an integer 1-5)
-            # among all its immediate parents. If no parent exists, it returns the node's own assurance.
-            def get_immediate_parent_assurance(node):
-                if node.parents:
-                    assurances = []
-                    for p in node.parents:
-                        # For clones, use the original parent's assurance value.
-                        parent = p if p.is_primary_instance else p.original
-                        try:
-                            val = int(parent.quant_value)
-                        except (TypeError, ValueError):
-                            val = 1
-                        assurances.append(val)
-                    return max(assurances) if assurances else int(node.quant_value if node.quant_value is not None else 1)
-                else:
-                    return int(node.quant_value if node.quant_value is not None else 1)
-            # ------------------------------------------------------------------
-    
-            # --- Safety Goals Summary Table ---
-            safety_goals_data = []
-            header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
-            safety_goals_data.append([
-                Paragraph("<b>Safety Goal</b>", header_style),
-                Paragraph("<b>Highest Immediate Parent Assurance</b>", header_style),
-                Paragraph("<b>Linked Recommendations</b>", header_style)
-            ])
-                    
-            # Instead of iterating over only top-level events,
-            # we iterate over all nodes that have safety requirements.
-            grouped_by_linked = {}
-            for node in self.get_all_nodes_in_model():
-                if hasattr(node, "safety_requirements") and node.safety_requirements:
-                    # Determine the safety goal from the node.
-                    safety_goal = node.safety_goal_description.strip() if node.safety_goal_description.strip() != "" else node.name
-                    # Get the highest assurance from its immediate parent(s)
-                    parent_assur = get_immediate_parent_assurance(node)
-                    assurance_str = f"Level {parent_assur} ({level_labels.get(parent_assur, 'N/A')})"
-                    # Use the node's description to generate a linked recommendation.
-                    # (You can adjust this method as needed.)
-                    linked_rec = self.generate_recommendations_for_top_event(node)
-                    extra_recs = self.get_extra_recommendations_list(node.description,
-                                                                      AutoML_Helper.discretize_level(node.quant_value))
-                    if not extra_recs:
-                        extra_recs = ["No Extra Recommendation"]
-                    # Group by the linked recommendation text.
-                    grouped_by_linked.setdefault(linked_rec, {})
-                    for extra in extra_recs:
-                        grouped_by_linked[linked_rec].setdefault(extra, [])
-                        grouped_by_linked[linked_rec][extra].append(f"- {safety_goal} (Assurance: {assurance_str})")
-    
-            sg_data = []
+        sg_data = []
+        sg_data.append([
+            Paragraph("<b>Linked Recommendation</b>", header_style),
+            Paragraph("<b>Safety Goals Grouped by Extra Recommendation</b>", header_style)
+        ])
+        for linked_rec, extra_groups in grouped_by_linked.items():
+            nested_text = ""
+            for extra_rec, goals in extra_groups.items():
+                nested_text += f"<b>{extra_rec}:</b><br/>" + "<br/>".join(goals) + "<br/><br/>"
             sg_data.append([
-                Paragraph("<b>Linked Recommendation</b>", header_style),
-                Paragraph("<b>Safety Goals Grouped by Extra Recommendation</b>", header_style)
+                Paragraph(linked_rec, pdf_styles["Normal"]),
+                Paragraph(nested_text, pdf_styles["Normal"])
             ])
-            for linked_rec, extra_groups in grouped_by_linked.items():
-                nested_text = ""
-                for extra_rec, goals in extra_groups.items():
-                    nested_text += f"<b>{extra_rec}:</b><br/>" + "<br/>".join(goals) + "<br/><br/>"
-                sg_data.append([
-                    Paragraph(linked_rec, pdf_styles["Normal"]),
-                    Paragraph(nested_text, pdf_styles["Normal"])
-                ])
-            if len(sg_data) > 1:
-                sg_table = Table(sg_data, colWidths=[200, 400])
-                sg_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                    ('FONTSIZE', (0,0), (-1,-1), 10),
-                    ('ALIGN', (0,0), (-1,0), 'CENTER')
-                ]))
-                Story.append(Paragraph("Safety Goals Summary:", pdf_styles["Heading2"]))
-                Story.append(Spacer(1, 12))
-                Story.append(sg_table)
-                Story.append(Spacer(1, 12))
-            Story.append(PageBreak())
-            
+        if len(sg_data) > 1:
+            sg_table = Table(sg_data, colWidths=[200, 400])
+            sg_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('FONTSIZE', (0,0), (-1,-1), 10),
+                ('ALIGN', (0,0), (-1,0), 'CENTER')
+            ]))
+            Story.append(Paragraph("Safety Goals Summary:", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            Story.append(sg_table)
+            Story.append(Spacer(1, 12))
+        Story.append(PageBreak())
+        
         # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
 
         cause_effect_rows = self.build_cause_effect_data()
@@ -7479,6 +7477,96 @@ class FaultTreeApp:
                 Story.append(Paragraph("A page diagram could not be captured.", pdf_styles["Normal"]))
                 Story.append(Spacer(1, 12))
 
+        # --- HAZOP Analyses ---
+        if self.hazop_docs:
+            Story.append(PageBreak())
+            Story.append(Paragraph("HAZOP Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.hazop_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["Function", "Malfunction", "Hazard", "Safety"]]
+                for e in doc.entries:
+                    data.append([e.function, e.malfunction, e.hazard, "Yes" if e.safety else "No"])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- HARA Analyses ---
+        if self.hara_docs:
+            Story.append(PageBreak())
+            Story.append(Paragraph("HARA Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.hara_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["Malfunction", "Hazard", "Severity", "Exposure", "Controllability", "ASIL", "Safety Goal"]]
+                for e in doc.entries:
+                    data.append([e.malfunction, e.hazard, str(e.severity), str(e.exposure), str(e.controllability), e.asil, e.safety_goal])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- FI2TC Analyses ---
+        if self.fi2tc_docs:
+            Story.append(PageBreak())
+            Story.append(Paragraph("FI2TC Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.fi2tc_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["System Function", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
+                for row in doc.entries:
+                    data.append([
+                        row.get("system_function", ""),
+                        row.get("functional_insufficiencies", ""),
+                        row.get("triggering_conditions", ""),
+                        row.get("severity", ""),
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- TC2FI Analyses ---
+        if self.tc2fi_docs:
+            Story.append(PageBreak())
+            Story.append(Paragraph("TC2FI Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for doc in self.tc2fi_docs:
+                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+                data = [["Known Use Case", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
+                for row in doc.entries:
+                    data.append([
+                        row.get("known_use_case", ""),
+                        row.get("functional_insufficiencies", ""),
+                        row.get("triggering_conditions", ""),
+                        row.get("severity", ""),
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
         # --- FMEA Tables ---
         if self.fmeas:
             Story.append(PageBreak())
@@ -7496,6 +7584,43 @@ class FaultTreeApp:
                     rpn = be.fmea_severity * be.fmea_occurrence * be.fmea_detection
                     failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
                     row = [comp, parent_name, failure_mode, be.fmea_effect, getattr(be, 'fmea_cause', ''), be.fmea_severity, be.fmea_occurrence, be.fmea_detection, rpn, req_ids, getattr(be, 'fmeda_malfunction', '')]
+                    data.append(row)
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- FMEDA Tables ---
+        if self.fmedas:
+            Story.append(PageBreak())
+            Story.append(Paragraph("FMEDA Tables", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for fmeda in self.fmedas:
+                Story.append(Paragraph(fmeda['name'], pdf_styles["Heading3"]))
+                data = [["Component", "Parent", "Failure Mode", "Malfunction", "Safety Goal", "Fault Type", "Fraction", "FIT", "DiagCov", "Mechanism"]]
+                for be in fmeda['entries']:
+                    src = self.get_failure_mode_node(be)
+                    comp = self.get_component_name_for_node(src) or "N/A"
+                    parent = src.parents[0] if src.parents else None
+                    parent_name = parent.user_name if parent and getattr(parent, "node_type", "").upper() not in GATE_NODE_TYPES else ""
+                    failure_mode = be.description or (be.user_name or f"BE {be.unique_id}")
+                    row = [
+                        comp,
+                        parent_name,
+                        failure_mode,
+                        getattr(be, 'fmeda_malfunction', ''),
+                        getattr(be, 'fmeda_safety_goal', ''),
+                        getattr(be, 'fmeda_fault_type', ''),
+                        f"{getattr(be, 'fmeda_fault_fraction', 0)}",
+                        f"{getattr(be, 'fmeda_fit', 0)}",
+                        f"{getattr(be, 'fmeda_diag_cov', 0)}",
+                        getattr(be, 'fmeda_mechanism', ''),
+                    ]
                     data.append(row)
                 table = Table(data, repeatRows=1)
                 table.setStyle(TableStyle([
@@ -7525,6 +7650,68 @@ class FaultTreeApp:
             Story.append(table)
             Story.append(Spacer(1, 12))
 
+        # --- FTA Cut Sets ---
+        cut_sets_exist = any(self.calculate_cut_sets(te) for te in self.top_events)
+        if cut_sets_exist:
+            Story.append(PageBreak())
+            Story.append(Paragraph("FTA Cut Sets", pdf_styles["Heading2"]))
+            data = [["Top Event", "Cut Set #", "Basic Events"]]
+            for te in self.top_events:
+                nodes_by_id = {}
+                def map_nodes(n):
+                    nodes_by_id[n.unique_id] = n
+                    for child in n.children:
+                        map_nodes(child)
+                map_nodes(te)
+                cut_sets = self.calculate_cut_sets(te)
+                te_label = te.user_name or f"Top Event {te.unique_id}"
+                for idx, cs in enumerate(cut_sets, start=1):
+                    names = ", ".join(
+                        f"{nodes_by_id[uid].user_name or nodes_by_id[uid].node_type} [{uid}]" for uid in sorted(cs)
+                    )
+                    data.append([te_label if idx == 1 else "", str(idx), names])
+                    te_label = ""
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('FONTSIZE', (0,0), (-1,-1), 8)
+            ]))
+            Story.append(table)
+            Story.append(Spacer(1, 12))
+
+        # --- Common Cause Analysis ---
+        events_by_cause = {}
+        for fmea in self.fmeas:
+            for be in fmea['entries']:
+                cause = be.description
+                label = f"{fmea['name']}:{be.user_name or be.description or be.unique_id}"
+                events_by_cause.setdefault(cause, set()).add(label)
+        for fmeda in self.fmedas:
+            for be in fmeda['entries']:
+                cause = be.description
+                label = f"{fmeda['name']}:{be.user_name or be.description or be.unique_id}"
+                events_by_cause.setdefault(cause, set()).add(label)
+        for be in self.get_all_basic_events():
+            cause = be.description or ""
+            label = be.user_name or f"BE {be.unique_id}"
+            events_by_cause.setdefault(cause, set()).add(label)
+        cc_rows = [[cause, ", ".join(sorted(evts))] for cause, evts in events_by_cause.items() if len(evts) > 1]
+        if cc_rows:
+            Story.append(PageBreak())
+            Story.append(Paragraph("Common Cause Analysis", pdf_styles["Heading2"]))
+            data = [["Cause", "Events"]] + cc_rows
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('FONTSIZE', (0,0), (-1,-1), 8)
+            ]))
+            Story.append(table)
+            Story.append(Spacer(1, 12))
+
         # --- Final Build ---
         try:
             doc.build(Story)
@@ -7538,11 +7725,7 @@ class FaultTreeApp:
         )
 
     def generate_pdf_report(self):
-        self._generate_pdf_report(include_assurance=True)
-
-    def generate_pdf_without_assurance(self):
-        """Generate a PDF report without the Prototype Assurance Level (PAL) pages."""
-        self._generate_pdf_report(include_assurance=False)
+        self._generate_pdf_report()
 
     def capture_event_diagram(self, event_node):
         temp = tk.Toplevel(self.root)
