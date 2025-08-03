@@ -90,7 +90,6 @@ numpy_stub = types.ModuleType("numpy")
 numpy_stub.array = _array
 numpy_stub.linalg = types.SimpleNamespace(norm=_norm)
 sys.modules.setdefault("numpy", numpy_stub)
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from AutoML import FaultTreeApp
@@ -134,7 +133,6 @@ class CauseEffectDiagramTests(unittest.TestCase):
         width, height = created_sizes[0]
         self.assertGreaterEqual(width, 120)
         self.assertGreaterEqual(height, 60)
-
 
 if __name__ == "__main__":
     unittest.main()
