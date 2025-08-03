@@ -23,9 +23,13 @@ _spec = importlib.machinery.PathFinder.find_spec(__name__, _search_paths)
 
 if _spec is not None:
     _real_module = importlib.util.module_from_spec(_spec)
+    # ``networkx`` imports submodules during initialization.  Those imports
+    # consult :data:`sys.modules` for the package, so we must register the real
+    # module *before* executing it to ensure its internal imports resolve
+    # correctly.
+    sys.modules[__name__] = _real_module
     _spec.loader.exec_module(_real_module)  # type: ignore[union-attr]
     globals().update(_real_module.__dict__)
-    sys.modules[__name__] = _real_module
 else:
     class DiGraph:
         """Very small subset of :class:`networkx.DiGraph`.
