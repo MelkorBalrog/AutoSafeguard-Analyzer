@@ -12166,6 +12166,19 @@ class FaultTreeApp:
                 pos[f"tc:{tc}"] = (2, y_tc)
                 y_tc -= 2
 
+            # Shift the layout so all coordinates are non-negative.  Some
+            # nodes (e.g. functional insufficiencies) are positioned above the
+            # hazard using negative ``y`` values.  Tk canvases cannot scroll
+            # into negative space, which previously caused those nodes to be
+            # clipped entirely from the view.  Translating the layout ensures
+            # everything lies within the positive quadrant and remains
+            # visible.
+            min_x = min(x for x, _ in pos.values())
+            min_y = min(y for _, y in pos.values())
+            if min_x < 0 or min_y < 0:
+                for key, (x, y) in list(pos.items()):
+                    pos[key] = (x - min_x, y - min_y)
+
             # Use hexadecimal color codes so the palette works on all Tk
             # platforms.  Some Windows installs reject X11 color names (e.g.
             # ``lightcoral``) which previously resulted in only the arrows
@@ -12232,6 +12245,8 @@ class FaultTreeApp:
                 )
 
             canvas.config(scrollregion=canvas.bbox("all"))
+            canvas.xview_moveto(0)
+            canvas.yview_moveto(0)
             # Ensure the drawing appears immediately in environments where
             # the Tk event loop has not yet run. Without this call the canvas
             # may show up blank until the user interacts with the window.
