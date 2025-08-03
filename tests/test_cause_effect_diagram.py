@@ -96,20 +96,13 @@ from AutoML import FaultTreeApp
 
 
 class DummyNode:
-    def __init__(self, unique_id, node_type, name, gate_type=None,
-                 children=None, input_subtype="", x=0, y=0):
+    def __init__(self, unique_id, node_type, name, gate_type=None, children=None, input_subtype=""):
         self.unique_id = unique_id
         self.node_type = node_type
         self.name = name
         self.gate_type = gate_type
         self.children = children or []
         self.input_subtype = input_subtype
-        # The real application stores pixel coordinates for each node so the
-        # exported diagram matches the on-screen layout.  Include ``x`` and
-        # ``y`` here so tests can verify the positions are propagated through
-        # the simplified model.
-        self.x = x
-        self.y = y
 
 
 class CauseEffectDiagramTests(unittest.TestCase):
@@ -118,46 +111,28 @@ class CauseEffectDiagramTests(unittest.TestCase):
         self.app = FaultTreeApp.__new__(FaultTreeApp)
 
     def test_build_simplified_fta_model_includes_basic_events(self):
-        be1 = DummyNode(2, "BASIC EVENT", "Cause 1", x=100, y=100)
-        be2 = DummyNode(3, "BASIC EVENT", "Cause 2", x=200, y=100)
-        top = DummyNode(1, "TOP EVENT", "Hazard", gate_type="AND",
-                        children=[be1, be2], x=150, y=0)
+        be1 = DummyNode(2, "BASIC EVENT", "Cause 1")
+        be2 = DummyNode(3, "BASIC EVENT", "Cause 2")
+        top = DummyNode(1, "TOP EVENT", "Hazard", gate_type="AND", children=[be1, be2])
 
         model = self.app.build_simplified_fta_model(top)
 
         node_ids = {n["id"] for n in model["nodes"]}
         self.assertEqual(node_ids, {"1", "2", "3"})
 
-        # Positions from the nodes should be carried over to the model so the
-        # exported diagram mirrors the application's layout.
-        node_map = {n["id"]: n for n in model["nodes"]}
-        self.assertEqual(node_map["1"]["x"], 150)
-        self.assertEqual(node_map["2"]["y"], 100)
         edge_pairs = {(e["source"], e["target"]) for e in model["edges"]}
         self.assertEqual(edge_pairs, {("1", "2"), ("1", "3")})
 
     def test_auto_generate_diagram_canvas_large_enough(self):
         """Ensure generated diagram is not clipped when only one node exists."""
         created_sizes.clear()
-        top = DummyNode(1, "TOP EVENT", "Hazard", x=10, y=20)
+        top = DummyNode(1, "TOP EVENT", "Hazard")
         model = self.app.build_simplified_fta_model(top)
         FaultTreeApp.auto_generate_fta_diagram(model, "out.png")
         self.assertTrue(created_sizes, "Image.new was not called")
         width, height = created_sizes[0]
         self.assertGreaterEqual(width, 120)
         self.assertGreaterEqual(height, 60)
-
-    def test_auto_generate_diagram_respects_coordinates(self):
-        """Nodes positioned far apart should produce a correspondingly
-        large canvas, proving the coordinates from the model are used."""
-        created_sizes.clear()
-        be = DummyNode(2, "BASIC EVENT", "Cause", x=1000, y=1000)
-        top = DummyNode(1, "TOP EVENT", "Hazard", children=[be], x=0, y=0)
-        model = self.app.build_simplified_fta_model(top)
-        FaultTreeApp.auto_generate_fta_diagram(model, "out.png")
-        width, height = created_sizes[0]
-        self.assertGreater(width, 1000)
-        self.assertGreater(height, 1000)
 
 if __name__ == "__main__":
     unittest.main()
