@@ -21,6 +21,10 @@ _repo_root = os.path.abspath(os.path.join(_package_dir, os.pardir))
 _search_paths = [p for p in sys.path if os.path.abspath(p) != _repo_root]
 _spec = importlib.machinery.PathFinder.find_spec(__name__, _search_paths)
 
+# Keep a reference to the stub module object executing this file so we can
+# restore it if loading the external package fails part way through.
+_stub_module = sys.modules[__name__]
+
 if _spec is not None:
     _real_module = importlib.util.module_from_spec(_spec)
     # ``networkx`` imports submodules during initialization.  Those imports
@@ -28,9 +32,18 @@ if _spec is not None:
     # module *before* executing it to ensure its internal imports resolve
     # correctly.
     sys.modules[__name__] = _real_module
-    _spec.loader.exec_module(_real_module)  # type: ignore[union-attr]
-    globals().update(_real_module.__dict__)
-else:
+    try:
+        _spec.loader.exec_module(_real_module)  # type: ignore[union-attr]
+    except Exception:
+        # If anything goes wrong while importing the external dependency we
+        # silently fall back to the lightweight in-repo stub.  Re‑register the
+        # original module so the rest of this file can define the fallback API.
+        sys.modules[__name__] = _stub_module
+        _spec = None
+    else:
+        globals().update(_real_module.__dict__)
+
+if _spec is None:
     class DiGraph:
         """Very small subset of :class:`networkx.DiGraph`.
 
