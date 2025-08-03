@@ -6850,15 +6850,24 @@ class FaultTreeApp:
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
 
+        # Ensure the canvas leaves enough room so that nodes at the
+        # extremities are fully visible.  The previous implementation used a
+        # fixed margin of 50 pixels which was smaller than half of the node's
+        # width (60px).  As a result, nodes located at the left or right
+        # boundary were clipped in the exported diagram.  By basing the margins
+        # on the node dimensions we guarantee that every node remains within
+        # view.
+        node_w, node_h = 120, 60
         scale = 150
-        margin = 50
-        width = int((max_x - min_x) * scale) + 2 * margin
-        height = int((max_y - min_y) * scale) + 2 * margin
+        margin_x = int(node_w / 2) + 20
+        margin_y = int(node_h / 2) + 20
+        width = int((max_x - min_x) * scale) + 2 * margin_x
+        height = int((max_y - min_y) * scale) + 2 * margin_y
 
         def to_px(pt):
             x, y = pt
-            px = int((x - min_x) * scale) + margin
-            py = int((max_y - y) * scale) + margin
+            px = int((x - min_x) * scale) + margin_x
+            py = int((max_y - y) * scale) + margin_y
             return px, py
 
         px_pos = {n: to_px(pos[n]) for n in pos}
@@ -6886,7 +6895,6 @@ class FaultTreeApp:
                 draw.polygon([end, left, right], fill="gray")
 
         # Draw nodes
-        node_w, node_h = 120, 60
         for n, (x, y) in px_pos.items():
             left = x - node_w / 2
             top = y - node_h / 2
