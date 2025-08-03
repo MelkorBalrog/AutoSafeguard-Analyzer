@@ -7405,6 +7405,7 @@ class FaultTreeApp:
             
         # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
 
+        cause_effect_rows = self.build_cause_effect_data()
         processed_ids = set()
         for idx, event in enumerate(self.top_events, start=1):
             if event.unique_id in processed_ids:
@@ -7435,23 +7436,20 @@ class FaultTreeApp:
                 Story.append(rl_img)
                 Story.append(Spacer(1, 12))
 
-            # (B) "Cause and Effect" BFS diagram: build a single-root model for THIS event only
-            fta_model = self.build_simplified_fta_model(event)
-            temp_diagram_path = f"temp_fta_diagram_{idx}.png"
-            self.auto_generate_fta_diagram(fta_model, temp_diagram_path)
-            try:
-                with open(temp_diagram_path, "rb") as img_file:
-                    buf = BytesIO(img_file.read())
-                pil_img = PILImage.open(buf)
-                desired_width, desired_height = scale_image(pil_img)
-                buf.seek(0)
-                rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph("Cause and Effect Diagram (Single Root):", pdf_styles["Heading3"]))
-                Story.append(Spacer(1, 12))
-                Story.append(rl_img2)
-                Story.append(Spacer(1, 12))
-            except Exception as e:
-                Story.append(Paragraph(f"Error generating BFS diagram for {event.name}: {e}", pdf_styles["Normal"]))
+            # (B) Cause and effect chain matching the on-screen diagram
+            ce_row = next((r for r in cause_effect_rows if r["malfunction"] == getattr(event, "malfunction", "")), None)
+            if ce_row:
+                ce_img = self.render_cause_effect_diagram(ce_row)
+                if ce_img:
+                    buf = BytesIO()
+                    ce_img.save(buf, format="PNG")
+                    buf.seek(0)
+                    desired_width, desired_height = scale_image(ce_img)
+                    rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
+                    Story.append(Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"]))
+                    Story.append(Spacer(1, 12))
+                    Story.append(rl_img2)
+                    Story.append(Spacer(1, 12))
             Story.append(PageBreak())
         
         # --- Insert Page Diagrams (for 'page gates') ---
@@ -12053,6 +12051,132 @@ class FaultTreeApp:
 
         return sorted(rows.values(), key=lambda r: (r["hazard"].lower(), r["malfunction"].lower()))
 
+    def _build_cause_effect_graph(self, row):
+        """Return nodes, edges and positions for a cause-and-effect diagram.
+
+        The layout mirrors the on-screen diagram so exports remain consistent
+        with what users see in the application."""
+        nodes: dict[str, tuple[str, str]] = {}
+        edges: list[tuple[str, str]] = []
+
+        haz_label = row["hazard"]
+        mal_label = row["malfunction"]
+        haz_id = f"haz:{haz_label}"
+        mal_id = f"mal:{mal_label}"
+        nodes[haz_id] = (haz_label, "hazard")
+        nodes[mal_id] = (mal_label, "malfunction")
+        edges.append((haz_id, mal_id))
+
+        for fm, faults in sorted(row["failure_modes"].items()):
+            fm_id = f"fm:{fm}"
+            nodes[fm_id] = (fm, "failure_mode")
+            edges.append((mal_id, fm_id))
+            for fault in sorted(faults):
+                fault_id = f"fault:{fault}"
+                nodes[fault_id] = (fault, "fault")
+                edges.append((fm_id, fault_id))
+        for fi in sorted(row["fis"]):
+            fi_id = f"fi:{fi}"
+            nodes[fi_id] = (fi, "fi")
+            edges.append((haz_id, fi_id))
+        for tc in sorted(row["tcs"]):
+            tc_id = f"tc:{tc}"
+            nodes[tc_id] = (tc, "tc")
+            edges.append((haz_id, tc_id))
+
+        pos = {haz_id: (0, 0), mal_id: (4, 0)}
+        y_fm = 0
+        for fm, faults in sorted(row["failure_modes"].items()):
+            fm_y = y_fm * 4
+            pos[f"fm:{fm}"] = (8, fm_y)
+            y_fault = fm_y
+            for fault in sorted(faults):
+                pos[f"fault:{fault}"] = (12, y_fault)
+                y_fault += 2
+            y_fm += 1
+        y_fi = -2
+        for fi in sorted(row["fis"]):
+            pos[f"fi:{fi}"] = (2, y_fi)
+            y_fi -= 2
+        y_tc = y_fi
+        for tc in sorted(row["tcs"]):
+            pos[f"tc:{tc}"] = (2, y_tc)
+            y_tc -= 2
+
+        min_x = min(x for x, _ in pos.values())
+        min_y = min(y for _, y in pos.values())
+        if min_x < 0 or min_y < 0:
+            for key, (x, y) in list(pos.items()):
+                pos[key] = (x - min_x, y - min_y)
+
+        return nodes, edges, pos
+
+    def render_cause_effect_diagram(self, row):
+        """Render *row* as a PIL image matching the on-screen diagram."""
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except Exception:
+            return None
+        import textwrap, math
+
+        nodes, edges, pos = self._build_cause_effect_graph(row)
+        color_map = {
+            "hazard": "#F08080",
+            "malfunction": "#ADD8E6",
+            "failure_mode": "#FFA500",
+            "fault": "#D3D3D3",
+            "fi": "#FFFFE0",
+            "tc": "#90EE90",
+        }
+
+        scale = 80
+        x_off = 50
+        y_off = 50
+        box_w = 80
+        box_h = 40
+
+        max_x = max(x for x, _ in pos.values())
+        max_y = max(y for _, y in pos.values())
+        width = int(x_off * 2 + scale * max_x + box_w)
+        height = int(y_off * 2 + scale * max_y + box_h)
+
+        img = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        def to_canvas(x: float, y: float) -> tuple[float, float]:
+            return x_off + scale * x, y_off + scale * y
+
+        for u, v in edges:
+            x1, y1 = to_canvas(*pos[u])
+            x2, y2 = to_canvas(*pos[v])
+            draw.line((x1, y1, x2, y2), fill="black")
+            dx, dy = x2 - x1, y2 - y1
+            length = math.hypot(dx, dy) or 1
+            ux, uy = dx / length, dy / length
+            arrow = 10
+            px, py = x2 - arrow * ux, y2 - arrow * uy
+            perp = (-uy, ux)
+            left = (px + perp[0] * arrow / 2, py + perp[1] * arrow / 2)
+            right = (px - perp[0] * arrow / 2, py - perp[1] * arrow / 2)
+            draw.polygon([ (x2, y2), left, right ], fill="black")
+            if hasattr(draw, "text"):
+                draw.text(((x1 + x2) / 2, (y1 + y2) / 2), "caused by", fill="black", font=font, anchor="mm")
+
+        for n, (x, y) in pos.items():
+            label, kind = nodes.get(n, (n, ""))
+            color = color_map.get(kind, "white")
+            cx, cy = to_canvas(x, y)
+            rect = [cx - box_w / 2, cy - box_h / 2, cx + box_w / 2, cy + box_h / 2]
+            draw.rectangle(rect, fill=color, outline="black")
+            text = textwrap.fill(str(label), 20)
+            bbox = draw.multiline_textbbox((0, 0), text, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            draw.multiline_text((cx - tw / 2, cy - th / 2), text, font=font, align="center")
+
+        return img
+
     def show_cause_effect_chain(self):
         """Display a table linking hazards to downstream events with an optional diagram."""
         data = self.build_cause_effect_data()
@@ -12118,89 +12242,11 @@ class FaultTreeApp:
             row_map[iid] = row
 
         def draw_row(row):
-            """Render a small network diagram for *row* using matplotlib.
-
-            The PDF export uses the same matplotlib styling; generating the
-            image here ensures the on-screen diagram matches the PDF exactly.
-            The temporary PNG is loaded via Pillow when available and falls
-            back to Tk's ``PhotoImage`` otherwise to avoid the ``TclError``
-            reported on some systems.
-            """
+            """Render the cause-and-effect network for *row* on the Tk canvas."""
             import textwrap
 
-            # Build a simple graph structure without relying on external
-            # drawing helpers.  We will render the diagram using basic Tk
-            # canvas primitives such as lines and rectangles.
-            nodes: dict[str, str] = {}
-            edges: list[tuple[str, str]] = []
+            nodes, edges, pos = self._build_cause_effect_graph(row)
 
-            # Use unique internal identifiers for each node so hazards and
-            # malfunctions with the same label don't collapse into a single
-            # vertex.  The displayed label is stored separately from the key.
-            haz_label = row["hazard"]
-            mal_label = row["malfunction"]
-            haz_id = f"haz:{haz_label}"
-            mal_id = f"mal:{mal_label}"
-            nodes[haz_id] = (haz_label, "hazard")
-            nodes[mal_id] = (mal_label, "malfunction")
-            edges.append((haz_id, mal_id))
-
-            for fm, faults in sorted(row["failure_modes"].items()):
-                fm_id = f"fm:{fm}"
-                nodes[fm_id] = (fm, "failure_mode")
-                edges.append((mal_id, fm_id))
-                for fault in sorted(faults):
-                    fault_id = f"fault:{fault}"
-                    nodes[fault_id] = (fault, "fault")
-                    edges.append((fm_id, fault_id))
-            for fi in sorted(row["fis"]):
-                fi_id = f"fi:{fi}"
-                nodes[fi_id] = (fi, "fi")
-                edges.append((haz_id, fi_id))
-            for tc in sorted(row["tcs"]):
-                tc_id = f"tc:{tc}"
-                nodes[tc_id] = (tc, "tc")
-                edges.append((haz_id, tc_id))
-
-            # Layout from effect (hazard) on the left to root causes on the
-            # right.  Use generous spacing so wrapped text remains readable.
-            pos = {haz_id: (0, 0), mal_id: (4, 0)}
-            y_fm = 0
-            for fm, faults in sorted(row["failure_modes"].items()):
-                fm_y = y_fm * 4
-                pos[f"fm:{fm}"] = (8, fm_y)
-                y_fault = fm_y
-                for fault in sorted(faults):
-                    pos[f"fault:{fault}"] = (12, y_fault)
-                    y_fault += 2
-                y_fm += 1
-            y_fi = -2
-            for fi in sorted(row["fis"]):
-                pos[f"fi:{fi}"] = (2, y_fi)
-                y_fi -= 2
-            y_tc = y_fi
-            for tc in sorted(row["tcs"]):
-                pos[f"tc:{tc}"] = (2, y_tc)
-                y_tc -= 2
-
-            # Shift the layout so all coordinates are non-negative.  Some
-            # nodes (e.g. functional insufficiencies) are positioned above the
-            # hazard using negative ``y`` values.  Tk canvases cannot scroll
-            # into negative space, which previously caused those nodes to be
-            # clipped entirely from the view.  Translating the layout ensures
-            # everything lies within the positive quadrant and remains
-            # visible.
-            min_x = min(x for x, _ in pos.values())
-            min_y = min(y for _, y in pos.values())
-            if min_x < 0 or min_y < 0:
-                for key, (x, y) in list(pos.items()):
-                    pos[key] = (x - min_x, y - min_y)
-
-            # Use hexadecimal color codes so the palette works on all Tk
-            # platforms.  Some Windows installs reject X11 color names (e.g.
-            # ``lightcoral``) which previously resulted in only the arrows
-            # being drawn.  Hex codes are universally recognised and ensure
-            # that every node receives a visible fill colour.
             color_map = {
                 "hazard": "#F08080",       # light coral
                 "malfunction": "#ADD8E6",  # light blue
