@@ -6674,28 +6674,37 @@ class FaultTreeApp:
         """
         nodes = []
         edges = []
-        
+
+        visited = set()
+
         def traverse(node):
+            if node.unique_id in visited:
+                return
+            visited.add(node.unique_id)
+
             node_type_up = node.node_type.upper()
-            if node_type_up in GATE_NODE_TYPES:
-                final_gate_type = node.gate_type  # e.g. "AND" or "OR"
+            node_info = {
+                "id": str(node.unique_id),
+                "label": node.name,
+            }
 
-                node_info = {
-                    "id": str(node.unique_id),
-                    "label": node.name,
-                    "gate_type": final_gate_type,   # store it only if not all children are base
-                }
-                if node.input_subtype:
-                    node_info["subtype"] = node.input_subtype
-                
-                nodes.append(node_info)
+            # Include gate type only when the node itself is a gate and it has
+            # at least one non-base child.  Previously only gate nodes were
+            # added to the model which meant that basic events—the actual
+            # causes in the chain—were omitted from the generated diagram. As a
+            # result the PDF report often displayed just the top event with no
+            # contributing causes.  By recording every node and linking it to
+            # its parent, all causes now appear in the output.
+            if node_type_up in GATE_NODE_TYPES and not self.all_children_are_base_events(node):
+                node_info["gate_type"] = node.gate_type
+            if getattr(node, "input_subtype", ""):
+                node_info["subtype"] = node.input_subtype
 
-                # Only traverse children that are also gates or top events
-                for child in node.children:
-                    child_type = child.node_type.upper()
-                    if child_type in GATE_NODE_TYPES:
-                        edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
-                        traverse(child)
+            nodes.append(node_info)
+
+            for child in getattr(node, "children", []):
+                edges.append({"source": str(node.unique_id), "target": str(child.unique_id)})
+                traverse(child)
 
         traverse(top_event)
         return {"nodes": nodes, "edges": edges}
@@ -6841,15 +6850,24 @@ class FaultTreeApp:
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
 
+        # Ensure the canvas leaves enough room so that nodes at the
+        # extremities are fully visible.  The previous implementation used a
+        # fixed margin of 50 pixels which was smaller than half of the node's
+        # width (60px).  As a result, nodes located at the left or right
+        # boundary were clipped in the exported diagram.  By basing the margins
+        # on the node dimensions we guarantee that every node remains within
+        # view.
+        node_w, node_h = 120, 60
         scale = 150
-        margin = 50
-        width = int((max_x - min_x) * scale) + 2 * margin
-        height = int((max_y - min_y) * scale) + 2 * margin
+        margin_x = int(node_w / 2) + 20
+        margin_y = int(node_h / 2) + 20
+        width = int((max_x - min_x) * scale) + 2 * margin_x
+        height = int((max_y - min_y) * scale) + 2 * margin_y
 
         def to_px(pt):
             x, y = pt
-            px = int((x - min_x) * scale) + margin
-            py = int((max_y - y) * scale) + margin
+            px = int((x - min_x) * scale) + margin_x
+            py = int((max_y - y) * scale) + margin_y
             return px, py
 
         px_pos = {n: to_px(pos[n]) for n in pos}
@@ -6877,7 +6895,6 @@ class FaultTreeApp:
                 draw.polygon([end, left, right], fill="gray")
 
         # Draw nodes
-        node_w, node_h = 120, 60
         for n, (x, y) in px_pos.items():
             left = x - node_w / 2
             top = y - node_h / 2
