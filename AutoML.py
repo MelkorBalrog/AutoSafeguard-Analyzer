@@ -6686,12 +6686,6 @@ class FaultTreeApp:
             node_info = {
                 "id": str(node.unique_id),
                 "label": node.name,
-                # Preserve the on-screen coordinates so exported diagrams can
-                # mirror the layout used inside the application.  If a node
-                # lacks explicit positions, default to ``0`` so the diagram
-                # generator can still function.
-                "x": getattr(node, "x", 0),
-                "y": getattr(node, "y", 0),
             }
 
             # Include gate type only when the node itself is a gate and it has
@@ -6717,117 +6711,34 @@ class FaultTreeApp:
 
     @staticmethod
     def auto_generate_fta_diagram(fta_model, output_path):
-        """Generate a cause-and-effect diagram for inclusion in the PDF
-        report.  If the simplified FTA model provides explicit ``x`` and ``y``
-        coordinates for every node, those positions are used directly so the
-        exported image matches the diagram shown inside the tool.  Otherwise a
-        simple layered layout is computed as a fallback."""
+        """
+        Generate a cause-and-effect diagram with a layered (hierarchical) layout,
+        but draw the arrows in reverse (child -> parent).
+        """
+        import networkx as nx
         from PIL import Image, ImageDraw, ImageFont
+        import numpy as np
         import math
 
-        nodes = fta_model.get("nodes", [])
-        edges = fta_model.get("edges", [])
-
-        # ------------------------------------------------------------------
-        # 1) Use stored coordinates when available
-        # ------------------------------------------------------------------
-        if nodes and all("x" in n and "y" in n for n in nodes):
-            node_w, node_h = 120, 60
-            xs = [n["x"] for n in nodes]
-            ys = [n["y"] for n in nodes]
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
-            margin_x = int(node_w / 2) + 20
-            margin_y = int(node_h / 2) + 20
-            width = int(max_x - min_x) + node_w + 2 * margin_x
-            height = int(max_y - min_y) + node_h + 2 * margin_y
-
-            img = Image.new("RGB", (width, height), "white")
-            draw = ImageDraw.Draw(img)
-            font = ImageFont.load_default()
-
-            node_colors = {}
-            node_labels = {}
-            pos = {}
-            for n in nodes:
-                node_id = n["id"]
-                label = n.get("label", f"Node {node_id}")
-                gate_type = n.get("gate_type", "")
-                if gate_type:
-                    label += f"\n({gate_type.upper()})"
-                node_labels[node_id] = label
-
-                subtype = n.get("subtype", "").lower()
-                if "vehicle level function" in subtype:
-                    node_colors[node_id] = "lightcoral"
-                elif "safety mechanism" in subtype:
-                    node_colors[node_id] = "lightyellow"
-                elif "capability" in subtype:
-                    node_colors[node_id] = "lightblue"
-                else:
-                    node_colors[node_id] = "white"
-
-                x = n["x"] - min_x + margin_x + node_w / 2
-                y = n["y"] - min_y + margin_y + node_h / 2
-                pos[node_id] = (x, y)
-
-            for edge in edges:
-                src = edge["source"]
-                tgt = edge["target"]
-                if src in pos and tgt in pos:
-                    start = pos[tgt]
-                    end = pos[src]
-                    draw.line([start, end], fill="gray", width=2)
-                    dx = end[0] - start[0]
-                    dy = end[1] - start[1]
-                    length = math.hypot(dx, dy)
-                    if length:
-                        ux, uy = dx / length, dy / length
-                        arrow = 10
-                        left = (end[0] - ux * arrow - uy * arrow / 2,
-                                end[1] - uy * arrow + ux * arrow / 2)
-                        right = (end[0] - ux * arrow + uy * arrow / 2,
-                                 end[1] - uy * arrow - ux * arrow / 2)
-                        draw.polygon([end, left, right], fill="gray")
-
-            for node_id, (x, y) in pos.items():
-                left = x - node_w / 2
-                top = y - node_h / 2
-                right = x + node_w / 2
-                bottom = y + node_h / 2
-                draw.rectangle([left, top, right, bottom],
-                               fill=node_colors[node_id], outline="black")
-                lbl = node_labels[node_id]
-                bbox = draw.multiline_textbbox((0, 0), lbl, font=font,
-                                               align="center")
-                tw = bbox[2] - bbox[0]
-                th = bbox[3] - bbox[1]
-                draw.multiline_text((x - tw/2, y - th/2), lbl, font=font,
-                                    fill="black", align="center")
-
-            img.save(output_path)
-            return
-
-        # ------------------------------------------------------------------
-        # 2) Fallback: compute a layered layout similar to the previous
-        #    implementation when coordinates are not provided.
-        # ------------------------------------------------------------------
-        import networkx as nx
-        import numpy as np
-
+        # --- 1) Build the directed graph (parent->child) ---
         G = nx.DiGraph()
         node_labels = {}
         node_colors = {}
 
-        for node in nodes:
+        for node in fta_model["nodes"]:
             node_id = node["id"]
-            label = node.get("label", f"Node {node_id}")
+            label   = node.get("label", f"Node {node_id}")
+
+            # If there's a gate_type, append it to the label
             gate_type = node.get("gate_type", "")
             if gate_type:
+                # e.g. label = "Node 1\n(AND)"
                 label += f"\n({gate_type.upper()})"
+
             G.add_node(node_id)
             node_labels[node_id] = label
 
+            # Keep your color logic based on "subtype":
             subtype = node.get("subtype", "").lower()
             if "vehicle level function" in subtype:
                 node_colors[node_id] = "lightcoral"
@@ -6836,16 +6747,19 @@ class FaultTreeApp:
             elif "capability" in subtype:
                 node_colors[node_id] = "lightblue"
             else:
-                node_colors[node_id] = "white"
+                node_colors[node_id] = "white"  # clone
 
-        for edge in edges:
+        # Add edges
+        for edge in fta_model["edges"]:
             src = edge["source"]
             tgt = edge["target"]
-            if G.has_node(src) and G.has_node(tgt):
-                G.add_edge(src, tgt)
+            if not G.has_node(src) or not G.has_node(tgt):
+                continue
+            G.add_edge(src, tgt)
 
-        if nodes:
-            top_event_id = nodes[0]["id"]
+        # --- 2) Identify the top event as 'root' (layer 0) ---
+        if fta_model["nodes"]:
+            top_event_id = fta_model["nodes"][0]["id"]
         else:
             img = Image.new("RGB", (400, 300), "white")
             draw = ImageDraw.Draw(img)
@@ -6853,9 +6767,11 @@ class FaultTreeApp:
             img.save(output_path)
             return
 
-        layers = {top_event_id: 0}
+        # --- 3) BFS layering from top_event to find each node's layer ---
+        layers = {}
+        layers[top_event_id] = 0
         queue = [top_event_id]
-        visited = {top_event_id}
+        visited = set([top_event_id])
 
         while queue:
             current = queue.pop(0)
@@ -6866,35 +6782,44 @@ class FaultTreeApp:
                     layers[child] = current_layer + 1
                     queue.append(child)
 
+        # Any node not reached gets placed in a higher layer
         max_layer = max(layers.values()) if layers else 0
         for n in G.nodes():
             if n not in layers:
                 max_layer += 1
                 layers[n] = max_layer
 
+        # Group nodes by layer
         layer_dict = {}
         for node_id, layer in layers.items():
             layer_dict.setdefault(layer, []).append(node_id)
 
+        # --- 4) Assign (x, y) by layer ---
         horizontal_gap = 2.0
-        vertical_gap = 1.0
+        vertical_gap   = 1.0
         pos = {}
+
         for layer in sorted(layer_dict.keys()):
             node_list = layer_dict[layer]
 
+            # Sort siblings by average parent index (optional)
             def avg_parent_position(n):
                 parents = list(G.predecessors(n))
                 if not parents:
                     return 0
+                # we assume all parents are in a smaller layer
                 return sum(layer_dict[layers[p]].index(p) for p in parents) / len(parents)
 
             node_list.sort(key=avg_parent_position)
+
+            # Place them at x = layer*gap, y around 0
             middle = (len(node_list) - 1) / 2.0
             for i, n in enumerate(node_list):
                 x = layer * horizontal_gap
                 y = (i - middle) * vertical_gap
                 pos[n] = (x, y)
 
+        # --- 5) Light collision-avoidance pass (optional) ---
         def get_node_bbox(p, box_size=0.3):
             return (p[0] - box_size, p[1] - box_size, p[0] + box_size, p[1] + box_size)
 
@@ -6914,14 +6839,24 @@ class FaultTreeApp:
                         delta = p1 - p2
                         dist = np.linalg.norm(delta) + 1e-9
                         push = 0.02
-                        shift = (delta / dist) * push
+                        shift = (delta/dist)*push
                         pos[n1] = tuple(p1 + shift)
                         pos[n2] = tuple(p2 - shift)
 
+        # --- 6) Draw the diagram with REVERSED edges (child->parent) ---
+        # Convert layout coordinates to image pixels
         xs = [p[0] for p in pos.values()]
         ys = [p[1] for p in pos.values()]
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
+
+        # Ensure the canvas leaves enough room so that nodes at the
+        # extremities are fully visible.  The previous implementation used a
+        # fixed margin of 50 pixels which was smaller than half of the node's
+        # width (60px).  As a result, nodes located at the left or right
+        # boundary were clipped in the exported diagram.  By basing the margins
+        # on the node dimensions we guarantee that every node remains within
+        # view.
         node_w, node_h = 120, 60
         scale = 150
         margin_x = int(node_w / 2) + 20
@@ -6941,10 +6876,12 @@ class FaultTreeApp:
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()
 
+        # Draw reversed edges (child -> parent)
         for src, tgt in G.edges():
             start = px_pos[tgt]
             end = px_pos[src]
             draw.line([start, end], fill="gray", width=2)
+
             dx = end[0] - start[0]
             dy = end[1] - start[1]
             length = math.hypot(dx, dy)
@@ -6957,6 +6894,7 @@ class FaultTreeApp:
                          end[1] - uy * arrow - ux * arrow / 2)
                 draw.polygon([end, left, right], fill="gray")
 
+        # Draw nodes
         for n, (x, y) in px_pos.items():
             left = x - node_w / 2
             top = y - node_h / 2
