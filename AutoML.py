@@ -7143,7 +7143,10 @@ class FaultTreeApp:
         def scale_image(pil_img):
             """Scale images so they fit within the doc page nicely."""
             orig_width, orig_height = pil_img.size
-            scale_factor = 0.95 * min(doc.width / orig_width, doc.height / orig_height, 1)
+            page_width, page_height = doc.pagesize
+            available_width = page_width - doc.leftMargin - doc.rightMargin
+            available_height = page_height - doc.topMargin - doc.bottomMargin
+            scale_factor = 0.95 * min(available_width / orig_width, available_height / orig_height, 1)
             return orig_width * scale_factor, orig_height * scale_factor
 
         Story = []
