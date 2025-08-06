@@ -7156,7 +7156,7 @@ class FaultTreeApp:
             self.aggregate_safety_requirements(node_dict, all_nodes)
 
         # Define document with extra margins.
-        doc = SimpleDocTemplate(
+        pdf_doc = SimpleDocTemplate(
             path,
             pagesize=landscape(letter),
             leftMargin=0.8 * inch,
@@ -7170,11 +7170,11 @@ class FaultTreeApp:
         pdf_styles.add(preformatted_style)
 
         def scale_image(pil_img):
-            """Scale images so they fit within the doc page nicely."""
+            """Scale images so they fit within the PDF page nicely."""
             orig_width, orig_height = pil_img.size
-            page_width, page_height = doc.pagesize
-            available_width = page_width - doc.leftMargin - doc.rightMargin
-            available_height = page_height - doc.topMargin - doc.bottomMargin
+            page_width, page_height = pdf_doc.pagesize
+            available_width = page_width - pdf_doc.leftMargin - pdf_doc.rightMargin
+            available_height = page_height - pdf_doc.topMargin - pdf_doc.bottomMargin
             scale_factor = 0.95 * min(available_width / orig_width, available_height / orig_height, 1)
             return orig_width * scale_factor, orig_height * scale_factor
 
@@ -7482,10 +7482,10 @@ class FaultTreeApp:
             Story.append(PageBreak())
             Story.append(Paragraph("HAZOP Analyses", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
-            for doc in self.hazop_docs:
-                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+            for hz_doc in self.hazop_docs:
+                Story.append(Paragraph(hz_doc.name, pdf_styles["Heading3"]))
                 data = [["Function", "Malfunction", "Hazard", "Safety"]]
-                for e in doc.entries:
+                for e in hz_doc.entries:
                     data.append([e.function, e.malfunction, e.hazard, "Yes" if e.safety else "No"])
                 table = Table(data, repeatRows=1)
                 table.setStyle(TableStyle([
@@ -7502,10 +7502,10 @@ class FaultTreeApp:
             Story.append(PageBreak())
             Story.append(Paragraph("HARA Analyses", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
-            for doc in self.hara_docs:
-                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+            for hara_doc in self.hara_docs:
+                Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
                 data = [["Malfunction", "Hazard", "Severity", "Exposure", "Controllability", "ASIL", "Safety Goal"]]
-                for e in doc.entries:
+                for e in hara_doc.entries:
                     data.append([e.malfunction, e.hazard, str(e.severity), str(e.exposure), str(e.controllability), e.asil, e.safety_goal])
                 table = Table(data, repeatRows=1)
                 table.setStyle(TableStyle([
@@ -7522,10 +7522,10 @@ class FaultTreeApp:
             Story.append(PageBreak())
             Story.append(Paragraph("FI2TC Analyses", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
-            for doc in self.fi2tc_docs:
-                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+            for fi_doc in self.fi2tc_docs:
+                Story.append(Paragraph(fi_doc.name, pdf_styles["Heading3"]))
                 data = [["System Function", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
-                for row in doc.entries:
+                for row in fi_doc.entries:
                     data.append([
                         row.get("system_function", ""),
                         row.get("functional_insufficiencies", ""),
@@ -7547,10 +7547,10 @@ class FaultTreeApp:
             Story.append(PageBreak())
             Story.append(Paragraph("TC2FI Analyses", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
-            for doc in self.tc2fi_docs:
-                Story.append(Paragraph(doc.name, pdf_styles["Heading3"]))
+            for tc_doc in self.tc2fi_docs:
+                Story.append(Paragraph(tc_doc.name, pdf_styles["Heading3"]))
                 data = [["Known Use Case", "Functional Insufficiencies", "Triggering Conditions", "Severity"]]
-                for row in doc.entries:
+                for row in tc_doc.entries:
                     data.append([
                         row.get("known_use_case", ""),
                         row.get("functional_insufficiencies", ""),
@@ -7714,7 +7714,7 @@ class FaultTreeApp:
 
         # --- Final Build ---
         try:
-            doc.build(Story)
+            pdf_doc.build(Story)
         except Exception as e:
             messagebox.showerror("Report", f"Failed to generate PDF: {e}")
             return
