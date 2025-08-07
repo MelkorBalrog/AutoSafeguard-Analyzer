@@ -175,7 +175,12 @@ class StpaWindow(tk.Frame):
         name, diag_name = dlg.result
         repo = SysMLRepository.get_instance()
         diag_id = next(
-            (d.diag_id for d in repo.diagrams.values() if (d.name or d.diag_id) == diag_name),
+            (
+                d.diag_id
+                for d in repo.diagrams.values()
+                if d.diag_type == "Control Flow Diagram"
+                and (d.name or d.diag_id) == diag_name
+            ),
             "",
         )
         doc = StpaDoc(name, diag_id, [])
@@ -207,7 +212,12 @@ class StpaWindow(tk.Frame):
         repo = SysMLRepository.get_instance()
         diag_name = dlg.result
         diag_id = next(
-            (d.diag_id for d in repo.diagrams.values() if (d.name or d.diag_id) == diag_name),
+            (
+                d.diag_id
+                for d in repo.diagrams.values()
+                if d.diag_type == "Control Flow Diagram"
+                and (d.name or d.diag_id) == diag_name
+            ),
             "",
         )
         self.app.active_stpa.diagram = diag_id
