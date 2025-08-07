@@ -2472,6 +2472,14 @@ def format_control_flow_label(
         elem = repo.elements.get(conn.element_id)
         if elem:
             label = elem.name or ""
+    stereotype = ""
+    if diag_type == "Control Flow Diagram":
+        if conn.conn_type == "Control Action":
+            stereotype = "<<control action>>"
+        elif conn.conn_type == "Feedback":
+            stereotype = "<<feedback>>"
+    if stereotype:
+        label = f"{stereotype} {label}".strip()
     if diag_type == "Control Flow Diagram" and conn.conn_type in (
         "Control Action",
         "Feedback",
@@ -3089,8 +3097,15 @@ class SysMLDiagramWindow(tk.Frame):
                         src_id = self.start.element_id
                         dst_id = obj.element_id
                         if src_id and dst_id:
-                            rel = self.repo.create_relationship(t, src_id, dst_id)
-                            self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                            stereo = (
+                                "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
+                            )
+                            rel = self.repo.create_relationship(
+                                t, src_id, dst_id, stereotype=stereo
+                            )
+                            self.repo.add_relationship_to_diagram(
+                                self.diagram_id, rel.rel_id
+                            )
                         self._sync_to_repository()
                         ConnectionDialog(self, conn)
                     else:
@@ -3594,10 +3609,20 @@ class SysMLDiagramWindow(tk.Frame):
                                     conn.arrow = "both"
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
-                        rel = self.repo.create_relationship(
-                            self.current_tool, self.start.element_id, obj.element_id
+                        stereo = (
+                            "control action"
+                            if self.current_tool == "Control Action"
+                            else "feedback" if self.current_tool == "Feedback" else None
                         )
-                        self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                        rel = self.repo.create_relationship(
+                            self.current_tool,
+                            self.start.element_id,
+                            obj.element_id,
+                            stereotype=stereo,
+                        )
+                        self.repo.add_relationship_to_diagram(
+                            self.diagram_id, rel.rel_id
+                        )
                         if self.current_tool == "Generalization":
                             inherit_block_properties(self.repo, self.start.element_id)
                     self._sync_to_repository()

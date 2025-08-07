@@ -58,7 +58,7 @@ class ControlFlowGuardTests(unittest.TestCase):
         )
         diag.connections = [conn.__dict__]
         label = format_control_flow_label(conn, repo, "Control Flow Diagram")
-        self.assertEqual(label, "[g1\nAND g2\nOR g3] / Do")
+        self.assertEqual(label, "[g1\nAND g2\nOR g3] / <<control action>> Do")
 
 if __name__ == "__main__":
     unittest.main()

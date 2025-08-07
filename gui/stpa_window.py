@@ -305,6 +305,8 @@ class StpaWindow(tk.Frame):
                     label = format_control_flow_label(
                         conn_obj, repo, "Control Flow Diagram"
                     )
+                    if label.startswith("<<control action>>"):
+                        label = label[len("<<control action>>"):].strip()
                     if not label:
                         src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
                         dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
