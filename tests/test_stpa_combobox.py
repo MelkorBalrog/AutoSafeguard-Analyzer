@@ -1,25 +1,17 @@
 import types
+import os
+import sys
 
-from analysis.models import StpaDoc, StpaEntry
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from analysis.models import StpaEntry
 from gui.stpa_window import StpaWindow
-from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 
 
 def test_row_dialog_populates_control_actions(monkeypatch):
     """The control action combo box should list actions and preselect one."""
 
-    repo = SysMLRepository.reset_instance()
-    diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
-    diag.objects = [
-        {"obj_id": 1, "name": "Controller"},
-        {"obj_id": 2, "name": "Process"},
-    ]
-    diag.connections = [
-        {"src": 1, "dst": 2, "conn_type": "Control Action", "name": "Act"}
-    ]
-    repo.diagrams[diag.diag_id] = diag
-
-    app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag.diag_id, []))
+    app = types.SimpleNamespace(get_all_action_labels=lambda: ["Act"])
     parent = StpaWindow.__new__(StpaWindow)
     parent.app = app
 
