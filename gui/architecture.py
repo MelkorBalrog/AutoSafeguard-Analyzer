@@ -2497,6 +2497,27 @@ def format_control_flow_label(
     return label
 
 
+def diagram_type_abbreviation(diag_type: str | None) -> str:
+    """Return an abbreviation for a diagram type.
+
+    The abbreviation is formed by taking the first letter of each word in the
+    diagram type and uppercasing it. For example, "Control Flow Diagram" becomes
+    "CFD" and "Internal Block Diagram" becomes "IBD".
+    """
+    if not diag_type:
+        return ""
+    return "".join(word[0] for word in diag_type.split()).upper()
+
+
+def format_diagram_name(diagram: "SysMLDiagram | None") -> str:
+    """Return the diagram name with its stereotype abbreviation appended."""
+    if not diagram:
+        return ""
+    abbr = diagram_type_abbreviation(diagram.diag_type)
+    name = diagram.name or diagram.diag_id
+    return f"{name} : {abbr}" if abbr else name
+
+
 class SysMLDiagramWindow(tk.Frame):
     """Base frame for AutoML diagrams with zoom and pan support."""
 

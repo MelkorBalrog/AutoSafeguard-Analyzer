@@ -15,7 +15,11 @@ from analysis.models import (
     global_requirements,
 )
 from sysml.sysml_repository import SysMLRepository
-from gui.architecture import DiagramConnection, format_control_flow_label
+from gui.architecture import (
+    DiagramConnection,
+    format_control_flow_label,
+    format_diagram_name,
+)
 
 
 class StpaWindow(tk.Frame):
@@ -99,13 +103,13 @@ class StpaWindow(tk.Frame):
         if self.app.active_stpa:
             self.doc_var.set(self.app.active_stpa.name)
             diag = repo.diagrams.get(self.app.active_stpa.diagram)
-            self.diag_lbl.config(text=f"Diagram: {diag.name if diag else ''}")
+            self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
         elif names:
             self.doc_var.set(names[0])
             self.app.active_stpa = self.app.stpa_docs[0]
             self.app.stpa_entries = self.app.active_stpa.entries
             diag = repo.diagrams.get(self.app.active_stpa.diagram)
-            self.diag_lbl.config(text=f"Diagram: {diag.name if diag else ''}")
+            self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
 
     def select_doc(self, *_):
         name = self.doc_var.get()
@@ -115,7 +119,7 @@ class StpaWindow(tk.Frame):
                 self.app.active_stpa = d
                 self.app.stpa_entries = d.entries
                 diag = repo.diagrams.get(d.diagram)
-                self.diag_lbl.config(text=f"Diagram: {diag.name if diag else ''}")
+                self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
                 break
         self.refresh()
 
@@ -133,11 +137,14 @@ class StpaWindow(tk.Frame):
                 row=1, column=0, sticky="e"
             )
             repo = SysMLRepository.get_instance()
-            diags = [
-                d.name or d.diag_id
-                for d in repo.diagrams.values()
-                if d.diag_type == "Control Flow Diagram"
-            ]
+            self.diag_map = {}
+            diags = []
+            for d in repo.diagrams.values():
+                if d.diag_type != "Control Flow Diagram":
+                    continue
+                disp = format_diagram_name(d)
+                self.diag_map[disp] = d.diag_id
+                diags.append(disp)
             self.diag_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.diag_var, values=diags, state="readonly"
@@ -145,7 +152,8 @@ class StpaWindow(tk.Frame):
             return name_entry
 
         def apply(self):
-            self.result = (self.name_var.get(), self.diag_var.get())
+            selected = self.diag_var.get()
+            self.result = (self.name_var.get(), self.diag_map.get(selected, ""))
 
     class EditStpaDialog(simpledialog.Dialog):
         def __init__(self, parent, app):
@@ -157,16 +165,19 @@ class StpaWindow(tk.Frame):
                 row=0, column=0, sticky="e"
             )
             repo = SysMLRepository.get_instance()
-            diags = [
-                d.name or d.diag_id
-                for d in repo.diagrams.values()
-                if d.diag_type == "Control Flow Diagram"
-            ]
+            self.diag_map = {}
+            diags = []
+            for d in repo.diagrams.values():
+                if d.diag_type != "Control Flow Diagram":
+                    continue
+                disp = format_diagram_name(d)
+                self.diag_map[disp] = d.diag_id
+                diags.append(disp)
             self.diag_var = tk.StringVar()
             current = ""
             if self.app.active_stpa:
                 diag = repo.diagrams.get(self.app.active_stpa.diagram)
-                current = diag.name if diag else self.app.active_stpa.diagram
+                current = format_diagram_name(diag) if diag else ""
             ttk.Combobox(
                 master, textvariable=self.diag_var, values=diags, state="readonly"
             ).grid(row=0, column=1)
@@ -175,23 +186,13 @@ class StpaWindow(tk.Frame):
             return master
 
         def apply(self):
-            self.result = self.diag_var.get()
+            self.result = self.diag_map.get(self.diag_var.get(), "")
 
     def new_doc(self):
         dlg = self.NewStpaDialog(self, self.app)
         if not getattr(dlg, "result", None):
             return
-        name, diag_name = dlg.result
-        repo = SysMLRepository.get_instance()
-        diag_id = next(
-            (
-                d.diag_id
-                for d in repo.diagrams.values()
-                if d.diag_type == "Control Flow Diagram"
-                and (d.name or d.diag_id) == diag_name
-            ),
-            "",
-        )
+        name, diag_id = dlg.result
         doc = StpaDoc(name, diag_id, [])
         self.app.stpa_docs.append(doc)
         self.app.active_stpa = doc
@@ -219,20 +220,11 @@ class StpaWindow(tk.Frame):
         if not getattr(dlg, "result", None):
             return
         repo = SysMLRepository.get_instance()
-        diag_name = dlg.result
-        diag_id = next(
-            (
-                d.diag_id
-                for d in repo.diagrams.values()
-                if d.diag_type == "Control Flow Diagram"
-                and (d.name or d.diag_id) == diag_name
-            ),
-            "",
-        )
+        diag_id = dlg.result
         self.app.active_stpa.diagram = diag_id
         self.app.stpa_entries = self.app.active_stpa.entries
         diag = repo.diagrams.get(diag_id)
-        self.diag_lbl.config(text=f"Diagram: {diag.name if diag else ''}")
+        self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
         self.refresh()
         self.app.update_views()
 
@@ -281,7 +273,7 @@ class StpaWindow(tk.Frame):
         repo = SysMLRepository.get_instance()
         diag_id = getattr(getattr(self.app, "active_stpa", None), "diagram", "")
         diagram = repo.diagrams.get(diag_id)
-        if not diagram:
+        if not diagram or diagram.diag_type != "Control Flow Diagram":
             return []
 
         labels: set[str] = set()
