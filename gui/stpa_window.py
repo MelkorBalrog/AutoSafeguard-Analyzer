@@ -231,20 +231,23 @@ class StpaWindow(tk.Frame):
         for conn_data in getattr(diag, "connections", []):
             if isinstance(conn_data, dict):
                 conn_obj = DiagramConnection(
-                    **{k: v for k, v in conn_data.items() if k in DiagramConnection.__annotations__}
+                    **{
+                        k: v
+                        for k, v in conn_data.items()
+                        if k in DiagramConnection.__annotations__
+                    }
                 )
             else:
                 conn_obj = conn_data
-            if getattr(conn_obj, "conn_type", "") == "Control Action":
-                label = format_control_flow_label(
-                    conn_obj, repo, "Control Flow Diagram"
-                )
-                if not label:
-                    src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
-                    dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
-                    label = f"{src_name} -> {dst_name}"
-                if label:
-                    actions.add(label)
+            label = format_control_flow_label(
+                conn_obj, repo, "Control Flow Diagram"
+            )
+            if not label:
+                src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
+                dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
+                label = f"{src_name} -> {dst_name}"
+            if label:
+                actions.add(label)
         return sorted(actions)
 
     class RowDialog(simpledialog.Dialog):
