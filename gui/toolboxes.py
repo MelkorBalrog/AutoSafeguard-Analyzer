@@ -169,33 +169,40 @@ class _RequirementDialog(simpledialog.Dialog):
         ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
         default_type = self.req.get("req_type", self.req_type)
         self.type_var = tk.StringVar(value=default_type)
-        ttk.Combobox(
+        self.type_cb = ttk.Combobox(
             master,
             textvariable=self.type_var,
             values=self.type_options,
             state="readonly",
             width=20,
-        ).grid(row=1, column=1, padx=5, pady=5)
+        )
+        self.type_cb.grid(row=1, column=1, padx=5, pady=5)
+        self.type_cb.bind("<<ComboboxSelected>>", self._toggle_fields)
 
-        ttk.Label(master, text="ASIL:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.asil_label = ttk.Label(master, text="ASIL:")
+        self.asil_label.grid(row=2, column=0, sticky="e", padx=5, pady=5)
         self.asil_var = tk.StringVar(value=self.req.get("asil", "QM"))
-        ttk.Combobox(
+        self.asil_combo = ttk.Combobox(
             master,
             textvariable=self.asil_var,
             values=ASIL_LEVEL_OPTIONS,
             state="readonly",
             width=8,
-        ).grid(row=2, column=1, padx=5, pady=5)
+        )
+        self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
 
-        ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        self.cal_label = ttk.Label(master, text="CAL:")
+        self.cal_label.grid(row=3, column=0, sticky="e", padx=5, pady=5)
         self.cal_var = tk.StringVar(value=self.req.get("cal", CAL_LEVEL_OPTIONS[0]))
-        ttk.Combobox(
+        self.cal_combo = ttk.Combobox(
             master,
             textvariable=self.cal_var,
             values=CAL_LEVEL_OPTIONS,
             state="readonly",
             width=8,
-        ).grid(row=3, column=1, padx=5, pady=5)
+        )
+        self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
+        self._toggle_fields()
 
         ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
         self.parent_var = tk.StringVar(value=self.req.get("parent_id", ""))
@@ -220,16 +227,31 @@ class _RequirementDialog(simpledialog.Dialog):
 
     def apply(self):
         rid = self.id_var.get().strip() or str(uuid.uuid4())
+        req_type = self.type_var.get().strip()
         self.result = {
             "id": rid,
             "custom_id": rid,
-            "req_type": self.type_var.get().strip(),
+            "req_type": req_type,
             "text": self.text_var.get().strip(),
-            "asil": self.asil_var.get().strip(),
-            "cal": self.cal_var.get().strip(),
             "status": self.status_var.get().strip(),
             "parent_id": self.parent_var.get().strip(),
         }
+        if req_type not in ("operational", "functional modification"):
+            self.result["asil"] = self.asil_var.get().strip()
+            self.result["cal"] = self.cal_var.get().strip()
+
+    def _toggle_fields(self, event=None):
+        req_type = self.type_var.get()
+        hide = req_type in ("operational", "functional modification")
+        widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
+        if hide:
+            for w in widgets:
+                w.grid_remove()
+        else:
+            self.asil_label.grid(row=2, column=0, sticky="e", padx=5, pady=5)
+            self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
+            self.cal_label.grid(row=3, column=0, sticky="e", padx=5, pady=5)
+            self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
 
 
 class _SelectRequirementsDialog(simpledialog.Dialog):

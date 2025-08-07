@@ -359,6 +359,23 @@ from gui.toolboxes import (
 from gui.stpa_window import StpaWindow
 
 
+def format_requirement(req, include_id=True):
+    """Return a formatted requirement string without empty ASIL/CAL fields."""
+    parts = []
+    if include_id and req.get("id"):
+        parts.append(f"[{req['id']}]")
+    if req.get("req_type"):
+        parts.append(f"[{req['req_type']}]")
+    asil = req.get("asil")
+    if asil:
+        parts.append(f"[{asil}]")
+    cal = req.get("cal")
+    if cal:
+        parts.append(f"[{cal}]")
+    parts.append(req.get("text", ""))
+    return " ".join(parts)
+
+
 def get_version() -> str:
     """Read the tool version from the first line of README.md."""
     try:
@@ -983,7 +1000,7 @@ class EditNodeDialog(simpledialog.Dialog):
             for req in self.node.safety_requirements:
                 self.safety_req_listbox.insert(
                     tk.END,
-                    f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                    format_requirement(req),
                 )
 
             # Buttons for Add, Edit, and Delete.
@@ -1036,7 +1053,7 @@ class EditNodeDialog(simpledialog.Dialog):
             for req in self.node.safety_requirements:
                 self.safety_req_listbox.insert(
                     tk.END,
-                    f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                    format_requirement(req),
                 )
             self.add_req_button = ttk.Button(self.safety_req_frame, text="Add New", command=self.add_safety_requirement)
             self.add_req_button.grid(row=1, column=0, padx=2, pady=2)
@@ -1210,6 +1227,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 width=20,
             )
             self.type_combo.grid(row=0, column=1, padx=5, pady=5)
+            self.type_combo.bind("<<ComboboxSelected>>", self._toggle_fields)
             
             ttk.Label(master, text="Custom Requirement ID:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
             self.custom_id_entry = tk.Entry(master, width=20, font=dialog_font)
@@ -1221,7 +1239,8 @@ class EditNodeDialog(simpledialog.Dialog):
             self.req_entry = tk.Entry(master, width=40, font=dialog_font)
             self.req_entry.grid(row=2, column=1, padx=5, pady=5)
 
-            ttk.Label(master, text="ASIL:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+            self.asil_label = ttk.Label(master, text="ASIL:")
+            self.asil_label.grid(row=3, column=0, sticky="e", padx=5, pady=5)
             self.req_asil_var = tk.StringVar()
             state = "disabled" if self.asil_readonly else "readonly"
             self.req_asil_combo = ttk.Combobox(
@@ -1233,7 +1252,8 @@ class EditNodeDialog(simpledialog.Dialog):
             )
             self.req_asil_combo.grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
-            ttk.Label(master, text="CAL:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+            self.cal_label = ttk.Label(master, text="CAL:")
+            self.cal_label.grid(row=4, column=0, sticky="e", padx=5, pady=5)
             self.req_cal_var = tk.StringVar()
             self.req_cal_combo = ttk.Combobox(
                 master,
@@ -1251,6 +1271,7 @@ class EditNodeDialog(simpledialog.Dialog):
             self.req_entry.insert(0, self.initial_req.get("text", ""))
             self.req_asil_var.set(self.initial_req.get("asil", "QM"))
             self.req_cal_var.set(self.initial_req.get("cal", CAL_LEVEL_OPTIONS[0]))
+            self._toggle_fields()
             return self.req_entry
 
         def apply(self):
@@ -1263,9 +1284,10 @@ class EditNodeDialog(simpledialog.Dialog):
                 "req_type": req_type,
                 "text": req_text,
                 "custom_id": custom_id,
-                "asil": asil,
-                "cal": cal,
             }
+            if req_type not in ("operational", "functional modification"):
+                self.result["asil"] = asil
+                self.result["cal"] = cal
 
         def validate(self):
             custom_id = self.custom_id_entry.get().strip()
@@ -1282,6 +1304,19 @@ class EditNodeDialog(simpledialog.Dialog):
                     )
                     return False
             return True
+
+        def _toggle_fields(self, event=None):
+            req_type = self.type_var.get()
+            hide = req_type in ("operational", "functional modification")
+            widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
+            if hide:
+                for w in widgets:
+                    w.grid_remove()
+            else:
+                self.asil_label.grid(row=3, column=0, sticky="e", padx=5, pady=5)
+                self.req_asil_combo.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+                self.cal_label.grid(row=4, column=0, sticky="e", padx=5, pady=5)
+                self.req_cal_combo.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
     class SelectExistingRequirementsDialog(simpledialog.Dialog):
             """
@@ -1321,7 +1356,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 for req_id, req in global_requirements.items():
                     var = tk.BooleanVar(value=False)
                     self.selected_vars[req_id] = var
-                    text = f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
+                    text = format_requirement(req)
                     ttk.Checkbutton(self.check_frame, text=text, variable=var).pack(anchor="w", padx=2, pady=2)
                 return self.check_frame
     
@@ -1353,7 +1388,7 @@ class EditNodeDialog(simpledialog.Dialog):
                         pass  # ASIL recalculated when joint review closes
                     self.safety_req_listbox.insert(
                         tk.END,
-                        f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                        format_requirement(req),
                     )
         else:
             messagebox.showinfo("No Selection", "No existing requirements were selected.")
@@ -1365,11 +1400,12 @@ class EditNodeDialog(simpledialog.Dialog):
             "req_type": req_type,
             "text": text,
             "custom_id": custom_id,
-            "asil": asil,
-            "cal": cal,
             "status": "draft",
             "parent_id": "",
         }
+        if req_type not in ("operational", "functional modification"):
+            req["asil"] = asil
+            req["cal"] = cal
         global_requirements[custom_id] = req
         print(f"Added new requirement: {req}")
         return req
@@ -1377,7 +1413,7 @@ class EditNodeDialog(simpledialog.Dialog):
     def list_all_requirements(self):
         # This function returns a list of formatted strings for all requirements
         return [
-            f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
+            format_requirement(req)
             for req in global_requirements.values()
         ]
 
@@ -1435,10 +1471,8 @@ class EditNodeDialog(simpledialog.Dialog):
         rid = req.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        return (
-            f"[{rid}] [{req.get('req_type','')}] [{req.get('asil','')}] {req.get('text','')}" +
-            f" (Alloc: {alloc}; SGs: {goals})"
-        )
+        base = format_requirement(req)
+        return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     def infer_requirement_asil_from_node(self, node):
         """Return the highest ASIL of safety goals above the given node."""
@@ -1550,22 +1584,37 @@ class EditNodeDialog(simpledialog.Dialog):
         # Check global registry: if exists, update; otherwise, register new.
         if custom_id in global_requirements:
             req = global_requirements[custom_id]
-            req["req_type"] = dialog.result["req_type"]
+            req_type = dialog.result["req_type"]
+            req["req_type"] = req_type
             req["text"] = dialog.result["text"]
-            req["asil"] = asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM")
-            req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
+            if req_type not in ("operational", "functional modification"):
+                req["asil"] = (
+                    asil_default
+                    if self.node.node_type.upper() == "BASIC EVENT"
+                    else dialog.result.get("asil", "QM"),
+                )
+                req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
+            else:
+                req.pop("asil", None)
+                req.pop("cal", None)
         else:
+            req_type = dialog.result["req_type"]
             req = {
                 "id": custom_id,
-                "req_type": dialog.result["req_type"],
+                "req_type": req_type,
                 "text": dialog.result["text"],
                 "custom_id": custom_id,
-                "asil": asil_default if self.node.node_type.upper() == "BASIC EVENT" else dialog.result.get("asil", "QM"),
-                "cal": dialog.result.get("cal", CAL_LEVEL_OPTIONS[0]),
                 "validation_criteria": 0.0,
                 "status": "draft",
-                "parent_id": ""
+                "parent_id": "",
             }
+            if req_type not in ("operational", "functional modification"):
+                req["asil"] = (
+                    asil_default
+                    if self.node.node_type.upper() == "BASIC EVENT"
+                    else dialog.result.get("asil", "QM"),
+                )
+                req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
             global_requirements[custom_id] = req
 
         self.app.update_validation_criteria(custom_id)
@@ -1579,7 +1628,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 pass  # ASIL updated after joint review
             self.safety_req_listbox.insert(
                 tk.END,
-                f"[{req['id']}] [{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}",
+                format_requirement(req),
             )
 
     def edit_safety_requirement(self):
@@ -1604,17 +1653,22 @@ class EditNodeDialog(simpledialog.Dialog):
         if dialog.result is None or dialog.result["text"] == "":
             return
         new_custom_id = dialog.result["custom_id"].strip() or current_req.get("custom_id") or current_req.get("id") or str(uuid.uuid4())
-        current_req["req_type"] = dialog.result["req_type"]
+        req_type = dialog.result["req_type"]
+        current_req["req_type"] = req_type
         current_req["text"] = dialog.result["text"]
         current_req["status"] = "draft"
-        if self.node.node_type.upper() == "BASIC EVENT":
-            # Leave the ASIL untouched for decomposed requirements when
-            # editing within a base event so the value set during
-            # decomposition remains intact.
-            pass
+        if req_type not in ("operational", "functional modification"):
+            if self.node.node_type.upper() == "BASIC EVENT":
+                # Leave the ASIL untouched for decomposed requirements when
+                # editing within a base event so the value set during
+                # decomposition remains intact.
+                pass
+            else:
+                current_req["asil"] = dialog.result.get("asil", "QM")
+            current_req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
         else:
-            current_req["asil"] = dialog.result.get("asil", "QM")
-        current_req["cal"] = dialog.result.get("cal", CAL_LEVEL_OPTIONS[0])
+            current_req.pop("asil", None)
+            current_req.pop("cal", None)
         current_req["custom_id"] = new_custom_id
         current_req["id"] = new_custom_id
         global_requirements[new_custom_id] = current_req
@@ -1626,7 +1680,7 @@ class EditNodeDialog(simpledialog.Dialog):
             pass  # ASIL updated after joint review completion
         self.safety_req_listbox.insert(
             index,
-            f"[{current_req['id']}] [{current_req['req_type']}] [{current_req.get('asil','')}] [{current_req.get('cal','')}] {current_req['text']}",
+            format_requirement(current_req),
         )
 
     def delete_safety_requirement(self):
@@ -1660,8 +1714,6 @@ class EditNodeDialog(simpledialog.Dialog):
             "req_type": req.get("req_type", "vehicle"),
             "text": base_text + " (A)",
             "custom_id": req_id_a,
-            "asil": asil_a,
-            "cal": req.get("cal", CAL_LEVEL_OPTIONS[0]),
             "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
@@ -1671,12 +1723,16 @@ class EditNodeDialog(simpledialog.Dialog):
             "req_type": req.get("req_type", "vehicle"),
             "text": base_text + " (B)",
             "custom_id": req_id_b,
-            "asil": asil_b,
-            "cal": req.get("cal", CAL_LEVEL_OPTIONS[0]),
             "validation_criteria": 0.0,
             "status": "draft",
             "parent_id": req.get("id"),
         }
+        if req.get("asil") is not None:
+            r1["asil"] = asil_a
+            r2["asil"] = asil_b
+        if req.get("cal") is not None:
+            r1["cal"] = req.get("cal", CAL_LEVEL_OPTIONS[0])
+            r2["cal"] = req.get("cal", CAL_LEVEL_OPTIONS[0])
         req["status"] = "draft"
         global_requirements[req.get("id")] = req
         global_requirements[req_id_a] = r1
@@ -2399,10 +2455,8 @@ class FaultTreeApp:
         rid = req.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        return (
-            f"[{rid}] [{req.get('req_type','')}] [{req.get('asil','')}] {req.get('text','')}" +
-            f" (Alloc: {alloc}; SGs: {goals})"
-        )
+        base = format_requirement(req)
+        return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     def build_requirement_diff_html(self, review):
         """Return HTML highlighting requirement differences for the review."""
@@ -2634,10 +2688,8 @@ class FaultTreeApp:
         rid = req.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        return (
-            f"[{rid}] [{req.get('req_type','')}] [{req.get('asil','')}] {req.get('text','')}" +
-            f" (Alloc: {alloc}; SGs: {goals})"
-        )
+        base = format_requirement(req)
+        return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     def build_requirement_diff_html(self, review):
         """Return HTML highlighting requirement differences for the review."""
@@ -2783,18 +2835,20 @@ class FaultTreeApp:
     def format_requirement_with_trace(self, req):
         """Return requirement text including allocation and safety goal lists."""
         if isinstance(req, dict):
-            rid = req.get("id", "")
-            rtype = req.get("req_type", "")
-            asil = req.get("asil", "")
-            text = req.get("text", "")
+            data = req
         else:
-            rid = getattr(req, "id", "")
-            rtype = getattr(req, "req_type", "")
-            asil = getattr(req, "asil", "")
-            text = getattr(req, "text", "")
+            data = {
+                "id": getattr(req, "id", ""),
+                "req_type": getattr(req, "req_type", ""),
+                "asil": getattr(req, "asil", ""),
+                "cal": getattr(req, "cal", ""),
+                "text": getattr(req, "text", ""),
+            }
+        rid = data.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        return f"[{rid}] [{rtype}] [{asil}] {text} (Alloc: {alloc}; SGs: {goals})"
+        base = format_requirement(data)
+        return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     def build_requirement_diff_html(self, review):
         """Return HTML highlighting requirement differences for the review."""
@@ -2963,18 +3017,20 @@ class FaultTreeApp:
     def format_requirement_with_trace(self, req):
         """Return requirement text including allocation and safety goal lists."""
         if isinstance(req, dict):
-            rid = req.get("id", "")
-            rtype = req.get("req_type", "")
-            asil = req.get("asil", "")
-            text = req.get("text", "")
+            data = req
         else:
-            rid = getattr(req, "id", "")
-            rtype = getattr(req, "req_type", "")
-            asil = getattr(req, "asil", "")
-            text = getattr(req, "text", "")
+            data = {
+                "id": getattr(req, "id", ""),
+                "req_type": getattr(req, "req_type", ""),
+                "asil": getattr(req, "asil", ""),
+                "cal": getattr(req, "cal", ""),
+                "text": getattr(req, "text", ""),
+            }
+        rid = data.get("id", "")
         alloc = ", ".join(self.get_requirement_allocation_names(rid))
         goals = ", ".join(self.get_requirement_goal_names(rid))
-        return f"[{rid}] [{rtype}] [{asil}] {text} (Alloc: {alloc}; SGs: {goals})"
+        base = format_requirement(data)
+        return f"{base} (Alloc: {alloc}; SGs: {goals})"
 
     def build_requirement_diff_html(self, review):
         """Return HTML highlighting requirement differences for the review."""
@@ -9965,21 +10021,28 @@ class FaultTreeApp:
 
                 ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e")
                 self.type_var = tk.StringVar(value=self.initial.get("req_type", "vehicle"))
-                ttk.Combobox(
+                self.type_cb = ttk.Combobox(
                     master,
                     textvariable=self.type_var,
                     values=REQUIREMENT_TYPE_OPTIONS,
                     state="readonly",
                     width=20,
-                ).grid(row=1, column=1, padx=5, pady=5)
+                )
+                self.type_cb.grid(row=1, column=1, padx=5, pady=5)
+                self.type_cb.bind("<<ComboboxSelected>>", self._toggle_fields)
 
-                ttk.Label(master, text="ASIL:").grid(row=2, column=0, sticky="e")
+                self.asil_label = ttk.Label(master, text="ASIL:")
+                self.asil_label.grid(row=2, column=0, sticky="e")
                 self.asil_var = tk.StringVar(value=self.initial.get("asil", "QM"))
-                ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=2, column=1, padx=5, pady=5)
+                self.asil_combo = ttk.Combobox(master, textvariable=self.asil_var, values=ASIL_LEVEL_OPTIONS, state="readonly", width=8)
+                self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e")
+                self.cal_label = ttk.Label(master, text="CAL:")
+                self.cal_label.grid(row=3, column=0, sticky="e")
                 self.cal_var = tk.StringVar(value=self.initial.get("cal", CAL_LEVEL_OPTIONS[0]))
-                ttk.Combobox(master, textvariable=self.cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8).grid(row=3, column=1, padx=5, pady=5)
+                self.cal_combo = ttk.Combobox(master, textvariable=self.cal_var, values=CAL_LEVEL_OPTIONS, state="readonly", width=8)
+                self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
+                self._toggle_fields()
 
                 ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e")
                 self.parent_var = tk.StringVar(value=self.initial.get("parent_id", ""))
@@ -9997,15 +10060,18 @@ class FaultTreeApp:
                 return master
 
             def apply(self):
+                rid = self.id_var.get().strip() or str(uuid.uuid4())
+                req_type = self.type_var.get().strip()
                 self.result = {
-                    "id": self.id_var.get().strip() or str(uuid.uuid4()),
-                    "req_type": self.type_var.get().strip(),
-                    "asil": self.asil_var.get().strip(),
-                    "cal": self.cal_var.get().strip(),
+                    "id": rid,
+                    "req_type": req_type,
                     "parent_id": self.parent_var.get().strip(),
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
                 }
+                if req_type not in ("operational", "functional modification"):
+                    self.result["asil"] = self.asil_var.get().strip()
+                    self.result["cal"] = self.cal_var.get().strip()
 
             def validate(self):
                 rid = self.id_var.get().strip()
@@ -10013,6 +10079,19 @@ class FaultTreeApp:
                     messagebox.showerror("ID", "ID already exists")
                     return False
                 return True
+
+            def _toggle_fields(self, event=None):
+                req_type = self.type_var.get()
+                hide = req_type in ("operational", "functional modification")
+                widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
+                if hide:
+                    for w in widgets:
+                        w.grid_remove()
+                else:
+                    self.asil_label.grid(row=2, column=0, sticky="e")
+                    self.asil_combo.grid(row=2, column=1, padx=5, pady=5)
+                    self.cal_label.grid(row=3, column=0, sticky="e")
+                    self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
 
         class TraceDialog(simpledialog.Dialog):
             def __init__(self, parent, app, requirement):
@@ -10888,7 +10967,7 @@ class FaultTreeApp:
                                     self.node.safety_requirements = []
                                 if not any(r.get("id") == req["id"] for r in self.node.safety_requirements):
                                     self.node.safety_requirements.append(req)
-                                    desc = f"[{req['req_type']}] [{req.get('asil','')}] [{req.get('cal','')}] {req['text']}"
+                                    desc = format_requirement(req, include_id=False)
                                     self.req_listbox.insert(tk.END, desc)
                             break
 
@@ -10956,7 +11035,7 @@ class FaultTreeApp:
             if not hasattr(self.node, "safety_requirements"):
                 self.node.safety_requirements = []
             for req in self.node.safety_requirements:
-                desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                desc = format_requirement(req, include_id=False)
                 self.req_listbox.insert(tk.END, desc)
             ttk.Button(self.req_frame, text="Add New", command=self.add_safety_requirement).grid(row=1, column=0, padx=2, pady=2)
             ttk.Button(self.req_frame, text="Edit", command=self.edit_safety_requirement).grid(row=1, column=1, padx=2, pady=2)
@@ -11064,8 +11143,8 @@ class FaultTreeApp:
                     req = global_requirements.get(req_id)
                     if req and not any(r["id"] == req_id for r in self.node.safety_requirements):
                         self.node.safety_requirements.append(req)
-                        desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
-                self.req_listbox.insert(tk.END, desc)
+                        desc = format_requirement(req, include_id=False)
+                        self.req_listbox.insert(tk.END, desc)
             else:
                 messagebox.showinfo("No Selection", "No existing requirements were selected.")
 
@@ -11128,7 +11207,7 @@ class FaultTreeApp:
                 self.node.safety_requirements = []
             if not any(r["id"] == custom_id for r in self.node.safety_requirements):
                 self.node.safety_requirements.append(req)
-                desc = f"[{req['req_type']}] [{req.get('asil','')}] {req['text']}"
+                desc = format_requirement(req, include_id=False)
                 self.req_listbox.insert(tk.END, desc)
 
         def edit_safety_requirement(self):
@@ -11152,7 +11231,7 @@ class FaultTreeApp:
             self.app.update_validation_criteria(new_custom_id)
             self.node.safety_requirements[index] = current_req
             self.req_listbox.delete(index)
-            desc = f"[{current_req['req_type']}] [{current_req.get('asil','')}] {current_req['text']}"
+            desc = format_requirement(current_req, include_id=False)
             self.req_listbox.insert(index, desc)
 
         def delete_safety_requirement(self):
