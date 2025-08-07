@@ -159,6 +159,23 @@ class HaraDoc:
     meta: Metadata = field(default_factory=Metadata)
 
 @dataclass
+class StpaEntry:
+    action: str
+    not_providing: str
+    providing: str
+    incorrect_timing: str
+    stopped_too_soon: str
+    safety_constraints: list[str] = field(default_factory=list)
+
+
+@dataclass
+class StpaDoc:
+    name: str
+    diagram: str
+    entries: list
+    meta: Metadata = field(default_factory=Metadata)
+
+@dataclass
 class FI2TCDoc:
     """Container for an FI2TC analysis."""
     name: str
