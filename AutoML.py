@@ -275,6 +275,8 @@ from analysis.models import (
     HaraEntry,
     HazopDoc,
     HaraDoc,
+    StpaEntry,
+    StpaDoc,
     FI2TCDoc,
     TC2FIDoc,
     QUALIFICATIONS,
@@ -354,6 +356,7 @@ from gui.toolboxes import (
     HazardExplorerWindow,
     RequirementsExplorerWindow,
 )
+from gui.stpa_window import StpaWindow
 
 
 def get_version() -> str:
@@ -1956,10 +1959,13 @@ class FaultTreeApp:
         self.functional_insufficiencies: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
+        self.stpa_docs = []   # list of StpaDoc
         self.active_hazop = None
         self.active_hara = None
+        self.active_stpa = None
         self.hazop_entries = []  # backwards compatibility for active doc
         self.hara_entries = []
+        self.stpa_entries = []
         self.fi2tc_docs = []  # list of FI2TCDoc
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
@@ -2083,6 +2089,7 @@ class FaultTreeApp:
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
         qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
+        qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
@@ -2205,6 +2212,7 @@ class FaultTreeApp:
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
             "HARA Analysis": self.open_hara_window,
+            "STPA Analysis": self.open_stpa_window,
             "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
             "Faults Editor": self.show_fault_editor,
@@ -2817,6 +2825,11 @@ class FaultTreeApp:
                     for d in data.get("haras", [])
                     if d.get("name") in getattr(review, "hara_names", [])
                 ],
+                "stpas": [
+                    d
+                    for d in data.get("stpas", [])
+                    if d.get("name") in getattr(review, "stpa_names", [])
+                ],
             }
 
         data1 = filter_data(base_data)
@@ -2989,6 +3002,11 @@ class FaultTreeApp:
                     d
                     for d in data.get("haras", [])
                     if d.get("name") in getattr(review, "hara_names", [])
+                ],
+                "stpas": [
+                    d
+                    for d in data.get("stpas", [])
+                    if d.get("name") in getattr(review, "stpa_names", [])
                 ],
             }
 
@@ -7964,6 +7982,12 @@ class FaultTreeApp:
                 doc = self.hara_docs[idx]
                 self._hara_window.doc_var.set(doc.name)
                 self._hara_window.select_doc()
+        elif kind == "stpa":
+            self.open_stpa_window()
+            if hasattr(self, "_stpa_window"):
+                doc = self.stpa_docs[idx]
+                self._stpa_window.doc_var.set(doc.name)
+                self._stpa_window.select_doc()
         elif kind == "fi2tc":
             self.open_fi2tc_window()
             if hasattr(self, "_fi2tc_window"):
@@ -8843,6 +8867,9 @@ class FaultTreeApp:
             hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
             for idx, doc in enumerate(self.hazop_docs):
                 tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
+            stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
+            for idx, doc in enumerate(self.stpa_docs):
+                tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
             fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
             for idx, doc in enumerate(self.fi2tc_docs):
                 tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
@@ -13753,6 +13780,13 @@ class FaultTreeApp:
         self._hara_tab = self._new_tab("HARA")
         self._hara_window = HaraWindow(self._hara_tab, self)
 
+    def open_stpa_window(self):
+        if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
+            self.doc_nb.select(self._stpa_tab)
+            return
+        self._stpa_tab = self._new_tab("STPA")
+        self._stpa_window = StpaWindow(self._stpa_tab, self)
+
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
@@ -14467,6 +14501,14 @@ class FaultTreeApp:
                 }
                 for doc in self.hara_docs
             ],
+            "stpas": [
+                {
+                    "name": doc.name,
+                    "diagram": doc.diagram,
+                    "entries": [asdict(e) for e in doc.entries],
+                }
+                for doc in self.stpa_docs
+            ],
             "fi2tc_docs": [
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.fi2tc_docs
@@ -14691,6 +14733,42 @@ class FaultTreeApp:
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
         self.update_hazard_list()
+
+        self.stpa_docs = []
+        for d in data.get("stpas", []):
+            entries = [
+                StpaEntry(
+                    e.get("action", ""),
+                    e.get("not_providing", ""),
+                    e.get("providing", ""),
+                    e.get("incorrect_timing", ""),
+                    e.get("stopped_too_soon", ""),
+                    e.get("safety_constraints", []),
+                )
+                for e in d.get("entries", [])
+            ]
+            self.stpa_docs.append(
+                StpaDoc(
+                    d.get("name", f"STPA {len(self.stpa_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
+            )
+        if not self.stpa_docs and "stpa_entries" in data:
+            entries = [
+                StpaEntry(
+                    e.get("action", ""),
+                    e.get("not_providing", ""),
+                    e.get("providing", ""),
+                    e.get("incorrect_timing", ""),
+                    e.get("stopped_too_soon", ""),
+                    e.get("safety_constraints", []),
+                )
+                for e in data.get("stpa_entries", [])
+            ]
+            self.stpa_docs.append(StpaDoc("Default", "", entries))
+        self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
+        self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
@@ -15069,6 +15147,42 @@ class FaultTreeApp:
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
         self.update_hazard_list()
+
+        self.stpa_docs = []
+        for d in data.get("stpas", []):
+            entries = [
+                StpaEntry(
+                    e.get("action", ""),
+                    e.get("not_providing", ""),
+                    e.get("providing", ""),
+                    e.get("incorrect_timing", ""),
+                    e.get("stopped_too_soon", ""),
+                    e.get("safety_constraints", []),
+                )
+                for e in d.get("entries", [])
+            ]
+            self.stpa_docs.append(
+                StpaDoc(
+                    d.get("name", f"STPA {len(self.stpa_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
+            )
+        if not self.stpa_docs and "stpa_entries" in data:
+            entries = [
+                StpaEntry(
+                    e.get("action", ""),
+                    e.get("not_providing", ""),
+                    e.get("providing", ""),
+                    e.get("incorrect_timing", ""),
+                    e.get("stopped_too_soon", ""),
+                    e.get("safety_constraints", []),
+                )
+                for e in data.get("stpa_entries", [])
+            ]
+            self.stpa_docs.append(StpaDoc("Default", "", entries))
+        self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
+        self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
