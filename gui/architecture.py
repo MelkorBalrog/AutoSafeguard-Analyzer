@@ -14,7 +14,7 @@ from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
-from analysis.models import global_requirements, ASIL_ORDER
+from analysis.models import global_requirements, ASIL_ORDER, StpaDoc
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -8239,8 +8239,29 @@ class ControlFlowDiagramWindow(SysMLDiagramWindow):
             "Existing Element",
             "Control Action",
             "Feedback",
+            "STPA Analysis",
         ]
         super().__init__(master, "Control Flow Diagram", tools, diagram_id, app=app, history=history)
+
+    def select_tool(self, tool):
+        if tool == "STPA Analysis":
+            repo = SysMLRepository.get_instance()
+            self.app.open_stpa_window()
+            diag_id = self.diagram_id
+            doc = next((d for d in self.app.stpa_docs if d.diagram == diag_id), None)
+            if not doc:
+                diag = repo.diagrams.get(diag_id)
+                name = diag.name or diag.diag_id if diag else f"STPA {len(self.app.stpa_docs)+1}"
+                doc = StpaDoc(name, diag_id, [])
+                self.app.stpa_docs.append(doc)
+            self.app.active_stpa = doc
+            self.app.stpa_entries = doc.entries
+            if hasattr(self.app, "_stpa_window"):
+                self.app._stpa_window.refresh_docs()
+                self.app._stpa_window.doc_var.set(doc.name)
+                self.app._stpa_window.select_doc()
+            return
+        super().select_tool(tool)
 
 
 class NewDiagramDialog(simpledialog.Dialog):
