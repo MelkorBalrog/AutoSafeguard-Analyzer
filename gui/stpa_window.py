@@ -225,11 +225,12 @@ class StpaWindow(tk.Frame):
                     name = elem.name or ""
             obj_map[obj_data.get("obj_id")] = name
         for conn_data in getattr(diag, "connections", []):
-            conn_obj = (
-                DiagramConnection(**conn_data)
-                if isinstance(conn_data, dict)
-                else conn_data
-            )
+            if isinstance(conn_data, dict):
+                conn_obj = DiagramConnection(
+                    **{k: v for k, v in conn_data.items() if k in DiagramConnection.__annotations__}
+                )
+            else:
+                conn_obj = conn_data
             if getattr(conn_obj, "conn_type", "") == "Control Action":
                 label = format_control_flow_label(
                     conn_obj, repo, "Control Flow Diagram"
