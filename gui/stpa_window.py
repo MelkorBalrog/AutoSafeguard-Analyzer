@@ -4,7 +4,6 @@ from tkinter import ttk, simpledialog
 
 from gui import messagebox
 from gui.toolboxes import (
-    EditableTreeview,
     configure_table_style,
     _RequirementDialog,
     _SelectRequirementsDialog,
@@ -51,12 +50,11 @@ class StpaWindow(tk.Frame):
         tree_frame = ttk.Frame(self)
         tree_frame.pack(fill=tk.BOTH, expand=True)
         configure_table_style("Stpa.Treeview", rowheight=80)
-        self.tree = EditableTreeview(
+        self.tree = ttk.Treeview(
             tree_frame,
             columns=self.COLS,
             show="headings",
             style="Stpa.Treeview",
-            edit_callback=self.on_cell_edit,
             height=4,
         )
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
@@ -67,6 +65,7 @@ class StpaWindow(tk.Frame):
             self.tree.heading(c, text=heading)
             width = 200 if c == "safety_constraints" else 150
             self.tree.column(c, width=width)
+        self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
@@ -75,9 +74,15 @@ class StpaWindow(tk.Frame):
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
-        ttk.Button(btn, text="Add", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(side=tk.LEFT, padx=2, pady=2)
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Add", command=self.add_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Edit", command=self.edit_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
+        ttk.Button(btn, text="Delete", command=self.del_row).pack(
+            side=tk.LEFT, padx=2, pady=2
+        )
 
         self.refresh_docs()
         self.refresh()
@@ -124,7 +129,9 @@ class StpaWindow(tk.Frame):
             self.name_var = tk.StringVar()
             name_entry = ttk.Entry(master, textvariable=self.name_var)
             name_entry.grid(row=0, column=1)
-            ttk.Label(master, text="Control Flow Diagram").grid(row=1, column=0, sticky="e")
+            ttk.Label(master, text="Control Flow Diagram").grid(
+                row=1, column=0, sticky="e"
+            )
             repo = SysMLRepository.get_instance()
             diags = [
                 d.name or d.diag_id
@@ -146,7 +153,9 @@ class StpaWindow(tk.Frame):
             super().__init__(parent, title="Edit STPA")
 
         def body(self, master):
-            ttk.Label(master, text="Control Flow Diagram").grid(row=0, column=0, sticky="e")
+            ttk.Label(master, text="Control Flow Diagram").grid(
+                row=0, column=0, sticky="e"
+            )
             repo = SysMLRepository.get_instance()
             diags = [
                 d.name or d.diag_id
@@ -238,7 +247,9 @@ class StpaWindow(tk.Frame):
             self.app.active_stpa = self.app.stpa_docs[0]
         else:
             self.app.active_stpa = None
-        self.app.stpa_entries = self.app.active_stpa.entries if self.app.active_stpa else []
+        self.app.stpa_entries = (
+            self.app.active_stpa.entries if self.app.active_stpa else []
+        )
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -329,7 +340,9 @@ class StpaWindow(tk.Frame):
             ttk.Label(master, text="Control Action").grid(row=0, column=0, sticky="e")
             actions = self.parent._get_control_actions()
             self.action_var = tk.StringVar(value=self.row.action)
-            action_cb = ttk.Combobox(master, textvariable=self.action_var, state="readonly")
+            action_cb = ttk.Combobox(
+                master, textvariable=self.action_var, state="readonly"
+            )
             action_cb.grid(row=0, column=1, padx=5, pady=5)
             # Explicitly configure the combobox values so Tkinter updates its list
             # correctly. Passing ``values`` during construction can sometimes
@@ -376,7 +389,9 @@ class StpaWindow(tk.Frame):
             self.st_var.insert(0, self.row.stopped_too_soon)
             self.st_var.grid(row=4, column=1, padx=5, pady=5)
 
-            ttk.Label(master, text="Safety Constraints").grid(row=5, column=0, sticky="ne")
+            ttk.Label(master, text="Safety Constraints").grid(
+                row=5, column=0, sticky="ne"
+            )
             sc_frame = ttk.Frame(master)
             sc_frame.grid(row=5, column=1, padx=5, pady=5)
             self.sc_lb = tk.Listbox(sc_frame, selectmode="extended", height=4, width=40)
@@ -387,11 +402,15 @@ class StpaWindow(tk.Frame):
             ttk.Button(sc_frame, text="Add New", command=self.add_sc_new).grid(
                 row=1, column=0
             )
-            ttk.Button(sc_frame, text="Add Existing", command=self.add_sc_existing).grid(
-                row=1, column=1
+            ttk.Button(
+                sc_frame, text="Add Existing", command=self.add_sc_existing
+            ).grid(row=1, column=1)
+            ttk.Button(sc_frame, text="Edit", command=self.edit_sc).grid(
+                row=1, column=2
             )
-            ttk.Button(sc_frame, text="Edit", command=self.edit_sc).grid(row=1, column=2)
-            ttk.Button(sc_frame, text="Delete", command=self.del_sc).grid(row=1, column=3)
+            ttk.Button(sc_frame, text="Delete", command=self.del_sc).grid(
+                row=1, column=3
+            )
             return action_cb
 
         def add_sc_new(self):
@@ -443,8 +462,7 @@ class StpaWindow(tk.Frame):
             self.row.incorrect_timing = self.it_var.get()
             self.row.stopped_too_soon = self.st_var.get()
             self.row.safety_constraints = [
-                self.sc_lb.get(i).split("]", 1)[0][1:]
-                for i in range(self.sc_lb.size())
+                self.sc_lb.get(i).split("]", 1)[0][1:] for i in range(self.sc_lb.size())
             ]
 
     def add_row(self):
@@ -472,13 +490,10 @@ class StpaWindow(tk.Frame):
                 del self.app.stpa_entries[idx]
         self.refresh()
 
-    def on_cell_edit(self, row: int, column: str, value: str) -> None:
-        if row >= len(self.app.stpa_entries):
+    def _on_double_click(self, event):
+        item = self.tree.identify_row(event.y)
+        if not item:
             return
-        entry = self.app.stpa_entries[row]
-        if column == "safety_constraints":
-            entry.safety_constraints = [v for v in value.split(";") if v]
-        elif column in self.COLS:
-            setattr(entry, column, value)
-        self.refresh()
-
+        self.tree.selection_set(item)
+        self.tree.focus(item)
+        self.edit_row()
