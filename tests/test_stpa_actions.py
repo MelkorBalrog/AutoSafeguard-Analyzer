@@ -9,7 +9,7 @@ def reset_repo():
     return SysMLRepository.get_instance()
 
 
-def test_get_actions_returns_control_actions_only():
+def test_get_control_actions_returns_control_actions_only():
     repo = reset_repo()
     diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
     diag.objects = [
@@ -24,11 +24,11 @@ def test_get_actions_returns_control_actions_only():
     app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag.diag_id, []))
     win = StpaWindow.__new__(StpaWindow)
     win.app = app
-    actions = win._get_actions()
+    actions = win._get_control_actions()
     assert actions == ["Act"]
 
 
-def test_get_actions_ignores_extra_connection_fields():
+def test_get_control_actions_ignores_extra_connection_fields():
     repo = reset_repo()
     diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
     diag.objects = [
@@ -48,11 +48,11 @@ def test_get_actions_ignores_extra_connection_fields():
     app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag.diag_id, []))
     win = StpaWindow.__new__(StpaWindow)
     win.app = app
-    actions = win._get_actions()
+    actions = win._get_control_actions()
     assert actions == ["Act"]
 
 
-def test_get_actions_matches_diagram_by_name():
+def test_get_control_actions_matches_diagram_by_name():
     repo = reset_repo()
     diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram", name="CF")
     diag.objects = [
@@ -66,5 +66,5 @@ def test_get_actions_matches_diagram_by_name():
     app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag.name, []))
     win = StpaWindow.__new__(StpaWindow)
     win.app = app
-    actions = win._get_actions()
+    actions = win._get_control_actions()
     assert actions == ["Act"]
