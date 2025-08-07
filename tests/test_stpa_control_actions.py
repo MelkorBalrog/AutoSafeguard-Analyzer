@@ -67,7 +67,7 @@ def test_diagram_lookup_prefers_control_flow_diagrams():
     e1 = repo.create_element("Block", name="A")
     e2 = repo.create_element("Block", name="B")
     act = repo.create_element("Action", name="Do")
-    # Create diagrams with the same name but different types
+    # Create diagrams with the same base name but different types
     activity = repo.create_diagram("Activity Diagram", name="Same")
     cf = repo.create_diagram("Control Flow Diagram", name="Same")
 
@@ -95,7 +95,7 @@ def test_diagram_lookup_prefers_control_flow_diagrams():
 
     class DummyNewDialog:
         def __init__(self, parent, app):
-            self.result = ("doc", "Same")
+            self.result = ("doc", cf.name)
 
     window.NewStpaDialog = DummyNewDialog
     window.new_doc()
@@ -107,7 +107,7 @@ def test_diagram_lookup_prefers_control_flow_diagrams():
 
     class DummyEditDialog:
         def __init__(self, parent, app):
-            self.result = "Same"
+            self.result = cf.name
 
     window.EditStpaDialog = DummyEditDialog
     window.edit_doc()
