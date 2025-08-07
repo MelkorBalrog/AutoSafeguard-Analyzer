@@ -210,9 +210,13 @@ class StpaWindow(tk.Frame):
         if not self.app.active_stpa:
             return []
         repo = SysMLRepository.get_instance()
-        diag = repo.diagrams.get(self.app.active_stpa.diagram)
+        diag_id = self.app.active_stpa.diagram
+        diag = repo.diagrams.get(diag_id)
         if not diag:
-            return []
+            diag = next(
+                (d for d in repo.diagrams.values() if (d.name or d.diag_id) == diag_id),
+                None,
+            )
         if not diag or diag.diag_type != "Control Flow Diagram":
             return []
         actions: set[str] = set()
