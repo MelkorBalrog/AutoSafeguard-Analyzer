@@ -339,6 +339,14 @@ class StpaWindow(tk.Frame):
                 # Select the first control action by default so the combo box is
                 # never shown empty to the user.
                 self.action_var.set(actions[0])
+            # Add a tooltip that always shows the full control action text.
+            self._action_tt = ToolTip(action_cb, self.action_var.get())
+
+            def _update_tooltip(_event=None):
+                self._action_tt.text = self.action_var.get()
+
+            _update_tooltip()
+            action_cb.bind("<<ComboboxSelected>>", _update_tooltip)
 
             ttk.Label(master, text="Not Providing causes Hazard").grid(
                 row=1, column=0, sticky="e"
