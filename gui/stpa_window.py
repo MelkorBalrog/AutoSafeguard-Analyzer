@@ -263,14 +263,49 @@ class StpaWindow(tk.Frame):
         if not diagram:
             return []
 
-        labels = []
-        for conn_dict in diagram.connections:
-            if conn_dict.get("conn_type") != "Control Action":
+        labels: set[str] = set()
+        # First gather labels from explicit diagram connections
+        for conn_dict in getattr(diagram, "connections", []):
+            conn_type = conn_dict.get("conn_type")
+            stereotype = (conn_dict.get("stereotype") or "").lower()
+            if conn_type != "Control Action" and stereotype != "control action":
                 continue
+            conn_dict.setdefault("conn_type", "Control Action")
             conn = DiagramConnection(**conn_dict)
             label = format_control_flow_label(conn, repo, diagram.diag_type)
             if label:
-                labels.append(label)
+                labels.add(label)
+
+        if labels:
+            return sorted(labels)
+
+        # Fall back to diagram relationships if no connections are present
+        for rel_id in getattr(diagram, "relationships", []):
+            rel = next((r for r in repo.relationships if r.rel_id == rel_id), None)
+            if not rel:
+                continue
+            rel_stereo = (rel.stereotype or "").lower()
+            if rel.rel_type != "Control Action" and rel_stereo != "control action":
+                continue
+            conn = DiagramConnection(0, 0, "Control Action")
+            conn.name = rel.properties.get("name", "")
+            elem_id = rel.properties.get("element_id")
+            if elem_id:
+                conn.element_id = elem_id
+            guards = rel.properties.get("guard")
+            if isinstance(guards, str):
+                guards = [guards]
+            if guards:
+                conn.guard = guards
+            guard_ops = rel.properties.get("guard_ops")
+            if isinstance(guard_ops, str):
+                guard_ops = [guard_ops]
+            if guard_ops:
+                conn.guard_ops = guard_ops
+            label = format_control_flow_label(conn, repo, diagram.diag_type)
+            if label:
+                labels.add(label)
+
         return sorted(labels)
 
     class RowDialog(simpledialog.Dialog):
