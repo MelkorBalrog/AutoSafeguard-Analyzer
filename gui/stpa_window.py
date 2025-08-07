@@ -63,7 +63,8 @@ class StpaWindow(tk.Frame):
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for c in self.COLS:
-            self.tree.heading(c, text=c.replace("_", " ").title())
+            heading = "Control Action" if c == "action" else c.replace("_", " ").title()
+            self.tree.heading(c, text=heading)
             width = 200 if c == "safety_constraints" else 150
             self.tree.column(c, width=width)
         self.tree.grid(row=0, column=0, sticky="nsew")
@@ -253,7 +254,7 @@ class StpaWindow(tk.Frame):
             ]
             self.tree.insert("", "end", values=vals)
 
-    def _get_actions(self):
+    def _get_control_actions(self):
         if not self.app.active_stpa:
             return []
         repo = SysMLRepository.get_instance()
@@ -307,8 +308,8 @@ class StpaWindow(tk.Frame):
             super().__init__(parent, title="Edit STPA Row")
 
         def body(self, master):
-            ttk.Label(master, text="Action").grid(row=0, column=0, sticky="e")
-            actions = self.parent._get_actions()
+            ttk.Label(master, text="Control Action").grid(row=0, column=0, sticky="e")
+            actions = self.parent._get_control_actions()
             self.action_var = tk.StringVar(value=self.row.action)
             action_cb = ttk.Combobox(
                 master, textvariable=self.action_var, values=actions, state="readonly"
