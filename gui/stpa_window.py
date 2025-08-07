@@ -17,7 +17,7 @@ from analysis.models import (
     REQUIREMENT_TYPE_OPTIONS,
 )
 from sysml.sysml_repository import SysMLRepository
-from gui.architecture import format_control_flow_label
+from gui.architecture import DiagramConnection, format_control_flow_label
 
 
 class StpaWindow(tk.Frame):
@@ -214,9 +214,14 @@ class StpaWindow(tk.Frame):
         if not diag:
             return []
         actions = []
-        for conn in getattr(diag, "connections", []):
-            if conn.conn_type == "Control Action":
-                label = format_control_flow_label(conn, repo, "Control Flow Diagram")
+        for conn_data in getattr(diag, "connections", []):
+            conn_obj = (
+                DiagramConnection(**conn_data)
+                if isinstance(conn_data, dict)
+                else conn_data
+            )
+            if getattr(conn_obj, "conn_type", "") == "Control Action":
+                label = format_control_flow_label(conn_obj, repo, "Control Flow Diagram")
                 if label:
                     actions.append(label)
         return sorted(actions)
