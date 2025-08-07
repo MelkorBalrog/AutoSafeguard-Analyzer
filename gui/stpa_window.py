@@ -340,10 +340,16 @@ class StpaWindow(tk.Frame):
             ttk.Label(master, text="Control Action").grid(row=0, column=0, sticky="e")
             actions = self.parent._get_control_actions()
             self.action_var = tk.StringVar(value=self.row.action)
-            action_cb = ttk.Combobox(
-                master, textvariable=self.action_var, values=actions, state="readonly"
-            )
+            action_cb = ttk.Combobox(master, textvariable=self.action_var, state="readonly")
             action_cb.grid(row=0, column=1, padx=5, pady=5)
+            # Explicitly configure the combobox values so Tkinter updates its list
+            # correctly. Passing ``values`` during construction can sometimes
+            # result in an empty drop-down on some platforms.
+            action_cb.configure(values=actions)
+            if not self.row.action and actions:
+                # Select the first control action by default so the combo box is
+                # never shown empty to the user.
+                self.action_var.set(actions[0])
 
             ttk.Label(master, text="Not Providing causes Hazard").grid(
                 row=1, column=0, sticky="e"
