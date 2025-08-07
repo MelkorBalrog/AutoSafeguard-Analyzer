@@ -300,17 +300,22 @@ class StpaWindow(tk.Frame):
                     )
                 else:
                     conn_obj = conn_data
-                if conn_obj.conn_type != "Control Action":
-                    continue
-                label = format_control_flow_label(
-                    conn_obj, repo, "Control Flow Diagram"
-                )
-                if not label:
-                    src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
-                    dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
-                    label = f"{src_name} -> {dst_name}"
-                if label:
-                    results.add(label)
+                elem_id = getattr(conn_obj, "element_id", "")
+                if conn_obj.conn_type == "Control Action":
+                    label = format_control_flow_label(
+                        conn_obj, repo, "Control Flow Diagram"
+                    )
+                    if not label:
+                        src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
+                        dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
+                        label = f"{src_name} -> {dst_name}"
+                    if label:
+                        results.add(label)
+                if elem_id:
+                    sub_id = repo.get_linked_diagram(elem_id)
+                    sub_diag = repo.diagrams.get(sub_id)
+                    if sub_diag:
+                        results.update(collect_actions(sub_diag))
 
             for obj_data in getattr(diagram, "objects", []):
                 elem_id = obj_data.get("element_id")
