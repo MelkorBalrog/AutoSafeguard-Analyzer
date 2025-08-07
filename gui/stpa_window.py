@@ -255,13 +255,23 @@ class StpaWindow(tk.Frame):
             self.tree.insert("", "end", values=vals)
 
     def _get_control_actions(self):
-        """Return available control action labels.
+        """Return labels of control action connections for the selected diagram."""
 
-        This legacy helper now delegates to the application-wide
-        ``get_all_action_labels`` method, which provides a unified way
-        of retrieving action labels across the application.
-        """
-        return self.app.get_all_action_labels()
+        repo = SysMLRepository.get_instance()
+        diag_id = getattr(getattr(self.app, "active_stpa", None), "diagram", "")
+        diagram = repo.diagrams.get(diag_id)
+        if not diagram:
+            return []
+
+        labels = []
+        for conn_dict in diagram.connections:
+            if conn_dict.get("conn_type") != "Control Action":
+                continue
+            conn = DiagramConnection(**conn_dict)
+            label = format_control_flow_label(conn, repo, diagram.diag_type)
+            if label:
+                labels.append(label)
+        return sorted(labels)
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
@@ -272,7 +282,7 @@ class StpaWindow(tk.Frame):
 
         def body(self, master):
             ttk.Label(master, text="Control Action").grid(row=0, column=0, sticky="e")
-            actions = self.app.get_all_action_labels()
+            actions = self.parent._get_control_actions()
             self.action_var = tk.StringVar(value=self.row.action)
             action_cb = ttk.Combobox(master, textvariable=self.action_var, state="readonly")
             action_cb.grid(row=0, column=1, padx=5, pady=5)

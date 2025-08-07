@@ -11,9 +11,10 @@ from gui.stpa_window import StpaWindow
 def test_row_dialog_populates_control_actions(monkeypatch):
     """The control action combo box should list actions and preselect one."""
 
-    app = types.SimpleNamespace(get_all_action_labels=lambda: ["Act"])
+    app = types.SimpleNamespace()
     parent = StpaWindow.__new__(StpaWindow)
     parent.app = app
+    parent._get_control_actions = lambda: ["Act"]
 
     # ------------------------------------------------------------------
     # Stub tkinter widgets so the dialog can be created without a display
