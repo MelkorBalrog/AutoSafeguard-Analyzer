@@ -2244,6 +2244,7 @@ class FaultTreeApp:
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
+                "STPA Analysis",
                 "FI2TC Analysis",
                 "TC2FI Analysis",
             ],
