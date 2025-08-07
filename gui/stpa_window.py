@@ -14,7 +14,6 @@ from analysis.models import (
     StpaEntry,
     StpaDoc,
     global_requirements,
-    REQUIREMENT_TYPE_OPTIONS,
 )
 from sysml.sysml_repository import SysMLRepository
 from gui.architecture import DiagramConnection, format_control_flow_label
@@ -43,6 +42,7 @@ class StpaWindow(tk.Frame):
         self.doc_cb.pack(side=tk.LEFT, padx=2)
         ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
         ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
+        ttk.Button(top, text="Edit", command=self.edit_doc).pack(side=tk.LEFT)
         ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
         self.diag_lbl = ttk.Label(top, text="")
@@ -139,6 +139,34 @@ class StpaWindow(tk.Frame):
         def apply(self):
             self.result = (self.name_var.get(), self.diag_var.get())
 
+    class EditStpaDialog(simpledialog.Dialog):
+        def __init__(self, parent, app):
+            self.app = app
+            super().__init__(parent, title="Edit STPA")
+
+        def body(self, master):
+            ttk.Label(master, text="Control Flow Diagram").grid(row=0, column=0, sticky="e")
+            repo = SysMLRepository.get_instance()
+            diags = [
+                d.name or d.diag_id
+                for d in repo.diagrams.values()
+                if d.diag_type == "Control Flow Diagram"
+            ]
+            self.diag_var = tk.StringVar()
+            current = ""
+            if self.app.active_stpa:
+                diag = repo.diagrams.get(self.app.active_stpa.diagram)
+                current = diag.name if diag else self.app.active_stpa.diagram
+            ttk.Combobox(
+                master, textvariable=self.diag_var, values=diags, state="readonly"
+            ).grid(row=0, column=1)
+            if current:
+                self.diag_var.set(current)
+            return master
+
+        def apply(self):
+            self.result = self.diag_var.get()
+
     def new_doc(self):
         dlg = self.NewStpaDialog(self, self.app)
         if not getattr(dlg, "result", None):
@@ -167,6 +195,25 @@ class StpaWindow(tk.Frame):
             return
         self.app.active_stpa.name = name
         self.refresh_docs()
+        self.app.update_views()
+
+    def edit_doc(self):
+        if not self.app.active_stpa:
+            return
+        dlg = self.EditStpaDialog(self, self.app)
+        if not getattr(dlg, "result", None):
+            return
+        repo = SysMLRepository.get_instance()
+        diag_name = dlg.result
+        diag_id = next(
+            (d.diag_id for d in repo.diagrams.values() if (d.name or d.diag_id) == diag_name),
+            "",
+        )
+        self.app.active_stpa.diagram = diag_id
+        self.app.stpa_entries = self.app.active_stpa.entries
+        diag = repo.diagrams.get(diag_id)
+        self.diag_lbl.config(text=f"Diagram: {diag.name if diag else ''}")
+        self.refresh()
         self.app.update_views()
 
     def delete_doc(self):
@@ -239,6 +286,8 @@ class StpaWindow(tk.Frame):
                 )
             else:
                 conn_obj = conn_data
+            if conn_obj.conn_type != "Control Action":
+                continue
             label = format_control_flow_label(
                 conn_obj, repo, "Control Flow Diagram"
             )
@@ -312,33 +361,18 @@ class StpaWindow(tk.Frame):
             ttk.Button(sc_frame, text="Delete", command=self.del_sc).grid(row=1, column=3)
             return action_cb
 
-        def _ask_type(self):
-            rt = simpledialog.askstring(
-                "Requirement Type", "Type:", initialvalue=REQUIREMENT_TYPE_OPTIONS[0]
-            )
-            if not rt:
-                return None
-            rt = rt.strip().lower()
-            if rt not in REQUIREMENT_TYPE_OPTIONS:
-                messagebox.showerror("Requirement", "Invalid type")
-                return None
-            return rt
-
         def add_sc_new(self):
-            rt = self._ask_type()
-            if not rt:
-                return
-            dlg = _RequirementDialog(self, req_type=rt)
+            dlg = _RequirementDialog(
+                self,
+                type_options=["operational", "functional modification"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
                 self.sc_lb.insert(tk.END, f"[{req['id']}] {req['text']}")
 
         def add_sc_existing(self):
-            rt = self._ask_type()
-            if not rt:
-                return
-            dlg = _SelectRequirementsDialog(self, req_type=rt)
+            dlg = _SelectRequirementsDialog(self)
             if dlg.result:
                 for val in dlg.result:
                     if val not in self.sc_lb.get(0, tk.END):
@@ -353,7 +387,12 @@ class StpaWindow(tk.Frame):
             req = global_requirements.get(
                 rid, {"id": rid, "text": text, "req_type": "operational"}
             )
-            dlg = _RequirementDialog(self, req, req_type=req.get("req_type", "operational"))
+            dlg = _RequirementDialog(
+                self,
+                req,
+                req_type=req.get("req_type", "operational"),
+                type_options=["operational", "functional modification"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
