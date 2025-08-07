@@ -95,7 +95,7 @@ def test_diagram_lookup_prefers_control_flow_diagrams():
 
     class DummyNewDialog:
         def __init__(self, parent, app):
-            self.result = ("doc", cf.name)
+            self.result = ("doc", cf.diag_id)
 
     window.NewStpaDialog = DummyNewDialog
     window.new_doc()
@@ -107,9 +107,30 @@ def test_diagram_lookup_prefers_control_flow_diagrams():
 
     class DummyEditDialog:
         def __init__(self, parent, app):
-            self.result = cf.name
+            self.result = cf.diag_id
 
     window.EditStpaDialog = DummyEditDialog
     window.edit_doc()
     assert window.app.active_stpa.diagram == cf.diag_id
     assert window._get_control_actions() == ["<<control action>> Do"]
+
+
+def test_get_control_actions_ignores_non_cfd_diagrams():
+    repo = SysMLRepository.reset_instance()
+    e1 = repo.create_element("Block", name="A")
+    e2 = repo.create_element("Block", name="B")
+    act = repo.create_element("Action", name="Do")
+    diag = repo.create_diagram("Activity Diagram", name="Act")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Existing Element", 0, 0, element_id=e1.elem_id)
+    o2 = SysMLObject(2, "Existing Element", 0, 100, element_id=e2.elem_id)
+    diag.objects = [o1.__dict__, o2.__dict__]
+    ca_conn = DiagramConnection(o1.obj_id, o2.obj_id, "Control Action", element_id=act.elem_id)
+    diag.connections = [ca_conn.__dict__]
+
+    app = types.SimpleNamespace(active_stpa=StpaDoc("doc", diag.diag_id, []))
+    window = StpaWindow.__new__(StpaWindow)
+    window.app = app
+
+    assert window._get_control_actions() == []
