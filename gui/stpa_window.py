@@ -121,7 +121,8 @@ class StpaWindow(tk.Frame):
         def body(self, master):
             ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
             self.name_var = tk.StringVar()
-            ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
+            name_entry = ttk.Entry(master, textvariable=self.name_var)
+            name_entry.grid(row=0, column=1)
             ttk.Label(master, text="Control Flow Diagram").grid(row=1, column=0, sticky="e")
             repo = SysMLRepository.get_instance()
             diags = [
@@ -133,7 +134,7 @@ class StpaWindow(tk.Frame):
             ttk.Combobox(
                 master, textvariable=self.diag_var, values=diags, state="readonly"
             ).grid(row=1, column=1)
-            return self.name_var
+            return name_entry
 
         def apply(self):
             self.result = (self.name_var.get(), self.diag_var.get())
@@ -231,9 +232,10 @@ class StpaWindow(tk.Frame):
             ttk.Label(master, text="Action").grid(row=0, column=0, sticky="e")
             actions = self.parent._get_actions()
             self.action_var = tk.StringVar(value=self.row.action)
-            ttk.Combobox(
+            action_cb = ttk.Combobox(
                 master, textvariable=self.action_var, values=actions, state="readonly"
-            ).grid(row=0, column=1, padx=5, pady=5)
+            )
+            action_cb.grid(row=0, column=1, padx=5, pady=5)
 
             ttk.Label(master, text="Not Providing causes Hazard").grid(
                 row=1, column=0, sticky="e"
@@ -279,7 +281,7 @@ class StpaWindow(tk.Frame):
             )
             ttk.Button(sc_frame, text="Edit", command=self.edit_sc).grid(row=1, column=2)
             ttk.Button(sc_frame, text="Delete", command=self.del_sc).grid(row=1, column=3)
-            return self.action_var
+            return action_cb
 
         def _ask_type(self):
             rt = simpledialog.askstring(
