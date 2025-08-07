@@ -269,6 +269,7 @@ class StpaWindow(tk.Frame):
             return []
 
         visited: set[str] = set()
+        rel_lookup = {r.rel_id: r for r in repo.relationships}
 
         def collect_actions(diagram: "SysMLDiagram") -> set[str]:
             if (
@@ -281,13 +282,23 @@ class StpaWindow(tk.Frame):
             results: set[str] = set()
 
             obj_map: dict[int, str] = {}
+            elem_map: dict[int, str] = {}
             for obj_data in getattr(diagram, "objects", []):
                 name = obj_data.get("name") or ""
-                if not name and obj_data.get("element_id"):
-                    elem = repo.elements.get(obj_data.get("element_id"))
+                elem_id = obj_data.get("element_id")
+                if not name and elem_id:
+                    elem = repo.elements.get(elem_id)
                     if elem:
                         name = elem.name or ""
-                obj_map[obj_data.get("obj_id")] = name
+                obj_id = obj_data.get("obj_id")
+                obj_map[obj_id] = name
+                elem_map[obj_id] = elem_id
+
+            rel_map: dict[tuple[str, str], str] = {}
+            for rel_id in getattr(diagram, "relationships", []):
+                rel = rel_lookup.get(rel_id)
+                if rel and rel.stereotype:
+                    rel_map[(rel.source, rel.target)] = rel.stereotype
 
             for conn_data in getattr(diagram, "connections", []):
                 if isinstance(conn_data, dict):
@@ -301,7 +312,14 @@ class StpaWindow(tk.Frame):
                 else:
                     conn_obj = conn_data
                 elem_id = getattr(conn_obj, "element_id", "")
-                if conn_obj.conn_type == "Control Action":
+                src_elem = elem_map.get(conn_obj.src)
+                dst_elem = elem_map.get(conn_obj.dst)
+                stereo = (
+                    rel_map.get((src_elem, dst_elem))
+                    if src_elem and dst_elem
+                    else None
+                )
+                if conn_obj.conn_type == "Control Action" or stereo == "control action":
                     label = format_control_flow_label(
                         conn_obj, repo, "Control Flow Diagram"
                     )

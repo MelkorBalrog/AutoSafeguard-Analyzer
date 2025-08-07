@@ -137,3 +137,27 @@ def test_get_control_actions_recurses_from_connection_links():
     win.app = app
     actions = win._get_control_actions()
     assert actions == ["SubAct"]
+
+
+def test_get_control_actions_from_relationship_stereotype():
+    repo = reset_repo()
+    e1 = repo.create_element("Block", name="A")
+    e2 = repo.create_element("Block", name="B")
+    diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
+    diag.objects = [
+        {"obj_id": 1, "name": "A", "element_id": e1.elem_id},
+        {"obj_id": 2, "name": "B", "element_id": e2.elem_id},
+    ]
+    diag.connections = [
+        {"src": 1, "dst": 2, "conn_type": "Association", "name": "Act"},
+    ]
+    repo.diagrams[diag.diag_id] = diag
+    rel = repo.create_relationship(
+        "Association", e1.elem_id, e2.elem_id, stereotype="control action"
+    )
+    repo.add_relationship_to_diagram(diag.diag_id, rel.rel_id)
+    app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag.diag_id, []))
+    win = StpaWindow.__new__(StpaWindow)
+    win.app = app
+    actions = win._get_control_actions()
+    assert actions == ["Act"]
