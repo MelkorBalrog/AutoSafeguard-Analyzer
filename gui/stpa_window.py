@@ -255,79 +255,13 @@ class StpaWindow(tk.Frame):
             self.tree.insert("", "end", values=vals)
 
     def _get_control_actions(self):
-        if not self.app.active_stpa:
-            return []
-        repo = SysMLRepository.get_instance()
-        diag_id = self.app.active_stpa.diagram
-        diag = repo.diagrams.get(diag_id)
-        if not diag:
-            diag = next(
-                (d for d in repo.diagrams.values() if (d.name or d.diag_id) == diag_id),
-                None,
-            )
-        if not diag or diag.diag_type != "Control Flow Diagram":
-            return []
+        """Return available control action labels.
 
-        visited: set[str] = set()
-
-        def collect_actions(diagram: "SysMLDiagram") -> set[str]:
-            if (
-                not diagram
-                or diagram.diag_id in visited
-                or diagram.diag_type != "Control Flow Diagram"
-            ):
-                return set()
-            visited.add(diagram.diag_id)
-            results: set[str] = set()
-
-            obj_map: dict[int, str] = {}
-            for obj_data in getattr(diagram, "objects", []):
-                name = obj_data.get("name") or ""
-                if not name and obj_data.get("element_id"):
-                    elem = repo.elements.get(obj_data.get("element_id"))
-                    if elem:
-                        name = elem.name or ""
-                obj_map[obj_data.get("obj_id")] = name
-
-            for conn_data in getattr(diagram, "connections", []):
-                if isinstance(conn_data, dict):
-                    conn_obj = DiagramConnection(
-                        **{
-                            k: v
-                            for k, v in conn_data.items()
-                            if k in DiagramConnection.__annotations__
-                        }
-                    )
-                else:
-                    conn_obj = conn_data
-                elem_id = getattr(conn_obj, "element_id", "")
-                if conn_obj.conn_type == "Control Action":
-                    label = format_control_flow_label(
-                        conn_obj, repo, "Control Flow Diagram"
-                    )
-                    if not label:
-                        src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
-                        dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
-                        label = f"{src_name} -> {dst_name}"
-                    if label:
-                        results.add(label)
-                if elem_id:
-                    sub_id = repo.get_linked_diagram(elem_id)
-                    sub_diag = repo.diagrams.get(sub_id)
-                    if sub_diag:
-                        results.update(collect_actions(sub_diag))
-
-            for obj_data in getattr(diagram, "objects", []):
-                elem_id = obj_data.get("element_id")
-                if elem_id:
-                    sub_id = repo.get_linked_diagram(elem_id)
-                    sub_diag = repo.diagrams.get(sub_id)
-                    if sub_diag:
-                        results.update(collect_actions(sub_diag))
-
-            return results
-
-        return sorted(collect_actions(diag))
+        This legacy helper now delegates to the application-wide
+        ``get_all_action_labels`` method, which provides a unified way
+        of retrieving action labels across the application.
+        """
+        return self.app.get_all_action_labels()
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
@@ -338,7 +272,7 @@ class StpaWindow(tk.Frame):
 
         def body(self, master):
             ttk.Label(master, text="Control Action").grid(row=0, column=0, sticky="e")
-            actions = self.parent._get_control_actions()
+            actions = self.app.get_all_action_labels()
             self.action_var = tk.StringVar(value=self.row.action)
             action_cb = ttk.Combobox(master, textvariable=self.action_var, state="readonly")
             action_cb.grid(row=0, column=1, padx=5, pady=5)
