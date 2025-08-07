@@ -103,3 +103,37 @@ def test_get_control_actions_recurses_into_linked_diagrams():
     win.app = app
     actions = win._get_control_actions()
     assert actions == ["Act", "SubAct"]
+
+
+def test_get_control_actions_recurses_from_connection_links():
+    repo = reset_repo()
+    # Top-level diagram with a non-control connection linked to a subdiagram
+    diag1 = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
+    elem = repo.create_element("ActionUsage", name="Sub")
+    diag1.objects = [
+        {"obj_id": 1, "name": "Controller"},
+        {"obj_id": 2, "name": "Process"},
+    ]
+    diag1.connections = [
+        {"src": 1, "dst": 2, "conn_type": "Feedback", "element_id": elem.elem_id},
+    ]
+
+    # Subdiagram linked from the connection with a control action
+    diag2 = SysMLDiagram(diag_id="d2", diag_type="Control Flow Diagram")
+    diag2.objects = [
+        {"obj_id": 10, "name": "SubController"},
+        {"obj_id": 11, "name": "SubProcess"},
+    ]
+    diag2.connections = [
+        {"src": 10, "dst": 11, "conn_type": "Control Action", "name": "SubAct"},
+    ]
+
+    repo.diagrams[diag1.diag_id] = diag1
+    repo.diagrams[diag2.diag_id] = diag2
+    repo.link_diagram(elem.elem_id, diag2.diag_id)
+
+    app = types.SimpleNamespace(active_stpa=StpaDoc("Doc", diag1.diag_id, []))
+    win = StpaWindow.__new__(StpaWindow)
+    win.app = app
+    actions = win._get_control_actions()
+    assert actions == ["SubAct"]
