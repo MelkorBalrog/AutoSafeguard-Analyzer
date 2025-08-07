@@ -267,38 +267,62 @@ class StpaWindow(tk.Frame):
             )
         if not diag or diag.diag_type != "Control Flow Diagram":
             return []
-        actions: set[str] = set()
-        obj_map: dict[int, str] = {}
-        for obj_data in getattr(diag, "objects", []):
-            name = obj_data.get("name") or ""
-            if not name and obj_data.get("element_id"):
-                elem = repo.elements.get(obj_data.get("element_id"))
-                if elem:
-                    name = elem.name or ""
-            obj_map[obj_data.get("obj_id")] = name
-        for conn_data in getattr(diag, "connections", []):
-            if isinstance(conn_data, dict):
-                conn_obj = DiagramConnection(
-                    **{
-                        k: v
-                        for k, v in conn_data.items()
-                        if k in DiagramConnection.__annotations__
-                    }
+
+        visited: set[str] = set()
+
+        def collect_actions(diagram: "SysMLDiagram") -> set[str]:
+            if (
+                not diagram
+                or diagram.diag_id in visited
+                or diagram.diag_type != "Control Flow Diagram"
+            ):
+                return set()
+            visited.add(diagram.diag_id)
+            results: set[str] = set()
+
+            obj_map: dict[int, str] = {}
+            for obj_data in getattr(diagram, "objects", []):
+                name = obj_data.get("name") or ""
+                if not name and obj_data.get("element_id"):
+                    elem = repo.elements.get(obj_data.get("element_id"))
+                    if elem:
+                        name = elem.name or ""
+                obj_map[obj_data.get("obj_id")] = name
+
+            for conn_data in getattr(diagram, "connections", []):
+                if isinstance(conn_data, dict):
+                    conn_obj = DiagramConnection(
+                        **{
+                            k: v
+                            for k, v in conn_data.items()
+                            if k in DiagramConnection.__annotations__
+                        }
+                    )
+                else:
+                    conn_obj = conn_data
+                if conn_obj.conn_type != "Control Action":
+                    continue
+                label = format_control_flow_label(
+                    conn_obj, repo, "Control Flow Diagram"
                 )
-            else:
-                conn_obj = conn_data
-            if conn_obj.conn_type != "Control Action":
-                continue
-            label = format_control_flow_label(
-                conn_obj, repo, "Control Flow Diagram"
-            )
-            if not label:
-                src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
-                dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
-                label = f"{src_name} -> {dst_name}"
-            if label:
-                actions.add(label)
-        return sorted(actions)
+                if not label:
+                    src_name = obj_map.get(conn_obj.src, str(conn_obj.src))
+                    dst_name = obj_map.get(conn_obj.dst, str(conn_obj.dst))
+                    label = f"{src_name} -> {dst_name}"
+                if label:
+                    results.add(label)
+
+            for obj_data in getattr(diagram, "objects", []):
+                elem_id = obj_data.get("element_id")
+                if elem_id:
+                    sub_id = repo.get_linked_diagram(elem_id)
+                    sub_diag = repo.diagrams.get(sub_id)
+                    if sub_diag:
+                        results.update(collect_actions(sub_diag))
+
+            return results
+
+        return sorted(collect_actions(diag))
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, row=None):
