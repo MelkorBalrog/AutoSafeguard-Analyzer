@@ -9,7 +9,7 @@ def reset_repo():
     return SysMLRepository.get_instance()
 
 
-def test_get_actions_returns_all_connections():
+def test_get_actions_returns_control_actions_only():
     repo = reset_repo()
     diag = SysMLDiagram(diag_id="d1", diag_type="Control Flow Diagram")
     diag.objects = [
@@ -25,7 +25,7 @@ def test_get_actions_returns_all_connections():
     win = StpaWindow.__new__(StpaWindow)
     win.app = app
     actions = win._get_actions()
-    assert actions == ["Act", "FB"]
+    assert actions == ["Act"]
 
 
 def test_get_actions_ignores_extra_connection_fields():

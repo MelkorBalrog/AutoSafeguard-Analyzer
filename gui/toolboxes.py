@@ -155,8 +155,9 @@ def _wrap_val(val, width=30):
 class _RequirementDialog(simpledialog.Dialog):
     """Simple dialog to create or edit a requirement."""
 
-    def __init__(self, parent, req=None, req_type="functional modification"):
+    def __init__(self, parent, req=None, req_type="functional modification", type_options=None):
         self.req_type = req_type
+        self.type_options = type_options or REQUIREMENT_TYPE_OPTIONS
         self.req = req or {}
         super().__init__(parent, title="Requirement")
 
@@ -165,10 +166,56 @@ class _RequirementDialog(simpledialog.Dialog):
         self.id_var = tk.StringVar(value=self.req.get("id", ""))
         tk.Entry(master, textvariable=self.id_var, width=20).grid(row=0, column=1, padx=5, pady=5)
 
-        ttk.Label(master, text="Text:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        ttk.Label(master, text="Type:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        default_type = self.req.get("req_type", self.req_type)
+        self.type_var = tk.StringVar(value=default_type)
+        ttk.Combobox(
+            master,
+            textvariable=self.type_var,
+            values=self.type_options,
+            state="readonly",
+            width=20,
+        ).grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="ASIL:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.asil_var = tk.StringVar(value=self.req.get("asil", "QM"))
+        ttk.Combobox(
+            master,
+            textvariable=self.asil_var,
+            values=ASIL_LEVEL_OPTIONS,
+            state="readonly",
+            width=8,
+        ).grid(row=2, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        self.cal_var = tk.StringVar(value=self.req.get("cal", CAL_LEVEL_OPTIONS[0]))
+        ttk.Combobox(
+            master,
+            textvariable=self.cal_var,
+            values=CAL_LEVEL_OPTIONS,
+            state="readonly",
+            width=8,
+        ).grid(row=3, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Parent ID:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+        self.parent_var = tk.StringVar(value=self.req.get("parent_id", ""))
+        tk.Entry(master, textvariable=self.parent_var, width=20).grid(row=4, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Status:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
+        statuses = ["draft", "in review", "peer reviewed", "pending approval", "approved"]
+        self.status_var = tk.StringVar(value=self.req.get("status", "draft"))
+        ttk.Combobox(
+            master,
+            textvariable=self.status_var,
+            values=statuses,
+            state="readonly",
+            width=15,
+        ).grid(row=5, column=1, padx=5, pady=5)
+
+        ttk.Label(master, text="Text:").grid(row=6, column=0, sticky="e", padx=5, pady=5)
         self.text_var = tk.Entry(master, width=40)
         self.text_var.insert(0, self.req.get("text", ""))
-        self.text_var.grid(row=1, column=1, padx=5, pady=5)
+        self.text_var.grid(row=6, column=1, padx=5, pady=5)
         return self.text_var
 
     def apply(self):
@@ -176,19 +223,19 @@ class _RequirementDialog(simpledialog.Dialog):
         self.result = {
             "id": rid,
             "custom_id": rid,
-            "req_type": self.req_type,
+            "req_type": self.type_var.get().strip(),
             "text": self.text_var.get().strip(),
-            "asil": self.req.get("asil", "QM"),
-            "cal": self.req.get("cal", ""),
-            "status": "draft",
-            "parent_id": self.req.get("parent_id", ""),
+            "asil": self.asil_var.get().strip(),
+            "cal": self.cal_var.get().strip(),
+            "status": self.status_var.get().strip(),
+            "parent_id": self.parent_var.get().strip(),
         }
 
 
 class _SelectRequirementsDialog(simpledialog.Dialog):
     """Dialog to choose one or more existing requirements of a given type."""
 
-    def __init__(self, parent, req_type="functional modification", initial=None):
+    def __init__(self, parent, req_type=None, initial=None):
         self.selected = initial or []
         self.req_type = req_type
         super().__init__(parent, title="Select Requirements")
@@ -196,11 +243,13 @@ class _SelectRequirementsDialog(simpledialog.Dialog):
     def body(self, master):
         self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
         for req in global_requirements.values():
-            if req.get("req_type") == self.req_type:
+            if self.req_type is None or req.get("req_type") == self.req_type:
                 self.lb.insert(tk.END, f"[{req['id']}] {req['text']}")
         self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         for idx, req in enumerate(global_requirements.values()):
-            if req.get("req_type") == self.req_type and req["id"] in self.selected:
+            if (
+                self.req_type is None or req.get("req_type") == self.req_type
+            ) and req["id"] in self.selected:
                 self.lb.selection_set(idx)
         return self.lb
 
@@ -1227,7 +1276,11 @@ class FI2TCWindow(tk.Frame):
             self.result = True
 
         def add_dm_new(self):
-            dlg = _RequirementDialog(self, req_type="functional modification")
+            dlg = _RequirementDialog(
+                self,
+                req_type="functional modification",
+                type_options=["functional modification"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
@@ -1248,7 +1301,12 @@ class FI2TCWindow(tk.Frame):
             text = self.dm_lb.get(sel[0])
             rid = text.split("]", 1)[0][1:]
             req = global_requirements.get(rid, {"id": rid, "text": text})
-            dlg = _RequirementDialog(self, req, req_type="functional modification")
+            dlg = _RequirementDialog(
+                self,
+                req,
+                req_type="functional modification",
+                type_options=["functional modification"],
+            )
             if dlg.result:
                 new_req = dlg.result
                 global_requirements[new_req["id"]] = new_req
@@ -1291,7 +1349,11 @@ class FI2TCWindow(tk.Frame):
                 self.tc_lb.delete(idx)
 
         def add_mit_new(self):
-            dlg = _RequirementDialog(self, req_type="operational")
+            dlg = _RequirementDialog(
+                self,
+                req_type="operational",
+                type_options=["operational"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
@@ -1345,7 +1407,12 @@ class FI2TCWindow(tk.Frame):
             text = self.mit_lb.get(sel[0])
             rid = text.split("]", 1)[0][1:]
             req = global_requirements.get(rid, {"id": rid, "text": text})
-            dlg = _RequirementDialog(self, req, req_type="operational")
+            dlg = _RequirementDialog(
+                self,
+                req,
+                req_type="operational",
+                type_options=["operational"],
+            )
             if dlg.result:
                 new_req = dlg.result
                 global_requirements[new_req["id"]] = new_req
@@ -2748,7 +2815,11 @@ class TC2FIWindow(tk.Frame):
             self.result = True
 
         def add_dm_new(self):
-            dlg = _RequirementDialog(self, req_type="functional modification")
+            dlg = _RequirementDialog(
+                self,
+                req_type="functional modification",
+                type_options=["functional modification"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
@@ -2769,7 +2840,12 @@ class TC2FIWindow(tk.Frame):
             text = self.dm_lb.get(sel[0])
             rid = text.split("]", 1)[0][1:]
             req = global_requirements.get(rid, {"id": rid, "text": text})
-            dlg = _RequirementDialog(self, req, req_type="functional modification")
+            dlg = _RequirementDialog(
+                self,
+                req,
+                req_type="functional modification",
+                type_options=["functional modification"],
+            )
             if dlg.result:
                 new_req = dlg.result
                 global_requirements[new_req["id"]] = new_req
@@ -2812,7 +2888,11 @@ class TC2FIWindow(tk.Frame):
                 self.tc_lb.delete(idx)
 
         def add_mit_new(self):
-            dlg = _RequirementDialog(self, req_type="operational")
+            dlg = _RequirementDialog(
+                self,
+                req_type="operational",
+                type_options=["operational"],
+            )
             if dlg.result:
                 req = dlg.result
                 global_requirements[req["id"]] = req
@@ -2865,7 +2945,12 @@ class TC2FIWindow(tk.Frame):
             text = self.mit_lb.get(sel[0])
             rid = text.split("]", 1)[0][1:]
             req = global_requirements.get(rid, {"id": rid, "text": text})
-            dlg = _RequirementDialog(self, req, req_type="operational")
+            dlg = _RequirementDialog(
+                self,
+                req,
+                req_type="operational",
+                type_options=["operational"],
+            )
             if dlg.result:
                 new_req = dlg.result
                 global_requirements[new_req["id"]] = new_req
