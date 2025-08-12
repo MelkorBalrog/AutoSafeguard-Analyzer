@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Iterable, Set
+from typing import Iterable, List
 import uuid
 
 from .nodes import GSNNode
@@ -21,20 +21,24 @@ class GSNDiagram:
     root: GSNNode
     drawing_helper: GSNDrawingHelper = field(default_factory=GSNDrawingHelper)
     diag_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    nodes: List[GSNNode] = field(default_factory=list)
+
+    def __post_init__(self) -> None:  # pragma: no cover - simple bookkeeping
+        if self.root not in self.nodes:
+            self.nodes.append(self.root)
+
+    # ------------------------------------------------------------------
+    def add_node(self, node: GSNNode) -> None:
+        """Register *node* with the diagram without connecting it."""
+        if node not in self.nodes:
+            self.nodes.append(node)
 
     # ------------------------------------------------------------------
     def _traverse(self) -> Iterable[GSNNode]:
-        visited: Set[str] = set()
-
-        def rec(node: GSNNode):
-            if node.unique_id in visited:
-                return
-            visited.add(node.unique_id)
-            yield node
-            for child in node.children:
-                yield from rec(child)
-
-        yield from rec(self.root)
+        # ``nodes`` already contains all diagram nodes, including ones that
+        # are not connected yet.  Simply iterate over the list to avoid
+        # skipping orphan elements and to maintain a stable drawing order.
+        return list(self.nodes)
 
     # ------------------------------------------------------------------
     def draw(self, canvas, zoom: float = 1.0) -> None:  # pragma: no cover - requires tkinter

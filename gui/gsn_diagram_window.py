@@ -80,7 +80,8 @@ class GSNDiagramWindow(tk.Frame):
     # Placement is very rudimentary but sufficient for tests.
     def _add_node(self, node_type: str):  # pragma: no cover - requires tkinter
         node = GSNNode(node_type, node_type, x=50, y=50)
-        self.diagram.root.add_child(node)
+        self.diagram.add_node(node)
+        self.selected_node = node
         self.refresh()
 
     def add_goal(self):  # pragma: no cover - requires tkinter
@@ -111,17 +112,11 @@ class GSNDiagramWindow(tk.Frame):
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         node = self._node_at(event.x, event.y)
+        if self._connect_mode:
+            self._connect_parent = node
+            return
         if not node:
             self.selected_node = None
-            self.refresh()
-            return
-        if self._connect_mode:
-            if self._connect_parent is None:
-                self._connect_parent = node
-            else:
-                self._connect_parent.add_child(node)
-                self._connect_mode = None
-                self._connect_parent = None
             self.refresh()
             return
         self.selected_node = node
@@ -131,6 +126,25 @@ class GSNDiagramWindow(tk.Frame):
         self.refresh()
 
     def _on_drag(self, event):  # pragma: no cover - requires tkinter
+        if self._connect_mode and self._connect_parent:
+            self.canvas.delete("_temp_conn")
+            px, py = (
+                self._connect_parent.x * self.zoom,
+                self._connect_parent.y * self.zoom,
+            )
+            dash = (4, 2) if self._connect_mode == "context" else None
+            self.canvas.create_line(
+                px,
+                py,
+                event.x,
+                event.y,
+                fill="dimgray",
+                dash=dash,
+                smooth=True,
+                arrow=tk.LAST,
+                tags="_temp_conn",
+            )
+            return
         if not self._drag_node:
             return
         nx = (event.x - self._drag_offset[0]) / self.zoom
@@ -139,7 +153,16 @@ class GSNDiagramWindow(tk.Frame):
         self._drag_node.y = ny
         self.refresh()
 
-    def _on_release(self, _event):  # pragma: no cover - requires tkinter
+    def _on_release(self, event):  # pragma: no cover - requires tkinter
+        if self._connect_mode and self._connect_parent:
+            self.canvas.delete("_temp_conn")
+            node = self._node_at(event.x, event.y)
+            if node and node is not self._connect_parent:
+                self._connect_parent.add_child(node)
+            self._connect_mode = None
+            self._connect_parent = None
+            self.refresh()
+            return
         self._drag_node = None
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
@@ -150,7 +173,7 @@ class GSNDiagramWindow(tk.Frame):
         self.refresh()
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
-        items = self.canvas.find_overlapping(x, y, x, y)
+        items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
         for item in items:
             for tag in self.canvas.gettags(item):
                 node = self.id_to_node.get(tag)
