@@ -305,7 +305,6 @@ from analysis.models import (
     REQUIREMENT_TYPE_OPTIONS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
-    CyberRiskEntry,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -15678,44 +15677,22 @@ class FaultTreeApp:
 
         self.hara_docs = []
         for d in data.get("haras", []):
-            entries = []
-            for e in d.get("entries", []):
-                cyber = None
-                cdata = e.get("cyber")
-                if isinstance(cdata, dict):
-                    allowed = {
-                        "damage_scenario",
-                        "threat_scenario",
-                        "attack_vector",
-                        "feasibility",
-                        "financial_impact",
-                        "safety_impact",
-                        "operational_impact",
-                        "privacy_impact",
-                        "cybersecurity_goal",
-                        "attack_paths",
-                    }
-                    clean = {k: cdata.get(k) for k in allowed if k in cdata}
-                    try:
-                        cyber = CyberRiskEntry(**clean)
-                    except TypeError:
-                        cyber = None
-                entries.append(
-                    HaraEntry(
-                        e.get("malfunction", ""),
-                        e.get("hazard", ""),
-                        e.get("scenario", ""),
-                        e.get("severity", 1),
-                        e.get("sev_rationale", ""),
-                        e.get("controllability", 1),
-                        e.get("cont_rationale", ""),
-                        e.get("exposure", 1),
-                        e.get("exp_rationale", ""),
-                        e.get("asil", "QM"),
-                        e.get("safety_goal", ""),
-                        cyber,
-                    )
+            entries = [
+                HaraEntry(
+                    e.get("malfunction", ""),
+                    e.get("hazard", ""),
+                    e.get("scenario", ""),
+                    e.get("severity", 1),
+                    e.get("sev_rationale", ""),
+                    e.get("controllability", 1),
+                    e.get("cont_rationale", ""),
+                    e.get("exposure", 1),
+                    e.get("exp_rationale", ""),
+                    e.get("asil", "QM"),
+                    e.get("safety_goal", ""),
                 )
+                for e in d.get("entries", [])
+            ]
             hazops = d.get("hazops")
             if not hazops:
                 hazop = d.get("hazop")
@@ -15733,49 +15710,26 @@ class FaultTreeApp:
             )
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
-            entries = []
-            for e in data.get("hara_entries", []):
-                cyber = None
-                cdata = e.get("cyber")
-                if isinstance(cdata, dict):
-                    allowed = {
-                        "damage_scenario",
-                        "threat_scenario",
-                        "attack_vector",
-                        "feasibility",
-                        "financial_impact",
-                        "safety_impact",
-                        "operational_impact",
-                        "privacy_impact",
-                        "cybersecurity_goal",
-                        "attack_paths",
-                    }
-                    clean = {k: cdata.get(k) for k in allowed if k in cdata}
-                    try:
-                        cyber = CyberRiskEntry(**clean)
-                    except TypeError:
-                        cyber = None
-                entries.append(
-                    HaraEntry(
-                        e.get("malfunction", ""),
-                        e.get("hazard", ""),
-                        e.get("scenario", ""),
-                        e.get("severity", 1),
-                        e.get("sev_rationale", ""),
-                        e.get("controllability", 1),
-                        e.get("cont_rationale", ""),
-                        e.get("exposure", 1),
-                        e.get("exp_rationale", ""),
-                        e.get("asil", "QM"),
-                        e.get("safety_goal", ""),
-                        cyber,
-                    )
-                )
             self.hara_docs.append(
                 HaraDoc(
                     "Default",
                     [hazop_name] if hazop_name else [],
-                    entries,
+                    [
+                        HaraEntry(
+                            e.get("malfunction", ""),
+                            e.get("hazard", ""),
+                            e.get("scenario", ""),
+                            e.get("severity", 1),
+                            e.get("sev_rationale", ""),
+                            e.get("controllability", 1),
+                            e.get("cont_rationale", ""),
+                            e.get("exposure", 1),
+                            e.get("exp_rationale", ""),
+                            e.get("asil", "QM"),
+                            e.get("safety_goal", ""),
+                        )
+                        for e in data.get("hara_entries", [])
+                    ],
                     False,
                     "draft",
                     stpa="",
