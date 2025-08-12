@@ -15,13 +15,15 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [AutoML Safety Extensions](#automl-safety-extensions)
   - [Core SysML Elements](#core-sysml-elements)
   - [Diagram Relationships](#diagram-relationships)
-  - [Detailed Safety and Reliability Metamodel](#detailed-safety-and-reliability-metamodel)
+  - [Detailed Safety, Reliability and Cybersecurity Metamodel](#detailed-safety-reliability-and-cybersecurity-metamodel)
   - [Extended AutoML Element Attributes](#extended-automl-element-attributes)
 - [BOM Integration with AutoML Diagrams](#bom-integration-with-automl-diagrams)
 - [Component Qualifications](#component-qualifications)
 - [Mission Profiles and Probability Formulas](#mission-profiles-and-probability-formulas)
 - [SOTIF Analysis](#sotif-analysis)
   - [SOTIF Traceability](#sotif-traceability)
+- [Cybersecurity Analysis](#cybersecurity-analysis)
+  - [Safety and Cyber Governance](#safety-and-cyber-governance)
 - [Review Toolbox](#review-toolbox)
 - [Additional Tools](#additional-tools)
   - [Common Cause Toolbox](#common-cause-toolbox)
@@ -338,7 +340,7 @@ classDiagram
     ActionUsage --> InternalBlockDiagram : view
 ```
 
-### Detailed Safety and Reliability Metamodel
+### Detailed Safety, Reliability and Cybersecurity Metamodel
 
 The tool stores each safety analysis in its own container object alongside the
 SysML repository. These containers track the tables and diagrams loaded in the
@@ -392,6 +394,17 @@ classDiagram
     SysMLRepository --> "*" Fault
     SysMLRepository --> "*" Failure
     SysMLRepository --> "*" ReviewData
+    SysMLRepository --> "*" ThreatDoc
+    ThreatDoc --> "*" ThreatEntry
+    ThreatEntry --> "*" FunctionThreat
+    FunctionThreat --> "*" DamageScenario
+    DamageScenario --> "*" ThreatScenario
+    ThreatScenario --> "*" AttackPath
+    SysMLRepository --> "*" CyberRiskEntry
+    SysMLRepository --> "*" CybersecurityGoal
+    CybersecurityGoal --> "*" CyberRiskEntry : riskAssessments
+    CyberRiskEntry --> ThreatScenario : threatScenario
+    CyberRiskEntry --> DamageScenario : damageScenario
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -410,6 +423,14 @@ classDiagram
     class OddLibrary
     class Scenery
     class ReviewData
+    class ThreatDoc
+    class ThreatEntry
+    class FunctionThreat
+    class DamageScenario
+    class ThreatScenario
+    class AttackPath
+    class CyberRiskEntry
+    class CybersecurityGoal
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -425,7 +446,11 @@ and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
 stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
 dictionaries capturing the failure mode, cause, detection rating and diagnostic
 coverage. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
-FMEA metrics, FMEDA values and traced requirements.
+FMEA metrics, FMEDA values and traced requirements. Cybersecurity analyses use
+`ThreatDoc` and `CyberRiskEntry` records to capture STRIDE-based threat
+scenarios, attack paths and damage assessments. Each `CyberRiskEntry`
+computes impact, risk level and CAL while linked `CybersecurityGoal`
+collections store the highest resulting CAL to support ISO 21434 compliance.
 
 #### Analysis Relationships
 
@@ -1085,6 +1110,35 @@ classDiagram
     TriggeringCondition --> FaultTreeNode : cta
     FunctionalInsufficiency --> FaultTreeNode : cta
 ```
+
+## Cybersecurity Analysis
+
+AutoML includes cybersecurity assessments alongside traditional safety tools.
+The **Cyber Risk Assessment** view evaluates damage scenarios, threat
+scenarios and attack vectors to compute overall impact, risk level and
+Cybersecurity Assurance Level (CAL). Each row may reference a
+`CybersecurityGoal`, which aggregates the highest CAL from its linked
+risk assessments.
+
+### Safety and Cyber Governance
+
+The governance model below illustrates how safety and cybersecurity
+activities converge during reviews.
+
+```mermaid
+flowchart TD
+    A([Threat Analysis]) --> B([Cyber Risk Assessment])
+    B --> C([Cybersecurity Goals])
+    A --> D([Hazard Analysis])
+    D --> E([Safety Goals])
+    C & E --> F([Governance Review])
+    F --> G([Mitigations Implemented])
+```
+
+Threat analyses feed cyber risk assessments and ultimately cybersecurity
+goals, while hazard analyses inform safety goals. Both goal sets flow
+into a combined governance review that drives the implementation of
+mitigations across safety and security domains.
 
 ## Review Toolbox
 
