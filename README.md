@@ -1141,8 +1141,10 @@ R_HB = A_H / (P_{E|HB} * P_{C|E} * P_{S|C})
 This value can serve as a validation target when planning tests. For example,
 an acceptance criterion of ``1e-8/h`` with ``P_{E|HB}=0.05``,
 ``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``.
-The product goal editor and risk assessment utilities provide input fields for
-these parameters and automatically compute the resulting validation target.
+The product goal editor derives exposure, controllability and severity
+probabilities from their risk assessment ratings and shows them as read-only
+fields. Only the acceptance rate is editable; the validation target is then
+computed automatically.
 
 ## Email Setup
 
