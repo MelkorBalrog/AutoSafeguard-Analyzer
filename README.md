@@ -28,6 +28,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
   - [Product Goals Export](#product-goals-export)
   - [Safety Performance Indicators](#safety-performance-indicators)
+  - [Safety Management Toolbox](#safety-management-toolbox)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
 - [Diagram Styles](#diagram-styles)
@@ -1125,13 +1126,20 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
 
+### Safety Management Toolbox
+
+The **Safety Management Toolbox** lets you organize safety work products across the entire lifecycle. You can define phases, attach tailored work products from any diagram or analysis with a supporting rationale, and capture workflows that govern how these items interact. The resulting lifecycle and workflow definition can be exported as a JSON business diagram to document your safety governance process.
+
 ### Acceptance Criteria and Validation Targets
 
 ISO 21448 provides a method to derive a validation target from an acceptance
 criterion by analysing the rate of the hazardous behaviour :math:`R_{HB}`.
 The **acceptance rate** :math:`A_H` represents the tolerated rate of harm
-in events per hour. The derived validation target is the corresponding rate
-of hazardous behaviour :math:`R_{HB}` that should not be exceeded. Given
+in events per hour. Product goals also record the operational hours spent in
+the system's ON state for which the acceptance criterion applies. The derived
+validation target is the corresponding rate of hazardous behaviour
+:math:`R_{HB}` that should not be exceeded. A mission profile from the model
+can be selected to define the operating context for this validation target. Given
 conditional probabilities for exposure :math:`P_{E|HB}`, uncontrollability
 :math:`P_{C|E}` and severity :math:`P_{S|C}`, the acceptable rate of the
 hazardous behaviour is computed as:

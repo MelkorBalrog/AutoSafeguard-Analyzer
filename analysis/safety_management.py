@@ -9,7 +9,6 @@ from typing import Dict, List
 
 from sysml.sysml_repository import SysMLRepository
 
-
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
