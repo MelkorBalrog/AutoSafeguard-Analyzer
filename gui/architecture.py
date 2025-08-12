@@ -5334,15 +5334,28 @@ class SysMLDiagramWindow(tk.Frame):
             )
             label = obj.properties.get("name", "")
             if label:
-                lx = x
-                ly = y - h - 4 * self.zoom
-                self.canvas.create_text(
-                    lx,
-                    ly,
-                    text=label,
-                    anchor="s",
-                    font=self.font,
-                )
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and diag.diag_type == "Activity Diagram":
+                    lx = x - w - 4 * self.zoom
+                    ly = y
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        angle=90,
+                        anchor="e",
+                        font=self.font,
+                    )
+                else:
+                    lx = x
+                    ly = y - h - 4 * self.zoom
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        anchor="s",
+                        font=self.font,
+                    )
         elif obj.obj_type == "Block Boundary":
             self._create_round_rect(
                 x - w,
@@ -7768,6 +7781,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Fork",
             "Join",
             "Flow",
+            "System Boundary",
         ]
         super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
         ttk.Button(
