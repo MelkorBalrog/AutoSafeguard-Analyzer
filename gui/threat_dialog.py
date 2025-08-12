@@ -259,17 +259,30 @@ class ThreatDialog(simpledialog.Dialog):
             for obj in getattr(diag, "objects", []):
                 typ = obj.get("obj_type") or obj.get("type")
                 if typ in {"Part", "Port", "Flow", "Connector"}:
-                    name = obj.get("properties", {}).get("name")
+                    props = obj.get("properties", {})
+                    name = props.get("name")
                     if not name:
                         elem_id = obj.get("element_id")
                         if elem_id and elem_id in repo.elements:
                             name = repo.elements[elem_id].name
                     if name:
                         names.add(name)
+
+                    # Ports may define a flow without a name property. Include
+                    # those flow names in the asset list so that data flows are
+                    # available in the threat analysis asset combobox.
+                    flow = props.get("flow")
+                    if flow:
+                        names.add(flow)
+
             for conn in getattr(diag, "connections", []):
                 name = conn.get("name")
                 if name:
                     names.add(name)
+                # Connections might also carry a "flow" property
+                flow = conn.get("properties", {}).get("flow")
+                if flow:
+                    names.add(flow)
         return sorted(names)
 
     def _get_functions(self):
