@@ -32,5 +32,24 @@ class CauseEffectPDFTests(unittest.TestCase):
         self.assertGreaterEqual(w, 120)
         self.assertGreaterEqual(h, 60)
 
+    def test_graph_includes_threats_and_attack_paths(self):
+        row = {
+            "hazard": "Hazard",
+            "malfunction": "Malfunction",
+            "failure_modes": {},
+            "faults": set(),
+            "fis": set(),
+            "tcs": set(),
+            "threats": {"Threat": {"Path"}},
+            "attack_paths": {"Path"},
+        }
+        nodes, edges, _ = self.app._build_cause_effect_graph(row)
+        self.assertIn("threat:Threat", nodes)
+        self.assertIn("ap:Path", nodes)
+        self.assertIn(("threat:Threat", "ap:Path"), edges)
+        self.assertIn(("ap:Path", "mal:Malfunction"), edges)
+        img = self.app.render_cause_effect_diagram(row)
+        self.assertIsNotNone(img)
+
 if __name__ == "__main__":
     unittest.main()
