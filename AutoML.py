@@ -12728,13 +12728,20 @@ class FaultTreeApp:
                 if not haz or not mal:
                     continue
                 key = (haz, mal)
-                rows.setdefault(
+                info = rows.setdefault(
                     key,
                     {
                         "hazard": haz,
                         "malfunction": mal,
                         "fis": set(),
                         "tcs": set(),
+                        # Map threat scenarios to their attack paths so the
+                        # cause and effect diagram can show how cyber attacks
+                        # propagate.
+                        "threats": {},
+                        # Maintain a flat set of all attack paths for table
+                        # views.
+                        "attack_paths": set(),
                         # Store a mapping of failure mode label -> set of
                         # faults that cause it.  Keeping the association lets
                         # us draw edges from a malfunction to its failure
@@ -12747,6 +12754,18 @@ class FaultTreeApp:
                         "faults": set(),
                     },
                 )
+
+                cyber = getattr(e, "cyber", None)
+                if cyber:
+                    threat = getattr(cyber, "threat_scenario", "").strip()
+                    aps = [
+                        ap.get("path", "").strip()
+                        for ap in getattr(cyber, "attack_paths", [])
+                        if ap.get("path", "").strip()
+                    ]
+                    if threat:
+                        info["threats"].setdefault(threat, set()).update(aps)
+                    info["attack_paths"].update(aps)
 
         # Add FI/TC info per hazard
         for doc in self.fi2tc_docs + self.tc2fi_docs:
@@ -12806,6 +12825,16 @@ class FaultTreeApp:
         nodes[mal_id] = (mal_label, "malfunction")
         edges.append((haz_id, mal_id))
 
+        for threat, aps in sorted(row.get("threats", {}).items()):
+            th_id = f"threat:{threat}"
+            nodes[th_id] = (threat, "threat")
+            edges.append((haz_id, th_id))
+            for ap in sorted(aps):
+                ap_id = f"ap:{ap}"
+                nodes[ap_id] = (ap, "attack_path")
+                edges.append((th_id, ap_id))
+                edges.append((ap_id, mal_id))
+
         for fm, faults in sorted(row["failure_modes"].items()):
             fm_id = f"fm:{fm}"
             nodes[fm_id] = (fm, "failure_mode")
@@ -12824,6 +12853,16 @@ class FaultTreeApp:
             edges.append((haz_id, tc_id))
 
         pos = {haz_id: (0, 0), mal_id: (4, 0)}
+        y_th = 2
+        for threat, aps in sorted(row.get("threats", {}).items()):
+            th_y = y_th
+            pos[f"threat:{threat}"] = (2, th_y)
+            y_ap = th_y
+            for ap in sorted(aps):
+                pos[f"ap:{ap}"] = (3, y_ap)
+                y_ap += 2
+            y_th = max(y_th + 2, y_ap)
+
         y_fm = 0
         for fm, faults in sorted(row["failure_modes"].items()):
             fm_y = y_fm * 4
@@ -12866,6 +12905,8 @@ class FaultTreeApp:
             "fault": "#D3D3D3",
             "fi": "#FFFFE0",
             "tc": "#90EE90",
+            "threat": "#FFC0CB",
+            "attack_path": "#E6E6FA",
         }
 
         scale = 80
@@ -12942,6 +12983,8 @@ class FaultTreeApp:
         cols = (
             "Hazard",
             "Malfunction",
+            "Threat Scenarios",
+            "Attack Paths",
             "Failure Modes",
             "Faults",
             "FIs",
@@ -12972,6 +13015,8 @@ class FaultTreeApp:
                 values=(
                     row["hazard"],
                     row["malfunction"],
+                    ", ".join(sorted(row.get("threats", {}).keys())),
+                    ", ".join(sorted(row.get("attack_paths", []))),
                     ", ".join(sorted(row["failure_modes"].keys())),
                     ", ".join(sorted(row["faults"])),
                     ", ".join(sorted(row["fis"])),
@@ -12993,6 +13038,8 @@ class FaultTreeApp:
                 "fault": "#D3D3D3",        # light gray
                 "fi": "#FFFFE0",           # light yellow
                 "tc": "#90EE90",           # light green
+                "threat": "#FFC0CB",       # pink
+                "attack_path": "#E6E6FA",  # lavender
             }
 
             # Clear any existing drawing
