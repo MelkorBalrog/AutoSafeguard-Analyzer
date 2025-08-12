@@ -574,7 +574,7 @@ VALID_SUBTYPES = {
     "Confidence": ["Function", "Human Task"],
     "Robustness": ["Function", "Human Task"],
     "Maturity": ["Functionality"],
-    "Rigor": ["Failure", "AI Error"],
+    "Rigor": ["Failure", "AI Error", "Functional Insufficiency"],
     "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
 }
 
@@ -6924,6 +6924,8 @@ class FaultTreeApp:
                 node_colors[node_id] = "lightyellow"
             elif "failure" in subtype:
                 node_colors[node_id] = "lightblue"
+            elif "functional insufficiency" in subtype:
+                node_colors[node_id] = "lightgreen"
             else:
                 node_colors[node_id] = "white"  # clone
 
@@ -8595,7 +8597,12 @@ class FaultTreeApp:
 
     def get_all_functional_insufficiencies(self):
         """Return all functional insufficiency nodes."""
-        return [n for n in self.get_all_nodes_in_model() if n.node_type.upper() == "FUNCTIONAL INSUFFICIENCY"]
+        return [
+            n
+            for n in self.get_all_nodes_in_model()
+            if n.node_type.upper() == "FUNCTIONAL INSUFFICIENCY"
+            or (getattr(n, "input_subtype", "") or "").lower() == "functional insufficiency"
+        ]
 
     def get_all_scenario_names(self):
         """Return the list of scenario names from all scenario libraries."""
