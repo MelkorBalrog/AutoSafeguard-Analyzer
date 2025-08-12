@@ -292,7 +292,7 @@ class ReviewScopeDialog(simpledialog.Dialog):
             cb = tk.Checkbutton(hazop_frame, text=d.name, variable=var, anchor="w")
             cb.pack(fill=tk.X, anchor="w")
             self.hazop_vars.append((var, d.name))
-        tk.Label(master, text="HARAs:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
+        tk.Label(master, text="Risk Assessments:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
         self.hara_vars = []
         hara_frame = tk.Frame(master)
         hara_frame.grid(row=1, column=4, padx=5, pady=5, sticky="nsew")
@@ -742,8 +742,8 @@ class ReviewToolbox(tk.Frame):
                 self.app.update_hara_statuses()
                 self.app.update_fta_statuses()
                 self.app.update_requirement_statuses()
-                if hasattr(self.app, "_hara_window") and self.app._hara_window.winfo_exists():
-                    self.app._hara_window.refresh_docs()
+                if hasattr(self.app, "_risk_window") and self.app._risk_window.winfo_exists():
+                    self.app._risk_window.refresh_docs()
                 self.refresh_reviews()
         else:
             approvers = [p for p in r.participants if p.role == 'approver']
@@ -762,8 +762,8 @@ class ReviewToolbox(tk.Frame):
                 if not was_closed and r.closed:
                     self.app.ensure_asil_consistency()
                     self.app.update_base_event_requirement_asil()
-                if hasattr(self.app, "_hara_window") and self.app._hara_window.winfo_exists():
-                    self.app._hara_window.refresh_docs()
+                if hasattr(self.app, "_risk_window") and self.app._risk_window.winfo_exists():
+                    self.app._risk_window.refresh_docs()
                 self.refresh_reviews()
 
     def refresh_targets(self):
@@ -1443,7 +1443,7 @@ class ReviewDocumentDialog(tk.Frame):
             new_entries = new_hara.get(name, [])
             if not old_entries and not new_entries:
                 continue
-            tk.Label(self.inner, text=f"HARA: {name}", font=heading_font).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+            tk.Label(self.inner, text=f"Risk Assessment: {name}", font=heading_font).grid(row=row, column=0, sticky='w', padx=5, pady=5)
             row += 1
             frame = tk.Frame(self.inner)
             frame.grid(row=row, column=0, sticky='nsew', padx=5, pady=5)
@@ -1652,7 +1652,7 @@ class VersionCompareDialog(tk.Frame):
         self.hazop_tree.tag_configure("existing", background="#e2e3e5")
 
         columns_hara = [
-            "HARA",
+            "Assessment",
             "Malfunction",
             "Hazard",
             "Severity",
@@ -2434,7 +2434,7 @@ class VersionCompareDialog(tk.Frame):
                     # Insert removed HAZOP entry
                     self.hazop_tree.insert("", "end", values=row, tags=("removed",))
 
-        # ----- HARA diff -----
+        # ----- Risk Assessment diff -----
         self.hara_tree.delete(*self.hara_tree.get_children())
         hr1 = {d["name"]: d for d in data1.get("haras", [])}
         hr2 = {d["name"]: d for d in data2.get("haras", [])}

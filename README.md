@@ -8,7 +8,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
-- [Risk Assessment (HARA, HIRE & TARA)](#risk-assessment-hara-hire--tara)
+- [Risk Assessment](#risk-assessment)
 - [Requirements Creation and Management](#requirements-creation-and-management)
 - [AutoML Diagrams and Safety Analyses](#automl-diagrams-and-safety-analyses)
 - [Metamodel Overview](#metamodel-overview)
@@ -46,7 +46,7 @@ flowchart TD
     X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
     A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
     A --> S([FI2TC / TC2FI<br/>inputs: functions<br/>outputs: hazards, FIs & TCs, severity])
-    B --> C([HARA<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
+    B --> C([Risk Assessment<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
     S --> C
     A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
@@ -58,20 +58,20 @@ flowchart TD
     G --> H([ASIL propagation to SGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. The **HARA** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
 The **HAZOP Analysis** window lets you list system functions with one or more associated malfunctions. Each entry records the malfunction guideword (*No/Not*, *Unintended*, *Excessive*, *Insufficient* or *Reverse*), the related scenario, driving conditions and hazard, and whether it is safety relevant. Covered malfunctions may reference other entries as mitigation. When a function is allocated to an active component in a reliability analysis, its malfunctions become selectable failure modes in the FMEDA table.
 
-## Risk Assessment (HARA, HIRE & TARA)
+## Risk Assessment
 
-The **Risk Assessment (HARA, HIRE & TARA)** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new HARA you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each HARA table contains the following columns:
+The **Risk Assessment** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new assessment you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each assessment table contains the following columns:
 
 1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP documents.
 2. **Hazard** – textual description of the resulting hazard.
 3. **Severity** – ISO&nbsp;26262 severity level (1–3). Values from FI2TC and
-   TC2FI analyses are inherited here so the HARA reflects SOTIF hazards.
+   TC2FI analyses are inherited here so the risk assessment reflects SOTIF hazards.
 4. **Severity Rationale** – free text explanation for the chosen severity.
 5. **Controllability** – ISO&nbsp;26262 controllability level (1–3).
 6. **Controllability Rationale** – free text explanation for the chosen controllability.
@@ -82,7 +82,7 @@ The **Risk Assessment (HARA, HIRE & TARA)** view builds on the safety relevant m
 
 The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
 
-The **Hazard Explorer** window lists all hazards from every HARA in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
+The **Hazard Explorer** window lists all hazards from every risk assessment in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
 
 ## Requirements Creation and Management
 
@@ -98,7 +98,7 @@ Activity diagrams list individual **actions** that describe the expected behavio
 
 Elements on a diagram may reference reliability analyses. Choosing an **analysis** or **component** automatically fills the **fit**, **qualification** and **failureModes** fields using data from FMEA and FMEDA tables. These values show up in a *Reliability* compartment for blocks or below parts. When a block references an analysis, the components from that analysis BOM can be inserted as parts in the linked internal block diagram with their failure modes already listed.
 
-Requirements can also be attached to diagram elements to keep architecture and safety analyses synchronized. The same safety goals referenced in HAZOP or HARA tables can therefore be traced directly to the blocks and parts that implement them.
+Requirements can also be attached to diagram elements to keep architecture and safety analyses synchronized. The same safety goals referenced in HAZOP or risk assessment tables can therefore be traced directly to the blocks and parts that implement them.
 
 ## Metamodel Overview
 
@@ -233,7 +233,7 @@ classDiagram
 AutoML builds on this base by introducing domain specific stereotypes for safety
 analysis. Hazards, faults and scenarios are stored using explicit types such as
 `Hazard`, `Scenario`, `Scenery`, `SafetyGoal` and `FaultTreeNode`. Tables like
-HAZOP or HARA reference these elements so analyses remain linked to the
+HAZOP or risk assessment reference these elements so analyses remain linked to the
 architecture.
 
 ```mermaid
@@ -417,8 +417,8 @@ instances capture on/off times and temperature ranges used when converting FIT
 rates to probabilities. `MechanismLibrary` collections hold
 `DiagnosticMechanism` entries from ISO 26262 Annex D so FMEDAs can select the
 appropriate diagnostic coverage. `ScenarioLibrary` and `OddLibrary` objects
-group reusable scenarios and ODD elements so HAZOP, HARA and FI2TC/TC2FI tables
-share a consistent context. HAZOP and HARA tables use `HazopDoc`/`HazopEntry`
+group reusable scenarios and ODD elements so HAZOP, risk assessment and FI2TC/TC2FI tables
+share a consistent context. HAZOP and risk assessment tables use `HazopDoc`/`HazopEntry`
 and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
 stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
 dictionaries capturing the failure mode, cause, detection rating and diagnostic
@@ -557,7 +557,7 @@ the names or IDs of the analyses being evaluated.
   listing applicable `failureModes` and storing the assigned `asil` level.
 - **SafetyGoal** – specialization of `Requirement` holding a textual
   `description`, `asil` rating and quantitative targets `spfm`, `lpfm` and `dc`.
-- **Hazard** – extends `SysMLElement` with a hazard `description` and HARA
+- **Hazard** – extends `SysMLElement` with a hazard `description` and risk assessment
   `severity` plus the related `scenarios`.
 - **Scenario** – extends `SysMLElement` to include a short `description`, linked
   `scenery` context and traced `hazards`.
@@ -612,7 +612,7 @@ Key attributes are:
 - **SafetyGoal** – textual `description`, assigned `asil` level and quantitative
   targets `spfm`, `lpfm` and `dc`. Each goal also lists allocated safety
   `requirements`.
-- **Hazard** – hazard `description`, HARA `severity` and the related
+- **Hazard** – hazard `description`, risk assessment `severity` and the related
   `scenarios` that can lead to it.
 - **Scenario** – short `description`, linked `scenery` context and traced
   `hazards`.
@@ -711,7 +711,7 @@ classDiagram
     Requirement <|-- SafetyGoal
 ```
 
-**Hazard** – extends `SysMLElement` to store the hazard `description` and HARA `severity`.
+**Hazard** – extends `SysMLElement` to store the hazard `description` and risk assessment `severity`.
 
 ```mermaid
 classDiagram
@@ -1044,9 +1044,9 @@ Two additional tables support tracing between these elements:
   **functional_insufficiencies** fields mirror those in the FI2TC table to keep
   the relationships consistent.
 
-Severity recorded in FI2TC and TC2FI entries is inherited by the HARA so the risk graph reflects the SOTIF findings. Other HARA values such as the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
+Severity recorded in FI2TC and TC2FI entries is inherited by the risk assessment so the risk graph reflects the SOTIF findings. Other risk assessment values such as the associated safety goal flow into these tables so SOTIF considerations remain connected to the overall risk assessment. Minimal cut sets calculated from the FTAs highlight combinations of FIs and TCs that form *CTAs*. From a CTA entry you can generate a functional modification requirement describing how the design must change to avoid the unsafe behaviour.
 
-All FI2TC and TC2FI documents appear in the *Hazard Analysis* section of the **Analyses** tab so they can be opened alongside HARA tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
+All FI2TC and TC2FI documents appear in the *Hazard Analysis* section of the **Analyses** tab so they can be opened alongside risk assessment tables, FTAs and CTAs for a complete view of functional safety and SOTIF issues.
 
 ### SOTIF Traceability
 
@@ -1225,10 +1225,10 @@ Steps to reproduce:
 |----------|-------------|----------|--------|-----------|
 | Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
 
-### Risk Assessment (HARA, HIRE & TARA)
+### Risk Assessment
 
 Steps to reproduce:
-1. Open **Safety → Risk Assessment (HARA, HIRE & TARA)** and create a new document linked to the HAZOP entry.
+1. Open **Safety → Risk Assessment** and create a new document linked to the HAZOP entry.
 2. Set Severity = 3, Controllability = 3, Exposure = 4; AutoML computes ASIL D.
 3. Export or save to view the table.
 
@@ -1274,5 +1274,5 @@ Steps to reproduce:
 | resistor | resistor | 20 | 297.505 |
 | capacitor | capacitor | 10 | 961.17 |
 
-This end-to-end flow links HAZOP findings to HARA ratings, fault trees and FMEDA metrics for a coherent safety case.
+This end-to-end flow links HAZOP findings to risk assessment ratings, fault trees and FMEDA metrics for a coherent safety case.
 
