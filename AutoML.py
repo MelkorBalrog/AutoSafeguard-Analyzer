@@ -13192,14 +13192,31 @@ class FaultTreeApp:
         refresh()
 
     def load_default_mechanisms(self):
-        if self.mechanism_libraries:
-            return
-        self.mechanism_libraries.append(
-            MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy())
-        )
-        self.mechanism_libraries.append(
-            MechanismLibrary("PAS 8800", PAS_8800_MECHANISMS.copy())
-        )
+        """Ensure the built-in diagnostic mechanism libraries are present.
+
+        Earlier versions only populated the ISO 26262 Annex D list when no
+        mechanism libraries were loaded at all.  Users that had already saved
+        models therefore never saw the newly introduced PAS 8800 library.  This
+        implementation checks each default library individually and adds any
+        that are missing, also marking them as selected so they appear in the
+        user interface without extra steps.
+        """
+
+        defaults = {
+            "ISO 26262 Annex D": ANNEX_D_MECHANISMS,
+            "PAS 8800": PAS_8800_MECHANISMS,
+        }
+
+        existing = {lib.name: lib for lib in self.mechanism_libraries}
+
+        for name, mechanisms in defaults.items():
+            lib = existing.get(name)
+            if lib is None:
+                lib = MechanismLibrary(name, mechanisms.copy())
+                self.mechanism_libraries.append(lib)
+                existing[name] = lib
+            if lib not in self.selected_mechanism_libraries:
+                self.selected_mechanism_libraries.append(lib)
 
     def manage_mechanism_libraries(self):
         if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
