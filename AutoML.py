@@ -8594,6 +8594,58 @@ class FaultTreeApp:
                     names.append(name)
         return names
 
+    def get_validation_targets_for_odd(self, element_name):
+        """Return product goals linked to scenarios using ``element_name``.
+
+        The search traverses scenario libraries, HAZOP documents and risk
+        assessment entries to locate safety goals whose top events contain
+        validation targets. The returned list contains the matching top event
+        nodes so their validation data can be displayed.
+        """
+        scenarios = set()
+        for lib in self.scenario_libraries:
+            for sc in lib.get("scenarios", []):
+                if isinstance(sc, dict):
+                    name = sc.get("name", "")
+                    scenery = sc.get("scenery", "")
+                    desc = sc.get("description", "")
+                else:
+                    name = sc
+                    scenery = ""
+                    desc = ""
+                elems = {e.strip() for e in str(scenery).split(",") if e}
+                if desc:
+                    elems.update(re.findall(r"\[\[(.+?)\]\]", str(desc)))
+                if element_name and name and element_name in elems:
+                    scenarios.add(name)
+
+        if not scenarios:
+            return []
+
+        hazop_scenarios = set()
+        for doc in self.hazop_docs:
+            for entry in doc.entries:
+                if getattr(entry, "scenario", "") in scenarios:
+                    hazop_scenarios.add(entry.scenario)
+
+        if not hazop_scenarios:
+            return []
+
+        goals = []
+        seen = set()
+        for doc in self.hara_docs:
+            for entry in doc.entries:
+                if getattr(entry, "scenario", "") in hazop_scenarios:
+                    sg_name = getattr(entry, "safety_goal", "")
+                    for te in self.top_events:
+                        name = te.safety_goal_description or (
+                            te.user_name or f"SG {te.unique_id}"
+                        )
+                        if name == sg_name and sg_name not in seen:
+                            goals.append(te)
+                            seen.add(sg_name)
+        return goals
+
     def classify_scenarios(self):
         """Return two lists of scenario names grouped by category."""
         use_case = []
@@ -13990,7 +14042,8 @@ class FaultTreeApp:
                 )
 
         class ElementDialog(simpledialog.Dialog):
-            def __init__(self, parent, data=None):
+            def __init__(self, parent, app, data=None):
+                self.app = app
                 self.data = data or {"name": ""}
                 super().__init__(parent, title="Edit Element")
 
@@ -14072,6 +14125,41 @@ class FaultTreeApp:
                     var.trace_add("write", update_metrics)
                 update_metrics()
 
+                vt_frame = ttk.Frame(cm_frame)
+                vt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
+                columns = [
+                    "Product Goal",
+                    "Validation Target",
+                    "Target Description",
+                    "Acceptance Criteria",
+                ]
+                self.vt_tree = ttk.Treeview(
+                    vt_frame, columns=columns, show="headings", height=4
+                )
+                for c in columns:
+                    self.vt_tree.heading(c, text=c)
+                    width = 120 if c in ("Product Goal", "Validation Target") else 200
+                    self.vt_tree.column(c, width=width, anchor="center")
+                self.vt_tree.pack(fill=tk.BOTH, expand=True)
+
+                def refresh_vt(*_):
+                    self.vt_tree.delete(*self.vt_tree.get_children())
+                    name = self.name_var.get().strip()
+                    for sg in self.app.get_validation_targets_for_odd(name):
+                        self.vt_tree.insert(
+                            "",
+                            "end",
+                            values=[
+                                sg.user_name or f"SG {sg.unique_id}",
+                                getattr(sg, "validation_target", ""),
+                                getattr(sg, "validation_desc", ""),
+                                getattr(sg, "acceptance_criteria", ""),
+                            ],
+                        )
+
+                refresh_vt()
+                self.name_var.trace_add("write", refresh_vt)
+
             def apply(self):
                 new_data = {"name": self.name_var.get()}
                 for k_var, v_var in self.attr_rows:
@@ -14138,7 +14226,7 @@ class FaultTreeApp:
             if not sel:
                 return
             lib = self.odd_libraries[sel[0]]
-            dlg = ElementDialog(win)
+            dlg = ElementDialog(win, self)
             lib.setdefault("elements", []).append(dlg.data)
             refresh_elems()
             self.update_odd_elements()
@@ -14151,7 +14239,7 @@ class FaultTreeApp:
             lib = self.odd_libraries[sel_lib[0]]
             idx = elem_tree.index(sel_elem[0])
             data = lib.get("elements", [])[idx]
-            dlg = ElementDialog(win, data)
+            dlg = ElementDialog(win, self, data)
             lib["elements"][idx] = dlg.data
             refresh_elems()
             self.update_odd_elements()
