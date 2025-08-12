@@ -27,6 +27,10 @@ from analysis.models import (
     REQUIREMENT_TYPE_OPTIONS,
     ASIL_LEVEL_OPTIONS,
     CAL_LEVEL_OPTIONS,
+    CyberRiskEntry,
+    IMPACT_LEVELS,
+    RISK_LEVEL_TABLE,
+    CAL_TABLE,
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
@@ -2235,7 +2239,7 @@ class RiskAssessmentWindow(tk.Frame):
             tag = f"asil_{row.asil}" if row.asil else ""
             self.tree.insert("", "end", values=vals, tags=(tag,))
         self.app.sync_hara_to_safety_goals()
-        self.app.sync_hara_to_safety_goals()
+        self.app.sync_cyber_risk_to_goals()
 
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, row=None):
@@ -2250,6 +2254,8 @@ class RiskAssessmentWindow(tk.Frame):
             malfs = set()
             hazards_map = {}
             scenarios_map = {}
+            self.threat_map = {}
+            threats = set()
             if not hazop_names:
                 hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
@@ -2279,83 +2285,119 @@ class RiskAssessmentWindow(tk.Frame):
                                     scenarios_map.setdefault(e.malfunction, []).append(
                                         scen_name
                                     )
+            # STPA unsafe control actions
+            for doc in getattr(self.app, "stpa_docs", []):
+                for entry in getattr(doc, "entries", []):
+                    for uc in (
+                        entry.not_providing,
+                        entry.providing,
+                        entry.incorrect_timing,
+                        entry.stopped_too_soon,
+                    ):
+                        if uc:
+                            malfs.add(uc)
+            # Threat scenarios from threat analysis (separate list)
+            for doc in getattr(self.app, "threat_docs", []):
+                for entry in getattr(doc, "entries", []):
+                    for func in getattr(entry, "functions", []):
+                        for dmg in getattr(func, "damage_scenarios", []):
+                            for threat in getattr(dmg, "threats", []):
+                                ts = threat.scenario
+                                threats.add(ts)
+                                paths = [ap.description for ap in threat.attack_paths]
+                                self.threat_map[ts] = {
+                                    "damage": dmg.scenario,
+                                    "paths": paths,
+                                }
             malfs = sorted(malfs)
+            threats = sorted(threats)
             goals = [
                 te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
                 for te in self.app.top_events
             ]
-            ttk.Label(master, text="Malfunction").grid(row=0, column=0, sticky="e")
+            self.app.sync_cyber_risk_to_goals()
+
+            notebook = ttk.Notebook(master)
+            notebook.pack(fill=tk.BOTH, expand=True)
+            safety_tab = ttk.Frame(notebook)
+            cyber_tab = ttk.Frame(notebook)
+            notebook.add(safety_tab, text="Safety Risk Assessment")
+            notebook.add(cyber_tab, text="Cybersecurity Risk Assessment")
+
+            ttk.Label(safety_tab, text="Malfunction").grid(row=0, column=0, sticky="e")
             self.mal_var = tk.StringVar(value=self.row.malfunction)
             mal_cb = ttk.Combobox(
-                master, textvariable=self.mal_var, values=malfs, state="readonly"
+                safety_tab, textvariable=self.mal_var, values=malfs, state="readonly"
             )
             mal_cb.grid(row=0, column=1)
-            ttk.Label(master, text="Hazard").grid(row=1, column=0, sticky="ne")
-            self.haz = tk.Text(master, width=30, height=3)
+            ttk.Label(safety_tab, text="Hazard").grid(row=1, column=0, sticky="ne")
+            self.haz = tk.Text(safety_tab, width=30, height=3)
             self.haz.insert("1.0", self.row.hazard)
             self.haz.grid(row=1, column=1)
-            ttk.Label(master, text="Severity").grid(row=2, column=0, sticky="e")
             scen_names = self.app.get_all_scenario_names()
             self.scen_var = tk.StringVar(value=getattr(self.row, "scenario", ""))
             scen_cb = ttk.Combobox(
-                master, textvariable=self.scen_var, values=scen_names, state="readonly"
+                safety_tab, textvariable=self.scen_var, values=scen_names, state="readonly"
             )
             scen_cb.grid(row=2, column=1)
-            ttk.Label(master, text="Severity").grid(row=3, column=0, sticky="e")
-            sev_val = str(self.app.hazard_severity.get(self.row.hazard.strip(), self.row.severity))
+            ttk.Label(safety_tab, text="Severity").grid(row=2, column=0, sticky="e")
+            sev_val = str(
+                self.app.hazard_severity.get(self.row.hazard.strip(), self.row.severity)
+            )
             self.sev_var = tk.StringVar(value=sev_val)
             sev_cb = ttk.Combobox(
-                master,
+                safety_tab,
                 textvariable=self.sev_var,
                 values=["1", "2", "3"],
                 state="disabled",
             )
-            sev_cb.grid(row=2, column=1)
-            ttk.Label(master, text="Severity Rationale").grid(
+            sev_cb.grid(row=3, column=1)
+            ttk.Label(safety_tab, text="Severity Rationale").grid(
                 row=3, column=0, sticky="e"
             )
-            self.sev_rat = tk.Entry(master)
+            self.sev_rat = tk.Entry(safety_tab)
             self.sev_rat.insert(0, self.row.sev_rationale)
-            self.sev_rat.grid(row=3, column=1)
-            ttk.Label(master, text="Controllability").grid(row=4, column=0, sticky="e")
+            self.sev_rat.grid(row=4, column=1)
+            ttk.Label(safety_tab, text="Controllability").grid(row=4, column=0, sticky="e")
             self.cont_var = tk.StringVar(value=str(self.row.controllability))
             cont_cb = ttk.Combobox(
-                master,
+                safety_tab,
                 textvariable=self.cont_var,
                 values=["1", "2", "3"],
                 state="readonly",
             )
             cont_cb.grid(row=5, column=1)
-            ttk.Label(master, text="Controllability Rationale").grid(
+            ttk.Label(safety_tab, text="Controllability Rationale").grid(
                 row=5, column=0, sticky="e"
             )
-            self.cont_rat = tk.Entry(master)
+            self.cont_rat = tk.Entry(safety_tab)
             self.cont_rat.insert(0, self.row.cont_rationale)
             self.cont_rat.grid(row=6, column=1)
-            ttk.Label(master, text="Exposure").grid(row=7, column=0, sticky="e")
+            ttk.Label(safety_tab, text="Exposure").grid(row=6, column=0, sticky="e")
             self.exp_var = tk.StringVar(value=str(self.row.exposure))
             exp_cb = ttk.Combobox(
-                master,
+                safety_tab,
                 textvariable=self.exp_var,
                 values=["1", "2", "3", "4"],
                 state="disabled",
             )
             exp_cb.grid(row=7, column=1)
-            ttk.Label(master, text="Exposure Rationale").grid(
-                row=8, column=0, sticky="e"
+            ttk.Label(safety_tab, text="Exposure Rationale").grid(
+                row=7, column=0, sticky="e"
             )
-            self.exp_rat = tk.Entry(master)
+            self.exp_rat = tk.Entry(safety_tab)
             self.exp_rat.insert(0, self.row.exp_rationale)
             self.exp_rat.grid(row=8, column=1)
-            ttk.Label(master, text="ASIL").grid(row=9, column=0, sticky="e")
+            ttk.Label(safety_tab, text="ASIL").grid(row=8, column=0, sticky="e")
             self.asil_var = tk.StringVar(value=self.row.asil)
-            asil_lbl = ttk.Label(master, textvariable=self.asil_var)
-            asil_lbl.grid(row=9, column=1)
-            ttk.Label(master, text="Safety Goal").grid(row=10, column=0, sticky="e")
+            asil_lbl = ttk.Label(safety_tab, textvariable=self.asil_var)
+            asil_lbl.grid(row=8, column=1)
+            ttk.Label(safety_tab, text="Safety Goal").grid(row=9, column=0, sticky="e")
             self.sg_var = tk.StringVar(value=self.row.safety_goal)
-            ttk.Combobox(
-                master, textvariable=self.sg_var, values=goals, state="readonly"
-            ).grid(row=10, column=1)
+            sg_cb = ttk.Combobox(
+                safety_tab, textvariable=self.sg_var, values=goals, state="readonly"
+            )
+            sg_cb.grid(row=9, column=1)
 
             def recalc(_=None):
                 try:
@@ -2366,7 +2408,6 @@ class RiskAssessmentWindow(tk.Frame):
                     self.asil_var.set("QM")
                     return
                 self.asil_var.set(calc_asil(s, c, e))
-
 
             sev_cb.bind("<<ComboboxSelected>>", recalc)
             cont_cb.bind("<<ComboboxSelected>>", recalc)
@@ -2381,6 +2422,193 @@ class RiskAssessmentWindow(tk.Frame):
             scen_cb.bind("<<ComboboxSelected>>", update_exposure)
             update_exposure()
 
+            # ---- Cybersecurity tab ----
+            ttk.Label(cyber_tab, text="Threat Scenario").grid(row=0, column=0, sticky="e")
+            self.threat_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "threat_scenario", "")
+            )
+            threat_cb = ttk.Combobox(
+                cyber_tab, textvariable=self.threat_var, values=threats, state="readonly"
+            )
+            threat_cb.grid(row=0, column=1)
+
+            ttk.Label(cyber_tab, text="Damage Scenario").grid(row=1, column=0, sticky="e")
+            self.damage_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "damage_scenario", "")
+            )
+            ttk.Label(cyber_tab, textvariable=self.damage_var).grid(row=1, column=1, sticky="w")
+
+            ttk.Label(cyber_tab, text="Financial Impact").grid(row=2, column=0, sticky="e")
+            self.fin_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "financial_impact", "Negligible")
+            )
+            ttk.Combobox(
+                cyber_tab, textvariable=self.fin_var, values=IMPACT_LEVELS, state="readonly"
+            ).grid(row=2, column=1)
+
+            ttk.Label(cyber_tab, text="Safety Impact").grid(row=3, column=0, sticky="e")
+            self.safe_imp_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "safety_impact", "Negligible")
+            )
+            ttk.Combobox(
+                cyber_tab, textvariable=self.safe_imp_var, values=IMPACT_LEVELS, state="readonly"
+            ).grid(row=3, column=1)
+
+            ttk.Label(cyber_tab, text="Operational Impact").grid(row=4, column=0, sticky="e")
+            self.op_imp_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "operational_impact", "Negligible")
+            )
+            ttk.Combobox(
+                cyber_tab, textvariable=self.op_imp_var, values=IMPACT_LEVELS, state="readonly"
+            ).grid(row=4, column=1)
+
+            ttk.Label(cyber_tab, text="Privacy Impact").grid(row=5, column=0, sticky="e")
+            self.priv_imp_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "privacy_impact", "Negligible")
+            )
+            ttk.Combobox(
+                cyber_tab, textvariable=self.priv_imp_var, values=IMPACT_LEVELS, state="readonly"
+            ).grid(row=5, column=1)
+
+            ttk.Label(cyber_tab, text="Overall Impact").grid(row=6, column=0, sticky="e")
+            self.overall_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "overall_impact", "")
+            )
+            ttk.Label(cyber_tab, textvariable=self.overall_var).grid(row=6, column=1, sticky="w")
+
+            ttk.Label(cyber_tab, text="Attack Paths").grid(row=7, column=0, sticky="nw")
+            self.attack_frame = ttk.Frame(cyber_tab)
+            self.attack_frame.grid(row=7, column=1, sticky="w")
+            self.attack_vars = []
+            self.attack_widgets = []
+            self.current_attack_paths = []
+
+            ttk.Label(cyber_tab, text="Risk Level").grid(row=8, column=0, sticky="e")
+            self.risk_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "risk_level", "")
+            )
+            ttk.Label(cyber_tab, textvariable=self.risk_var).grid(row=8, column=1, sticky="w")
+            ttk.Label(cyber_tab, text="CAL").grid(row=9, column=0, sticky="e")
+            self.cal_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "cal", "")
+            )
+            ttk.Label(cyber_tab, textvariable=self.cal_var).grid(row=9, column=1, sticky="w")
+
+            ttk.Label(cyber_tab, text="Cybersecurity Goal").grid(row=10, column=0, sticky="e")
+            goal_ids = [g.goal_id for g in self.app.cybersecurity_goals]
+            self.goal_var = tk.StringVar(
+                value=getattr(getattr(self.row, "cyber", None), "cybersecurity_goal", "")
+            )
+            goal_cb = ttk.Combobox(
+                cyber_tab, textvariable=self.goal_var, values=goal_ids, state="readonly"
+            )
+            goal_cb.grid(row=10, column=1)
+            self.goal_cal_var = tk.StringVar()
+            ttk.Label(cyber_tab, textvariable=self.goal_cal_var).grid(row=10, column=2, sticky="w")
+
+            def update_goal_cal(*_):
+                cmap = {g.goal_id: g.cal for g in self.app.cybersecurity_goals}
+                self.goal_cal_var.set(cmap.get(self.goal_var.get(), ""))
+
+            goal_cb.bind("<<ComboboxSelected>>", update_goal_cal)
+            update_goal_cal()
+
+            def sync_from_safety(_=None):
+                self.goal_var.set(self.sg_var.get())
+                update_goal_cal()
+
+            def sync_from_cyber(_=None):
+                self.sg_var.set(self.goal_var.get())
+
+            sg_cb.bind("<<ComboboxSelected>>", sync_from_safety)
+            goal_cb.bind("<<ComboboxSelected>>", sync_from_cyber, add="+")
+            if self.sg_var.get() and not self.goal_var.get():
+                self.goal_var.set(self.sg_var.get())
+                update_goal_cal()
+            elif self.goal_var.get() and not self.sg_var.get():
+                self.sg_var.set(self.goal_var.get())
+
+            def update_cyber(_=None):
+                order = {name: idx for idx, name in enumerate(IMPACT_LEVELS)}
+                impacts = [
+                    self.fin_var.get(),
+                    self.safe_imp_var.get(),
+                    self.op_imp_var.get(),
+                    self.priv_imp_var.get(),
+                ]
+                overall = max(impacts, key=lambda x: order.get(x, 0))
+                self.overall_var.set(overall)
+                feas_order = {"Low": 1, "Medium": 2, "High": 3}
+                feas = "Low"
+                for _v, f in self.attack_vars:
+                    val = f.get() or "Low"
+                    if feas_order.get(val, 1) > feas_order.get(feas, 1):
+                        feas = val
+                self.risk_var.set(RISK_LEVEL_TABLE.get(feas, {}).get(overall, ""))
+                cal_order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
+                highest = ""
+                for v, _f in self.attack_vars:
+                    vec = v.get()
+                    if vec in ("Physical", "Local"):
+                        col = "Physical-Local"
+                    elif vec == "Adjacent":
+                        col = "Adjacent Network"
+                    elif vec == "Network":
+                        col = "Network-Remote"
+                    else:
+                        continue
+                    cal = CAL_TABLE.get(col, {}).get(overall, "")
+                    if cal and cal_order.get(cal, 0) > cal_order.get(highest, 0):
+                        highest = cal
+                self.cal_var.set(highest)
+
+            for var in (
+                self.fin_var,
+                self.safe_imp_var,
+                self.op_imp_var,
+                self.priv_imp_var,
+            ):
+                var.trace_add("write", update_cyber)
+
+            def build_attack_widgets(paths):
+                for w in self.attack_widgets:
+                    w.destroy()
+                self.attack_widgets.clear()
+                self.attack_vars = []
+                self.current_attack_paths = paths
+                if paths:
+                    ttk.Label(self.attack_frame, text="Path").grid(row=0, column=0, sticky="w")
+                    ttk.Label(self.attack_frame, text="Attack Vector").grid(row=0, column=1)
+                    ttk.Label(self.attack_frame, text="Feasibility").grid(row=0, column=2)
+                for i, path in enumerate(paths, start=1):
+                    lbl = ttk.Label(self.attack_frame, text=path)
+                    lbl.grid(row=i, column=0, sticky="w")
+                    vec_var = tk.StringVar()
+                    feas_var = tk.StringVar()
+                    vec_cb = ttk.Combobox(
+                        self.attack_frame,
+                        textvariable=vec_var,
+                        values=["Physical", "Local", "Adjacent", "Network"],
+                        state="readonly",
+                    )
+                    vec_cb.grid(row=i, column=1)
+                    feas_cb = ttk.Combobox(
+                        self.attack_frame,
+                        textvariable=feas_var,
+                        values=["Low", "Medium", "High"],
+                        state="readonly",
+                    )
+                    feas_cb.grid(row=i, column=2)
+                    self.attack_widgets.extend([lbl, vec_cb, feas_cb])
+                    self.attack_vars.append((vec_var, feas_var))
+                    vec_var.trace_add("write", update_cyber)
+                    feas_var.trace_add("write", update_cyber)
+                    if self.row.cyber:
+                        for ap in getattr(self.row.cyber, "attack_paths", []):
+                            if ap.get("path") == path:
+                                vec_var.set(ap.get("vector", ""))
+                                feas_var.set(ap.get("feasibility", ""))
+                update_cyber()
             def auto_hazard(_=None):
                 mal = self.mal_var.get()
                 if not mal:
@@ -2399,8 +2627,20 @@ class RiskAssessmentWindow(tk.Frame):
                     self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
                 recalc()
 
+            def on_threat_selected(_=None):
+                ts = self.threat_var.get()
+                info = self.threat_map.get(ts)
+                if info:
+                    self.damage_var.set(info.get("damage", ""))
+                    build_attack_widgets(info.get("paths", []))
+                else:
+                    self.damage_var.set("")
+                    build_attack_widgets([])
+
             mal_cb.bind("<<ComboboxSelected>>", auto_hazard)
+            threat_cb.bind("<<ComboboxSelected>>", on_threat_selected)
             auto_hazard()
+            on_threat_selected()
 
         def apply(self):
             old_mal = self.row.malfunction
@@ -2422,6 +2662,42 @@ class RiskAssessmentWindow(tk.Frame):
             self.row.asil = self.asil_var.get()
             self.row.safety_goal = self.sg_var.get()
             self.row.scenario = self.scen_var.get()
+            # --- Cybersecurity values ---
+            impacts = (
+                self.fin_var.get(),
+                self.safe_imp_var.get(),
+                self.op_imp_var.get(),
+                self.priv_imp_var.get(),
+            )
+            highest_vec = ""
+            highest_feas = "Low"
+            vector_order = {"Physical": 1, "Local": 2, "Adjacent": 3, "Network": 4}
+            feas_order = {"Low": 1, "Medium": 2, "High": 3}
+            attack_data = []
+            for (v_var, f_var), path in zip(self.attack_vars, self.current_attack_paths):
+                vec = v_var.get()
+                feas = f_var.get() or "Low"
+                attack_data.append({"path": path, "vector": vec, "feasibility": feas})
+                if vector_order.get(vec, 0) > vector_order.get(highest_vec, 0):
+                    highest_vec = vec
+                if feas_order.get(feas, 0) > feas_order.get(highest_feas, 0):
+                    highest_feas = feas
+            if any(impacts) or attack_data:
+                cyber = CyberRiskEntry(
+                    damage_scenario=self.damage_var.get(),
+                    threat_scenario=self.threat_var.get(),
+                    attack_vector=highest_vec or "Physical",
+                    feasibility=highest_feas,
+                    financial_impact=impacts[0],
+                    safety_impact=impacts[1],
+                    operational_impact=impacts[2],
+                    privacy_impact=impacts[3],
+                    cybersecurity_goal=self.goal_var.get(),
+                )
+                cyber.attack_paths = attack_data
+                self.row.cyber = cyber
+            else:
+                self.row.cyber = None
 
     def add_row(self):
         if not self.app.active_hara:

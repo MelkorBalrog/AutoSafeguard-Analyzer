@@ -534,5 +534,6 @@ class ThreatDialog(simpledialog.Dialog):
         self.bind("<Escape>", self.cancel)
         box.pack(side=tk.BOTTOM, fill=tk.X)
         self.update_idletasks()
-        self.geometry(f"700x{self.winfo_reqheight()}")
+        height = self.winfo_reqheight() // 2
+        self.geometry(f"700x{height}")
         self.resizable(False, False)
