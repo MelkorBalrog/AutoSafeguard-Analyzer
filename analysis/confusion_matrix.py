@@ -74,7 +74,6 @@ def counts_from_metrics(accuracy: float, precision: float, recall: float) -> Dic
 
     return {"tp": tp, "fp": fp, "tn": tn, "fn": fn}
 
-
 def counts_from_validation(entries: Iterable[Tuple[float, float, float]]) -> Dict[str, float]:
     """Derive confusion matrix counts from validation results.
 
@@ -112,5 +111,4 @@ def counts_from_validation(entries: Iterable[Tuple[float, float, float]]) -> Dic
             counts["fn"] += 1
         else:
             counts["tn"] += 1
-    return counts
 

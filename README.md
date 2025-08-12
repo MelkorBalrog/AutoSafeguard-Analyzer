@@ -1151,6 +1151,21 @@ probabilities from their risk assessment ratings and shows them as read-only
 fields. Only the acceptance rate is editable; the validation target is then
 computed automatically.
 
+The following rule-of-thumb probabilities are used to convert ISO 26262/21448
+ratings into conditional probabilities. Each step increases the likelihood by
+roughly an order of magnitude and represents values commonly referenced in
+industry practice:
+
+| Rating | ``P(E|HB)`` | ``P(C|E)`` | ``P(S|C)`` |
+|-------:|------------:|-----------:|-----------:|
+| 1 | ``1e-4`` | ``1e-3`` | ``1e-3`` |
+| 2 | ``1e-3`` | ``1e-2`` | ``1e-2`` |
+| 3 | ``1e-2`` | ``1e-1`` | ``1e-1`` |
+| 4 | ``1e-1`` | – | – |
+
+Projects with empirical data may substitute more precise values, but these
+approximations provide a justified starting point when none are available.
+
 ## Email Setup
 
 When sending review summaries, the application asks for SMTP settings and login details. If you use Gmail with two-factor authentication enabled, create an **app password** and enter it instead of your normal account password. Authentication failures will prompt you to re-enter these settings.
