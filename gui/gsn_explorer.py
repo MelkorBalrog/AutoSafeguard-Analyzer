@@ -46,7 +46,6 @@ class GSNExplorer(tk.Frame):
             "Context": self._create_icon("rect", "#696969"),
         }
         self.default_node_icon = self._create_icon("rect")
-
         self.item_map: dict[str, tuple[str, object]] = {}
 
         btns = ttk.Frame(self)
@@ -57,7 +56,6 @@ class GSNExplorer(tk.Frame):
         ttk.Button(btns, text="Rename", command=self.rename_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
-
         self.tree.bind("<Double-1>", self._on_double_click)
         self.populate()
 

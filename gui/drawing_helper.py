@@ -828,7 +828,6 @@ class FTADrawingHelper:
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
 
-
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""
 
