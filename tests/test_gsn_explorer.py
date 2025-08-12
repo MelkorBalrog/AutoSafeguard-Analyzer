@@ -1,7 +1,6 @@
 import types
 
 from tkinter import simpledialog
-
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui.gsn_explorer import GSNExplorer
 
@@ -51,7 +50,6 @@ def test_gsn_explorer_populates_modules_and_diagrams():
     texts = [meta["text"] for meta in explorer.tree.items.values()]
     assert "Pkg" in texts
     assert "Root" in texts
-
 
 def test_new_diagram_only_in_module(monkeypatch):
     mod = GSNModule("Pkg")
