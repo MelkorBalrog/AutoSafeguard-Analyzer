@@ -14209,15 +14209,17 @@ class FaultTreeApp:
                         p=p,
                         n=n,
                     )
-                    self.tp_var.set(rates["tp"])
-                    self.fp_var.set(rates["fp"])
-                    self.tn_var.set(rates["tn"])
-                    self.fn_var.set(rates["fn"])
-                    metrics = compute_metrics(rates["tp"], rates["fp"], rates["tn"], rates["fn"])
+                    metrics = compute_metrics(
+                        rates["tp"], rates["fp"], rates["tn"], rates["fn"]
+                    )
                     self.acc_var.set(f"{metrics['accuracy']:.3f}")
                     self.prec_var.set(f"{metrics['precision']:.3f}")
                     self.rec_var.set(f"{metrics['recall']:.3f}")
                     self.f1_var.set(f"{metrics['f1']:.3f}")
+                    self.tp_var.set(rates["tp"])
+                    self.fp_var.set(rates["fp"])
+                    self.tn_var.set(rates["tn"])
+                    self.fn_var.set(rates["fn"])
 
                 for var in (self.p_var, self.n_var):
                     var.trace_add("write", update_metrics)
@@ -14307,17 +14309,20 @@ class FaultTreeApp:
                     p=p,
                     n=n,
                 )
-                metrics = compute_metrics(rates["tp"], rates["fp"], rates["tn"], rates["fn"])
-                new_data.update({
-                    "p": p,
-                    "n": n,
-                    "tp": rates["tp"],
-                    "fp": rates["fp"],
-                    "tn": rates["tn"],
-                    "fn": rates["fn"],
-                })
+                metrics = compute_metrics(
+                    rates["tp"], rates["fp"], rates["tn"], rates["fn"]
+                )
                 new_data.update(metrics)
-                new_data.update(rates)
+                new_data.update(
+                    {
+                        "p": p,
+                        "n": n,
+                        "tp": rates["tp"],
+                        "fp": rates["fp"],
+                        "tn": rates["tn"],
+                        "fn": rates["fn"],
+                    }
+                )
                 self.data = new_data
 
         def add_lib():
