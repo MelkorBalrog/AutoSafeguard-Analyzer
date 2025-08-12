@@ -32,6 +32,18 @@ def test_pas8800_contains_fault_aware_training():
     assert "Fault-aware training" in names
 
 
+def test_pas8800_contains_new_diagnostics():
+    names = [m.name for m in PAS_8800_MECHANISMS]
+    expected = [
+        "Bayesian inference",
+        "Monte Carlo dropout",
+        "Data distillation",
+        "Auto data labeling and annotation",
+    ]
+    for mech in expected:
+        assert mech in names
+
+
 def test_pas8800_library_non_empty():
     lib = MechanismLibrary("PAS 8800", PAS_8800_MECHANISMS.copy())
     assert len(lib.mechanisms) >= 30

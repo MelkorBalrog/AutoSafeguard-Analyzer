@@ -512,4 +512,32 @@ PAS_8800_MECHANISMS = [
         "",
         "G.4.9.2",
     ),
+    DiagnosticMechanism(
+        "Bayesian inference",
+        1.0,
+        "Uses probabilistic models to quantify prediction uncertainty and improve reliability.",
+        "",
+        "",
+    ),
+    DiagnosticMechanism(
+        "Monte Carlo dropout",
+        1.0,
+        "Applies dropout during inference to approximate Bayesian uncertainty for robust decisions.",
+        "",
+        "",
+    ),
+    DiagnosticMechanism(
+        "Data distillation",
+        1.0,
+        "Compresses datasets into representative samples to enhance training efficiency while retaining performance.",
+        "",
+        "",
+    ),
+    DiagnosticMechanism(
+        "Auto data labeling and annotation",
+        1.0,
+        "Automates labeling processes to accelerate dataset creation and improve consistency.",
+        "",
+        "",
+    ),
 ]
