@@ -40,7 +40,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 
 ## Workflow Overview
 
-The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL values propagated throughout the model.
+The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
 
 ```mermaid
 flowchart TD
@@ -50,19 +50,22 @@ flowchart TD
     X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
     A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
     A --> S([FI2TC / TC2FI<br/>inputs: functions<br/>outputs: hazards, FIs & TCs, severity])
+    A --> T([Threat Analysis<br/>inputs: architecture & functions<br/>outputs: threat scenarios])
     B --> C([Risk Assessment<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
     S --> C
+    T --> U([Cyber Risk Assessment<br/>inputs: threat scenarios<br/>outputs: damage scenarios, CAL, cybersecurity goals])
     A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
     C --> D
     C --> E([FTA<br/>inputs: hazards & safety goals<br/>outputs: fault trees])
     D --> E
+    U --> V([Cybersecurity requirements<br/>inputs: cybersecurity goals])
     E --> F([Safety requirements<br/>inputs: fault trees & failure modes])
-    F --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
-    G --> H([ASIL propagation to SGs, FMEAs and FTAs])
+    F & V --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
+    G --> H([ASIL & CAL propagation to SGs, CGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. In parallel, a **Threat Analysis** maps potential attack paths so the **Cyber Risk Assessment** can compute damage scenarios, risk levels and CALs that roll up into cybersecurity goals. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Cyber and safety goals produce corresponding requirement sets that converge in peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL and CAL values traced back to the safety goals, cybersecurity goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
