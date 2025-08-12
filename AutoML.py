@@ -1167,15 +1167,22 @@ class EditNodeDialog(simpledialog.Dialog):
                 # the safety tab. They remain attributes of the node but are
                 # configured elsewhere.
 
-                ttk.Label(safety_frame, text="Acceptance Probability:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
-                self.acc_prob_var = tk.StringVar(value=str(getattr(self.node, "acceptance_prob", 1.0)))
+                ttk.Label(safety_frame, text="Validation Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                self.val_target_var = tk.StringVar(value=str(getattr(self.node, "validation_target", 1.0)))
                 tk.Entry(
                     safety_frame,
-                    textvariable=self.acc_prob_var,
+                    textvariable=self.val_target_var,
                     width=8,
                     validate="key",
                     validatecommand=(self.register(self.validate_float), "%P"),
                 ).grid(row=row_next, column=1, padx=5, pady=5, sticky="w")
+                row_next += 1
+
+                ttk.Label(safety_frame, text="Validation Target Desc:").grid(row=row_next, column=0, padx=5, pady=5, sticky="ne")
+                self.val_desc_text = tk.Text(safety_frame, width=40, height=3, font=dialog_font, wrap="word")
+                self.val_desc_text.insert("1.0", getattr(self.node, "validation_desc", ""))
+                self.val_desc_text.grid(row=row_next, column=1, padx=5, pady=5)
+                self.val_desc_text.bind("<Return>", self.on_enter_pressed)
                 row_next += 1
 
                 ttk.Label(safety_frame, text="Acceptance Criteria:").grid(row=row_next, column=0, padx=5, pady=5, sticky="ne")
@@ -1928,9 +1935,10 @@ class EditNodeDialog(simpledialog.Dialog):
                 # Safety metrics targets are no longer edited here. Preserve
                 # existing values on the node.
                 try:
-                    target_node.acceptance_prob = float(self.acc_prob_var.get())
+                    target_node.validation_target = float(self.val_target_var.get())
                 except Exception:
-                    target_node.acceptance_prob = 1.0
+                    target_node.validation_target = 1.0
+                target_node.validation_desc = self.val_desc_text.get("1.0", "end-1c")
                 target_node.acceptance_criteria = self.ac_text.get("1.0", "end-1c")
             else:
                 target_node.is_page = self.is_page_var.get()
@@ -2141,6 +2149,7 @@ class FaultTreeApp:
         requirements_menu.add_command(label="Requirements Explorer", command=self.show_requirements_explorer)
         requirements_menu.add_command(label="Product Goals Matrix", command=self.show_safety_goals_matrix)
         requirements_menu.add_command(label="Product Goals Editor", command=self.show_product_goals_editor)
+        requirements_menu.add_command(label="Safety Performance Indicators", command=self.show_safety_performance_indicators)
         requirements_menu.add_command(label="Export Product Goal Requirements", command=self.export_product_goal_requirements)
         review_menu = tk.Menu(menubar, tearoff=0)
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
@@ -12057,11 +12066,20 @@ class FaultTreeApp:
         self._sg_tab = self._new_tab("Product Goals")
         win = self._sg_tab
 
-        columns = ["ID", "ASIL", "Safe State", "FTTI", "Prob", "Acceptance", "Description"]
+        columns = [
+            "ID",
+            "ASIL",
+            "Safe State",
+            "FTTI",
+            "Val Target",
+            "Val Desc",
+            "Acceptance",
+            "Description",
+        ]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
             tree.heading(c, text=c)
-            tree.column(c, width=120 if c != "Description" else 300, anchor="center")
+            tree.column(c, width=120 if c not in ("Description", "Val Desc", "Acceptance") else 300, anchor="center")
         tree.pack(fill=tk.BOTH, expand=True)
 
         def refresh_tree():
@@ -12078,7 +12096,8 @@ class FaultTreeApp:
                         sg.safety_goal_asil,
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
-                        getattr(sg, "acceptance_prob", ""),
+                        getattr(sg, "validation_target", ""),
+                        getattr(sg, "validation_desc", ""),
                         getattr(sg, "acceptance_criteria", ""),
                         sg.safety_goal_description,
                     ],
@@ -12113,24 +12132,29 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=3, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Prob:").grid(row=4, column=0, sticky="e")
-                self.prob_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_prob", 1.0)))
+                ttk.Label(master, text="Validation Target:").grid(row=4, column=0, sticky="e")
+                self.val_var = tk.StringVar(value=str(getattr(self.initial, "validation_target", 1.0)))
                 tk.Entry(
                     master,
-                    textvariable=self.prob_var,
+                    textvariable=self.val_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=5, column=0, sticky="ne")
+                ttk.Label(master, text="Val Target Desc:").grid(row=5, column=0, sticky="ne")
+                self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
+                self.val_desc_text.grid(row=5, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=6, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=5, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=6, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=6, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=7, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=6, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=7, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -12142,7 +12166,8 @@ class FaultTreeApp:
                     "asil": asil,
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
-                    "prob": self.prob_var.get().strip(),
+                    "val": self.val_var.get().strip(),
+                    "val_desc": self.val_desc_text.get("1.0", "end-1c"),
                     "accept": self.acc_text.get("1.0", "end-1c"),
                     "desc": desc,
                 }
@@ -12155,9 +12180,10 @@ class FaultTreeApp:
                 node.safe_state = dlg.result["state"]
                 node.ftti = dlg.result["ftti"]
                 try:
-                    node.acceptance_prob = float(dlg.result["prob"])
+                    node.validation_target = float(dlg.result["val"])
                 except Exception:
-                    node.acceptance_prob = 1.0
+                    node.validation_target = 1.0
+                node.validation_desc = dlg.result["val_desc"]
                 node.acceptance_criteria = dlg.result["accept"]
                 node.safety_goal_description = dlg.result["desc"]
                 self.top_events.append(node)
@@ -12177,9 +12203,10 @@ class FaultTreeApp:
                 sg.safe_state = dlg.result["state"]
                 sg.ftti = dlg.result["ftti"]
                 try:
-                    sg.acceptance_prob = float(dlg.result["prob"])
+                    sg.validation_target = float(dlg.result["val"])
                 except Exception:
-                    sg.acceptance_prob = 1.0
+                    sg.validation_target = 1.0
+                sg.validation_desc = dlg.result["val_desc"]
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
                 refresh_tree()
@@ -12203,6 +12230,36 @@ class FaultTreeApp:
         ttk.Button(btn, text="Delete", command=del_sg).pack(side=tk.LEFT)
 
         refresh_tree()
+
+    def show_safety_performance_indicators(self):
+        """Display Safety Performance Indicators."""
+        if hasattr(self, "_spi_tab") and self._spi_tab.winfo_exists():
+            self.doc_nb.select(self._spi_tab)
+            return
+        self._spi_tab = self._new_tab("Safety Performance Indicators")
+        win = self._spi_tab
+
+        columns = ["Product Goal", "Validation Target", "Target Description", "Acceptance Criteria"]
+        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 120
+            if c in ("Target Description", "Acceptance Criteria"):
+                width = 300
+            tree.column(c, width=width, anchor="center")
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for sg in self.top_events:
+            tree.insert(
+                "",
+                "end",
+                values=[
+                    sg.user_name or f"SG {sg.unique_id}",
+                    getattr(sg, "validation_target", ""),
+                    getattr(sg, "validation_desc", ""),
+                    getattr(sg, "acceptance_criteria", ""),
+                ],
+            )
 
     def export_product_goal_requirements(self):
         """Export requirements traced to product goals including their ASIL."""
@@ -16454,7 +16511,7 @@ class FaultTreeApp:
             if not sg:
                 continue
             try:
-                acc = float(getattr(sg, "acceptance_prob", 1.0))
+                acc = float(getattr(sg, "validation_target", 1.0))
             except (TypeError, ValueError):
                 acc = 1.0
             try:
@@ -16772,7 +16829,8 @@ class FaultTreeNode:
         self.safety_goal_asil = ""
         self.safe_state = ""
         self.ftti = ""
-        self.acceptance_prob = 1.0
+        self.validation_target = 1.0
+        self.validation_desc = ""
         self.acceptance_criteria = ""
         self.status = "draft"
         self.approved = False
@@ -16848,7 +16906,8 @@ class FaultTreeNode:
             "safety_goal_asil": self.safety_goal_asil,
             "safe_state": self.safe_state,
             "ftti": self.ftti,
-            "acceptance_prob": self.acceptance_prob,
+            "validation_target": self.validation_target,
+            "validation_desc": self.validation_desc,
             "acceptance_criteria": self.acceptance_criteria,
             "status": self.status,
             "approved": self.approved,
@@ -16911,7 +16970,8 @@ class FaultTreeNode:
         node.safety_goal_asil = data.get("safety_goal_asil", "")
         node.safe_state = data.get("safe_state", "")
         node.ftti = data.get("ftti", "")
-        node.acceptance_prob = data.get("acceptance_prob", 1.0)
+        node.validation_target = data.get("validation_target", 1.0)
+        node.validation_desc = data.get("validation_desc", "")
         node.acceptance_criteria = data.get("acceptance_criteria", "")
         node.status = data.get("status", "draft")
         node.approved = data.get("approved", False)
