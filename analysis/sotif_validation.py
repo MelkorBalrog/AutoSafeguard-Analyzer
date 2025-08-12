@@ -19,10 +19,15 @@ def hazardous_behavior_rate(
 ) -> float:
     """Derive the rate of hazardous behaviour.
 
+    All rates are expressed in **events per hour**. The function implements
+    ISO 21448 Formula (C.2)::
+
+        RHB = AH / (P_E|HB * P_C|E * P_S|C)
+
     Parameters
     ----------
     acceptance_rate:
-        The acceptance criterion :math:`A_H` (e.g. ``1e-8`` per hour).
+        The acceptance criterion :math:`A_H` (e.g. ``1e-8`` events per hour).
     p_exposure_given_hb:
         Probability :math:`P_{E|HB}` that the hazardous behaviour occurs in a
         scenario leading to harm.
@@ -36,10 +41,12 @@ def hazardous_behavior_rate(
     Returns
     -------
     float
-        Rate of hazardous behaviour :math:`R_{HB}` derived using ISO 21448
-        Formula (C.2):
+        Rate of hazardous behaviour :math:`R_{HB}` in events per hour.
 
-        ``RHB = AH / (P_E|HB * P_C|E * P_S|C)``
+    Examples
+    --------
+    >>> hazardous_behavior_rate(1e-8, 0.05, 0.1, 0.01)
+    0.0002
     """
 
     denominator = (
@@ -58,9 +65,25 @@ def acceptance_rate(
 ) -> float:
     """Compute the acceptance rate from the hazardous behaviour rate.
 
-    Implements ISO 21448 Formula (C.1):
+    All rates are expressed in **events per hour**. Implements ISO 21448
+    Formula (C.1)::
 
-    ``AH = RHB * P_E|HB * P_C|E * P_S|C``
+        AH = RHB * P_E|HB * P_C|E * P_S|C
+
+    Parameters
+    ----------
+    hazardous_behavior_rate:
+        Rate of hazardous behaviour :math:`R_{HB}` in events per hour.
+
+    Returns
+    -------
+    float
+        Acceptance criterion :math:`A_H` in events per hour.
+
+    Examples
+    --------
+    >>> acceptance_rate(0.0002, 0.05, 0.1, 0.01)
+    1e-08
     """
 
     return (
