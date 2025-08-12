@@ -570,6 +570,8 @@ REQUIREMENT_TYPE_OPTIONS = [
     "AI safety",
     "functional modification",
     "cybersecurity",
+    "production",
+    "service",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [
