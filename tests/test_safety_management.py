@@ -26,6 +26,7 @@ from sysml.sysml_repository import SysMLRepository
 def test_work_product_registration():
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Activity Diagram", "HAZOP", "Link action to hazard")
+
     products = toolbox.get_work_products()
     assert len(products) == 1
     assert products[0].diagram == "Activity Diagram"
@@ -37,6 +38,7 @@ def test_lifecycle_and_workflow_storage():
     toolbox = SafetyManagementToolbox()
     toolbox.build_lifecycle(["concept", "development", "operation"])
     toolbox.define_workflow("risk", ["identify", "assess", "mitigate"])
+
     assert toolbox.lifecycle == ["concept", "development", "operation"]
     assert toolbox.get_workflow("risk") == ["identify", "assess", "mitigate"]
     assert toolbox.get_workflow("missing") == []
@@ -191,3 +193,48 @@ def test_safety_diagrams_hidden_and_immutable_in_explorer():
     assert not explorer.tree.exists(f"diag_{diag_id}")
     explorer.rename_item(f"diag_{diag_id}")
     assert repo.diagrams[diag_id].name == "Gov"
+
+def test_safety_diagrams_hidden_in_analysis_tree():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.create_diagram("Gov")
+    repo.create_diagram("Block Definition Diagram", name="Arch")
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            pass
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.analysis_tree = DummyTree()
+
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "Gov" not in texts
+    assert "Arch" in texts
