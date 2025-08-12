@@ -2354,6 +2354,7 @@ class FaultTreeApp:
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety Management": self.open_safety_management_toolbox,
+            "Safety Performance Indicators": self.show_safety_performance_indicators,
         }
 
         self.tool_categories = {
@@ -2408,6 +2409,7 @@ class FaultTreeApp:
             ],
             "Safety Management": [
                 "Safety Management",
+                "Safety Performance Indicators",
             ],
         }
 
