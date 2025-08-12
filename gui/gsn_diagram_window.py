@@ -59,11 +59,9 @@ class GSNDiagramWindow(tk.Frame):
         self._connect_mode: Optional[str] = None
         self._connect_parent: Optional[GSNNode] = None
         self.zoom = 1.0
-
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
-
         self.refresh()
 
     # ------------------------------------------------------------------

@@ -17,6 +17,18 @@ _NAMED_COLORS = {
     "lightyellow": "#ffffe0",
 }
 
+# Basic mapping of a few common color names to their hex equivalents. The
+# gradient routines expect ``#RRGGBB`` colors; previously passing a named color
+# such as ``"lightyellow"`` caused a ``ValueError`` when converting to integers.
+# The small table below covers the named colors used by the drawing helpers and
+# can be extended easily if additional names are required.
+_NAMED_COLORS = {
+    "lightgray": "#d3d3d3",
+    "lightgrey": "#d3d3d3",
+    "lightblue": "#add8e6",
+    "lightyellow": "#ffffe0",
+}
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
@@ -827,7 +839,6 @@ class FTADrawingHelper:
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
-
 
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""

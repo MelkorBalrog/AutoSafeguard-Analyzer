@@ -1,7 +1,6 @@
 import types
 
 from tkinter import simpledialog
-
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui.gsn_explorer import GSNExplorer
 
