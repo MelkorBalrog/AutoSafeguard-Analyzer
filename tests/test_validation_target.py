@@ -36,6 +36,5 @@ class ValidationTargetTests(unittest.TestCase):
         self.assertAlmostEqual(controllability_to_probability(3), 1e-1)
         self.assertAlmostEqual(severity_to_probability(2), 1e-2)
 
-
 if __name__ == "__main__":
     unittest.main()
