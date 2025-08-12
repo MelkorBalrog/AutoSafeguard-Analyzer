@@ -5,6 +5,18 @@ import tkinter.font as tkFont
 
 TEXT_BOX_COLOR = "#CFD8DC"
 
+# Basic mapping of a few common color names to their hex equivalents. The
+# gradient routines expect ``#RRGGBB`` colors; previously passing a named color
+# such as ``"lightyellow"`` caused a ``ValueError`` when converting to integers.
+# The small table below covers the named colors used by the drawing helpers and
+# can be extended easily if additional names are required.
+_NAMED_COLORS = {
+    "lightgray": "#d3d3d3",
+    "lightgrey": "#d3d3d3",
+    "lightblue": "#add8e6",
+    "lightyellow": "#ffffe0",
+}
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
@@ -19,10 +31,21 @@ class FTADrawingHelper:
         pass
 
     def _interpolate_color(self, color: str, ratio: float) -> str:
-        """Return color blended with white by *ratio* (0..1)."""
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
+        """Return *color* blended with white by *ratio* (0..1)."""
+        # ``color`` may be provided as ``#RRGGBB`` or a Tk-style name such as
+        # ``"lightgray"``.  Map known names to their hex representation so the
+        # interpolation math can operate on integers.
+        if not color.startswith("#"):
+            color = _NAMED_COLORS.get(color.lower(), color)
+
+        # Fallback to black if the color string is still not a valid ``#RRGGBB``
+        # value to avoid raising ``ValueError`` during drawing.
+        try:
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+        except (ValueError, IndexError):  # pragma: no cover - defensive
+            r = g = b = 0
         nr = int(255 * (1 - ratio) + r * ratio)
         ng = int(255 * (1 - ratio) + g * ratio)
         nb = int(255 * (1 - ratio) + b * ratio)
@@ -804,7 +827,6 @@ class FTADrawingHelper:
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
-
 
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""
