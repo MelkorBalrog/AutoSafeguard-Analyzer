@@ -1834,12 +1834,33 @@ class EditNodeDialog(simpledialog.Dialog):
         return "break"
 
     def validate_float(self, value):
-        if value in ("", "-", "+", ".", "-.", "+."):
+        """Validation helper that accepts scientific notation.
+
+        Tk's ``validatecommand`` fires on every keystroke, so this method
+        permits intermediate states such as ``"1e"`` or ``"1e-"`` that are
+        part of entering a number in scientific notation. The final value is
+        still checked via ``float`` for correctness.
+        """
+
+        if value in ("", "-", "+", ".", "-.", "+.", "e", "E", "e-", "e+", "E-", "E+"):
             return True
         try:
             float(value)
             return True
         except ValueError:
+            lower = value.lower()
+            if lower.endswith("e"):
+                try:
+                    float(lower[:-1])
+                    return True
+                except ValueError:
+                    return False
+            if lower.endswith(("e-", "e+")):
+                try:
+                    float(lower[:-2])
+                    return True
+                except ValueError:
+                    return False
             return False
 
     def update_probability(self, *_):
@@ -9081,15 +9102,32 @@ class FaultTreeApp:
             be.failure_prob = self.compute_failure_prob(be)
 
     def validate_float(self, value):
-        """Return ``True`` if ``value`` can be parsed as a float or is an
-        intermediate input allowed by Tk validation."""
+        """Return ``True`` if ``value`` resembles a float.
 
-        if value in ("", "-", "+", ".", "-.", "+."):
+        This validator is tolerant of scientific-notation inputs that are
+        entered incrementally (e.g. ``"1e"`` or ``"1e-"``) to keep the entry
+        widget from rejecting keystrokes during editing.
+        """
+
+        if value in ("", "-", "+", ".", "-.", "+.", "e", "E", "e-", "e+", "E-", "E+"):
             return True
         try:
             float(value)
             return True
         except ValueError:
+            lower = value.lower()
+            if lower.endswith("e"):
+                try:
+                    float(lower[:-1])
+                    return True
+                except ValueError:
+                    return False
+            if lower.endswith(("e-", "e+")):
+                try:
+                    float(lower[:-2])
+                    return True
+                except ValueError:
+                    return False
             return False
 
     def compute_failure_prob(self, node, failure_mode_ref=None, formula=None):
