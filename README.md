@@ -8,7 +8,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
-- [HARA Analysis](#hara-analysis)
+- [Risk Assessment (HARA, HIRE & TARA)](#risk-assessment-hara-hire--tara)
 - [Requirements Creation and Management](#requirements-creation-and-management)
 - [AutoML Diagrams and Safety Analyses](#automl-diagrams-and-safety-analyses)
 - [Metamodel Overview](#metamodel-overview)
@@ -64,9 +64,9 @@ The workflow begins by entering system functions and architecture elements. A **
 
 The **HAZOP Analysis** window lets you list system functions with one or more associated malfunctions. Each entry records the malfunction guideword (*No/Not*, *Unintended*, *Excessive*, *Insufficient* or *Reverse*), the related scenario, driving conditions and hazard, and whether it is safety relevant. Covered malfunctions may reference other entries as mitigation. When a function is allocated to an active component in a reliability analysis, its malfunctions become selectable failure modes in the FMEDA table.
 
-## HARA Analysis
+## Risk Assessment (HARA, HIRE & TARA)
 
-The **HARA Analysis** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new HARA you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each HARA table contains the following columns:
+The **Risk Assessment (HARA, HIRE & TARA)** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new HARA you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each HARA table contains the following columns:
 
 1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP documents.
 2. **Hazard** – textual description of the resulting hazard.
@@ -1225,10 +1225,10 @@ Steps to reproduce:
 |----------|-------------|----------|--------|-----------|
 | Stop at Intersection | Does not stop at intersection | Pedestrians crossing | Run over VRUs | If the vehicle fails to stop when pedestrians are crossing, it may run over vulnerable road users. |
 
-### HARA
+### Risk Assessment (HARA, HIRE & TARA)
 
 Steps to reproduce:
-1. Open **Safety → HARA** and create a new document linked to the HAZOP entry.
+1. Open **Safety → Risk Assessment (HARA, HIRE & TARA)** and create a new document linked to the HAZOP entry.
 2. Set Severity = 3, Controllability = 3, Exposure = 4; AutoML computes ASIL D.
 3. Export or save to view the table.
 

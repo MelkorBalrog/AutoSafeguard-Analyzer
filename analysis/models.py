@@ -208,6 +208,78 @@ class MechanismLibrary:
     name: str
     mechanisms: list = field(default_factory=list)
 
+
+@dataclass
+class CybersecurityGoal:
+    """Cybersecurity goal with linked risk assessments and CAL."""
+
+    goal_id: str
+    description: str
+    cal: str = "CAL1"
+    risk_assessments: list = field(default_factory=list)
+
+    def compute_cal(self) -> None:
+        """Compute CAL as highest level among linked risk assessments."""
+        order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
+        highest = CAL_LEVEL_OPTIONS[0]
+        for ra in self.risk_assessments:
+            cal = getattr(ra, "cal", None)
+            if cal is None and isinstance(ra, dict):
+                cal = ra.get("cal")
+            if cal in order and order[cal] > order.get(highest, 0):
+                highest = cal
+        self.cal = highest
+
+
+@dataclass
+class AttackPath:
+    """Single attack path description."""
+
+    description: str
+
+
+@dataclass
+class ThreatScenario:
+    """Threat scenario organized by STRIDE category."""
+
+    stride: str
+    scenario: str
+    attack_paths: list[AttackPath] = field(default_factory=list)
+
+
+@dataclass
+class DamageScenario:
+    """Potential damage scenario for a given asset/function."""
+
+    scenario: str
+    dtype: str = ""
+    threats: list[ThreatScenario] = field(default_factory=list)
+
+
+@dataclass
+class FunctionThreat:
+    """Link a function to its damage scenarios."""
+
+    name: str
+    damage_scenarios: list[DamageScenario] = field(default_factory=list)
+
+
+@dataclass
+class ThreatEntry:
+    """Single row in a threat analysis table."""
+
+    asset: str
+    functions: list[FunctionThreat] = field(default_factory=list)
+
+
+@dataclass
+class ThreatDoc:
+    """Container for a threat analysis document."""
+
+    name: str
+    entries: list[ThreatEntry]
+    meta: Metadata = field(default_factory=Metadata)
+
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {
         "dielectric": ["ceramic", "electrolytic", "tantalum"],

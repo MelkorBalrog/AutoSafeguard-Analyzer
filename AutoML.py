@@ -279,6 +279,12 @@ from analysis.models import (
     StpaDoc,
     FI2TCDoc,
     TC2FIDoc,
+    DamageScenario,
+    ThreatScenario,
+    AttackPath,
+    FunctionThreat,
+    ThreatEntry,
+    ThreatDoc,
     QUALIFICATIONS,
     COMPONENT_ATTR_TEMPLATES,
     RELIABILITY_MODELS,
@@ -292,6 +298,7 @@ from analysis.models import (
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
     CAL_LEVEL_OPTIONS,
+    CybersecurityGoal,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -357,6 +364,7 @@ from gui.toolboxes import (
     RequirementsExplorerWindow,
 )
 from gui.stpa_window import StpaWindow
+from gui.threat_window import ThreatWindow
 
 
 def format_requirement(req, include_id=True):
@@ -2016,16 +2024,20 @@ class FaultTreeApp:
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.stpa_docs = []   # list of StpaDoc
+        self.threat_docs = []  # list of ThreatDoc
         self.active_hazop = None
         self.active_hara = None
         self.active_stpa = None
+        self.active_threat = None
         self.hazop_entries = []  # backwards compatibility for active doc
         self.hara_entries = []
         self.stpa_entries = []
+        self.threat_entries = []
         self.fi2tc_docs = []  # list of FI2TCDoc
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
         self.active_tc2fi = None
+        self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
@@ -2144,8 +2156,12 @@ class FaultTreeApp:
         # --- Qualitative Analysis Menu ---
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
-        qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
+        qualitative_menu.add_command(
+            label="Risk Assessment (HARA, HIRE & TARA)",
+            command=self.open_hara_window,
+        )
         qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
+        qualitative_menu.add_command(label="Threat Analysis", command=self.open_threat_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
@@ -2267,8 +2283,9 @@ class FaultTreeApp:
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
-            "HARA Analysis": self.open_hara_window,
+            "Risk Assessment (HARA, HIRE & TARA)": self.open_hara_window,
             "STPA Analysis": self.open_stpa_window,
+            "Threat Analysis": self.open_threat_window,
             "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
             "Faults Editor": self.show_fault_editor,
@@ -2296,11 +2313,12 @@ class FaultTreeApp:
         }
 
         self.tool_categories = {
-            "Hazard Analysis": [
+            "Safety & Threat Analysis": [
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
                 "STPA Analysis",
+                "Threat Analysis",
                 "FI2TC Analysis",
                 "TC2FI Analysis",
             ],
@@ -7572,23 +7590,46 @@ class FaultTreeApp:
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
-        # --- HARA Analyses ---
+        # --- Risk Assessment (HARA, HIRE & TARA) ---
         if self.hara_docs:
             Story.append(PageBreak())
-            Story.append(Paragraph("HARA Analyses", pdf_styles["Heading2"]))
+            Story.append(
+                Paragraph(
+                    "Risk Assessment (HARA, HIRE & TARA)",
+                    pdf_styles["Heading2"],
+                )
+            )
             Story.append(Spacer(1, 12))
             for hara_doc in self.hara_docs:
                 Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
-                data = [["Malfunction", "Hazard", "Severity", "Exposure", "Controllability", "ASIL", "Safety Goal"]]
+                data = [[
+                    "Malfunction",
+                    "Hazard",
+                    "Severity",
+                    "Exposure",
+                    "Controllability",
+                    "ASIL",
+                    "Safety Goal",
+                ]]
                 for e in hara_doc.entries:
-                    data.append([e.malfunction, e.hazard, str(e.severity), str(e.exposure), str(e.controllability), e.asil, e.safety_goal])
+                    data.append([
+                        e.malfunction,
+                        e.hazard,
+                        str(e.severity),
+                        str(e.exposure),
+                        str(e.controllability),
+                        e.asil,
+                        e.safety_goal,
+                    ])
                 table = Table(data, repeatRows=1)
-                table.setStyle(TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                    ('FONTSIZE', (0,0), (-1,-1), 8)
-                ]))
+                table.setStyle(
+                    TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTSIZE', (0,0), (-1,-1), 8)
+                    ])
+                )
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
@@ -8045,6 +8086,12 @@ class FaultTreeApp:
                 doc = self.stpa_docs[idx]
                 self._stpa_window.doc_var.set(doc.name)
                 self._stpa_window.select_doc()
+        elif kind == "threat":
+            self.open_threat_window()
+            if hasattr(self, "_threat_window"):
+                doc = self.threat_docs[idx]
+                self._threat_window.doc_var.set(doc.name)
+                self._threat_window.select_doc()
         elif kind == "fi2tc":
             self.open_fi2tc_window()
             if hasattr(self, "_fi2tc_window"):
@@ -8919,14 +8966,17 @@ class FaultTreeApp:
                 )
             tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
 
-            # --- Hazard Analysis Section ---
-            haz_root = tree.insert("", "end", text="Hazard Analysis", open=True)
+            # --- Safety & Threat Analysis Section ---
+            haz_root = tree.insert("", "end", text="Safety & Threat Analysis", open=True)
             hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
             for idx, doc in enumerate(self.hazop_docs):
                 tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
             stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
             for idx, doc in enumerate(self.stpa_docs):
                 tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
+            threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
+            for idx, doc in enumerate(self.threat_docs):
+                tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
             fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
             for idx, doc in enumerate(self.fi2tc_docs):
                 tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
@@ -12156,6 +12206,27 @@ class FaultTreeApp:
                     writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
         messagebox.showinfo("Export", "Product goal requirements exported.")
 
+    def export_cybersecurity_goal_requirements(self):
+        """Export cybersecurity goals with linked risk assessments."""
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not path:
+            return
+
+        columns = ["Cybersecurity Goal", "CAL", "Risk Assessments", "Description"]
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(columns)
+            for cg in self.cybersecurity_goals:
+                cg.compute_cal()
+                ras = ", ".join(
+                    [
+                        ra.get("name", str(ra)) if isinstance(ra, dict) else str(ra)
+                        for ra in cg.risk_assessments
+                    ]
+                )
+                writer.writerow([cg.goal_id, cg.cal, ras, cg.description])
+        messagebox.showinfo("Export", "Cybersecurity goal requirements exported.")
+
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
         if not self.top_events:
@@ -13867,6 +13938,13 @@ class FaultTreeApp:
         self._stpa_tab = self._new_tab("STPA")
         self._stpa_window = StpaWindow(self._stpa_tab, self)
 
+    def open_threat_window(self):
+        if hasattr(self, "_threat_tab") and self._threat_tab.winfo_exists():
+            self.doc_nb.select(self._threat_tab)
+            return
+        self._threat_tab = self._new_tab("Threat")
+        self._threat_window = ThreatWindow(self._threat_tab, self)
+
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
@@ -14589,6 +14667,10 @@ class FaultTreeApp:
                 }
                 for doc in self.stpa_docs
             ],
+            "threat_docs": [
+                {"name": doc.name, "entries": [asdict(e) for e in doc.entries]}
+                for doc in self.threat_docs
+            ],
             "fi2tc_docs": [
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.fi2tc_docs
@@ -14849,6 +14931,61 @@ class FaultTreeApp:
             self.stpa_docs.append(StpaDoc("Default", "", entries))
         self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
         self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
+
+        self.threat_docs = []
+        for d in data.get("threat_docs", []):
+            entries = []
+            for e in d.get("entries", []):
+                funcs = []
+                raw_funcs = e.get("functions", [])
+                if raw_funcs and isinstance(raw_funcs[0], dict):
+                    for f in raw_funcs:
+                        dmg_list = []
+                        for ds in f.get("damage_scenarios", []):
+                            threats = []
+                            for t in ds.get("threats", []):
+                                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                                threats.append(
+                                    ThreatScenario(
+                                        t.get("stride", ""),
+                                        t.get("scenario", ""),
+                                        paths,
+                                    )
+                                )
+                            dmg_list.append(
+                                DamageScenario(
+                                    ds.get("scenario", ""), ds.get("dtype", ""), threats
+                                )
+                            )
+                        funcs.append(FunctionThreat(f.get("name", ""), dmg_list))
+                else:
+                    dmg_list = []
+                    for ds in e.get("damage_scenarios", []):
+                        threats = []
+                        for t in ds.get("threats", []):
+                            paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                            threats.append(
+                                ThreatScenario(
+                                    t.get("stride", ""),
+                                    t.get("scenario", ""),
+                                    paths,
+                                )
+                            )
+                        dmg_list.append(
+                            DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
+                        )
+                    func_names = raw_funcs
+                    if func_names is None:
+                        func = e.get("function")
+                        func_names = [func] if func else []
+                    for name in func_names:
+                        funcs.append(FunctionThreat(name, dmg_list))
+                entries.append(ThreatEntry(e.get("asset", ""), funcs))
+            self.threat_docs.append(
+                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+            )
+        self.active_threat = self.threat_docs[0] if self.threat_docs else None
+        self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
@@ -15263,6 +15400,61 @@ class FaultTreeApp:
             self.stpa_docs.append(StpaDoc("Default", "", entries))
         self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
         self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
+
+        self.threat_docs = []
+        for d in data.get("threat_docs", []):
+            entries = []
+            for e in d.get("entries", []):
+                funcs = []
+                raw_funcs = e.get("functions", [])
+                if raw_funcs and isinstance(raw_funcs[0], dict):
+                    for f in raw_funcs:
+                        dmg_list = []
+                        for ds in f.get("damage_scenarios", []):
+                            threats = []
+                            for t in ds.get("threats", []):
+                                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                                threats.append(
+                                    ThreatScenario(
+                                        t.get("stride", ""),
+                                        t.get("scenario", ""),
+                                        paths,
+                                    )
+                                )
+                            dmg_list.append(
+                                DamageScenario(
+                                    ds.get("scenario", ""), ds.get("dtype", ""), threats
+                                )
+                            )
+                        funcs.append(FunctionThreat(f.get("name", ""), dmg_list))
+                else:
+                    dmg_list = []
+                    for ds in e.get("damage_scenarios", []):
+                        threats = []
+                        for t in ds.get("threats", []):
+                            paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                            threats.append(
+                                ThreatScenario(
+                                    t.get("stride", ""),
+                                    t.get("scenario", ""),
+                                    paths,
+                                )
+                            )
+                        dmg_list.append(
+                            DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
+                        )
+                    func_names = raw_funcs
+                    if func_names is None:
+                        func = e.get("function")
+                        func_names = [func] if func else []
+                    for name in func_names:
+                        funcs.append(FunctionThreat(name, dmg_list))
+                entries.append(ThreatEntry(e.get("asset", ""), funcs))
+            self.threat_docs.append(
+                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+            )
+        self.active_threat = self.threat_docs[0] if self.threat_docs else None
+        self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
