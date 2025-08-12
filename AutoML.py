@@ -574,7 +574,7 @@ VALID_SUBTYPES = {
     "Confidence": ["Function", "Human Task"],
     "Robustness": ["Function", "Human Task"],
     "Maturity": ["Functionality"],
-    "Rigor": ["Capability", "Safety Mechanism"],
+    "Rigor": ["Failure", "AI Error"],
     "Prototype Assurance Level (PAL)": ["Vehicle Level Function"]
 }
 
@@ -6920,9 +6920,9 @@ class FaultTreeApp:
             subtype = node.get("subtype", "").lower()
             if "vehicle level function" in subtype:
                 node_colors[node_id] = "lightcoral"
-            elif "safety mechanism" in subtype:
+            elif "ai error" in subtype:
                 node_colors[node_id] = "lightyellow"
-            elif "capability" in subtype:
+            elif "failure" in subtype:
                 node_colors[node_id] = "lightblue"
             else:
                 node_colors[node_id] = "white"  # clone
@@ -15131,7 +15131,7 @@ class FaultTreeApp:
                 self.clipboard_node.node_type = "RIGOR LEVEL"
                 self.clipboard_node.severity = None
                 self.clipboard_node.is_page = False
-                self.clipboard_node.input_subtype = "Capability"
+                self.clipboard_node.input_subtype = "Failure"
             self.clipboard_node.is_primary_instance = True
             target.children.append(self.clipboard_node)
             self.clipboard_node.parents.append(target)
