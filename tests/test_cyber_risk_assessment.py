@@ -50,6 +50,35 @@ class CyberRiskEntryTests(unittest.TestCase):
         self.assertEqual(app.cybersecurity_goals[0].risk_assessments[0]["name"], "RA1")
         self.assertEqual(app.cybersecurity_goals[0].cal, cyber.cal)
 
+    def test_get_cyber_goal_cal(self):
+        app = FaultTreeApp.__new__(FaultTreeApp)
+        cyber1 = CyberRiskEntry(
+            damage_scenario="D1",
+            threat_scenario="T1",
+            attack_vector="Network",
+            feasibility="High",
+            financial_impact="Major",
+            safety_impact="Negligible",
+            operational_impact="Negligible",
+            privacy_impact="Negligible",
+            cybersecurity_goal="CG",
+        )
+        entry1 = HaraEntry("M1", "", "", 1, "", 1, "", 1, "", "QM", "", cyber1)
+        cyber2 = CyberRiskEntry(
+            damage_scenario="D2",
+            threat_scenario="T2",
+            attack_vector="Physical",
+            feasibility="Low",
+            financial_impact="Negligible",
+            safety_impact="Negligible",
+            operational_impact="Negligible",
+            privacy_impact="Negligible",
+            cybersecurity_goal="CG",
+        )
+        entry2 = HaraEntry("M2", "", "", 1, "", 1, "", 1, "", "QM", "", cyber2)
+        doc = HaraDoc("RA", [], [entry1, entry2])
+        app.hara_docs = [doc]
+        self.assertEqual(app.get_cyber_goal_cal("CG"), cyber1.cal)
 
 if __name__ == "__main__":
     unittest.main()
