@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from sysml.sysml_repository import SysMLRepository
+
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -84,18 +85,9 @@ class SafetyManagementToolbox:
         """
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name)
+        diag.tags.append("safety-management")
         self.diagrams[name] = diag.diag_id
         return diag.diag_id
-
-    def rename_diagram(self, old_name: str, new_name: str) -> None:
-        """Rename an existing tracked diagram."""
-        if old_name not in self.diagrams:
-            return
-        diag_id = self.diagrams.pop(old_name)
-        self.diagrams[new_name] = diag_id
-        repo = SysMLRepository.get_instance()
-        if diag_id in repo.diagrams:
-            repo.diagrams[diag_id].name = new_name
 
     def delete_diagram(self, name: str) -> None:
         """Remove a diagram from the toolbox and repository."""
@@ -108,3 +100,4 @@ class SafetyManagementToolbox:
     def list_diagrams(self) -> List[str]:
         """Return the names of all managed diagrams."""
         return list(self.diagrams.keys())
+
