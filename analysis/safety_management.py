@@ -7,7 +7,6 @@ governance."""
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -64,4 +63,3 @@ class SafetyManagementToolbox:
     def get_workflow(self, name: str) -> List[str]:
         """Return the steps for the requested workflow."""
         return self.workflows.get(name, [])
-
