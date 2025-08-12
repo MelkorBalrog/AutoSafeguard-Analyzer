@@ -9234,6 +9234,8 @@ class FaultTreeApp:
         """Update modification metadata for the given document."""
         doc["modified"] = datetime.datetime.now().isoformat()
         doc["modified_by"] = CURRENT_USER_NAME
+        # Synchronize the entire application whenever a document changes
+        self.refresh_all()
 
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
@@ -9267,6 +9269,24 @@ class FaultTreeApp:
                     entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
 
         self.update_basic_event_probabilities()
+
+    def refresh_all(self):
+        """Synchronize model elements and refresh all open views.
+
+        This is invoked whenever the user opens, closes or edits content so
+        analyses and diagrams remain consistent with the underlying data.
+        """
+        # Update the main explorer and propagate model changes
+        self.update_views()
+        # Refresh any secondary windows that may be open
+        for attr in dir(self):
+            if attr.endswith("_window"):
+                win = getattr(self, attr)
+                if hasattr(win, "winfo_exists") and win.winfo_exists():
+                    if hasattr(win, "refresh_docs"):
+                        win.refresh_docs()
+                    if hasattr(win, "refresh"):
+                        win.refresh()
 
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
@@ -14270,63 +14290,72 @@ class FaultTreeApp:
     def open_reliability_window(self):
         if hasattr(self, "_rel_tab") and self._rel_tab.winfo_exists():
             self.doc_nb.select(self._rel_tab)
-            return
-        self._rel_tab = self._new_tab("Reliability")
-        self._rel_window = ReliabilityWindow(self._rel_tab, self)
-        self._rel_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            self._rel_tab = self._new_tab("Reliability")
+            self._rel_window = ReliabilityWindow(self._rel_tab, self)
+            self._rel_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_fmeda_window(self):
         self.show_fmeda_list()
+        self.refresh_all()
 
     def open_hazop_window(self):
         if hasattr(self, "_hazop_tab") and self._hazop_tab.winfo_exists():
             self.doc_nb.select(self._hazop_tab)
-            return
-        self._hazop_tab = self._new_tab("HAZOP")
-        self._hazop_window = HazopWindow(self._hazop_tab, self)
+        else:
+            self._hazop_tab = self._new_tab("HAZOP")
+            self._hazop_window = HazopWindow(self._hazop_tab, self)
+        self.refresh_all()
 
     def open_risk_assessment_window(self):
         if hasattr(self, "_risk_tab") and self._risk_tab.winfo_exists():
             self.doc_nb.select(self._risk_tab)
-            return
-        self._risk_tab = self._new_tab("Risk Assessment")
-        self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
+        else:
+            self._risk_tab = self._new_tab("Risk Assessment")
+            self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
+        self.refresh_all()
 
     def open_stpa_window(self):
         if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
             self.doc_nb.select(self._stpa_tab)
-            return
-        self._stpa_tab = self._new_tab("STPA")
-        self._stpa_window = StpaWindow(self._stpa_tab, self)
+        else:
+            self._stpa_tab = self._new_tab("STPA")
+            self._stpa_window = StpaWindow(self._stpa_tab, self)
+        self.refresh_all()
 
     def open_threat_window(self):
         if hasattr(self, "_threat_tab") and self._threat_tab.winfo_exists():
             self.doc_nb.select(self._threat_tab)
-            return
-        self._threat_tab = self._new_tab("Threat")
-        self._threat_window = ThreatWindow(self._threat_tab, self)
+        else:
+            self._threat_tab = self._new_tab("Threat")
+            self._threat_window = ThreatWindow(self._threat_tab, self)
+        self.refresh_all()
 
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
-            return
-        self._fi2tc_tab = self._new_tab("FI2TC")
-        self._fi2tc_window = FI2TCWindow(self._fi2tc_tab, self)
+        else:
+            self._fi2tc_tab = self._new_tab("FI2TC")
+            self._fi2tc_window = FI2TCWindow(self._fi2tc_tab, self)
+        self.refresh_all()
 
     def open_tc2fi_window(self):
         if hasattr(self, "_tc2fi_tab") and self._tc2fi_tab.winfo_exists():
             self.doc_nb.select(self._tc2fi_tab)
-            return
-        self._tc2fi_tab = self._new_tab("TC2FI")
-        self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
+        else:
+            self._tc2fi_tab = self._new_tab("TC2FI")
+            self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
+        self.refresh_all()
 
     def open_fault_prioritization_window(self):
         if hasattr(self, "_fault_prio_tab") and self._fault_prio_tab.winfo_exists():
             self.doc_nb.select(self._fault_prio_tab)
-            return
-        self._fault_prio_tab = self._new_tab("Fault Prioritization")
-        from gui.fault_prioritization import FaultPrioritizationWindow
-        self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+        else:
+            self._fault_prio_tab = self._new_tab("Fault Prioritization")
+            from gui.fault_prioritization import FaultPrioritizationWindow
+            self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+        self.refresh_all()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
@@ -14406,6 +14435,8 @@ class FaultTreeApp:
                 del self.diagram_tabs[did]
                 break
         tab.destroy()
+        # Ensure the rest of the application reflects the closed tab
+        self.refresh_all()
 
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
@@ -14482,7 +14513,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_activity_diagram(self):
         """Prompt for a diagram name then open a new activity diagram."""
@@ -14494,7 +14525,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_block_diagram(self):
         """Prompt for a diagram name then open a new block diagram."""
@@ -14506,7 +14537,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_internal_block_diagram(self):
         """Prompt for a diagram name then open a new internal block diagram."""
@@ -14518,7 +14549,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_control_flow_diagram(self):
         """Prompt for a diagram name then open a new control flow diagram."""
@@ -14530,15 +14561,16 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
             self.doc_nb.select(self._arch_tab)
-            return
-        self._arch_tab = self._new_tab("AutoML Explorer")
-        self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
-        self._arch_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            self._arch_tab = self._new_tab("AutoML Explorer")
+            self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
+            self._arch_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_arch_window(self, idx: int) -> None:
         """Open an existing architecture diagram from the repository."""
@@ -14550,6 +14582,7 @@ class FaultTreeApp:
         if existing and str(existing) in self.doc_nb.tabs():
             if existing.winfo_exists():
                 self.doc_nb.select(existing)
+                self.refresh_all()
                 return
         else:
             # Remove stale reference if the tab was closed
@@ -14566,6 +14599,7 @@ class FaultTreeApp:
             InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Control Flow Diagram":
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.refresh_all()
         
     def copy_node(self):
         if self.selected_node and self.selected_node != self.root_node:
@@ -16060,6 +16094,7 @@ class FaultTreeApp:
         # Use the resolved (original) node for the page diagram.
         self.page_diagram = PageDiagram(self, resolved_node, page_canvas)
         self.page_diagram.redraw_canvas()
+        self.refresh_all()
 
     def go_back(self):
         if self.page_history:
@@ -16397,11 +16432,12 @@ class FaultTreeApp:
     def open_review_document(self, review):
         if hasattr(self, "_review_doc_tab") and self._review_doc_tab.winfo_exists():
             self.doc_nb.select(self._review_doc_tab)
-            return
-        title = f"Review {review.name}"
-        self._review_doc_tab = self._new_tab(title)
-        self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
-        self._review_doc_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            title = f"Review {review.name}"
+            self._review_doc_tab = self._new_tab(title)
+            self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
+            self._review_doc_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_review_toolbox(self):
         if not self.reviews:
@@ -16418,6 +16454,7 @@ class FaultTreeApp:
             self._review_tab = self._new_tab("Review")
             self.review_window = ReviewToolbox(self._review_tab, self)
             self.review_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
         self.set_current_user()
 
     def send_review_email(self, review):
