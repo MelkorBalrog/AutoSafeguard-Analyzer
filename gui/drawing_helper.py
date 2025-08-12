@@ -885,29 +885,20 @@ class GSNDrawingHelper(FTADrawingHelper):
         outline_color="dimgray",
         line_width=1,
     ):
-        """Draw a solid connector indicating a 'solved by' relationship."""
-        fixed_y = parent_pt[1] + 40
+        """Draw a curved connector indicating a 'solved by' relationship."""
+        px, py = parent_pt
+        cx, cy = child_pt
+        offset = (cy - py) / 2
         canvas.create_line(
-            parent_pt[0],
-            parent_pt[1],
-            parent_pt[0],
-            fixed_y,
-            fill=outline_color,
-            width=line_width,
-        )
-        canvas.create_line(
-            parent_pt[0],
-            fixed_y,
-            child_pt[0],
-            fixed_y,
-            fill=outline_color,
-            width=line_width,
-        )
-        canvas.create_line(
-            child_pt[0],
-            fixed_y,
-            child_pt[0],
-            child_pt[1],
+            px,
+            py,
+            px,
+            py + offset,
+            cx,
+            cy - offset,
+            cx,
+            cy,
+            smooth=True,
             fill=outline_color,
             width=line_width,
             arrow=tk.LAST,
@@ -921,32 +912,21 @@ class GSNDrawingHelper(FTADrawingHelper):
         outline_color="dimgray",
         line_width=1,
     ):
-        """Draw a dashed connector for an 'in context of' relationship."""
-        fixed_y = parent_pt[1] + 40
+        """Draw a dashed curved connector for an 'in context of' relationship."""
+        px, py = parent_pt
+        cx, cy = child_pt
+        offset = (cy - py) / 2
         dash = (4, 2)
         canvas.create_line(
-            parent_pt[0],
-            parent_pt[1],
-            parent_pt[0],
-            fixed_y,
-            fill=outline_color,
-            width=line_width,
-            dash=dash,
-        )
-        canvas.create_line(
-            parent_pt[0],
-            fixed_y,
-            child_pt[0],
-            fixed_y,
-            fill=outline_color,
-            width=line_width,
-            dash=dash,
-        )
-        canvas.create_line(
-            child_pt[0],
-            fixed_y,
-            child_pt[0],
-            child_pt[1],
+            px,
+            py,
+            px,
+            py + offset,
+            cx,
+            cy - offset,
+            cx,
+            cy,
+            smooth=True,
             fill=outline_color,
             width=line_width,
             dash=dash,
