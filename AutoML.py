@@ -2080,6 +2080,7 @@ class FaultTreeApp:
         self.active_tc2fi = None
         self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
+        self.management_diagrams = []
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
@@ -8195,6 +8196,8 @@ class FaultTreeApp:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
+        elif kind == "gov":
+            self.open_management_window(idx)
         elif kind == "arch":
             self.open_arch_window(idx)
 
@@ -8229,6 +8232,8 @@ class FaultTreeApp:
             current = self.tc2fi_docs[idx].name
         elif kind == "arch":
             current = self.arch_diagrams[idx].name
+        elif kind == "gov":
+            current = self.management_diagrams[idx].name
         elif kind == "fta":
             node = next((t for t in self.top_events if t.unique_id == idx), None)
             current = node.user_name if node else ""
@@ -8251,6 +8256,8 @@ class FaultTreeApp:
             self.tc2fi_docs[idx].name = new
         elif kind == "arch":
             self.arch_diagrams[idx].name = new
+        elif kind == "gov":
+            self.management_diagrams[idx].name = new
         elif kind == "fta" and node:
             node.user_name = new
         self.update_views()
@@ -9111,9 +9118,37 @@ class FaultTreeApp:
             tree = self.analysis_tree
             tree.delete(*tree.get_children())
 
+            repo = SysMLRepository.get_instance()
+
+            # --- Safety Management Section ---
+            self.management_diagrams = sorted(
+                [
+                    d
+                    for d in repo.diagrams.values()
+                    if "safety-management" in getattr(d, "tags", [])
+                ],
+                key=lambda d: d.name or d.diag_id,
+            )
+            mgmt_root = tree.insert("", "end", text="Safety Management", open=True)
+            gov_root = tree.insert(
+                mgmt_root,
+                "end",
+                text="Safety & Security Governance Diagrams",
+                open=True,
+            )
+            for idx, diag in enumerate(self.management_diagrams):
+                name = diag.name or f"Diagram {idx + 1}"
+                icon = self.diagram_icons.get(diag.diag_type)
+                tree.insert(
+                    gov_root,
+                    "end",
+                    text=name,
+                    tags=("gov", str(idx)),
+                    image=icon,
+                )
+
             # --- System Design Section ---
             sys_root = tree.insert("", "end", text="System Design", open=True)
-            repo = SysMLRepository.get_instance()
             self.arch_diagrams = sorted(
                 [
                     d
@@ -14890,6 +14925,33 @@ class FaultTreeApp:
                 return
         else:
             # Remove stale reference if the tab was closed
+            self.diagram_tabs.pop(diag.diag_id, None)
+        tab = self._new_tab(self._format_diag_title(diag))
+        self.diagram_tabs[diag.diag_id] = tab
+        if diag.diag_type == "Use Case Diagram":
+            UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Activity Diagram":
+            ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Block Diagram":
+            BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Internal Block Diagram":
+            InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Control Flow Diagram":
+            ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.refresh_all()
+
+    def open_management_window(self, idx: int) -> None:
+        """Open a safety management diagram from the repository."""
+        if idx < 0 or idx >= len(self.management_diagrams):
+            return
+        diag = self.management_diagrams[idx]
+        existing = self.diagram_tabs.get(diag.diag_id)
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                self.refresh_all()
+                return
+        else:
             self.diagram_tabs.pop(diag.diag_id, None)
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
