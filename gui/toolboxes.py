@@ -15,12 +15,6 @@ from analysis.models import (
     HaraEntry,
     HazopDoc,
     HaraDoc,
-    ThreatDoc,
-    compute_overall_impact,
-    compute_cyber_risk_level,
-    merge_malfunctions,
-    IMPACT_LEVELS,
-    ATTACK_FEASIBILITY,
     FI2TCDoc,
     TC2FIDoc,
     QUALIFICATIONS,
@@ -2029,7 +2023,7 @@ class HazopWindow(tk.Frame):
         messagebox.showinfo("Save", "Analysis saved")
 
 
-class RiskAnalysisWindow(tk.Frame):
+class HaraWindow(tk.Frame):
     COLS = [
         "malfunction",
         "hazard",
@@ -2042,31 +2036,25 @@ class RiskAnalysisWindow(tk.Frame):
         "exp_rationale",
         "asil",
         "safety_goal",
-        "damage_scenario",
-        "impact_overall",
-        "attack_vector",
-        "attack_feasibility",
-        "risk_level",
-        "cybersecurity_goal",
     ]
 
     def __init__(self, master, app):
         super().__init__(master)
         self.app = app
         if isinstance(master, tk.Toplevel):
-            master.title("Risk Analysis")
+            master.title("Risk Assessment (HARA, HIRE & TARA)")
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
-        hara_lbl = ttk.Label(top, text="Risk Analysis:")
+        hara_lbl = ttk.Label(top, text="HARA:")
         hara_lbl.pack(side=tk.LEFT)
-        ToolTip(hara_lbl, "Select a risk analysis document to work on.")
+        ToolTip(hara_lbl, "Select a HARA document to work on.")
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ToolTip(self.doc_cb, "Only risk analyses defined in the project appear here.")
+        ToolTip(self.doc_cb, "Only HARAs defined in the project appear here.")
         new_hara_btn = ttk.Button(top, text="New", command=self.new_doc)
         new_hara_btn.pack(side=tk.LEFT)
-        ToolTip(new_hara_btn, "Create a new risk analysis document.")
+        ToolTip(new_hara_btn, "Create a new HARA document.")
         edit_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
         edit_btn.pack(side=tk.LEFT)
         del_btn = ttk.Button(top, text="Delete", command=self.delete_doc)
@@ -2135,11 +2123,7 @@ class RiskAnalysisWindow(tk.Frame):
         if self.app.active_hara:
             self.doc_var.set(self.app.active_hara.name)
             hazops = ", ".join(getattr(self.app.active_hara, "hazops", []))
-            stpas = ", ".join(getattr(self.app.active_hara, "stpas", []))
-            threats = ", ".join(getattr(self.app.active_hara, "threats", []))
-            self.hazop_lbl.config(
-                text=f"HAZOPs: {hazops} | STPAs: {stpas} | Threats: {threats}"
-            )
+            self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
             self.status_lbl.config(
                 text=f"Status: {getattr(self.app.active_hara, 'status', 'draft')}"
             )
@@ -2148,11 +2132,7 @@ class RiskAnalysisWindow(tk.Frame):
             self.doc_var.set(names[0])
             doc = self.app.hara_docs[0]
             hazops = ", ".join(getattr(doc, "hazops", []))
-            stpas = ", ".join(getattr(doc, "stpas", []))
-            threats = ", ".join(getattr(doc, "threats", []))
-            self.hazop_lbl.config(
-                text=f"HAZOPs: {hazops} | STPAs: {stpas} | Threats: {threats}"
-            )
+            self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
             self.app.active_hara = doc
             self.app.hara_entries = doc.entries
             self.status_lbl.config(text=f"Status: {getattr(doc, 'status', 'draft')}")
@@ -2164,19 +2144,15 @@ class RiskAnalysisWindow(tk.Frame):
                 self.app.active_hara = d
                 self.app.hara_entries = d.entries
                 hazops = ", ".join(getattr(d, "hazops", []))
-                stpas = ", ".join(getattr(d, "stpas", []))
-                threats = ", ".join(getattr(d, "threats", []))
-                self.hazop_lbl.config(
-                    text=f"HAZOPs: {hazops} | STPAs: {stpas} | Threats: {threats}"
-                )
+                self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
                 self.status_lbl.config(text=f"Status: {getattr(d, 'status', 'draft')}")
                 break
         self.refresh()
 
-    class NewRiskAnalysisDialog(simpledialog.Dialog):
+    class NewHaraDialog(simpledialog.Dialog):
         def __init__(self, parent, app):
             self.app = app
-            super().__init__(parent, title="New Risk Analysis")
+            super().__init__(parent, title="New HARA")
 
         def body(self, master):
             ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
@@ -2188,31 +2164,17 @@ class RiskAnalysisWindow(tk.Frame):
             for n in names:
                 self.hazop_lb.insert(tk.END, n)
             self.hazop_lb.grid(row=1, column=1)
-            ttk.Label(master, text="STPAs").grid(row=2, column=0, sticky="ne")
-            stpa_names = [d.name for d in self.app.stpa_docs]
-            self.stpa_lb = tk.Listbox(master, selectmode="extended", height=5)
-            for n in stpa_names:
-                self.stpa_lb.insert(tk.END, n)
-            self.stpa_lb.grid(row=2, column=1)
-            ttk.Label(master, text="Threat Analyses").grid(row=3, column=0, sticky="ne")
-            threat_names = [d.name for d in getattr(self.app, "threat_docs", [])]
-            self.threat_lb = tk.Listbox(master, selectmode="extended", height=5)
-            for n in threat_names:
-                self.threat_lb.insert(tk.END, n)
-            self.threat_lb.grid(row=3, column=1)
 
         def apply(self):
-            hazops = [self.hazop_lb.get(i) for i in self.hazop_lb.curselection()]
-            stpas = [self.stpa_lb.get(i) for i in self.stpa_lb.curselection()]
-            threats = [self.threat_lb.get(i) for i in self.threat_lb.curselection()]
-            self.result = (self.name_var.get(), hazops, stpas, threats)
+            sel = [self.hazop_lb.get(i) for i in self.hazop_lb.curselection()]
+            self.result = (self.name_var.get(), sel)
 
     def new_doc(self):
-        dlg = self.NewRiskAnalysisDialog(self, self.app)
+        dlg = self.NewHaraDialog(self, self.app)
         if not getattr(dlg, "result", None):
             return
-        name, hazops, stpas, threats = dlg.result
-        doc = HaraDoc(name, hazops, [], False, "draft", stpas=stpas, threats=threats)
+        name, hazops = dlg.result
+        doc = HaraDoc(name, hazops, [], False, "draft")
         self.app.hara_docs.append(doc)
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
@@ -2225,7 +2187,7 @@ class RiskAnalysisWindow(tk.Frame):
         if not self.app.active_hara:
             return
         name = simpledialog.askstring(
-            "Rename Risk Analysis", "Name:", initialvalue=self.app.active_hara.name
+            "Rename HARA", "Name:", initialvalue=self.app.active_hara.name
         )
         if not name:
             return
@@ -2237,7 +2199,7 @@ class RiskAnalysisWindow(tk.Frame):
         doc = self.app.active_hara
         if not doc:
             return
-        if not messagebox.askyesno("Delete", f"Delete Risk Analysis '{doc.name}'?"):
+        if not messagebox.askyesno("Delete", f"Delete HARA '{doc.name}'?"):
             return
         self.app.hara_docs.remove(doc)
         if self.app.hara_docs:
@@ -2269,12 +2231,6 @@ class RiskAnalysisWindow(tk.Frame):
                 row.exp_rationale,
                 row.asil,
                 row.safety_goal,
-                getattr(row, "damage_scenario", ""),
-                getattr(row, "impact_overall", ""),
-                getattr(row, "attack_vector", ""),
-                getattr(row, "attack_feasibility", ""),
-                getattr(row, "risk_level", ""),
-                getattr(row, "cybersecurity_goal", ""),
             ]
             tag = f"asil_{row.asil}" if row.asil else ""
             self.tree.insert("", "end", values=vals, tags=(tag,))
@@ -2284,45 +2240,18 @@ class RiskAnalysisWindow(tk.Frame):
     class RowDialog(simpledialog.Dialog):
         def __init__(self, parent, app, row=None):
             self.app = app
-            self.row = row or HaraEntry(
-                "",
-                "",
-                "",
-                1,
-                "",
-                1,
-                "",
-                1,
-                "",
-                "QM",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            )
-            super().__init__(parent, title="Edit Risk Analysis Row")
+            self.row = row or HaraEntry("", "", "", 1, "", 1, "", 1, "", "QM", "")
+            super().__init__(parent, title="Edit HARA Row")
 
         def body(self, master):
             hazop_names = []
-            stpa_names = []
-            threat_names = []
             if self.app.active_hara:
                 hazop_names = getattr(self.app.active_hara, "hazops", []) or []
-                stpa_names = getattr(self.app.active_hara, "stpas", []) or []
-                threat_names = getattr(self.app.active_hara, "threats", []) or []
-            if not hazop_names:
-                hazop_names = [d.name for d in self.app.hazop_docs]
-            malfs = merge_malfunctions(
-                self.app.hazop_docs, self.app.stpa_docs, hazop_names, stpa_names
-            )
+            malfs = set()
             hazards_map = {}
             scenarios_map = {}
+            if not hazop_names:
+                hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
                 hz = self.app.get_hazop_by_name(hz_name)
                 if hz:
@@ -2427,69 +2356,6 @@ class RiskAnalysisWindow(tk.Frame):
             ttk.Combobox(
                 master, textvariable=self.sg_var, values=goals, state="readonly"
             ).grid(row=10, column=1)
-            ttk.Label(master, text="Damage Scenario").grid(row=11, column=0, sticky="e")
-            damage_opts = set()
-            for th_name in threat_names:
-                doc = self.app.get_threat_by_name(th_name)
-                if doc:
-                    damage_opts.update(getattr(doc, "damage_scenarios", []))
-            self.damage_var = tk.StringVar(value=self.row.damage_scenario)
-            ttk.Combobox(master, textvariable=self.damage_var, values=sorted(damage_opts), state="readonly").grid(row=11, column=1)
-            ttk.Label(master, text="Financial Impact").grid(row=12, column=0, sticky="e")
-            self.fin_var = tk.StringVar(value=self.row.impact_financial or IMPACT_LEVELS[0])
-            ttk.Combobox(master, textvariable=self.fin_var, values=IMPACT_LEVELS, state="readonly").grid(row=12, column=1)
-            ttk.Label(master, text="Safety Impact").grid(row=13, column=0, sticky="e")
-            self.saf_var = tk.StringVar(value=self.row.impact_safety or IMPACT_LEVELS[0])
-            ttk.Combobox(master, textvariable=self.saf_var, values=IMPACT_LEVELS, state="readonly").grid(row=13, column=1)
-            ttk.Label(master, text="Operational Impact").grid(row=14, column=0, sticky="e")
-            self.op_var = tk.StringVar(value=self.row.impact_operational or IMPACT_LEVELS[0])
-            ttk.Combobox(master, textvariable=self.op_var, values=IMPACT_LEVELS, state="readonly").grid(row=14, column=1)
-            ttk.Label(master, text="Privacy Impact").grid(row=15, column=0, sticky="e")
-            self.priv_var = tk.StringVar(value=self.row.impact_privacy or IMPACT_LEVELS[0])
-            ttk.Combobox(master, textvariable=self.priv_var, values=IMPACT_LEVELS, state="readonly").grid(row=15, column=1)
-            ttk.Label(master, text="Overall Impact").grid(row=16, column=0, sticky="e")
-            self.overall_var = tk.StringVar(value=self.row.impact_overall)
-            ttk.Label(master, textvariable=self.overall_var).grid(row=16, column=1)
-            ttk.Label(master, text="Attack Vector").grid(row=17, column=0, sticky="e")
-            self.vector_var = tk.StringVar(value=self.row.attack_vector or "Physical")
-            ttk.Combobox(master, textvariable=self.vector_var, values=["Physical", "Local", "Adjacent", "Network"], state="readonly").grid(row=17, column=1)
-            ttk.Label(master, text="Attack Feasibility").grid(row=18, column=0, sticky="e")
-            self.feas_var = tk.StringVar(value=self.row.attack_feasibility or ATTACK_FEASIBILITY[0])
-            feas_cb = ttk.Combobox(master, textvariable=self.feas_var, values=ATTACK_FEASIBILITY, state="readonly")
-            feas_cb.grid(row=18, column=1)
-            ttk.Label(master, text="Risk Level").grid(row=19, column=0, sticky="e")
-            self.risk_var = tk.StringVar(value=self.row.risk_level)
-            ttk.Label(master, textvariable=self.risk_var).grid(row=19, column=1)
-            ttk.Label(master, text="Cybersecurity Goal").grid(row=20, column=0, sticky="e")
-            goals_cyber = [
-                req["id"]
-                for req in global_requirements.values()
-                if req.get("req_type") in ("cybersecurity", "functional safety", "technical safety")
-            ]
-            self.csg_var = tk.StringVar(value=self.row.cybersecurity_goal)
-            ttk.Combobox(master, textvariable=self.csg_var, values=sorted(goals_cyber), state="readonly").grid(row=20, column=1)
-
-            def update_risk(_=None):
-                overall = compute_overall_impact(
-                    self.fin_var.get(),
-                    self.saf_var.get(),
-                    self.op_var.get(),
-                    self.priv_var.get(),
-                )
-                self.overall_var.set(overall)
-                self.risk_var.set(
-                    compute_cyber_risk_level(overall, self.feas_var.get())
-                )
-
-            for var in (
-                self.fin_var,
-                self.saf_var,
-                self.op_var,
-                self.priv_var,
-                self.feas_var,
-            ):
-                var.trace_add("write", update_risk)
-            update_risk()
 
             def recalc(_=None):
                 try:
@@ -2556,20 +2422,10 @@ class RiskAnalysisWindow(tk.Frame):
             self.row.asil = self.asil_var.get()
             self.row.safety_goal = self.sg_var.get()
             self.row.scenario = self.scen_var.get()
-            self.row.damage_scenario = self.damage_var.get()
-            self.row.impact_financial = self.fin_var.get()
-            self.row.impact_safety = self.saf_var.get()
-            self.row.impact_operational = self.op_var.get()
-            self.row.impact_privacy = self.priv_var.get()
-            self.row.impact_overall = self.overall_var.get()
-            self.row.attack_vector = self.vector_var.get()
-            self.row.attack_feasibility = self.feas_var.get()
-            self.row.risk_level = self.risk_var.get()
-            self.row.cybersecurity_goal = self.csg_var.get()
 
     def add_row(self):
         if not self.app.active_hara:
-            messagebox.showwarning("Add", "Create a risk analysis first")
+            messagebox.showwarning("Add", "Create a HARA first")
             return
         dlg = self.RowDialog(self, self.app)
         self.app.hara_entries.append(dlg.row)
@@ -2639,7 +2495,7 @@ class RiskAnalysisWindow(tk.Frame):
         self.app.update_hara_statuses()
         self.app.ensure_asil_consistency()
         self.app.update_views()
-        messagebox.showinfo("Risk Analysis", "Risk analysis approved")
+        messagebox.showinfo("HARA", "HARA approved")
 
 
 class TC2FIWindow(tk.Frame):
