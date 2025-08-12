@@ -282,6 +282,7 @@ from analysis.models import (
     DamageScenario,
     ThreatScenario,
     AttackPath,
+    FunctionThreat,
     ThreatEntry,
     ThreatDoc,
     QUALIFICATIONS,
@@ -15078,22 +15079,51 @@ class FaultTreeApp:
         for d in data.get("threat_docs", []):
             entries = []
             for e in d.get("entries", []):
-                dmg_list = []
-                for ds in e.get("damage_scenarios", []):
-                    threats = []
-                    for t in ds.get("threats", []):
-                        paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                        threats.append(
-                            ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths)
+                funcs = []
+                raw_funcs = e.get("functions", [])
+                if raw_funcs and isinstance(raw_funcs[0], dict):
+                    for f in raw_funcs:
+                        dmg_list = []
+                        for ds in f.get("damage_scenarios", []):
+                            threats = []
+                            for t in ds.get("threats", []):
+                                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                                threats.append(
+                                    ThreatScenario(
+                                        t.get("stride", ""),
+                                        t.get("scenario", ""),
+                                        paths,
+                                    )
+                                )
+                            dmg_list.append(
+                                DamageScenario(
+                                    ds.get("scenario", ""), ds.get("dtype", ""), threats
+                                )
+                            )
+                        funcs.append(FunctionThreat(f.get("name", ""), dmg_list))
+                else:
+                    dmg_list = []
+                    for ds in e.get("damage_scenarios", []):
+                        threats = []
+                        for t in ds.get("threats", []):
+                            paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                            threats.append(
+                                ThreatScenario(
+                                    t.get("stride", ""),
+                                    t.get("scenario", ""),
+                                    paths,
+                                )
+                            )
+                        dmg_list.append(
+                            DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
                         )
-                    dmg_list.append(
-                        DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
-                    )
-                funcs = e.get("functions")
-                if funcs is None:
-                    func = e.get("function")
-                    funcs = [func] if func else []
-                entries.append(ThreatEntry(e.get("asset", ""), funcs, dmg_list))
+                    func_names = raw_funcs
+                    if func_names is None:
+                        func = e.get("function")
+                        func_names = [func] if func else []
+                    for name in func_names:
+                        funcs.append(FunctionThreat(name, dmg_list))
+                entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
                 ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )
@@ -15518,22 +15548,51 @@ class FaultTreeApp:
         for d in data.get("threat_docs", []):
             entries = []
             for e in d.get("entries", []):
-                dmg_list = []
-                for ds in e.get("damage_scenarios", []):
-                    threats = []
-                    for t in ds.get("threats", []):
-                        paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                        threats.append(
-                            ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths)
+                funcs = []
+                raw_funcs = e.get("functions", [])
+                if raw_funcs and isinstance(raw_funcs[0], dict):
+                    for f in raw_funcs:
+                        dmg_list = []
+                        for ds in f.get("damage_scenarios", []):
+                            threats = []
+                            for t in ds.get("threats", []):
+                                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                                threats.append(
+                                    ThreatScenario(
+                                        t.get("stride", ""),
+                                        t.get("scenario", ""),
+                                        paths,
+                                    )
+                                )
+                            dmg_list.append(
+                                DamageScenario(
+                                    ds.get("scenario", ""), ds.get("dtype", ""), threats
+                                )
+                            )
+                        funcs.append(FunctionThreat(f.get("name", ""), dmg_list))
+                else:
+                    dmg_list = []
+                    for ds in e.get("damage_scenarios", []):
+                        threats = []
+                        for t in ds.get("threats", []):
+                            paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                            threats.append(
+                                ThreatScenario(
+                                    t.get("stride", ""),
+                                    t.get("scenario", ""),
+                                    paths,
+                                )
+                            )
+                        dmg_list.append(
+                            DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
                         )
-                    dmg_list.append(
-                        DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
-                    )
-                funcs = e.get("functions")
-                if funcs is None:
-                    func = e.get("function")
-                    funcs = [func] if func else []
-                entries.append(ThreatEntry(e.get("asset", ""), funcs, dmg_list))
+                    func_names = raw_funcs
+                    if func_names is None:
+                        func = e.get("function")
+                        func_names = [func] if func else []
+                    for name in func_names:
+                        funcs.append(FunctionThreat(name, dmg_list))
+                entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
                 ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )

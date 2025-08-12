@@ -257,12 +257,19 @@ class DamageScenario:
 
 
 @dataclass
+class FunctionThreat:
+    """Link a function to its damage scenarios."""
+
+    name: str
+    damage_scenarios: list[DamageScenario] = field(default_factory=list)
+
+
+@dataclass
 class ThreatEntry:
     """Single row in a threat analysis table."""
 
     asset: str
-    functions: list[str] = field(default_factory=list)
-    damage_scenarios: list[DamageScenario] = field(default_factory=list)
+    functions: list[FunctionThreat] = field(default_factory=list)
 
 
 @dataclass

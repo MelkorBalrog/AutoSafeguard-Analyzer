@@ -17,6 +17,7 @@ class ThreatWindow(tk.Frame):
         if isinstance(master, tk.Toplevel):
             master.title("Threat Analysis")
             master.geometry("700x350")
+            master.resizable(False, False)
 
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
@@ -41,9 +42,17 @@ class ThreatWindow(tk.Frame):
             style="Threat.Treeview",
             height=8,
         )
+        headers = {
+            "asset": "Asset",
+            "functions": "Functions",
+            "damage": "Damage Scenario",
+            "type": "Damage Type",
+            "threat": "Threat Scenario (STRIDE)",
+            "path": "Attack Paths",
+        }
         for col in columns:
-            self.tree.heading(col, text=col.capitalize())
-            width = 120 if col not in {"damage", "threat", "path"} else 200
+            self.tree.heading(col, text=headers[col])
+            width = 120 if col in {"asset", "functions", "type"} else 200
             self.tree.column(col, width=width)
         vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=vsb.set)
@@ -138,14 +147,23 @@ class ThreatWindow(tk.Frame):
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         for idx, entry in enumerate(self.app.threat_entries):
-            damages = "; ".join(ds.scenario for ds in entry.damage_scenarios)
-            types = "; ".join(ds.dtype for ds in entry.damage_scenarios)
+            funcs = [f.name for f in entry.functions]
+            damages = "; ".join(
+                ds.scenario for f in entry.functions for ds in f.damage_scenarios
+            )
+            types = "; ".join(
+                ds.dtype for f in entry.functions for ds in f.damage_scenarios
+            )
             threats = "; ".join(
-                ts.scenario for ds in entry.damage_scenarios for ts in ds.threats
+                f"{ts.stride}: {ts.scenario}"
+                for f in entry.functions
+                for ds in f.damage_scenarios
+                for ts in ds.threats
             )
             paths = "; ".join(
                 ap.description
-                for ds in entry.damage_scenarios
+                for f in entry.functions
+                for ds in f.damage_scenarios
                 for ts in ds.threats
                 for ap in ts.attack_paths
             )
@@ -155,7 +173,7 @@ class ThreatWindow(tk.Frame):
                 iid=str(idx),
                 values=(
                     entry.asset,
-                    "; ".join(entry.functions),
+                    "; ".join(funcs),
                     damages,
                     types,
                     threats,
