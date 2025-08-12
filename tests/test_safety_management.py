@@ -194,7 +194,6 @@ def test_safety_diagrams_hidden_and_immutable_in_explorer():
     explorer.rename_item(f"diag_{diag_id}")
     assert repo.diagrams[diag_id].name == "Gov"
 
-
 def test_safety_diagrams_hidden_in_analysis_tree():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
