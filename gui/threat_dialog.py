@@ -268,6 +268,10 @@ class ThreatDialog(simpledialog.Dialog):
                         names.add(name)
             for conn in getattr(diag, "connections", []):
                 name = conn.get("name")
+                if not name:
+                    elem_id = conn.get("element_id")
+                    if elem_id and elem_id in repo.elements:
+                        name = repo.elements[elem_id].name
                 if name:
                     names.add(name)
         return sorted(names)
