@@ -8,8 +8,6 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from sysml.sysml_repository import SysMLRepository
-
-
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -110,4 +108,3 @@ class SafetyManagementToolbox:
     def list_diagrams(self) -> List[str]:
         """Return the names of all managed diagrams."""
         return list(self.diagrams.keys())
-
