@@ -14164,97 +14164,58 @@ class FaultTreeApp:
                 self.tn_var = tk.DoubleVar(value=float(self.data.get("tn", 0) or 0))
                 self.fn_var = tk.DoubleVar(value=float(self.data.get("fn", 0) or 0))
 
-                inputs = ttk.Frame(cm_frame)
-                inputs.grid(row=0, column=0, pady=5)
-                ttk.Label(inputs, text="Actual P").grid(row=0, column=0)
-                ttk.Entry(inputs, textvariable=self.p_var, width=6).grid(row=0, column=1)
-                ttk.Label(inputs, text="Actual N").grid(row=0, column=2)
-                ttk.Entry(inputs, textvariable=self.n_var, width=6).grid(row=0, column=3)
+                matrix_metrics = ttk.Frame(cm_frame)
+                matrix_metrics.grid(row=0, column=0, pady=5, sticky="w")
+                matrix = ttk.Frame(matrix_metrics)
+                matrix.grid(row=0, column=0, sticky="w")
+                ttk.Label(matrix, text="").grid(row=0, column=0)
+                ttk.Label(matrix, text="Pred P").grid(row=0, column=1)
+                ttk.Label(matrix, text="Pred N").grid(row=0, column=2)
+                ttk.Label(matrix, text="Actual P").grid(row=1, column=0)
+                ttk.Entry(matrix, textvariable=self.tp_var, width=6).grid(row=1, column=1)
+                ttk.Entry(matrix, textvariable=self.fn_var, width=6).grid(row=1, column=2)
+                ttk.Label(matrix, text="Actual N").grid(row=2, column=0)
+                ttk.Entry(matrix, textvariable=self.fp_var, width=6).grid(row=2, column=1)
+                ttk.Entry(matrix, textvariable=self.tn_var, width=6).grid(row=2, column=2)
 
-                matrix = ttk.Frame(cm_frame)
-                matrix.grid(row=1, column=0, pady=5)
-                ttk.Label(matrix, text="TP").grid(row=0, column=0)
-                ttk.Label(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
-                ttk.Label(matrix, text="FN").grid(row=0, column=2)
-                ttk.Label(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
-                ttk.Label(matrix, text="FP").grid(row=1, column=0)
-                ttk.Label(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
-                ttk.Label(matrix, text="TN").grid(row=1, column=2)
-                ttk.Label(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
-
-                metrics_frame = ttk.Frame(cm_frame)
-                metrics_frame.grid(row=1, column=0, sticky="nsew")
+                metrics_frame = ttk.Frame(matrix_metrics)
+                metrics_frame.grid(row=0, column=1, padx=10, sticky="n")
                 ttk.Label(metrics_frame, text="Accuracy:").grid(row=0, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="Precision:").grid(row=1, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="Recall:").grid(row=2, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="F1 Score:").grid(row=3, column=0, sticky="e")
-                ttk.Label(metrics_frame, text="TPR:").grid(row=4, column=0, sticky="e")
-                ttk.Label(metrics_frame, text="TNR:").grid(row=5, column=0, sticky="e")
-                ttk.Label(metrics_frame, text="FPR:").grid(row=6, column=0, sticky="e")
-                ttk.Label(metrics_frame, text="FNR:").grid(row=7, column=0, sticky="e")
                 self.acc_var = tk.StringVar()
                 self.prec_var = tk.StringVar()
                 self.rec_var = tk.StringVar()
                 self.f1_var = tk.StringVar()
-                self.tpr_var = tk.StringVar()
-                self.tnr_var = tk.StringVar()
-                self.fpr_var = tk.StringVar()
-                self.fnr_var = tk.StringVar()
                 ttk.Label(metrics_frame, textvariable=self.acc_var).grid(row=0, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.prec_var).grid(row=1, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.rec_var).grid(row=2, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.tpr_var).grid(row=4, column=1, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.tnr_var).grid(row=5, column=1, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.fpr_var).grid(row=6, column=1, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.fnr_var).grid(row=7, column=1, sticky="w")
-                ttk.Label(metrics_frame, text="TP/hr:").grid(row=0, column=2, sticky="e")
-                ttk.Label(metrics_frame, text="TN/hr:").grid(row=1, column=2, sticky="e")
-                ttk.Label(metrics_frame, text="FP/hr:").grid(row=2, column=2, sticky="e")
-                ttk.Label(metrics_frame, text="FN/hr:").grid(row=3, column=2, sticky="e")
-                self.tp_rate_var = tk.StringVar()
-                self.tn_rate_var = tk.StringVar()
-                self.fp_rate_var = tk.StringVar()
-                self.fn_rate_var = tk.StringVar()
-                ttk.Label(metrics_frame, textvariable=self.tp_rate_var).grid(row=0, column=3, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.tn_rate_var).grid(row=1, column=3, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.fp_rate_var).grid(row=2, column=3, sticky="w")
-                ttk.Label(metrics_frame, textvariable=self.fn_rate_var).grid(row=3, column=3, sticky="w")
 
                 def update_metrics(*_):
-                    from analysis.confusion_matrix import compute_metrics_from_target
+                    from analysis.confusion_matrix import compute_metrics
 
-                    p = self.p_var.get()
-                    n = self.n_var.get()
-                    tau_on = getattr(self, "current_tau_on", 0.0)
-                    val_target = None
-                    if getattr(self, "selected_goal", None) is not None:
-                        val_target = getattr(self.selected_goal, "validation_target", None)
-                    data = compute_metrics_from_target(
-                        hours=tau_on or 0.0,
-                        validation_target=val_target,
-                        p=p,
-                        n=n,
-                    )
-                    self.acc_var.set(f"{data['accuracy']:.3f}")
-                    self.prec_var.set(f"{data['precision']:.3f}")
-                    self.rec_var.set(f"{data['recall']:.3f}")
-                    self.f1_var.set(f"{data['f1']:.3f}")
-                    tp = data["tp"]
-                    fp = data["fp"]
-                    tn = data["tn"]
-                    fn = data["fn"]
-                    self.tp_var.set(tp)
-                    self.fp_var.set(fp)
-                    self.tn_var.set(tn)
-                    self.fn_var.set(fn)
+                    tp = self.tp_var.get()
+                    fp = self.fp_var.get()
+                    tn = self.tn_var.get()
+                    fn = self.fn_var.get()
+                    metrics = compute_metrics(tp, fp, tn, fn)
+                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
+                    self.prec_var.set(f"{metrics['precision']:.3f}")
+                    self.rec_var.set(f"{metrics['recall']:.3f}")
+                    self.f1_var.set(f"{metrics['f1']:.3f}")
+                    self.p_var.set(tp + fn)
+                    self.n_var.set(tn + fp)
 
-                for var in (self.p_var, self.n_var):
+                for var in (self.tp_var, self.fp_var, self.tn_var, self.fn_var):
                     var.trace_add("write", update_metrics)
                 update_metrics()
 
                 vt_frame = ttk.Frame(cm_frame)
-                vt_frame.grid(row=2, column=0, sticky="nsew", pady=5)
+                vt_frame.grid(row=1, column=0, sticky="nsew", pady=5)
+                cm_frame.grid_rowconfigure(1, weight=1)
+                cm_frame.grid_columnconfigure(0, weight=1)
                 columns = [
                     "Product Goal",
                     "Validation Target",
@@ -14322,22 +14283,25 @@ class FaultTreeApp:
                 for row in self.attr_rows:
                     key = row["k_var"].get().strip()
                     if key:
-                        new_data[key] = row["v_var"].get()
-                p = float(self.p_var.get())
-                n = float(self.n_var.get())
-                from analysis.confusion_matrix import compute_metrics_from_target
+                        new_data[key] = v_var.get()
+                tp = float(self.tp_var.get())
+                fp = float(self.fp_var.get())
+                tn = float(self.tn_var.get())
+                fn = float(self.fn_var.get())
+                from analysis.confusion_matrix import compute_metrics
 
-                tau_on = getattr(self, "current_tau_on", 0.0)
-                val_target = None
-                if getattr(self, "selected_goal", None) is not None:
-                    val_target = getattr(self.selected_goal, "validation_target", None)
-                data = compute_metrics_from_target(
-                    hours=tau_on or 0.0,
-                    validation_target=val_target,
-                    p=p,
-                    n=n,
-                )
-                new_data.update(data)
+                metrics = compute_metrics(tp, fp, tn, fn)
+                p = tp + fn
+                n = tn + fp
+                new_data.update({
+                    "tp": tp,
+                    "fp": fp,
+                    "tn": tn,
+                    "fn": fn,
+                    "p": p,
+                    "n": n,
+                })
+                new_data.update(metrics)
                 self.data = new_data
 
         def add_lib():
