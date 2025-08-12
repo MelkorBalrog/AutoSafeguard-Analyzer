@@ -24,10 +24,8 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def body(self, master):
-        master.columnconfigure(0, weight=1)
-        master.rowconfigure(0, weight=1)
         nb = ttk.Notebook(master)
-        nb.grid(row=0, column=0, sticky="nsew")
+        nb.pack(fill=tk.BOTH, expand=True)
 
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
