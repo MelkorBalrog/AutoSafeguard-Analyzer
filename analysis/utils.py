@@ -4,6 +4,31 @@
 from typing import List
 
 
+# Mapping tables from risk assessment ratings to probabilities.
+#
+# The values provide a simple heuristic for converting ISO 26262 / ISO 21448
+# levels into conditional probabilities used in the validation target
+# calculation. They can be refined as better field data becomes available.
+EXPOSURE_PROBABILITIES = {1: 1e-4, 2: 1e-3, 3: 1e-2, 4: 5e-2}
+CONTROLLABILITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
+SEVERITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
+
+
+def exposure_to_probability(level: int) -> float:
+    """Return ``P(E|HB)`` for the given exposure rating."""
+    return EXPOSURE_PROBABILITIES.get(int(level), 1.0)
+
+
+def controllability_to_probability(level: int) -> float:
+    """Return ``P(C|E)`` for the given controllability rating."""
+    return CONTROLLABILITY_PROBABILITIES.get(int(level), 1.0)
+
+
+def severity_to_probability(level: int) -> float:
+    """Return ``P(S|C)`` for the given severity rating."""
+    return SEVERITY_PROBABILITIES.get(int(level), 1.0)
+
+
 def append_unique_insensitive(items: List[str], name: str) -> None:
     """Append ``name`` to ``items`` if not already present (case-insensitive)."""
     if not name:
