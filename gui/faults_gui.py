@@ -659,6 +659,47 @@ class FaultsWindow(QMainWindow):
         self.table.setItemDelegateForColumn(col_index("Recovery"), ComboDelegate(CBO_RECOV, self))
         self.table.setItemDelegateForColumn(col_index("Detectability"), ComboDelegate(CBO_DETECT, self))
 
+    def on_table_double_clicked(self, index: QModelIndex):
+        """Open an appropriate editor when the user double-clicks a table cell."""
+        if not index.isValid():
+            return
+
+        col_name = self.df.columns[index.column()]
+        row = index.row()
+
+        # Ignore output columns which are read-only
+        if self.is_output_column(col_name):
+            return
+
+        # Requirement columns open a multi-select dialog
+        req_map = {
+            "Operational Requirement": "operational requirement",
+            "Technical Safety Requirement": "technical safety requirement",
+            "Functional Modification": "functional modification",
+        }
+        if col_name in req_map:
+            current_val = str(self.df.at[row, col_name])
+            selected = [s for s in current_val.split(";") if s]
+            options = requirement_ids(req_map[col_name])
+            dlg = MultiSelectDialog(options, selected, title=col_name, parent=self)
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                new_val = ";".join(dlg.selected_items())
+                self.model.setData(index, new_val, Qt.ItemDataRole.EditRole)
+            return
+
+        if col_name == "Safety Critical":
+            current = self.model.data(index, Qt.ItemDataRole.CheckStateRole)
+            new_state = (
+                Qt.CheckState.Unchecked
+                if current == Qt.CheckState.Checked
+                else Qt.CheckState.Checked
+            )
+            self.model.setData(index, new_state, Qt.ItemDataRole.CheckStateRole)
+            return
+
+        # For all other editable cells, invoke the default editor
+        self.table.edit(index)
+
     # ---------- Model <-> View ----------
 
     def model_from_df(self):
