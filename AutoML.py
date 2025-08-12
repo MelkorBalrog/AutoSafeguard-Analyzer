@@ -12211,7 +12211,7 @@ class FaultTreeApp:
                     textvariable=self.accept_rate_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=9, column=1, padx=5, pady=5)
+                ).grid(row=5, column=1, padx=5, pady=5)
 
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
