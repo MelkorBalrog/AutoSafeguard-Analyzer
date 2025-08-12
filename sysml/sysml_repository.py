@@ -47,6 +47,7 @@ class SysMLDiagram:
     description: str = ""
     color: str = "#FFFFFF"
     father: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
     elements: List[str] = field(default_factory=list)
     relationships: List[str] = field(default_factory=list)
     objects: List[dict] = field(default_factory=list)
