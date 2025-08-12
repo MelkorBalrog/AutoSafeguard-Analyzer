@@ -2631,7 +2631,14 @@ class RiskAssessmentWindow(tk.Frame):
             elif self.goal_var.get() and not self.sg_var.get():
                 self.sg_var.set(self.goal_var.get())
 
-            def update_cyber(_=None):
+            # tk.Variable.trace_add callbacks receive three arguments:
+            # the variable name, index, and operation. The previous
+            # implementation only accepted a single optional argument,
+            # which caused a ``TypeError`` when the callback was invoked
+            # by ``trace_add``.  Allow arbitrary positional arguments so
+            # the function can be used both as an event handler and as a
+            # variable trace callback.
+            def update_cyber(*_):
                 order = {name: idx for idx, name in enumerate(IMPACT_LEVELS)}
                 impacts = [
                     self.fin_var.get(),
