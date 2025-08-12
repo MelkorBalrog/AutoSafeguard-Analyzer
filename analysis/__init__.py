@@ -9,6 +9,13 @@ __all__ = [
     "hazardous_behavior_rate",
     "validation_time",
     "compute_metrics",
-    "compute_metrics_from_target",
     "SafetyManagementToolbox",
 ]
+
+
+def __getattr__(name):
+    if name == "SafetyManagementToolbox":
+        from .safety_management import SafetyManagementToolbox as _SMT
+
+        return _SMT
+    raise AttributeError(name)

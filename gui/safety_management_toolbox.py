@@ -1,83 +1,99 @@
-"""GUI for interacting with the Safety Management toolbox."""
-
 import tkinter as tk
 from tkinter import ttk, simpledialog
-from gui import messagebox
-from analysis.safety_management import SafetyManagementToolbox as SMT
+
+from analysis import SafetyManagementToolbox
+from gui.architecture import ActivityDiagramWindow
 
 
-class SafetyManagementToolbox(ttk.Frame):
-    """Tab widget exposing safety governance data and BPMN editing."""
+class SafetyManagementWindow(tk.Frame):
+    """Editor and browser for Safety Management diagrams.
 
-    def __init__(self, master, toolbox: SMT | None = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-        self.toolbox = toolbox or SMT()
+    Users can create, rename and delete Activity Diagrams that model the
+    project's safety governance. Only diagrams registered in the provided
+    :class:`SafetyManagementToolbox` are listed.
+    """
 
-        controls = ttk.Frame(self)
-        controls.pack(fill=tk.X, padx=5, pady=5)
-        ttk.Button(controls, text="Add Task", command=self._add_task).pack(
-            side=tk.LEFT, padx=2
-        )
-        ttk.Button(controls, text="Add Flow", command=self._add_flow).pack(
-            side=tk.LEFT, padx=2
-        )
-        ttk.Button(controls, text="Rebuild Default", command=self._rebuild).pack(
-            side=tk.LEFT, padx=2
-        )
+    def __init__(self, master, app, toolbox: SafetyManagementToolbox | None = None):
+        super().__init__(master)
+        self.app = app
+        self.toolbox = toolbox or SafetyManagementToolbox()
 
-        # Canvas used to render a lightweight BPMN diagram without matplotlib
-        self.canvas = tk.Canvas(self, width=500, height=400, bg="white")
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        top = ttk.Frame(self)
+        top.pack(fill=tk.X)
 
-        # Start with a diagram built from current work products
-        self.toolbox.build_default_diagram()
-        self._refresh()
+        ttk.Label(top, text="Diagram:").pack(side=tk.LEFT)
+        self.diag_var = tk.StringVar()
+        self.diag_cb = ttk.Combobox(top, textvariable=self.diag_var, state="readonly")
+        self.diag_cb.pack(side=tk.LEFT, padx=2)
+        self.diag_cb.bind("<<ComboboxSelected>>", self.select_diagram)
 
-    def _refresh(self) -> None:
-        """Redraw the BPMN diagram on the canvas."""
-        self.canvas.delete("all")
-        g = self.toolbox.business_diagram.graph
-        nodes = list(g.nodes())
-        if not nodes:
+        ttk.Button(top, text="New", command=self.new_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Rename", command=self.rename_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Delete", command=self.delete_diagram).pack(side=tk.LEFT)
+
+        self.diagram_frame = ttk.Frame(self)
+        self.diagram_frame.pack(fill=tk.BOTH, expand=True)
+        self.current_window = None
+
+        self.refresh_diagrams()
+        if not isinstance(master, tk.Toplevel):
+            self.pack(fill=tk.BOTH, expand=True)
+
+    # ------------------------------------------------------------------
+    # Diagram operations
+    # ------------------------------------------------------------------
+    def refresh_diagrams(self):
+        names = self.toolbox.list_diagrams()
+        self.diag_cb.configure(values=names)
+        if names:
+            current = self.diag_var.get()
+            if current not in names:
+                self.diag_var.set(names[0])
+            self.open_diagram(self.diag_var.get())
+        else:
+            self.diag_var.set("")
+            self.open_diagram(None)
+
+    def new_diagram(self):
+        name = simpledialog.askstring("New Diagram", "Name:", parent=self)
+        if not name:
             return
+        self.toolbox.create_diagram(name)
+        self.refresh_diagrams()
+        self.diag_var.set(name)
+        self.open_diagram(name)
 
-        # Simple horizontal layout
-        pos = {n: (50 + i * 100, 100) for i, n in enumerate(nodes)}
+    def rename_diagram(self):
+        name = self.diag_var.get()
+        if not name:
+            return
+        new_name = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=name, parent=self)
+        if not new_name:
+            return
+        self.toolbox.rename_diagram(name, new_name)
+        self.refresh_diagrams()
+        self.diag_var.set(new_name)
+        self.open_diagram(new_name)
 
-        # Draw flows
-        for u, v in g.edges():
-            x1, y1 = pos[u]
-            x2, y2 = pos[v]
-            self.canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+    def delete_diagram(self):
+        name = self.diag_var.get()
+        if not name:
+            return
+        self.toolbox.delete_diagram(name)
+        self.refresh_diagrams()
 
-        # Draw tasks
-        radius = 20
-        for name, (x, y) in pos.items():
-            self.canvas.create_oval(
-                x - radius,
-                y - radius,
-                x + radius,
-                y + radius,
-                fill="lightgray",
-            )
-            self.canvas.create_text(x, y, text=name)
+    def select_diagram(self, *_):
+        name = self.diag_var.get()
+        self.open_diagram(name)
 
-    def _add_task(self) -> None:
-        name = simpledialog.askstring("Task", "Task name:", parent=self)
-        if name:
-            self.toolbox.add_business_task(name)
-            self._refresh()
-
-    def _add_flow(self) -> None:
-        src = simpledialog.askstring("Flow", "Source task:", parent=self)
-        dst = simpledialog.askstring("Flow", "Destination task:", parent=self)
-        if src and dst:
-            try:
-                self.toolbox.add_business_flow(src, dst)
-            except ValueError as exc:
-                messagebox.showerror("Flow", str(exc))
-            self._refresh()
-
-    def _rebuild(self) -> None:
-        self.toolbox.build_default_diagram()
-        self._refresh()
+    def open_diagram(self, name: str | None):
+        for child in self.diagram_frame.winfo_children():
+            child.destroy()
+        self.current_window = None
+        if not name:
+            return
+        diag_id = self.toolbox.diagrams.get(name)
+        if diag_id is None:
+            return
+        self.current_window = ActivityDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
+        self.current_window.pack(fill=tk.BOTH, expand=True)
