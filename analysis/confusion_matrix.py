@@ -97,3 +97,63 @@ def compute_rates(
         n = tn + fp
 
     return {"tp": tp, "fp": fp, "tn": tn, "fn": fn, "p": p, "n": n}
+
+
+def compute_metrics_from_target(
+    *, hours: float, validation_target: float | None, p: float, n: float
+) -> Dict[str, float]:
+    """Compute metrics and confusion matrix counts from a validation target.
+
+    This helper mirrors the workflow of the *ODD elements* confusion matrix
+    window where accuracy, precision, recall and F1 score are first derived
+    from a product goal's validation target and mission profile duration
+    (``TAU ON``).  The resulting metrics are then used to recover the
+    confusion matrix counts ``tp``, ``fp``, ``tn`` and ``fn``.
+
+    Parameters
+    ----------
+    hours:
+        Total test duration in hours (mission profile ``TAU ON``).
+    validation_target:
+        Allowed hazardous events per hour for the selected validation target.
+    p, n:
+        Dataset sizes for actual positives and negatives.
+
+    Returns
+    -------
+    dict
+        Dictionary containing classification metrics (``accuracy``,
+        ``precision``, ``recall`` and ``f1``) together with the confusion
+        matrix counts and totals (``tp``, ``fp``, ``tn``, ``fn``, ``p``,
+        ``n``).
+    """
+
+    hours = float(hours)
+    p = float(p)
+    n = float(n)
+    rate = float(validation_target or 0.0)
+    errors = rate * hours
+
+    total = p + n
+    accuracy = (total - 2 * errors) / total if total else 0.0
+    precision = (p - errors) / p if p else 0.0
+    recall = (p - errors) / p if p else 0.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+
+    tp = recall * p
+    fn = p - tp
+    fp = tp * (1 / precision - 1) if precision else 0.0
+    tn = n - fp
+
+    return {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "tp": tp,
+        "fp": fp,
+        "tn": tn,
+        "fn": fn,
+        "p": p,
+        "n": n,
+    }
