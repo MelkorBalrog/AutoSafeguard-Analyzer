@@ -14006,13 +14006,71 @@ class FaultTreeApp:
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
                 ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
-                self.attr_frame = ttk.Frame(master)
-                self.attr_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+                nb = ttk.Notebook(master)
+                nb.grid(row=1, column=0, columnspan=2, sticky="nsew")
+                master.grid_rowconfigure(1, weight=1)
+                master.grid_columnconfigure(1, weight=1)
+
+                # Attributes tab
+                self.attr_frame = ttk.Frame(nb)
+                nb.add(self.attr_frame, text="Attributes")
                 self.attr_rows = []
                 for k, v in self.data.items():
-                    if k != "name":
+                    if k not in {"name", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
-                ttk.Button(master, text="Add Attribute", command=self.add_attr_row).grid(row=2, column=0, columnspan=2, pady=5)
+                ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=2, pady=5)
+
+                # Confusion matrix tab
+                cm_frame = ttk.Frame(nb)
+                nb.add(cm_frame, text="Confusion Matrix")
+                self.tp_var = tk.DoubleVar(value=float(self.data.get("tp", 0) or 0))
+                self.fp_var = tk.DoubleVar(value=float(self.data.get("fp", 0) or 0))
+                self.tn_var = tk.DoubleVar(value=float(self.data.get("tn", 0) or 0))
+                self.fn_var = tk.DoubleVar(value=float(self.data.get("fn", 0) or 0))
+
+                matrix = ttk.Frame(cm_frame)
+                matrix.grid(row=0, column=0, pady=5)
+                ttk.Label(matrix, text="TP").grid(row=0, column=0)
+                ttk.Entry(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
+                ttk.Label(matrix, text="FN").grid(row=0, column=2)
+                ttk.Entry(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
+                ttk.Label(matrix, text="FP").grid(row=1, column=0)
+                ttk.Entry(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
+                ttk.Label(matrix, text="TN").grid(row=1, column=2)
+                ttk.Entry(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
+
+                metrics_frame = ttk.Frame(cm_frame)
+                metrics_frame.grid(row=1, column=0, sticky="nsew")
+                ttk.Label(metrics_frame, text="Accuracy:").grid(row=0, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="Precision:").grid(row=1, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="Recall:").grid(row=2, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="F1 Score:").grid(row=3, column=0, sticky="e")
+                self.acc_var = tk.StringVar()
+                self.prec_var = tk.StringVar()
+                self.rec_var = tk.StringVar()
+                self.f1_var = tk.StringVar()
+                ttk.Label(metrics_frame, textvariable=self.acc_var).grid(row=0, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.prec_var).grid(row=1, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.rec_var).grid(row=2, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
+
+                def update_metrics(*_):
+                    from analysis.confusion_matrix import compute_metrics
+
+                    tp = self.tp_var.get()
+                    fp = self.fp_var.get()
+                    tn = self.tn_var.get()
+                    fn = self.fn_var.get()
+                    metrics = compute_metrics(tp, fp, tn, fn)
+                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
+                    self.prec_var.set(f"{metrics['precision']:.3f}")
+                    self.rec_var.set(f"{metrics['recall']:.3f}")
+                    self.f1_var.set(f"{metrics['f1']:.3f}")
+
+                for var in (self.tp_var, self.fp_var, self.tn_var, self.fn_var):
+                    var.trace_add("write", update_metrics)
+                update_metrics()
 
             def apply(self):
                 new_data = {"name": self.name_var.get()}
@@ -14020,6 +14078,14 @@ class FaultTreeApp:
                     key = k_var.get().strip()
                     if key:
                         new_data[key] = v_var.get()
+                tp = float(self.tp_var.get())
+                fp = float(self.fp_var.get())
+                tn = float(self.tn_var.get())
+                fn = float(self.fn_var.get())
+                from analysis.confusion_matrix import compute_metrics
+
+                new_data.update({"tp": tp, "fp": fp, "tn": tn, "fn": fn})
+                new_data.update(compute_metrics(tp, fp, tn, fn))
                 self.data = new_data
 
         def add_lib():
