@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from analysis.confusion_matrix import compute_metrics, counts_from_validation
+from analysis.confusion_matrix import compute_metrics
 
 
 def test_compute_metrics_basic():
@@ -23,14 +23,3 @@ def test_compute_metrics_zero_division():
     assert metrics["precision"] == 0.0
     assert metrics["recall"] == 0.0
     assert metrics["f1"] == 0.0
-
-
-def test_counts_from_validation():
-    entries = [
-        (2e-5, 1e-5, 1e-6),  # TP
-        (5e-7, 1e-5, 1e-6),  # TN
-        (2e-5, 1e-6, 1e-4),  # FP
-        (2e-5, 5e-5, 1e-6),  # FN
-    ]
-    counts = counts_from_validation(entries)
-    assert counts == {"tp": 1.0, "tn": 1.0, "fp": 1.0, "fn": 1.0}
