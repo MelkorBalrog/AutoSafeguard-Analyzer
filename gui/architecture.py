@@ -3544,17 +3544,6 @@ class SysMLDiagramWindow(tk.Frame):
                     if o.properties.get("boundary") == str(self.selected_obj.obj_id):
                         o.x += dx
                         o.y += dy
-            else:
-                b_id = self.selected_obj.properties.get("boundary")
-                if b_id:
-                    b = self.get_object(int(b_id))
-                    if b:
-                        b.x += dx
-                        b.y += dy
-                        for o in self.objects:
-                            if o is not self.selected_obj and o.properties.get("boundary") == b_id:
-                                o.x += dx
-                                o.y += dy
             boundary = self.get_ibd_boundary()
             if boundary:
                 ensure_boundary_contains_parts(boundary, self.objects)
