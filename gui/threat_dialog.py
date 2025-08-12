@@ -535,7 +535,7 @@ class ThreatDialog(simpledialog.Dialog):
     def buttonbox(self):
         """Add explicit OK/Cancel buttons and set dialog size."""
         box = ttk.Frame(self)
-        box.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        box.pack(fill="x", padx=5, pady=5)
 
         ok_btn = ttk.Button(
             box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
