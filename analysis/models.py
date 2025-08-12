@@ -558,15 +558,16 @@ global_requirements = {}
 
 # Requirement type options used throughout the GUI when creating or
 # editing safety requirements.  The list retains the original "vehicle"
-# and "operational" categories and adds new ones for functional and
-# technical safety as well as functional modifications.
-# Updated requirement categories including functional and technical safety,
-# functional modifications, cybersecurity, production and service.
+# and "operational" categories and adds new ones for functional,
+# technical and AI safety as well as functional modifications.
+# Updated requirement categories including functional, technical and AI
+# safety, functional modifications and cybersecurity.
 REQUIREMENT_TYPE_OPTIONS = [
     "vehicle",
     "operational",
     "functional safety",
     "technical safety",
+    "AI safety",
     "functional modification",
     "cybersecurity",
     "production",
