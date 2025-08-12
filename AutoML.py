@@ -242,7 +242,12 @@ from gui.review_toolbox import (
     VersionCompareDialog,
 )
 from dataclasses import asdict
-from analysis.mechanisms import DiagnosticMechanism, MechanismLibrary, ANNEX_D_MECHANISMS
+from analysis.mechanisms import (
+    DiagnosticMechanism,
+    MechanismLibrary,
+    ANNEX_D_MECHANISMS,
+    PAS_8800_MECHANISMS,
+)
 import json
 import csv
 try:
@@ -13189,8 +13194,12 @@ class FaultTreeApp:
     def load_default_mechanisms(self):
         if self.mechanism_libraries:
             return
-        lib = MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy())
-        self.mechanism_libraries.append(lib)
+        self.mechanism_libraries.append(
+            MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy())
+        )
+        self.mechanism_libraries.append(
+            MechanismLibrary("PAS 8800", PAS_8800_MECHANISMS.copy())
+        )
 
     def manage_mechanism_libraries(self):
         if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
