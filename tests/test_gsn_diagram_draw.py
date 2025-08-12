@@ -1,0 +1,62 @@
+from gsn import GSNNode, GSNDiagram
+
+
+class StubCanvas:
+    def __init__(self):
+        self.items = []
+
+    def create_rectangle(self, left, top, right, bottom, **kw):
+        self.items.append((left, top, right, bottom, kw))
+
+    def create_line(self, *args, **kwargs):
+        pass
+
+    def create_text(self, *args, **kwargs):
+        pass
+
+
+class DummyHelper:
+    def draw_goal_shape(self, canvas, x, y, scale, obj_id=""):
+        left = x - scale / 2
+        top = y - scale / 2
+        right = x + scale / 2
+        bottom = y + scale / 2
+        canvas.create_rectangle(left, top, right, bottom, tags=(obj_id,))
+
+    draw_strategy_shape = draw_goal_shape
+    draw_solution_shape = draw_goal_shape
+    draw_away_solution_shape = draw_goal_shape
+    draw_away_goal_shape = draw_goal_shape
+    draw_assumption_shape = draw_goal_shape
+    draw_justification_shape = draw_goal_shape
+    draw_context_shape = draw_goal_shape
+    draw_away_module_shape = draw_goal_shape
+
+    def draw_solved_by_connection(self, *args, **kwargs):
+        pass
+
+    def draw_in_context_connection(self, *args, **kwargs):
+        pass
+
+
+def _rect_for(node_id, canvas):
+    for left, top, right, bottom, kw in canvas.items:
+        if kw.get("tags") == (node_id,):
+            return left, top, right, bottom, kw
+    raise KeyError(node_id)
+
+
+def test_draw_tags_and_zoom_scaling():
+    root = GSNNode("Root", "Goal", x=10, y=10)
+    diag = GSNDiagram(root, drawing_helper=DummyHelper())
+
+    c1 = StubCanvas()
+    diag.draw(c1, zoom=1.0)
+    rect1 = _rect_for(root.unique_id, c1)
+
+    c2 = StubCanvas()
+    diag.draw(c2, zoom=2.0)
+    rect2 = _rect_for(root.unique_id, c2)
+
+    assert rect2[0] == rect1[0] * 2
+    assert rect1[4]["tags"] == (root.unique_id,)
