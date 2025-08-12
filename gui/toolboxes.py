@@ -1852,7 +1852,7 @@ class HazopWindow(tk.Frame):
             safety_cb.grid(row=6, column=1, padx=5, pady=5)
             ToolTip(
                 safety_cb,
-                "Only safety relevant malfunctions are used in HARA analyses.",
+                "Only safety relevant malfunctions are used in risk assessments.",
             )
 
             rat_lbl = ttk.Label(master, text="Rationale")
@@ -2042,7 +2042,7 @@ class HaraWindow(tk.Frame):
         super().__init__(master)
         self.app = app
         if isinstance(master, tk.Toplevel):
-            master.title("HARA Analysis")
+            master.title("Risk Assessment (HARA, HIRE & TARA)")
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         hara_lbl = ttk.Label(top, text="HARA:")

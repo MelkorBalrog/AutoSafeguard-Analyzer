@@ -2144,7 +2144,10 @@ class FaultTreeApp:
         # --- Qualitative Analysis Menu ---
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
-        qualitative_menu.add_command(label="HARA Analysis", command=self.open_hara_window)
+        qualitative_menu.add_command(
+            label="Risk Assessment (HARA, HIRE & TARA)",
+            command=self.open_hara_window,
+        )
         qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
@@ -2267,7 +2270,7 @@ class FaultTreeApp:
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
-            "HARA Analysis": self.open_hara_window,
+            "Risk Assessment (HARA, HIRE & TARA)": self.open_hara_window,
             "STPA Analysis": self.open_stpa_window,
             "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
@@ -2305,7 +2308,7 @@ class FaultTreeApp:
                 "TC2FI Analysis",
             ],
             "Risk Assessment": [
-                "HARA Analysis",
+                "Risk Assessment (HARA, HIRE & TARA)",
                 "Safety Goal Export",
                 "Safety Goals Editor",
             ],
@@ -7572,23 +7575,46 @@ class FaultTreeApp:
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
-        # --- HARA Analyses ---
+        # --- Risk Assessment (HARA, HIRE & TARA) ---
         if self.hara_docs:
             Story.append(PageBreak())
-            Story.append(Paragraph("HARA Analyses", pdf_styles["Heading2"]))
+            Story.append(
+                Paragraph(
+                    "Risk Assessment (HARA, HIRE & TARA)",
+                    pdf_styles["Heading2"],
+                )
+            )
             Story.append(Spacer(1, 12))
             for hara_doc in self.hara_docs:
                 Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
-                data = [["Malfunction", "Hazard", "Severity", "Exposure", "Controllability", "ASIL", "Safety Goal"]]
+                data = [[
+                    "Malfunction",
+                    "Hazard",
+                    "Severity",
+                    "Exposure",
+                    "Controllability",
+                    "ASIL",
+                    "Safety Goal",
+                ]]
                 for e in hara_doc.entries:
-                    data.append([e.malfunction, e.hazard, str(e.severity), str(e.exposure), str(e.controllability), e.asil, e.safety_goal])
+                    data.append([
+                        e.malfunction,
+                        e.hazard,
+                        str(e.severity),
+                        str(e.exposure),
+                        str(e.controllability),
+                        e.asil,
+                        e.safety_goal,
+                    ])
                 table = Table(data, repeatRows=1)
-                table.setStyle(TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                    ('FONTSIZE', (0,0), (-1,-1), 8)
-                ]))
+                table.setStyle(
+                    TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTSIZE', (0,0), (-1,-1), 8)
+                    ])
+                )
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
