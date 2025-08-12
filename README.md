@@ -1127,29 +1127,22 @@ The **Safety Performance Indicators** tab in the Requirements menu lists each pr
 
 ### Acceptance Criteria and Validation Targets
 
-ISO 21448 derives validation targets from an acceptance criterion using the rate
-of hazardous behaviour (*R*<sub>HB</sub>). For a hazardous behaviour with an
-acceptance criterion *A*<sub>H</sub> and the probabilities of exposure,
-uncontrollability and severity ( *P*<sub>E&#124;HB</sub>,
-*P*<sub>C&#124;E</sub>, *P*<sub>S&#124;C</sub> ), the standard defines:
+ISO 21448 provides a method to derive a validation target from an acceptance
+criterion by analysing the rate of the hazardous behaviour :math:`R_{HB}`.
+Given an acceptance criterion for a harm :math:`A_H` and conditional
+probabilities for exposure :math:`P_{E|HB}`, uncontrollability
+:math:`P_{C|E}` and severity :math:`P_{S|C}`, the acceptable rate of the
+hazardous behaviour is computed as:
 
 ```
-A_H = R_HB × P_E|HB × P_C|E × P_S|C
-R_HB = A_H / (P_E|HB × P_C|E × P_S|C)
+R_HB = A_H / (P_{E|HB} * P_{C|E} * P_{S|C})
 ```
 
-The resulting *R*<sub>HB</sub> can be used to determine the validation effort.
-Assuming no hazardous behaviour is observed during testing, the duration needed
-to meet the acceptance criterion with confidence *C* is:
-
-```
-T = -ln(1 - C) / R_HB
-```
-
-For example, if *A*<sub>H</sub> = 10⁻⁸/h,
-*P*<sub>E&#124;HB</sub> = 5 %, *P*<sub>C&#124;E</sub> = 10 % and
-*P*<sub>S&#124;C</sub> = 1 %, then *R*<sub>HB</sub> = 2×10⁻⁴/h. Demonstrating this
-with 63 % confidence requires roughly 5 000 h of fault‑free testing.
+This value can serve as a validation target when planning tests. For example,
+an acceptance criterion of ``1e-8/h`` with ``P_{E|HB}=0.05``,
+``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``.
+The product goal editor and risk assessment utilities provide input fields for
+these parameters and automatically compute the resulting validation target.
 
 ## Email Setup
 
