@@ -1300,12 +1300,12 @@ ratings into conditional probabilities. Each step increases the likelihood by
 roughly an order of magnitude and represents values commonly referenced in
 industry practice:
 
-| Rating | ``P(E|HB)`` | ``P(C|E)`` | ``P(S|C)`` |
-|-------:|------------:|-----------:|-----------:|
-| 1 | ``1e-4`` | ``1e-3`` | ``1e-3`` |
-| 2 | ``1e-3`` | ``1e-2`` | ``1e-2`` |
-| 3 | ``1e-2`` | ``1e-1`` | ``1e-1`` |
-| 4 | ``1e-1`` | – | – |
+| Rating | P(E\|HB) | P(C\|E) | P(S\|C) |
+|-------:|----------:|---------:|---------:|
+| 1      | 1×10⁻⁴    | 1×10⁻³   | 1×10⁻³   |
+| 2      | 1×10⁻³    | 1×10⁻²   | 1×10⁻²   |
+| 3      | 1×10⁻²    | 1×10⁻¹   | 1×10⁻¹   |
+| 4      | 1×10⁻¹    | –        | –        |
 
 Projects with empirical data may substitute more precise values, but these
 approximations provide a justified starting point when none are available.
