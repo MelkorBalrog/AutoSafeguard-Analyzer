@@ -67,9 +67,9 @@ The **HAZOP Analysis** window lets you list system functions with one or more as
 
 ## Risk Assessment
 
-The **Risk Assessment** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new assessment you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each assessment table contains the following columns:
+The **Risk Assessment** view builds on the safety relevant malfunctions from a selected HAZOP. When creating a new assessment you pick a HAZOP document from a drop-down; only malfunctions from that selection appear in the table. Each assessment table contains the following columns:
 
-1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP documents.
+1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP document.
 2. **Hazard** – textual description of the resulting hazard.
 3. **Severity** – ISO&nbsp;26262 severity level (1–3). Values from FI2TC and
    TC2FI analyses are inherited here so the risk assessment reflects SOTIF hazards.
