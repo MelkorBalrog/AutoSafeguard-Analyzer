@@ -281,6 +281,7 @@ class ThreatDoc:
     """Container for a threat analysis document."""
 
     name: str
+    diagram: str
     entries: list[ThreatEntry]
     meta: Metadata = field(default_factory=Metadata)
 

@@ -1173,7 +1173,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 # the safety tab. They remain attributes of the node but are
                 # configured elsewhere.
 
-                ttk.Label(safety_frame, text="Validation Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                ttk.Label(safety_frame, text="Validation Target (1/h):").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.val_target_var = tk.StringVar(value=str(getattr(self.node, "validation_target", 1.0)))
                 tk.Entry(
                     safety_frame,
@@ -1289,7 +1289,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 width=8,
             )
             self.req_cal_combo.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-            ttk.Label(master, text="Validation Target:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
+            ttk.Label(master, text="Validation Target (1/h):").grid(row=5, column=0, sticky="e", padx=5, pady=5)
             self.val_var = tk.StringVar(value=str(self.initial_req.get("validation_criteria", 0.0)))
             tk.Entry(master, textvariable=self.val_var, state="readonly", width=10).grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
@@ -8640,6 +8640,83 @@ class FaultTreeApp:
                     names.append(name)
         return names
 
+    def _validation_entries_for_odd(self, odd_name: str):
+        """Collect validation results for the given ODD element.
+
+        Returns a list of ``(result, target, acceptance)`` tuples for product
+        goals linked to scenarios referencing ``odd_name``.
+        """
+        odd_name = (odd_name or "").strip()
+        if not odd_name:
+            return []
+
+        scen_names = set()
+        for lib in self.scenario_libraries:
+            for sc in lib.get("scenarios", []):
+                if isinstance(sc, dict) and sc.get("scenery") == odd_name:
+                    scen_names.add(sc.get("name", ""))
+        if not scen_names:
+            return []
+
+        malfs = set()
+        for doc in self.hazop_docs:
+            for e in doc.entries:
+                scen = e.scenario
+                if isinstance(scen, dict):
+                    scen = scen.get("name", "")
+                elif isinstance(scen, str) and scen.strip().startswith("{"):
+                    import ast
+
+                    try:
+                        val = ast.literal_eval(scen)
+                        if isinstance(val, dict):
+                            scen = val.get("name", scen)
+                    except Exception:
+                        pass
+                if scen in scen_names and getattr(e, "safety", False):
+                    malfs.add(e.malfunction)
+        if not malfs:
+            return []
+
+        entries = []
+        for doc in self.hara_docs:
+            for row in doc.entries:
+                if row.malfunction in malfs:
+                    sg_name = row.safety_goal
+                    te = next(
+                        (
+                            te
+                            for te in self.top_events
+                            if sg_name
+                            in {
+                                getattr(te, "safety_goal_description", ""),
+                                getattr(te, "user_name", ""),
+                            }
+                        ),
+                        None,
+                    )
+                    if not te:
+                        continue
+                    result = float(getattr(te, "validation_result", 0.0) or 0.0)
+                    target = float(getattr(te, "validation_target", 0.0) or 0.0)
+                    acceptance = float(getattr(te, "acceptance_rate", 0.0) or 0.0)
+                    entries.append((result, target, acceptance))
+        return entries
+
+    def compute_confusion_for_odd(self, odd_name: str):
+        """Compute confusion matrix counts and metrics for an ODD element."""
+        from analysis.confusion_matrix import counts_from_validation, compute_metrics
+
+        entries = self._validation_entries_for_odd(odd_name)
+        counts = counts_from_validation(entries)
+        metrics = compute_metrics(
+            counts.get("tp", 0.0),
+            counts.get("fp", 0.0),
+            counts.get("tn", 0.0),
+            counts.get("fn", 0.0),
+        )
+        return counts, metrics
+
 
     def get_all_function_names(self):
         """Return unique function names from HAZOP entries."""
@@ -12204,7 +12281,7 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Rate:").grid(row=5, column=0, sticky="e")
+                ttk.Label(master, text="Acceptance Rate (1/h):").grid(row=5, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
                     master,
@@ -12229,7 +12306,7 @@ class FaultTreeApp:
                 self.psc_var = tk.StringVar(value=str(sev))
                 tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target:").grid(row=9, column=0, sticky="e")
+                ttk.Label(master, text="Validation Target (1/h):").grid(row=9, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
@@ -12328,6 +12405,8 @@ class FaultTreeApp:
                 self.top_events = [t for t in self.top_events if t.unique_id != uid]
                 refresh_tree()
                 self.update_views()
+
+        tree.bind("<Double-1>", lambda e: edit_sg())
 
         btn = ttk.Frame(win)
         btn.pack(fill=tk.X)
@@ -13987,6 +14066,8 @@ class FaultTreeApp:
                     image=self.odd_elem_icon,
                 )
 
+        app = self
+
         class ElementDialog(simpledialog.Dialog):
             def __init__(self, parent, data=None):
                 self.data = data or {"name": ""}
@@ -14004,13 +14085,68 @@ class FaultTreeApp:
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
                 ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
-                self.attr_frame = ttk.Frame(master)
-                self.attr_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+                nb = ttk.Notebook(master)
+                nb.grid(row=1, column=0, columnspan=2, sticky="nsew")
+                master.grid_rowconfigure(1, weight=1)
+                master.grid_columnconfigure(1, weight=1)
+
+                # Attributes tab
+                self.attr_frame = ttk.Frame(nb)
+                nb.add(self.attr_frame, text="Attributes")
                 self.attr_rows = []
                 for k, v in self.data.items():
-                    if k != "name":
+                    if k not in {"name", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
-                ttk.Button(master, text="Add Attribute", command=self.add_attr_row).grid(row=2, column=0, columnspan=2, pady=5)
+                ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=2, pady=5)
+
+                # Confusion matrix tab
+                cm_frame = ttk.Frame(nb)
+                nb.add(cm_frame, text="Confusion Matrix")
+                self.tp_var = tk.DoubleVar()
+                self.fp_var = tk.DoubleVar()
+                self.tn_var = tk.DoubleVar()
+                self.fn_var = tk.DoubleVar()
+
+                matrix = ttk.Frame(cm_frame)
+                matrix.grid(row=0, column=0, pady=5)
+                ttk.Label(matrix, text="TP").grid(row=0, column=0)
+                ttk.Label(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
+                ttk.Label(matrix, text="FN").grid(row=0, column=2)
+                ttk.Label(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
+                ttk.Label(matrix, text="FP").grid(row=1, column=0)
+                ttk.Label(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
+                ttk.Label(matrix, text="TN").grid(row=1, column=2)
+                ttk.Label(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
+
+                metrics_frame = ttk.Frame(cm_frame)
+                metrics_frame.grid(row=1, column=0, sticky="nsew")
+                ttk.Label(metrics_frame, text="Accuracy:").grid(row=0, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="Precision:").grid(row=1, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="Recall:").grid(row=2, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="F1 Score:").grid(row=3, column=0, sticky="e")
+                self.acc_var = tk.StringVar()
+                self.prec_var = tk.StringVar()
+                self.rec_var = tk.StringVar()
+                self.f1_var = tk.StringVar()
+                ttk.Label(metrics_frame, textvariable=self.acc_var).grid(row=0, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.prec_var).grid(row=1, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.rec_var).grid(row=2, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
+
+                def refresh_confusion(*_):
+                    counts, metrics = app.compute_confusion_for_odd(self.name_var.get())
+                    self.tp_var.set(counts.get("tp", 0.0))
+                    self.fp_var.set(counts.get("fp", 0.0))
+                    self.tn_var.set(counts.get("tn", 0.0))
+                    self.fn_var.set(counts.get("fn", 0.0))
+                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
+                    self.prec_var.set(f"{metrics['precision']:.3f}")
+                    self.rec_var.set(f"{metrics['recall']:.3f}")
+                    self.f1_var.set(f"{metrics['f1']:.3f}")
+
+                self.name_var.trace_add("write", refresh_confusion)
+                refresh_confusion()
 
             def apply(self):
                 new_data = {"name": self.name_var.get()}
@@ -14018,6 +14154,9 @@ class FaultTreeApp:
                     key = k_var.get().strip()
                     if key:
                         new_data[key] = v_var.get()
+                counts, metrics = app.compute_confusion_for_odd(self.name_var.get())
+                new_data.update(counts)
+                new_data.update(metrics)
                 self.data = new_data
 
         def add_lib():
@@ -14875,7 +15014,11 @@ class FaultTreeApp:
                 for doc in self.stpa_docs
             ],
             "threat_docs": [
-                {"name": doc.name, "entries": [asdict(e) for e in doc.entries]}
+                {
+                    "name": doc.name,
+                    "diagram": doc.diagram,
+                    "entries": [asdict(e) for e in doc.entries],
+                }
                 for doc in self.threat_docs
             ],
             "fi2tc_docs": [
@@ -15193,7 +15336,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
@@ -15666,7 +15813,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []

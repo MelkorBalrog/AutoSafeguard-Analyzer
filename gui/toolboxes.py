@@ -2092,6 +2092,7 @@ class RiskAssessmentWindow(tk.Frame):
             width = 200 if c == "hazard" else 120
             self.tree.column(c, width=width)
         self.tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
         table_frame.columnconfigure(0, weight=1)
@@ -2178,12 +2179,12 @@ class RiskAssessmentWindow(tk.Frame):
             ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
             self.name_var = tk.StringVar()
             ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
-            ttk.Label(master, text="HAZOPs").grid(row=1, column=0, sticky="ne")
+            ttk.Label(master, text="HAZOPs").grid(row=1, column=0, sticky="e")
             names = [d.name for d in self.app.hazop_docs]
-            self.hazop_lb = tk.Listbox(master, selectmode="extended", height=5)
-            for n in names:
-                self.hazop_lb.insert(tk.END, n)
-            self.hazop_lb.grid(row=1, column=1)
+            self.hazop_var = tk.StringVar()
+            ttk.Combobox(
+                master, textvariable=self.hazop_var, values=names, state="readonly"
+            ).grid(row=1, column=1)
             ttk.Label(master, text="STPA").grid(row=2, column=0, sticky="e")
             stpas = [d.name for d in self.app.stpa_docs]
             self.stpa_var = tk.StringVar()
@@ -2198,7 +2199,8 @@ class RiskAssessmentWindow(tk.Frame):
             ).grid(row=3, column=1)
 
         def apply(self):
-            sel = [self.hazop_lb.get(i) for i in self.hazop_lb.curselection()]
+            hazop = self.hazop_var.get()
+            sel = [hazop] if hazop else []
             self.result = (
                 self.name_var.get(),
                 sel,
