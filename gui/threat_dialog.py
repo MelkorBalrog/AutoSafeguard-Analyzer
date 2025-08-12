@@ -24,10 +24,8 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def body(self, master):
-        master.columnconfigure(0, weight=1)
-        master.rowconfigure(0, weight=1)
         nb = ttk.Notebook(master)
-        nb.grid(row=0, column=0, sticky="nsew")
+        nb.pack(fill=tk.BOTH, expand=True)
 
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
@@ -85,8 +83,8 @@ class ThreatDialog(simpledialog.Dialog):
         )
         self.ds_tree.heading("scenario", text="Damage Scenario")
         self.ds_tree.heading("type", text="Type")
-        self.ds_tree.column("scenario", width=250, stretch=True)
-        self.ds_tree.column("type", width=100, stretch=True)
+        self.ds_tree.column("scenario", width=560, stretch=True)
+        self.ds_tree.column("type", width=120, stretch=True)
         self.ds_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         ds_scroll = ttk.Scrollbar(ds_frame, orient="vertical", command=self.ds_tree.yview)
         self.ds_tree.configure(yscrollcommand=ds_scroll.set)
@@ -142,8 +140,8 @@ class ThreatDialog(simpledialog.Dialog):
         )
         self.threat_tree.heading("stride", text="STRIDE")
         self.threat_tree.heading("scenario", text="Threat Scenario")
-        self.threat_tree.column("stride", width=100, stretch=True)
-        self.threat_tree.column("scenario", width=250, stretch=True)
+        self.threat_tree.column("stride", width=120, stretch=True)
+        self.threat_tree.column("scenario", width=560, stretch=True)
         self.threat_tree.bind("<<TreeviewSelect>>", self.on_threat_select)
         self.threat_tree.grid(row=0, column=0, sticky="nsew")
         tscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.threat_tree.yview)
@@ -158,7 +156,7 @@ class ThreatDialog(simpledialog.Dialog):
             style="Threat.Paths.Treeview",
         )
         self.path_tree.heading("path", text="Attack Path")
-        self.path_tree.column("path", width=350, stretch=True)
+        self.path_tree.column("path", width=680, stretch=True)
         self.path_tree.grid(row=1, column=0, sticky="nsew")
         pscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.path_tree.yview)
         self.path_tree.configure(yscrollcommand=pscroll.set)
@@ -226,7 +224,7 @@ class ThreatDialog(simpledialog.Dialog):
 
         self.refresh_ds()
         self.geometry("700x500")
-        self.resizable(True, True)
+        self.resizable(False, False)
         return nb
 
     # ------------------------------------------------------------------
@@ -263,8 +261,10 @@ class ThreatDialog(simpledialog.Dialog):
             self.entry.functions.append(FunctionThreat(func))
             self.func_list.insert(tk.END, func)
             self.func_list.selection_clear(0, tk.END)
-            self.func_list.selection_set(tk.END)
-            self.func_list.event_generate("<<ListboxSelect>>")
+            last = self.func_list.size() - 1
+            if last >= 0:
+                self.func_list.selection_set(last)
+                self.func_list.event_generate("<<ListboxSelect>>")
         self.func_var.set("")
 
     def remove_function(self):

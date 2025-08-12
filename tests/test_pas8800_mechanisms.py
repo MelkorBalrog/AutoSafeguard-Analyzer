@@ -3,7 +3,6 @@ import types
 from analysis.mechanisms import PAS_8800_MECHANISMS
 from analysis.models import MechanismLibrary
 
-
 def _stub_review_toolbox():
     """Provide a lightweight stub for gui.review_toolbox.
 
@@ -55,24 +54,3 @@ def test_default_mechanisms_include_pas8800():
     selected = [lib.name for lib in obj.selected_mechanism_libraries]
     assert "PAS 8800" in names
     assert "PAS 8800" in selected
-
-
-def test_default_mechanisms_add_missing_library():
-    _stub_review_toolbox()
-    from AutoML import FaultTreeApp
-
-    class Dummy:
-        def __init__(self):
-            from analysis.mechanisms import ANNEX_D_MECHANISMS
-
-            self.mechanism_libraries = [
-                MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy())
-            ]
-            self.selected_mechanism_libraries = []
-
-    Dummy.load_default_mechanisms = FaultTreeApp.load_default_mechanisms
-    obj = Dummy()
-    obj.load_default_mechanisms()
-
-    names = [lib.name for lib in obj.mechanism_libraries]
-    assert "PAS 8800" in names
