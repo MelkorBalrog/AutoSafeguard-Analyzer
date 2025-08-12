@@ -452,6 +452,62 @@ scenarios, attack paths and damage assessments. Each `CyberRiskEntry`
 computes impact, risk level and CAL while linked `CybersecurityGoal`
 collections store the highest resulting CAL to support ISO 21434 compliance.
 
+The diagram below shows how a threat analysis links to its cybersecurity risk
+assessment and resulting goal. Each risk entry records the attack vector,
+feasibility and four impact categories before deriving the overall impact,
+resulting risk level and Cybersecurity Assurance Level (CAL).
+
+```mermaid
+classDiagram
+    class ThreatDoc {
+        name
+        diagram
+    }
+    class ThreatEntry {
+        asset
+    }
+    class FunctionThreat {
+        name
+    }
+    class DamageScenario {
+        scenario
+        dtype
+    }
+    class ThreatScenario {
+        stride
+        scenario
+    }
+    class AttackPath {
+        description
+    }
+    class CyberRiskEntry {
+        damage_scenario
+        threat_scenario
+        attack_vector
+        feasibility
+        financial_impact
+        safety_impact
+        operational_impact
+        privacy_impact
+        overall_impact
+        risk_level
+        cal
+    }
+    class CybersecurityGoal {
+        goal_id
+        description
+        cal
+    }
+    ThreatDoc --> "*" ThreatEntry
+    ThreatEntry --> "*" FunctionThreat
+    FunctionThreat --> "*" DamageScenario
+    DamageScenario --> "*" ThreatScenario
+    ThreatScenario --> "*" AttackPath
+    CyberRiskEntry --> ThreatScenario : threatScenario
+    CyberRiskEntry --> DamageScenario : damageScenario
+    CybersecurityGoal --> "*" CyberRiskEntry : riskAssessments
+```
+
 #### Analysis Relationships
 
 The diagram below shows how reliability calculations flow into FMEDA tables and fault trees.
@@ -630,6 +686,23 @@ the names or IDs of the analyses being evaluated.
   road features or environmental limits.
 - **ReviewData** – stores peer or joint review sessions with moderators,
   participants, review comments and lists of referenced analyses.
+- **ThreatDoc** – container for a threat analysis document with a `name`,
+  reference `diagram` and `entries` describing assets and functions.
+- **ThreatEntry** – links an `asset` to the affected system `functions` for
+  further analysis.
+- **FunctionThreat** – associates a function `name` with possible
+  `damage_scenarios`.
+- **DamageScenario** – potential damage `scenario` and type `dtype` that groups
+  related threat scenarios.
+- **ThreatScenario** – STRIDE-based `stride` category, textual `scenario` and
+  optional attack paths.
+- **AttackPath** – description of a single attack path that could realize the
+  threat.
+- **CyberRiskEntry** – risk assessment values for a threat scenario including
+  `attack_vector`, `feasibility`, impact ratings, derived `overall_impact`,
+  `risk_level` and resulting `cal`.
+- **CybersecurityGoal** – textual goal `description`, `goal_id` and computed
+  highest `cal` across linked risk assessments.
 
 ### Extended AutoML Element Attributes
 
@@ -1178,7 +1251,13 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 ### Safety Performance Indicators
 
-The **Safety Performance Indicators** tool in the Safety Management tab lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
+The **Safety Performance Indicators** tool in the Safety Management tab
+aggregates each product goal's validation target and acceptance criteria with
+its safety and AI metrics. Safety metrics such as SPFM, LPFM and DC, along with
+AI-specific measures like false-negative or precision rates, can be compared
+against the planned validation targets. This view highlights how acceptance
+criteria translate into measurable indicators and whether current performance
+meets the required safety objectives.
 
 ### Safety Management Toolbox
 
@@ -1227,6 +1306,11 @@ industry practice:
 
 Projects with empirical data may substitute more precise values, but these
 approximations provide a justified starting point when none are available.
+
+These acceptance criteria and validation targets form the baseline for Safety
+Performance Indicators. Observed safety or AI metrics are traced back to these
+targets so stakeholders can validate whether the established acceptance
+criteria are met throughout development and testing.
 
 ## Email Setup
 
