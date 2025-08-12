@@ -97,6 +97,37 @@ class SafetyManagementToolbox:
         repo = SysMLRepository.get_instance()
         repo.delete_diagram(diag_id)
 
+    def rename_diagram(self, old: str, new: str) -> None:
+        """Rename a managed diagram ensuring the name remains unique.
+
+        Parameters
+        ----------
+        old: str
+            Current diagram name.
+        new: str
+            Desired new name for the diagram.
+        """
+        diag_id = self.diagrams.get(old)
+        if not diag_id or not new:
+            return
+        repo = SysMLRepository.get_instance()
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
+            return
+
+        # Ensure the new name is unique across all diagrams
+        existing = {d.name for d in repo.diagrams.values() if d.diag_id != diag_id}
+        base = new
+        suffix = 1
+        while new in existing:
+            new = f"{base}_{suffix}"
+            suffix += 1
+
+        diag.name = new
+        repo.touch_diagram(diag_id)
+        del self.diagrams[old]
+        self.diagrams[new] = diag_id
+
     def list_diagrams(self) -> List[str]:
         """Return the names of all managed diagrams."""
         return list(self.diagrams.keys())
