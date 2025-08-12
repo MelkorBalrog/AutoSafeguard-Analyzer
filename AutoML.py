@@ -12888,6 +12888,31 @@ class FaultTreeApp:
                 y_path += 2
             y_item += 4
 
+        y_thr = y_fm
+        for threat, paths in sorted(row.get("threats", {}).items()):
+            thr_y = y_thr * 4
+            pos[f"thr:{threat}"] = (8, thr_y)
+            y_ap = thr_y
+            for path in sorted(paths):
+                pos[f"ap:{path}"] = (12, y_ap)
+                y_ap += 2
+            y_thr += 1
+
+        # Drop any nodes that were never connected by an edge.  Occasionally
+        # stale placeholders like a lone "threat" label can slip into the node
+        # or position dictionaries; filtering them out keeps the diagram clean
+        # and avoids drawing disconnected white boxes.
+        used_nodes: set[str] = set()
+        for u, v in edges:
+            used_nodes.add(u)
+            used_nodes.add(v)
+        for key in list(nodes.keys()):
+            if key not in used_nodes:
+                nodes.pop(key, None)
+        for key in list(pos.keys()):
+            if key not in used_nodes:
+                pos.pop(key, None)
+
         min_x = min(x for x, _ in pos.values())
         min_y = min(y for _, y in pos.values())
         if min_x < 0 or min_y < 0:
