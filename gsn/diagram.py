@@ -37,47 +37,69 @@ class GSNDiagram:
         yield from rec(self.root)
 
     # ------------------------------------------------------------------
-    def draw(self, canvas) -> None:  # pragma: no cover - requires tkinter
+    def draw(self, canvas, zoom: float = 1.0) -> None:  # pragma: no cover - requires tkinter
         """Render the diagram on a :class:`tkinter.Canvas` instance."""
         # draw connectors first so they appear behind nodes
         for parent in self._traverse():
             for child in parent.children:
+                p_pt = (parent.x * zoom, parent.y * zoom)
+                c_pt = (child.x * zoom, child.y * zoom)
                 if child.node_type in {"Context", "Assumption", "Justification"}:
                     self.drawing_helper.draw_in_context_connection(
-                        canvas, (parent.x, parent.y), (child.x, child.y)
+                        canvas, p_pt, c_pt
                     )
                 else:
                     self.drawing_helper.draw_solved_by_connection(
-                        canvas, (parent.x, parent.y), (child.x, child.y)
+                        canvas, p_pt, c_pt
                     )
         for node in self._traverse():
-            self._draw_node(canvas, node)
+            self._draw_node(canvas, node, zoom)
 
     # ------------------------------------------------------------------
-    def _draw_node(self, canvas, node: GSNNode) -> None:  # pragma: no cover - requires tkinter
-        x, y = node.x, node.y
-        scale = 40
+    def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
+        x, y = node.x * zoom, node.y * zoom
+        scale = 40 * zoom
         typ = node.node_type.lower()
         if typ == "solution":
             if node.is_primary_instance:
-                self.drawing_helper.draw_solution_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_solution_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )
             else:
-                self.drawing_helper.draw_away_solution_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_away_solution_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )
         elif typ == "goal":
             if node.is_primary_instance:
-                self.drawing_helper.draw_goal_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_goal_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )
             else:
-                self.drawing_helper.draw_away_goal_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_away_goal_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )
         elif typ == "strategy":
-            self.drawing_helper.draw_strategy_shape(canvas, x, y, scale)
+            self.drawing_helper.draw_strategy_shape(
+                canvas, x, y, scale, obj_id=node.unique_id
+            )
         elif typ == "assumption":
-            self.drawing_helper.draw_assumption_shape(canvas, x, y, scale)
+            self.drawing_helper.draw_assumption_shape(
+                canvas, x, y, scale, obj_id=node.unique_id
+            )
         elif typ == "justification":
-            self.drawing_helper.draw_justification_shape(canvas, x, y, scale)
+            self.drawing_helper.draw_justification_shape(
+                canvas, x, y, scale, obj_id=node.unique_id
+            )
         elif typ == "context":
-            self.drawing_helper.draw_context_shape(canvas, x, y, scale)
+            self.drawing_helper.draw_context_shape(
+                canvas, x, y, scale, obj_id=node.unique_id
+            )
         elif typ == "module":
             if node.is_primary_instance:
-                self.drawing_helper.draw_goal_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_goal_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )
             else:
-                self.drawing_helper.draw_away_module_shape(canvas, x, y, scale)
+                self.drawing_helper.draw_away_module_shape(
+                    canvas, x, y, scale, obj_id=node.unique_id
+                )

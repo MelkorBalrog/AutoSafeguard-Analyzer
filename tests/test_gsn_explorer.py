@@ -51,6 +51,7 @@ def test_gsn_explorer_populates_modules_and_diagrams():
     assert "Pkg" in texts
     assert "Root" in texts
 
+
 def test_new_diagram_only_in_module(monkeypatch):
     mod = GSNModule("Pkg")
     explorer = GSNExplorer.__new__(GSNExplorer)
