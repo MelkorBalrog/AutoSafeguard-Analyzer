@@ -140,6 +140,16 @@ class HaraEntry:
     exp_rationale: str
     asil: str
     safety_goal: str
+    damage_scenario: str = ""
+    impact_financial: str = ""
+    impact_safety: str = ""
+    impact_operational: str = ""
+    impact_privacy: str = ""
+    impact_overall: str = ""
+    attack_vector: str = ""
+    attack_feasibility: str = ""
+    risk_level: str = ""
+    cybersecurity_goal: str = ""
 
 @dataclass
 class HazopDoc:
@@ -156,6 +166,17 @@ class HaraDoc:
     entries: list
     approved: bool = False
     status: str = "draft"
+    stpas: list = field(default_factory=list)
+    threats: list = field(default_factory=list)
+    meta: Metadata = field(default_factory=Metadata)
+
+
+@dataclass
+class ThreatDoc:
+    """Container for a Threat Analysis document."""
+    name: str
+    damage_scenarios: list = field(default_factory=list)
+    threat_scenarios: dict = field(default_factory=dict)
     meta: Metadata = field(default_factory=Metadata)
 
 @dataclass
@@ -245,6 +266,52 @@ class MechanismLibrary:
     name: str
     mechanisms: list = field(default_factory=list)
 
+
+# --- Cybersecurity risk assessment helpers ---------------------------------
+
+IMPACT_LEVELS = ["Negligible", "Moderate", "Major", "Severe"]
+IMPACT_ORDER = {name: idx for idx, name in enumerate(IMPACT_LEVELS)}
+ATTACK_FEASIBILITY = ["Low", "Medium", "High"]
+
+# Simple risk matrix indexed by overall impact then attack feasibility
+CYBER_RISK_MATRIX = {
+    "Negligible": {"Low": "Low", "Medium": "Low", "High": "Medium"},
+    "Moderate": {"Low": "Low", "Medium": "Medium", "High": "High"},
+    "Major": {"Low": "Medium", "Medium": "High", "High": "Critical"},
+    "Severe": {"Low": "High", "Medium": "Critical", "High": "Critical"},
+}
+
+
+def compute_overall_impact(financial: str, safety: str, operational: str, privacy: str) -> str:
+    """Return the maximum impact level among the provided categories."""
+    levels = [financial, safety, operational, privacy]
+    max_level = max(levels, key=lambda v: IMPACT_ORDER.get(v, 0))
+    return max_level
+
+
+def compute_cyber_risk_level(overall: str, feasibility: str) -> str:
+    """Look up the risk level from the CYBER_RISK_MATRIX."""
+    return CYBER_RISK_MATRIX.get(overall, {}).get(feasibility, "Low")
+
+
+def merge_malfunctions(hazop_docs, stpa_docs, hazop_names, stpa_names):
+    """Merge malfunctions from selected HAZOPs and unsafe control actions from STPAs."""
+    malfs = set()
+    for hz_name in hazop_names:
+        doc = next((d for d in hazop_docs if d.name == hz_name), None)
+        if doc:
+            for e in doc.entries:
+                if getattr(e, "safety", False):
+                    malfs.add(e.malfunction)
+    for st_name in stpa_names:
+        doc = next((d for d in stpa_docs if d.name == st_name), None)
+        if doc:
+            for e in doc.entries:
+                for field in ("not_providing", "providing", "incorrect_timing", "stopped_too_soon"):
+                    val = getattr(e, field, "")
+                    if val:
+                        malfs.add(val)
+    return sorted(malfs)
 
 @dataclass
 class CybersecurityGoal:

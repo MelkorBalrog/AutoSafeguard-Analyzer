@@ -742,8 +742,8 @@ class ReviewToolbox(tk.Frame):
                 self.app.update_hara_statuses()
                 self.app.update_fta_statuses()
                 self.app.update_requirement_statuses()
-                if hasattr(self.app, "_hara_window") and self.app._hara_window.winfo_exists():
-                    self.app._hara_window.refresh_docs()
+                if hasattr(self.app, "_risk_window") and self.app._risk_window.winfo_exists():
+                    self.app._risk_window.refresh_docs()
                 self.refresh_reviews()
         else:
             approvers = [p for p in r.participants if p.role == 'approver']
@@ -762,8 +762,8 @@ class ReviewToolbox(tk.Frame):
                 if not was_closed and r.closed:
                     self.app.ensure_asil_consistency()
                     self.app.update_base_event_requirement_asil()
-                if hasattr(self.app, "_hara_window") and self.app._hara_window.winfo_exists():
-                    self.app._hara_window.refresh_docs()
+                if hasattr(self.app, "_risk_window") and self.app._risk_window.winfo_exists():
+                    self.app._risk_window.refresh_docs()
                 self.refresh_reviews()
 
     def refresh_targets(self):
