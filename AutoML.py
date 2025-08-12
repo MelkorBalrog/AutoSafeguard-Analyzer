@@ -241,6 +241,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from gui.safety_management_toolbox import SafetyManagementToolbox
 from dataclasses import asdict
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -2351,6 +2352,7 @@ class FaultTreeApp:
             "Product Goals Export": self.export_product_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
+            "Safety Management": self.open_safety_management_toolbox,
         }
 
         self.tool_categories = {
@@ -2402,6 +2404,9 @@ class FaultTreeApp:
                 "Faults Editor",
                 "Cause & Effect Chain",
                 "Fault Prioritization",
+            ],
+            "Safety Management": [
+                "Safety Management",
             ],
         }
 
