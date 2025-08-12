@@ -1,6 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from dataclasses import dataclass, field
 import datetime
+from typing import Optional
 from analysis.user_config import CURRENT_USER_NAME, CURRENT_USER_EMAIL
 
 
@@ -140,6 +141,7 @@ class HaraEntry:
     exp_rationale: str
     asil: str
     safety_goal: str
+    cyber: Optional["CyberRiskEntry"] = None
 
 @dataclass
 class HazopDoc:
@@ -279,6 +281,91 @@ class ThreatDoc:
     name: str
     entries: list[ThreatEntry]
     meta: Metadata = field(default_factory=Metadata)
+
+
+# ---------------------------------------------------------------------------
+# Cybersecurity Risk Assessment
+# ---------------------------------------------------------------------------
+IMPACT_LEVELS = ["Negligible", "Moderate", "Major", "Severe"]
+
+# Mapping of feasibility and impact severity to overall risk level
+RISK_LEVEL_TABLE = {
+    "High": {
+        "Severe": "High",
+        "Major": "High",
+        "Moderate": "Medium",
+        "Negligible": "Low",
+    },
+    "Medium": {
+        "Severe": "High",
+        "Major": "Medium",
+        "Moderate": "Low",
+        "Negligible": "Low",
+    },
+    "Low": {
+        "Severe": "Medium",
+        "Major": "Low",
+        "Moderate": "Low",
+        "Negligible": "Low",
+    },
+}
+
+# Mapping of impact severity and attack vector to Cybersecurity Assurance Level
+CAL_TABLE = {
+    "Physical-Local": {"Severe": "CAL2", "Major": "CAL1", "Moderate": "CAL1"},
+    "Adjacent Network": {"Severe": "CAL3", "Major": "CAL2", "Moderate": "CAL1"},
+    "Network-Remote": {"Severe": "CAL4", "Major": "CAL3", "Moderate": "CAL2"},
+}
+
+
+@dataclass
+class CyberRiskEntry:
+    """Store cybersecurity risk assessment values for a threat scenario."""
+
+    damage_scenario: str
+    threat_scenario: str
+    attack_vector: str
+    feasibility: str
+    financial_impact: str
+    safety_impact: str
+    operational_impact: str
+    privacy_impact: str
+    cybersecurity_goal: str = ""
+    attack_paths: list = field(default_factory=list)
+    overall_impact: str = field(init=False)
+    risk_level: str = field(init=False)
+    cal: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.overall_impact = self.compute_overall_impact()
+        self.risk_level = self.compute_risk_level()
+        self.cal = self.compute_cal()
+
+    def compute_overall_impact(self) -> str:
+        """Return the highest impact among all impact categories."""
+        order = {name: idx for idx, name in enumerate(IMPACT_LEVELS)}
+        impacts = [
+            self.financial_impact,
+            self.safety_impact,
+            self.operational_impact,
+            self.privacy_impact,
+        ]
+        return max(impacts, key=lambda x: order.get(x, 0))
+
+    def compute_risk_level(self) -> str:
+        """Compute overall risk level from feasibility and impact severity."""
+        table = RISK_LEVEL_TABLE.get(self.feasibility, {})
+        return table.get(self.overall_impact, "")
+
+    def compute_cal(self) -> str:
+        """Determine CAL from overall impact and attack vector."""
+        if self.attack_vector in ("Physical", "Local"):
+            col = "Physical-Local"
+        elif self.attack_vector == "Adjacent":
+            col = "Adjacent Network"
+        else:
+            col = "Network-Remote"
+        return CAL_TABLE.get(col, {}).get(self.overall_impact, "")
 
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {
