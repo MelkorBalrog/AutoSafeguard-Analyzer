@@ -12329,6 +12329,8 @@ class FaultTreeApp:
                 refresh_tree()
                 self.update_views()
 
+        tree.bind("<Double-1>", lambda e: edit_sg())
+
         btn = ttk.Frame(win)
         btn.pack(fill=tk.X)
         ttk.Button(btn, text="Add", command=add_sg).pack(side=tk.LEFT)
