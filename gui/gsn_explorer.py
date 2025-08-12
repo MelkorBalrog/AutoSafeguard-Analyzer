@@ -57,6 +57,10 @@ class GSNExplorer(tk.Frame):
         ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
         self.tree.bind("<Double-1>", self._on_double_click)
+        # drag and drop support
+        self.drag_item: str | None = None
+        self.tree.bind("<ButtonPress-1>", self._on_drag_start)
+        self.tree.bind("<ButtonRelease-1>", self._on_drag_end)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -196,6 +200,104 @@ class GSNExplorer(tk.Frame):
                 return obj
             parent = self.tree.parent(parent)
         return None
+
+    # ------------------------------------------------------------------
+    def _on_drag_start(self, event):
+        """Record the item being dragged."""
+        self.drag_item = self.tree.identify_row(event.y)
+
+    # ------------------------------------------------------------------
+    def _on_drag_end(self, event):
+        """Handle dropping of an item onto a new parent."""
+        if not self.app or not self.drag_item:
+            self.drag_item = None
+            return
+        target = self.tree.identify_row(event.y)
+        if target == self.drag_item:
+            self.drag_item = None
+            return
+        drag_type, drag_obj = self.item_map.get(self.drag_item, (None, None))
+        if drag_type not in ("diagram", "module"):
+            self.drag_item = None
+            return
+        parent_module = None
+        if target:
+            target_type, target_obj = self.item_map.get(target, (None, None))
+            if target_type == "module":
+                parent_module = target_obj
+            else:
+                parent_module = self._find_parent_module(target)
+        if drag_type == "diagram":
+            if parent_module is None:
+                self._move_diagram_to_root(drag_obj)
+            else:
+                self._move_diagram_to_module(drag_obj, parent_module)
+        elif drag_type == "module":
+            if parent_module is None:
+                self._move_module_to_root(drag_obj)
+            elif not self._is_descendant_module(drag_obj, parent_module):
+                self._move_module_to_module(drag_obj, parent_module)
+        self.drag_item = None
+        self.populate()
+
+    # ------------------------------------------------------------------
+    def _remove_diagram_from_all_modules(self, diag: GSNDiagram, modules=None):
+        modules = modules or getattr(self.app, "gsn_modules", [])
+        for mod in modules:
+            if diag in mod.diagrams:
+                mod.diagrams.remove(diag)
+                return True
+            if self._remove_diagram_from_all_modules(diag, mod.modules):
+                return True
+        return False
+
+    # ------------------------------------------------------------------
+    def _remove_module_from_parent(self, module: GSNModule, modules=None):
+        modules = modules or getattr(self.app, "gsn_modules", [])
+        for mod in modules:
+            if module in mod.modules:
+                mod.modules.remove(module)
+                return True
+            if self._remove_module_from_parent(module, mod.modules):
+                return True
+        return False
+
+    # ------------------------------------------------------------------
+    def _move_diagram_to_module(self, diag: GSNDiagram, module: GSNModule):
+        if diag in getattr(self.app, "gsn_diagrams", []):
+            self.app.gsn_diagrams.remove(diag)
+        else:
+            self._remove_diagram_from_all_modules(diag)
+        module.diagrams.append(diag)
+
+    # ------------------------------------------------------------------
+    def _move_diagram_to_root(self, diag: GSNDiagram):
+        if diag not in getattr(self.app, "gsn_diagrams", []):
+            self._remove_diagram_from_all_modules(diag)
+            self.app.gsn_diagrams.append(diag)
+
+    # ------------------------------------------------------------------
+    def _move_module_to_module(self, module: GSNModule, parent: GSNModule):
+        if module in getattr(self.app, "gsn_modules", []):
+            self.app.gsn_modules.remove(module)
+        else:
+            self._remove_module_from_parent(module)
+        parent.modules.append(module)
+
+    # ------------------------------------------------------------------
+    def _move_module_to_root(self, module: GSNModule):
+        if module not in getattr(self.app, "gsn_modules", []):
+            self._remove_module_from_parent(module)
+            self.app.gsn_modules.append(module)
+
+    # ------------------------------------------------------------------
+    def _is_descendant_module(self, module: GSNModule, potential_parent: GSNModule):
+        if module is potential_parent:
+            return True
+        for sub in module.modules:
+            if self._is_descendant_module(sub, potential_parent):
+                return True
+        return False
 
     # ------------------------------------------------------------------
     def _on_double_click(self, _event):

@@ -151,3 +151,121 @@ def test_open_item_delegates_to_app(monkeypatch):
     GSNExplorer.open_item(explorer)
 
     assert explorer.app.opened is diag
+
+
+def test_drag_diagram_into_module():
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    mod = GSNModule("Pkg")
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+            self.item_for_y = {}
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+        def identify_row(self, y):
+            return self.item_for_y.get(y, "")
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[mod], gsn_diagrams=[diag])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is diag:
+            diag_id = iid
+        elif obj is mod:
+            mod_id = iid
+    explorer.tree.item_for_y[0] = diag_id
+    explorer.tree.item_for_y[1] = mod_id
+
+    explorer._on_drag_start(types.SimpleNamespace(y=0))
+    explorer._on_drag_end(types.SimpleNamespace(y=1))
+
+    assert diag in mod.diagrams
+    assert diag not in explorer.app.gsn_diagrams
+
+
+def test_drag_diagram_to_root():
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    mod = GSNModule("Pkg")
+    mod.diagrams.append(diag)
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+            self.item_for_y = {}
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+        def identify_row(self, y):
+            return self.item_for_y.get(y, "")
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[mod], gsn_diagrams=[])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is diag:
+            diag_id = iid
+    explorer.tree.item_for_y[0] = diag_id
+
+    explorer._on_drag_start(types.SimpleNamespace(y=0))
+    explorer._on_drag_end(types.SimpleNamespace(y=42))
+
+    assert diag not in mod.diagrams
+    assert diag in explorer.app.gsn_diagrams
