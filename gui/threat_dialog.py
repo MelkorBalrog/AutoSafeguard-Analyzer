@@ -59,18 +59,33 @@ class ThreatDialog(simpledialog.Dialog):
             state="readonly",
         )
         self.func_cb.grid(row=0, column=1, sticky="ew", padx=2)
-        ttk.Button(func_frame, text="Add", command=self.add_function).grid(row=0, column=2, padx=2)
+        ttk.Button(func_frame, text="Add", command=self.add_function).grid(
+            row=0, column=2, padx=2
+        )
 
-        self.func_list = tk.Listbox(asset_tab)
-        self.func_list.grid(row=2, column=0, sticky="nsew", padx=2)
-        self.func_list.bind("<<ListboxSelect>>", self.on_func_select)
+        configure_table_style("Threat.Functions.Treeview")
+        self.func_tree = ttk.Treeview(
+            asset_tab,
+            columns=("function",),
+            show="headings",
+            style="Threat.Functions.Treeview",
+        )
+        self.func_tree.heading("function", text="Function")
+        self.func_tree.column("function", width=680, stretch=True)
+        self.func_tree.grid(row=2, column=0, sticky="nsew", padx=2)
+        fscroll = ttk.Scrollbar(asset_tab, orient="vertical", command=self.func_tree.yview)
+        self.func_tree.configure(yscrollcommand=fscroll.set)
+        fscroll.grid(row=2, column=1, sticky="ns")
+        self.func_tree.bind("<<TreeviewSelect>>", self.on_func_select)
         ttk.Button(asset_tab, text="Remove Function", command=self.remove_function).grid(
             row=3, column=0, sticky="w", padx=2, pady=2
         )
         for fn in self.entry.functions:
-            self.func_list.insert(tk.END, fn.name)
+            self.func_tree.insert("", tk.END, values=(fn.name,))
         if self.entry.functions:
-            self.func_list.selection_set(0)
+            first = self.func_tree.get_children()[0]
+            self.func_tree.selection_set(first)
+            self.func_tree.focus(first)
 
         ds_frame = ttk.Frame(asset_tab)
         ds_frame.grid(row=4, column=0, sticky="nsew")
@@ -255,23 +270,26 @@ class ThreatDialog(simpledialog.Dialog):
     # ------------------------------------------------------------------
     # Function helpers
     # ------------------------------------------------------------------
+    def _selected_func_idx(self):
+        sel = self.func_tree.selection()
+        return self.func_tree.index(sel[0]) if sel else None
+
     def add_function(self):
         func = self.func_var.get()
-        if func and func not in self.func_list.get(0, tk.END):
+        existing = [self.func_tree.item(iid, "values")[0] for iid in self.func_tree.get_children()]
+        if func and func not in existing:
             self.entry.functions.append(FunctionThreat(func))
-            self.func_list.insert(tk.END, func)
-            self.func_list.selection_clear(0, tk.END)
-            last = self.func_list.size() - 1
-            if last >= 0:
-                self.func_list.selection_set(last)
-                self.func_list.event_generate("<<ListboxSelect>>")
+            item = self.func_tree.insert("", tk.END, values=(func,))
+            self.func_tree.selection_set(item)
+            self.func_tree.focus(item)
+            self.on_func_select()
         self.func_var.set("")
 
     def remove_function(self):
-        sel = self.func_list.curselection()
+        sel = self.func_tree.selection()
         if sel:
-            idx = sel[0]
-            self.func_list.delete(idx)
+            idx = self.func_tree.index(sel[0])
+            self.func_tree.delete(sel[0])
             del self.entry.functions[idx]
             self.refresh_ds()
 
@@ -280,10 +298,10 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def on_ds_select(self, *_):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         sel = self.ds_tree.selection()
-        if func_sel and sel:
-            func = self.entry.functions[func_sel[0]]
+        if func_idx is not None and sel:
+            func = self.entry.functions[func_idx]
             ds = func.damage_scenarios[int(sel[0])]
             self.ds_scenario_var.set(ds.scenario)
             self.ds_type_var.set(ds.dtype)
@@ -293,11 +311,11 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_threats()
 
     def on_threat_select(self, *_):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         sel = self.threat_tree.selection()
-        if func_sel and ds_sel and sel:
-            func = self.entry.functions[func_sel[0]]
+        if func_idx is not None and ds_sel and sel:
+            func = self.entry.functions[func_idx]
             ds = func.damage_scenarios[int(ds_sel[0])]
             ts = ds.threats[int(sel[0])]
             self.threat_stride_var.set(ts.stride)
@@ -308,12 +326,12 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_paths()
 
     def on_path_select(self, *_):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
         ap_sel = self.path_tree.selection()
-        if func_sel and ds_sel and ts_sel and ap_sel:
-            func = self.entry.functions[func_sel[0]]
+        if func_idx is not None and ds_sel and ts_sel and ap_sel:
+            func = self.entry.functions[func_idx]
             ds = func.damage_scenarios[int(ds_sel[0])]
             ts = ds.threats[int(ts_sel[0])]
             ap = ts.attack_paths[int(ap_sel[0])]
@@ -323,11 +341,11 @@ class ThreatDialog(simpledialog.Dialog):
 
     def refresh_ds(self):
         self.ds_tree.delete(*self.ds_tree.get_children())
-        func_sel = self.func_list.curselection()
-        if not func_sel:
+        func_idx = self._selected_func_idx()
+        if func_idx is None:
             self.on_ds_select()
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         for idx, ds in enumerate(func.damage_scenarios):
             self.ds_tree.insert("", "end", iid=str(idx), values=(ds.scenario, ds.dtype))
         self.on_ds_select()
@@ -335,11 +353,11 @@ class ThreatDialog(simpledialog.Dialog):
     def refresh_threats(self):
         self.threat_tree.delete(*self.threat_tree.get_children())
         self.path_tree.delete(*self.path_tree.get_children())
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
-        if not func_sel or not ds_sel:
+        if func_idx is None or not ds_sel:
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         for idx, ts in enumerate(ds.threats):
             self.threat_tree.insert("", "end", iid=str(idx), values=(ts.stride, ts.scenario))
@@ -347,12 +365,12 @@ class ThreatDialog(simpledialog.Dialog):
 
     def refresh_paths(self):
         self.path_tree.delete(*self.path_tree.get_children())
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel:
+        if func_idx is None or not ds_sel or not ts_sel:
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ts = ds.threats[int(ts_sel[0])]
         for idx, ap in enumerate(ts.attack_paths):
@@ -363,8 +381,8 @@ class ThreatDialog(simpledialog.Dialog):
     # Damage Scenarios
     # ------------------------------------------------------------------
     def add_damage_scenario(self):
-        func_sel = self.func_list.curselection()
-        if not func_sel:
+        func_idx = self._selected_func_idx()
+        if func_idx is None:
             messagebox.showwarning("Add", "Select a function first")
             return
         scenario = self.ds_scenario_var.get().strip()
@@ -372,32 +390,32 @@ class ThreatDialog(simpledialog.Dialog):
             messagebox.showwarning("Add", "Enter a damage scenario")
             return
         stype = self.ds_type_var.get().strip()
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         func.damage_scenarios.append(DamageScenario(scenario, stype))
         self.ds_scenario_var.set("")
         self.ds_type_var.set("")
         self.refresh_ds()
 
     def update_damage_scenario(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         sel = self.ds_tree.selection()
-        if not func_sel or not sel:
+        if func_idx is None or not sel:
             messagebox.showwarning("Update", "Select a damage scenario")
             return
         idx = int(sel[0])
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[idx]
         ds.scenario = self.ds_scenario_var.get()
         ds.dtype = self.ds_type_var.get()
         self.refresh_ds()
 
     def del_damage_scenario(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         sel = self.ds_tree.selection()
-        if not func_sel or not sel:
+        if func_idx is None or not sel:
             return
         idx = int(sel[0])
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         del func.damage_scenarios[idx]
         self.refresh_ds()
         self.ds_scenario_var.set("")
@@ -407,9 +425,9 @@ class ThreatDialog(simpledialog.Dialog):
     # Threat Scenarios
     # ------------------------------------------------------------------
     def add_threat_scenario(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
-        if not func_sel or not ds_sel:
+        if func_idx is None or not ds_sel:
             messagebox.showwarning("Add", "Select a damage scenario first")
             return
         stride = self.threat_stride_var.get().strip()
@@ -417,7 +435,7 @@ class ThreatDialog(simpledialog.Dialog):
         if not stride or not scenario:
             messagebox.showwarning("Add", "Enter STRIDE and scenario")
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ds.threats.append(ThreatScenario(stride, scenario))
         self.threat_stride_var.set("")
@@ -425,13 +443,13 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_threats()
 
     def update_threat_scenario(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel:
+        if func_idx is None or not ds_sel or not ts_sel:
             messagebox.showwarning("Update", "Select a threat scenario")
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ts = ds.threats[int(ts_sel[0])]
         ts.stride = self.threat_stride_var.get()
@@ -439,12 +457,12 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_threats()
 
     def del_threat_scenario(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel:
+        if func_idx is None or not ds_sel or not ts_sel:
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         del ds.threats[int(ts_sel[0])]
         self.refresh_threats()
@@ -455,17 +473,17 @@ class ThreatDialog(simpledialog.Dialog):
     # Attack Paths
     # ------------------------------------------------------------------
     def add_attack_path(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel:
+        if func_idx is None or not ds_sel or not ts_sel:
             messagebox.showwarning("Add", "Select a threat scenario first")
             return
         path = self.path_var.get().strip()
         if not path:
             messagebox.showwarning("Add", "Enter an attack path")
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ts = ds.threats[int(ts_sel[0])]
         ts.attack_paths.append(AttackPath(path))
@@ -473,14 +491,14 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_paths()
 
     def update_attack_path(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
         ap_sel = self.path_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel or not ap_sel:
+        if func_idx is None or not ds_sel or not ts_sel or not ap_sel:
             messagebox.showwarning("Update", "Select an attack path")
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ts = ds.threats[int(ts_sel[0])]
         ap = ts.attack_paths[int(ap_sel[0])]
@@ -488,13 +506,13 @@ class ThreatDialog(simpledialog.Dialog):
         self.refresh_paths()
 
     def del_attack_path(self):
-        func_sel = self.func_list.curselection()
+        func_idx = self._selected_func_idx()
         ds_sel = self.ds_tree.selection()
         ts_sel = self.threat_tree.selection()
         ap_sel = self.path_tree.selection()
-        if not func_sel or not ds_sel or not ts_sel or not ap_sel:
+        if func_idx is None or not ds_sel or not ts_sel or not ap_sel:
             return
-        func = self.entry.functions[func_sel[0]]
+        func = self.entry.functions[func_idx]
         ds = func.damage_scenarios[int(ds_sel[0])]
         ts = ds.threats[int(ts_sel[0])]
         del ts.attack_paths[int(ap_sel[0])]
