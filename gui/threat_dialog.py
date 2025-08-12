@@ -37,15 +37,41 @@ class ThreatDialog(simpledialog.Dialog):
         ai_top = ttk.Frame(asset_tab)
         ai_top.grid(row=0, column=0, sticky="ew")
         ai_top.columnconfigure(1, weight=1)
-        ttk.Label(ai_top, text="Asset:").grid(row=0, column=0, sticky="w")
+        # internal block diagram selection
+        ttk.Label(ai_top, text="Internal Block Diagram:").grid(
+            row=0, column=0, sticky="w"
+        )
+        self.diag_var = tk.StringVar()
+        self._diag_map = self._get_ibd_map()
+        self.diag_cb = ttk.Combobox(
+            ai_top,
+            textvariable=self.diag_var,
+            values=list(self._diag_map.keys()),
+            state="readonly",
+        )
+        self.diag_cb.grid(row=0, column=1, sticky="ew", padx=2)
+        self.diag_cb.bind("<<ComboboxSelected>>", self.on_diag_change)
+        # asset selection filtered by diagram
+        ttk.Label(ai_top, text="Asset:").grid(row=1, column=0, sticky="w")
         self.asset_var = tk.StringVar(value=self.entry.asset)
         self.asset_cb = ttk.Combobox(
             ai_top,
             textvariable=self.asset_var,
-            values=self._get_assets(),
             state="readonly",
         )
-        self.asset_cb.grid(row=0, column=1, sticky="ew", padx=2)
+        self.asset_cb.grid(row=1, column=1, sticky="ew", padx=2)
+        # initialize diagram and assets
+        if self._diag_map:
+            init_diag = ""
+            if self.entry.asset:
+                for name, did in self._diag_map.items():
+                    if self.entry.asset in self._get_assets(did):
+                        init_diag = name
+                        break
+            if not init_diag:
+                init_diag = next(iter(self._diag_map))
+            self.diag_var.set(init_diag)
+            self.on_diag_change()
 
         func_frame = ttk.Frame(asset_tab)
         func_frame.grid(row=1, column=0, sticky="ew", pady=2)
@@ -244,13 +270,26 @@ class ThreatDialog(simpledialog.Dialog):
     # ------------------------------------------------------------------
     # Data helpers
     # ------------------------------------------------------------------
-    def _get_assets(self):
+    def _get_ibd_map(self):
+        repo = SysMLRepository.get_instance()
+        return {
+            d.name or d.diag_id: d.diag_id
+            for d in repo.diagrams.values()
+            if d.diag_type == "Internal Block Diagram"
+        }
+
+    def on_diag_change(self, *_):
+        diag_id = self._diag_map.get(self.diag_var.get())
+        assets = self._get_assets(diag_id)
+        self.asset_cb.config(values=assets)
+        if self.asset_var.get() not in assets:
+            self.asset_var.set("")
+
+    def _get_assets(self, diag_id):
         repo = SysMLRepository.get_instance()
         names = set()
-        for elem in repo.elements.values():
-            if elem.elem_type in {"Part", "Port", "Flow", "Connector"} and elem.name:
-                names.add(elem.name)
-        for diag in repo.diagrams.values():
+        diag = repo.diagrams.get(diag_id) if diag_id else None
+        if diag:
             for obj in getattr(diag, "objects", []):
                 typ = obj.get("obj_type") or obj.get("type")
                 if typ in {"Part", "Port", "Flow", "Connector"}:
@@ -261,6 +300,10 @@ class ThreatDialog(simpledialog.Dialog):
                             name = repo.elements[elem_id].name
                     if name:
                         names.add(name)
+            for conn in getattr(diag, "connections", []):
+                name = conn.get("name")
+                if name:
+                    names.add(name)
         return sorted(names)
 
     def _get_functions(self):
@@ -525,16 +568,19 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def buttonbox(self):
-        """Add visible Accept/Cancel buttons and resize the dialog."""
+        """Add Accept/Cancel buttons and shrink the dialog height."""
         box = ttk.Frame(self)
 
-        ok_btn = ttk.Button(box, text="Accept", width=10, command=self.ok)
-        ok_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        accept_btn = ttk.Button(
+            box, text="Accept", width=10, command=self.ok, default=tk.ACTIVE
+        )
+        accept_btn.pack(side=tk.LEFT, padx=5, pady=5)
         cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
         cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
         box.pack(side=tk.BOTTOM, fill=tk.X)
 
+        accept_btn.focus_set()
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
 
