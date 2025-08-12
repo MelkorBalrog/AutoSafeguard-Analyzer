@@ -155,9 +155,7 @@ class HaraDoc:
     """Container for a HARA derived from one or more HAZOPs."""
     name: str
     hazops: list
-    stpa: Optional[str] = None
-    threat: Optional[str] = None
-    entries: list = field(default_factory=list)
+    entries: list
     approved: bool = False
     status: str = "draft"
     meta: Metadata = field(default_factory=Metadata)

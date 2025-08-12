@@ -43,7 +43,7 @@ class CyberRiskEntryTests(unittest.TestCase):
         )
         cyber.attack_paths = [{"path": "p1", "vector": "Network", "feasibility": "High"}]
         entry = HaraEntry("T", "", "", 1, "", 1, "", 1, "", "QM", "", cyber)
-        doc = HaraDoc(name="RA1", hazops=[], entries=[entry])
+        doc = HaraDoc("RA1", [], [entry])
         app.hara_docs = [doc]
         app.cybersecurity_goals = [CybersecurityGoal("CG1", "desc"), CybersecurityGoal("CG2", "d2")]
         FaultTreeApp.sync_cyber_risk_to_goals(app)
@@ -76,7 +76,7 @@ class CyberRiskEntryTests(unittest.TestCase):
             cybersecurity_goal="CG",
         )
         entry2 = HaraEntry("M2", "", "", 1, "", 1, "", 1, "", "QM", "", cyber2)
-        doc = HaraDoc(name="RA", hazops=[], entries=[entry1, entry2])
+        doc = HaraDoc("RA", [], [entry1, entry2])
         app.hara_docs = [doc]
         self.assertEqual(app.get_cyber_goal_cal("CG"), cyber1.cal)
 
