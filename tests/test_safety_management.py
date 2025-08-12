@@ -194,7 +194,7 @@ def test_safety_diagrams_hidden_and_immutable_in_explorer():
     explorer.rename_item(f"diag_{diag_id}")
     assert repo.diagrams[diag_id].name == "Gov"
 
-def test_safety_diagrams_hidden_in_analysis_tree():
+def test_safety_diagrams_visible_in_analysis_tree():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
@@ -236,5 +236,7 @@ def test_safety_diagrams_hidden_in_analysis_tree():
 
     app.update_views()
     texts = [meta["text"] for meta in app.analysis_tree.items.values()]
-    assert "Gov" not in texts
+    assert "Safety Management" in texts
+    assert "Safety & Security Governance Diagrams" in texts
+    assert "Gov" in texts
     assert "Arch" in texts
