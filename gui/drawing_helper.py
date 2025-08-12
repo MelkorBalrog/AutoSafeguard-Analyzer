@@ -1,5 +1,6 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import math
+import tkinter as tk
 import tkinter.font as tkFont
 
 TEXT_BOX_COLOR = "#CFD8DC"
@@ -841,6 +842,81 @@ class GSNDrawingHelper(FTADrawingHelper):
             tags=(obj_id,),
         )
         canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_solved_by_connection(
+        self,
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color="dimgray",
+        line_width=1,
+    ):
+        """Draw a solid connector indicating a 'solved by' relationship."""
+        fixed_y = parent_pt[1] + 40
+        canvas.create_line(
+            parent_pt[0],
+            parent_pt[1],
+            parent_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            parent_pt[0],
+            fixed_y,
+            child_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            child_pt[0],
+            fixed_y,
+            child_pt[0],
+            child_pt[1],
+            fill=outline_color,
+            width=line_width,
+            arrow=tk.LAST,
+        )
+
+    def draw_in_context_connection(
+        self,
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color="dimgray",
+        line_width=1,
+    ):
+        """Draw a dashed connector for an 'in context of' relationship."""
+        fixed_y = parent_pt[1] + 40
+        dash = (4, 2)
+        canvas.create_line(
+            parent_pt[0],
+            parent_pt[1],
+            parent_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
+        canvas.create_line(
+            parent_pt[0],
+            fixed_y,
+            child_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
+        canvas.create_line(
+            child_pt[0],
+            fixed_y,
+            child_pt[0],
+            child_pt[1],
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
 
     def draw_strategy_shape(
         self,

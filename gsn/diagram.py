@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Iterable, Set
+import uuid
 
 from .nodes import GSNNode
 from gui.drawing_helper import GSNDrawingHelper
@@ -19,6 +20,7 @@ class GSNDiagram:
 
     root: GSNNode
     drawing_helper: GSNDrawingHelper = field(default_factory=GSNDrawingHelper)
+    diag_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # ------------------------------------------------------------------
     def _traverse(self) -> Iterable[GSNNode]:
@@ -37,6 +39,17 @@ class GSNDiagram:
     # ------------------------------------------------------------------
     def draw(self, canvas) -> None:  # pragma: no cover - requires tkinter
         """Render the diagram on a :class:`tkinter.Canvas` instance."""
+        # draw connectors first so they appear behind nodes
+        for parent in self._traverse():
+            for child in parent.children:
+                if child.node_type in {"Context", "Assumption", "Justification"}:
+                    self.drawing_helper.draw_in_context_connection(
+                        canvas, (parent.x, parent.y), (child.x, child.y)
+                    )
+                else:
+                    self.drawing_helper.draw_solved_by_connection(
+                        canvas, (parent.x, parent.y), (child.x, child.y)
+                    )
         for node in self._traverse():
             self._draw_node(canvas, node)
 

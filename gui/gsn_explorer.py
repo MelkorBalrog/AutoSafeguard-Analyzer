@@ -211,6 +211,9 @@ class GSNExplorer(tk.Frame):
         typ, obj = self.item_map.get(sel[0], (None, None))
         if typ != "diagram":
             return
+        if self.app and hasattr(self.app, "open_gsn_diagram"):
+            self.app.open_gsn_diagram(obj)
+            return
         win = tk.Toplevel(self)
         win.title(obj.root.user_name)
         canvas = tk.Canvas(win, width=800, height=600, bg="white")

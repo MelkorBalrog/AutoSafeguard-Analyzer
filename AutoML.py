@@ -243,6 +243,7 @@ from gui.review_toolbox import (
 )
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
+from gui.gsn_diagram_window import GSNDiagramWindow
 from dataclasses import asdict
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -15045,6 +15046,20 @@ class FaultTreeApp:
             self._gsn_tab = self._new_tab("GSN Explorer")
             self._gsn_window = GSNExplorer(self._gsn_tab, self)
             self._gsn_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def open_gsn_diagram(self, diagram):
+        """Open a GSN diagram inside a new notebook tab."""
+        existing = self.diagram_tabs.get(diagram.diag_id)
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                self.refresh_all()
+                return
+            self.diagram_tabs.pop(diagram.diag_id, None)
+        tab = self._new_tab(diagram.root.user_name)
+        self.diagram_tabs[diagram.diag_id] = tab
+        GSNDiagramWindow(tab, self, diagram)
         self.refresh_all()
 
     def open_arch_window(self, idx: int) -> None:
