@@ -305,6 +305,7 @@ from analysis.models import (
     REQUIREMENT_TYPE_OPTIONS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
+    CyberRiskEntry,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -2359,7 +2360,7 @@ class FaultTreeApp:
         }
 
         self.tool_categories = {
-            "Safety & Threat Analysis": [
+            "Hazard & Threat Analysis": [
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
@@ -9173,8 +9174,8 @@ class FaultTreeApp:
                 )
             tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
 
-            # --- Safety & Threat Analysis Section ---
-            haz_root = tree.insert("", "end", text="Safety & Threat Analysis", open=True)
+            # --- Hazard & Threat Analysis Section ---
+            haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
             hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
             for idx, doc in enumerate(self.hazop_docs):
                 tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
@@ -12728,7 +12729,7 @@ class FaultTreeApp:
                 if not haz or not mal:
                     continue
                 key = (haz, mal)
-                rows.setdefault(
+                info = rows.setdefault(
                     key,
                     {
                         "hazard": haz,
@@ -12821,7 +12822,7 @@ class FaultTreeApp:
         nodes[mal_id] = (mal_label, "malfunction")
         edges.append((haz_id, mal_id))
 
-        for fm, faults in sorted(row["failure_modes"].items()):
+        for fm, faults in sorted(row.get("failure_modes", {}).items()):
             fm_id = f"fm:{fm}"
             nodes[fm_id] = (fm, "failure_mode")
             edges.append((mal_id, fm_id))
@@ -12829,11 +12830,11 @@ class FaultTreeApp:
                 fault_id = f"fault:{fault}"
                 nodes[fault_id] = (fault, "fault")
                 edges.append((fm_id, fault_id))
-        for fi in sorted(row["fis"]):
+        for fi in sorted(row.get("fis", [])):
             fi_id = f"fi:{fi}"
             nodes[fi_id] = (fi, "fi")
             edges.append((haz_id, fi_id))
-        for tc in sorted(row["tcs"]):
+        for tc in sorted(row.get("tcs", [])):
             tc_id = f"tc:{tc}"
             nodes[tc_id] = (tc, "tc")
             edges.append((haz_id, tc_id))
@@ -12849,7 +12850,7 @@ class FaultTreeApp:
 
         pos = {haz_id: (0, 0), mal_id: (4, 0)}
         y_fm = 0
-        for fm, faults in sorted(row["failure_modes"].items()):
+        for fm, faults in sorted(row.get("failure_modes", {}).items()):
             fm_y = y_fm * 4
             pos[f"fm:{fm}"] = (8, fm_y)
             y_fault = fm_y
@@ -12858,13 +12859,34 @@ class FaultTreeApp:
                 y_fault += 2
             y_fm += 1
         y_fi = -2
-        for fi in sorted(row["fis"]):
+        for fi in sorted(row.get("fis", [])):
             pos[f"fi:{fi}"] = (2, y_fi)
             y_fi -= 2
         y_tc = y_fi
-        for tc in sorted(row["tcs"]):
+        for tc in sorted(row.get("tcs", [])):
             pos[f"tc:{tc}"] = (2, y_tc)
             y_tc -= 2
+        y_ts = y_tc
+        for ts, paths in sorted(row.get("threats", {}).items()):
+            pos[f"threat:{ts}"] = (2, y_ts)
+            y_ap = y_ts
+            for ap in sorted(paths):
+                pos[f"ap:{ap}"] = (3, y_ap)
+                y_ap -= 2
+            y_ts = min(y_ts, y_ap) - 2
+
+        # Place threat scenarios at the same horizontal level as failure modes
+        # and attack paths aligned with faults so both safety and cybersecurity
+        # events appear on comparable tiers.
+        y_item = y_fm * 4
+        for threat, paths in sorted(row.get("threats", {}).items()):
+            thr_y = y_item
+            pos[f"thr:{threat}"] = (8, thr_y)
+            y_path = thr_y
+            for path in sorted(paths):
+                pos[f"ap:{path}"] = (12, y_path)
+                y_path += 2
+            y_item += 4
 
         y_thr = y_fm
         for threat, paths in sorted(row.get("threats", {}).items()):
@@ -12993,6 +13015,8 @@ class FaultTreeApp:
         cols = (
             "Hazard",
             "Malfunction",
+            "Threats",
+            "Attack Paths",
             "Failure Modes",
             "Faults",
             "Threat Scenarios",
@@ -13025,6 +13049,8 @@ class FaultTreeApp:
                 values=(
                     row["hazard"],
                     row["malfunction"],
+                    ", ".join(sorted(row["threats"].keys())),
+                    ", ".join(sorted(row["attack_paths"])),
                     ", ".join(sorted(row["failure_modes"].keys())),
                     ", ".join(sorted(row["faults"])),
                     ", ".join(sorted(row["threats"].keys())),
@@ -15677,22 +15703,39 @@ class FaultTreeApp:
 
         self.hara_docs = []
         for d in data.get("haras", []):
-            entries = [
-                HaraEntry(
-                    e.get("malfunction", ""),
-                    e.get("hazard", ""),
-                    e.get("scenario", ""),
-                    e.get("severity", 1),
-                    e.get("sev_rationale", ""),
-                    e.get("controllability", 1),
-                    e.get("cont_rationale", ""),
-                    e.get("exposure", 1),
-                    e.get("exp_rationale", ""),
-                    e.get("asil", "QM"),
-                    e.get("safety_goal", ""),
+            entries = []
+            for e in d.get("entries", []):
+                cyber = None
+                cdata = e.get("cyber")
+                if cdata:
+                    cyber = CyberRiskEntry(
+                        damage_scenario=cdata.get("damage_scenario", ""),
+                        threat_scenario=cdata.get("threat_scenario", ""),
+                        attack_vector=cdata.get("attack_vector", ""),
+                        feasibility=cdata.get("feasibility", ""),
+                        financial_impact=cdata.get("financial_impact", ""),
+                        safety_impact=cdata.get("safety_impact", ""),
+                        operational_impact=cdata.get("operational_impact", ""),
+                        privacy_impact=cdata.get("privacy_impact", ""),
+                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
+                    )
+                    cyber.attack_paths = cdata.get("attack_paths", [])
+                entries.append(
+                    HaraEntry(
+                        e.get("malfunction", ""),
+                        e.get("hazard", ""),
+                        e.get("scenario", ""),
+                        e.get("severity", 1),
+                        e.get("sev_rationale", ""),
+                        e.get("controllability", 1),
+                        e.get("cont_rationale", ""),
+                        e.get("exposure", 1),
+                        e.get("exp_rationale", ""),
+                        e.get("asil", "QM"),
+                        e.get("safety_goal", ""),
+                        cyber,
+                    )
                 )
-                for e in d.get("entries", [])
-            ]
             hazops = d.get("hazops")
             if not hazops:
                 hazop = d.get("hazop")
@@ -15710,26 +15753,44 @@ class FaultTreeApp:
             )
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
+            entries = []
+            for e in data.get("hara_entries", []):
+                cyber = None
+                cdata = e.get("cyber")
+                if cdata:
+                    cyber = CyberRiskEntry(
+                        damage_scenario=cdata.get("damage_scenario", ""),
+                        threat_scenario=cdata.get("threat_scenario", ""),
+                        attack_vector=cdata.get("attack_vector", ""),
+                        feasibility=cdata.get("feasibility", ""),
+                        financial_impact=cdata.get("financial_impact", ""),
+                        safety_impact=cdata.get("safety_impact", ""),
+                        operational_impact=cdata.get("operational_impact", ""),
+                        privacy_impact=cdata.get("privacy_impact", ""),
+                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
+                    )
+                    cyber.attack_paths = cdata.get("attack_paths", [])
+                entries.append(
+                    HaraEntry(
+                        e.get("malfunction", ""),
+                        e.get("hazard", ""),
+                        e.get("scenario", ""),
+                        e.get("severity", 1),
+                        e.get("sev_rationale", ""),
+                        e.get("controllability", 1),
+                        e.get("cont_rationale", ""),
+                        e.get("exposure", 1),
+                        e.get("exp_rationale", ""),
+                        e.get("asil", "QM"),
+                        e.get("safety_goal", ""),
+                        cyber,
+                    )
+                )
             self.hara_docs.append(
                 HaraDoc(
                     "Default",
                     [hazop_name] if hazop_name else [],
-                    [
-                        HaraEntry(
-                            e.get("malfunction", ""),
-                            e.get("hazard", ""),
-                            e.get("scenario", ""),
-                            e.get("severity", 1),
-                            e.get("sev_rationale", ""),
-                            e.get("controllability", 1),
-                            e.get("cont_rationale", ""),
-                            e.get("exposure", 1),
-                            e.get("exp_rationale", ""),
-                            e.get("asil", "QM"),
-                            e.get("safety_goal", ""),
-                        )
-                        for e in data.get("hara_entries", [])
-                    ],
+                    entries,
                     False,
                     "draft",
                     stpa="",
@@ -16154,22 +16215,39 @@ class FaultTreeApp:
 
         self.hara_docs = []
         for d in data.get("haras", []):
-            entries = [
-                HaraEntry(
-                    e.get("malfunction", ""),
-                    e.get("hazard", ""),
-                    e.get("scenario", ""),
-                    e.get("severity", 1),
-                    e.get("sev_rationale", ""),
-                    e.get("controllability", 1),
-                    e.get("cont_rationale", ""),
-                    e.get("exposure", 1),
-                    e.get("exp_rationale", ""),
-                    e.get("asil", "QM"),
-                    e.get("safety_goal", ""),
+            entries = []
+            for e in d.get("entries", []):
+                cyber = None
+                cdata = e.get("cyber")
+                if cdata:
+                    cyber = CyberRiskEntry(
+                        damage_scenario=cdata.get("damage_scenario", ""),
+                        threat_scenario=cdata.get("threat_scenario", ""),
+                        attack_vector=cdata.get("attack_vector", ""),
+                        feasibility=cdata.get("feasibility", ""),
+                        financial_impact=cdata.get("financial_impact", ""),
+                        safety_impact=cdata.get("safety_impact", ""),
+                        operational_impact=cdata.get("operational_impact", ""),
+                        privacy_impact=cdata.get("privacy_impact", ""),
+                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
+                    )
+                    cyber.attack_paths = cdata.get("attack_paths", [])
+                entries.append(
+                    HaraEntry(
+                        e.get("malfunction", ""),
+                        e.get("hazard", ""),
+                        e.get("scenario", ""),
+                        e.get("severity", 1),
+                        e.get("sev_rationale", ""),
+                        e.get("controllability", 1),
+                        e.get("cont_rationale", ""),
+                        e.get("exposure", 1),
+                        e.get("exp_rationale", ""),
+                        e.get("asil", "QM"),
+                        e.get("safety_goal", ""),
+                        cyber,
+                    )
                 )
-                for e in d.get("entries", [])
-            ]
             hazops = d.get("hazops")
             if not hazops:
                 hazop = d.get("hazop")
@@ -16187,26 +16265,44 @@ class FaultTreeApp:
             )
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
+            entries = []
+            for e in data.get("hara_entries", []):
+                cyber = None
+                cdata = e.get("cyber")
+                if cdata:
+                    cyber = CyberRiskEntry(
+                        damage_scenario=cdata.get("damage_scenario", ""),
+                        threat_scenario=cdata.get("threat_scenario", ""),
+                        attack_vector=cdata.get("attack_vector", ""),
+                        feasibility=cdata.get("feasibility", ""),
+                        financial_impact=cdata.get("financial_impact", ""),
+                        safety_impact=cdata.get("safety_impact", ""),
+                        operational_impact=cdata.get("operational_impact", ""),
+                        privacy_impact=cdata.get("privacy_impact", ""),
+                        cybersecurity_goal=cdata.get("cybersecurity_goal", ""),
+                    )
+                    cyber.attack_paths = cdata.get("attack_paths", [])
+                entries.append(
+                    HaraEntry(
+                        e.get("malfunction", ""),
+                        e.get("hazard", ""),
+                        e.get("scenario", ""),
+                        e.get("severity", 1),
+                        e.get("sev_rationale", ""),
+                        e.get("controllability", 1),
+                        e.get("cont_rationale", ""),
+                        e.get("exposure", 1),
+                        e.get("exp_rationale", ""),
+                        e.get("asil", "QM"),
+                        e.get("safety_goal", ""),
+                        cyber,
+                    )
+                )
             self.hara_docs.append(
                 HaraDoc(
                     "Default",
                     [hazop_name] if hazop_name else [],
-                    [
-                        HaraEntry(
-                            e.get("malfunction", ""),
-                            e.get("hazard", ""),
-                            e.get("scenario", ""),
-                            e.get("severity", 1),
-                            e.get("sev_rationale", ""),
-                            e.get("controllability", 1),
-                            e.get("cont_rationale", ""),
-                            e.get("exposure", 1),
-                            e.get("exp_rationale", ""),
-                            e.get("asil", "QM"),
-                            e.get("safety_goal", ""),
-                        )
-                        for e in data.get("hara_entries", [])
-                    ],
+                    entries,
                     False,
                     "draft",
                     stpa="",

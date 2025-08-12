@@ -8,12 +8,33 @@ requirements. Metrics are automatically recomputed when a cell is edited.
 """
 
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, simpledialog, messagebox
 from typing import List, Dict, Any
 import csv
 
 from gui.toolboxes import EditableTreeview, configure_table_style, stripe_rows
 from analysis.models import global_requirements
+
+
+class SelectFaultDialog(simpledialog.Dialog):
+    """Simple list selection dialog for choosing a fault name."""
+
+    def __init__(self, parent, faults):
+        self.faults = faults
+        self.selected = None
+        super().__init__(parent, title="Select Fault")
+
+    def body(self, master):
+        self.listbox = tk.Listbox(master, height=10, width=40)
+        for f in self.faults:
+            self.listbox.insert(tk.END, f)
+        self.listbox.grid(row=0, column=0, padx=5, pady=5)
+        return self.listbox
+
+    def apply(self):
+        sel = self.listbox.curselection()
+        if sel:
+            self.selected = self.faults[sel[0]]
 
 # Reuse the scoring dictionaries from the PyQt implementation
 IMPACT_SCORES = {"None": 0, "Low": 1, "Medium": 2, "High": 3, "Critical": 4}
@@ -198,7 +219,33 @@ class FaultPrioritizationWindow(tk.Frame):
             master.geometry("1000x600")
             self.pack(fill=tk.BOTH, expand=True)
 
-        self.rows: List[Dict[str, Any]] = default_rows()
+        if getattr(self.app, "faults", []):
+            self.rows: List[Dict[str, Any]] = []
+            for idx, fault in enumerate(sorted(self.app.faults), 1):
+                row = {c: "" for c in ALL_COLUMNS}
+                row.update({
+                    "Fault ID": f"F{idx:03d}",
+                    "Description": fault,
+                    "Probability": "Medium",
+                    "Mission Impact": "Medium",
+                    "Recovery": "Manual intervention",
+                    "Detectability": "Medium",
+                    "Safety Critical": False,
+                    "Time To Recover (s)": 0.0,
+                    "Occurrences /100 missions": 0.0,
+                })
+                row.update(
+                    compute_metrics(
+                        row,
+                        SEVERITY_HI_TH,
+                        SEVERITY_MED_TH,
+                        STOPS_HI,
+                        STOPS_MED,
+                    )
+                )
+                self.rows.append(row)
+        else:
+            self.rows: List[Dict[str, Any]] = default_rows()
 
         th_frame = ttk.Frame(self)
         th_frame.pack(fill=tk.X)
@@ -259,11 +306,20 @@ class FaultPrioritizationWindow(tk.Frame):
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
         ttk.Button(btn, text="Add Row", command=self.add_row).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Add Existing", command=self.add_existing_fault).pack(side=tk.LEFT, padx=2, pady=2)
         ttk.Button(btn, text="Delete Selected", command=self.delete_selected).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(btn, text="Remove Fault", command=self.remove_fault).pack(side=tk.LEFT, padx=2, pady=2)
         ttk.Button(btn, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=2, pady=2)
 
         if not isinstance(master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
+
+    def next_fault_id(self) -> str:
+        existing = {r.get("Fault ID") for r in self.rows}
+        idx = 1
+        while f"F{idx:03d}" in existing:
+            idx += 1
+        return f"F{idx:03d}"
 
     def refresh_tree(self):
         self.tree.delete(*self.tree.get_children())
@@ -296,6 +352,17 @@ class FaultPrioritizationWindow(tk.Frame):
                 cur[column] = 0.0
         elif column == "Safety Critical":
             cur[column] = value.lower() in ("1", "true", "yes")
+        elif column == "Description":
+            old = cur.get("Description", "")
+            cur[column] = value
+            if getattr(self.app, "faults", None):
+                if old and old in self.app.faults and old != value:
+                    try:
+                        self.app.faults.remove(old)
+                    except ValueError:
+                        pass
+                if value and value not in self.app.faults:
+                    self.app.faults.append(value)
         else:
             cur[column] = value
         cur.update(
@@ -310,10 +377,9 @@ class FaultPrioritizationWindow(tk.Frame):
         self.refresh_tree()
 
     def add_row(self):
-        idx = len(self.rows) + 1
         row = {c: "" for c in ALL_COLUMNS}
         row.update({
-            "Fault ID": f"F{idx:03d}",
+            "Fault ID": self.next_fault_id(),
             "Probability": "Medium",
             "Mission Impact": "Medium",
             "Recovery": "Manual intervention",
@@ -327,13 +393,66 @@ class FaultPrioritizationWindow(tk.Frame):
         self.refresh_tree()
         self.tree.see(self.tree.get_children()[-1])
 
+    def add_existing_fault(self):
+        available = [f for f in sorted(getattr(self.app, "faults", [])) if f not in [r.get("Description") for r in self.rows]]
+        if not available:
+            messagebox.showinfo("No Faults", "No additional faults available.")
+            return
+        dlg = SelectFaultDialog(self, available)
+        fault = dlg.selected
+        if not fault:
+            return
+        row = {c: "" for c in ALL_COLUMNS}
+        row.update({
+            "Fault ID": self.next_fault_id(),
+            "Description": fault,
+            "Probability": "Medium",
+            "Mission Impact": "Medium",
+            "Recovery": "Manual intervention",
+            "Detectability": "Medium",
+            "Safety Critical": False,
+            "Time To Recover (s)": 0.0,
+            "Occurrences /100 missions": 0.0,
+        })
+        row.update(compute_metrics(row, self.sev_hi_var.get(), self.sev_med_var.get(), self.stops_hi_var.get(), self.stops_med_var.get()))
+        self.rows.append(row)
+        self.refresh_tree()
+
+    def remove_fault(self):
+        faults_in_table = [r.get("Description") for r in self.rows if r.get("Description")]
+        if not faults_in_table:
+            return
+        dlg = SelectFaultDialog(self, sorted(faults_in_table))
+        fault = dlg.selected
+        if not fault:
+            return
+        indices = [i for i, r in enumerate(self.rows) if r.get("Description") == fault]
+        for idx in reversed(indices):
+            del self.rows[idx]
+        if getattr(self.app, "faults", None):
+            for existing in list(self.app.faults):
+                if existing == fault:
+                    self.app.faults.remove(existing)
+                    break
+        self.refresh_tree()
+
     def delete_selected(self):
         sel = self.tree.selection()
         if not sel:
             return
         indices = sorted((self.tree.index(i) for i in sel), reverse=True)
+        removed = []
         for idx in indices:
+            desc = self.rows[idx].get("Description")
+            if desc:
+                removed.append(desc)
             del self.rows[idx]
+        if getattr(self.app, "faults", None):
+            for desc in removed:
+                for existing in list(self.app.faults):
+                    if existing == desc:
+                        self.app.faults.remove(existing)
+                        break
         self.refresh_tree()
 
     def export_csv(self):
