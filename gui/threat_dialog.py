@@ -568,7 +568,7 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def buttonbox(self):
-        """Add visible Accept/Cancel buttons and resize the dialog."""
+        """Add explicit Accept/Cancel buttons and set dialog size."""
         box = ttk.Frame(self)
 
         ok_btn = ttk.Button(box, text="Accept", width=10, command=self.ok)
@@ -581,9 +581,13 @@ class ThreatDialog(simpledialog.Dialog):
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
 
-        # Reduce dialog height to half while keeping computed width
+        # Resize after layout so width/height are accurate
+        self.after_idle(self._set_initial_size)
+
+    def _set_initial_size(self):
+        """Shrink dialog while ensuring controls remain visible."""
         self.update_idletasks()
-        width = self.winfo_reqwidth()
-        height = self.winfo_reqheight() // 2
+        width = max(self.winfo_width(), self.winfo_reqwidth(), 800)
+        height = max(self.winfo_height() // 2, 600)
         self.geometry(f"{width}x{height}")
         self.resizable(False, False)
