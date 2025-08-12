@@ -242,7 +242,12 @@ from gui.review_toolbox import (
     VersionCompareDialog,
 )
 from dataclasses import asdict
-from analysis.mechanisms import DiagnosticMechanism, MechanismLibrary, ANNEX_D_MECHANISMS
+from analysis.mechanisms import (
+    DiagnosticMechanism,
+    MechanismLibrary,
+    ANNEX_D_MECHANISMS,
+    PAS_8800_MECHANISMS,
+)
 import json
 import csv
 try:
@@ -13187,10 +13192,25 @@ class FaultTreeApp:
         refresh()
 
     def load_default_mechanisms(self):
+        """Populate built-in mechanism libraries if none are loaded.
+
+        The application ships with two collections of diagnostic mechanisms:
+        ISO 26262 Annex D and PAS 8800.  Previously only the Annex D
+        mechanisms were loaded by default which meant the PAS 8800 list was
+        unavailable in the user interface.  This method now initialises both
+        libraries and selects them so they are immediately visible and usable
+        when the tool starts.
+        """
         if self.mechanism_libraries:
             return
-        lib = MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy())
-        self.mechanism_libraries.append(lib)
+
+        default_libs = [
+            MechanismLibrary("ISO 26262 Annex D", ANNEX_D_MECHANISMS.copy()),
+            MechanismLibrary("PAS 8800", PAS_8800_MECHANISMS.copy()),
+        ]
+        self.mechanism_libraries.extend(default_libs)
+        # Make the default libraries available without extra user action.
+        self.selected_mechanism_libraries.extend(default_libs)
 
     def manage_mechanism_libraries(self):
         if hasattr(self, "_mech_tab") and self._mech_tab.winfo_exists():
