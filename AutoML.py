@@ -3338,6 +3338,21 @@ class FaultTreeApp:
                     best = e.asil
         return best
 
+    def get_cyber_goal_cal(self, goal_id):
+        """Return highest CAL from risk assessments for the given cybersecurity goal."""
+        order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
+        best = CAL_LEVEL_OPTIONS[0]
+        for doc in getattr(self, "hara_docs", []):
+            for e in getattr(doc, "entries", []):
+                cyber = getattr(e, "cyber", None)
+                if not cyber or not cyber.cybersecurity_goal:
+                    continue
+                if goal_id and goal_id == cyber.cybersecurity_goal:
+                    cal = getattr(cyber, "cal", CAL_LEVEL_OPTIONS[0])
+                    if order.get(cal, 0) > order.get(best, 0):
+                        best = cal
+        return best
+
     def get_top_event_safety_goals(self, node):
         """Return names of safety goals for top events containing ``node``."""
         result = []
@@ -12017,13 +12032,15 @@ class FaultTreeApp:
         """Display product goals and derived requirements in a tree view."""
         win = tk.Toplevel(self.root)
         win.title("Product Goals Matrix")
-        tree = ttk.Treeview(win, columns=["ID", "ASIL", "SafeState", "Text"], show="tree headings")
+        tree = ttk.Treeview(win, columns=["ID", "ASIL", "CAL", "SafeState", "Text"], show="tree headings")
         tree.heading("ID", text="Requirement ID")
         tree.heading("ASIL", text="ASIL")
+        tree.heading("CAL", text="CAL")
         tree.heading("SafeState", text="Safe State")
         tree.heading("Text", text="Text")
         tree.column("ID", width=120)
         tree.column("ASIL", width=60)
+        tree.column("CAL", width=60)
         tree.column("SafeState", width=100)
         tree.column("Text", width=300)
         tree.pack(fill=tk.BOTH, expand=True)
@@ -12031,9 +12048,10 @@ class FaultTreeApp:
         for te in self.top_events:
             sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
             sg_id = te.user_name or f"SG {te.unique_id}"
+            cal = self.get_cyber_goal_cal(sg_id)
             parent_iid = tree.insert(
                 "", "end", text=sg_text,
-                values=[sg_id, te.safety_goal_asil, te.safe_state, sg_text],
+                values=[sg_id, te.safety_goal_asil, cal, te.safe_state, sg_text],
             )
             reqs = self.collect_requirements_recursive(te)
             seen_ids = set()
@@ -12046,7 +12064,7 @@ class FaultTreeApp:
                     parent_iid,
                     "end",
                     text="",
-                    values=[req_id, req.get("asil", ""), req.get("text", "")],
+                    values=[req_id, req.get("asil", ""), "", "", req.get("text", "")],
                 )
 
     def show_product_goals_editor(self):
@@ -12057,7 +12075,7 @@ class FaultTreeApp:
         self._sg_tab = self._new_tab("Product Goals")
         win = self._sg_tab
 
-        columns = ["ID", "ASIL", "Safe State", "FTTI", "Prob", "Acceptance", "Description"]
+        columns = ["ID", "ASIL", "CAL", "Safe State", "FTTI", "Prob", "Acceptance", "Description"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
             tree.heading(c, text=c)
@@ -12069,6 +12087,7 @@ class FaultTreeApp:
             for sg in self.top_events:
                 name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
                 sg.safety_goal_asil = self.get_hara_goal_asil(name)
+                cal = self.get_cyber_goal_cal(sg.user_name or f"SG {sg.unique_id}")
                 tree.insert(
                     "",
                     "end",
@@ -12076,6 +12095,7 @@ class FaultTreeApp:
                     values=[
                         sg.user_name or f"SG {sg.unique_id}",
                         sg.safety_goal_asil,
+                        cal,
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
                         getattr(sg, "acceptance_prob", ""),
@@ -12100,37 +12120,41 @@ class FaultTreeApp:
                 self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
                 ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(master, text="Safe State:").grid(row=2, column=0, sticky="e")
-                self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
-                tk.Entry(master, textvariable=self.state_var).grid(row=2, column=1, padx=5, pady=5)
+                ttk.Label(master, text="CAL:").grid(row=2, column=0, sticky="e")
+                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
+                ttk.Label(master, textvariable=self.cal_var).grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(master, text="FTTI:").grid(row=3, column=0, sticky="e")
+                ttk.Label(master, text="Safe State:").grid(row=3, column=0, sticky="e")
+                self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
+                tk.Entry(master, textvariable=self.state_var).grid(row=3, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="FTTI:").grid(row=4, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
                 tk.Entry(
                     master,
                     textvariable=self.ftti_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=3, column=1, padx=5, pady=5)
+                ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Prob:").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="Acceptance Prob:").grid(row=5, column=0, sticky="e")
                 self.prob_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_prob", 1.0)))
                 tk.Entry(
                     master,
                     textvariable=self.prob_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=4, column=1, padx=5, pady=5)
+                ).grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=5, column=0, sticky="ne")
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=6, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=5, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=6, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=6, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=7, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=6, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=7, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
