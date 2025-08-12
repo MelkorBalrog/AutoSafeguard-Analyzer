@@ -277,10 +277,17 @@ class ThreatDialog(simpledialog.Dialog):
 
             for conn in getattr(diag, "connections", []):
                 name = conn.get("name")
+                if not name:
+                    elem_id = conn.get("element_id")
+                    if elem_id and elem_id in repo.elements:
+                        name = repo.elements[elem_id].name
                 if name:
                     names.add(name)
-                # Connections might also carry a "flow" property
-                flow = conn.get("properties", {}).get("flow")
+
+                # Connections might define a flow either directly or within
+                # their properties. Include those so that data flows and
+                # unnamed connectors appear in the asset combobox.
+                flow = conn.get("flow") or conn.get("properties", {}).get("flow")
                 if flow:
                     names.add(flow)
         return sorted(names)
