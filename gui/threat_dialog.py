@@ -238,8 +238,6 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         self.refresh_ds()
-        self.geometry("700x500")
-        self.resizable(False, False)
         return nb
 
     # ------------------------------------------------------------------
@@ -535,3 +533,6 @@ class ThreatDialog(simpledialog.Dialog):
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
         box.pack(side=tk.BOTTOM, fill=tk.X)
+        self.update_idletasks()
+        self.geometry(f"700x{self.winfo_reqheight()}")
+        self.resizable(False, False)
