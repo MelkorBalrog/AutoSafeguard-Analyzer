@@ -60,46 +60,124 @@ class GSNDiagram:
         x, y = node.x * zoom, node.y * zoom
         scale = 40 * zoom
         typ = node.node_type.lower()
+        text = self._format_text(node)
+        
+        def _call(method, *args, **kwargs):
+            try:
+                method(*args, **kwargs)
+            except TypeError:  # pragma: no cover - fallback for simplified helpers
+                kwargs.pop("text", None)
+                kwargs.pop("top_text", None)
+                kwargs.pop("bottom_text", None)
+                method(*args, **kwargs)
         if typ == "solution":
             if node.is_primary_instance:
-                self.drawing_helper.draw_solution_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_solution_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    top_text=node.user_name,
+                    bottom_text=node.description,
+                    obj_id=node.unique_id,
                 )
             else:
-                self.drawing_helper.draw_away_solution_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_away_solution_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    top_text=node.user_name,
+                    bottom_text=node.description,
+                    obj_id=node.unique_id,
                 )
         elif typ == "goal":
             if node.is_primary_instance:
-                self.drawing_helper.draw_goal_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_goal_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    text=text,
+                    obj_id=node.unique_id,
                 )
             else:
-                self.drawing_helper.draw_away_goal_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_away_goal_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    text=text,
+                    obj_id=node.unique_id,
                 )
         elif typ == "strategy":
-            self.drawing_helper.draw_strategy_shape(
-                canvas, x, y, scale, obj_id=node.unique_id
+            _call(
+                self.drawing_helper.draw_strategy_shape,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                obj_id=node.unique_id,
             )
         elif typ == "assumption":
-            self.drawing_helper.draw_assumption_shape(
-                canvas, x, y, scale, obj_id=node.unique_id
+            _call(
+                self.drawing_helper.draw_assumption_shape,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                obj_id=node.unique_id,
             )
         elif typ == "justification":
-            self.drawing_helper.draw_justification_shape(
-                canvas, x, y, scale, obj_id=node.unique_id
+            _call(
+                self.drawing_helper.draw_justification_shape,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                obj_id=node.unique_id,
             )
         elif typ == "context":
-            self.drawing_helper.draw_context_shape(
-                canvas, x, y, scale, obj_id=node.unique_id
+            _call(
+                self.drawing_helper.draw_context_shape,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                obj_id=node.unique_id,
             )
         elif typ == "module":
             if node.is_primary_instance:
-                self.drawing_helper.draw_goal_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_goal_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    text=text,
+                    obj_id=node.unique_id,
                 )
             else:
-                self.drawing_helper.draw_away_module_shape(
-                    canvas, x, y, scale, obj_id=node.unique_id
+                _call(
+                    self.drawing_helper.draw_away_module_shape,
+                    canvas,
+                    x,
+                    y,
+                    scale,
+                    text=text,
+                    obj_id=node.unique_id,
                 )
+
+    def _format_text(self, node: GSNNode) -> str:
+        """Return node label including description if present."""
+        if getattr(node, "description", ""):
+            return f"{node.user_name}\n{node.description}"
+        return node.user_name

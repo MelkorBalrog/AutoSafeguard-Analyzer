@@ -13,7 +13,9 @@ class GSNNode:
     Parameters
     ----------
     user_name:
-        Human readable label for the node.
+        Human readable label for the node (name).
+    description:
+        Optional description shown beneath the name when rendering.
     node_type:
         One of ``Goal``, ``Strategy``, ``Solution``, ``Assumption``,
         ``Justification`` or ``Context``.
@@ -23,6 +25,7 @@ class GSNNode:
 
     user_name: str
     node_type: str
+    description: str = ""
     x: float = 50
     y: float = 50
     children: List["GSNNode"] = field(default_factory=list)
@@ -53,6 +56,7 @@ class GSNNode:
         clone = GSNNode(
             self.user_name,
             self.node_type,
+            description=self.description,
             x=self.x,
             y=self.y,
             is_primary_instance=False,
