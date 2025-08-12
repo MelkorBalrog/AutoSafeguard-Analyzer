@@ -29,10 +29,10 @@ class ValidationTargetTests(unittest.TestCase):
         node.controllability = 3
         node.severity = 2
         node.update_validation_target()
-        self.assertAlmostEqual(node.validation_target, 2e-4)
+        self.assertAlmostEqual(node.validation_target, 1e-4)
 
     def test_probability_mappings(self):
-        self.assertAlmostEqual(exposure_to_probability(4), 5e-2)
+        self.assertAlmostEqual(exposure_to_probability(4), 1e-1)
         self.assertAlmostEqual(controllability_to_probability(3), 1e-1)
         self.assertAlmostEqual(severity_to_probability(2), 1e-2)
 

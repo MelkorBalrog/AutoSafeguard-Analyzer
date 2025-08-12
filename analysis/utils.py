@@ -6,26 +6,39 @@ from typing import List
 
 # Mapping tables from risk assessment ratings to probabilities.
 #
-# The values provide a simple heuristic for converting ISO 26262 / ISO 21448
-# levels into conditional probabilities used in the validation target
-# calculation. They can be refined as better field data becomes available.
-EXPOSURE_PROBABILITIES = {1: 1e-4, 2: 1e-3, 3: 1e-2, 4: 5e-2}
+# The chosen values reflect rule‑of‑thumb probabilities commonly used in
+# functional‑safety workshops: each step increases the likelihood by roughly an
+# order of magnitude. They provide a starting point when field data is not yet
+# available and align with interpretations published in industry literature.
+# Projects with better data can refine these mappings as needed.
+EXPOSURE_PROBABILITIES = {1: 1e-4, 2: 1e-3, 3: 1e-2, 4: 1e-1}
 CONTROLLABILITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
 SEVERITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
 
 
 def exposure_to_probability(level: int) -> float:
-    """Return ``P(E|HB)`` for the given exposure rating."""
+    """Return ``P(E|HB)`` for the given exposure rating.
+
+    The mapping follows a common industry heuristic where exposure levels 1–4
+    correspond to probabilities ``1e-4``, ``1e-3``, ``1e-2`` and ``1e-1``.
+    """
     return EXPOSURE_PROBABILITIES.get(int(level), 1.0)
 
 
 def controllability_to_probability(level: int) -> float:
-    """Return ``P(C|E)`` for the given controllability rating."""
+    """Return ``P(C|E)`` for the given controllability rating.
+
+    Ratings 1–3 map to probabilities ``1e-3``, ``1e-2`` and ``1e-1``
+    respectively.
+    """
     return CONTROLLABILITY_PROBABILITIES.get(int(level), 1.0)
 
 
 def severity_to_probability(level: int) -> float:
-    """Return ``P(S|C)`` for the given severity rating."""
+    """Return ``P(S|C)`` for the given severity rating.
+
+    Severity levels 1–3 map to ``1e-3``, ``1e-2`` and ``1e-1`` respectively.
+    """
     return SEVERITY_PROBABILITIES.get(int(level), 1.0)
 
 
