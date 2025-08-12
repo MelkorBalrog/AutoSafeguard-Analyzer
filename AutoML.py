@@ -3752,6 +3752,22 @@ class FaultTreeApp:
             if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
                 te.safety_goal_asil = asil
 
+    def sync_cyber_risk_to_goals(self):
+        """Aggregate CAL values from risk assessments into cybersecurity goals."""
+        goal_map = {g.goal_id: g for g in getattr(self, "cybersecurity_goals", [])}
+        for g in goal_map.values():
+            g.risk_assessments = []
+        for doc in getattr(self, "hara_docs", []):
+            for e in getattr(doc, "entries", []):
+                cyber = getattr(e, "cyber", None)
+                if not cyber or not cyber.cybersecurity_goal:
+                    continue
+                cg = goal_map.get(cyber.cybersecurity_goal)
+                if cg is not None:
+                    cg.risk_assessments.append({"name": doc.name, "cal": cyber.cal})
+        for g in goal_map.values():
+            g.compute_cal()
+
     def edit_selected(self):
         sel = self.analysis_tree.selection()
         target = None
