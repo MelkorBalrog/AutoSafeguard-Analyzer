@@ -568,19 +568,19 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def buttonbox(self):
-        """Add explicit Accept/Cancel buttons and set dialog size."""
+        """Add explicit OK/Cancel buttons and set dialog size."""
         box = ttk.Frame(self)
 
-        accept_btn = ttk.Button(
-            box, text="Accept", width=10, command=self.ok, default=tk.ACTIVE
+        ok_btn = ttk.Button(
+            box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
         )
-        accept_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        ok_btn.pack(side=tk.LEFT, padx=5, pady=5)
         cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
         cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
         box.pack(side=tk.BOTTOM, fill=tk.X)
 
-        accept_btn.focus_set()
+        ok_btn.focus_set()
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
 
