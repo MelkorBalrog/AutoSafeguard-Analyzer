@@ -230,6 +230,42 @@ class CybersecurityGoal:
                 highest = cal
         self.cal = highest
 
+
+@dataclass
+class DamageScenario:
+    """Potential damage scenario for a given asset/function."""
+
+    scenario: str
+    type: str = ""
+
+
+@dataclass
+class AttackPath:
+    """Single attack path description."""
+
+    description: str
+
+
+@dataclass
+class ThreatScenario:
+    """Threat scenario organized by STRIDE category."""
+
+    stride: str
+    scenario: str
+    attack_paths: list[AttackPath] = field(default_factory=list)
+
+
+@dataclass
+class ThreatDoc:
+    """Container for a threat analysis document."""
+
+    name: str
+    asset: str
+    function: str
+    damage_scenarios: list[DamageScenario] = field(default_factory=list)
+    threat_scenarios: list[ThreatScenario] = field(default_factory=list)
+    meta: Metadata = field(default_factory=Metadata)
+
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {
         "dielectric": ["ceramic", "electrolytic", "tantalum"],
