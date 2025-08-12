@@ -1124,7 +1124,7 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 ### Safety Performance Indicators
 
-The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
+The **Safety Performance Indicators** tool in the Safety Management tab lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
 
 ### Safety Management Toolbox
 
