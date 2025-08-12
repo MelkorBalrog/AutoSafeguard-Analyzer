@@ -241,6 +241,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from gui.safety_management_toolbox import SafetyManagementToolbox
 from dataclasses import asdict
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -2351,6 +2352,7 @@ class FaultTreeApp:
             "Product Goals Export": self.export_product_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
+            "Safety Management": self.open_safety_management_toolbox,
         }
 
         self.tool_categories = {
@@ -2402,6 +2404,9 @@ class FaultTreeApp:
                 "Faults Editor",
                 "Cause & Effect Chain",
                 "Fault Prioritization",
+            ],
+            "Safety Management": [
+                "Safety Management",
             ],
         }
 
@@ -9234,6 +9239,8 @@ class FaultTreeApp:
         """Update modification metadata for the given document."""
         doc["modified"] = datetime.datetime.now().isoformat()
         doc["modified_by"] = CURRENT_USER_NAME
+        # Synchronize the entire application whenever a document changes
+        self.refresh_all()
 
     def refresh_model(self):
         """Propagate changes across analyses when the model updates."""
@@ -9267,6 +9274,24 @@ class FaultTreeApp:
                     entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
 
         self.update_basic_event_probabilities()
+
+    def refresh_all(self):
+        """Synchronize model elements and refresh all open views.
+
+        This is invoked whenever the user opens, closes or edits content so
+        analyses and diagrams remain consistent with the underlying data.
+        """
+        # Update the main explorer and propagate model changes
+        self.update_views()
+        # Refresh any secondary windows that may be open
+        for attr in dir(self):
+            if attr.endswith("_window"):
+                win = getattr(self, attr)
+                if hasattr(win, "winfo_exists") and win.winfo_exists():
+                    if hasattr(win, "refresh_docs"):
+                        win.refresh_docs()
+                    if hasattr(win, "refresh"):
+                        win.refresh()
 
     def insert_node_in_tree(self, parent_item, node):
         # If the node has no parent (i.e. it's a top-level event), display it.
@@ -12190,7 +12215,9 @@ class FaultTreeApp:
             "Safe State",
             "FTTI",
             "Acc Rate",
+            "On Hours",
             "Val Target",
+            "Profile",
             "Val Desc",
             "Acceptance",
             "Description",
@@ -12216,7 +12243,9 @@ class FaultTreeApp:
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
                         str(getattr(sg, "acceptance_rate", "")),
+                        getattr(sg, "operational_hours_on", ""),
                         getattr(sg, "validation_target", ""),
+                        getattr(sg, "mission_profile", ""),
                         getattr(sg, "validation_desc", ""),
                         getattr(sg, "acceptance_criteria", ""),
                         sg.safety_goal_description,
@@ -12265,29 +12294,38 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=5, column=1, padx=5, pady=5)
 
+                ttk.Label(master, text="On Hours:").grid(row=6, column=0, sticky="e")
+                self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.op_hours_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=6, column=1, padx=5, pady=5)
+
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
 
-                ttk.Label(master, text="P(E|HB):").grid(row=6, column=0, sticky="e")
+                ttk.Label(master, text="P(E|HB):").grid(row=7, column=0, sticky="e")
                 self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=6, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=7, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(C|E):").grid(row=7, column=0, sticky="e")
+                ttk.Label(master, text="P(C|E):").grid(row=8, column=0, sticky="e")
                 self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=7, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(S|C):").grid(row=8, column=0, sticky="e")
+                ttk.Label(master, text="P(S|C):").grid(row=9, column=0, sticky="e")
                 self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target (1/h):").grid(row=9, column=0, sticky="e")
+                ttk.Label(master, text="Validation Target (1/h):").grid(row=10, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
                     val = 1.0
                 self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
 
                 def _update_val(*_):
                     try:
@@ -12299,20 +12337,29 @@ class FaultTreeApp:
 
                 self.accept_rate_var.trace_add("write", _update_val)
 
-                ttk.Label(master, text="Val Target Desc:").grid(row=10, column=0, sticky="ne")
+                ttk.Label(master, text="Mission Profile:").grid(row=11, column=0, sticky="e")
+                self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
+                ttk.Combobox(
+                    master,
+                    textvariable=self.profile_var,
+                    values=[mp.name for mp in self.app.mission_profiles],
+                    state="readonly",
+                ).grid(row=11, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Val Target Desc:").grid(row=12, column=0, sticky="ne")
                 self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=10, column=1, padx=5, pady=5)
+                self.val_desc_text.grid(row=12, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=11, column=0, sticky="ne")
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=13, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=11, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=13, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=12, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=14, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=12, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=14, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -12325,10 +12372,12 @@ class FaultTreeApp:
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
                     "accept_rate": self.accept_rate_var.get().strip(),
+                    "op_hours": self.op_hours_var.get().strip(),
                     "pehb": self.pehb_var.get().strip(),
                     "pce": self.pce_var.get().strip(),
                     "psc": self.psc_var.get().strip(),
                     "val": self.val_var.get().strip(),
+                    "profile": self.profile_var.get().strip(),
                     "val_desc": self.val_desc_text.get("1.0", "end-1c"),
                     "accept": self.acc_text.get("1.0", "end-1c"),
                     "desc": desc,
@@ -12342,7 +12391,9 @@ class FaultTreeApp:
                 node.safe_state = dlg.result["state"]
                 node.ftti = dlg.result["ftti"]
                 node.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                node.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
                 node.update_validation_target()
+                node.mission_profile = dlg.result.get("profile", "")
                 node.validation_desc = dlg.result["val_desc"]
                 node.acceptance_criteria = dlg.result["accept"]
                 node.safety_goal_description = dlg.result["desc"]
@@ -12363,7 +12414,9 @@ class FaultTreeApp:
                 sg.safe_state = dlg.result["state"]
                 sg.ftti = dlg.result["ftti"]
                 sg.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                sg.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
                 sg.update_validation_target()
+                sg.mission_profile = dlg.result.get("profile", "")
                 sg.validation_desc = dlg.result["val_desc"]
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
@@ -14270,63 +14323,72 @@ class FaultTreeApp:
     def open_reliability_window(self):
         if hasattr(self, "_rel_tab") and self._rel_tab.winfo_exists():
             self.doc_nb.select(self._rel_tab)
-            return
-        self._rel_tab = self._new_tab("Reliability")
-        self._rel_window = ReliabilityWindow(self._rel_tab, self)
-        self._rel_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            self._rel_tab = self._new_tab("Reliability")
+            self._rel_window = ReliabilityWindow(self._rel_tab, self)
+            self._rel_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_fmeda_window(self):
         self.show_fmeda_list()
+        self.refresh_all()
 
     def open_hazop_window(self):
         if hasattr(self, "_hazop_tab") and self._hazop_tab.winfo_exists():
             self.doc_nb.select(self._hazop_tab)
-            return
-        self._hazop_tab = self._new_tab("HAZOP")
-        self._hazop_window = HazopWindow(self._hazop_tab, self)
+        else:
+            self._hazop_tab = self._new_tab("HAZOP")
+            self._hazop_window = HazopWindow(self._hazop_tab, self)
+        self.refresh_all()
 
     def open_risk_assessment_window(self):
         if hasattr(self, "_risk_tab") and self._risk_tab.winfo_exists():
             self.doc_nb.select(self._risk_tab)
-            return
-        self._risk_tab = self._new_tab("Risk Assessment")
-        self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
+        else:
+            self._risk_tab = self._new_tab("Risk Assessment")
+            self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
+        self.refresh_all()
 
     def open_stpa_window(self):
         if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
             self.doc_nb.select(self._stpa_tab)
-            return
-        self._stpa_tab = self._new_tab("STPA")
-        self._stpa_window = StpaWindow(self._stpa_tab, self)
+        else:
+            self._stpa_tab = self._new_tab("STPA")
+            self._stpa_window = StpaWindow(self._stpa_tab, self)
+        self.refresh_all()
 
     def open_threat_window(self):
         if hasattr(self, "_threat_tab") and self._threat_tab.winfo_exists():
             self.doc_nb.select(self._threat_tab)
-            return
-        self._threat_tab = self._new_tab("Threat")
-        self._threat_window = ThreatWindow(self._threat_tab, self)
+        else:
+            self._threat_tab = self._new_tab("Threat")
+            self._threat_window = ThreatWindow(self._threat_tab, self)
+        self.refresh_all()
 
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
-            return
-        self._fi2tc_tab = self._new_tab("FI2TC")
-        self._fi2tc_window = FI2TCWindow(self._fi2tc_tab, self)
+        else:
+            self._fi2tc_tab = self._new_tab("FI2TC")
+            self._fi2tc_window = FI2TCWindow(self._fi2tc_tab, self)
+        self.refresh_all()
 
     def open_tc2fi_window(self):
         if hasattr(self, "_tc2fi_tab") and self._tc2fi_tab.winfo_exists():
             self.doc_nb.select(self._tc2fi_tab)
-            return
-        self._tc2fi_tab = self._new_tab("TC2FI")
-        self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
+        else:
+            self._tc2fi_tab = self._new_tab("TC2FI")
+            self._tc2fi_window = TC2FIWindow(self._tc2fi_tab, self)
+        self.refresh_all()
 
     def open_fault_prioritization_window(self):
         if hasattr(self, "_fault_prio_tab") and self._fault_prio_tab.winfo_exists():
             self.doc_nb.select(self._fault_prio_tab)
-            return
-        self._fault_prio_tab = self._new_tab("Fault Prioritization")
-        from gui.fault_prioritization import FaultPrioritizationWindow
-        self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+        else:
+            self._fault_prio_tab = self._new_tab("Fault Prioritization")
+            from gui.fault_prioritization import FaultPrioritizationWindow
+            self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+        self.refresh_all()
 
     def open_safety_management_toolbox(self):
         """Open a placeholder tab for the Safety Management toolbox."""
@@ -14427,6 +14489,8 @@ class FaultTreeApp:
                 del self.diagram_tabs[did]
                 break
         tab.destroy()
+        # Ensure the rest of the application reflects the closed tab
+        self.refresh_all()
 
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
@@ -14503,7 +14567,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_activity_diagram(self):
         """Prompt for a diagram name then open a new activity diagram."""
@@ -14515,7 +14579,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_block_diagram(self):
         """Prompt for a diagram name then open a new block diagram."""
@@ -14527,7 +14591,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_internal_block_diagram(self):
         """Prompt for a diagram name then open a new internal block diagram."""
@@ -14539,7 +14603,7 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def open_control_flow_diagram(self):
         """Prompt for a diagram name then open a new control flow diagram."""
@@ -14551,15 +14615,16 @@ class FaultTreeApp:
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        self.update_views()
+        self.refresh_all()
 
     def manage_architecture(self):
         if hasattr(self, "_arch_tab") and self._arch_tab.winfo_exists():
             self.doc_nb.select(self._arch_tab)
-            return
-        self._arch_tab = self._new_tab("AutoML Explorer")
-        self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
-        self._arch_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            self._arch_tab = self._new_tab("AutoML Explorer")
+            self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
+            self._arch_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_arch_window(self, idx: int) -> None:
         """Open an existing architecture diagram from the repository."""
@@ -14571,6 +14636,7 @@ class FaultTreeApp:
         if existing and str(existing) in self.doc_nb.tabs():
             if existing.winfo_exists():
                 self.doc_nb.select(existing)
+                self.refresh_all()
                 return
         else:
             # Remove stale reference if the tab was closed
@@ -14587,6 +14653,7 @@ class FaultTreeApp:
             InternalBlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Control Flow Diagram":
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        self.refresh_all()
         
     def copy_node(self):
         if self.selected_node and self.selected_node != self.root_node:
@@ -16081,6 +16148,7 @@ class FaultTreeApp:
         # Use the resolved (original) node for the page diagram.
         self.page_diagram = PageDiagram(self, resolved_node, page_canvas)
         self.page_diagram.redraw_canvas()
+        self.refresh_all()
 
     def go_back(self):
         if self.page_history:
@@ -16418,11 +16486,12 @@ class FaultTreeApp:
     def open_review_document(self, review):
         if hasattr(self, "_review_doc_tab") and self._review_doc_tab.winfo_exists():
             self.doc_nb.select(self._review_doc_tab)
-            return
-        title = f"Review {review.name}"
-        self._review_doc_tab = self._new_tab(title)
-        self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
-        self._review_doc_window.pack(fill=tk.BOTH, expand=True)
+        else:
+            title = f"Review {review.name}"
+            self._review_doc_tab = self._new_tab(title)
+            self._review_doc_window = ReviewDocumentDialog(self._review_doc_tab, self, review)
+            self._review_doc_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
 
     def open_review_toolbox(self):
         if not self.reviews:
@@ -16439,6 +16508,7 @@ class FaultTreeApp:
             self._review_tab = self._new_tab("Review")
             self.review_window = ReviewToolbox(self._review_tab, self)
             self.review_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
         self.set_current_user()
 
     def send_review_email(self, review):
@@ -17137,8 +17207,10 @@ class FaultTreeNode:
         self.ftti = ""
         self.validation_target = 1.0
         self.validation_desc = ""
+        self.mission_profile = ""
         self.acceptance_criteria = ""
         self.acceptance_rate = 0.0
+        self.operational_hours_on = 0.0
         self.exposure_given_hb = 1.0
         self.uncontrollable_given_exposure = 1.0
         self.severity_given_uncontrollable = 1.0
@@ -17232,8 +17304,10 @@ class FaultTreeNode:
             "ftti": self.ftti,
             "validation_target": self.validation_target,
             "validation_desc": self.validation_desc,
+            "mission_profile": self.mission_profile,
             "acceptance_criteria": self.acceptance_criteria,
             "acceptance_rate": self.acceptance_rate,
+            "operational_hours_on": self.operational_hours_on,
             "exposure_given_hb": self.exposure_given_hb,
             "uncontrollable_given_exposure": self.uncontrollable_given_exposure,
             "severity_given_uncontrollable": self.severity_given_uncontrollable,
@@ -17301,8 +17375,10 @@ class FaultTreeNode:
         node.ftti = data.get("ftti", "")
         node.validation_target = data.get("validation_target", 1.0)
         node.validation_desc = data.get("validation_desc", "")
+        node.mission_profile = data.get("mission_profile", "")
         node.acceptance_criteria = data.get("acceptance_criteria", "")
         node.acceptance_rate = data.get("acceptance_rate", 0.0)
+        node.operational_hours_on = data.get("operational_hours_on", 0.0)
         node.exposure_given_hb = data.get("exposure_given_hb", 1.0)
         node.uncontrollable_given_exposure = data.get("uncontrollable_given_exposure", 1.0)
         node.severity_given_uncontrollable = data.get("severity_given_uncontrollable", 1.0)
