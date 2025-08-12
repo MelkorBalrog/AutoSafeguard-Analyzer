@@ -238,8 +238,6 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         self.refresh_ds()
-        self.geometry("700x500")
-        self.resizable(False, False)
         return nb
 
     # ------------------------------------------------------------------
@@ -523,3 +521,18 @@ class ThreatDialog(simpledialog.Dialog):
     def apply(self):
         self.entry.asset = self.asset_var.get()
         self.result = self.entry
+
+    # ------------------------------------------------------------------
+    def buttonbox(self):
+        """Add visible OK/Cancel buttons to the dialog."""
+        box = ttk.Frame(self)
+        ok_btn = ttk.Button(box, text="OK", width=10, command=self.ok)
+        ok_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
+        cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        box.pack(side=tk.BOTTOM, fill=tk.X)
+        self.update_idletasks()
+        self.geometry(f"700x{self.winfo_reqheight()}")
+        self.resizable(False, False)
