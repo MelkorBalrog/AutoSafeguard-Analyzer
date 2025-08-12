@@ -44,7 +44,6 @@ def test_compute_rates_basic():
     assert math.isclose(rates["tpr_min"], 1 - (0.01 * 100) / 60)
     assert math.isclose(rates["tnr_min"], 1 - (0.01 * 100) / 40)
 
-
 def test_compute_rates_auto_counts():
     rates = compute_rates(hours=100, validation_target=0.01, p=60, n=40)
     assert math.isclose(rates["fp"], 0.01 * 100)
@@ -53,7 +52,6 @@ def test_compute_rates_auto_counts():
     assert math.isclose(rates["tn"], 40 - 0.01 * 100)
     assert math.isclose(rates["tpr"], rates["tp"] / 60)
     assert math.isclose(rates["tnr"], rates["tn"] / 40)
-
 
 def test_compute_rates_zero_hours():
     rates = compute_rates(0, 0, 0, 0, 0, None)

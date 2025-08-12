@@ -14326,6 +14326,7 @@ class FaultTreeApp:
                 })
                 new_data.update(metrics)
                 new_data.update(rates)
+
                 self.data = new_data
 
         def add_lib():
@@ -14488,6 +14489,48 @@ class FaultTreeApp:
             from gui.fault_prioritization import FaultPrioritizationWindow
             self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
         self.refresh_all()
+
+    def open_safety_management_toolbox(self):
+        """Open a placeholder tab for the Safety Management toolbox."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        msg = (
+            "Safety Management toolbox initialized.\n"
+            "Future versions will provide a full graphical interface."
+        )
+        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
+
+    def open_safety_management_toolbox(self):
+        """Open a placeholder tab for the Safety Management toolbox."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        msg = (
+            "Safety Management toolbox initialized.\n"
+            "Future versions will provide a full graphical interface."
+        )
+        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
