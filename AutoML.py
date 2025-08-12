@@ -279,6 +279,10 @@ from analysis.models import (
     StpaDoc,
     FI2TCDoc,
     TC2FIDoc,
+    AttackPath,
+    ThreatScenario,
+    DamageScenario,
+    ThreatDoc,
     QUALIFICATIONS,
     COMPONENT_ATTR_TEMPLATES,
     RELIABILITY_MODELS,
@@ -357,6 +361,7 @@ from gui.toolboxes import (
     RequirementsExplorerWindow,
 )
 from gui.stpa_window import StpaWindow
+from gui.threat_window import ThreatWindow
 
 
 def format_requirement(req, include_id=True):
@@ -2016,9 +2021,11 @@ class FaultTreeApp:
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
         self.stpa_docs = []   # list of StpaDoc
+        self.threat_docs = []  # list of ThreatDoc
         self.active_hazop = None
         self.active_hara = None
         self.active_stpa = None
+        self.active_threat = None
         self.hazop_entries = []  # backwards compatibility for active doc
         self.hara_entries = []
         self.stpa_entries = []
@@ -2149,6 +2156,7 @@ class FaultTreeApp:
             command=self.open_hara_window,
         )
         qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
+        qualitative_menu.add_command(label="Threat Analysis", command=self.open_threat_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
@@ -2272,6 +2280,7 @@ class FaultTreeApp:
             "HAZOP Analysis": self.open_hazop_window,
             "Risk Assessment (HARA, HIRE & TARA)": self.open_hara_window,
             "STPA Analysis": self.open_stpa_window,
+            "Threat Analysis": self.open_threat_window,
             "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
             "Faults Editor": self.show_fault_editor,
@@ -2299,11 +2308,12 @@ class FaultTreeApp:
         }
 
         self.tool_categories = {
-            "Hazard Analysis": [
+            "Safety & Threat Analysis": [
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
                 "STPA Analysis",
+                "Threat Analysis",
                 "FI2TC Analysis",
                 "TC2FI Analysis",
             ],
@@ -8071,6 +8081,12 @@ class FaultTreeApp:
                 doc = self.stpa_docs[idx]
                 self._stpa_window.doc_var.set(doc.name)
                 self._stpa_window.select_doc()
+        elif kind == "threat":
+            self.open_threat_window()
+            if hasattr(self, "_threat_window"):
+                doc = self.threat_docs[idx]
+                self._threat_window.doc_var.set(doc.name)
+                self._threat_window.select_doc()
         elif kind == "fi2tc":
             self.open_fi2tc_window()
             if hasattr(self, "_fi2tc_window"):
@@ -8121,6 +8137,8 @@ class FaultTreeApp:
             current = self.hazop_docs[idx].name
         elif kind == "hara":
             current = self.hara_docs[idx].name
+        elif kind == "threat":
+            current = self.threat_docs[idx].name
         elif kind == "fi2tc":
             current = self.fi2tc_docs[idx].name
         elif kind == "tc2fi":
@@ -8143,6 +8161,8 @@ class FaultTreeApp:
             self.hazop_docs[idx].name = new
         elif kind == "hara":
             self.hara_docs[idx].name = new
+        elif kind == "threat":
+            self.threat_docs[idx].name = new
         elif kind == "fi2tc":
             self.fi2tc_docs[idx].name = new
         elif kind == "tc2fi":
@@ -8945,14 +8965,17 @@ class FaultTreeApp:
                 )
             tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
 
-            # --- Hazard Analysis Section ---
-            haz_root = tree.insert("", "end", text="Hazard Analysis", open=True)
+            # --- Safety & Threat Analysis Section ---
+            haz_root = tree.insert("", "end", text="Safety & Threat Analysis", open=True)
             hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
             for idx, doc in enumerate(self.hazop_docs):
                 tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
             stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
             for idx, doc in enumerate(self.stpa_docs):
                 tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
+            threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
+            for idx, doc in enumerate(self.threat_docs):
+                tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
             fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
             for idx, doc in enumerate(self.fi2tc_docs):
                 tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
@@ -13893,6 +13916,13 @@ class FaultTreeApp:
         self._stpa_tab = self._new_tab("STPA")
         self._stpa_window = StpaWindow(self._stpa_tab, self)
 
+    def open_threat_window(self):
+        if hasattr(self, "_threat_tab") and self._threat_tab.winfo_exists():
+            self.doc_nb.select(self._threat_tab)
+            return
+        self._threat_tab = self._new_tab("Threat")
+        self._threat_window = ThreatWindow(self._threat_tab, self)
+
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
@@ -14623,6 +14653,7 @@ class FaultTreeApp:
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.tc2fi_docs
             ],
+            "threat_docs": [asdict(doc) for doc in self.threat_docs],
             "hazop_entries": [asdict(e) for e in self.hazop_entries],
             "fi2tc_entries": self.fi2tc_entries,
             "tc2fi_entries": self.tc2fi_entries,
@@ -14875,6 +14906,26 @@ class FaultTreeApp:
             self.stpa_docs.append(StpaDoc("Default", "", entries))
         self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
         self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
+
+        self.threat_docs = []
+        for d in data.get("threat_docs", []):
+            damages = []
+            for ds in d.get("damages", []):
+                threats = []
+                for ts in ds.get("threats", []):
+                    paths = [AttackPath(**ap) for ap in ts.get("attack_paths", [])]
+                    threats.append(ThreatScenario(ts.get("stride", ""), ts.get("description", ""), paths))
+                damages.append(
+                    DamageScenario(
+                        ds.get("asset", ""),
+                        ds.get("function", ""),
+                        ds.get("category", ""),
+                        ds.get("description", ""),
+                        threats,
+                    )
+                )
+            self.threat_docs.append(ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), damages))
+        self.active_threat = self.threat_docs[0] if self.threat_docs else None
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
