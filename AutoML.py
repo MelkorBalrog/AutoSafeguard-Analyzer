@@ -352,7 +352,7 @@ from gui.toolboxes import (
     ReliabilityWindow,
     FI2TCWindow,
     HazopWindow,
-    RiskAnalysisWindow,
+    HaraWindow,
     TC2FIWindow,
     HazardExplorerWindow,
     RequirementsExplorerWindow,
@@ -2016,7 +2016,6 @@ class FaultTreeApp:
         self.functional_insufficiencies: list[str] = []
         self.hazop_docs = []  # list of HazopDoc
         self.hara_docs = []   # list of HaraDoc
-        self.threat_docs = []  # list of ThreatDoc
         self.stpa_docs = []   # list of StpaDoc
         self.active_hazop = None
         self.active_hara = None
@@ -2149,7 +2148,10 @@ class FaultTreeApp:
         # --- Qualitative Analysis Menu ---
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
-        qualitative_menu.add_command(label="Risk Analysis", command=self.open_risk_analysis_window)
+        qualitative_menu.add_command(
+            label="Risk Assessment (HARA, HIRE & TARA)",
+            command=self.open_hara_window,
+        )
         qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
@@ -2272,7 +2274,7 @@ class FaultTreeApp:
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
-            "Risk Analysis": self.open_risk_analysis_window,
+            "Risk Assessment (HARA, HIRE & TARA)": self.open_hara_window,
             "STPA Analysis": self.open_stpa_window,
             "Hazards Editor": self.show_hazard_editor,
             "Malfunctions Editor": self.show_malfunction_editor,
@@ -3263,18 +3265,6 @@ class FaultTreeApp:
 
     def get_hazop_by_name(self, name):
         for d in self.hazop_docs:
-            if d.name == name:
-                return d
-        return None
-
-    def get_stpa_by_name(self, name):
-        for d in self.stpa_docs:
-            if d.name == name:
-                return d
-        return None
-
-    def get_threat_by_name(self, name):
-        for d in self.threat_docs:
             if d.name == name:
                 return d
         return None
@@ -7593,17 +7583,26 @@ class FaultTreeApp:
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
-        # --- Risk Analyses ---
+        # --- Risk Assessment (HARA, HIRE & TARA) ---
         if self.hara_docs:
             Story.append(PageBreak())
-            Story.append(Paragraph("Risk Analyses", pdf_styles["Heading2"]))
+            Story.append(
+                Paragraph(
+                    "Risk Assessment (HARA, HIRE & TARA)",
+                    pdf_styles["Heading2"],
+                )
+            )
             Story.append(Spacer(1, 12))
             for hara_doc in self.hara_docs:
                 Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
                 data = [[
-                    "Malfunction", "Hazard", "Severity", "Exposure", "Controllability",
-                    "ASIL", "Safety Goal", "Damage Scenario", "Overall Impact",
-                    "Attack Feasibility", "Risk Level", "Cyber Goal"
+                    "Malfunction",
+                    "Hazard",
+                    "Severity",
+                    "Exposure",
+                    "Controllability",
+                    "ASIL",
+                    "Safety Goal",
                 ]]
                 for e in hara_doc.entries:
                     data.append([
@@ -7614,11 +7613,6 @@ class FaultTreeApp:
                         str(e.controllability),
                         e.asil,
                         e.safety_goal,
-                        getattr(e, "damage_scenario", ""),
-                        getattr(e, "impact_overall", ""),
-                        getattr(e, "attack_feasibility", ""),
-                        getattr(e, "risk_level", ""),
-                        getattr(e, "cybersecurity_goal", ""),
                     ])
                 table = Table(data, repeatRows=1)
                 table.setStyle(
@@ -8074,11 +8068,11 @@ class FaultTreeApp:
                 self._hazop_window.doc_var.set(doc.name)
                 self._hazop_window.select_doc()
         elif kind == "hara":
-            self.open_risk_analysis_window()
-            if hasattr(self, "_risk_window"):
+            self.open_hara_window()
+            if hasattr(self, "_hara_window"):
                 doc = self.hara_docs[idx]
-                self._risk_window.doc_var.set(doc.name)
-                self._risk_window.select_doc()
+                self._hara_window.doc_var.set(doc.name)
+                self._hara_window.select_doc()
         elif kind == "stpa":
             self.open_stpa_window()
             if hasattr(self, "_stpa_window"):
@@ -14051,12 +14045,12 @@ class FaultTreeApp:
         self._hazop_tab = self._new_tab("HAZOP")
         self._hazop_window = HazopWindow(self._hazop_tab, self)
 
-    def open_risk_analysis_window(self):
-        if hasattr(self, "_risk_tab") and self._risk_tab.winfo_exists():
-            self.doc_nb.select(self._risk_tab)
+    def open_hara_window(self):
+        if hasattr(self, "_hara_tab") and self._hara_tab.winfo_exists():
+            self.doc_nb.select(self._hara_tab)
             return
-        self._risk_tab = self._new_tab("Risk Analysis")
-        self._risk_window = RiskAnalysisWindow(self._risk_tab, self)
+        self._hara_tab = self._new_tab("HARA")
+        self._hara_window = HaraWindow(self._hara_tab, self)
 
     def open_stpa_window(self):
         if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
@@ -14773,21 +14767,11 @@ class FaultTreeApp:
                 {
                     "name": doc.name,
                     "hazops": getattr(doc, "hazops", []),
-                    "stpas": getattr(doc, "stpas", []),
-                    "threats": getattr(doc, "threats", []),
                     "entries": [asdict(e) for e in doc.entries],
                     "approved": getattr(doc, "approved", False),
                     "status": getattr(doc, "status", "draft"),
                 }
                 for doc in self.hara_docs
-            ],
-            "threats": [
-                {
-                    "name": doc.name,
-                    "damage_scenarios": getattr(doc, "damage_scenarios", []),
-                    "threat_scenarios": getattr(doc, "threat_scenarios", {}),
-                }
-                for doc in self.threat_docs
             ],
             "stpas": [
                 {
@@ -14976,16 +14960,6 @@ class FaultTreeApp:
                     e.get("exp_rationale", ""),
                     e.get("asil", "QM"),
                     e.get("safety_goal", ""),
-                    e.get("damage_scenario", ""),
-                    e.get("impact_financial", ""),
-                    e.get("impact_safety", ""),
-                    e.get("impact_operational", ""),
-                    e.get("impact_privacy", ""),
-                    e.get("impact_overall", ""),
-                    e.get("attack_vector", ""),
-                    e.get("attack_feasibility", ""),
-                    e.get("risk_level", ""),
-                    e.get("cybersecurity_goal", ""),
                 )
                 for e in d.get("entries", [])
             ]
@@ -15000,8 +14974,6 @@ class FaultTreeApp:
                     entries,
                     d.get("approved", False),
                     d.get("status", "draft"),
-                    stpas=d.get("stpas", []),
-                    threats=d.get("threats", []),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
@@ -15023,16 +14995,6 @@ class FaultTreeApp:
                             e.get("exp_rationale", ""),
                             e.get("asil", "QM"),
                             e.get("safety_goal", ""),
-                            e.get("damage_scenario", ""),
-                            e.get("impact_financial", ""),
-                            e.get("impact_safety", ""),
-                            e.get("impact_operational", ""),
-                            e.get("impact_privacy", ""),
-                            e.get("impact_overall", ""),
-                            e.get("attack_vector", ""),
-                            e.get("attack_feasibility", ""),
-                            e.get("risk_level", ""),
-                            e.get("cybersecurity_goal", ""),
                         )
                         for e in data.get("hara_entries", [])
                     ],
@@ -15043,16 +15005,6 @@ class FaultTreeApp:
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
         self.update_hazard_list()
-
-        self.threat_docs = []
-        for d in data.get("threats", []):
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", ""),
-                    d.get("damage_scenarios", []),
-                    d.get("threat_scenarios", {}),
-                )
-            )
 
         self.stpa_docs = []
         for d in data.get("stpas", []):
