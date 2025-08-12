@@ -1125,6 +1125,32 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
 
+### Acceptance Criteria and Validation Targets
+
+ISO 21448 derives validation targets from an acceptance criterion using the rate
+of hazardous behaviour (*R*<sub>HB</sub>). For a hazardous behaviour with an
+acceptance criterion *A*<sub>H</sub> and the probabilities of exposure,
+uncontrollability and severity ( *P*<sub>E&#124;HB</sub>,
+*P*<sub>C&#124;E</sub>, *P*<sub>S&#124;C</sub> ), the standard defines:
+
+```
+A_H = R_HB × P_E|HB × P_C|E × P_S|C
+R_HB = A_H / (P_E|HB × P_C|E × P_S|C)
+```
+
+The resulting *R*<sub>HB</sub> can be used to determine the validation effort.
+Assuming no hazardous behaviour is observed during testing, the duration needed
+to meet the acceptance criterion with confidence *C* is:
+
+```
+T = -ln(1 - C) / R_HB
+```
+
+For example, if *A*<sub>H</sub> = 10⁻⁸/h,
+*P*<sub>E&#124;HB</sub> = 5 %, *P*<sub>C&#124;E</sub> = 10 % and
+*P*<sub>S&#124;C</sub> = 1 %, then *R*<sub>HB</sub> = 2×10⁻⁴/h. Demonstrating this
+with 63 % confidence requires roughly 5 000 h of fault‑free testing.
+
 ## Email Setup
 
 When sending review summaries, the application asks for SMTP settings and login details. If you use Gmail with two-factor authentication enabled, create an **app password** and enter it instead of your normal account password. Authentication failures will prompt you to re-enter these settings.
