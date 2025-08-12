@@ -28,6 +28,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
   - [Product Goals Export](#product-goals-export)
   - [Safety Performance Indicators](#safety-performance-indicators)
+  - [Safety Management Toolbox](#safety-management-toolbox)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
 - [Diagram Styles](#diagram-styles)
@@ -1124,6 +1125,10 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 ### Safety Performance Indicators
 
 The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
+
+### Safety Management Toolbox
+
+The **Safety Management Toolbox** lets you organize safety work products across the entire lifecycle. You can define phases, attach tailored work products from any diagram or analysis with a supporting rationale, and capture workflows that govern how these items interact. The resulting lifecycle and workflow definition can be exported as a JSON business diagram to document your safety governance process.
 
 ### Acceptance Criteria and Validation Targets
 
