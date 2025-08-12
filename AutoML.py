@@ -9079,7 +9079,12 @@ class FaultTreeApp:
             sys_root = tree.insert("", "end", text="System Design", open=True)
             repo = SysMLRepository.get_instance()
             self.arch_diagrams = sorted(
-                repo.diagrams.values(), key=lambda d: d.name or d.diag_id
+                [
+                    d
+                    for d in repo.diagrams.values()
+                    if "safety-management" not in getattr(d, "tags", [])
+                ],
+                key=lambda d: d.name or d.diag_id,
             )
             arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
             for idx, diag in enumerate(self.arch_diagrams):
@@ -14327,6 +14332,24 @@ class FaultTreeApp:
         self._fault_prio_tab = self._new_tab("Fault Prioritization")
         from gui.fault_prioritization import FaultPrioritizationWindow
         self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
+
+    def open_safety_management_toolbox(self):
+        """Open the Safety Management editor and browser."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from gui.safety_management_toolbox import SafetyManagementWindow
+        from analysis import SafetyManagementToolbox
+
+        if not hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox = SafetyManagementToolbox()
+
+        SafetyManagementWindow(
+            self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
+        )
 
     def open_style_editor(self):
         """Open the diagram style editor window."""

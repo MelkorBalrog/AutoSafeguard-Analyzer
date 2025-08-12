@@ -5334,15 +5334,28 @@ class SysMLDiagramWindow(tk.Frame):
             )
             label = obj.properties.get("name", "")
             if label:
-                lx = x
-                ly = y - h - 4 * self.zoom
-                self.canvas.create_text(
-                    lx,
-                    ly,
-                    text=label,
-                    anchor="s",
-                    font=self.font,
-                )
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if diag and diag.diag_type == "Activity Diagram":
+                    lx = x - w - 4 * self.zoom
+                    ly = y
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        angle=90,
+                        anchor="e",
+                        font=self.font,
+                    )
+                else:
+                    lx = x
+                    ly = y - h - 4 * self.zoom
+                    self.canvas.create_text(
+                        lx,
+                        ly,
+                        text=label,
+                        anchor="s",
+                        font=self.font,
+                    )
         elif obj.obj_type == "Block Boundary":
             self._create_round_rect(
                 x - w,
@@ -7768,6 +7781,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Fork",
             "Join",
             "Flow",
+            "System Boundary",
         ]
         super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
         ttk.Button(
@@ -8604,7 +8618,7 @@ class ArchitectureManagerDialog(tk.Frame):
                 ):
                     add_elem(e.elem_id, node)
             for d in self.repo.diagrams.values():
-                if d.package == pkg_id:
+                if d.package == pkg_id and "safety-management" not in getattr(d, "tags", []):
                     label = d.name or d.diag_id
                     icon = self.diagram_icons.get(d.diag_type, self.default_diag_icon)
                     diag_iid = f"diag_{d.diag_id}"
@@ -8803,6 +8817,8 @@ class ArchitectureManagerDialog(tk.Frame):
             return
         if item.startswith("diag_"):
             diag = self.repo.diagrams.get(item[5:])
+            if diag and "safety-management" in getattr(diag, "tags", []):
+                return
             if diag:
                 name = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=diag.name)
                 if name:
