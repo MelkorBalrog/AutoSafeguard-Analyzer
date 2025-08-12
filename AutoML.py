@@ -8705,25 +8705,10 @@ class FaultTreeApp:
 
     def compute_confusion_for_odd(self, odd_name: str):
         """Compute confusion matrix counts and metrics for an ODD element."""
-        from analysis.confusion_matrix import (
-            compute_metrics,
-            counts_from_metrics,
-        )
+        from analysis.confusion_matrix import counts_from_validation, compute_metrics
 
         entries = self._validation_entries_for_odd(odd_name)
-        if not entries:
-            counts = {"tp": 0.0, "fp": 0.0, "tn": 0.0, "fn": 0.0}
-            metrics = {
-                "accuracy": 0.0,
-                "precision": 0.0,
-                "recall": 0.0,
-                "f1": 0.0,
-            }
-            return counts, metrics
-
-        worst_target = max(target for _, target, _ in entries)
-        metric_value = max(0.0, 1.0 - worst_target)
-        counts = counts_from_metrics(metric_value, metric_value, metric_value)
+        counts = counts_from_validation(entries)
         metrics = compute_metrics(
             counts.get("tp", 0.0),
             counts.get("fp", 0.0),
