@@ -12137,6 +12137,7 @@ class FaultTreeApp:
             "ASIL",
             "Safe State",
             "FTTI",
+            "Acc Rate",
             "Val Target",
             "Val Desc",
             "Acceptance",
@@ -12153,7 +12154,6 @@ class FaultTreeApp:
             for sg in self.top_events:
                 name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
                 sg.safety_goal_asil = self.get_hara_goal_asil(name)
-                cal = self.get_cyber_goal_cal(sg.user_name or f"SG {sg.unique_id}")
                 tree.insert(
                     "",
                     "end",
@@ -12161,9 +12161,9 @@ class FaultTreeApp:
                     values=[
                         sg.user_name or f"SG {sg.unique_id}",
                         sg.safety_goal_asil,
-                        cal,
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
+                        str(getattr(sg, "acceptance_rate", "")),
                         getattr(sg, "validation_target", ""),
                         getattr(sg, "validation_desc", ""),
                         getattr(sg, "acceptance_criteria", ""),
