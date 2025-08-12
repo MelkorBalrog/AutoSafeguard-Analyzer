@@ -196,43 +196,6 @@ class StpaDoc:
     entries: list
     meta: Metadata = field(default_factory=Metadata)
 
-
-@dataclass
-class AttackPath:
-    """Sequence of steps an attacker may take."""
-
-    steps: list[str] = field(default_factory=list)
-    description: str = ""
-
-
-@dataclass
-class ThreatScenario:
-    """Threat scenario linked to a damage scenario."""
-
-    stride: str
-    description: str = ""
-    attack_paths: list[AttackPath] = field(default_factory=list)
-
-
-@dataclass
-class DamageScenario:
-    """Potential damage to an asset categorized by CIA."""
-
-    asset: str
-    function: str
-    category: str
-    description: str = ""
-    threats: list[ThreatScenario] = field(default_factory=list)
-
-
-@dataclass
-class ThreatDoc:
-    """Container for a threat analysis document."""
-
-    name: str
-    damages: list[DamageScenario]
-    meta: Metadata = field(default_factory=Metadata)
-
 @dataclass
 class FI2TCDoc:
     """Container for an FI2TC analysis."""
