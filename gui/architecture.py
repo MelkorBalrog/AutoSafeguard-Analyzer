@@ -4255,8 +4255,6 @@ class SysMLDiagramWindow(tk.Frame):
     ) -> Tuple[float, float]:
         cx = obj.x * self.zoom
         cy = obj.y * self.zoom
-        if obj.obj_type == "Port":
-            return cx, cy
 
         def _intersect(vx: float, vy: float, w: float, h: float, r: float) -> Tuple[float, float]:
             """Return intersection of a ray from the origin with a rounded rectangle."""
@@ -4302,6 +4300,21 @@ class SysMLDiagramWindow(tk.Frame):
 
             t, ix, iy = min(candidates, key=lambda c: c[0])
             return ix, iy
+
+        if obj.obj_type == "Port":
+            # Ports are drawn as 12x12 squares regardless of object width/height.
+            # Compute the intersection with this square so connectors touch its edge
+            # rather than reaching the center.
+            w = h = 6 * self.zoom
+            if rel is not None:
+                rx, ry = rel
+                vx = rx * w
+                vy = ry * h
+            else:
+                vx = tx - cx
+                vy = ty - cy
+            ix, iy = _intersect(vx, vy, w, h, 0.0)
+            return cx + ix, cy + iy
 
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
