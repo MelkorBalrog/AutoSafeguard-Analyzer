@@ -14589,6 +14589,24 @@ class FaultTreeApp:
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
 
+    def open_safety_management_toolbox(self):
+        """Open the Safety Management editor and browser."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from gui.safety_management_toolbox import SafetyManagementWindow
+        from analysis import SafetyManagementToolbox
+
+        if not hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox = SafetyManagementToolbox()
+
+        SafetyManagementWindow(
+            self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
+        )
+
     def open_style_editor(self):
         """Open the diagram style editor window."""
         StyleEditor(self.root)

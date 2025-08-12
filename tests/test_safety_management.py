@@ -19,7 +19,7 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 from analysis import SafetyManagementToolbox
-from gui.architecture import ActivityDiagramWindow, SysMLObject
+from gui.architecture import ActivityDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from sysml.sysml_repository import SysMLRepository
 
 
@@ -136,3 +136,58 @@ def test_open_safety_management_toolbox_uses_browser():
     app.open_safety_management_toolbox()
     assert DummySMW.created
     assert hasattr(app, "safety_mgmt_toolbox")
+
+
+def test_safety_diagrams_hidden_and_immutable_in_explorer():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag_id = toolbox.create_diagram("Gov")
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+
+        def delete(self, *items):
+            for iid in items:
+                self.items.pop(iid, None)
+
+        def get_children(self, item=""):
+            if item:
+                return self.items.get(item, {}).get("children", [])
+            return [iid for iid, meta in self.items.items() if meta["parent"] == ""]
+
+        def exists(self, iid):
+            return iid in self.items
+
+        def insert(self, parent, index, iid=None, text="", values=(), image=None, **kwargs):
+            self.items[iid] = {
+                "parent": parent,
+                "text": text,
+                "values": values,
+                "image": image,
+                "children": [],
+            }
+            if parent in self.items:
+                self.items[parent]["children"].append(iid)
+            return iid
+
+    class DummyExplorer:
+        def __init__(self):
+            self.repo = repo
+            self.tree = DummyTree()
+            self.diagram_icons = {}
+            self.elem_icons = {}
+            self.default_diag_icon = None
+            self.default_elem_icon = None
+            self.pkg_icon = None
+            self.app = None
+
+        populate = ArchitectureManagerDialog.populate
+        rename_item = ArchitectureManagerDialog.rename_item
+
+    explorer = DummyExplorer()
+    explorer.populate()
+    assert not explorer.tree.exists(f"diag_{diag_id}")
+    explorer.rename_item(f"diag_{diag_id}")
+    assert repo.diagrams[diag_id].name == "Gov"
