@@ -14123,28 +14123,47 @@ class FaultTreeApp:
                 nb.add(self.attr_frame, text="Attributes")
                 self.attr_rows = []
                 for k, v in self.data.items():
-                    if k not in {"name", "tp", "fp", "tn", "fn"}:
+                    if k not in {"name", "p", "n", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
                 ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=2, pady=5)
 
                 # Confusion matrix tab
                 cm_frame = ttk.Frame(nb)
                 nb.add(cm_frame, text="Confusion Matrix")
+                self.p_var = tk.DoubleVar(value=float(self.data.get("p", 0) or 0))
+                self.n_var = tk.DoubleVar(value=float(self.data.get("n", 0) or 0))
                 self.tp_var = tk.DoubleVar(value=float(self.data.get("tp", 0) or 0))
                 self.fp_var = tk.DoubleVar(value=float(self.data.get("fp", 0) or 0))
                 self.tn_var = tk.DoubleVar(value=float(self.data.get("tn", 0) or 0))
                 self.fn_var = tk.DoubleVar(value=float(self.data.get("fn", 0) or 0))
+                self.vt_type_var = tk.StringVar(value="FP")
+
+                inputs = ttk.Frame(cm_frame)
+                inputs.grid(row=0, column=0, pady=5)
+                ttk.Label(inputs, text="Actual P").grid(row=0, column=0)
+                ttk.Entry(inputs, textvariable=self.p_var, width=6).grid(row=0, column=1)
+                ttk.Label(inputs, text="Actual N").grid(row=0, column=2)
+                ttk.Entry(inputs, textvariable=self.n_var, width=6).grid(row=0, column=3)
+                ttk.Label(inputs, text="Type").grid(row=0, column=4)
+                type_box = ttk.Combobox(
+                    inputs,
+                    values=["TP", "FP", "TN", "FN"],
+                    textvariable=self.vt_type_var,
+                    width=5,
+                    state="readonly",
+                )
+                type_box.grid(row=0, column=5)
 
                 matrix = ttk.Frame(cm_frame)
-                matrix.grid(row=0, column=0, pady=5)
+                matrix.grid(row=1, column=0, pady=5)
                 ttk.Label(matrix, text="TP").grid(row=0, column=0)
-                ttk.Entry(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
+                ttk.Label(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
                 ttk.Label(matrix, text="FN").grid(row=0, column=2)
-                ttk.Entry(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
+                ttk.Label(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
                 ttk.Label(matrix, text="FP").grid(row=1, column=0)
-                ttk.Entry(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
+                ttk.Label(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
                 ttk.Label(matrix, text="TN").grid(row=1, column=2)
-                ttk.Entry(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
+                ttk.Label(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
 
                 metrics_frame = ttk.Frame(cm_frame)
                 metrics_frame.grid(row=1, column=0, sticky="nsew")
@@ -14162,20 +14181,39 @@ class FaultTreeApp:
                 ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
 
                 def update_metrics(*_):
-                    from analysis.confusion_matrix import compute_metrics
+                    from analysis.confusion_matrix import compute_metrics, compute_counts
 
-                    tp = self.tp_var.get()
-                    fp = self.fp_var.get()
-                    tn = self.tn_var.get()
-                    fn = self.fn_var.get()
-                    metrics = compute_metrics(tp, fp, tn, fn)
+                    p = self.p_var.get()
+                    n = self.n_var.get()
+                    tau_on = getattr(self, "current_tau_on", 0.0)
+                    val_target = None
+                    if getattr(self, "selected_goal", None) is not None:
+                        val_target = getattr(self.selected_goal, "validation_target", None)
+                    counts = compute_counts(
+                        hours=tau_on or 0.0,
+                        validation_target=val_target,
+                        p=p,
+                        n=n,
+                        target_type=self.vt_type_var.get().lower(),
+                    )
+                    self.tp_var.set(counts["tp"])
+                    self.fp_var.set(counts["fp"])
+                    self.tn_var.set(counts["tn"])
+                    self.fn_var.set(counts["fn"])
+                    metrics = compute_metrics(counts["tp"], counts["fp"], counts["tn"], counts["fn"])
                     self.acc_var.set(f"{metrics['accuracy']:.3f}")
                     self.prec_var.set(f"{metrics['precision']:.3f}")
                     self.rec_var.set(f"{metrics['recall']:.3f}")
                     self.f1_var.set(f"{metrics['f1']:.3f}")
 
-                for var in (self.tp_var, self.fp_var, self.tn_var, self.fn_var):
+                def on_type_change(*_):
+                    if getattr(self, "selected_goal", None) is not None:
+                        setattr(self.selected_goal, "cm_type", self.vt_type_var.get().lower())
+                    update_metrics()
+
+                for var in (self.p_var, self.n_var):
                     var.trace_add("write", update_metrics)
+                self.vt_type_var.trace_add("write", on_type_change)
                 update_metrics()
 
                 vt_frame = ttk.Frame(cm_frame)
@@ -14194,12 +14232,37 @@ class FaultTreeApp:
                     width = 120 if c in ("Product Goal", "Validation Target") else 200
                     self.vt_tree.column(c, width=width, anchor="center")
                 self.vt_tree.pack(fill=tk.BOTH, expand=True)
+                self.vt_item_to_goal = {}
+                self.selected_goal = None
+                self.current_tau_on = 0.0
+
+                def on_vt_select(event=None):
+                    sel = self.vt_tree.selection()
+                    if not sel:
+                        self.selected_goal = None
+                        self.current_tau_on = 0.0
+                    else:
+                        sg = self.vt_item_to_goal.get(sel[0])
+                        self.selected_goal = sg
+                        tau_on = 0.0
+                        mp_name = getattr(sg, "mission_profile", "")
+                        if mp_name:
+                            for mp in self.app.mission_profiles:
+                                if mp.name == mp_name:
+                                    tau_on = mp.tau_on
+                                    break
+                        self.current_tau_on = tau_on
+                        self.vt_type_var.set(getattr(sg, "cm_type", "fp").upper())
+                    update_metrics()
+
+                self.vt_tree.bind("<<TreeviewSelect>>", on_vt_select)
 
                 def refresh_vt(*_):
                     self.vt_tree.delete(*self.vt_tree.get_children())
+                    self.vt_item_to_goal.clear()
                     name = self.name_var.get().strip()
                     for sg in self.app.get_validation_targets_for_odd(name):
-                        self.vt_tree.insert(
+                        iid = self.vt_tree.insert(
                             "",
                             "end",
                             values=[
@@ -14209,6 +14272,11 @@ class FaultTreeApp:
                                 getattr(sg, "acceptance_criteria", ""),
                             ],
                         )
+                        self.vt_item_to_goal[iid] = sg
+                    items = self.vt_tree.get_children()
+                    if items:
+                        self.vt_tree.selection_set(items[0])
+                        on_vt_select()
 
                 refresh_vt()
                 self.name_var.trace_add("write", refresh_vt)
@@ -14219,14 +14287,32 @@ class FaultTreeApp:
                     key = k_var.get().strip()
                     if key:
                         new_data[key] = v_var.get()
-                tp = float(self.tp_var.get())
-                fp = float(self.fp_var.get())
-                tn = float(self.tn_var.get())
-                fn = float(self.fn_var.get())
-                from analysis.confusion_matrix import compute_metrics
+                p = float(self.p_var.get())
+                n = float(self.n_var.get())
+                from analysis.confusion_matrix import compute_metrics, compute_counts
 
-                new_data.update({"tp": tp, "fp": fp, "tn": tn, "fn": fn})
-                new_data.update(compute_metrics(tp, fp, tn, fn))
+                tau_on = getattr(self, "current_tau_on", 0.0)
+                val_target = None
+                if getattr(self, "selected_goal", None) is not None:
+                    val_target = getattr(self.selected_goal, "validation_target", None)
+                counts = compute_counts(
+                    hours=tau_on or 0.0,
+                    validation_target=val_target,
+                    p=p,
+                    n=n,
+                    target_type=self.vt_type_var.get().lower(),
+                )
+                metrics = compute_metrics(counts["tp"], counts["fp"], counts["tn"], counts["fn"])
+                new_data.update({
+                    "p": p,
+                    "n": n,
+                    "tp": counts["tp"],
+                    "fp": counts["fp"],
+                    "tn": counts["tn"],
+                    "fn": counts["fn"],
+                })
+                new_data.update(metrics)
+                new_data.update(counts)
                 self.data = new_data
 
         def add_lib():
