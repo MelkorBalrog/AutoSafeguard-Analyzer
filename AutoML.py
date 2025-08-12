@@ -14549,6 +14549,23 @@ class FaultTreeApp:
         gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
         gui.pack(fill=tk.BOTH, expand=True)
 
+    def open_safety_management_toolbox(self):
+        """Open the Safety Management toolbox tab."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+        from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
+        gui.pack(fill=tk.BOTH, expand=True)
+
     def open_style_editor(self):
         """Open the diagram style editor window."""
         StyleEditor(self.root)

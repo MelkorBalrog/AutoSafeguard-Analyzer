@@ -2,10 +2,6 @@
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-
 from gui import messagebox
 from analysis.safety_management import SafetyManagementToolbox as SMT
 
@@ -29,34 +25,42 @@ class SafetyManagementToolbox(ttk.Frame):
             side=tk.LEFT, padx=2
         )
 
-        self.fig, self.ax = plt.subplots(figsize=(5, 4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        # Canvas used to render a lightweight BPMN diagram without matplotlib
+        self.canvas = tk.Canvas(self, width=500, height=400, bg="white")
+        self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # Start with a diagram built from current work products
         self.toolbox.build_default_diagram()
         self._refresh()
 
     def _refresh(self) -> None:
-        self.ax.clear()
+        """Redraw the BPMN diagram on the canvas."""
+        self.canvas.delete("all")
         g = self.toolbox.business_diagram.graph
-        nodes = g.nodes()
-        if nodes:
-            pos = {n: (i, 0) for i, n in enumerate(nodes)}
-            # Draw edges
-            for u, v in g.edges():
-                x1, y1 = pos[u]
-                x2, y2 = pos[v]
-                self.ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                                 arrowprops=dict(arrowstyle="->"))
-            # Draw nodes
-            xs = [pos[n][0] for n in nodes]
-            ys = [pos[n][1] for n in nodes]
-            self.ax.scatter(xs, ys, s=300)
-            for n, (x, y) in pos.items():
-                self.ax.text(x, y, n, ha="center", va="center")
-        self.ax.axis("off")
-        self.canvas.draw()
+        nodes = list(g.nodes())
+        if not nodes:
+            return
+
+        # Simple horizontal layout
+        pos = {n: (50 + i * 100, 100) for i, n in enumerate(nodes)}
+
+        # Draw flows
+        for u, v in g.edges():
+            x1, y1 = pos[u]
+            x2, y2 = pos[v]
+            self.canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+
+        # Draw tasks
+        radius = 20
+        for name, (x, y) in pos.items():
+            self.canvas.create_oval(
+                x - radius,
+                y - radius,
+                x + radius,
+                y + radius,
+                fill="lightgray",
+            )
+            self.canvas.create_text(x, y, text=name)
 
     def _add_task(self) -> None:
         name = simpledialog.askstring("Task", "Task name:", parent=self)
