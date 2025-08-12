@@ -14218,14 +14218,6 @@ class FaultTreeApp:
                     self.prec_var.set(f"{metrics['precision']:.3f}")
                     self.rec_var.set(f"{metrics['recall']:.3f}")
                     self.f1_var.set(f"{metrics['f1']:.3f}")
-                    self.tpr_var.set(f"{rates['tpr']:.3f}")
-                    self.tnr_var.set(f"{rates['tnr']:.3f}")
-                    self.fpr_var.set(f"{rates['fpr']:.3f}")
-                    self.fnr_var.set(f"{rates['fnr']:.3f}")
-                    self.tp_rate_var.set(f"{rates['tp_rate']:.3f}")
-                    self.tn_rate_var.set(f"{rates['tn_rate']:.3f}")
-                    self.fp_rate_var.set(f"{rates['fp_rate']:.3f}")
-                    self.fn_rate_var.set(f"{rates['fn_rate']:.3f}")
 
                 for var in (self.p_var, self.n_var):
                     var.trace_add("write", update_metrics)
@@ -14326,7 +14318,6 @@ class FaultTreeApp:
                 })
                 new_data.update(metrics)
                 new_data.update(rates)
-
                 self.data = new_data
 
         def add_lib():

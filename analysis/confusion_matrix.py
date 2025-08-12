@@ -44,27 +44,26 @@ def compute_rates(
     p: float | None = None,
     n: float | None = None,
 ) -> Dict[str, float]:
-    """Calculate confusion matrix rates and per-hour event rates.
+    """Derive confusion matrix counts from dataset size and limits.
 
-    This helper can either operate on explicit confusion matrix counts
-    (``tp``, ``fp``, ``tn``, ``fn``) or derive them from dataset sizes
-    ``p`` (actual positives) and ``n`` (actual negatives) together with an
-    allowed hazardous event rate ``validation_target`` expressed in
-    events/hour.
+    The helper operates on explicit confusion matrix counts (``tp``, ``fp``,
+    ``tn``, ``fn``) or, when these are not provided, derives them from
+    dataset sizes ``p`` and ``n`` together with an allowed hazardous event
+    rate ``validation_target`` (events/hour) over a mission duration
+    ``hours``.
 
     Parameters
     ----------
     tp, fp, tn, fn:
         Confusion matrix counts. If any are ``None`` then ``p`` and ``n``
-        must be supplied and counts are derived assuming the per-hour
-        limit ``validation_target`` applies equally to false positives and
-        false negatives.
+        must be supplied and counts are derived assuming the per-hour limit
+        ``validation_target`` applies equally to false positives and false
+        negatives.
     hours:
         Total test duration in hours (mission profile ``TAU ON``).
     validation_target:
         Optional allowed hazardous events per hour for the selected
-        validation target. When provided, additional maximum/minimum rates
-        are computed using the formulas in the project documentation.
+        validation target.
     p, n:
         Dataset sizes for actual positives and negatives. Required when
         explicit confusion matrix counts are not supplied.
@@ -73,12 +72,7 @@ def compute_rates(
     -------
     dict
         Dictionary containing the confusion matrix counts (``tp``, ``fp``,
-        ``tn``, ``fn``), derived totals ``p`` and ``n``, the dimensionless
-        rates ``tpr``, ``tnr``, ``fpr`` and ``fnr`` as well as the per-hour
-        event rates ``tp_rate``, ``tn_rate``, ``fp_rate`` and
-        ``fn_rate``. When ``validation_target`` is supplied, the dictionary
-        also contains ``fpr_max``, ``fnr_max``, ``tpr_min`` and
-        ``tnr_min``.
+        ``tn``, ``fn``) and totals ``p`` and ``n``.
     """
 
     hours = float(hours)
@@ -102,46 +96,4 @@ def compute_rates(
         p = tp + fn
         n = tn + fp
 
-    validation_target = float(validation_target) if validation_target is not None else None
-
-    tpr = tp / p if p else 0.0
-    tnr = tn / n if n else 0.0
-    fpr = fp / n if n else 0.0
-    fnr = fn / p if p else 0.0
-
-    tp_rate = tp / hours if hours else 0.0
-    tn_rate = tn / hours if hours else 0.0
-    fp_rate = fp / hours if hours else 0.0
-    fn_rate = fn / hours if hours else 0.0
-
-    results = {
-        "tp": tp,
-        "fp": fp,
-        "tn": tn,
-        "fn": fn,
-        "p": p,
-        "n": n,
-        "tpr": tpr,
-        "tnr": tnr,
-        "fpr": fpr,
-        "fnr": fnr,
-        "tp_rate": tp_rate,
-        "tn_rate": tn_rate,
-        "fp_rate": fp_rate,
-        "fn_rate": fn_rate,
-    }
-
-    if validation_target is not None and hours > 0.0:
-        max_events = validation_target * hours
-        fpr_max = max_events / n if n else 0.0
-        fnr_max = max_events / p if p else 0.0
-        results.update(
-            {
-                "fpr_max": fpr_max,
-                "fnr_max": fnr_max,
-                "tpr_min": 1.0 - fnr_max,
-                "tnr_min": 1.0 - fpr_max,
-            }
-        )
-
-    return results
+    return {"tp": tp, "fp": fp, "tn": tn, "fn": fn, "p": p, "n": n}
