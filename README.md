@@ -27,6 +27,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [Common Cause Toolbox](#common-cause-toolbox)
   - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
   - [Product Goals Export](#product-goals-export)
+  - [Safety Performance Indicators](#safety-performance-indicators)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
 - [Diagram Styles](#diagram-styles)
@@ -624,8 +625,8 @@ Key attributes are:
   `fmeda_spfm`, `fmeda_lpfm`, `fmeda_fault_type`, `fmeda_fault_fraction`,
   `fmeda_dc_target`, `fmeda_spfm_target`, `fmeda_lpfm_target`), safety goal data
   (`safety_goal_description`, `safety_goal_asil`, `safe_state`, `ftti`,
-  `acceptance_prob`, `acceptance_criteria`, `sg_dc_target`, `sg_spfm_target`,
-  `sg_lpfm_target`), probability attributes (`failure_prob`, `probability`,
+  `validation_target`, `validation_desc`, `acceptance_criteria`, `sg_dc_target`,
+  `sg_spfm_target`, `sg_lpfm_target`), probability attributes (`failure_prob`, `probability`,
   `prob_formula`), plus `fault_ref`, `malfunction` and linked
   `safety_requirements`.
 - **ReliabilityAnalysis** – selected `standard`, mission `profile`, aggregated
@@ -1119,6 +1120,10 @@ A built-in calculator derives a Prototype Assurance Level (PAL) from confidence,
 ### Product Goals Export
 
 Use **Export Product Goal Requirements** in the Requirements menu to generate a CSV listing each product goal with its associated requirements and ASIL ratings.
+
+### Safety Performance Indicators
+
+The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
 
 ## Email Setup
 
