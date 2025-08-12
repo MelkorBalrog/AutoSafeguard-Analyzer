@@ -261,8 +261,10 @@ class ThreatDialog(simpledialog.Dialog):
             self.entry.functions.append(FunctionThreat(func))
             self.func_list.insert(tk.END, func)
             self.func_list.selection_clear(0, tk.END)
-            self.func_list.selection_set(tk.END)
-            self.func_list.event_generate("<<ListboxSelect>>")
+            last = self.func_list.size() - 1
+            if last >= 0:
+                self.func_list.selection_set(last)
+                self.func_list.event_generate("<<ListboxSelect>>")
         self.func_var.set("")
 
     def remove_function(self):
