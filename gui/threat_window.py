@@ -152,6 +152,7 @@ class ThreatWindow(tk.Frame):
             super().__init__(parent, title="Edit Threat Analysis")
 
         def body(self, master):
+            self._body = master
             ttk.Label(master, text="Internal Block Diagram").grid(
                 row=0, column=0, sticky="e"
             )
@@ -175,6 +176,25 @@ class ThreatWindow(tk.Frame):
             if current:
                 self.diag_var.set(current)
             return master
+
+        def buttonbox(self):
+            """Place explicit OK/Cancel buttons at the bottom."""
+            if hasattr(self, "_body"):
+                self._body.pack_configure(fill=tk.BOTH, expand=True)
+
+            box = ttk.Frame(self)
+            box.pack(fill=tk.X, padx=5, pady=5)
+
+            ok_btn = ttk.Button(
+                box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
+            )
+            ok_btn.pack(side=tk.RIGHT, padx=5)
+            cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
+            cancel_btn.pack(side=tk.RIGHT, padx=5)
+
+            ok_btn.focus_set()
+            self.bind("<Return>", self.ok)
+            self.bind("<Escape>", self.cancel)
 
         def apply(self):
             self.result = self.diag_map.get(self.diag_var.get(), "")
