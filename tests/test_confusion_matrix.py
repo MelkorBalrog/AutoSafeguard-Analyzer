@@ -3,7 +3,11 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from analysis.confusion_matrix import compute_metrics, compute_rates
+from analysis.confusion_matrix import (
+    compute_metrics,
+    compute_metrics_from_target,
+    compute_rates,
+)
 
 
 def test_compute_metrics_basic():
@@ -51,3 +55,15 @@ def test_compute_rates_zero_hours():
     assert counts["tn"] == 0.0
     assert counts["fp"] == 0.0
     assert counts["fn"] == 0.0
+
+
+def test_compute_metrics_from_target():
+    data = compute_metrics_from_target(hours=100, validation_target=0.01, p=60, n=40)
+    assert math.isclose(data["accuracy"], 0.98)
+    assert math.isclose(data["precision"], 0.9833333333333333)
+    assert math.isclose(data["recall"], 0.9833333333333333)
+    assert math.isclose(data["f1"], 0.9833333333333333)
+    assert math.isclose(data["tp"], 59.0)
+    assert math.isclose(data["fp"], 1.0)
+    assert math.isclose(data["tn"], 39.0)
+    assert math.isclose(data["fn"], 1.0)

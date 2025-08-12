@@ -14195,7 +14195,7 @@ class FaultTreeApp:
                 ttk.Label(metrics_frame, textvariable=self.fn_rate_var).grid(row=3, column=3, sticky="w")
 
                 def update_metrics(*_):
-                    from analysis.confusion_matrix import compute_metrics, compute_rates
+                    from analysis.confusion_matrix import compute_metrics_from_target
 
                     p = self.p_var.get()
                     n = self.n_var.get()
@@ -14203,23 +14203,24 @@ class FaultTreeApp:
                     val_target = None
                     if getattr(self, "selected_goal", None) is not None:
                         val_target = getattr(self.selected_goal, "validation_target", None)
-                    rates = compute_rates(
+                    data = compute_metrics_from_target(
                         hours=tau_on or 0.0,
                         validation_target=val_target,
                         p=p,
                         n=n,
                     )
-                    metrics = compute_metrics(
-                        rates["tp"], rates["fp"], rates["tn"], rates["fn"]
-                    )
-                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
-                    self.prec_var.set(f"{metrics['precision']:.3f}")
-                    self.rec_var.set(f"{metrics['recall']:.3f}")
-                    self.f1_var.set(f"{metrics['f1']:.3f}")
-                    self.tp_var.set(rates["tp"])
-                    self.fp_var.set(rates["fp"])
-                    self.tn_var.set(rates["tn"])
-                    self.fn_var.set(rates["fn"])
+                    self.acc_var.set(f"{data['accuracy']:.3f}")
+                    self.prec_var.set(f"{data['precision']:.3f}")
+                    self.rec_var.set(f"{data['recall']:.3f}")
+                    self.f1_var.set(f"{data['f1']:.3f}")
+                    tp = data["tp"]
+                    fp = data["fp"]
+                    tn = data["tn"]
+                    fn = data["fn"]
+                    self.tp_var.set(tp)
+                    self.fp_var.set(fp)
+                    self.tn_var.set(tn)
+                    self.fn_var.set(fn)
 
                 for var in (self.p_var, self.n_var):
                     var.trace_add("write", update_metrics)
@@ -14297,32 +14298,19 @@ class FaultTreeApp:
                         new_data[key] = v_var.get()
                 p = float(self.p_var.get())
                 n = float(self.n_var.get())
-                from analysis.confusion_matrix import compute_metrics, compute_rates
+                from analysis.confusion_matrix import compute_metrics_from_target
 
                 tau_on = getattr(self, "current_tau_on", 0.0)
                 val_target = None
                 if getattr(self, "selected_goal", None) is not None:
                     val_target = getattr(self.selected_goal, "validation_target", None)
-                rates = compute_rates(
+                data = compute_metrics_from_target(
                     hours=tau_on or 0.0,
                     validation_target=val_target,
                     p=p,
                     n=n,
                 )
-                metrics = compute_metrics(
-                    rates["tp"], rates["fp"], rates["tn"], rates["fn"]
-                )
-                new_data.update(metrics)
-                new_data.update(
-                    {
-                        "p": p,
-                        "n": n,
-                        "tp": rates["tp"],
-                        "fp": rates["fp"],
-                        "tn": rates["tn"],
-                        "fn": rates["fn"],
-                    }
-                )
+                new_data.update(data)
                 self.data = new_data
 
         def add_lib():
