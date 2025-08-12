@@ -6,6 +6,7 @@ from tkinter import ttk
 from typing import Optional
 
 from gsn import GSNNode, GSNDiagram
+from .gsn_config_window import GSNElementConfig
 
 
 class GSNDiagramWindow(tk.Frame):
@@ -62,6 +63,7 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
+        self.canvas.bind("<Double-1>", self._on_double_click)
         self.refresh()
 
     # ------------------------------------------------------------------
@@ -139,6 +141,13 @@ class GSNDiagramWindow(tk.Frame):
 
     def _on_release(self, _event):  # pragma: no cover - requires tkinter
         self._drag_node = None
+
+    def _on_double_click(self, event):  # pragma: no cover - requires tkinter
+        node = self._node_at(event.x, event.y)
+        if not node:
+            return
+        GSNElementConfig(self, node)
+        self.refresh()
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
         items = self.canvas.find_overlapping(x, y, x, y)
