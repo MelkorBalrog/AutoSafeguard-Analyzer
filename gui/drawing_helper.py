@@ -803,3 +803,229 @@ class FTADrawingHelper:
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
+
+
+class GSNDrawingHelper(FTADrawingHelper):
+    """Drawing helper providing shapes for GSN argumentation diagrams."""
+
+    def draw_goal_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Goal",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.6
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_strategy_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Strategy",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        offset = w * 0.2
+        points = [
+            (x - w / 2 + offset, y - h / 2),
+            (x + w / 2, y - h / 2),
+            (x + w / 2 - offset, y + h / 2),
+            (x - w / 2, y + h / 2),
+        ]
+        self._fill_gradient_polygon(canvas, points, fill)
+        canvas.create_polygon(points, outline=outline_color, width=line_width, fill="", tags=(obj_id,))
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_solution_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Solution",
+        bottom_text="",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        radius = scale / 2
+        self.draw_circle_event_shape(
+            canvas,
+            x,
+            y,
+            radius,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            base_event=True,
+            obj_id=obj_id,
+        )
+
+    def draw_assumption_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Assumption",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            dash=(4, 2),
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_justification_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Justification",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        inset = 4
+        canvas.create_rectangle(
+            left + inset,
+            top + inset,
+            right - inset,
+            bottom - inset,
+            outline=outline_color,
+            width=line_width,
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_context_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Context",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
+        self.draw_solution_shape(canvas, x, y, scale=scale, **kwargs)
+        radius = scale / 2
+        self.draw_shared_marker(canvas, x + radius, y - radius, 1)
+
+    def draw_away_goal_shape(self, canvas, x, y, scale=60.0, **kwargs):
+        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
+        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
+
+    def draw_away_module_shape(self, canvas, x, y, scale=60.0, **kwargs):
+        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
+        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
+
+
+# Create a single GSNDrawingHelper object for convenience
+
+gsn_drawing_helper = GSNDrawingHelper()
