@@ -363,7 +363,7 @@ from gui.toolboxes import (
     ReliabilityWindow,
     FI2TCWindow,
     HazopWindow,
-    HaraWindow,
+    RiskAssessmentWindow,
     TC2FIWindow,
     HazardExplorerWindow,
     RequirementsExplorerWindow,
@@ -1506,7 +1506,7 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_basic_event_probabilities()
 
     def invalidate_reviews_for_hara(self, name):
-        """Reopen reviews associated with the given HARA."""
+        """Reopen reviews associated with the given risk assessment."""
         for r in self.reviews:
             if name in getattr(r, "hara_names", []):
                 r.closed = False
@@ -1543,7 +1543,7 @@ class EditNodeDialog(simpledialog.Dialog):
         self.update_requirement_statuses()
 
     def invalidate_reviews_for_hara(self, name):
-        """Reopen reviews associated with the given HARA."""
+        """Reopen reviews associated with the given risk assessment."""
         for r in self.reviews:
             if name in getattr(r, "hara_names", []):
                 r.closed = False
@@ -2162,8 +2162,8 @@ class FaultTreeApp:
         qualitative_menu = tk.Menu(menubar, tearoff=0)
         qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
         qualitative_menu.add_command(
-            label="Risk Assessment (HARA, HIRE & TARA)",
-            command=self.open_hara_window,
+            label="Risk Assessment",
+            command=self.open_risk_assessment_window,
         )
         qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
         qualitative_menu.add_command(label="Threat Analysis", command=self.open_threat_window)
@@ -2288,7 +2288,7 @@ class FaultTreeApp:
             "FMEDA Manager": self.show_fmeda_list,
             "FMEA Manager": self.show_fmea_list,
             "HAZOP Analysis": self.open_hazop_window,
-            "Risk Assessment (HARA, HIRE & TARA)": self.open_hara_window,
+            "Risk Assessment": self.open_risk_assessment_window,
             "STPA Analysis": self.open_stpa_window,
             "Threat Analysis": self.open_threat_window,
             "Hazards Editor": self.show_hazard_editor,
@@ -2328,7 +2328,7 @@ class FaultTreeApp:
                 "TC2FI Analysis",
             ],
             "Risk Assessment": [
-                "HARA Analysis",
+                "Risk Assessment",
                 "Product Goals Export",
                 "Product Goals Editor",
             ],
@@ -3288,7 +3288,7 @@ class FaultTreeApp:
         return None
 
     def update_hara_statuses(self):
-        """Update each HARA document's status based on linked reviews."""
+        """Update each risk assessment document's status based on linked reviews."""
         for doc in self.hara_docs:
             status = "draft"
             for review in self.reviews:
@@ -3315,7 +3315,7 @@ class FaultTreeApp:
             te.status = status
 
     def get_safety_goal_asil(self, sg_name):
-        """Return the highest ASIL level for a safety goal name across approved HARAs."""
+        """Return the highest ASIL level for a safety goal name across approved risk assessments."""
         best = "QM"
         for doc in getattr(self, "hara_docs", []):
             if not getattr(doc, "approved", False) and getattr(doc, "status", "") != "closed":
@@ -3330,7 +3330,7 @@ class FaultTreeApp:
         return best
 
     def get_hara_goal_asil(self, sg_name):
-        """Return highest ASIL from all HARA entries for the given safety goal."""
+        """Return highest ASIL from all risk assessment entries for the given safety goal."""
         best = "QM"
         for doc in getattr(self, "hara_docs", []):
             for e in doc.entries:
@@ -3705,7 +3705,7 @@ class FaultTreeApp:
         }
 
     def sync_hara_to_safety_goals(self):
-        """Propagate HARA values to top events, inheriting ASILs from HARA rows."""
+        """Propagate risk assessment values to top events, inheriting ASILs from assessment rows."""
         sg_data = {}
         sg_asil = {}
         for doc in getattr(self, "hara_docs", []):
@@ -7595,12 +7595,12 @@ class FaultTreeApp:
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
-        # --- Risk Assessment (HARA, HIRE & TARA) ---
+        # --- Risk Assessment ---
         if self.hara_docs:
             Story.append(PageBreak())
             Story.append(
                 Paragraph(
-                    "Risk Assessment (HARA, HIRE & TARA)",
+                    "Risk Assessment",
                     pdf_styles["Heading2"],
                 )
             )
@@ -8080,11 +8080,11 @@ class FaultTreeApp:
                 self._hazop_window.doc_var.set(doc.name)
                 self._hazop_window.select_doc()
         elif kind == "hara":
-            self.open_hara_window()
-            if hasattr(self, "_hara_window"):
+            self.open_risk_assessment_window()
+            if hasattr(self, "_risk_window"):
                 doc = self.hara_docs[idx]
-                self._hara_window.doc_var.set(doc.name)
-                self._hara_window.select_doc()
+                self._risk_window.doc_var.set(doc.name)
+                self._risk_window.select_doc()
         elif kind == "stpa":
             self.open_stpa_window()
             if hasattr(self, "_stpa_window"):
@@ -8738,7 +8738,7 @@ class FaultTreeApp:
             self.odd_elements.extend(lib.get("elements", []))
 
     def update_hazard_list(self):
-        """Aggregate hazards from HARA and HAZOP documents."""
+        """Aggregate hazards from risk assessment and HAZOP documents."""
         hazards: list[str] = []
         for doc in self.hara_docs:
             for e in doc.entries:
@@ -8991,9 +8991,9 @@ class FaultTreeApp:
 
             # --- Risk Assessment Section ---
             risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
-            hara_root = tree.insert(risk_root, "end", text="HARAs", open=True)
+            assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
             for idx, doc in enumerate(self.hara_docs):
-                tree.insert(hara_root, "end", text=doc.name, tags=("hara", str(idx)))
+                tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
             tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
 
             # --- Safety Analysis Section ---
@@ -12347,7 +12347,7 @@ class FaultTreeApp:
     def build_cause_effect_data(self):
         """Collect cause and effect chain information."""
         rows = {}
-        # Map hazards to malfunctions from HARA entries
+        # Map hazards to malfunctions from risk assessment entries
         for doc in self.hara_docs:
             for e in doc.entries:
                 haz = e.hazard.strip()
@@ -13950,12 +13950,12 @@ class FaultTreeApp:
         self._hazop_tab = self._new_tab("HAZOP")
         self._hazop_window = HazopWindow(self._hazop_tab, self)
 
-    def open_hara_window(self):
-        if hasattr(self, "_hara_tab") and self._hara_tab.winfo_exists():
-            self.doc_nb.select(self._hara_tab)
+    def open_risk_assessment_window(self):
+        if hasattr(self, "_risk_tab") and self._risk_tab.winfo_exists():
+            self.doc_nb.select(self._risk_tab)
             return
-        self._hara_tab = self._new_tab("HARA")
-        self._hara_window = HaraWindow(self._hara_tab, self)
+        self._risk_tab = self._new_tab("Risk Assessment")
+        self._risk_window = RiskAssessmentWindow(self._risk_tab, self)
 
     def open_stpa_window(self):
         if hasattr(self, "_stpa_tab") and self._stpa_tab.winfo_exists():
@@ -14483,13 +14483,13 @@ class FaultTreeApp:
     def edit_severity(self):
         messagebox.showinfo(
             "Severity",
-            "Severity is determined from the HARA and cannot be edited here.",
+            "Severity is determined from the risk assessment and cannot be edited here.",
         )
 
     def edit_controllability(self):
         messagebox.showinfo(
             "Controllability",
-            "Controllability is determined from the HARA and cannot be edited here.",
+            "Controllability is determined from the risk assessment and cannot be edited here.",
         )
 
     def edit_page_flag(self):
@@ -14885,7 +14885,7 @@ class FaultTreeApp:
                 hazops = [hazop] if hazop else []
             self.hara_docs.append(
                 HaraDoc(
-                    d.get("name", f"HARA {len(self.hara_docs)+1}"),
+                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
                     hazops,
                     entries,
                     d.get("approved", False),
@@ -15354,7 +15354,7 @@ class FaultTreeApp:
                 hazops = [hazop] if hazop else []
             self.hara_docs.append(
                 HaraDoc(
-                    d.get("name", f"HARA {len(self.hara_docs)+1}"),
+                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
                     hazops,
                     entries,
                     d.get("approved", False),
@@ -15539,7 +15539,7 @@ class FaultTreeApp:
         for event in self.top_events:
             self.update_global_requirements_from_nodes(event)
 
-        # Propagate ASIL values from HARA entries to loaded safety goals
+        # Propagate ASIL values from risk assessment entries to loaded safety goals
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
         
@@ -16101,7 +16101,7 @@ class FaultTreeApp:
                 lines.append(f" - {name}")
             lines.append("")
         if getattr(review, 'hara_names', []):
-            lines.append("HARAs:")
+            lines.append("Risk Assessments:")
             for name in review.hara_names:
                 lines.append(f" - {name}")
             lines.append("")
@@ -16489,7 +16489,7 @@ class FaultTreeApp:
                     global_requirements[rid]["asil"] = asil
 
     def ensure_asil_consistency(self):
-        """Sync safety goal ASILs from HARAs and update requirement ASILs."""
+        """Sync safety goal ASILs from risk assessments and update requirement ASILs."""
         self.update_fta_statuses()
         self.sync_hara_to_safety_goals()
         self.update_hazard_list()
@@ -16497,7 +16497,7 @@ class FaultTreeApp:
         self.update_all_validation_criteria()
 
     def invalidate_reviews_for_hara(self, name):
-        """Reopen reviews associated with the given HARA."""
+        """Reopen reviews associated with the given risk assessment."""
         for r in self.reviews:
             if name in getattr(r, "hara_names", []):
                 r.closed = False
@@ -16738,7 +16738,7 @@ class FaultTreeNode:
         self.x = 50
         self.y = 50
         # Severity and controllability now use a 1-3 scale
-        # Default to the lowest level until linked to a HARA entry
+        # Default to the lowest level until linked to a risk assessment entry
         self.severity = 1 if node_type.upper() == "TOP EVENT" else None
         self.controllability = 1 if node_type.upper() == "TOP EVENT" else None
         self.input_subtype = None

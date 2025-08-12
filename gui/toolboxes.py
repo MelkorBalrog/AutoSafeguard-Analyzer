@@ -1633,13 +1633,13 @@ class HazopWindow(tk.Frame):
         btn.pack(fill=tk.X)
         hara_add_btn = ttk.Button(btn, text="Add", command=self.add_row)
         hara_add_btn.pack(side=tk.LEFT, padx=2, pady=2)
-        ToolTip(hara_add_btn, "Insert a new HARA entry.")
+        ToolTip(hara_add_btn, "Insert a new risk assessment entry.")
         hara_edit_btn = ttk.Button(btn, text="Edit", command=self.edit_row)
         hara_edit_btn.pack(side=tk.LEFT, padx=2, pady=2)
-        ToolTip(hara_edit_btn, "Edit the selected HARA row.")
+        ToolTip(hara_edit_btn, "Edit the selected risk assessment row.")
         hara_del_btn = ttk.Button(btn, text="Delete", command=self.del_row)
         hara_del_btn.pack(side=tk.LEFT, padx=2, pady=2)
-        ToolTip(hara_del_btn, "Delete the selected HARA row.")
+        ToolTip(hara_del_btn, "Delete the selected risk assessment row.")
 
         self.refresh_docs()
         self.refresh()
@@ -2023,7 +2023,7 @@ class HazopWindow(tk.Frame):
         messagebox.showinfo("Save", "Analysis saved")
 
 
-class HaraWindow(tk.Frame):
+class RiskAssessmentWindow(tk.Frame):
     COLS = [
         "malfunction",
         "hazard",
@@ -2042,19 +2042,19 @@ class HaraWindow(tk.Frame):
         super().__init__(master)
         self.app = app
         if isinstance(master, tk.Toplevel):
-            master.title("Risk Assessment (HARA, HIRE & TARA)")
+            master.title("Risk Assessment")
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
-        hara_lbl = ttk.Label(top, text="HARA:")
-        hara_lbl.pack(side=tk.LEFT)
-        ToolTip(hara_lbl, "Select a HARA document to work on.")
+        assessment_lbl = ttk.Label(top, text="Assessment:")
+        assessment_lbl.pack(side=tk.LEFT)
+        ToolTip(assessment_lbl, "Select a risk assessment document to work on.")
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ToolTip(self.doc_cb, "Only HARAs defined in the project appear here.")
-        new_hara_btn = ttk.Button(top, text="New", command=self.new_doc)
-        new_hara_btn.pack(side=tk.LEFT)
-        ToolTip(new_hara_btn, "Create a new HARA document.")
+        ToolTip(self.doc_cb, "Only risk assessments defined in the project appear here.")
+        new_assessment_btn = ttk.Button(top, text="New", command=self.new_doc)
+        new_assessment_btn.pack(side=tk.LEFT)
+        ToolTip(new_assessment_btn, "Create a new risk assessment document.")
         edit_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
         edit_btn.pack(side=tk.LEFT)
         del_btn = ttk.Button(top, text="Delete", command=self.delete_doc)
@@ -2065,14 +2065,14 @@ class HaraWindow(tk.Frame):
         self.status_lbl = ttk.Label(top, text="")
         self.status_lbl.pack(side=tk.LEFT, padx=10)
 
-        configure_table_style("Hara.Treeview")
+        configure_table_style("Risk.Treeview")
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
             table_frame,
             columns=self.COLS,
             show="headings",
-            style="Hara.Treeview",
+            style="Risk.Treeview",
             edit_callback=self.on_cell_edit,
             height=8,
         )
@@ -2149,10 +2149,10 @@ class HaraWindow(tk.Frame):
                 break
         self.refresh()
 
-    class NewHaraDialog(simpledialog.Dialog):
+    class NewAssessmentDialog(simpledialog.Dialog):
         def __init__(self, parent, app):
             self.app = app
-            super().__init__(parent, title="New HARA")
+            super().__init__(parent, title="New Risk Assessment")
 
         def body(self, master):
             ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
@@ -2170,7 +2170,7 @@ class HaraWindow(tk.Frame):
             self.result = (self.name_var.get(), sel)
 
     def new_doc(self):
-        dlg = self.NewHaraDialog(self, self.app)
+        dlg = self.NewAssessmentDialog(self, self.app)
         if not getattr(dlg, "result", None):
             return
         name, hazops = dlg.result
@@ -2187,7 +2187,7 @@ class HaraWindow(tk.Frame):
         if not self.app.active_hara:
             return
         name = simpledialog.askstring(
-            "Rename HARA", "Name:", initialvalue=self.app.active_hara.name
+            "Rename Risk Assessment", "Name:", initialvalue=self.app.active_hara.name
         )
         if not name:
             return
@@ -2199,7 +2199,7 @@ class HaraWindow(tk.Frame):
         doc = self.app.active_hara
         if not doc:
             return
-        if not messagebox.askyesno("Delete", f"Delete HARA '{doc.name}'?"):
+        if not messagebox.askyesno("Delete", f"Delete risk assessment '{doc.name}'?"):
             return
         self.app.hara_docs.remove(doc)
         if self.app.hara_docs:
@@ -2241,7 +2241,7 @@ class HaraWindow(tk.Frame):
         def __init__(self, parent, app, row=None):
             self.app = app
             self.row = row or HaraEntry("", "", "", 1, "", 1, "", 1, "", "QM", "")
-            super().__init__(parent, title="Edit HARA Row")
+            super().__init__(parent, title="Edit Risk Assessment Row")
 
         def body(self, master):
             hazop_names = []
@@ -2425,7 +2425,7 @@ class HaraWindow(tk.Frame):
 
     def add_row(self):
         if not self.app.active_hara:
-            messagebox.showwarning("Add", "Create a HARA first")
+            messagebox.showwarning("Add", "Create a risk assessment first")
             return
         dlg = self.RowDialog(self, self.app)
         self.app.hara_entries.append(dlg.row)
@@ -2495,7 +2495,7 @@ class HaraWindow(tk.Frame):
         self.app.update_hara_statuses()
         self.app.ensure_asil_consistency()
         self.app.update_views()
-        messagebox.showinfo("HARA", "HARA approved")
+        messagebox.showinfo("Risk Assessment", "Risk assessment approved")
 
 
 class TC2FIWindow(tk.Frame):
@@ -3149,14 +3149,14 @@ class TC2FIWindow(tk.Frame):
 
 
 class HazardExplorerWindow(tk.Toplevel):
-    """Read-only list of hazards per HARA."""
+    """Read-only list of hazards per risk assessment."""
 
     def __init__(self, app):
         super().__init__(app.root)
         self.app = app
         self.title("Hazard Explorer")
 
-        columns = ("HARA", "Malfunction", "Hazard", "Severity")
+        columns = ("Assessment", "Malfunction", "Hazard", "Severity")
         configure_table_style("HazExp.Treeview")
         self.tree = EditableTreeview(
             self,
@@ -3194,14 +3194,14 @@ class HazardExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["HARA", "Malfunction", "Hazard", "Severity"])
+            w.writerow(["Assessment", "Malfunction", "Hazard", "Severity"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Hazards exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx = ("HARA", "Malfunction", "Hazard", "Severity").index(column)
+        idx = ("Assessment", "Malfunction", "Hazard", "Severity").index(column)
         values[idx] = value
         self.tree.item(self.tree.get_children()[row], values=values)
 
