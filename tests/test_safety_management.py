@@ -23,6 +23,10 @@ def test_lifecycle_and_workflow_storage():
     toolbox.build_lifecycle(["concept", "development", "operation"])
     toolbox.define_workflow("risk", ["identify", "assess", "mitigate"])
 
-    assert toolbox.lifecycle == ["concept", "development", "operation"]
+    assert [stage.name for stage in toolbox.lifecycle] == [
+        "concept",
+        "development",
+        "operation",
+    ]
     assert toolbox.get_workflow("risk") == ["identify", "assess", "mitigate"]
     assert toolbox.get_workflow("missing") == []
