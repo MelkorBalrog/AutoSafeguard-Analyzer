@@ -1513,11 +1513,12 @@ class EditNodeDialog(simpledialog.Dialog):
         return asil
 
     def refresh_model(self):
-        """Propagate changes to keep analyses synchronized."""
-        self.ensure_asil_consistency()
-        for fm in self.get_all_failure_modes():
-            self.propagate_failure_mode_attributes(fm)
-        self.update_basic_event_probabilities()
+        """Delegate refresh logic to the main application."""
+        # ``EditNodeDialog`` doesn't maintain its own model; instead it should
+        # trigger a full refresh on the application so that any edits made in
+        # the dialog propagate through the entire analysis chain.
+        if hasattr(self, "app"):
+            self.app.refresh_model()
 
     def invalidate_reviews_for_hara(self, name):
         """Reopen reviews associated with the given risk assessment."""
@@ -9316,8 +9317,17 @@ class FaultTreeApp:
         self.refresh_all()
 
     def refresh_model(self):
-        """Propagate changes across analyses when the model updates."""
+        """Recalculate derived values across the entire model.
+
+        This recomputes ASIL assignments, basic-event probabilities and
+        cybersecurity CAL levels so that edits in one analysis propagate
+        throughout the full input→output flow.
+        """
+
+        # Ensure safety-related data is consistent first
         self.ensure_asil_consistency()
+
+        # Propagate FMEDA attributes to any linked basic events
         for fm in self.get_all_failure_modes():
             self.propagate_failure_mode_attributes(fm)
 
@@ -9346,7 +9356,11 @@ class FaultTreeApp:
                     entry.fmeda_spfm_target = getattr(te, "sg_spfm_target", 0.0)
                     entry.fmeda_lpfm_target = getattr(te, "sg_lpfm_target", 0.0)
 
+        # Recalculate probabilities for all basic events
         self.update_basic_event_probabilities()
+
+        # Synchronize cybersecurity risk assessments with goal CAL values
+        self.sync_cyber_risk_to_goals()
 
     def refresh_all(self):
         """Synchronize model elements and refresh all open views.
