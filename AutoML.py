@@ -282,6 +282,7 @@ from analysis.models import (
     DamageScenario,
     ThreatScenario,
     AttackPath,
+    ThreatEntry,
     ThreatDoc,
     QUALIFICATIONS,
     COMPONENT_ATTR_TEMPLATES,
@@ -2030,6 +2031,7 @@ class FaultTreeApp:
         self.hazop_entries = []  # backwards compatibility for active doc
         self.hara_entries = []
         self.stpa_entries = []
+        self.threat_entries = []
         self.fi2tc_docs = []  # list of FI2TCDoc
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
@@ -14808,20 +14810,7 @@ class FaultTreeApp:
                 for doc in self.stpa_docs
             ],
             "threat_docs": [
-                {
-                    "name": doc.name,
-                    "asset": doc.asset,
-                    "function": doc.function,
-                    "damage_scenarios": [asdict(ds) for ds in doc.damage_scenarios],
-                    "threat_scenarios": [
-                        {
-                            "stride": ts.stride,
-                            "scenario": ts.scenario,
-                            "attack_paths": [asdict(ap) for ap in ts.attack_paths],
-                        }
-                        for ts in doc.threat_scenarios
-                    ],
-                }
+                {"name": doc.name, "entries": [asdict(e) for e in doc.entries]}
                 for doc in self.threat_docs
             ],
             "fi2tc_docs": [
@@ -15087,21 +15076,27 @@ class FaultTreeApp:
 
         self.threat_docs = []
         for d in data.get("threat_docs", []):
-            damage = [DamageScenario(**ds) for ds in d.get("damage_scenarios", [])]
-            threats = []
-            for t in d.get("threat_scenarios", []):
-                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                threats.append(ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths))
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
-                    d.get("asset", ""),
-                    d.get("function", ""),
-                    damage,
-                    threats,
+            entries = []
+            for e in d.get("entries", []):
+                dmg_list = []
+                for ds in e.get("damage_scenarios", []):
+                    threats = []
+                    for t in ds.get("threats", []):
+                        paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                        threats.append(
+                            ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths)
+                        )
+                    dmg_list.append(
+                        DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
+                    )
+                entries.append(
+                    ThreatEntry(e.get("asset", ""), e.get("function", ""), dmg_list)
                 )
+            self.threat_docs.append(
+                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
+        self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
@@ -15519,21 +15514,27 @@ class FaultTreeApp:
 
         self.threat_docs = []
         for d in data.get("threat_docs", []):
-            damage = [DamageScenario(**ds) for ds in d.get("damage_scenarios", [])]
-            threats = []
-            for t in d.get("threat_scenarios", []):
-                paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
-                threats.append(ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths))
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
-                    d.get("asset", ""),
-                    d.get("function", ""),
-                    damage,
-                    threats,
+            entries = []
+            for e in d.get("entries", []):
+                dmg_list = []
+                for ds in e.get("damage_scenarios", []):
+                    threats = []
+                    for t in ds.get("threats", []):
+                        paths = [AttackPath(**p) for p in t.get("attack_paths", [])]
+                        threats.append(
+                            ThreatScenario(t.get("stride", ""), t.get("scenario", ""), paths)
+                        )
+                    dmg_list.append(
+                        DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
+                    )
+                entries.append(
+                    ThreatEntry(e.get("asset", ""), e.get("function", ""), dmg_list)
                 )
+            self.threat_docs.append(
+                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
+        self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
