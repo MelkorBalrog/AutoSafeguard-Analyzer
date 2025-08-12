@@ -2256,6 +2256,7 @@ class RiskAssessmentWindow(tk.Frame):
             scenarios_map = {}
             self.threat_map = {}
             threats = set()
+
             if not hazop_names:
                 hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
@@ -2609,6 +2610,7 @@ class RiskAssessmentWindow(tk.Frame):
                                 vec_var.set(ap.get("vector", ""))
                                 feas_var.set(ap.get("feasibility", ""))
                 update_cyber()
+
             def auto_hazard(_=None):
                 mal = self.mal_var.get()
                 if not mal:
@@ -2626,6 +2628,13 @@ class RiskAssessmentWindow(tk.Frame):
                 if scen:
                     self.exp_var.set(str(self.app.get_scenario_exposure(scen)))
                 recalc()
+                info = self.threat_map.get(mal)
+                if info:
+                    self.damage_var.set(info.get("damage", ""))
+                    build_attack_widgets(info.get("paths", []))
+                else:
+                    self.damage_var.set("")
+                    build_attack_widgets([])
 
             def on_threat_selected(_=None):
                 ts = self.threat_var.get()

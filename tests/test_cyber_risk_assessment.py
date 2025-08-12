@@ -80,6 +80,5 @@ class CyberRiskEntryTests(unittest.TestCase):
         app.hara_docs = [doc]
         self.assertEqual(app.get_cyber_goal_cal("CG"), cyber1.cal)
 
-
 if __name__ == "__main__":
     unittest.main()
