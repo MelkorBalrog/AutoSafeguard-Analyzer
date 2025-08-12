@@ -2092,6 +2092,7 @@ class RiskAssessmentWindow(tk.Frame):
             width = 200 if c == "hazard" else 120
             self.tree.column(c, width=width)
         self.tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.bind("<Double-1>", lambda e: self.edit_row())
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
         table_frame.columnconfigure(0, weight=1)
