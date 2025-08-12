@@ -158,14 +158,25 @@ class ThreatWindow(tk.Frame):
     # ------------------------------------------------------------------
     def _get_assets(self):
         repo = SysMLRepository.get_instance()
-        items = list(repo.parts.keys()) + list(repo.ports.keys()) + list(repo.flows.keys()) + list(repo.connectors.keys())
-        return sorted(items)
+        names = set()
+        for elem in repo.elements.values():
+            if elem.elem_type in {"Part", "Port", "Flow", "Connector"} and elem.name:
+                names.add(elem.name)
+        for diag in repo.diagrams.values():
+            for obj in getattr(diag, "objects", []):
+                typ = obj.get("obj_type") or obj.get("type")
+                if typ in {"Part", "Port", "Flow", "Connector"}:
+                    name = obj.get("properties", {}).get("name")
+                    if not name:
+                        elem_id = obj.get("element_id")
+                        if elem_id and elem_id in repo.elements:
+                            name = repo.elements[elem_id].name
+                    if name:
+                        names.add(name)
+        return sorted(names)
 
     def _get_functions(self):
-        repo = SysMLRepository.get_instance()
-        actions = [a.name for a in repo.actions.values()]
-        activities = [a.name for a in repo.activities.values()]
-        return sorted(set(actions + activities))
+        return self.app.get_all_action_names()
 
     def _asset_changed(self, *_):
         if self.app.active_threat:
