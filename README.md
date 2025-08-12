@@ -1129,8 +1129,10 @@ The **Safety Performance Indicators** tab in the Requirements menu lists each pr
 
 ISO 21448 provides a method to derive a validation target from an acceptance
 criterion by analysing the rate of the hazardous behaviour :math:`R_{HB}`.
-Given an acceptance criterion for a harm :math:`A_H` and conditional
-probabilities for exposure :math:`P_{E|HB}`, uncontrollability
+The **acceptance rate** :math:`A_H` represents the tolerated rate of harm
+in events per hour. The derived validation target is the corresponding rate
+of hazardous behaviour :math:`R_{HB}` that should not be exceeded. Given
+conditional probabilities for exposure :math:`P_{E|HB}`, uncontrollability
 :math:`P_{C|E}` and severity :math:`P_{S|C}`, the acceptable rate of the
 hazardous behaviour is computed as:
 
@@ -1140,11 +1142,29 @@ R_HB = A_H / (P_{E|HB} * P_{C|E} * P_{S|C})
 
 This value can serve as a validation target when planning tests. For example,
 an acceptance criterion of ``1e-8/h`` with ``P_{E|HB}=0.05``,
-``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``.
+``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``. Because the
+conditional probabilities are often very small, even moderate acceptance
+rates can produce seemingly large validation targets.
+
 The product goal editor derives exposure, controllability and severity
 probabilities from their risk assessment ratings and shows them as read-only
 fields. Only the acceptance rate is editable; the validation target is then
 computed automatically.
+
+The following rule-of-thumb probabilities are used to convert ISO 26262/21448
+ratings into conditional probabilities. Each step increases the likelihood by
+roughly an order of magnitude and represents values commonly referenced in
+industry practice:
+
+| Rating | ``P(E|HB)`` | ``P(C|E)`` | ``P(S|C)`` |
+|-------:|------------:|-----------:|-----------:|
+| 1 | ``1e-4`` | ``1e-3`` | ``1e-3`` |
+| 2 | ``1e-3`` | ``1e-2`` | ``1e-2`` |
+| 3 | ``1e-2`` | ``1e-1`` | ``1e-1`` |
+| 4 | ``1e-1`` | – | – |
+
+Projects with empirical data may substitute more precise values, but these
+approximations provide a justified starting point when none are available.
 
 ## Email Setup
 
