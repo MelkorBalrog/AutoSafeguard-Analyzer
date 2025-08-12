@@ -83,7 +83,7 @@ def test_activity_boundary_label_rotated_left():
 
 
 def test_toolbox_manages_diagram_lifecycle():
-    """Toolbox creates tagged diagrams and can delete them."""
+    """Toolbox creates tagged diagrams, can rename, and delete them."""
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
@@ -91,9 +91,12 @@ def test_toolbox_manages_diagram_lifecycle():
     diag_id = toolbox.create_diagram("Gov1")
     assert diag_id in repo.diagrams
     assert "safety-management" in repo.diagrams[diag_id].tags
-    assert not hasattr(toolbox, "rename_diagram")
 
-    toolbox.delete_diagram("Gov1")
+    toolbox.rename_diagram("Gov1", "Gov2")
+    assert repo.diagrams[diag_id].name == "Gov2"
+    assert "Gov2" in toolbox.list_diagrams()
+
+    toolbox.delete_diagram("Gov2")
     assert diag_id not in repo.diagrams
     assert not toolbox.diagrams
 

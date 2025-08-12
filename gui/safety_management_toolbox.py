@@ -8,10 +8,9 @@ from gui.architecture import ActivityDiagramWindow
 class SafetyManagementWindow(tk.Frame):
     """Editor and browser for Safety Management diagrams.
 
-    Users can create and delete Activity Diagrams that model the project's
-    safety governance. Only diagrams registered in the provided
-    :class:`SafetyManagementToolbox` are listed and their names remain fixed to
-    preserve the link with recorded work products.
+    Users can create, rename, and delete Activity Diagrams that model the
+    project's safety governance. Only diagrams registered in the provided
+    :class:`SafetyManagementToolbox` are listed.
     """
 
     def __init__(self, master, app, toolbox: SafetyManagementToolbox | None = None):
@@ -29,6 +28,7 @@ class SafetyManagementWindow(tk.Frame):
         self.diag_cb.bind("<<ComboboxSelected>>", self.select_diagram)
 
         ttk.Button(top, text="New", command=self.new_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Rename", command=self.rename_diagram).pack(side=tk.LEFT)
         ttk.Button(top, text="Delete", command=self.delete_diagram).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
@@ -69,6 +69,18 @@ class SafetyManagementWindow(tk.Frame):
             return
         self.toolbox.delete_diagram(name)
         self.refresh_diagrams()
+
+    def rename_diagram(self):
+        old = self.diag_var.get()
+        if not old:
+            return
+        new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=old, parent=self)
+        if not new or new == old:
+            return
+        self.toolbox.rename_diagram(old, new)
+        self.refresh_diagrams()
+        self.diag_var.set(new)
+        self.open_diagram(new)
 
     def select_diagram(self, *_):
         name = self.diag_var.get()
