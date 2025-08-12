@@ -20,7 +20,6 @@ class ThreatDialog(simpledialog.Dialog):
     def __init__(self, parent, app, entry=None):
         self.app = app
         self.entry = entry if entry else ThreatEntry("", [])
-        self.current_ds_index = None
         super().__init__(parent, title="Edit Threat Entry")
 
     # ------------------------------------------------------------------
@@ -64,7 +63,7 @@ class ThreatDialog(simpledialog.Dialog):
         self.func_cb.grid(row=0, column=1, sticky="ew", padx=2)
         ttk.Button(func_frame, text="Add", command=self.add_function).grid(row=0, column=2, padx=2)
 
-        self.func_list = tk.Listbox(asset_tab, height=4)
+        self.func_list = tk.Listbox(asset_tab)
         self.func_list.grid(row=2, column=0, sticky="nsew", padx=2)
         self.func_list.bind("<<ListboxSelect>>", self.on_func_select)
         ttk.Button(asset_tab, text="Remove Function", command=self.remove_function).grid(
@@ -83,7 +82,6 @@ class ThreatDialog(simpledialog.Dialog):
             columns=("scenario", "type"),
             show="headings",
             style="Threat.Damage.Treeview",
-            height=4,
         )
         self.ds_tree.heading("scenario", text="Damage Scenario")
         self.ds_tree.heading("type", text="Type")
@@ -111,7 +109,6 @@ class ThreatDialog(simpledialog.Dialog):
             state="readonly",
         )
         self.ds_type_cb.grid(row=0, column=3, sticky="ew", padx=2)
-        self.ds_type_cb.bind("<<ComboboxSelected>>", self.on_ds_type_change)
 
         ds_btn = ttk.Frame(asset_tab)
         ds_btn.grid(row=6, column=0, sticky="ew")
@@ -142,7 +139,6 @@ class ThreatDialog(simpledialog.Dialog):
             columns=("stride", "scenario"),
             show="headings",
             style="Threat.Scenarios.Treeview",
-            height=4,
         )
         self.threat_tree.heading("stride", text="STRIDE")
         self.threat_tree.heading("scenario", text="Threat Scenario")
@@ -160,7 +156,6 @@ class ThreatDialog(simpledialog.Dialog):
             columns=("path",),
             show="headings",
             style="Threat.Paths.Treeview",
-            height=3,
         )
         self.path_tree.heading("path", text="Attack Path")
         self.path_tree.column("path", width=350, stretch=True)
@@ -231,7 +226,7 @@ class ThreatDialog(simpledialog.Dialog):
 
         self.refresh_ds()
         self.geometry("700x500")
-        self.resizable(False, False)
+        self.resizable(True, True)
         return nb
 
     # ------------------------------------------------------------------
@@ -290,11 +285,9 @@ class ThreatDialog(simpledialog.Dialog):
         if func_sel and sel:
             func = self.entry.functions[func_sel[0]]
             ds = func.damage_scenarios[int(sel[0])]
-            self.current_ds_index = int(sel[0])
             self.ds_scenario_var.set(ds.scenario)
             self.ds_type_var.set(ds.dtype)
         else:
-            self.current_ds_index = None
             self.ds_scenario_var.set("")
             self.ds_type_var.set("")
         self.refresh_threats()
@@ -365,16 +358,6 @@ class ThreatDialog(simpledialog.Dialog):
         for idx, ap in enumerate(ts.attack_paths):
             self.path_tree.insert("", "end", iid=str(idx), values=(ap.description,))
         self.on_path_select()
-
-    def on_ds_type_change(self, *_):
-        func_sel = self.func_list.curselection()
-        if not func_sel or self.current_ds_index is None:
-            return
-        func = self.entry.functions[func_sel[0]]
-        ds = func.damage_scenarios[self.current_ds_index]
-        ds.dtype = self.ds_type_var.get()
-        self.ds_tree.item(str(self.current_ds_index), values=(ds.scenario, ds.dtype))
-        self.ds_tree.selection_set(str(self.current_ds_index))
 
     # ------------------------------------------------------------------
     # Damage Scenarios
