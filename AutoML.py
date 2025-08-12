@@ -12728,7 +12728,7 @@ class FaultTreeApp:
                 if not haz or not mal:
                     continue
                 key = (haz, mal)
-                rows.setdefault(
+                info = rows.setdefault(
                     key,
                     {
                         "hazard": haz,
@@ -12745,8 +12745,22 @@ class FaultTreeApp:
                         # Maintain a flat set of all faults so the table view
                         # can continue to show a comma separated list.
                         "faults": set(),
+                        # Track threat scenarios and their attack paths.
+                        "threats": {},
+                        "attack_paths": set(),
                     },
                 )
+                cyber = getattr(e, "cyber", None)
+                if cyber:
+                    ts = getattr(cyber, "threat_scenario", "").strip()
+                    if ts:
+                        paths = [
+                            ap.get("path", "").strip()
+                            for ap in getattr(cyber, "attack_paths", [])
+                            if ap.get("path", "").strip()
+                        ]
+                        info["threats"].setdefault(ts, set()).update(paths)
+                        info["attack_paths"].update(paths)
 
         # Add FI/TC info per hazard
         for doc in self.fi2tc_docs + self.tc2fi_docs:
@@ -12806,7 +12820,7 @@ class FaultTreeApp:
         nodes[mal_id] = (mal_label, "malfunction")
         edges.append((haz_id, mal_id))
 
-        for fm, faults in sorted(row["failure_modes"].items()):
+        for fm, faults in sorted(row.get("failure_modes", {}).items()):
             fm_id = f"fm:{fm}"
             nodes[fm_id] = (fm, "failure_mode")
             edges.append((mal_id, fm_id))
@@ -12814,18 +12828,29 @@ class FaultTreeApp:
                 fault_id = f"fault:{fault}"
                 nodes[fault_id] = (fault, "fault")
                 edges.append((fm_id, fault_id))
-        for fi in sorted(row["fis"]):
+        for fi in sorted(row.get("fis", [])):
             fi_id = f"fi:{fi}"
             nodes[fi_id] = (fi, "fi")
             edges.append((haz_id, fi_id))
-        for tc in sorted(row["tcs"]):
+        for tc in sorted(row.get("tcs", [])):
             tc_id = f"tc:{tc}"
             nodes[tc_id] = (tc, "tc")
             edges.append((haz_id, tc_id))
 
+        for ts, paths in sorted(row.get("threats", {}).items()):
+            ts_id = f"threat:{ts}"
+            nodes[ts_id] = (ts, "threat")
+            if paths:
+                for ap in sorted(paths):
+                    ap_id = f"ap:{ap}"
+                    nodes[ap_id] = (ap, "attack_path")
+                    edges.append((ts_id, ap_id))
+                    edges.append((ap_id, mal_id))
+            else:
+                edges.append((ts_id, mal_id))
         pos = {haz_id: (0, 0), mal_id: (4, 0)}
         y_fm = 0
-        for fm, faults in sorted(row["failure_modes"].items()):
+        for fm, faults in sorted(row.get("failure_modes", {}).items()):
             fm_y = y_fm * 4
             pos[f"fm:{fm}"] = (8, fm_y)
             y_fault = fm_y
@@ -12834,13 +12859,21 @@ class FaultTreeApp:
                 y_fault += 2
             y_fm += 1
         y_fi = -2
-        for fi in sorted(row["fis"]):
+        for fi in sorted(row.get("fis", [])):
             pos[f"fi:{fi}"] = (2, y_fi)
             y_fi -= 2
         y_tc = y_fi
-        for tc in sorted(row["tcs"]):
+        for tc in sorted(row.get("tcs", [])):
             pos[f"tc:{tc}"] = (2, y_tc)
             y_tc -= 2
+        y_ts = y_tc
+        for ts, paths in sorted(row.get("threats", {}).items()):
+            pos[f"threat:{ts}"] = (2, y_ts)
+            y_ap = y_ts
+            for ap in sorted(paths):
+                pos[f"ap:{ap}"] = (3, y_ap)
+                y_ap -= 2
+            y_ts = min(y_ts, y_ap) - 2
 
         min_x = min(x for x, _ in pos.values())
         min_y = min(y for _, y in pos.values())
@@ -12866,6 +12899,8 @@ class FaultTreeApp:
             "fault": "#D3D3D3",
             "fi": "#FFFFE0",
             "tc": "#90EE90",
+            "threat": "#FFC0CB",
+            "attack_path": "#E6E6FA",
         }
 
         scale = 80
@@ -12942,6 +12977,8 @@ class FaultTreeApp:
         cols = (
             "Hazard",
             "Malfunction",
+            "Threats",
+            "Attack Paths",
             "Failure Modes",
             "Faults",
             "FIs",
@@ -12972,6 +13009,8 @@ class FaultTreeApp:
                 values=(
                     row["hazard"],
                     row["malfunction"],
+                    ", ".join(sorted(row["threats"].keys())),
+                    ", ".join(sorted(row["attack_paths"])),
                     ", ".join(sorted(row["failure_modes"].keys())),
                     ", ".join(sorted(row["faults"])),
                     ", ".join(sorted(row["fis"])),
@@ -12993,6 +13032,8 @@ class FaultTreeApp:
                 "fault": "#D3D3D3",        # light gray
                 "fi": "#FFFFE0",           # light yellow
                 "tc": "#90EE90",           # light green
+                "threat": "#FFC0CB",       # pink
+                "attack_path": "#E6E6FA",  # lavender
             }
 
             # Clear any existing drawing
