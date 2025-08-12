@@ -8608,10 +8608,14 @@ class FaultTreeApp:
                 if isinstance(sc, dict):
                     name = sc.get("name", "")
                     scenery = sc.get("scenery", "")
+                    desc = sc.get("description", "")
                 else:
                     name = sc
                     scenery = ""
+                    desc = ""
                 elems = {e.strip() for e in str(scenery).split(",") if e}
+                if desc:
+                    elems.update(re.findall(r"\[\[(.+?)\]\]", str(desc)))
                 if element_name and name and element_name in elems:
                     scenarios.add(name)
 
