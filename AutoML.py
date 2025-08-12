@@ -242,6 +242,8 @@ from gui.review_toolbox import (
     VersionCompareDialog,
 )
 from gui.safety_management_toolbox import SafetyManagementToolbox
+from gui.gsn_explorer import GSNExplorer
+from gui.gsn_diagram_window import GSNDiagramWindow
 from dataclasses import asdict
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -2083,6 +2085,8 @@ class FaultTreeApp:
         self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
         self.management_diagrams = []
+        self.gsn_modules = []  # top-level GSN modules
+        self.gsn_diagrams = []  # diagrams not assigned to a module
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
         self.top_events = []
@@ -2234,6 +2238,9 @@ class FaultTreeApp:
         libs_menu.add_command(label="Scenario Libraries", command=self.manage_scenario_libraries)
         libs_menu.add_command(label="ODD Libraries", command=self.manage_odd_libraries)
 
+        gsn_menu = tk.Menu(menubar, tearoff=0)
+        gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
         menubar.add_cascade(label="Edit", menu=edit_menu)
@@ -2244,6 +2251,7 @@ class FaultTreeApp:
         menubar.add_cascade(label="Qualitative Analysis", menu=qualitative_menu)
         menubar.add_cascade(label="Quantitative Analysis", menu=quantitative_menu)
         menubar.add_cascade(label="FTA/CTA", menu=fta_menu)
+        menubar.add_cascade(label="GSN", menu=gsn_menu)
         menubar.add_cascade(label="Process", menu=process_menu)
         menubar.add_cascade(label="Review", menu=review_menu)
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -2357,6 +2365,7 @@ class FaultTreeApp:
             "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
+            "GSN Explorer": self.manage_gsn,
         }
 
         self.tool_categories = {
@@ -2412,6 +2421,7 @@ class FaultTreeApp:
             "Safety Management": [
                 "Safety Management",
                 "Safety Performance Indicators",
+                "GSN Explorer",
             ],
         }
 
@@ -15027,6 +15037,29 @@ class FaultTreeApp:
             self._arch_tab = self._new_tab("AutoML Explorer")
             self._arch_window = ArchitectureManagerDialog(self._arch_tab, self)
             self._arch_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def manage_gsn(self):
+        if hasattr(self, "_gsn_tab") and self._gsn_tab.winfo_exists():
+            self.doc_nb.select(self._gsn_tab)
+        else:
+            self._gsn_tab = self._new_tab("GSN Explorer")
+            self._gsn_window = GSNExplorer(self._gsn_tab, self)
+            self._gsn_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def open_gsn_diagram(self, diagram):
+        """Open a GSN diagram inside a new notebook tab."""
+        existing = self.diagram_tabs.get(diagram.diag_id)
+        if existing and str(existing) in self.doc_nb.tabs():
+            if existing.winfo_exists():
+                self.doc_nb.select(existing)
+                self.refresh_all()
+                return
+            self.diagram_tabs.pop(diagram.diag_id, None)
+        tab = self._new_tab(diagram.root.user_name)
+        self.diagram_tabs[diagram.diag_id] = tab
+        GSNDiagramWindow(tab, self, diagram)
         self.refresh_all()
 
     def open_arch_window(self, idx: int) -> None:
