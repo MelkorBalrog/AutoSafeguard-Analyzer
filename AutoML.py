@@ -14843,6 +14843,8 @@ class FaultTreeApp:
                     "entries": [asdict(e) for e in doc.entries],
                     "approved": getattr(doc, "approved", False),
                     "status": getattr(doc, "status", "draft"),
+                    "stpa": getattr(doc, "stpa", ""),
+                    "threat": getattr(doc, "threat", ""),
                 }
                 for doc in self.hara_docs
             ],
@@ -15051,6 +15053,8 @@ class FaultTreeApp:
                     entries,
                     d.get("approved", False),
                     d.get("status", "draft"),
+                    stpa=d.get("stpa", ""),
+                    threat=d.get("threat", ""),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
@@ -15077,6 +15081,8 @@ class FaultTreeApp:
                     ],
                     False,
                     "draft",
+                    stpa="",
+                    threat="",
                 )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
@@ -15520,6 +15526,8 @@ class FaultTreeApp:
                     entries,
                     d.get("approved", False),
                     d.get("status", "draft"),
+                    stpa=d.get("stpa", ""),
+                    threat=d.get("threat", ""),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
@@ -15546,6 +15554,8 @@ class FaultTreeApp:
                     ],
                     False,
                     "draft",
+                    stpa="",
+                    threat="",
                 )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
