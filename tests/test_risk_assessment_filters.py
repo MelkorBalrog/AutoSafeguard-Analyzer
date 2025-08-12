@@ -47,6 +47,7 @@ def test_row_dialog_filters_stpa_and_threat(monkeypatch):
 
     threat_sel = ThreatDoc(
         "TA1",
+        "",
         [
             ThreatEntry(
                 "asset",
@@ -72,6 +73,7 @@ def test_row_dialog_filters_stpa_and_threat(monkeypatch):
     )
     threat_other = ThreatDoc(
         "TA2",
+        "",
         [
             ThreatEntry(
                 "asset",
