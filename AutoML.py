@@ -357,7 +357,7 @@ styles.add(preformatted_style)
 
 # Characters used to display pass/fail status in metrics labels.
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from analysis.utils import append_unique_insensitive
+from analysis.utils import append_unique_insensitive, derive_validation_target
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -12156,29 +12156,65 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target:").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="Acceptance Rate:").grid(row=5, column=0, sticky="e")
+                self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.accept_rate_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=5, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="P(E|HB):").grid(row=6, column=0, sticky="e")
+                self.pehb_var = tk.StringVar(value=str(getattr(self.initial, "exposure_given_hb", 1.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.pehb_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=6, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="P(C|E):").grid(row=7, column=0, sticky="e")
+                self.pce_var = tk.StringVar(value=str(getattr(self.initial, "uncontrollable_given_exposure", 1.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.pce_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=7, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="P(S|C):").grid(row=8, column=0, sticky="e")
+                self.psc_var = tk.StringVar(value=str(getattr(self.initial, "severity_given_uncontrollable", 1.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.psc_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=8, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Validation Target:").grid(row=9, column=0, sticky="e")
                 self.val_var = tk.StringVar(value=str(getattr(self.initial, "validation_target", 1.0)))
                 tk.Entry(
                     master,
                     textvariable=self.val_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=5, column=1, padx=5, pady=5)
+                ).grid(row=9, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Val Target Desc:").grid(row=5, column=0, sticky="ne")
+                ttk.Label(master, text="Val Target Desc:").grid(row=10, column=0, sticky="ne")
                 self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=5, column=1, padx=5, pady=5)
+                self.val_desc_text.grid(row=10, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=6, column=0, sticky="ne")
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=11, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=6, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=11, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=7, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=12, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=7, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=12, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -12190,6 +12226,10 @@ class FaultTreeApp:
                     "asil": asil,
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
+                    "accept_rate": self.accept_rate_var.get().strip(),
+                    "pehb": self.pehb_var.get().strip(),
+                    "pce": self.pce_var.get().strip(),
+                    "psc": self.psc_var.get().strip(),
                     "val": self.val_var.get().strip(),
                     "val_desc": self.val_desc_text.get("1.0", "end-1c"),
                     "accept": self.acc_text.get("1.0", "end-1c"),
@@ -12203,10 +12243,22 @@ class FaultTreeApp:
                 node.safety_goal_asil = dlg.result["asil"]
                 node.safe_state = dlg.result["state"]
                 node.ftti = dlg.result["ftti"]
+                node.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                node.exposure_given_hb = float(dlg.result.get("pehb", 1.0) or 1.0)
+                node.uncontrollable_given_exposure = float(dlg.result.get("pce", 1.0) or 1.0)
+                node.severity_given_uncontrollable = float(dlg.result.get("psc", 1.0) or 1.0)
                 try:
-                    node.validation_target = float(dlg.result["val"])
+                    node.validation_target = derive_validation_target(
+                        node.acceptance_rate,
+                        node.exposure_given_hb,
+                        node.uncontrollable_given_exposure,
+                        node.severity_given_uncontrollable,
+                    )
                 except Exception:
-                    node.validation_target = 1.0
+                    try:
+                        node.validation_target = float(dlg.result["val"])
+                    except Exception:
+                        node.validation_target = 1.0
                 node.validation_desc = dlg.result["val_desc"]
                 node.acceptance_criteria = dlg.result["accept"]
                 node.safety_goal_description = dlg.result["desc"]
@@ -12226,10 +12278,22 @@ class FaultTreeApp:
                 sg.safety_goal_asil = dlg.result["asil"]
                 sg.safe_state = dlg.result["state"]
                 sg.ftti = dlg.result["ftti"]
+                sg.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                sg.exposure_given_hb = float(dlg.result.get("pehb", 1.0) or 1.0)
+                sg.uncontrollable_given_exposure = float(dlg.result.get("pce", 1.0) or 1.0)
+                sg.severity_given_uncontrollable = float(dlg.result.get("psc", 1.0) or 1.0)
                 try:
-                    sg.validation_target = float(dlg.result["val"])
+                    sg.validation_target = derive_validation_target(
+                        sg.acceptance_rate,
+                        sg.exposure_given_hb,
+                        sg.uncontrollable_given_exposure,
+                        sg.severity_given_uncontrollable,
+                    )
                 except Exception:
-                    sg.validation_target = 1.0
+                    try:
+                        sg.validation_target = float(dlg.result["val"])
+                    except Exception:
+                        sg.validation_target = 1.0
                 sg.validation_desc = dlg.result["val_desc"]
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
@@ -16856,6 +16920,10 @@ class FaultTreeNode:
         self.validation_target = 1.0
         self.validation_desc = ""
         self.acceptance_criteria = ""
+        self.acceptance_rate = 0.0
+        self.exposure_given_hb = 1.0
+        self.uncontrollable_given_exposure = 1.0
+        self.severity_given_uncontrollable = 1.0
         self.status = "draft"
         self.approved = False
         # Targets for safety goal metrics
@@ -16900,6 +16968,16 @@ class FaultTreeNode:
         # Review status for top events
         self.status = "draft"
 
+    def update_validation_target(self):
+        """Recalculate validation target from stored acceptance data."""
+        self.validation_target = derive_validation_target(
+            self.acceptance_rate,
+            self.exposure_given_hb,
+            self.uncontrollable_given_exposure,
+            self.severity_given_uncontrollable,
+        )
+        return self.validation_target
+
     @property
     def name(self):
         orig = getattr(self, "original", self)
@@ -16933,6 +17011,10 @@ class FaultTreeNode:
             "validation_target": self.validation_target,
             "validation_desc": self.validation_desc,
             "acceptance_criteria": self.acceptance_criteria,
+            "acceptance_rate": self.acceptance_rate,
+            "exposure_given_hb": self.exposure_given_hb,
+            "uncontrollable_given_exposure": self.uncontrollable_given_exposure,
+            "severity_given_uncontrollable": self.severity_given_uncontrollable,
             "status": self.status,
             "approved": self.approved,
             "sg_dc_target": self.sg_dc_target,
@@ -16997,6 +17079,10 @@ class FaultTreeNode:
         node.validation_target = data.get("validation_target", 1.0)
         node.validation_desc = data.get("validation_desc", "")
         node.acceptance_criteria = data.get("acceptance_criteria", "")
+        node.acceptance_rate = data.get("acceptance_rate", 0.0)
+        node.exposure_given_hb = data.get("exposure_given_hb", 1.0)
+        node.uncontrollable_given_exposure = data.get("uncontrollable_given_exposure", 1.0)
+        node.severity_given_uncontrollable = data.get("severity_given_uncontrollable", 1.0)
         node.status = data.get("status", "draft")
         node.approved = data.get("approved", False)
         node.sg_dc_target = data.get("sg_dc_target", 0.0)

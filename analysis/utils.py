@@ -16,3 +16,60 @@ def append_unique_insensitive(items: List[str], name: str) -> None:
         if existing.lower() == lower:
             return
     items.append(name)
+
+
+def derive_validation_target(acceptance_rate: float,
+                             exposure_given_hb: float,
+                             uncontrollable_given_exposure: float,
+                             severity_given_uncontrollable: float) -> float:
+    """Derive a validation target from an acceptance criterion.
+
+    This implements the ISO 21448 relationship for the rate of hazardous
+    behaviour :math:`R_{HB}`.
+
+    The acceptance criterion :math:`A_H` is decomposed into conditional
+    probabilities for exposure (``exposure_given_hb``), lack of
+    controllability (``uncontrollable_given_exposure``) and severity
+    (``severity_given_uncontrollable``). The resulting validation target is
+    calculated using:
+
+    ``R_HB = A_H / (P_E|HB * P_C|E * P_S|C)``
+
+    Parameters
+    ----------
+    acceptance_rate:
+        Acceptance criterion for the harm :math:`A_H`.
+    exposure_given_hb:
+        Conditional probability of being exposed to the scenario given the
+        hazardous behaviour, :math:`P_{E|HB}`.
+    uncontrollable_given_exposure:
+        Probability that the hazardous behaviour is not controllable once
+        exposure occurs, :math:`P_{C|E}`.
+    severity_given_uncontrollable:
+        Probability of the relevant severity assuming the control action
+        fails, :math:`P_{S|C}`.
+
+    Returns
+    -------
+    float
+        The acceptable rate of the hazardous behaviour ``R_HB`` that can be
+        used as a validation target.
+
+    Raises
+    ------
+    ValueError
+        If any of the probability terms is less than or equal to zero.
+    """
+
+    denominator = (
+        exposure_given_hb *
+        uncontrollable_given_exposure *
+        severity_given_uncontrollable
+    )
+
+    if denominator <= 0:
+        raise ValueError(
+            "Probability factors must be positive to derive a validation target"
+        )
+
+    return acceptance_rate / denominator
