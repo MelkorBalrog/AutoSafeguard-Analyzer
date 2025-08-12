@@ -1,8 +1,21 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import math
+import tkinter as tk
 import tkinter.font as tkFont
 
 TEXT_BOX_COLOR = "#CFD8DC"
+
+# Basic mapping of a few common color names to their hex equivalents. The
+# gradient routines expect ``#RRGGBB`` colors; previously passing a named color
+# such as ``"lightyellow"`` caused a ``ValueError`` when converting to integers.
+# The small table below covers the named colors used by the drawing helpers and
+# can be extended easily if additional names are required.
+_NAMED_COLORS = {
+    "lightgray": "#d3d3d3",
+    "lightgrey": "#d3d3d3",
+    "lightblue": "#add8e6",
+    "lightyellow": "#ffffe0",
+}
 
 class FTADrawingHelper:
     """
@@ -18,10 +31,21 @@ class FTADrawingHelper:
         pass
 
     def _interpolate_color(self, color: str, ratio: float) -> str:
-        """Return color blended with white by *ratio* (0..1)."""
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
+        """Return *color* blended with white by *ratio* (0..1)."""
+        # ``color`` may be provided as ``#RRGGBB`` or a Tk-style name such as
+        # ``"lightgray"``.  Map known names to their hex representation so the
+        # interpolation math can operate on integers.
+        if not color.startswith("#"):
+            color = _NAMED_COLORS.get(color.lower(), color)
+
+        # Fallback to black if the color string is still not a valid ``#RRGGBB``
+        # value to avoid raising ``ValueError`` during drawing.
+        try:
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+        except (ValueError, IndexError):  # pragma: no cover - defensive
+            r = g = b = 0
         nr = int(255 * (1 - ratio) + r * ratio)
         ng = int(255 * (1 - ratio) + g * ratio)
         nb = int(255 * (1 - ratio) + b * ratio)
@@ -803,3 +827,304 @@ class FTADrawingHelper:
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
+
+
+class GSNDrawingHelper(FTADrawingHelper):
+    """Drawing helper providing shapes for GSN argumentation diagrams."""
+
+    def draw_goal_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Goal",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.6
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_solved_by_connection(
+        self,
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color="dimgray",
+        line_width=1,
+    ):
+        """Draw a solid connector indicating a 'solved by' relationship."""
+        fixed_y = parent_pt[1] + 40
+        canvas.create_line(
+            parent_pt[0],
+            parent_pt[1],
+            parent_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            parent_pt[0],
+            fixed_y,
+            child_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            child_pt[0],
+            fixed_y,
+            child_pt[0],
+            child_pt[1],
+            fill=outline_color,
+            width=line_width,
+            arrow=tk.LAST,
+        )
+
+    def draw_in_context_connection(
+        self,
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color="dimgray",
+        line_width=1,
+    ):
+        """Draw a dashed connector for an 'in context of' relationship."""
+        fixed_y = parent_pt[1] + 40
+        dash = (4, 2)
+        canvas.create_line(
+            parent_pt[0],
+            parent_pt[1],
+            parent_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
+        canvas.create_line(
+            parent_pt[0],
+            fixed_y,
+            child_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
+        canvas.create_line(
+            child_pt[0],
+            fixed_y,
+            child_pt[0],
+            child_pt[1],
+            fill=outline_color,
+            width=line_width,
+            dash=dash,
+        )
+
+    def draw_strategy_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Strategy",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        offset = w * 0.2
+        points = [
+            (x - w / 2 + offset, y - h / 2),
+            (x + w / 2, y - h / 2),
+            (x + w / 2 - offset, y + h / 2),
+            (x - w / 2, y + h / 2),
+        ]
+        self._fill_gradient_polygon(canvas, points, fill)
+        canvas.create_polygon(points, outline=outline_color, width=line_width, fill="", tags=(obj_id,))
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_solution_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=40.0,
+        top_text="Solution",
+        bottom_text="",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        radius = scale / 2
+        self.draw_circle_event_shape(
+            canvas,
+            x,
+            y,
+            radius,
+            top_text=top_text,
+            bottom_text=bottom_text,
+            fill=fill,
+            outline_color=outline_color,
+            line_width=line_width,
+            font_obj=font_obj,
+            base_event=True,
+            obj_id=obj_id,
+        )
+
+    def draw_assumption_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Assumption",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            dash=(4, 2),
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_justification_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Justification",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        inset = 4
+        canvas.create_rectangle(
+            left + inset,
+            top + inset,
+            right - inset,
+            bottom - inset,
+            outline=outline_color,
+            width=line_width,
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_context_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Context",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = tkFont.Font(family="Arial", size=int(10))
+        w = scale
+        h = scale * 0.5
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+
+    def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
+        self.draw_solution_shape(canvas, x, y, scale=scale, **kwargs)
+        radius = scale / 2
+        self.draw_shared_marker(canvas, x + radius, y - radius, 1)
+
+    def draw_away_goal_shape(self, canvas, x, y, scale=60.0, **kwargs):
+        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
+        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
+
+    def draw_away_module_shape(self, canvas, x, y, scale=60.0, **kwargs):
+        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
+        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
+
+
+# Create a single GSNDrawingHelper object for convenience
+
+gsn_drawing_helper = GSNDrawingHelper()
