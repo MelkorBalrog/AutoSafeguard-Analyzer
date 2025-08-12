@@ -50,7 +50,7 @@ def derive_validation_target(acceptance_rate: float,
     """Derive a validation target from an acceptance criterion.
 
     This implements the ISO 21448 relationship for the rate of hazardous
-    behaviour :math:`R_{HB}`.
+    behaviour :math:`R_{HB}`. All rates are expressed in **events per hour**.
 
     The acceptance criterion :math:`A_H` is decomposed into conditional
     probabilities for exposure (``exposure_given_hb``), lack of
@@ -60,10 +60,13 @@ def derive_validation_target(acceptance_rate: float,
 
     ``R_HB = A_H / (P_E|HB * P_C|E * P_S|C)``
 
+    For example, ``A_H = 1e-8/h`` with ``P_E|HB = 0.05``, ``P_C|E = 0.1``
+    and ``P_S|C = 0.01`` yields ``R_HB = 2e-4/h``.
+
     Parameters
     ----------
     acceptance_rate:
-        Acceptance criterion for the harm :math:`A_H`.
+        Acceptance criterion for the harm :math:`A_H` in events per hour.
     exposure_given_hb:
         Conditional probability of being exposed to the scenario given the
         hazardous behaviour, :math:`P_{E|HB}`.
@@ -77,8 +80,8 @@ def derive_validation_target(acceptance_rate: float,
     Returns
     -------
     float
-        The acceptable rate of the hazardous behaviour ``R_HB`` that can be
-        used as a validation target.
+        The acceptable rate of the hazardous behaviour ``R_HB`` (events per
+        hour) that can be used as a validation target.
 
     Raises
     ------
