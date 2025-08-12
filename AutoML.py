@@ -2122,9 +2122,9 @@ class FaultTreeApp:
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
         requirements_menu.add_command(label="Requirements Editor", command=self.show_requirements_editor)
         requirements_menu.add_command(label="Requirements Explorer", command=self.show_requirements_explorer)
-        requirements_menu.add_command(label="Safety Goals Matrix", command=self.show_safety_goals_matrix)
-        requirements_menu.add_command(label="Safety Goals Editor", command=self.show_safety_goals_editor)
-        requirements_menu.add_command(label="Export SG Requirements", command=self.export_safety_goal_requirements)
+        requirements_menu.add_command(label="Product Goals Matrix", command=self.show_safety_goals_matrix)
+        requirements_menu.add_command(label="Product Goals Editor", command=self.show_product_goals_editor)
+        requirements_menu.add_command(label="Export Product Goal Requirements", command=self.export_product_goal_requirements)
         review_menu = tk.Menu(menubar, tearoff=0)
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
         review_menu.add_command(label="Start Joint Review", command=self.start_joint_review)
@@ -2280,7 +2280,7 @@ class FaultTreeApp:
             "AutoML Explorer": self.manage_architecture,
             "Requirements Editor": self.show_requirements_editor,
             "Requirements Explorer": self.show_requirements_explorer,
-            "Safety Goals Editor": self.show_safety_goals_editor,
+            "Product Goals Editor": self.show_product_goals_editor,
             "Start Peer Review": self.start_peer_review,
             "Start Joint Review": self.start_joint_review,
             "Open Review Toolbox": self.open_review_toolbox,
@@ -2290,7 +2290,7 @@ class FaultTreeApp:
             "Common Cause Toolbox": self.show_common_cause_view,
             "Cause & Effect Chain": self.show_cause_effect_chain,
             "Fault Prioritization": self.open_fault_prioritization_window,
-            "Safety Goal Export": self.export_safety_goal_requirements,
+            "Product Goals Export": self.export_product_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
         }
@@ -2306,8 +2306,8 @@ class FaultTreeApp:
             ],
             "Risk Assessment": [
                 "HARA Analysis",
-                "Safety Goal Export",
-                "Safety Goals Editor",
+                "Product Goals Export",
+                "Product Goals Editor",
             ],
             "System Engineering": [
                 "AutoML Explorer",
@@ -8060,7 +8060,7 @@ class FaultTreeApp:
         elif kind == "reqs":
             self.show_requirements_editor()
         elif kind == "sg":
-            self.show_safety_goals_editor()
+            self.show_product_goals_editor()
         elif kind == "fta":
             te = next((t for t in self.top_events if t.unique_id == idx), None)
             if te:
@@ -8939,7 +8939,7 @@ class FaultTreeApp:
             hara_root = tree.insert(risk_root, "end", text="HARAs", open=True)
             for idx, doc in enumerate(self.hara_docs):
                 tree.insert(hara_root, "end", text=doc.name, tags=("hara", str(idx)))
-            tree.insert(risk_root, "end", text="Safety Goals", tags=("sg", "0"))
+            tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
 
             # --- Safety Analysis Section ---
             safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
@@ -11943,9 +11943,9 @@ class FaultTreeApp:
         return reqs
 
     def show_safety_goals_matrix(self):
-        """Display safety goals and derived requirements in a tree view."""
+        """Display product goals and derived requirements in a tree view."""
         win = tk.Toplevel(self.root)
-        win.title("Safety Goals Matrix")
+        win.title("Product Goals Matrix")
         tree = ttk.Treeview(win, columns=["ID", "ASIL", "SafeState", "Text"], show="tree headings")
         tree.heading("ID", text="Requirement ID")
         tree.heading("ASIL", text="ASIL")
@@ -11978,12 +11978,12 @@ class FaultTreeApp:
                     values=[req_id, req.get("asil", ""), req.get("text", "")],
                 )
 
-    def show_safety_goals_editor(self):
-        """Allow editing of top-level safety goals."""
+    def show_product_goals_editor(self):
+        """Allow editing of top-level product goals."""
         if hasattr(self, "_sg_tab") and self._sg_tab.winfo_exists():
             self.doc_nb.select(self._sg_tab)
             return
-        self._sg_tab = self._new_tab("Safety Goals")
+        self._sg_tab = self._new_tab("Product Goals")
         win = self._sg_tab
 
         columns = ["ID", "ASIL", "Safe State", "FTTI", "Prob", "Acceptance", "Description"]
@@ -12077,7 +12077,7 @@ class FaultTreeApp:
                 }
 
         def add_sg():
-            dlg = SGDialog(win, self, "Add Safety Goal")
+            dlg = SGDialog(win, self, "Add Product Goal")
             if dlg.result:
                 node = FaultTreeNode(dlg.result["id"], "TOP EVENT")
                 node.safety_goal_asil = dlg.result["asil"]
@@ -12099,7 +12099,7 @@ class FaultTreeApp:
                 return
             uid = int(sel[0])
             sg = self.find_node_by_id_all(uid)
-            dlg = SGDialog(win, self, "Edit Safety Goal", sg)
+            dlg = SGDialog(win, self, "Edit Product Goal", sg)
             if dlg.result:
                 sg.user_name = dlg.result["id"]
                 sg.safety_goal_asil = dlg.result["asil"]
@@ -12120,7 +12120,7 @@ class FaultTreeApp:
                 return
             uid = int(sel[0])
             sg = self.find_node_by_id_all(uid)
-            if sg and messagebox.askyesno("Delete", "Delete safety goal?"):
+            if sg and messagebox.askyesno("Delete", "Delete product goal?"):
                 self.top_events = [t for t in self.top_events if t.unique_id != uid]
                 refresh_tree()
                 self.update_views()
@@ -12133,13 +12133,13 @@ class FaultTreeApp:
 
         refresh_tree()
 
-    def export_safety_goal_requirements(self):
-        """Export requirements traced to safety goals including their ASIL."""
+    def export_product_goal_requirements(self):
+        """Export requirements traced to product goals including their ASIL."""
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
         if not path:
             return
 
-        columns = ["Safety Goal", "SG ASIL", "Safe State", "Requirement ID", "Req ASIL", "Text"]
+        columns = ["Product Goal", "PG ASIL", "Safe State", "Requirement ID", "Req ASIL", "Text"]
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(columns)
@@ -12154,7 +12154,7 @@ class FaultTreeApp:
                         continue
                     seen.add(rid)
                     writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
-        messagebox.showinfo("Export", "Safety goal requirements exported.")
+        messagebox.showinfo("Export", "Product goal requirements exported.")
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
