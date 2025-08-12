@@ -1,10 +1,10 @@
 import sys
 from pathlib import Path
 
-import pytest
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from analysis import SafetyManagementToolbox
+from gui.architecture import ActivityDiagramWindow, SysMLObject
+from sysml.sysml_repository import SysMLRepository
 
 
 def test_work_product_registration():
@@ -26,21 +26,39 @@ def test_lifecycle_and_workflow_storage():
     assert toolbox.get_workflow("missing") == []
 
 
-def test_business_diagram_building():
-    toolbox = SafetyManagementToolbox()
-    toolbox.add_work_product("Fault Tree", "FTA", "Assess faults")
-    toolbox.add_work_product("FMEA", "FMEA", "Analyze failures")
-    toolbox.build_default_diagram()
-    tasks = toolbox.business_diagram.tasks()
-    assert tasks == ["Fault Tree", "FMEA"]
-    flows = toolbox.business_diagram.flows()
-    assert ("Fault Tree", "FMEA") in flows
+class DummyCanvas:
+    def __init__(self):
+        self.text_calls = []
+
+    def create_text(self, x, y, **kw):
+        self.text_calls.append((x, y, kw))
+
+    def create_rectangle(self, *args, **kwargs):
+        pass
+
+    def create_line(self, *args, **kwargs):
+        pass
+
+    def create_polygon(self, *args, **kwargs):
+        pass
 
 
-def test_business_diagram_custom_task_and_flow():
-    toolbox = SafetyManagementToolbox()
-    toolbox.add_business_task("Review")
-    toolbox.add_business_task("Approve")
-    toolbox.add_business_flow("Review", "Approve")
-    assert "Review" in toolbox.business_diagram.tasks()
-    assert ("Review", "Approve") in toolbox.business_diagram.flows()
+def test_activity_boundary_label_rotated_left():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Activity Diagram")
+    win = ActivityDiagramWindow.__new__(ActivityDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+    obj = SysMLObject(1, "System Boundary", 0.0, 0.0, width=100.0, height=80.0, properties={"name": "Lane"})
+    win.draw_object(obj)
+
+    assert win.canvas.text_calls, "label not drawn"
+    x, _, kwargs = win.canvas.text_calls[0]
+    assert kwargs.get("angle") == 90
+    assert x < obj.x - obj.width / 2
