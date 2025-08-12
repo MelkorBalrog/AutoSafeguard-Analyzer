@@ -12215,7 +12215,9 @@ class FaultTreeApp:
             "Safe State",
             "FTTI",
             "Acc Rate",
+            "On Hours",
             "Val Target",
+            "Profile",
             "Val Desc",
             "Acceptance",
             "Description",
@@ -12241,7 +12243,9 @@ class FaultTreeApp:
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
                         str(getattr(sg, "acceptance_rate", "")),
+                        getattr(sg, "operational_hours_on", ""),
                         getattr(sg, "validation_target", ""),
+                        getattr(sg, "mission_profile", ""),
                         getattr(sg, "validation_desc", ""),
                         getattr(sg, "acceptance_criteria", ""),
                         sg.safety_goal_description,
@@ -12290,29 +12294,38 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=5, column=1, padx=5, pady=5)
 
+                ttk.Label(master, text="On Hours:").grid(row=6, column=0, sticky="e")
+                self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
+                tk.Entry(
+                    master,
+                    textvariable=self.op_hours_var,
+                    validate="key",
+                    validatecommand=(master.register(self.app.validate_float), "%P"),
+                ).grid(row=6, column=1, padx=5, pady=5)
+
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
 
-                ttk.Label(master, text="P(E|HB):").grid(row=6, column=0, sticky="e")
+                ttk.Label(master, text="P(E|HB):").grid(row=7, column=0, sticky="e")
                 self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=6, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=7, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(C|E):").grid(row=7, column=0, sticky="e")
+                ttk.Label(master, text="P(C|E):").grid(row=8, column=0, sticky="e")
                 self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=7, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(S|C):").grid(row=8, column=0, sticky="e")
+                ttk.Label(master, text="P(S|C):").grid(row=9, column=0, sticky="e")
                 self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target (1/h):").grid(row=9, column=0, sticky="e")
+                ttk.Label(master, text="Validation Target (1/h):").grid(row=10, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
                     val = 1.0
                 self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
 
                 def _update_val(*_):
                     try:
@@ -12324,20 +12337,29 @@ class FaultTreeApp:
 
                 self.accept_rate_var.trace_add("write", _update_val)
 
-                ttk.Label(master, text="Val Target Desc:").grid(row=10, column=0, sticky="ne")
+                ttk.Label(master, text="Mission Profile:").grid(row=11, column=0, sticky="e")
+                self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
+                ttk.Combobox(
+                    master,
+                    textvariable=self.profile_var,
+                    values=[mp.name for mp in self.app.mission_profiles],
+                    state="readonly",
+                ).grid(row=11, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Val Target Desc:").grid(row=12, column=0, sticky="ne")
                 self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=10, column=1, padx=5, pady=5)
+                self.val_desc_text.grid(row=12, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=11, column=0, sticky="ne")
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=13, column=0, sticky="ne")
                 self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=11, column=1, padx=5, pady=5)
+                self.acc_text.grid(row=13, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=12, column=0, sticky="ne")
+                ttk.Label(master, text="Description:").grid(row=14, column=0, sticky="ne")
                 self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=12, column=1, padx=5, pady=5)
+                self.desc_text.grid(row=14, column=1, padx=5, pady=5)
                 return master
 
             def apply(self):
@@ -12350,10 +12372,12 @@ class FaultTreeApp:
                     "state": self.state_var.get().strip(),
                     "ftti": self.ftti_var.get().strip(),
                     "accept_rate": self.accept_rate_var.get().strip(),
+                    "op_hours": self.op_hours_var.get().strip(),
                     "pehb": self.pehb_var.get().strip(),
                     "pce": self.pce_var.get().strip(),
                     "psc": self.psc_var.get().strip(),
                     "val": self.val_var.get().strip(),
+                    "profile": self.profile_var.get().strip(),
                     "val_desc": self.val_desc_text.get("1.0", "end-1c"),
                     "accept": self.acc_text.get("1.0", "end-1c"),
                     "desc": desc,
@@ -12367,7 +12391,9 @@ class FaultTreeApp:
                 node.safe_state = dlg.result["state"]
                 node.ftti = dlg.result["ftti"]
                 node.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                node.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
                 node.update_validation_target()
+                node.mission_profile = dlg.result.get("profile", "")
                 node.validation_desc = dlg.result["val_desc"]
                 node.acceptance_criteria = dlg.result["accept"]
                 node.safety_goal_description = dlg.result["desc"]
@@ -12388,7 +12414,9 @@ class FaultTreeApp:
                 sg.safe_state = dlg.result["state"]
                 sg.ftti = dlg.result["ftti"]
                 sg.acceptance_rate = float(dlg.result.get("accept_rate", 0.0) or 0.0)
+                sg.operational_hours_on = float(dlg.result.get("op_hours", 0.0) or 0.0)
                 sg.update_validation_target()
+                sg.mission_profile = dlg.result.get("profile", "")
                 sg.validation_desc = dlg.result["val_desc"]
                 sg.acceptance_criteria = dlg.result["accept"]
                 sg.safety_goal_description = dlg.result["desc"]
@@ -17158,8 +17186,10 @@ class FaultTreeNode:
         self.ftti = ""
         self.validation_target = 1.0
         self.validation_desc = ""
+        self.mission_profile = ""
         self.acceptance_criteria = ""
         self.acceptance_rate = 0.0
+        self.operational_hours_on = 0.0
         self.exposure_given_hb = 1.0
         self.uncontrollable_given_exposure = 1.0
         self.severity_given_uncontrollable = 1.0
@@ -17253,8 +17283,10 @@ class FaultTreeNode:
             "ftti": self.ftti,
             "validation_target": self.validation_target,
             "validation_desc": self.validation_desc,
+            "mission_profile": self.mission_profile,
             "acceptance_criteria": self.acceptance_criteria,
             "acceptance_rate": self.acceptance_rate,
+            "operational_hours_on": self.operational_hours_on,
             "exposure_given_hb": self.exposure_given_hb,
             "uncontrollable_given_exposure": self.uncontrollable_given_exposure,
             "severity_given_uncontrollable": self.severity_given_uncontrollable,
@@ -17322,8 +17354,10 @@ class FaultTreeNode:
         node.ftti = data.get("ftti", "")
         node.validation_target = data.get("validation_target", 1.0)
         node.validation_desc = data.get("validation_desc", "")
+        node.mission_profile = data.get("mission_profile", "")
         node.acceptance_criteria = data.get("acceptance_criteria", "")
         node.acceptance_rate = data.get("acceptance_rate", 0.0)
+        node.operational_hours_on = data.get("operational_hours_on", 0.0)
         node.exposure_given_hb = data.get("exposure_given_hb", 1.0)
         node.uncontrollable_given_exposure = data.get("uncontrollable_given_exposure", 1.0)
         node.severity_given_uncontrollable = data.get("severity_given_uncontrollable", 1.0)
