@@ -245,6 +245,28 @@ class MechanismLibrary:
     name: str
     mechanisms: list = field(default_factory=list)
 
+
+@dataclass
+class CybersecurityGoal:
+    """Cybersecurity goal with linked risk assessments and CAL."""
+
+    goal_id: str
+    description: str
+    cal: str = "CAL1"
+    risk_assessments: list = field(default_factory=list)
+
+    def compute_cal(self) -> None:
+        """Compute CAL as highest level among linked risk assessments."""
+        order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
+        highest = CAL_LEVEL_OPTIONS[0]
+        for ra in self.risk_assessments:
+            cal = getattr(ra, "cal", None)
+            if cal is None and isinstance(ra, dict):
+                cal = ra.get("cal")
+            if cal in order and order[cal] > order.get(highest, 0):
+                highest = cal
+        self.cal = highest
+
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {
         "dielectric": ["ceramic", "electrolytic", "tantalum"],

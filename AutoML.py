@@ -296,6 +296,7 @@ from analysis.models import (
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
     CAL_LEVEL_OPTIONS,
+    CybersecurityGoal,
 )
 from gui.architecture import (
     UseCaseDiagramWindow,
@@ -2033,6 +2034,7 @@ class FaultTreeApp:
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
         self.active_tc2fi = None
+        self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
         # Track open diagram tabs to avoid duplicates
         self.diagram_tabs: dict[str, ttk.Frame] = {}
@@ -2132,6 +2134,8 @@ class FaultTreeApp:
         requirements_menu.add_command(label="Safety Goals Matrix", command=self.show_safety_goals_matrix)
         requirements_menu.add_command(label="Safety Goals Editor", command=self.show_safety_goals_editor)
         requirements_menu.add_command(label="Export SG Requirements", command=self.export_safety_goal_requirements)
+        requirements_menu.add_command(label="Cybersecurity Goals Editor", command=self.show_cybersecurity_goals_editor)
+        requirements_menu.add_command(label="Export CSG Requirements", command=self.export_cybersecurity_goal_requirements)
         review_menu = tk.Menu(menubar, tearoff=0)
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
         review_menu.add_command(label="Start Joint Review", command=self.start_joint_review)
@@ -2293,6 +2297,7 @@ class FaultTreeApp:
             "Requirements Editor": self.show_requirements_editor,
             "Requirements Explorer": self.show_requirements_explorer,
             "Safety Goals Editor": self.show_safety_goals_editor,
+            "Cybersecurity Goals Editor": self.show_cybersecurity_goals_editor,
             "Start Peer Review": self.start_peer_review,
             "Start Joint Review": self.start_joint_review,
             "Open Review Toolbox": self.open_review_toolbox,
@@ -2303,6 +2308,7 @@ class FaultTreeApp:
             "Cause & Effect Chain": self.show_cause_effect_chain,
             "Fault Prioritization": self.open_fault_prioritization_window,
             "Safety Goal Export": self.export_safety_goal_requirements,
+            "Cybersecurity Goal Export": self.export_cybersecurity_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
         }
@@ -2321,6 +2327,8 @@ class FaultTreeApp:
                 "Risk Assessment (HARA, HIRE & TARA)",
                 "Safety Goal Export",
                 "Safety Goals Editor",
+                "Cybersecurity Goal Export",
+                "Cybersecurity Goals Editor",
             ],
             "System Engineering": [
                 "AutoML Explorer",
@@ -8989,6 +8997,7 @@ class FaultTreeApp:
             for idx, doc in enumerate(self.hara_docs):
                 tree.insert(hara_root, "end", text=doc.name, tags=("hara", str(idx)))
             tree.insert(risk_root, "end", text="Safety Goals", tags=("sg", "0"))
+            tree.insert(risk_root, "end", text="Cybersecurity Goals", tags=("csg", "0"))
 
             # --- Safety Analysis Section ---
             safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
@@ -12182,6 +12191,142 @@ class FaultTreeApp:
 
         refresh_tree()
 
+    def show_cybersecurity_goals_editor(self):
+        """Allow editing of cybersecurity goals."""
+        if hasattr(self, "_csg_tab") and self._csg_tab.winfo_exists():
+            self.doc_nb.select(self._csg_tab)
+            return
+        self._csg_tab = self._new_tab("Cybersecurity Goals")
+        win = self._csg_tab
+
+        columns = ["ID", "CAL", "Risk Assessments", "Description"]
+        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        for c in columns:
+            tree.heading(c, text=c)
+            tree.column(c, width=120 if c != "Description" else 300, anchor="center")
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        def refresh_tree():
+            tree.delete(*tree.get_children())
+            for cg in self.cybersecurity_goals:
+                cg.compute_cal()
+                ras = ", ".join(
+                    [
+                        ra.get("name", str(ra)) if isinstance(ra, dict) else str(ra)
+                        for ra in cg.risk_assessments
+                    ]
+                )
+                tree.insert(
+                    "",
+                    "end",
+                    iid=cg.goal_id,
+                    values=[cg.goal_id, cg.cal, ras, cg.description],
+                )
+
+        class CGDialog(simpledialog.Dialog):
+            def __init__(self, parent, app, title, initial=None):
+                self.app = app
+                self.initial = initial
+                super().__init__(parent, title=title)
+
+            def body(self, master):
+                ttk.Label(master, text="ID:").grid(row=0, column=0, sticky="e")
+                self.id_var = tk.StringVar(value=getattr(self.initial, "goal_id", ""))
+                tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Risk Assessments (name:CAL):").grid(row=1, column=0, sticky="e")
+                initial_ras = ", ".join(
+                    [
+                        f"{ra.get('name','')}: {ra.get('cal','')}"
+                        for ra in getattr(self.initial, "risk_assessments", [])
+                    ]
+                )
+                self.ra_var = tk.StringVar(value=initial_ras)
+                tk.Entry(master, textvariable=self.ra_var).grid(row=1, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="CAL:").grid(row=2, column=0, sticky="e")
+                self.cal_var = tk.StringVar()
+                ttk.Label(master, textvariable=self.cal_var).grid(row=2, column=1, padx=5, pady=5, sticky="w")
+
+                ttk.Label(master, text="Description:").grid(row=3, column=0, sticky="ne")
+                self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                self.desc_text.insert("1.0", getattr(self.initial, "description", ""))
+                self.desc_text.grid(row=3, column=1, padx=5, pady=5)
+
+                def update_cal(*_args):
+                    ras = []
+                    for item in self.ra_var.get().split(","):
+                        item = item.strip()
+                        if ":" in item:
+                            name, cal = item.split(":", 1)
+                            ras.append({"name": name.strip(), "cal": cal.strip()})
+                    dummy = CybersecurityGoal("", "", risk_assessments=ras)
+                    dummy.compute_cal()
+                    self.cal_var.set(dummy.cal)
+
+                self.ra_var.trace_add("write", update_cal)
+                update_cal()
+                return master
+
+            def apply(self):
+                ras = []
+                for item in self.ra_var.get().split(","):
+                    item = item.strip()
+                    if ":" in item:
+                        name, cal = item.split(":", 1)
+                        ras.append({"name": name.strip(), "cal": cal.strip()})
+                dummy = CybersecurityGoal(
+                    self.id_var.get().strip(),
+                    self.desc_text.get("1.0", "end-1c").strip(),
+                    risk_assessments=ras,
+                )
+                dummy.compute_cal()
+                self.result = {
+                    "id": dummy.goal_id,
+                    "desc": dummy.description,
+                    "risk": ras,
+                    "cal": dummy.cal,
+                }
+
+        def add_cg():
+            dlg = CGDialog(win, self, "Add Cybersecurity Goal")
+            if dlg.result:
+                cg = CybersecurityGoal(
+                    dlg.result["id"], dlg.result["desc"], dlg.result["cal"], dlg.result["risk"]
+                )
+                self.cybersecurity_goals.append(cg)
+                refresh_tree()
+
+        def edit_cg():
+            sel = tree.selection()
+            if not sel:
+                return
+            goal = next((g for g in self.cybersecurity_goals if g.goal_id == sel[0]), None)
+            dlg = CGDialog(win, self, "Edit Cybersecurity Goal", goal)
+            if dlg.result and goal:
+                goal.goal_id = dlg.result["id"]
+                goal.description = dlg.result["desc"]
+                goal.risk_assessments = dlg.result["risk"]
+                goal.cal = dlg.result["cal"]
+                refresh_tree()
+
+        def del_cg():
+            sel = tree.selection()
+            if not sel:
+                return
+            gid = sel[0]
+            if messagebox.askyesno("Delete", "Delete cybersecurity goal?"):
+                self.cybersecurity_goals = [g for g in self.cybersecurity_goals if g.goal_id != gid]
+                refresh_tree()
+
+        btn = ttk.Frame(win)
+        btn.pack(fill=tk.X)
+        ttk.Button(btn, text="Add", command=add_cg).pack(side=tk.LEFT)
+        ttk.Button(btn, text="Edit", command=edit_cg).pack(side=tk.LEFT)
+        ttk.Button(btn, text="Delete", command=del_cg).pack(side=tk.LEFT)
+
+        refresh_tree()
+
     def export_safety_goal_requirements(self):
         """Export requirements traced to safety goals including their ASIL."""
         path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
@@ -12204,6 +12349,27 @@ class FaultTreeApp:
                     seen.add(rid)
                     writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
         messagebox.showinfo("Export", "Safety goal requirements exported.")
+
+    def export_cybersecurity_goal_requirements(self):
+        """Export cybersecurity goals with linked risk assessments."""
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not path:
+            return
+
+        columns = ["Cybersecurity Goal", "CAL", "Risk Assessments", "Description"]
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(columns)
+            for cg in self.cybersecurity_goals:
+                cg.compute_cal()
+                ras = ", ".join(
+                    [
+                        ra.get("name", str(ra)) if isinstance(ra, dict) else str(ra)
+                        for ra in cg.risk_assessments
+                    ]
+                )
+                writer.writerow([cg.goal_id, cg.cal, ras, cg.description])
+        messagebox.showinfo("Export", "Cybersecurity goal requirements exported.")
 
     def show_cut_sets(self):
         """Display minimal cut sets for every top event."""
