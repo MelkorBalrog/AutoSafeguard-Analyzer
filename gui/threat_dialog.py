@@ -20,12 +20,15 @@ class ThreatDialog(simpledialog.Dialog):
     def __init__(self, parent, app, entry=None):
         self.app = app
         self.entry = entry if entry else ThreatEntry("", [])
+        self.current_ds_index = None
         super().__init__(parent, title="Edit Threat Entry")
 
     # ------------------------------------------------------------------
     def body(self, master):
+        master.columnconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
         nb = ttk.Notebook(master)
-        nb.pack(fill=tk.BOTH, expand=True)
+        nb.grid(row=0, column=0, sticky="nsew")
 
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
@@ -108,6 +111,7 @@ class ThreatDialog(simpledialog.Dialog):
             state="readonly",
         )
         self.ds_type_cb.grid(row=0, column=3, sticky="ew", padx=2)
+        self.ds_type_cb.bind("<<ComboboxSelected>>", self.on_ds_type_change)
 
         ds_btn = ttk.Frame(asset_tab)
         ds_btn.grid(row=6, column=0, sticky="ew")
@@ -286,9 +290,11 @@ class ThreatDialog(simpledialog.Dialog):
         if func_sel and sel:
             func = self.entry.functions[func_sel[0]]
             ds = func.damage_scenarios[int(sel[0])]
+            self.current_ds_index = int(sel[0])
             self.ds_scenario_var.set(ds.scenario)
             self.ds_type_var.set(ds.dtype)
         else:
+            self.current_ds_index = None
             self.ds_scenario_var.set("")
             self.ds_type_var.set("")
         self.refresh_threats()
@@ -359,6 +365,16 @@ class ThreatDialog(simpledialog.Dialog):
         for idx, ap in enumerate(ts.attack_paths):
             self.path_tree.insert("", "end", iid=str(idx), values=(ap.description,))
         self.on_path_select()
+
+    def on_ds_type_change(self, *_):
+        func_sel = self.func_list.curselection()
+        if not func_sel or self.current_ds_index is None:
+            return
+        func = self.entry.functions[func_sel[0]]
+        ds = func.damage_scenarios[self.current_ds_index]
+        ds.dtype = self.ds_type_var.get()
+        self.ds_tree.item(str(self.current_ds_index), values=(ds.scenario, ds.dtype))
+        self.ds_tree.selection_set(str(self.current_ds_index))
 
     # ------------------------------------------------------------------
     # Damage Scenarios
