@@ -261,7 +261,7 @@ class ThreatEntry:
     """Single row in a threat analysis table."""
 
     asset: str
-    function: str
+    functions: list[str] = field(default_factory=list)
     damage_scenarios: list[DamageScenario] = field(default_factory=list)
 
 

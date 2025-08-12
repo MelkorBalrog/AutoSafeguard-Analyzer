@@ -16,7 +16,7 @@ class ThreatWindow(tk.Frame):
         self.app = app
         if isinstance(master, tk.Toplevel):
             master.title("Threat Analysis")
-            master.geometry("700x400")
+            master.geometry("700x350")
 
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
@@ -30,7 +30,7 @@ class ThreatWindow(tk.Frame):
         ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
 
-        columns = ("asset", "function", "damage", "type", "threat", "path")
+        columns = ("asset", "functions", "damage", "type", "threat", "path")
         content = ttk.Frame(self)
         content.pack(fill=tk.BOTH, expand=True)
         configure_table_style("Threat.Treeview")
@@ -153,7 +153,14 @@ class ThreatWindow(tk.Frame):
                 "",
                 "end",
                 iid=str(idx),
-                values=(entry.asset, entry.function, damages, types, threats, paths),
+                values=(
+                    entry.asset,
+                    "; ".join(entry.functions),
+                    damages,
+                    types,
+                    threats,
+                    paths,
+                ),
             )
 
     def on_double_click(self, *_):

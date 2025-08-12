@@ -15089,9 +15089,11 @@ class FaultTreeApp:
                     dmg_list.append(
                         DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
                     )
-                entries.append(
-                    ThreatEntry(e.get("asset", ""), e.get("function", ""), dmg_list)
-                )
+                funcs = e.get("functions")
+                if funcs is None:
+                    func = e.get("function")
+                    funcs = [func] if func else []
+                entries.append(ThreatEntry(e.get("asset", ""), funcs, dmg_list))
             self.threat_docs.append(
                 ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )
@@ -15527,9 +15529,11 @@ class FaultTreeApp:
                     dmg_list.append(
                         DamageScenario(ds.get("scenario", ""), ds.get("dtype", ""), threats)
                     )
-                entries.append(
-                    ThreatEntry(e.get("asset", ""), e.get("function", ""), dmg_list)
-                )
+                funcs = e.get("functions")
+                if funcs is None:
+                    func = e.get("function")
+                    funcs = [func] if func else []
+                entries.append(ThreatEntry(e.get("asset", ""), funcs, dmg_list))
             self.threat_docs.append(
                 ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
             )
