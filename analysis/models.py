@@ -159,6 +159,8 @@ class HaraDoc:
     approved: bool = False
     status: str = "draft"
     meta: Metadata = field(default_factory=Metadata)
+    stpa: str = ""
+    threat: str = ""
 
 @dataclass
 class StpaEntry:
