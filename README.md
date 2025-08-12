@@ -51,9 +51,10 @@ flowchart TD
     A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
     A --> S([FI2TC / TC2FI<br/>inputs: functions<br/>outputs: hazards, FIs & TCs, severity])
     A --> T([Threat Analysis<br/>inputs: architecture & functions<br/>outputs: threat scenarios])
-    B --> C([Risk Assessment<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
+    B --> C([Risk Assessment<br/>inputs: malfunctions, SOTIF severity & cyber risk<br/>outputs: hazards, ASIL, safety goals])
     S --> C
     T --> U([Cyber Risk Assessment<br/>inputs: threat scenarios<br/>outputs: damage scenarios, CAL, cybersecurity goals])
+    U --> C
     A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
     C --> D
@@ -65,7 +66,7 @@ flowchart TD
     G --> H([ASIL & CAL propagation to SGs, CGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. In parallel, a **Threat Analysis** maps potential attack paths so the **Cyber Risk Assessment** can compute damage scenarios, risk levels and CALs that roll up into cybersecurity goals. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Cyber and safety goals produce corresponding requirement sets that converge in peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL and CAL values traced back to the safety goals, cybersecurity goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. In parallel, a **Threat Analysis** maps potential attack paths so the **Cyber Risk Assessment** can compute damage scenarios, risk levels and CALs. Those cybersecurity results feed the **risk assessment**, which combines them with malfunctions and SOTIF severities to assign hazards and ASIL ratings to safety goals that then inform FMEDAs and **FTA** diagrams. Cyber and safety goals produce corresponding requirement sets that converge in peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL and CAL values traced back to the safety goals, cybersecurity goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
@@ -86,8 +87,9 @@ The **Risk Assessment** view builds on the safety relevant malfunctions from a s
 8. **Exposure Rationale** – free text explanation for the chosen exposure.
 9. **ASIL** – automatically calculated from severity, controllability and exposure using the ISO&nbsp;26262 risk graph.
 10. **Safety Goal** – combo box listing all defined safety goals in the project.
+11. **Cyber Risk** – optional link to a cyber risk assessment entry so damage scenarios and CALs influence the hazard evaluation.
 
-The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
+If a cyber risk entry is selected, its damage scenario and CAL are stored with the row for traceability to cybersecurity goals. The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
 
 The **Hazard Explorer** window lists all hazards from every risk assessment in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
 
@@ -408,6 +410,7 @@ classDiagram
     CybersecurityGoal --> "*" CyberRiskEntry : riskAssessments
     CyberRiskEntry --> ThreatScenario : threatScenario
     CyberRiskEntry --> DamageScenario : damageScenario
+    HaraEntry --> CyberRiskEntry : cyber
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -548,7 +551,7 @@ Blocks reference a `ReliabilityAnalysis` which lists its components. Parts link 
 
 #### Hazard Traceability
 
-The next diagram traces how malfunctions detected in a HAZOP flow through the safety analyses. Actions in activity diagrams become `HazopEntry` malfunctions linked to operational `Scenario` objects and their `Scenery` from the ODD. Selected HAZOP rows populate `HaraEntry` items where Severity × Exposure × Controllability determine the ASIL and resulting `SafetyGoal`. Safety goals appear as the top level events in FTAs. FMEDA failure modes and architecture components create `FaultTreeNode` base events that generate safety `Requirement` objects. Requirements may be decomposed into children with reduced ASIL values when ISO 26262 decomposition rules apply.
+The next diagram traces how malfunctions detected in a HAZOP flow through the safety analyses. Actions in activity diagrams become `HazopEntry` malfunctions linked to operational `Scenario` objects and their `Scenery` from the ODD. Selected HAZOP rows populate `HaraEntry` items where Severity × Exposure × Controllability determine the ASIL and resulting `SafetyGoal`. When cyber risks are relevant, each `HaraEntry` can reference a `CyberRiskEntry` so damage scenarios influence the hazard analysis. Safety goals appear as the top level events in FTAs. FMEDA failure modes and architecture components create `FaultTreeNode` base events that generate safety `Requirement` objects. Requirements may be decomposed into children with reduced ASIL values when ISO 26262 decomposition rules apply.
 
 ```mermaid
 classDiagram
@@ -567,6 +570,7 @@ classDiagram
     class Fault
     class Failure
     class Requirement
+    class CyberRiskEntry
     UseCase --> ActivityUsage : realizedBy
     ActivityUsage --> "*" ActionUsage : actions
     ActivityUsage --> HazopEntry : hazopInput
@@ -579,6 +583,7 @@ classDiagram
     FmeaEntry --> Fault : cause
     FmeaEntry --> Failure : effect
     Failure --> FaultTreeNode : event
+    CyberRiskEntry --> HaraEntry : cyber
     HaraEntry --> Hazard
     HaraEntry --> SafetyGoal
     SafetyGoal --> FaultTreeDiagram : topEvent
@@ -704,6 +709,8 @@ the names or IDs of the analyses being evaluated.
 - **CyberRiskEntry** – risk assessment values for a threat scenario including
   `attack_vector`, `feasibility`, impact ratings, derived `overall_impact`,
   `risk_level` and resulting `cal`.
+- **HaraEntry** – risk assessment row linking a malfunction and scenario to an
+  optional `cyber` reference so damage scenarios influence safety hazards.
 - **CybersecurityGoal** – textual goal `description`, `goal_id` and computed
   highest `cal` across linked risk assessments.
 
@@ -1300,12 +1307,12 @@ ratings into conditional probabilities. Each step increases the likelihood by
 roughly an order of magnitude and represents values commonly referenced in
 industry practice:
 
-| Rating | ``P(E|HB)`` | ``P(C|E)`` | ``P(S|C)`` |
-|-------:|------------:|-----------:|-----------:|
-| 1 | ``1e-4`` | ``1e-3`` | ``1e-3`` |
-| 2 | ``1e-3`` | ``1e-2`` | ``1e-2`` |
-| 3 | ``1e-2`` | ``1e-1`` | ``1e-1`` |
-| 4 | ``1e-1`` | – | – |
+| Rating | P(E\|HB) | P(C\|E) | P(S\|C) |
+|-------:|----------:|---------:|---------:|
+| 1      | 1×10⁻⁴    | 1×10⁻³   | 1×10⁻³   |
+| 2      | 1×10⁻³    | 1×10⁻²   | 1×10⁻²   |
+| 3      | 1×10⁻²    | 1×10⁻¹   | 1×10⁻¹   |
+| 4      | 1×10⁻¹    | –        | –        |
 
 Projects with empirical data may substitute more precise values, but these
 approximations provide a justified starting point when none are available.
