@@ -2059,8 +2059,14 @@ class RiskAssessmentWindow(tk.Frame):
         new_assessment_btn = ttk.Button(top, text="New", command=self.new_doc)
         new_assessment_btn.pack(side=tk.LEFT)
         ToolTip(new_assessment_btn, "Create a new risk assessment document.")
-        edit_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
-        edit_btn.pack(side=tk.LEFT)
+        rename_btn = ttk.Button(top, text="Rename", command=self.rename_doc)
+        rename_btn.pack(side=tk.LEFT)
+        edit_doc_btn = ttk.Button(top, text="Edit", command=self.edit_doc)
+        edit_doc_btn.pack(side=tk.LEFT)
+        ToolTip(
+            edit_doc_btn,
+            "Change associated HAZOP, STPA and threat analyses.",
+        )
         del_btn = ttk.Button(top, text="Delete", command=self.delete_doc)
         del_btn.pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
@@ -2208,6 +2214,40 @@ class RiskAssessmentWindow(tk.Frame):
                 self.threat_var.get(),
             )
 
+    class EditAssessmentDialog(simpledialog.Dialog):
+        def __init__(self, parent, app, doc):
+            self.app = app
+            self.doc = doc
+            super().__init__(parent, title="Edit Risk Assessment")
+
+        def body(self, master):
+            ttk.Label(master, text="HAZOPs").grid(row=0, column=0, sticky="e")
+            names = [d.name for d in self.app.hazop_docs]
+            current = self.doc.hazops[0] if self.doc.hazops else ""
+            self.hazop_var = tk.StringVar(value=current)
+            ttk.Combobox(
+                master, textvariable=self.hazop_var, values=names, state="readonly"
+            ).grid(row=0, column=1)
+            ttk.Label(master, text="STPA").grid(row=1, column=0, sticky="e")
+            stpas = [d.name for d in self.app.stpa_docs]
+            self.stpa_var = tk.StringVar(value=getattr(self.doc, "stpa", ""))
+            ttk.Combobox(
+                master, textvariable=self.stpa_var, values=stpas, state="readonly"
+            ).grid(row=1, column=1)
+            ttk.Label(master, text="Threat Analysis").grid(row=2, column=0, sticky="e")
+            threats = [d.name for d in self.app.threat_docs]
+            self.threat_var = tk.StringVar(value=getattr(self.doc, "threat", ""))
+            ttk.Combobox(
+                master, textvariable=self.threat_var, values=threats, state="readonly"
+            ).grid(row=2, column=1)
+
+        def apply(self):
+            self.result = (
+                self.hazop_var.get(),
+                self.stpa_var.get(),
+                self.threat_var.get(),
+            )
+
     def new_doc(self):
         dlg = self.NewAssessmentDialog(self, self.app)
         if not getattr(dlg, "result", None):
@@ -2218,6 +2258,21 @@ class RiskAssessmentWindow(tk.Frame):
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
         self.status_lbl.config(text=f"Status: {doc.status}")
+        self.refresh_docs()
+        self.refresh()
+        self.app.update_views()
+
+    def edit_doc(self):
+        doc = self.app.active_hara
+        if not doc:
+            return
+        dlg = self.EditAssessmentDialog(self, self.app, doc)
+        if not getattr(dlg, "result", None):
+            return
+        hazop, stpa, threat = dlg.result
+        doc.hazops = [hazop] if hazop else []
+        doc.stpa = stpa
+        doc.threat = threat
         self.refresh_docs()
         self.refresh()
         self.app.update_views()

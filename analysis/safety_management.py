@@ -10,7 +10,6 @@ from typing import Dict, List
 
 from .bpmn import BPMNDiagram
 
-
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""

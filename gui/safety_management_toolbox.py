@@ -2,7 +2,6 @@
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
-
 from gui import messagebox
 from analysis.safety_management import SafetyManagementToolbox as SMT
 
