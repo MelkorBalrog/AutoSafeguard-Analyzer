@@ -14161,14 +14161,38 @@ class FaultTreeApp:
                 ttk.Label(metrics_frame, text="Precision:").grid(row=1, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="Recall:").grid(row=2, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="F1 Score:").grid(row=3, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="TPR:").grid(row=4, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="TNR:").grid(row=5, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="FPR:").grid(row=6, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="FNR:").grid(row=7, column=0, sticky="e")
                 self.acc_var = tk.StringVar()
                 self.prec_var = tk.StringVar()
                 self.rec_var = tk.StringVar()
                 self.f1_var = tk.StringVar()
+                self.tpr_var = tk.StringVar()
+                self.tnr_var = tk.StringVar()
+                self.fpr_var = tk.StringVar()
+                self.fnr_var = tk.StringVar()
                 ttk.Label(metrics_frame, textvariable=self.acc_var).grid(row=0, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.prec_var).grid(row=1, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.rec_var).grid(row=2, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tpr_var).grid(row=4, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tnr_var).grid(row=5, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fpr_var).grid(row=6, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fnr_var).grid(row=7, column=1, sticky="w")
+                ttk.Label(metrics_frame, text="TP/hr:").grid(row=0, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="TN/hr:").grid(row=1, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="FP/hr:").grid(row=2, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="FN/hr:").grid(row=3, column=2, sticky="e")
+                self.tp_rate_var = tk.StringVar()
+                self.tn_rate_var = tk.StringVar()
+                self.fp_rate_var = tk.StringVar()
+                self.fn_rate_var = tk.StringVar()
+                ttk.Label(metrics_frame, textvariable=self.tp_rate_var).grid(row=0, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tn_rate_var).grid(row=1, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fp_rate_var).grid(row=2, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fn_rate_var).grid(row=3, column=3, sticky="w")
 
                 def update_metrics(*_):
                     from analysis.confusion_matrix import compute_metrics, compute_rates
@@ -14456,6 +14480,82 @@ class FaultTreeApp:
             from gui.fault_prioritization import FaultPrioritizationWindow
             self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
         self.refresh_all()
+
+    def open_safety_management_toolbox(self):
+        """Open a placeholder tab for the Safety Management toolbox."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        msg = (
+            "Safety Management toolbox initialized.\n"
+            "Future versions will provide a full graphical interface."
+        )
+        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
+
+    def open_safety_management_toolbox(self):
+        """Open a placeholder tab for the Safety Management toolbox."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        msg = (
+            "Safety Management toolbox initialized.\n"
+            "Future versions will provide a full graphical interface."
+        )
+        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
+
+    def open_safety_management_toolbox(self):
+        """Open the Safety Management toolbox tab."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+        from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
+        gui.pack(fill=tk.BOTH, expand=True)
+
+    def open_safety_management_toolbox(self):
+        """Open the Safety Management toolbox tab."""
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+            return
+
+        self._safety_mgmt_tab = self._new_tab("Safety Management")
+
+        from analysis.safety_management import SafetyManagementToolbox
+        from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
+
+        # Reuse existing toolbox instance if present; otherwise create one
+        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
+
+        gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
+        gui.pack(fill=tk.BOTH, expand=True)
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
