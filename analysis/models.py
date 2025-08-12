@@ -561,7 +561,7 @@ global_requirements = {}
 # and "operational" categories and adds new ones for functional and
 # technical safety as well as functional modifications.
 # Updated requirement categories including functional and technical safety,
-# functional modifications and cybersecurity.
+# functional modifications, cybersecurity, production and service.
 REQUIREMENT_TYPE_OPTIONS = [
     "vehicle",
     "operational",
@@ -569,6 +569,8 @@ REQUIREMENT_TYPE_OPTIONS = [
     "technical safety",
     "functional modification",
     "cybersecurity",
+    "production",
+    "service",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [

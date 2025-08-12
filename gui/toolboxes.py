@@ -240,13 +240,13 @@ class _RequirementDialog(simpledialog.Dialog):
             "status": self.status_var.get().strip(),
             "parent_id": self.parent_var.get().strip(),
         }
-        if req_type not in ("operational", "functional modification"):
+        if req_type not in ("operational", "functional modification", "production", "service"):
             self.result["asil"] = self.asil_var.get().strip()
             self.result["cal"] = self.cal_var.get().strip()
 
     def _toggle_fields(self, event=None):
         req_type = self.type_var.get()
-        hide = req_type in ("operational", "functional modification")
+        hide = req_type in ("operational", "functional modification", "production", "service")
         widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
         if hide:
             for w in widgets:
