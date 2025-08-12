@@ -34,16 +34,29 @@ class GSNExplorer(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
+        # simple icons so different elements are visually distinct
+        self.module_icon = self._create_icon("folder", "#b8860b")
+        self.diagram_icon = self._create_icon("rect", "#4682b4")
+        self.node_icons = {
+            "Goal": self._create_icon("rect", "#2e8b57"),
+            "Strategy": self._create_icon("diamond", "#8b008b"),
+            "Solution": self._create_icon("circle", "#1e90ff"),
+            "Assumption": self._create_icon("rect", "#b22222"),
+            "Justification": self._create_icon("rect", "#ff8c00"),
+            "Context": self._create_icon("rect", "#696969"),
+        }
+        self.default_node_icon = self._create_icon("rect")
         self.item_map: dict[str, tuple[str, object]] = {}
 
         btns = ttk.Frame(self)
         btns.pack(fill=tk.X, padx=4, pady=4)
-        ttk.Button(btns, text="New Module", command=self.new_module).pack(side=tk.LEFT)
+        ttk.Button(btns, text="Open", command=self.open_item).pack(side=tk.LEFT)
+        ttk.Button(btns, text="New Module", command=self.new_module).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="New Diagram", command=self.new_diagram).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Rename", command=self.rename_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
-
+        self.tree.bind("<Double-1>", self._on_double_click)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -55,30 +68,31 @@ class GSNExplorer(tk.Frame):
             return
         # modules at root
         for mod in getattr(self.app, "gsn_modules", []):
-            mod_id = self.tree.insert("", "end", text=mod.name)
+            mod_id = self.tree.insert("", "end", text=mod.name, image=self.module_icon)
             self.item_map[mod_id] = ("module", mod)
             self._add_module_children(mod_id, mod)
         # diagrams not in any module
         for diag in getattr(self.app, "gsn_diagrams", []):
-            diag_id = self.tree.insert("", "end", text=diag.root.user_name)
+            diag_id = self.tree.insert("", "end", text=diag.root.user_name, image=self.diagram_icon)
             self.item_map[diag_id] = ("diagram", diag)
             self._add_node_children(diag_id, diag.root)
 
     # ------------------------------------------------------------------
     def _add_module_children(self, parent_id: str, module: GSNModule):
         for sub in module.modules:
-            sub_id = self.tree.insert(parent_id, "end", text=sub.name)
+            sub_id = self.tree.insert(parent_id, "end", text=sub.name, image=self.module_icon)
             self.item_map[sub_id] = ("module", sub)
             self._add_module_children(sub_id, sub)
         for diag in module.diagrams:
-            diag_id = self.tree.insert(parent_id, "end", text=diag.root.user_name)
+            diag_id = self.tree.insert(parent_id, "end", text=diag.root.user_name, image=self.diagram_icon)
             self.item_map[diag_id] = ("diagram", diag)
             self._add_node_children(diag_id, diag.root)
 
     # ------------------------------------------------------------------
     def _add_node_children(self, parent_id, node: GSNNode):
         for child in node.children:
-            child_id = self.tree.insert(parent_id, "end", text=child.user_name)
+            icon = self.node_icons.get(child.node_type, self.default_node_icon)
+            child_id = self.tree.insert(parent_id, "end", text=child.user_name, image=icon)
             self.item_map[child_id] = ("node", child)
             self._add_node_children(child_id, child)
 
@@ -92,12 +106,15 @@ class GSNExplorer(tk.Frame):
             return
         root = GSNNode(name, "Goal")
         diag = GSNDiagram(root)
-        self.app.gsn_diagrams.append(diag)
         sel = self.tree.selection()
         if sel:
             typ, obj = self.item_map.get(sel[0], (None, None))
             if typ == "module":
                 obj.diagrams.append(diag)
+            else:
+                self.app.gsn_diagrams.append(diag)
+        else:
+            self.app.gsn_diagrams.append(diag)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -179,3 +196,63 @@ class GSNExplorer(tk.Frame):
                 return obj
             parent = self.tree.parent(parent)
         return None
+
+    # ------------------------------------------------------------------
+    def _on_double_click(self, _event):
+        self.open_item()
+
+    # ------------------------------------------------------------------
+    def open_item(self):  # pragma: no cover - requires tkinter
+        if not self.app:
+            return
+        sel = self.tree.selection()
+        if not sel:
+            return
+        typ, obj = self.item_map.get(sel[0], (None, None))
+        if typ != "diagram":
+            return
+        win = tk.Toplevel(self)
+        win.title(obj.root.user_name)
+        canvas = tk.Canvas(win, width=800, height=600, bg="white")
+        canvas.pack(fill=tk.BOTH, expand=True)
+        obj.draw(canvas)
+
+    # ------------------------------------------------------------------
+    def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
+        """Return a simple 16x16 icon for treeview items."""
+        size = 16
+        img = tk.PhotoImage(width=size, height=size)
+        img.put("white", to=(0, 0, size - 1, size - 1))
+        c = color
+        if shape == "circle":
+            r = size // 2 - 2
+            cx = cy = size // 2
+            for y in range(size):
+                for x in range(size):
+                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                        img.put(c, (x, y))
+        elif shape == "diamond":
+            mid = size // 2
+            for y in range(2, size - 2):
+                span = mid - abs(mid - y)
+                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+        elif shape == "rect":
+            for x in range(3, size - 3):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for y in range(3, size - 3):
+                img.put(c, (3, y))
+                img.put(c, (size - 4, y))
+        elif shape == "folder":
+            for x in range(1, size - 1):
+                img.put(c, (x, 4))
+                img.put(c, (x, size - 2))
+            for y in range(4, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+            img.put(c, to=(1, 3, size - 2, 4))
+        else:
+            img.put(c, to=(2, 2, size - 2, size - 2))
+        return img
