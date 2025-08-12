@@ -2,6 +2,22 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
+import types
+import sys
+
+# Stub out Pillow dependencies so importing the main app doesn't require Pillow
+PIL_stub = types.ModuleType("PIL")
+PIL_stub.Image = types.SimpleNamespace()
+PIL_stub.ImageTk = types.SimpleNamespace()
+PIL_stub.ImageDraw = types.SimpleNamespace()
+PIL_stub.ImageFont = types.SimpleNamespace()
+sys.modules.setdefault("PIL", PIL_stub)
+sys.modules.setdefault("PIL.Image", PIL_stub.Image)
+sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
+sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
+sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
+
+from AutoML import FaultTreeApp
 from analysis import SafetyManagementToolbox
 from gui.architecture import ActivityDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
@@ -62,3 +78,63 @@ def test_activity_boundary_label_rotated_left():
     x, _, kwargs = win.canvas.text_calls[0]
     assert kwargs.get("angle") == 90
     assert x < obj.x - obj.width / 2
+
+
+def test_toolbox_manages_diagram_lifecycle():
+    """Toolbox can create, rename and delete diagrams in the repository."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    diag_id = toolbox.create_diagram("Gov1")
+    assert diag_id in repo.diagrams
+
+    toolbox.rename_diagram("Gov1", "GovMain")
+    assert "GovMain" in toolbox.diagrams
+    assert repo.diagrams[diag_id].name == "GovMain"
+
+    toolbox.delete_diagram("GovMain")
+    assert diag_id not in repo.diagrams
+    assert not toolbox.diagrams
+
+
+def test_open_safety_management_toolbox_uses_browser():
+    """FaultTreeApp opens the Safety Management window and toolbox."""
+    SysMLRepository._instance = None
+
+    class DummyTab:
+        def __init__(self):
+            self._exists = True
+
+        def winfo_exists(self):
+            return self._exists
+
+    class DummyNotebook:
+        def add(self, tab, text):
+            pass
+
+        def select(self, tab):
+            pass
+
+    class DummySMW:
+        def __init__(self, master, app, toolbox):
+            DummySMW.created = True
+            assert toolbox is app.safety_mgmt_toolbox
+
+    import gui.safety_management_toolbox as smt
+    smt.SafetyManagementWindow = DummySMW
+
+    class DummyApp:
+        open_safety_management_toolbox = FaultTreeApp.open_safety_management_toolbox
+
+        def __init__(self):
+            self.doc_nb = DummyNotebook()
+
+        def _new_tab(self, title):
+            return DummyTab()
+
+    DummySMW.created = False
+    app = DummyApp()
+    app.open_safety_management_toolbox()
+    assert DummySMW.created
+    assert hasattr(app, "safety_mgmt_toolbox")
