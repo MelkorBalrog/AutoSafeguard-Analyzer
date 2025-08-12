@@ -36,5 +36,14 @@ class ValidationTargetTests(unittest.TestCase):
         self.assertAlmostEqual(controllability_to_probability(3), 1e-1)
         self.assertAlmostEqual(severity_to_probability(2), 1e-2)
 
+    def test_serialization_of_operational_hours_and_profile(self):
+        node = FaultTreeNode("SG1", "TOP EVENT")
+        node.operational_hours_on = 100.0
+        node.mission_profile = "MP1"
+        data = node.to_dict()
+        restored = FaultTreeNode.from_dict(data)
+        self.assertEqual(restored.operational_hours_on, 100.0)
+        self.assertEqual(restored.mission_profile, "MP1")
+
 if __name__ == "__main__":
     unittest.main()
