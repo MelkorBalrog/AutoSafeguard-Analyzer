@@ -15,13 +15,15 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
   - [AutoML Safety Extensions](#automl-safety-extensions)
   - [Core SysML Elements](#core-sysml-elements)
   - [Diagram Relationships](#diagram-relationships)
-  - [Detailed Safety and Reliability Metamodel](#detailed-safety-and-reliability-metamodel)
+  - [Detailed Safety, Reliability and Cybersecurity Metamodel](#detailed-safety-reliability-and-cybersecurity-metamodel)
   - [Extended AutoML Element Attributes](#extended-automl-element-attributes)
 - [BOM Integration with AutoML Diagrams](#bom-integration-with-automl-diagrams)
 - [Component Qualifications](#component-qualifications)
 - [Mission Profiles and Probability Formulas](#mission-profiles-and-probability-formulas)
 - [SOTIF Analysis](#sotif-analysis)
   - [SOTIF Traceability](#sotif-traceability)
+- [Cybersecurity Analysis](#cybersecurity-analysis)
+  - [Safety and Cyber Governance](#safety-and-cyber-governance)
 - [Review Toolbox](#review-toolbox)
 - [Additional Tools](#additional-tools)
   - [Common Cause Toolbox](#common-cause-toolbox)
@@ -38,7 +40,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 
 ## Workflow Overview
 
-The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL values propagated throughout the model.
+The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
 
 ```mermaid
 flowchart TD
@@ -48,19 +50,22 @@ flowchart TD
     X --> R([Reliability analysis<br/>inputs: BOM<br/>outputs: FIT rates & parts])
     A([System functions & architecture]) --> B([HAZOP<br/>inputs: functions<br/>outputs: malfunctions])
     A --> S([FI2TC / TC2FI<br/>inputs: functions<br/>outputs: hazards, FIs & TCs, severity])
+    A --> T([Threat Analysis<br/>inputs: architecture & functions<br/>outputs: threat scenarios])
     B --> C([Risk Assessment<br/>inputs: malfunctions & SOTIF severity<br/>outputs: hazards, ASIL, safety goals])
     S --> C
+    T --> U([Cyber Risk Assessment<br/>inputs: threat scenarios<br/>outputs: damage scenarios, CAL, cybersecurity goals])
     A --> D([FMEA / FMEDA<br/>inputs: architecture, malfunctions, reliability<br/>outputs: failure modes])
     R --> D
     C --> D
     C --> E([FTA<br/>inputs: hazards & safety goals<br/>outputs: fault trees])
     D --> E
+    U --> V([Cybersecurity requirements<br/>inputs: cybersecurity goals])
     E --> F([Safety requirements<br/>inputs: fault trees & failure modes])
-    F --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
-    G --> H([ASIL propagation to SGs, FMEAs and FTAs])
+    F & V --> G([Peer/Joint review<br/>inputs: requirements & analyses<br/>outputs: approved changes])
+    G --> H([ASIL & CAL propagation to SGs, CGs, FMEAs and FTAs])
 ```
 
-The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Fault trees and failure modes generate safety requirements that go through peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL values traced back to the safety goals, FMEAs and FTAs.
+The workflow begins by entering system functions and architecture elements. A **BOM** is imported into a **Reliability analysis** which produces FIT rates and component lists used by the **FMEA/FMEDA** tables. A **HAZOP** analysis identifies malfunctions while the **FI2TC/TC2FI** tables capture SOTIF hazards, functional insufficiencies and triggering conditions along with their severities. In parallel, a **Threat Analysis** maps potential attack paths so the **Cyber Risk Assessment** can compute damage scenarios, risk levels and CALs that roll up into cybersecurity goals. The **risk assessment** inherits these severities and assigns hazards and ASIL ratings to safety goals which then inform FMEDAs and **FTA** diagrams. Cyber and safety goals produce corresponding requirement sets that converge in peer or joint **reviews**. When a review is approved any changes to requirements or analyses automatically update the ASIL and CAL values traced back to the safety goals, cybersecurity goals, FMEAs and FTAs.
 
 ## HAZOP Analysis
 
@@ -338,7 +343,7 @@ classDiagram
     ActionUsage --> InternalBlockDiagram : view
 ```
 
-### Detailed Safety and Reliability Metamodel
+### Detailed Safety, Reliability and Cybersecurity Metamodel
 
 The tool stores each safety analysis in its own container object alongside the
 SysML repository. These containers track the tables and diagrams loaded in the
@@ -392,6 +397,17 @@ classDiagram
     SysMLRepository --> "*" Fault
     SysMLRepository --> "*" Failure
     SysMLRepository --> "*" ReviewData
+    SysMLRepository --> "*" ThreatDoc
+    ThreatDoc --> "*" ThreatEntry
+    ThreatEntry --> "*" FunctionThreat
+    FunctionThreat --> "*" DamageScenario
+    DamageScenario --> "*" ThreatScenario
+    ThreatScenario --> "*" AttackPath
+    SysMLRepository --> "*" CyberRiskEntry
+    SysMLRepository --> "*" CybersecurityGoal
+    CybersecurityGoal --> "*" CyberRiskEntry : riskAssessments
+    CyberRiskEntry --> ThreatScenario : threatScenario
+    CyberRiskEntry --> DamageScenario : damageScenario
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -410,6 +426,14 @@ classDiagram
     class OddLibrary
     class Scenery
     class ReviewData
+    class ThreatDoc
+    class ThreatEntry
+    class FunctionThreat
+    class DamageScenario
+    class ThreatScenario
+    class AttackPath
+    class CyberRiskEntry
+    class CybersecurityGoal
 ```
 
 `ReliabilityAnalysis` records the selected standard, mission profile and overall
@@ -425,7 +449,67 @@ and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
 stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
 dictionaries capturing the failure mode, cause, detection rating and diagnostic
 coverage. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
-FMEA metrics, FMEDA values and traced requirements.
+FMEA metrics, FMEDA values and traced requirements. Cybersecurity analyses use
+`ThreatDoc` and `CyberRiskEntry` records to capture STRIDE-based threat
+scenarios, attack paths and damage assessments. Each `CyberRiskEntry`
+computes impact, risk level and CAL while linked `CybersecurityGoal`
+collections store the highest resulting CAL to support ISO 21434 compliance.
+
+The diagram below shows how a threat analysis links to its cybersecurity risk
+assessment and resulting goal. Each risk entry records the attack vector,
+feasibility and four impact categories before deriving the overall impact,
+resulting risk level and Cybersecurity Assurance Level (CAL).
+
+```mermaid
+classDiagram
+    class ThreatDoc {
+        name
+        diagram
+    }
+    class ThreatEntry {
+        asset
+    }
+    class FunctionThreat {
+        name
+    }
+    class DamageScenario {
+        scenario
+        dtype
+    }
+    class ThreatScenario {
+        stride
+        scenario
+    }
+    class AttackPath {
+        description
+    }
+    class CyberRiskEntry {
+        damage_scenario
+        threat_scenario
+        attack_vector
+        feasibility
+        financial_impact
+        safety_impact
+        operational_impact
+        privacy_impact
+        overall_impact
+        risk_level
+        cal
+    }
+    class CybersecurityGoal {
+        goal_id
+        description
+        cal
+    }
+    ThreatDoc --> "*" ThreatEntry
+    ThreatEntry --> "*" FunctionThreat
+    FunctionThreat --> "*" DamageScenario
+    DamageScenario --> "*" ThreatScenario
+    ThreatScenario --> "*" AttackPath
+    CyberRiskEntry --> ThreatScenario : threatScenario
+    CyberRiskEntry --> DamageScenario : damageScenario
+    CybersecurityGoal --> "*" CyberRiskEntry : riskAssessments
+```
 
 #### Analysis Relationships
 
@@ -605,6 +689,23 @@ the names or IDs of the analyses being evaluated.
   road features or environmental limits.
 - **ReviewData** – stores peer or joint review sessions with moderators,
   participants, review comments and lists of referenced analyses.
+- **ThreatDoc** – container for a threat analysis document with a `name`,
+  reference `diagram` and `entries` describing assets and functions.
+- **ThreatEntry** – links an `asset` to the affected system `functions` for
+  further analysis.
+- **FunctionThreat** – associates a function `name` with possible
+  `damage_scenarios`.
+- **DamageScenario** – potential damage `scenario` and type `dtype` that groups
+  related threat scenarios.
+- **ThreatScenario** – STRIDE-based `stride` category, textual `scenario` and
+  optional attack paths.
+- **AttackPath** – description of a single attack path that could realize the
+  threat.
+- **CyberRiskEntry** – risk assessment values for a threat scenario including
+  `attack_vector`, `feasibility`, impact ratings, derived `overall_impact`,
+  `risk_level` and resulting `cal`.
+- **CybersecurityGoal** – textual goal `description`, `goal_id` and computed
+  highest `cal` across linked risk assessments.
 
 ### Extended AutoML Element Attributes
 
@@ -1086,6 +1187,35 @@ classDiagram
     FunctionalInsufficiency --> FaultTreeNode : cta
 ```
 
+## Cybersecurity Analysis
+
+AutoML includes cybersecurity assessments alongside traditional safety tools.
+The **Cyber Risk Assessment** view evaluates damage scenarios, threat
+scenarios and attack vectors to compute overall impact, risk level and
+Cybersecurity Assurance Level (CAL). Each row may reference a
+`CybersecurityGoal`, which aggregates the highest CAL from its linked
+risk assessments.
+
+### Safety and Cyber Governance
+
+The governance model below illustrates how safety and cybersecurity
+activities converge during reviews.
+
+```mermaid
+flowchart TD
+    A([Threat Analysis]) --> B([Cyber Risk Assessment])
+    B --> C([Cybersecurity Goals])
+    A --> D([Hazard Analysis])
+    D --> E([Safety Goals])
+    C & E --> F([Governance Review])
+    F --> G([Mitigations Implemented])
+```
+
+Threat analyses feed cyber risk assessments and ultimately cybersecurity
+goals, while hazard analyses inform safety goals. Both goal sets flow
+into a combined governance review that drives the implementation of
+mitigations across safety and security domains.
+
 ## Review Toolbox
 
 Launch the review features from the **Review** menu:
@@ -1124,7 +1254,13 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 ### Safety Performance Indicators
 
-The **Safety Performance Indicators** tool in the Safety Management tab lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
+The **Safety Performance Indicators** tool in the Safety Management tab
+aggregates each product goal's validation target and acceptance criteria with
+its safety and AI metrics. Safety metrics such as SPFM, LPFM and DC, along with
+AI-specific measures like false-negative or precision rates, can be compared
+against the planned validation targets. This view highlights how acceptance
+criteria translate into measurable indicators and whether current performance
+meets the required safety objectives.
 
 ### Safety Management Toolbox
 
@@ -1173,6 +1309,11 @@ industry practice:
 
 Projects with empirical data may substitute more precise values, but these
 approximations provide a justified starting point when none are available.
+
+These acceptance criteria and validation targets form the baseline for Safety
+Performance Indicators. Observed safety or AI metrics are traced back to these
+targets so stakeholders can validate whether the established acceptance
+criteria are met throughout development and testing.
 
 ## Email Setup
 
