@@ -590,7 +590,7 @@ class ThreatDialog(simpledialog.Dialog):
     def _set_initial_size(self):
         """Shrink dialog while ensuring controls remain visible."""
         self.update_idletasks()
-        width = self.winfo_width()
+        width = max(self.winfo_width(), self.winfo_reqwidth(), 800)
         height = max(self.winfo_height() // 2, 600)
         self.geometry(f"{width}x{height}")
         self.resizable(False, False)
