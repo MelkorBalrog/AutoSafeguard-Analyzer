@@ -241,6 +241,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from gui.safety_management_toolbox import SafetyManagementToolbox
 from dataclasses import asdict
 from analysis.mechanisms import (
     DiagnosticMechanism,
@@ -2351,6 +2352,7 @@ class FaultTreeApp:
             "Product Goals Export": self.export_product_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
+            "Safety Management": self.open_safety_management_toolbox,
         }
 
         self.tool_categories = {
@@ -2402,6 +2404,9 @@ class FaultTreeApp:
                 "Faults Editor",
                 "Cause & Effect Chain",
                 "Fault Prioritization",
+            ],
+            "Safety Management": [
+                "Safety Management",
             ],
         }
 
@@ -16418,7 +16423,14 @@ class FaultTreeApp:
             self._review_tab = self._new_tab("Review")
             self.review_window = ReviewToolbox(self._review_tab, self)
             self.review_window.pack(fill=tk.BOTH, expand=True)
-        self.set_current_user()
+
+    def open_safety_management_toolbox(self):
+        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+            self.doc_nb.select(self._safety_mgmt_tab)
+        else:
+            self._safety_mgmt_tab = self._new_tab("Safety Management")
+            self.safety_mgmt_window = SafetyManagementToolbox(self._safety_mgmt_tab, self)
+            self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
 
     def send_review_email(self, review):
         """Send the review summary to all reviewers via configured SMTP."""
