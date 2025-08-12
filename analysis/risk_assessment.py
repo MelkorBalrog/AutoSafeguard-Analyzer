@@ -1,4 +1,6 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
+from .utils import derive_validation_target
+
 # Derived Maturity Table: (avg_confidence, avg_robustness) → maturity level
 DERIVED_MATURITY_TABLE = {
     (1, 1): 1, (1, 2): 1, (1, 3): 1, (1, 4): 2, (1, 5): 2,
@@ -30,6 +32,19 @@ OR_DECOMPOSITION_TABLE = {
     4: [(2, 2)],
     5: [(1, 1)]
 }
+
+
+def calculate_validation_target(acceptance_rate,
+                                exposure_given_hb,
+                                uncontrollable_given_exposure,
+                                severity_given_uncontrollable):
+    """Wrapper to derive a validation target for risk assessments."""
+    return derive_validation_target(
+        acceptance_rate,
+        exposure_given_hb,
+        uncontrollable_given_exposure,
+        severity_given_uncontrollable,
+    )
     
 def boolify(value, default):
     if isinstance(value, str):

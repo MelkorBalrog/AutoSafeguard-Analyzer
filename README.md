@@ -1125,6 +1125,27 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 The **Safety Performance Indicators** tab in the Requirements menu lists each product goal's validation target and acceptance criteria with their descriptions for quick reference.
 
+### Acceptance Criteria and Validation Targets
+
+ISO 21448 provides a method to derive a validation target from an acceptance
+criterion by analysing the rate of the hazardous behaviour :math:`R_{HB}`.
+Given an acceptance criterion for a harm :math:`A_H` and conditional
+probabilities for exposure :math:`P_{E|HB}`, uncontrollability
+:math:`P_{C|E}` and severity :math:`P_{S|C}`, the acceptable rate of the
+hazardous behaviour is computed as:
+
+```
+R_HB = A_H / (P_{E|HB} * P_{C|E} * P_{S|C})
+```
+
+This value can serve as a validation target when planning tests. For example,
+an acceptance criterion of ``1e-8/h`` with ``P_{E|HB}=0.05``,
+``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``.
+The product goal editor derives exposure, controllability and severity
+probabilities from their risk assessment ratings and shows them as read-only
+fields. Only the acceptance rate is editable; the validation target is then
+computed automatically.
+
 ## Email Setup
 
 When sending review summaries, the application asks for SMTP settings and login details. If you use Gmail with two-factor authentication enabled, create an **app password** and enter it instead of your normal account password. Authentication failures will prompt you to re-enter these settings.
