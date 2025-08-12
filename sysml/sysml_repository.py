@@ -352,7 +352,9 @@ class SysMLRepository:
         if self.root_package is None:
             self.root_package = self.create_element("Package", name="Root")
 
-    def create_relationship(self, rel_type: str, source: str, target: str, stereotype: Optional[str] = None, properties: Optional[Dict[str, str]] = None) -> SysMLRelationship:
+    def create_relationship(self, rel_type: str, source: str, target: str, stereotype: Optional[str] = None, properties: Optional[Dict[str, str]] = None, record_undo: bool = True) -> SysMLRelationship:
+        if record_undo:
+            self.push_undo_state()
         rel_id = str(uuid.uuid4())
         rel = SysMLRelationship(
             rel_id,
@@ -372,8 +374,10 @@ class SysMLRepository:
     # ------------------------------------------------------------
     # Diagram linkage helpers
     # ------------------------------------------------------------
-    def link_diagram(self, elem_id: str, diag_id: Optional[str]) -> None:
+    def link_diagram(self, elem_id: str, diag_id: Optional[str], record_undo: bool = True) -> None:
         """Associate an element with a diagram implementing it."""
+        if record_undo:
+            self.push_undo_state()
         if diag_id:
             self.element_diagrams[elem_id] = diag_id
         else:
