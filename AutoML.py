@@ -14152,17 +14152,41 @@ class FaultTreeApp:
                 ttk.Label(metrics_frame, text="Precision:").grid(row=1, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="Recall:").grid(row=2, column=0, sticky="e")
                 ttk.Label(metrics_frame, text="F1 Score:").grid(row=3, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="TPR:").grid(row=4, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="TNR:").grid(row=5, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="FPR:").grid(row=6, column=0, sticky="e")
+                ttk.Label(metrics_frame, text="FNR:").grid(row=7, column=0, sticky="e")
                 self.acc_var = tk.StringVar()
                 self.prec_var = tk.StringVar()
                 self.rec_var = tk.StringVar()
                 self.f1_var = tk.StringVar()
+                self.tpr_var = tk.StringVar()
+                self.tnr_var = tk.StringVar()
+                self.fpr_var = tk.StringVar()
+                self.fnr_var = tk.StringVar()
                 ttk.Label(metrics_frame, textvariable=self.acc_var).grid(row=0, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.prec_var).grid(row=1, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.rec_var).grid(row=2, column=1, sticky="w")
                 ttk.Label(metrics_frame, textvariable=self.f1_var).grid(row=3, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tpr_var).grid(row=4, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tnr_var).grid(row=5, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fpr_var).grid(row=6, column=1, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fnr_var).grid(row=7, column=1, sticky="w")
+                ttk.Label(metrics_frame, text="TP/hr:").grid(row=0, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="TN/hr:").grid(row=1, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="FP/hr:").grid(row=2, column=2, sticky="e")
+                ttk.Label(metrics_frame, text="FN/hr:").grid(row=3, column=2, sticky="e")
+                self.tp_rate_var = tk.StringVar()
+                self.tn_rate_var = tk.StringVar()
+                self.fp_rate_var = tk.StringVar()
+                self.fn_rate_var = tk.StringVar()
+                ttk.Label(metrics_frame, textvariable=self.tp_rate_var).grid(row=0, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.tn_rate_var).grid(row=1, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fp_rate_var).grid(row=2, column=3, sticky="w")
+                ttk.Label(metrics_frame, textvariable=self.fn_rate_var).grid(row=3, column=3, sticky="w")
 
                 def update_metrics(*_):
-                    from analysis.confusion_matrix import compute_metrics
+                    from analysis.confusion_matrix import compute_metrics, compute_rates
 
                     tp = self.tp_var.get()
                     fp = self.fp_var.get()
@@ -14173,6 +14197,20 @@ class FaultTreeApp:
                     self.prec_var.set(f"{metrics['precision']:.3f}")
                     self.rec_var.set(f"{metrics['recall']:.3f}")
                     self.f1_var.set(f"{metrics['f1']:.3f}")
+
+                    tau_on = getattr(self, "current_tau_on", 0.0)
+                    val_target = None
+                    if getattr(self, "selected_goal", None) is not None:
+                        val_target = getattr(self.selected_goal, "validation_target", None)
+                    rates = compute_rates(tp, fp, tn, fn, tau_on or 0.0, val_target)
+                    self.tpr_var.set(f"{rates['tpr']:.3f}")
+                    self.tnr_var.set(f"{rates['tnr']:.3f}")
+                    self.fpr_var.set(f"{rates['fpr']:.3f}")
+                    self.fnr_var.set(f"{rates['fnr']:.3f}")
+                    self.tp_rate_var.set(f"{rates['tp_rate']:.3f}")
+                    self.tn_rate_var.set(f"{rates['tn_rate']:.3f}")
+                    self.fp_rate_var.set(f"{rates['fp_rate']:.3f}")
+                    self.fn_rate_var.set(f"{rates['fn_rate']:.3f}")
 
                 for var in (self.tp_var, self.fp_var, self.tn_var, self.fn_var):
                     var.trace_add("write", update_metrics)
@@ -14194,12 +14232,36 @@ class FaultTreeApp:
                     width = 120 if c in ("Product Goal", "Validation Target") else 200
                     self.vt_tree.column(c, width=width, anchor="center")
                 self.vt_tree.pack(fill=tk.BOTH, expand=True)
+                self.vt_item_to_goal = {}
+                self.selected_goal = None
+                self.current_tau_on = 0.0
+
+                def on_vt_select(event=None):
+                    sel = self.vt_tree.selection()
+                    if not sel:
+                        self.selected_goal = None
+                        self.current_tau_on = 0.0
+                    else:
+                        sg = self.vt_item_to_goal.get(sel[0])
+                        self.selected_goal = sg
+                        tau_on = 0.0
+                        mp_name = getattr(sg, "mission_profile", "")
+                        if mp_name:
+                            for mp in self.app.mission_profiles:
+                                if mp.name == mp_name:
+                                    tau_on = mp.tau_on
+                                    break
+                        self.current_tau_on = tau_on
+                    update_metrics()
+
+                self.vt_tree.bind("<<TreeviewSelect>>", on_vt_select)
 
                 def refresh_vt(*_):
                     self.vt_tree.delete(*self.vt_tree.get_children())
+                    self.vt_item_to_goal.clear()
                     name = self.name_var.get().strip()
                     for sg in self.app.get_validation_targets_for_odd(name):
-                        self.vt_tree.insert(
+                        iid = self.vt_tree.insert(
                             "",
                             "end",
                             values=[
@@ -14209,6 +14271,11 @@ class FaultTreeApp:
                                 getattr(sg, "acceptance_criteria", ""),
                             ],
                         )
+                        self.vt_item_to_goal[iid] = sg
+                    items = self.vt_tree.get_children()
+                    if items:
+                        self.vt_tree.selection_set(items[0])
+                        on_vt_select()
 
                 refresh_vt()
                 self.name_var.trace_add("write", refresh_vt)
@@ -14223,10 +14290,15 @@ class FaultTreeApp:
                 fp = float(self.fp_var.get())
                 tn = float(self.tn_var.get())
                 fn = float(self.fn_var.get())
-                from analysis.confusion_matrix import compute_metrics
+                from analysis.confusion_matrix import compute_metrics, compute_rates
 
                 new_data.update({"tp": tp, "fp": fp, "tn": tn, "fn": fn})
                 new_data.update(compute_metrics(tp, fp, tn, fn))
+                tau_on = getattr(self, "current_tau_on", 0.0)
+                val_target = None
+                if getattr(self, "selected_goal", None) is not None:
+                    val_target = getattr(self.selected_goal, "validation_target", None)
+                new_data.update(compute_rates(tp, fp, tn, fn, tau_on or 0.0, val_target))
                 self.data = new_data
 
         def add_lib():
