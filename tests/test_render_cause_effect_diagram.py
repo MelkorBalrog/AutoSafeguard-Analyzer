@@ -25,12 +25,53 @@ class CauseEffectPDFTests(unittest.TestCase):
             "faults": set(),
             "fis": set(),
             "tcs": set(),
+            "attack_paths": set(),
+            "threats": {},
         }
         img = self.app.render_cause_effect_diagram(row)
         self.assertIsNotNone(img)
         w, h = img.size
         self.assertGreaterEqual(w, 120)
         self.assertGreaterEqual(h, 60)
+
+    def test_graph_includes_threats_and_attack_paths(self):
+        row = {
+            "hazard": "Hazard",
+            "malfunction": "Malfunction",
+            "failure_modes": {},
+            "faults": set(),
+            "fis": set(),
+            "tcs": set(),
+            "attack_paths": {"AP1"},
+            "threats": {"Threat1": {"AP1"}},
+        }
+        nodes, edges, pos = self.app._build_cause_effect_graph(row)
+        self.assertIn("ap:AP1", nodes)
+        self.assertIn("thr:Threat1", nodes)
+        edge_set = set(edges)
+        self.assertIn(("mal:Malfunction", "thr:Threat1"), edge_set)
+        self.assertIn(("thr:Threat1", "ap:AP1"), edge_set)
+        self.assertEqual(pos["thr:Threat1"][0], 8)
+        self.assertEqual(pos["ap:AP1"][0], 12)
+
+    def test_no_orphan_threat_node(self):
+        row = {
+            "hazard": "Hazard",
+            "malfunction": "Malfunction",
+            "failure_modes": {},
+            "faults": set(),
+            "fis": set(),
+            "tcs": set(),
+            "attack_paths": {"AP1"},
+            "threats": {"Threat1": {"AP1"}},
+        }
+        nodes, edges, pos = self.app._build_cause_effect_graph(row)
+        used = {n for edge in edges for n in edge}
+        self.assertNotIn("threat", nodes)
+        for n in nodes:
+            self.assertIn(n, used)
+        for n in pos:
+            self.assertIn(n, used)
 
 if __name__ == "__main__":
     unittest.main()

@@ -12745,8 +12745,23 @@ class FaultTreeApp:
                         # Maintain a flat set of all faults so the table view
                         # can continue to show a comma separated list.
                         "faults": set(),
+                        # Track threat scenarios and associated attack paths
+                        "threats": {},
+                        "attack_paths": set(),
                     },
                 )
+                info = rows[key]
+                cyber = getattr(e, "cyber", None)
+                if cyber:
+                    threat = getattr(cyber, "threat_scenario", "").strip()
+                    if threat:
+                        paths = [
+                            p.get("path", "").strip()
+                            for p in getattr(cyber, "attack_paths", [])
+                            if p.get("path", "").strip()
+                        ]
+                        info["threats"].setdefault(threat, set()).update(paths)
+                        info["attack_paths"].update(paths)
 
         # Add FI/TC info per hazard
         for doc in self.fi2tc_docs + self.tc2fi_docs:
@@ -12823,6 +12838,15 @@ class FaultTreeApp:
             nodes[tc_id] = (tc, "tc")
             edges.append((haz_id, tc_id))
 
+        for threat, paths in sorted(row.get("threats", {}).items()):
+            thr_id = f"thr:{threat}"
+            nodes[thr_id] = (threat, "threat")
+            edges.append((mal_id, thr_id))
+            for path in sorted(paths):
+                ap_id = f"ap:{path}"
+                nodes[ap_id] = (path, "attack_path")
+                edges.append((thr_id, ap_id))
+
         pos = {haz_id: (0, 0), mal_id: (4, 0)}
         y_fm = 0
         for fm, faults in sorted(row["failure_modes"].items()):
@@ -12841,6 +12865,31 @@ class FaultTreeApp:
         for tc in sorted(row["tcs"]):
             pos[f"tc:{tc}"] = (2, y_tc)
             y_tc -= 2
+
+        y_thr = y_fm
+        for threat, paths in sorted(row.get("threats", {}).items()):
+            thr_y = y_thr * 4
+            pos[f"thr:{threat}"] = (8, thr_y)
+            y_ap = thr_y
+            for path in sorted(paths):
+                pos[f"ap:{path}"] = (12, y_ap)
+                y_ap += 2
+            y_thr += 1
+
+        # Drop any nodes that were never connected by an edge.  Occasionally
+        # stale placeholders like a lone "threat" label can slip into the node
+        # or position dictionaries; filtering them out keeps the diagram clean
+        # and avoids drawing disconnected white boxes.
+        used_nodes: set[str] = set()
+        for u, v in edges:
+            used_nodes.add(u)
+            used_nodes.add(v)
+        for key in list(nodes.keys()):
+            if key not in used_nodes:
+                nodes.pop(key, None)
+        for key in list(pos.keys()):
+            if key not in used_nodes:
+                pos.pop(key, None)
 
         min_x = min(x for x, _ in pos.values())
         min_y = min(y for _, y in pos.values())
@@ -12866,6 +12915,8 @@ class FaultTreeApp:
             "fault": "#D3D3D3",
             "fi": "#FFFFE0",
             "tc": "#90EE90",
+            "attack_path": "#E0FFFF",
+            "threat": "#FFB6C1",
         }
 
         scale = 80
@@ -12944,6 +12995,8 @@ class FaultTreeApp:
             "Malfunction",
             "Failure Modes",
             "Faults",
+            "Threat Scenarios",
+            "Attack Paths",
             "FIs",
             "TCs",
         )
@@ -12974,6 +13027,8 @@ class FaultTreeApp:
                     row["malfunction"],
                     ", ".join(sorted(row["failure_modes"].keys())),
                     ", ".join(sorted(row["faults"])),
+                    ", ".join(sorted(row["threats"].keys())),
+                    ", ".join(sorted(row["attack_paths"])),
                     ", ".join(sorted(row["fis"])),
                     ", ".join(sorted(row["tcs"])),
                 ),
@@ -12993,6 +13048,8 @@ class FaultTreeApp:
                 "fault": "#D3D3D3",        # light gray
                 "fi": "#FFFFE0",           # light yellow
                 "tc": "#90EE90",           # light green
+                "attack_path": "#E0FFFF",   # light cyan
+                "threat": "#FFB6C1",       # light pink
             }
 
             # Clear any existing drawing
