@@ -24,8 +24,12 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def body(self, master):
+        master.columnconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
+
         nb = ttk.Notebook(master)
-        nb.pack(fill=tk.BOTH, expand=True)
+        nb.grid(row=0, column=0, sticky="nsew")
+        self._body = master
 
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
@@ -568,19 +572,22 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def buttonbox(self):
-        """Add explicit Accept/Cancel buttons and set dialog size."""
+        """Add explicit OK/Cancel buttons and set dialog size."""
+        # allow the main control frame to expand before adding buttons
+        if hasattr(self, "_body"):
+            self._body.pack_configure(fill=tk.BOTH, expand=True)
+
         box = ttk.Frame(self)
+        box.pack(fill=tk.X, padx=5, pady=5)
 
-        accept_btn = ttk.Button(
-            box, text="Accept", width=10, command=self.ok, default=tk.ACTIVE
+        ok_btn = ttk.Button(
+            box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
         )
-        accept_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        ok_btn.pack(side=tk.RIGHT, padx=5)
         cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
-        cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
 
-        box.pack(side=tk.BOTTOM, fill=tk.X)
-
-        accept_btn.focus_set()
+        ok_btn.focus_set()
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
 
