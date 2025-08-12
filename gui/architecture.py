@@ -575,7 +575,7 @@ def add_aggregation_part(
             None,
         )
     if not rel:
-        rel = repo.create_relationship("Aggregation", whole_id, part_id)
+        rel = repo.create_relationship("Aggregation", whole_id, part_id, record_undo=False)
     if multiplicity:
         rel.properties["multiplicity"] = multiplicity
     else:
@@ -624,7 +624,7 @@ def add_composite_aggregation_part(
         None,
     )
     if not rel:
-        rel = repo.create_relationship("Composite Aggregation", whole_id, part_id)
+        rel = repo.create_relationship("Composite Aggregation", whole_id, part_id, record_undo=False)
     if multiplicity:
         rel.properties["multiplicity"] = multiplicity
     else:

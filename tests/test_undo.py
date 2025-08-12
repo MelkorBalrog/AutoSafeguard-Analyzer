@@ -54,5 +54,25 @@ class UndoTests(unittest.TestCase):
         self.assertTrue(self.repo.redo())
         self.assertEqual(self.repo.elements[blk.elem_id].name, "B")
 
+    def test_undo_redo_relationship(self):
+        src = self.repo.create_element("Block", name="Src")
+        tgt = self.repo.create_element("Block", name="Tgt")
+        rel = self.repo.create_relationship("Association", src.elem_id, tgt.elem_id)
+        self.assertIn(rel, self.repo.relationships)
+        self.assertTrue(self.repo.undo())
+        self.assertNotIn(rel, self.repo.relationships)
+        self.assertTrue(self.repo.redo())
+        self.assertIn(rel, self.repo.relationships)
+
+    def test_undo_redo_link_diagram(self):
+        elem = self.repo.create_element("Block", name="A")
+        diag = self.repo.create_diagram("ibd", name="D")
+        self.repo.link_diagram(elem.elem_id, diag.diag_id)
+        self.assertEqual(self.repo.get_linked_diagram(elem.elem_id), diag.diag_id)
+        self.assertTrue(self.repo.undo())
+        self.assertIsNone(self.repo.get_linked_diagram(elem.elem_id))
+        self.assertTrue(self.repo.redo())
+        self.assertEqual(self.repo.get_linked_diagram(elem.elem_id), diag.diag_id)
+
 if __name__ == '__main__':
     unittest.main()
