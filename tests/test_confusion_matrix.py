@@ -3,7 +3,11 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from analysis.confusion_matrix import compute_metrics, counts_from_validation
+from analysis.confusion_matrix import (
+    compute_metrics,
+    counts_from_metrics,
+    counts_from_validation,
+)
 
 
 def test_compute_metrics_basic():
@@ -34,3 +38,13 @@ def test_counts_from_validation():
     ]
     counts = counts_from_validation(entries)
     assert counts == {"tp": 1.0, "tn": 1.0, "fp": 1.0, "fn": 1.0}
+
+
+def test_counts_from_metrics_round_trip():
+    counts = counts_from_metrics(0.9, 0.8, 0.7)
+    metrics = compute_metrics(
+        counts["tp"], counts["fp"], counts["tn"], counts["fn"]
+    )
+    assert math.isclose(metrics["accuracy"], 0.9, rel_tol=1e-6)
+    assert math.isclose(metrics["precision"], 0.8, rel_tol=1e-6)
+    assert math.isclose(metrics["recall"], 0.7, rel_tol=1e-6)

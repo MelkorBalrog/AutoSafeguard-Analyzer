@@ -34,6 +34,46 @@ def compute_metrics(tp: float, fp: float, tn: float, fn: float) -> Dict[str, flo
     }
 
 
+def counts_from_metrics(accuracy: float, precision: float, recall: float) -> Dict[str, float]:
+    """Estimate confusion matrix counts from classification metrics.
+
+    The returned counts are normalised such that ``tp`` is 1.0 and the
+    remaining values are scaled accordingly. This is sufficient for visualising
+    the relative distribution of outcomes when only the desired metrics are
+    known.
+
+    Parameters
+    ----------
+    accuracy, precision, recall:
+        Desired metrics in the range ``[0, 1]``. ``f1`` is implicitly derived
+        from ``precision`` and ``recall``.
+
+    Returns
+    -------
+    dict
+        Dictionary with keys ``tp``, ``fp``, ``tn`` and ``fn``.
+    """
+
+    # Avoid division by zero – return an all-zero matrix if any metric is
+    # degenerate.
+    if precision <= 0 or recall <= 0:
+        return {"tp": 0.0, "fp": 0.0, "tn": 0.0, "fn": 0.0}
+    if accuracy >= 1.0:
+        return {"tp": 1.0, "fp": 0.0, "tn": 1.0, "fn": 0.0}
+
+    tp = 1.0
+    fp = tp * (1.0 / precision - 1.0)
+    fn = tp * (1.0 / recall - 1.0)
+
+    denominator = 1.0 - accuracy
+    if denominator <= 0:
+        return {"tp": 0.0, "fp": 0.0, "tn": 0.0, "fn": 0.0}
+
+    total = (fp + fn) / denominator
+    tn = accuracy * total - tp
+
+    return {"tp": tp, "fp": fp, "tn": tn, "fn": fn}
+
 def counts_from_validation(entries: Iterable[Tuple[float, float, float]]) -> Dict[str, float]:
     """Derive confusion matrix counts from validation results.
 
@@ -71,4 +111,4 @@ def counts_from_validation(entries: Iterable[Tuple[float, float, float]]) -> Dic
             counts["fn"] += 1
         else:
             counts["tn"] += 1
-    return counts
+
