@@ -2359,7 +2359,7 @@ class FaultTreeApp:
         }
 
         self.tool_categories = {
-            "Safety & Threat Analysis": [
+            "Hazard & Threat Analysis": [
                 "ODD Libraries",
                 "Scenario Libraries",
                 "HAZOP Analysis",
@@ -9173,8 +9173,8 @@ class FaultTreeApp:
                 )
             tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
 
-            # --- Safety & Threat Analysis Section ---
-            haz_root = tree.insert("", "end", text="Safety & Threat Analysis", open=True)
+            # --- Hazard & Threat Analysis Section ---
+            haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
             hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
             for idx, doc in enumerate(self.hazop_docs):
                 tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
