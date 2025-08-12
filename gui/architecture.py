@@ -3459,10 +3459,6 @@ class SysMLDiagramWindow(tk.Frame):
                 "Merge",
             ):
                 return
-            cx = obj.x * self.zoom
-            cy = obj.y * self.zoom
-            new_w = obj.width
-            new_h = obj.height
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
                 min_w, min_h = self._min_block_size(obj)
@@ -3470,16 +3466,35 @@ class SysMLDiagramWindow(tk.Frame):
                 min_w, min_h = self._min_action_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
-            if "e" in self.resize_edge or "w" in self.resize_edge:
-                desired_w = 2 * abs(x - cx) / self.zoom
-                new_w = max(min_w, desired_w)
-            if "n" in self.resize_edge or "s" in self.resize_edge:
-                if obj.obj_type not in ("Fork", "Join", "Existing Element"):
-                    desired_h = 2 * abs(y - cy) / self.zoom
-                    new_h = max(min_h, desired_h)
-            if obj.obj_type in ("Initial", "Final"):
-                size = max(new_w, new_h)
-                new_w = new_h = size
+            left = obj.x - obj.width / 2
+            right = obj.x + obj.width / 2
+            top = obj.y - obj.height / 2
+            bottom = obj.y + obj.height / 2
+            if "e" in self.resize_edge:
+                new_right = x / self.zoom
+                if new_right - left < min_w:
+                    new_right = left + min_w
+                right = new_right
+            if "w" in self.resize_edge:
+                new_left = x / self.zoom
+                if right - new_left < min_w:
+                    new_left = right - min_w
+                left = new_left
+            if obj.obj_type not in ("Fork", "Join", "Existing Element"):
+                if "s" in self.resize_edge:
+                    new_bottom = y / self.zoom
+                    if new_bottom - top < min_h:
+                        new_bottom = top + min_h
+                    bottom = new_bottom
+                if "n" in self.resize_edge:
+                    new_top = y / self.zoom
+                    if bottom - new_top < min_h:
+                        new_top = bottom - min_h
+                    top = new_top
+            new_w = right - left
+            new_h = bottom - top
+            obj.x = (left + right) / 2
+            obj.y = (top + bottom) / 2
             obj.width = new_w
             obj.height = new_h
             if obj.obj_type == "Part":
