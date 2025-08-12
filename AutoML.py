@@ -14104,9 +14104,36 @@ class FaultTreeApp:
                 r = len(self.attr_rows)
                 k_var = tk.StringVar(value=key)
                 v_var = tk.StringVar(value=str(val))
-                ttk.Entry(self.attr_frame, textvariable=k_var).grid(row=r, column=0, padx=2, pady=2)
-                ttk.Entry(self.attr_frame, textvariable=v_var).grid(row=r, column=1, padx=2, pady=2)
-                self.attr_rows.append((k_var, v_var))
+                k_entry = ttk.Entry(self.attr_frame, textvariable=k_var)
+                v_entry = ttk.Entry(self.attr_frame, textvariable=v_var)
+                k_entry.grid(row=r, column=0, padx=2, pady=2)
+                v_entry.grid(row=r, column=1, padx=2, pady=2)
+
+                row = {}
+
+                def remove_row():
+                    k_entry.destroy()
+                    v_entry.destroy()
+                    del_btn.destroy()
+                    self.attr_rows.remove(row)
+                    for i, rdata in enumerate(self.attr_rows):
+                        rdata["k_entry"].grid_configure(row=i)
+                        rdata["v_entry"].grid_configure(row=i)
+                        rdata["del_btn"].grid_configure(row=i)
+
+                del_btn = ttk.Button(self.attr_frame, text="Delete", command=remove_row)
+                del_btn.grid(row=r, column=2, padx=2, pady=2)
+
+                row.update(
+                    {
+                        "k_var": k_var,
+                        "v_var": v_var,
+                        "k_entry": k_entry,
+                        "v_entry": v_entry,
+                        "del_btn": del_btn,
+                    }
+                )
+                self.attr_rows.append(row)
 
             def body(self, master):
                 ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
@@ -14125,7 +14152,7 @@ class FaultTreeApp:
                 for k, v in self.data.items():
                     if k not in {"name", "p", "n", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
-                ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=2, pady=5)
+                ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=3, pady=5)
 
                 # Confusion matrix tab
                 cm_frame = ttk.Frame(nb)
@@ -14185,8 +14212,8 @@ class FaultTreeApp:
 
             def apply(self):
                 new_data = {"name": self.name_var.get()}
-                for k_var, v_var in self.attr_rows:
-                    key = k_var.get().strip()
+                for row in self.attr_rows:
+                    key = row["k_var"].get().strip()
                     if key:
                         new_data[key] = v_var.get()
                 tp = float(self.tp_var.get())
