@@ -26,6 +26,7 @@ def _stub_review_toolbox():
         setattr(rt, name, type(name, (), {}))
     sys.modules.setdefault("gui.review_toolbox", rt)
 
+
 def test_pas8800_contains_fault_aware_training():
     names = [m.name for m in PAS_8800_MECHANISMS]
     assert "Fault-aware training" in names
@@ -34,6 +35,7 @@ def test_pas8800_contains_fault_aware_training():
 def test_pas8800_library_non_empty():
     lib = MechanismLibrary("PAS 8800", PAS_8800_MECHANISMS.copy())
     assert len(lib.mechanisms) >= 30
+
 
 def test_default_mechanisms_include_pas8800():
     _stub_review_toolbox()
