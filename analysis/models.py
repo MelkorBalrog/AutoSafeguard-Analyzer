@@ -196,6 +196,43 @@ class StpaDoc:
     entries: list
     meta: Metadata = field(default_factory=Metadata)
 
+
+@dataclass
+class AttackPath:
+    """Sequence of steps an attacker may take."""
+
+    steps: list[str] = field(default_factory=list)
+    description: str = ""
+
+
+@dataclass
+class ThreatScenario:
+    """Threat scenario linked to a damage scenario."""
+
+    stride: str
+    description: str = ""
+    attack_paths: list[AttackPath] = field(default_factory=list)
+
+
+@dataclass
+class DamageScenario:
+    """Potential damage to an asset categorized by CIA."""
+
+    asset: str
+    function: str
+    category: str
+    description: str = ""
+    threats: list[ThreatScenario] = field(default_factory=list)
+
+
+@dataclass
+class ThreatDoc:
+    """Container for a threat analysis document."""
+
+    name: str
+    damages: list[DamageScenario]
+    meta: Metadata = field(default_factory=Metadata)
+
 @dataclass
 class FI2TCDoc:
     """Container for an FI2TC analysis."""
@@ -275,6 +312,27 @@ def merge_malfunctions(hazop_docs, stpa_docs, hazop_names, stpa_names):
                     if val:
                         malfs.add(val)
     return sorted(malfs)
+
+@dataclass
+class CybersecurityGoal:
+    """Cybersecurity goal with linked risk assessments and CAL."""
+
+    goal_id: str
+    description: str
+    cal: str = "CAL1"
+    risk_assessments: list = field(default_factory=list)
+
+    def compute_cal(self) -> None:
+        """Compute CAL as highest level among linked risk assessments."""
+        order = {level: idx for idx, level in enumerate(CAL_LEVEL_OPTIONS, start=1)}
+        highest = CAL_LEVEL_OPTIONS[0]
+        for ra in self.risk_assessments:
+            cal = getattr(ra, "cal", None)
+            if cal is None and isinstance(ra, dict):
+                cal = ra.get("cal")
+            if cal in order and order[cal] > order.get(highest, 0):
+                highest = cal
+        self.cal = highest
 
 COMPONENT_ATTR_TEMPLATES = {
     "capacitor": {

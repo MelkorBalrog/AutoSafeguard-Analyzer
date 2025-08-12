@@ -1858,7 +1858,7 @@ class HazopWindow(tk.Frame):
             safety_cb.grid(row=6, column=1, padx=5, pady=5)
             ToolTip(
                 safety_cb,
-                "Only safety relevant malfunctions are used in HARA analyses.",
+                "Only safety relevant malfunctions are used in risk assessments.",
             )
 
             rat_lbl = ttk.Label(master, text="Rationale")
