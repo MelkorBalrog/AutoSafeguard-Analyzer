@@ -26,7 +26,7 @@ AutoML is an automotive modeling language. It lets you model items, operating sc
 - [Additional Tools](#additional-tools)
   - [Common Cause Toolbox](#common-cause-toolbox)
   - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
-  - [Safety Goal Export](#safety-goal-export)
+  - [Product Goals Export](#product-goals-export)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
 - [Diagram Styles](#diagram-styles)
@@ -1116,9 +1116,9 @@ The **Common Cause Toolbox** groups failures that share the same cause across FM
 
 A built-in calculator derives a Prototype Assurance Level (PAL) from confidence, robustness and direct assurance inputs. Gates aggregate assurance from child nodes to help judge whether additional testing or design changes are needed before road trials.
 
-### Safety Goal Export
+### Product Goals Export
 
-Use **Export SG Requirements** in the Requirements menu to generate a CSV listing each safety goal with its associated requirements and ASIL ratings.
+Use **Export Product Goal Requirements** in the Requirements menu to generate a CSV listing each product goal with its associated requirements and ASIL ratings.
 
 ## Email Setup
 
