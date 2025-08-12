@@ -8868,19 +8868,50 @@ class FaultTreeApp:
     def update_hazard_list(self):
         """Aggregate hazards from risk assessment and HAZOP documents."""
         hazards: list[str] = []
+        # Track severities found in analysis documents so the hazard editor
+        # can restore previously entered values.  Previously, only the hazard
+        # names were collected and any severity information was discarded,
+        # causing all hazards to default to severity 1 when the list was
+        # rebuilt.
+        severity_map: dict[str, int] = {}
+
         for doc in self.hara_docs:
             for e in doc.entries:
                 h = getattr(e, "hazard", "").strip()
-                if h and h not in hazards:
+                if not h:
+                    continue
+                if h not in hazards:
                     hazards.append(h)
+                # HARA entries store severity as an integer attribute
+                sev = getattr(e, "severity", None)
+                if sev is not None:
+                    try:
+                        severity_map[h] = int(sev)
+                    except Exception:
+                        severity_map[h] = 1
+
         for doc in self.hazop_docs:
             for e in doc.entries:
                 h = getattr(e, "hazard", "").strip()
-                if h and h not in hazards:
+                if not h:
+                    continue
+                if h not in hazards:
                     hazards.append(h)
+                # HAZOP entries currently do not have severities, but if they
+                # ever do, attempt to capture them as well.
+                sev = getattr(e, "severity", None)
+                if sev is not None and h not in severity_map:
+                    try:
+                        severity_map[h] = int(sev)
+                    except Exception:
+                        severity_map[h] = 1
+
         for h in hazards:
-            if h not in self.hazard_severity:
+            if h in severity_map:
+                self.hazard_severity[h] = severity_map[h]
+            elif h not in self.hazard_severity:
                 self.hazard_severity[h] = 1
+
         self.hazards = hazards
 
     def update_failure_list(self):
