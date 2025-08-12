@@ -24,8 +24,11 @@ class ThreatDialog(simpledialog.Dialog):
 
     # ------------------------------------------------------------------
     def body(self, master):
+        master.columnconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
+
         nb = ttk.Notebook(master)
-        nb.pack(fill=tk.BOTH, expand=True)
+        nb.grid(row=0, column=0, sticky="nsew")
 
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
@@ -532,15 +535,14 @@ class ThreatDialog(simpledialog.Dialog):
     def buttonbox(self):
         """Add explicit OK/Cancel buttons and set dialog size."""
         box = ttk.Frame(self)
+        box.pack(fill="x", padx=5, pady=5)
 
         ok_btn = ttk.Button(
             box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
         )
-        ok_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        ok_btn.pack(side=tk.RIGHT, padx=5)
         cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
-        cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
-
-        box.pack(side=tk.BOTTOM, fill=tk.X)
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
 
         ok_btn.focus_set()
         self.bind("<Return>", self.ok)

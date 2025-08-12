@@ -72,4 +72,3 @@ def counts_from_validation(entries: Iterable[Tuple[float, float, float]]) -> Dic
         else:
             counts["tn"] += 1
     return counts
-
