@@ -27,6 +27,10 @@ def test_compute_metrics_zero_division():
 
 def test_compute_rates_basic():
     rates = compute_rates(50, 10, 30, 10, 100, 0.01)
+    assert math.isclose(rates["tp"], 50)
+    assert math.isclose(rates["fp"], 10)
+    assert math.isclose(rates["tn"], 30)
+    assert math.isclose(rates["fn"], 10)
     assert math.isclose(rates["tpr"], 50 / 60)
     assert math.isclose(rates["tnr"], 30 / 40)
     assert math.isclose(rates["fpr"], 10 / 40)
@@ -40,6 +44,14 @@ def test_compute_rates_basic():
     assert math.isclose(rates["tpr_min"], 1 - (0.01 * 100) / 60)
     assert math.isclose(rates["tnr_min"], 1 - (0.01 * 100) / 40)
 
+def test_compute_rates_auto_counts():
+    rates = compute_rates(hours=100, validation_target=0.01, p=60, n=40)
+    assert math.isclose(rates["fp"], 0.01 * 100)
+    assert math.isclose(rates["fn"], 0.01 * 100)
+    assert math.isclose(rates["tp"], 60 - 0.01 * 100)
+    assert math.isclose(rates["tn"], 40 - 0.01 * 100)
+    assert math.isclose(rates["tpr"], rates["tp"] / 60)
+    assert math.isclose(rates["tnr"], rates["tn"] / 40)
 
 def test_compute_rates_zero_hours():
     rates = compute_rates(0, 0, 0, 0, 0, None)

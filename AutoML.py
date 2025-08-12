@@ -14123,28 +14123,37 @@ class FaultTreeApp:
                 nb.add(self.attr_frame, text="Attributes")
                 self.attr_rows = []
                 for k, v in self.data.items():
-                    if k not in {"name", "tp", "fp", "tn", "fn"}:
+                    if k not in {"name", "p", "n", "tp", "fp", "tn", "fn"}:
                         self.add_attr_row(k, v)
                 ttk.Button(self.attr_frame, text="Add Attribute", command=self.add_attr_row).grid(row=99, column=0, columnspan=2, pady=5)
 
                 # Confusion matrix tab
                 cm_frame = ttk.Frame(nb)
                 nb.add(cm_frame, text="Confusion Matrix")
+                self.p_var = tk.DoubleVar(value=float(self.data.get("p", 0) or 0))
+                self.n_var = tk.DoubleVar(value=float(self.data.get("n", 0) or 0))
                 self.tp_var = tk.DoubleVar(value=float(self.data.get("tp", 0) or 0))
                 self.fp_var = tk.DoubleVar(value=float(self.data.get("fp", 0) or 0))
                 self.tn_var = tk.DoubleVar(value=float(self.data.get("tn", 0) or 0))
                 self.fn_var = tk.DoubleVar(value=float(self.data.get("fn", 0) or 0))
 
+                inputs = ttk.Frame(cm_frame)
+                inputs.grid(row=0, column=0, pady=5)
+                ttk.Label(inputs, text="Actual P").grid(row=0, column=0)
+                ttk.Entry(inputs, textvariable=self.p_var, width=6).grid(row=0, column=1)
+                ttk.Label(inputs, text="Actual N").grid(row=0, column=2)
+                ttk.Entry(inputs, textvariable=self.n_var, width=6).grid(row=0, column=3)
+
                 matrix = ttk.Frame(cm_frame)
-                matrix.grid(row=0, column=0, pady=5)
+                matrix.grid(row=1, column=0, pady=5)
                 ttk.Label(matrix, text="TP").grid(row=0, column=0)
-                ttk.Entry(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
+                ttk.Label(matrix, textvariable=self.tp_var, width=6).grid(row=0, column=1)
                 ttk.Label(matrix, text="FN").grid(row=0, column=2)
-                ttk.Entry(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
+                ttk.Label(matrix, textvariable=self.fn_var, width=6).grid(row=0, column=3)
                 ttk.Label(matrix, text="FP").grid(row=1, column=0)
-                ttk.Entry(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
+                ttk.Label(matrix, textvariable=self.fp_var, width=6).grid(row=1, column=1)
                 ttk.Label(matrix, text="TN").grid(row=1, column=2)
-                ttk.Entry(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
+                ttk.Label(matrix, textvariable=self.tn_var, width=6).grid(row=1, column=3)
 
                 metrics_frame = ttk.Frame(cm_frame)
                 metrics_frame.grid(row=1, column=0, sticky="nsew")
@@ -14188,21 +14197,27 @@ class FaultTreeApp:
                 def update_metrics(*_):
                     from analysis.confusion_matrix import compute_metrics, compute_rates
 
-                    tp = self.tp_var.get()
-                    fp = self.fp_var.get()
-                    tn = self.tn_var.get()
-                    fn = self.fn_var.get()
-                    metrics = compute_metrics(tp, fp, tn, fn)
-                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
-                    self.prec_var.set(f"{metrics['precision']:.3f}")
-                    self.rec_var.set(f"{metrics['recall']:.3f}")
-                    self.f1_var.set(f"{metrics['f1']:.3f}")
-
+                    p = self.p_var.get()
+                    n = self.n_var.get()
                     tau_on = getattr(self, "current_tau_on", 0.0)
                     val_target = None
                     if getattr(self, "selected_goal", None) is not None:
                         val_target = getattr(self.selected_goal, "validation_target", None)
-                    rates = compute_rates(tp, fp, tn, fn, tau_on or 0.0, val_target)
+                    rates = compute_rates(
+                        hours=tau_on or 0.0,
+                        validation_target=val_target,
+                        p=p,
+                        n=n,
+                    )
+                    self.tp_var.set(rates["tp"])
+                    self.fp_var.set(rates["fp"])
+                    self.tn_var.set(rates["tn"])
+                    self.fn_var.set(rates["fn"])
+                    metrics = compute_metrics(rates["tp"], rates["fp"], rates["tn"], rates["fn"])
+                    self.acc_var.set(f"{metrics['accuracy']:.3f}")
+                    self.prec_var.set(f"{metrics['precision']:.3f}")
+                    self.rec_var.set(f"{metrics['recall']:.3f}")
+                    self.f1_var.set(f"{metrics['f1']:.3f}")
                     self.tpr_var.set(f"{rates['tpr']:.3f}")
                     self.tnr_var.set(f"{rates['tnr']:.3f}")
                     self.fpr_var.set(f"{rates['fpr']:.3f}")
@@ -14212,7 +14227,7 @@ class FaultTreeApp:
                     self.fp_rate_var.set(f"{rates['fp_rate']:.3f}")
                     self.fn_rate_var.set(f"{rates['fn_rate']:.3f}")
 
-                for var in (self.tp_var, self.fp_var, self.tn_var, self.fn_var):
+                for var in (self.p_var, self.n_var):
                     var.trace_add("write", update_metrics)
                 update_metrics()
 
@@ -14286,19 +14301,32 @@ class FaultTreeApp:
                     key = k_var.get().strip()
                     if key:
                         new_data[key] = v_var.get()
-                tp = float(self.tp_var.get())
-                fp = float(self.fp_var.get())
-                tn = float(self.tn_var.get())
-                fn = float(self.fn_var.get())
+                p = float(self.p_var.get())
+                n = float(self.n_var.get())
                 from analysis.confusion_matrix import compute_metrics, compute_rates
 
-                new_data.update({"tp": tp, "fp": fp, "tn": tn, "fn": fn})
-                new_data.update(compute_metrics(tp, fp, tn, fn))
                 tau_on = getattr(self, "current_tau_on", 0.0)
                 val_target = None
                 if getattr(self, "selected_goal", None) is not None:
                     val_target = getattr(self.selected_goal, "validation_target", None)
-                new_data.update(compute_rates(tp, fp, tn, fn, tau_on or 0.0, val_target))
+                rates = compute_rates(
+                    hours=tau_on or 0.0,
+                    validation_target=val_target,
+                    p=p,
+                    n=n,
+                )
+                metrics = compute_metrics(rates["tp"], rates["fp"], rates["tn"], rates["fn"])
+                new_data.update({
+                    "p": p,
+                    "n": n,
+                    "tp": rates["tp"],
+                    "fp": rates["fp"],
+                    "tn": rates["tn"],
+                    "fn": rates["fn"],
+                })
+                new_data.update(metrics)
+                new_data.update(rates)
+
                 self.data = new_data
 
         def add_lib():
