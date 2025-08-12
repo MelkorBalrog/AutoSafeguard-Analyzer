@@ -30,9 +30,12 @@ class ThreatDialog(simpledialog.Dialog):
         # Asset Identification tab --------------------------------------
         asset_tab = ttk.Frame(nb)
         nb.add(asset_tab, text="Asset Identification")
+        asset_tab.columnconfigure(0, weight=1)
+        asset_tab.rowconfigure(2, weight=1)
+        asset_tab.rowconfigure(4, weight=1)
 
         ai_top = ttk.Frame(asset_tab)
-        ai_top.pack(fill=tk.X)
+        ai_top.grid(row=0, column=0, sticky="ew")
         ttk.Label(ai_top, text="Asset:").pack(side=tk.LEFT)
         self.asset_var = tk.StringVar(value=self.entry.asset)
         self.asset_cb = ttk.Combobox(
@@ -44,7 +47,7 @@ class ThreatDialog(simpledialog.Dialog):
         self.asset_cb.pack(side=tk.LEFT, padx=2)
 
         func_frame = ttk.Frame(asset_tab)
-        func_frame.pack(fill=tk.X, pady=2)
+        func_frame.grid(row=1, column=0, sticky="ew", pady=2)
         ttk.Label(func_frame, text="Function:").pack(side=tk.LEFT)
         self.func_var = tk.StringVar()
         self.func_cb = ttk.Combobox(
@@ -58,10 +61,10 @@ class ThreatDialog(simpledialog.Dialog):
         ttk.Button(func_frame, text="Add", command=self.add_function).pack(side=tk.LEFT)
 
         self.func_list = tk.Listbox(asset_tab, height=4)
-        self.func_list.pack(fill=tk.X, padx=2)
+        self.func_list.grid(row=2, column=0, sticky="nsew", padx=2)
         self.func_list.bind("<<ListboxSelect>>", self.on_func_select)
-        ttk.Button(asset_tab, text="Remove Function", command=self.remove_function).pack(
-            anchor="w", padx=2, pady=2
+        ttk.Button(asset_tab, text="Remove Function", command=self.remove_function).grid(
+            row=3, column=0, sticky="w", padx=2, pady=2
         )
         for fn in self.entry.functions:
             self.func_list.insert(tk.END, fn.name)
@@ -69,7 +72,7 @@ class ThreatDialog(simpledialog.Dialog):
             self.func_list.selection_set(0)
 
         ds_frame = ttk.Frame(asset_tab)
-        ds_frame.pack(fill=tk.BOTH, expand=True)
+        ds_frame.grid(row=4, column=0, sticky="nsew")
         configure_table_style("Threat.Damage.Treeview")
         self.ds_tree = ttk.Treeview(
             ds_frame,
@@ -89,7 +92,7 @@ class ThreatDialog(simpledialog.Dialog):
         self.ds_tree.bind("<<TreeviewSelect>>", self.on_ds_select)
 
         ds_edit = ttk.Frame(asset_tab)
-        ds_edit.pack(fill=tk.X, pady=2)
+        ds_edit.grid(row=5, column=0, sticky="ew", pady=2)
         ttk.Label(ds_edit, text="Damage Scenario:").pack(side=tk.LEFT)
         self.ds_scenario_var = tk.StringVar()
         ttk.Entry(ds_edit, textvariable=self.ds_scenario_var, width=30).pack(side=tk.LEFT, padx=2)
@@ -105,7 +108,7 @@ class ThreatDialog(simpledialog.Dialog):
         self.ds_type_cb.pack(side=tk.LEFT, padx=2)
 
         ds_btn = ttk.Frame(asset_tab)
-        ds_btn.pack(fill=tk.X)
+        ds_btn.grid(row=6, column=0, sticky="ew")
         ttk.Button(ds_btn, text="Add", command=self.add_damage_scenario).pack(
             side=tk.LEFT, padx=2, pady=2
         )
@@ -119,9 +122,14 @@ class ThreatDialog(simpledialog.Dialog):
         # Threat Analysis tab -------------------------------------------
         threat_tab = ttk.Frame(nb)
         nb.add(threat_tab, text="Threat Analysis")
+        threat_tab.columnconfigure(0, weight=1)
+        threat_tab.rowconfigure(0, weight=1)
 
         ta_frame = ttk.Frame(threat_tab)
-        ta_frame.pack(fill=tk.BOTH, expand=True)
+        ta_frame.grid(row=0, column=0, sticky="nsew")
+        ta_frame.columnconfigure(0, weight=1)
+        ta_frame.rowconfigure(0, weight=1)
+        ta_frame.rowconfigure(1, weight=1)
         configure_table_style("Threat.Scenarios.Treeview")
         self.threat_tree = ttk.Treeview(
             ta_frame,
@@ -156,12 +164,8 @@ class ThreatDialog(simpledialog.Dialog):
         pscroll.grid(row=1, column=1, sticky="ns")
         self.path_tree.bind("<<TreeviewSelect>>", self.on_path_select)
 
-        ta_frame.columnconfigure(0, weight=1)
-        ta_frame.rowconfigure(0, weight=1)
-        ta_frame.rowconfigure(1, weight=1)
-
         ts_edit = ttk.Frame(threat_tab)
-        ts_edit.pack(fill=tk.X, pady=2)
+        ts_edit.grid(row=1, column=0, sticky="ew", pady=2)
         ttk.Label(ts_edit, text="STRIDE:").pack(side=tk.LEFT)
         self.threat_stride_var = tk.StringVar()
         self.threat_stride_cb = ttk.Combobox(
@@ -186,7 +190,7 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         ts_btn = ttk.Frame(threat_tab)
-        ts_btn.pack(fill=tk.X)
+        ts_btn.grid(row=2, column=0, sticky="ew")
         ttk.Button(ts_btn, text="Add", command=self.add_threat_scenario).pack(
             side=tk.LEFT, padx=2, pady=2
         )
@@ -198,7 +202,7 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         path_edit = ttk.Frame(threat_tab)
-        path_edit.pack(fill=tk.X, pady=2)
+        path_edit.grid(row=3, column=0, sticky="ew", pady=2)
         ttk.Label(path_edit, text="Attack Path:").pack(side=tk.LEFT)
         self.path_var = tk.StringVar()
         ttk.Entry(path_edit, textvariable=self.path_var, width=40).pack(
@@ -206,7 +210,7 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         path_btn = ttk.Frame(threat_tab)
-        path_btn.pack(fill=tk.X)
+        path_btn.grid(row=4, column=0, sticky="ew")
         ttk.Button(path_btn, text="Add", command=self.add_attack_path).pack(
             side=tk.LEFT, padx=2, pady=2
         )
