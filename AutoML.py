@@ -14875,7 +14875,11 @@ class FaultTreeApp:
                 for doc in self.stpa_docs
             ],
             "threat_docs": [
-                {"name": doc.name, "entries": [asdict(e) for e in doc.entries]}
+                {
+                    "name": doc.name,
+                    "diagram": doc.diagram,
+                    "entries": [asdict(e) for e in doc.entries],
+                }
                 for doc in self.threat_docs
             ],
             "fi2tc_docs": [
@@ -15193,7 +15197,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
@@ -15666,7 +15674,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
