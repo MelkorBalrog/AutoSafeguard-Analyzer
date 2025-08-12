@@ -56,9 +56,12 @@ class ThreatWindow(tk.Frame):
 
         ds_frame = ttk.Frame(asset_tab)
         ds_frame.pack(fill=tk.BOTH, expand=True)
-        configure_table_style("Threat.Damage")
+        configure_table_style("Threat.Damage.Treeview")
         self.ds_tree = ttk.Treeview(
-            ds_frame, columns=("scenario", "type"), show="headings", style="Threat.Damage"
+            ds_frame,
+            columns=("scenario", "type"),
+            show="headings",
+            style="Threat.Damage.Treeview",
         )
         self.ds_tree.heading("scenario", text="Scenario")
         self.ds_tree.heading("type", text="Type")
@@ -87,12 +90,12 @@ class ThreatWindow(tk.Frame):
 
         ta_frame = ttk.Frame(threat_tab)
         ta_frame.pack(fill=tk.BOTH, expand=True)
-        configure_table_style("Threat.Scenarios")
+        configure_table_style("Threat.Scenarios.Treeview")
         self.threat_tree = ttk.Treeview(
             ta_frame,
             columns=("stride", "scenario"),
             show="headings",
-            style="Threat.Scenarios",
+            style="Threat.Scenarios.Treeview",
             height=6,
         )
         self.threat_tree.heading("stride", text="STRIDE")
@@ -105,12 +108,12 @@ class ThreatWindow(tk.Frame):
         self.threat_tree.configure(yscrollcommand=tscroll.set)
         tscroll.grid(row=0, column=1, sticky="ns")
 
-        configure_table_style("Threat.Paths")
+        configure_table_style("Threat.Paths.Treeview")
         self.path_tree = ttk.Treeview(
             ta_frame,
             columns=("path",),
             show="headings",
-            style="Threat.Paths",
+            style="Threat.Paths.Treeview",
             height=4,
         )
         self.path_tree.heading("path", text="Attack Path")
