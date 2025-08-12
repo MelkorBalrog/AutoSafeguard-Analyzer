@@ -9722,6 +9722,7 @@ class FaultTreeApp:
         return False
 
     def add_node_of_type(self, event_type):
+        self.push_undo_state()
         # If a node is selected, ensure it is a primary instance.
         if self.selected_node:
             if not self.selected_node.is_primary_instance:
@@ -9774,6 +9775,7 @@ class FaultTreeApp:
         self.update_views()
 
     def add_basic_event_from_fmea(self):
+        self.push_undo_state()
         events = list(self.fmea_entries)
         for doc in self.fmeas:
             events.extend(doc.get("entries", []))
@@ -9816,6 +9818,7 @@ class FaultTreeApp:
         self.update_views()
 
     def add_basic_event_from_fmea(self):
+        self.push_undo_state()
         events = list(self.fmea_entries)
         for doc in self.fmeas:
             events.extend(doc.get("entries", []))
@@ -9858,6 +9861,7 @@ class FaultTreeApp:
         self.update_views()
 
     def add_basic_event_from_fmea(self):
+        self.push_undo_state()
         events = list(self.fmea_entries)
         for doc in self.fmeas:
             events.extend(doc.get("entries", []))
@@ -9901,6 +9905,7 @@ class FaultTreeApp:
 
 
     def remove_node(self):
+        self.push_undo_state()
         sel = self.analysis_tree.selection()
         target = None
         if sel:
@@ -9919,6 +9924,7 @@ class FaultTreeApp:
             messagebox.showwarning("Invalid", "Cannot remove the root node.")
 
     def remove_connection(self, node):
+        self.push_undo_state()
         if node and node != self.root_node:
             if node.parents:
                 for p in node.parents:
@@ -9936,6 +9942,7 @@ class FaultTreeApp:
             messagebox.showwarning("Remove Connection", "Cannot disconnect the root node.")
 
     def delete_node_and_subtree(self, node):
+        self.push_undo_state()
         if node:
             if node in self.top_events:
                 self.top_events.remove(node)
@@ -9954,6 +9961,7 @@ class FaultTreeApp:
     # ------------------------------------------------------------------
     def create_top_event_for_malfunction(self, name: str) -> None:
         """Create a new top level event linked to the given malfunction."""
+        self.push_undo_state()
         new_event = FaultTreeNode("", "TOP EVENT")
         new_event.x, new_event.y = 300, 200
         new_event.is_top_event = True
@@ -9964,6 +9972,7 @@ class FaultTreeApp:
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
         """Remove all FTAs tied to the malfunction ``name``."""
+        self.push_undo_state()
         removed = [te for te in self.top_events if getattr(te, "malfunction", "") == name]
         if not removed:
             return
@@ -9974,6 +9983,7 @@ class FaultTreeApp:
         self.update_views()
 
     def add_gate_from_failure_mode(self):
+        self.push_undo_state()
         modes = self.get_available_failure_modes_for_gates()
         if not modes:
             messagebox.showinfo("No Failure Modes", "No failure modes available.")
@@ -10017,6 +10027,7 @@ class FaultTreeApp:
         self.update_views()
 
     def add_fault_event(self):
+        self.push_undo_state()
         dialog = self.SelectFaultDialog(self.root, sorted(self.faults), allow_new=True)
         fault = dialog.selected
         if fault == "NEW":
