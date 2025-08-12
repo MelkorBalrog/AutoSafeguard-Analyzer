@@ -24,7 +24,7 @@ class ThreatWindow(tk.Frame):
         ttk.Label(top, text="Threat:").pack(side=tk.LEFT)
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
-        self.doc_cb.pack(side=tk.LEFT, padx=2)
+        self.doc_cb.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
         ToolTip(self.doc_cb, "Select a Threat Analysis document to edit.")
         ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
         ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
@@ -53,7 +53,7 @@ class ThreatWindow(tk.Frame):
         for col in columns:
             self.tree.heading(col, text=headers[col])
             width = 120 if col in {"asset", "functions", "type"} else 200
-            self.tree.column(col, width=width)
+            self.tree.column(col, width=width, stretch=True)
         vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=vsb.set)
         self.tree.grid(row=0, column=0, sticky="nsew")

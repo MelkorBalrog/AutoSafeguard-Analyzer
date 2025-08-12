@@ -36,7 +36,8 @@ class ThreatDialog(simpledialog.Dialog):
 
         ai_top = ttk.Frame(asset_tab)
         ai_top.grid(row=0, column=0, sticky="ew")
-        ttk.Label(ai_top, text="Asset:").pack(side=tk.LEFT)
+        ai_top.columnconfigure(1, weight=1)
+        ttk.Label(ai_top, text="Asset:").grid(row=0, column=0, sticky="w")
         self.asset_var = tk.StringVar(value=self.entry.asset)
         self.asset_cb = ttk.Combobox(
             ai_top,
@@ -44,21 +45,21 @@ class ThreatDialog(simpledialog.Dialog):
             values=self._get_assets(),
             state="readonly",
         )
-        self.asset_cb.pack(side=tk.LEFT, padx=2)
+        self.asset_cb.grid(row=0, column=1, sticky="ew", padx=2)
 
         func_frame = ttk.Frame(asset_tab)
         func_frame.grid(row=1, column=0, sticky="ew", pady=2)
-        ttk.Label(func_frame, text="Function:").pack(side=tk.LEFT)
+        func_frame.columnconfigure(1, weight=1)
+        ttk.Label(func_frame, text="Function:").grid(row=0, column=0, sticky="w")
         self.func_var = tk.StringVar()
         self.func_cb = ttk.Combobox(
             func_frame,
             textvariable=self.func_var,
             values=self._get_functions(),
             state="readonly",
-            width=25,
         )
-        self.func_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Button(func_frame, text="Add", command=self.add_function).pack(side=tk.LEFT)
+        self.func_cb.grid(row=0, column=1, sticky="ew", padx=2)
+        ttk.Button(func_frame, text="Add", command=self.add_function).grid(row=0, column=2, padx=2)
 
         self.func_list = tk.Listbox(asset_tab, height=4)
         self.func_list.grid(row=2, column=0, sticky="nsew", padx=2)
@@ -83,8 +84,8 @@ class ThreatDialog(simpledialog.Dialog):
         )
         self.ds_tree.heading("scenario", text="Damage Scenario")
         self.ds_tree.heading("type", text="Type")
-        self.ds_tree.column("scenario", width=250)
-        self.ds_tree.column("type", width=100)
+        self.ds_tree.column("scenario", width=250, stretch=True)
+        self.ds_tree.column("type", width=100, stretch=True)
         self.ds_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         ds_scroll = ttk.Scrollbar(ds_frame, orient="vertical", command=self.ds_tree.yview)
         self.ds_tree.configure(yscrollcommand=ds_scroll.set)
@@ -93,19 +94,20 @@ class ThreatDialog(simpledialog.Dialog):
 
         ds_edit = ttk.Frame(asset_tab)
         ds_edit.grid(row=5, column=0, sticky="ew", pady=2)
-        ttk.Label(ds_edit, text="Damage Scenario:").pack(side=tk.LEFT)
+        ds_edit.columnconfigure(1, weight=1)
+        ds_edit.columnconfigure(3, weight=1)
+        ttk.Label(ds_edit, text="Damage Scenario:").grid(row=0, column=0, sticky="w")
         self.ds_scenario_var = tk.StringVar()
-        ttk.Entry(ds_edit, textvariable=self.ds_scenario_var, width=30).pack(side=tk.LEFT, padx=2)
-        ttk.Label(ds_edit, text="Type:").pack(side=tk.LEFT)
+        ttk.Entry(ds_edit, textvariable=self.ds_scenario_var).grid(row=0, column=1, sticky="ew", padx=2)
+        ttk.Label(ds_edit, text="Type:").grid(row=0, column=2, sticky="w")
         self.ds_type_var = tk.StringVar()
         self.ds_type_cb = ttk.Combobox(
             ds_edit,
             textvariable=self.ds_type_var,
             values=["Confidentiality", "Integrity", "Availability"],
             state="readonly",
-            width=18,
         )
-        self.ds_type_cb.pack(side=tk.LEFT, padx=2)
+        self.ds_type_cb.grid(row=0, column=3, sticky="ew", padx=2)
 
         ds_btn = ttk.Frame(asset_tab)
         ds_btn.grid(row=6, column=0, sticky="ew")
@@ -140,8 +142,8 @@ class ThreatDialog(simpledialog.Dialog):
         )
         self.threat_tree.heading("stride", text="STRIDE")
         self.threat_tree.heading("scenario", text="Threat Scenario")
-        self.threat_tree.column("stride", width=100)
-        self.threat_tree.column("scenario", width=250)
+        self.threat_tree.column("stride", width=100, stretch=True)
+        self.threat_tree.column("scenario", width=250, stretch=True)
         self.threat_tree.bind("<<TreeviewSelect>>", self.on_threat_select)
         self.threat_tree.grid(row=0, column=0, sticky="nsew")
         tscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.threat_tree.yview)
@@ -157,7 +159,7 @@ class ThreatDialog(simpledialog.Dialog):
             height=3,
         )
         self.path_tree.heading("path", text="Attack Path")
-        self.path_tree.column("path", width=350)
+        self.path_tree.column("path", width=350, stretch=True)
         self.path_tree.grid(row=1, column=0, sticky="nsew")
         pscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.path_tree.yview)
         self.path_tree.configure(yscrollcommand=pscroll.set)
@@ -166,7 +168,9 @@ class ThreatDialog(simpledialog.Dialog):
 
         ts_edit = ttk.Frame(threat_tab)
         ts_edit.grid(row=1, column=0, sticky="ew", pady=2)
-        ttk.Label(ts_edit, text="STRIDE:").pack(side=tk.LEFT)
+        ts_edit.columnconfigure(1, weight=1)
+        ts_edit.columnconfigure(3, weight=1)
+        ttk.Label(ts_edit, text="STRIDE:").grid(row=0, column=0, sticky="w")
         self.threat_stride_var = tk.StringVar()
         self.threat_stride_cb = ttk.Combobox(
             ts_edit,
@@ -180,13 +184,12 @@ class ThreatDialog(simpledialog.Dialog):
                 "Elevation of privilege",
             ],
             state="readonly",
-            width=20,
         )
-        self.threat_stride_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Label(ts_edit, text="Threat Scenario:").pack(side=tk.LEFT)
+        self.threat_stride_cb.grid(row=0, column=1, sticky="ew", padx=2)
+        ttk.Label(ts_edit, text="Threat Scenario:").grid(row=0, column=2, sticky="w")
         self.threat_scenario_var = tk.StringVar()
-        ttk.Entry(ts_edit, textvariable=self.threat_scenario_var, width=30).pack(
-            side=tk.LEFT, padx=2
+        ttk.Entry(ts_edit, textvariable=self.threat_scenario_var).grid(
+            row=0, column=3, sticky="ew", padx=2
         )
 
         ts_btn = ttk.Frame(threat_tab)
@@ -203,10 +206,11 @@ class ThreatDialog(simpledialog.Dialog):
 
         path_edit = ttk.Frame(threat_tab)
         path_edit.grid(row=3, column=0, sticky="ew", pady=2)
-        ttk.Label(path_edit, text="Attack Path:").pack(side=tk.LEFT)
+        path_edit.columnconfigure(1, weight=1)
+        ttk.Label(path_edit, text="Attack Path:").grid(row=0, column=0, sticky="w")
         self.path_var = tk.StringVar()
-        ttk.Entry(path_edit, textvariable=self.path_var, width=40).pack(
-            side=tk.LEFT, padx=2
+        ttk.Entry(path_edit, textvariable=self.path_var).grid(
+            row=0, column=1, sticky="ew", padx=2
         )
 
         path_btn = ttk.Frame(threat_tab)
