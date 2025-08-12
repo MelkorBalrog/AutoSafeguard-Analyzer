@@ -40,41 +40,18 @@ class ThreatDialog(simpledialog.Dialog):
         ai_top = ttk.Frame(asset_tab)
         ai_top.grid(row=0, column=0, sticky="ew")
         ai_top.columnconfigure(1, weight=1)
-        # internal block diagram selection
-        ttk.Label(ai_top, text="Internal Block Diagram:").grid(
-            row=0, column=0, sticky="w"
-        )
-        self.diag_var = tk.StringVar()
-        self._diag_map = self._get_ibd_map()
-        self.diag_cb = ttk.Combobox(
-            ai_top,
-            textvariable=self.diag_var,
-            values=list(self._diag_map.keys()),
-            state="readonly",
-        )
-        self.diag_cb.grid(row=0, column=1, sticky="ew", padx=2)
-        self.diag_cb.bind("<<ComboboxSelected>>", self.on_diag_change)
-        # asset selection filtered by diagram
-        ttk.Label(ai_top, text="Asset:").grid(row=1, column=0, sticky="w")
+        ttk.Label(ai_top, text="Asset:").grid(row=0, column=0, sticky="w")
         self.asset_var = tk.StringVar(value=self.entry.asset)
+        assets = self._get_assets(getattr(self.app.active_threat, "diagram", ""))
         self.asset_cb = ttk.Combobox(
             ai_top,
             textvariable=self.asset_var,
+            values=assets,
             state="readonly",
         )
-        self.asset_cb.grid(row=1, column=1, sticky="ew", padx=2)
-        # initialize diagram and assets
-        if self._diag_map:
-            init_diag = ""
-            if self.entry.asset:
-                for name, did in self._diag_map.items():
-                    if self.entry.asset in self._get_assets(did):
-                        init_diag = name
-                        break
-            if not init_diag:
-                init_diag = next(iter(self._diag_map))
-            self.diag_var.set(init_diag)
-            self.on_diag_change()
+        self.asset_cb.grid(row=0, column=1, sticky="ew", padx=2)
+        if self.asset_var.get() not in assets:
+            self.asset_var.set("")
 
         func_frame = ttk.Frame(asset_tab)
         func_frame.grid(row=1, column=0, sticky="ew", pady=2)
@@ -273,21 +250,6 @@ class ThreatDialog(simpledialog.Dialog):
     # ------------------------------------------------------------------
     # Data helpers
     # ------------------------------------------------------------------
-    def _get_ibd_map(self):
-        repo = SysMLRepository.get_instance()
-        return {
-            d.name or d.diag_id: d.diag_id
-            for d in repo.diagrams.values()
-            if d.diag_type == "Internal Block Diagram"
-        }
-
-    def on_diag_change(self, *_):
-        diag_id = self._diag_map.get(self.diag_var.get())
-        assets = self._get_assets(diag_id)
-        self.asset_cb.config(values=assets)
-        if self.asset_var.get() not in assets:
-            self.asset_var.set("")
-
     def _get_assets(self, diag_id):
         repo = SysMLRepository.get_instance()
         names = set()

@@ -67,9 +67,9 @@ The **HAZOP Analysis** window lets you list system functions with one or more as
 
 ## Risk Assessment
 
-The **Risk Assessment** view builds on the safety relevant malfunctions from one or more selected HAZOPs. When creating a new assessment you can pick multiple HAZOP documents; only malfunctions from those selections appear in the table. Each assessment table contains the following columns:
+The **Risk Assessment** view builds on the safety relevant malfunctions from a selected HAZOP. When creating a new assessment you pick a HAZOP document from a drop-down; only malfunctions from that selection appear in the table. Each assessment table contains the following columns:
 
-1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP documents.
+1. **Malfunction** – combo box listing malfunctions flagged as safety relevant in the chosen HAZOP document.
 2. **Hazard** – textual description of the resulting hazard.
 3. **Severity** – ISO&nbsp;26262 severity level (1–3). Values from FI2TC and
    TC2FI analyses are inherited here so the risk assessment reflects SOTIF hazards.
@@ -1129,8 +1129,10 @@ The **Safety Performance Indicators** tab in the Requirements menu lists each pr
 
 ISO 21448 provides a method to derive a validation target from an acceptance
 criterion by analysing the rate of the hazardous behaviour :math:`R_{HB}`.
-Given an acceptance criterion for a harm :math:`A_H` and conditional
-probabilities for exposure :math:`P_{E|HB}`, uncontrollability
+The **acceptance rate** :math:`A_H` represents the tolerated rate of harm
+in events per hour. The derived validation target is the corresponding rate
+of hazardous behaviour :math:`R_{HB}` that should not be exceeded. Given
+conditional probabilities for exposure :math:`P_{E|HB}`, uncontrollability
 :math:`P_{C|E}` and severity :math:`P_{S|C}`, the acceptable rate of the
 hazardous behaviour is computed as:
 
@@ -1140,7 +1142,10 @@ R_HB = A_H / (P_{E|HB} * P_{C|E} * P_{S|C})
 
 This value can serve as a validation target when planning tests. For example,
 an acceptance criterion of ``1e-8/h`` with ``P_{E|HB}=0.05``,
-``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``.
+``P_{C|E}=0.1`` and ``P_{S|C}=0.01`` yields ``R_HB = 2e-4/h``. Because the
+conditional probabilities are often very small, even moderate acceptance
+rates can produce seemingly large validation targets.
+
 The product goal editor derives exposure, controllability and severity
 probabilities from their risk assessment ratings and shows them as read-only
 fields. Only the acceptance rate is editable; the validation target is then

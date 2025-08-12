@@ -5,6 +5,8 @@ from tkinter import ttk, simpledialog
 from gui import messagebox
 from gui.toolboxes import ToolTip, configure_table_style
 from analysis.models import ThreatDoc, ThreatEntry
+from sysml.sysml_repository import SysMLRepository
+from gui.architecture import format_diagram_name
 from .threat_dialog import ThreatDialog
 
 
@@ -28,8 +30,11 @@ class ThreatWindow(tk.Frame):
         ToolTip(self.doc_cb, "Select a Threat Analysis document to edit.")
         ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
         ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
+        ttk.Button(top, text="Edit", command=self.edit_doc).pack(side=tk.LEFT)
         ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
+        self.diag_lbl = ttk.Label(top, text="")
+        self.diag_lbl.pack(side=tk.LEFT, padx=10)
 
         columns = ("asset", "functions", "damage", "type", "threat", "path")
         content = ttk.Frame(self)
@@ -87,24 +92,99 @@ class ThreatWindow(tk.Frame):
         self.doc_cb["values"] = names
         if self.app.active_threat:
             self.doc_var.set(self.app.active_threat.name)
+            repo = SysMLRepository.get_instance()
+            diag = repo.diagrams.get(self.app.active_threat.diagram)
+            self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
         elif names:
             self.doc_var.set(names[0])
             self.select_doc()
+        else:
+            self.diag_lbl.config(text="")
 
     def select_doc(self, *_):
         name = self.doc_var.get()
+        repo = SysMLRepository.get_instance()
         for d in self.app.threat_docs:
             if d.name == name:
                 self.app.active_threat = d
                 self.app.threat_entries = d.entries
+                diag = repo.diagrams.get(d.diagram)
+                self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
                 break
         self.refresh()
 
+    class NewThreatDialog(simpledialog.Dialog):
+        def __init__(self, parent, app):
+            self.app = app
+            super().__init__(parent, title="New Threat Analysis")
+
+        def body(self, master):
+            ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
+            self.name_var = tk.StringVar()
+            name_entry = ttk.Entry(master, textvariable=self.name_var)
+            name_entry.grid(row=0, column=1)
+            ttk.Label(master, text="Internal Block Diagram").grid(
+                row=1, column=0, sticky="e"
+            )
+            repo = SysMLRepository.get_instance()
+            self.diag_map = {}
+            diags = []
+            for d in repo.diagrams.values():
+                if d.diag_type != "Internal Block Diagram":
+                    continue
+                disp = format_diagram_name(d)
+                self.diag_map[disp] = d.diag_id
+                diags.append(disp)
+            self.diag_var = tk.StringVar()
+            ttk.Combobox(
+                master, textvariable=self.diag_var, values=diags, state="readonly"
+            ).grid(row=1, column=1)
+            return name_entry
+
+        def apply(self):
+            self.result = (
+                self.name_var.get(), self.diag_map.get(self.diag_var.get(), "")
+            )
+
+    class EditThreatDialog(simpledialog.Dialog):
+        def __init__(self, parent, app):
+            self.app = app
+            super().__init__(parent, title="Edit Threat Analysis")
+
+        def body(self, master):
+            ttk.Label(master, text="Internal Block Diagram").grid(
+                row=0, column=0, sticky="e"
+            )
+            repo = SysMLRepository.get_instance()
+            self.diag_map = {}
+            diags = []
+            for d in repo.diagrams.values():
+                if d.diag_type != "Internal Block Diagram":
+                    continue
+                disp = format_diagram_name(d)
+                self.diag_map[disp] = d.diag_id
+                diags.append(disp)
+            self.diag_var = tk.StringVar()
+            ttk.Combobox(
+                master, textvariable=self.diag_var, values=diags, state="readonly"
+            ).grid(row=0, column=1)
+            current = ""
+            if self.app.active_threat:
+                diag = repo.diagrams.get(self.app.active_threat.diagram)
+                current = format_diagram_name(diag) if diag else ""
+            if current:
+                self.diag_var.set(current)
+            return master
+
+        def apply(self):
+            self.result = self.diag_map.get(self.diag_var.get(), "")
+
     def new_doc(self):
-        name = simpledialog.askstring("New Threat Analysis", "Name:")
-        if not name:
+        dlg = self.NewThreatDialog(self, self.app)
+        if not getattr(dlg, "result", None):
             return
-        doc = ThreatDoc(name, [])
+        name, diag_id = dlg.result
+        doc = ThreatDoc(name, diag_id, [])
         self.app.threat_docs.append(doc)
         self.app.active_threat = doc
         self.app.threat_entries = doc.entries
@@ -122,6 +202,21 @@ class ThreatWindow(tk.Frame):
             return
         self.app.active_threat.name = name
         self.refresh_docs()
+        self.app.update_views()
+
+    def edit_doc(self):
+        if not self.app.active_threat:
+            return
+        dlg = self.EditThreatDialog(self, self.app)
+        if not getattr(dlg, "result", None):
+            return
+        repo = SysMLRepository.get_instance()
+        diag_id = dlg.result
+        self.app.active_threat.diagram = diag_id
+        self.app.threat_entries = self.app.active_threat.entries
+        diag = repo.diagrams.get(diag_id)
+        self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+        self.refresh()
         self.app.update_views()
 
     def delete_doc(self):

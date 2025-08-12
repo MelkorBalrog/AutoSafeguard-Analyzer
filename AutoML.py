@@ -1173,7 +1173,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 # the safety tab. They remain attributes of the node but are
                 # configured elsewhere.
 
-                ttk.Label(safety_frame, text="Validation Target:").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
+                ttk.Label(safety_frame, text="Validation Target (1/h):").grid(row=row_next, column=0, padx=5, pady=5, sticky="e")
                 self.val_target_var = tk.StringVar(value=str(getattr(self.node, "validation_target", 1.0)))
                 tk.Entry(
                     safety_frame,
@@ -1289,7 +1289,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 width=8,
             )
             self.req_cal_combo.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-            ttk.Label(master, text="Validation Target:").grid(row=5, column=0, sticky="e", padx=5, pady=5)
+            ttk.Label(master, text="Validation Target (1/h):").grid(row=5, column=0, sticky="e", padx=5, pady=5)
             self.val_var = tk.StringVar(value=str(self.initial_req.get("validation_criteria", 0.0)))
             tk.Entry(master, textvariable=self.val_var, state="readonly", width=10).grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
@@ -12204,7 +12204,7 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Rate:").grid(row=5, column=0, sticky="e")
+                ttk.Label(master, text="Acceptance Rate (1/h):").grid(row=5, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
                     master,
@@ -12229,7 +12229,7 @@ class FaultTreeApp:
                 self.psc_var = tk.StringVar(value=str(sev))
                 tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target:").grid(row=9, column=0, sticky="e")
+                ttk.Label(master, text="Validation Target (1/h):").grid(row=9, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
@@ -12328,6 +12328,8 @@ class FaultTreeApp:
                 self.top_events = [t for t in self.top_events if t.unique_id != uid]
                 refresh_tree()
                 self.update_views()
+
+        tree.bind("<Double-1>", lambda e: edit_sg())
 
         btn = ttk.Frame(win)
         btn.pack(fill=tk.X)
@@ -14875,7 +14877,11 @@ class FaultTreeApp:
                 for doc in self.stpa_docs
             ],
             "threat_docs": [
-                {"name": doc.name, "entries": [asdict(e) for e in doc.entries]}
+                {
+                    "name": doc.name,
+                    "diagram": doc.diagram,
+                    "entries": [asdict(e) for e in doc.entries],
+                }
                 for doc in self.threat_docs
             ],
             "fi2tc_docs": [
@@ -15193,7 +15199,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
@@ -15666,7 +15676,11 @@ class FaultTreeApp:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
             self.threat_docs.append(
-                ThreatDoc(d.get("name", f"Threat {len(self.threat_docs)+1}"), entries)
+                ThreatDoc(
+                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                    d.get("diagram", ""),
+                    entries,
+                )
             )
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
