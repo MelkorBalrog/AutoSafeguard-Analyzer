@@ -2066,6 +2066,10 @@ class RiskAssessmentWindow(tk.Frame):
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
         self.hazop_lbl = ttk.Label(top, text="")
         self.hazop_lbl.pack(side=tk.LEFT, padx=10)
+        self.stpa_lbl = ttk.Label(top, text="")
+        self.stpa_lbl.pack(side=tk.LEFT, padx=10)
+        self.threat_lbl = ttk.Label(top, text="")
+        self.threat_lbl.pack(side=tk.LEFT, padx=10)
         self.status_lbl = ttk.Label(top, text="")
         self.status_lbl.pack(side=tk.LEFT, padx=10)
 
@@ -2128,6 +2132,8 @@ class RiskAssessmentWindow(tk.Frame):
             self.doc_var.set(self.app.active_hara.name)
             hazops = ", ".join(getattr(self.app.active_hara, "hazops", []))
             self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
+            self.stpa_lbl.config(text=f"STPA: {getattr(self.app.active_hara, 'stpa', '') or ''}")
+            self.threat_lbl.config(text=f"Threat: {getattr(self.app.active_hara, 'threat', '') or ''}")
             self.status_lbl.config(
                 text=f"Status: {getattr(self.app.active_hara, 'status', 'draft')}"
             )
@@ -2137,6 +2143,8 @@ class RiskAssessmentWindow(tk.Frame):
             doc = self.app.hara_docs[0]
             hazops = ", ".join(getattr(doc, "hazops", []))
             self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
+            self.stpa_lbl.config(text=f"STPA: {getattr(doc, 'stpa', '') or ''}")
+            self.threat_lbl.config(text=f"Threat: {getattr(doc, 'threat', '') or ''}")
             self.app.active_hara = doc
             self.app.hara_entries = doc.entries
             self.status_lbl.config(text=f"Status: {getattr(doc, 'status', 'draft')}")
@@ -2149,14 +2157,16 @@ class RiskAssessmentWindow(tk.Frame):
                 self.app.hara_entries = d.entries
                 hazops = ", ".join(getattr(d, "hazops", []))
                 self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
+                self.stpa_lbl.config(text=f"STPA: {getattr(d, 'stpa', '') or ''}")
+                self.threat_lbl.config(text=f"Threat: {getattr(d, 'threat', '') or ''}")
                 self.status_lbl.config(text=f"Status: {getattr(d, 'status', 'draft')}")
                 break
         self.refresh()
 
-    class NewAssessmentDialog(simpledialog.Dialog):
-        def __init__(self, parent, app):
-            self.app = app
-            super().__init__(parent, title="New Risk Assessment")
+        class NewAssessmentDialog(simpledialog.Dialog):
+            def __init__(self, parent, app):
+                self.app = app
+                super().__init__(parent, title="New Risk Assessment")
 
         def body(self, master):
             ttk.Label(master, text="Name").grid(row=0, column=0, sticky="e")
@@ -2168,17 +2178,35 @@ class RiskAssessmentWindow(tk.Frame):
             for n in names:
                 self.hazop_lb.insert(tk.END, n)
             self.hazop_lb.grid(row=1, column=1)
+            ttk.Label(master, text="STPA").grid(row=2, column=0, sticky="e")
+            stpa_names = [d.name for d in self.app.stpa_docs]
+            self.stpa_var = tk.StringVar()
+            ttk.Combobox(master, textvariable=self.stpa_var, values=stpa_names, state="readonly").grid(row=2, column=1)
+            ttk.Label(master, text="Threat Analysis").grid(row=3, column=0, sticky="e")
+            threat_names = [d.name for d in self.app.threat_docs]
+            self.threat_var = tk.StringVar()
+            ttk.Combobox(master, textvariable=self.threat_var, values=threat_names, state="readonly").grid(row=3, column=1)
 
         def apply(self):
             sel = [self.hazop_lb.get(i) for i in self.hazop_lb.curselection()]
-            self.result = (self.name_var.get(), sel)
+            stpa = self.stpa_var.get().strip()
+            threat = self.threat_var.get().strip()
+            self.result = (self.name_var.get(), sel, stpa, threat)
 
     def new_doc(self):
         dlg = self.NewAssessmentDialog(self, self.app)
         if not getattr(dlg, "result", None):
             return
-        name, hazops = dlg.result
-        doc = HaraDoc(name, hazops, [], False, "draft")
+        name, hazops, stpa, threat = dlg.result
+        doc = HaraDoc(
+            name=name,
+            hazops=hazops,
+            stpa=stpa or None,
+            threat=threat or None,
+            entries=[],
+            approved=False,
+            status="draft",
+        )
         self.app.hara_docs.append(doc)
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
@@ -2287,29 +2315,41 @@ class RiskAssessmentWindow(tk.Frame):
                                         scen_name
                                     )
             # STPA unsafe control actions
-            for doc in getattr(self.app, "stpa_docs", []):
-                for entry in getattr(doc, "entries", []):
-                    for uc in (
-                        entry.not_providing,
-                        entry.providing,
-                        entry.incorrect_timing,
-                        entry.stopped_too_soon,
-                    ):
-                        if uc:
-                            malfs.add(uc)
+            stpa_name = getattr(self.app.active_hara, "stpa", None)
+            if stpa_name:
+                doc = next(
+                    (d for d in getattr(self.app, "stpa_docs", []) if d.name == stpa_name),
+                    None,
+                )
+                if doc:
+                    for entry in getattr(doc, "entries", []):
+                        for uc in (
+                            entry.not_providing,
+                            entry.providing,
+                            entry.incorrect_timing,
+                            entry.stopped_too_soon,
+                        ):
+                            if uc:
+                                malfs.add(uc)
             # Threat scenarios from threat analysis (separate list)
-            for doc in getattr(self.app, "threat_docs", []):
-                for entry in getattr(doc, "entries", []):
-                    for func in getattr(entry, "functions", []):
-                        for dmg in getattr(func, "damage_scenarios", []):
-                            for threat in getattr(dmg, "threats", []):
-                                ts = threat.scenario
-                                threats.add(ts)
-                                paths = [ap.description for ap in threat.attack_paths]
-                                self.threat_map[ts] = {
-                                    "damage": dmg.scenario,
-                                    "paths": paths,
-                                }
+            threat_name = getattr(self.app.active_hara, "threat", None)
+            if threat_name:
+                doc = next(
+                    (d for d in getattr(self.app, "threat_docs", []) if d.name == threat_name),
+                    None,
+                )
+                if doc:
+                    for entry in getattr(doc, "entries", []):
+                        for func in getattr(entry, "functions", []):
+                            for dmg in getattr(func, "damage_scenarios", []):
+                                for threat in getattr(dmg, "threats", []):
+                                    ts = threat.scenario
+                                    threats.add(ts)
+                                    paths = [ap.description for ap in threat.attack_paths]
+                                    self.threat_map[ts] = {
+                                        "damage": dmg.scenario,
+                                        "paths": paths,
+                                    }
             malfs = sorted(malfs)
             threats = sorted(threats)
             goals = [

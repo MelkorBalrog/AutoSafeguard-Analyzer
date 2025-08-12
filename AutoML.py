@@ -14776,6 +14776,8 @@ class FaultTreeApp:
                 {
                     "name": doc.name,
                     "hazops": getattr(doc, "hazops", []),
+                    "stpa": getattr(doc, "stpa", None),
+                    "threat": getattr(doc, "threat", None),
                     "entries": [asdict(e) for e in doc.entries],
                     "approved": getattr(doc, "approved", False),
                     "status": getattr(doc, "status", "draft"),
@@ -14982,20 +14984,24 @@ class FaultTreeApp:
                 hazops = [hazop] if hazop else []
             self.hara_docs.append(
                 HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
+                    name=d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
+                    hazops=hazops,
+                    stpa=d.get("stpa"),
+                    threat=d.get("threat"),
+                    entries=entries,
+                    approved=d.get("approved", False),
+                    status=d.get("status", "draft"),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             self.hara_docs.append(
                 HaraDoc(
-                    "Default",
-                    [hazop_name] if hazop_name else [],
-                    [
+                    name="Default",
+                    hazops=[hazop_name] if hazop_name else [],
+                    stpa=None,
+                    threat=None,
+                    entries=[
                         HaraEntry(
                             e.get("malfunction", ""),
                             e.get("hazard", ""),
@@ -15011,8 +15017,8 @@ class FaultTreeApp:
                         )
                         for e in data.get("hara_entries", [])
                     ],
-                    False,
-                    "draft",
+                    approved=False,
+                    status="draft",
                 )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
@@ -15451,20 +15457,24 @@ class FaultTreeApp:
                 hazops = [hazop] if hazop else []
             self.hara_docs.append(
                 HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
+                    name=d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
+                    hazops=hazops,
+                    stpa=d.get("stpa"),
+                    threat=d.get("threat"),
+                    entries=entries,
+                    approved=d.get("approved", False),
+                    status=d.get("status", "draft"),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             self.hara_docs.append(
                 HaraDoc(
-                    "Default",
-                    [hazop_name] if hazop_name else [],
-                    [
+                    name="Default",
+                    hazops=[hazop_name] if hazop_name else [],
+                    stpa=None,
+                    threat=None,
+                    entries=[
                         HaraEntry(
                             e.get("malfunction", ""),
                             e.get("hazard", ""),
@@ -15480,8 +15490,8 @@ class FaultTreeApp:
                         )
                         for e in data.get("hara_entries", [])
                     ],
-                    False,
-                    "draft",
+                    approved=False,
+                    status="draft",
                 )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
