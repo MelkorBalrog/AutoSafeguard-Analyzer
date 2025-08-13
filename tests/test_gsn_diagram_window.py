@@ -82,3 +82,40 @@ def test_on_release_creates_context_link():
     win._on_release(event)
     assert child in parent.children
     assert child in parent.context_children
+
+
+def test_refresh_updates_scrollregion():
+    """Refresh should configure the canvas scrollregion."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.selected_node = None
+    win.zoom = 1.0
+
+    class DiagramStub:
+        def _traverse(self):
+            return []
+
+        def draw(self, canvas, zoom):
+            pass
+
+    win.diagram = DiagramStub()
+
+    class CanvasStub:
+        def __init__(self):
+            self.config = {}
+
+        def delete(self, *a, **k):
+            pass
+
+        def bbox(self, tag):
+            return (0, 0, 100, 100)
+
+        def configure(self, **kwargs):
+            self.config.update(kwargs)
+
+        def create_rectangle(self, *args, **kwargs):
+            pass
+
+    win.canvas = CanvasStub()
+    win.id_to_node = {}
+    win.refresh()
+    assert win.canvas.config.get("scrollregion") == (0, 0, 100, 100)
