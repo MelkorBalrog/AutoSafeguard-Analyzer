@@ -160,6 +160,51 @@ def test_edit_probability_updates_spi(monkeypatch):
     expected_spi = 1e-5 / 2e-4
     assert spi_tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
+
+def test_edit_probability_in_spi_explorer(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    sol.spi_target = "SG1"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        probability=1e-4,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+    app.refresh_safety_case_table = lambda: None
+    app.update_views = lambda: None
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 5e-5)
+
+    FaultTreeApp.show_safety_performance_indicators(app)
+    tree = app._spi_tree
+    iid = next(iter(tree.data))
+    tree.selection_set(iid)
+    app._edit_spi_item()
+    iid = next(iter(tree.data))
+    assert te.probability == 5e-5
+    assert tree.data[iid]["values"][2] == f"{5e-5:.2e}"
+    expected_spi = 1e-5 / 5e-5
+    assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
+
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")

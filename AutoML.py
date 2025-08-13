@@ -12622,6 +12622,7 @@ class FaultTreeApp:
         """Display Safety Performance Indicators."""
         if hasattr(self, "_spi_tab") and self._spi_tab.winfo_exists():
             self.doc_nb.select(self._spi_tab)
+            self.refresh_safety_performance_indicators()
             return
         self._spi_tab = self._new_tab("Safety Performance Indicators")
         win = self._spi_tab
@@ -12643,6 +12644,42 @@ class FaultTreeApp:
             tree.column(c, width=width, anchor="center")
         tree.pack(fill=tk.BOTH, expand=True)
         self._spi_tree = tree
+        self._spi_lookup = {}
+
+        def edit_selected():
+            sel = tree.selection()
+            if not sel:
+                return
+            iid = sel[0]
+            sg = self._spi_lookup.get(iid)
+            if not sg:
+                return
+            new_val = simpledialog.askfloat(
+                "Achieved Probability",
+                "Enter achieved probability:",
+                initialvalue=getattr(sg, "probability", 0.0),
+            )
+            if new_val is not None:
+                self.push_undo_state()
+                sg.probability = float(new_val)
+                self.refresh_safety_case_table()
+                self.refresh_safety_performance_indicators()
+                self.update_views()
+
+        btn = ttk.Button(win, text="Edit", command=edit_selected)
+        btn.pack(pady=4)
+        self._edit_spi_item = edit_selected
+
+        self.refresh_safety_performance_indicators()
+
+    def refresh_safety_performance_indicators(self):
+        """Populate the SPI explorer table."""
+        tree = getattr(self, "_spi_tree", None)
+        if not tree or not getattr(tree, "winfo_exists", lambda: True)():
+            return
+        for iid in list(tree.get_children("")):
+            tree.delete(iid)
+        self._spi_lookup = {}
 
         for sg in getattr(self, "top_events", []):
             v_target = getattr(sg, "validation_target", "")
@@ -12655,7 +12692,7 @@ class FaultTreeApp:
                     spi_val = f"{float(v_target) / float(prob):.2f}"
             except Exception:
                 spi_val = ""
-            tree.insert(
+            iid = tree.insert(
                 "",
                 "end",
                 values=[
@@ -12667,6 +12704,7 @@ class FaultTreeApp:
                     getattr(sg, "acceptance_criteria", ""),
                 ],
             )
+            self._spi_lookup[iid] = sg
 
     def refresh_safety_case_table(self):
         """Populate the Safety Case table with solution nodes."""
