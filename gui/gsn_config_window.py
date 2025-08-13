@@ -6,12 +6,21 @@ from tkinter import ttk
 
 from gsn import GSNNode, GSNDiagram
 
-WORK_PRODUCTS = [
-    "Architectural Diagram",
-    "Hazard & Cyber Analysis",
-    "Risk Assessment",
-    "Safety Analysis",
-]
+
+def _collect_work_products(diagram: GSNDiagram) -> list[str]:
+    """Return sorted unique work product names from *diagram*.
+
+    Only non-empty ``work_product`` attributes of nodes are considered to
+    provide meaningful options in the configuration dialog.
+    """
+
+    return sorted(
+        {
+            getattr(n, "work_product", "")
+            for n in getattr(diagram, "nodes", [])
+            if getattr(n, "work_product", "")
+        }
+    )
 
 
 class GSNElementConfig(tk.Toplevel):
@@ -43,10 +52,13 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="Work Product:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
+            work_products = _collect_work_products(diagram)
+            if self.work_var.get() and self.work_var.get() not in work_products:
+                work_products.append(self.work_var.get())
             ttk.Combobox(
                 self,
                 textvariable=self.work_var,
-                values=WORK_PRODUCTS,
+                values=work_products,
                 state="readonly",
             ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
             row += 1
