@@ -34,6 +34,7 @@ class GSNNode:
     original: Optional["GSNNode"] = field(default=None, repr=False)
     unique_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     work_product: str = ""
+    spi_target: str = ""
 
     def __post_init__(self) -> None:  # pragma: no cover - trivial
         # A freshly created node is considered its own original instance.
@@ -63,6 +64,8 @@ class GSNNode:
             is_primary_instance=False,
             original=self.original,
         )
+        clone.work_product = self.work_product
+        clone.spi_target = self.spi_target
         if parent is not None:
             parent.add_child(clone)
         return clone
@@ -80,6 +83,8 @@ class GSNNode:
             "children": [c.unique_id for c in self.children],
             "is_primary_instance": self.is_primary_instance,
             "original": self.original.unique_id if self.original else None,
+            "work_product": self.work_product,
+            "spi_target": self.spi_target,
         }
 
     # ------------------------------------------------------------------
@@ -99,6 +104,8 @@ class GSNNode:
             y=data.get("y", 50),
             is_primary_instance=data.get("is_primary_instance", True),
             unique_id=data.get("unique_id", str(uuid.uuid4())),
+            work_product=data.get("work_product", ""),
+            spi_target=data.get("spi_target", ""),
         )
         nodes[node.unique_id] = node
         # Temporarily store child and original references for second pass

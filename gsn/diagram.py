@@ -192,6 +192,13 @@ class GSNDiagram:
 
     def _format_text(self, node: GSNNode) -> str:
         """Return node label including description if present."""
+        if node.node_type == "Solution":
+            lines = [node.user_name]
+            if getattr(node, "spi_target", ""):
+                lines.append(f"SPI: {node.spi_target}")
+            if getattr(node, "description", ""):
+                lines.append(node.description)
+            return "\n".join(lines)
         if getattr(node, "description", ""):
             return f"{node.user_name}\n{node.description}"
         return node.user_name
