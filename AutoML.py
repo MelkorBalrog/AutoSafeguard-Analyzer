@@ -1982,6 +1982,7 @@ class FaultTreeApp:
             "pdf_detailed_formulas": True,
         }
         self.item_definition = {"description": "", "assumptions": ""}
+        self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
         self.mission_profiles = []
         self.fmeda_components = []
         self.reliability_analyses = []
@@ -8357,6 +8358,8 @@ class FaultTreeApp:
             self.manage_gsn()
         elif kind == "reqs":
             self.show_requirements_editor()
+        elif kind == "reqexp":
+            self.show_requirements_explorer()
         elif kind == "sg":
             self.show_product_goals_editor()
         elif kind == "fta":
@@ -8367,10 +8370,16 @@ class FaultTreeApp:
                 self.open_page_diagram(te)
         elif kind == "safetycase":
             self.show_safety_case()
+        elif kind == "safetyconcept":
+            self.show_safety_concept_editor()
         elif kind == "itemdef":
             self.show_item_definition_editor()
         elif kind == "arch":
             self.open_arch_window(ident)
+        elif kind == "safetyexp":
+            self.manage_safety_management()
+        elif kind == "gsnexp":
+            self.manage_gsn()
         elif kind == "pkg":
             self.manage_architecture()
 
@@ -9561,7 +9570,18 @@ class FaultTreeApp:
                         image=icon,
                     )
 
-            tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
+            # --- Safety & Security Concept Section ---
+            sc_root = tree.insert(
+                "",
+                "end",
+                text="Safety & Security Concept",
+                open=True,
+                tags=("safetyconcept", "0"),
+            )
+            tree.insert(sc_root, "end", text="Requirements Editor", tags=("reqs", "0"))
+            tree.insert(sc_root, "end", text="Requirements Explorer", tags=("reqexp", "0"))
+            tree.insert(sc_root, "end", text="Safety Management Explorer", tags=("safetyexp", "0"))
+            tree.insert(sc_root, "end", text="GSN Explorer", tags=("gsnexp", "0"))
 
             # --- Hazard & Threat Analysis Section ---
             haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
@@ -10713,6 +10733,60 @@ class FaultTreeApp:
         def save():
             self.item_definition["description"] = self._item_desc_text.get("1.0", "end").strip()
             self.item_definition["assumptions"] = self._item_assum_text.get("1.0", "end").strip()
+
+        ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
+
+    def show_safety_concept_editor(self):
+        """Open editor for safety & security concept descriptions and assumptions."""
+        if hasattr(self, "_safety_concept_tab") and self._safety_concept_tab.winfo_exists():
+            self.doc_nb.select(self._safety_concept_tab)
+            return
+        self._safety_concept_tab = self._new_tab("Safety & Security Concept")
+        win = self._safety_concept_tab
+        ttk.Label(
+            win,
+            text="Functional Safety Concept Description and Assumptions:",
+        ).pack(anchor="w")
+        f_frame = ttk.Frame(win)
+        f_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._fsc_text = tk.Text(f_frame, height=8, wrap="word")
+        f_scroll = ttk.Scrollbar(f_frame, orient=tk.VERTICAL, command=self._fsc_text.yview)
+        self._fsc_text.configure(yscrollcommand=f_scroll.set)
+        self._fsc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        f_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        ttk.Label(
+            win,
+            text="Technical Safety Concept Description & Assumptions:",
+        ).pack(anchor="w")
+        t_frame = ttk.Frame(win)
+        t_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._tsc_text = tk.Text(t_frame, height=8, wrap="word")
+        t_scroll = ttk.Scrollbar(t_frame, orient=tk.VERTICAL, command=self._tsc_text.yview)
+        self._tsc_text.configure(yscrollcommand=t_scroll.set)
+        self._tsc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        t_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        ttk.Label(
+            win,
+            text="Cybersecurity Concept Description & Assumptions:",
+        ).pack(anchor="w")
+        c_frame = ttk.Frame(win)
+        c_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._csc_text = tk.Text(c_frame, height=8, wrap="word")
+        c_scroll = ttk.Scrollbar(c_frame, orient=tk.VERTICAL, command=self._csc_text.yview)
+        self._csc_text.configure(yscrollcommand=c_scroll.set)
+        self._csc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        c_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self._fsc_text.insert("1.0", self.safety_concept.get("functional", ""))
+        self._tsc_text.insert("1.0", self.safety_concept.get("technical", ""))
+        self._csc_text.insert("1.0", self.safety_concept.get("cybersecurity", ""))
+
+        def save():
+            self.safety_concept["functional"] = self._fsc_text.get("1.0", "end").strip()
+            self.safety_concept["technical"] = self._tsc_text.get("1.0", "end").strip()
+            self.safety_concept["cybersecurity"] = self._csc_text.get("1.0", "end").strip()
 
         ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
 
@@ -16587,6 +16661,11 @@ class FaultTreeApp:
             "item_definition": getattr(
                 self, "item_definition", {"description": "", "assumptions": ""}
             ).copy(),
+            "safety_concept": getattr(
+                self,
+                "safety_concept",
+                {"functional": "", "technical": "", "cybersecurity": ""},
+            ).copy(),
             "global_requirements": global_requirements,
             "reviews": reviews,
             "current_review": current_name,
@@ -17001,6 +17080,14 @@ class FaultTreeApp:
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
+        self.safety_concept = data.get(
+            "safety_concept",
+            getattr(
+                self,
+                "safety_concept",
+                {"functional": "", "technical": "", "cybersecurity": ""},
+            ),
         )
         self.reviews = []
         reviews_data = data.get("reviews")
@@ -17526,6 +17613,14 @@ class FaultTreeApp:
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
+        self.safety_concept = data.get(
+            "safety_concept",
+            getattr(
+                self,
+                "safety_concept",
+                {"functional": "", "technical": "", "cybersecurity": ""},
+            ),
         )
         self.reviews = []
         reviews_data = data.get("reviews")
