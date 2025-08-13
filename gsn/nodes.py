@@ -60,13 +60,48 @@ class GSNNode:
         relation:
             Either ``"solved"`` for a solved-by connection or ``"context"``
             for an in-context-of relationship.  Defaults to ``"solved"``.
+
+        Raises
+        ------
+        ValueError
+            If the requested relationship between the two node types is not
+            allowed by the GSN standard.
         """
+
+        if relation not in {"solved", "context"}:
+            raise ValueError(f"Unknown relationship: {relation}")
+
+        if relation == "solved":
+            allowed = {
+                "Goal": {"Goal", "Strategy", "Solution", "Module"},
+                "Strategy": {"Goal"},
+                "Module": {"Goal", "Strategy", "Solution", "Module"},
+            }
+            if self.node_type not in allowed or child.node_type not in allowed[self.node_type]:
+                raise ValueError(
+                    f"{self.node_type} cannot be solved by {child.node_type}"
+                )
+        else:  # relation == "context"
+            allowed = {
+                "Goal": {"Context", "Assumption", "Justification"},
+                "Strategy": {"Context", "Assumption", "Justification"},
+                "Solution": {"Context", "Assumption", "Justification"},
+                "Module": {"Context", "Assumption", "Justification"},
+            }
+            if self.node_type not in allowed or child.node_type not in allowed[self.node_type]:
+                raise ValueError(
+                    f"{self.node_type} cannot have context {child.node_type}"
+                )
+
         if child not in self.children:
             self.children.append(child)
         if self not in child.parents:
             child.parents.append(self)
-        if relation == "context" and child not in self.context_children:
-            self.context_children.append(child)
+        if relation == "context":
+            if child not in self.context_children:
+                self.context_children.append(child)
+        elif child in self.context_children:
+            self.context_children.remove(child)
 
     # ------------------------------------------------------------------
     def clone(self, parent: Optional["GSNNode"] = None) -> "GSNNode":

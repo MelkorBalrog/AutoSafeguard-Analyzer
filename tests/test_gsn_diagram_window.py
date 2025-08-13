@@ -90,7 +90,7 @@ def test_on_release_creates_context_link():
     """Releasing in context mode should mark the relation accordingly."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
     parent = GSNNode("p", "Goal")
-    child = GSNNode("c", "Goal")
+    child = GSNNode("c", "Context")
 
     class CanvasStub:
         def __init__(self):
