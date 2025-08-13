@@ -246,17 +246,5 @@ class RepositoryTests(unittest.TestCase):
 
         self.assertEqual(original, loaded)
 
-    def test_item_definition_persistence(self):
-        self.repo.item_description = "Some description"
-        self.repo.assumptions = "Assumptions here"
-        path = "repo_itemdef.json"
-        self.repo.save(path)
-        SysMLRepository._instance = None
-        new_repo = SysMLRepository.get_instance()
-        new_repo.load(path)
-        os.remove(path)
-        self.assertEqual(new_repo.item_description, "Some description")
-        self.assertEqual(new_repo.assumptions, "Assumptions here")
-
 if __name__ == '__main__':
     unittest.main()

@@ -8121,8 +8121,6 @@ class FaultTreeApp:
                 doc = self.tc2fi_docs[idx]
                 self._tc2fi_window.doc_var.set(doc.name)
                 self._tc2fi_window.select_doc()
-        elif kind == "itemdef":
-            self.show_item_definition_editor()
         elif kind == "reqs":
             self.show_requirements_editor()
         elif kind == "sg":
@@ -9151,7 +9149,6 @@ class FaultTreeApp:
                 "end",
                 text="System Design (Item Definition)",
                 open=True,
-                tags=("itemdef", "0"),
             )
             self.arch_diagrams = sorted(
                 [
@@ -10293,46 +10290,6 @@ class FaultTreeApp:
             text.insert(tk.END, "\n\n")
 
         tk.Button(win, text="Open Requirements Editor", command=self.show_requirements_editor).pack(pady=5)
-
-    def show_item_definition_editor(self):
-        """Open a tab to edit item description and assumptions."""
-        repo = SysMLRepository.get_instance()
-        if hasattr(self, "_itemdef_tab") and self._itemdef_tab.winfo_exists():
-            self.doc_nb.select(self._itemdef_tab)
-            return
-        self._itemdef_tab = self._new_tab("Item Definition")
-        win = self._itemdef_tab
-
-        frame = ttk.Frame(win)
-        frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        frame.columnconfigure(0, weight=1)
-        ttk.Label(frame, text="Item Description:").grid(row=0, column=0, sticky="w")
-        desc_txt = tk.Text(frame, height=6, wrap="word")
-        desc_txt.grid(row=1, column=0, sticky="nsew", pady=(0, 5))
-        ttk.Label(frame, text="Assumptions:").grid(row=2, column=0, sticky="w")
-        assum_txt = tk.Text(frame, height=6, wrap="word")
-        assum_txt.grid(row=3, column=0, sticky="nsew")
-        frame.rowconfigure(1, weight=1)
-        frame.rowconfigure(3, weight=1)
-
-        desc_txt.insert("1.0", getattr(repo, "item_description", ""))
-        assum_txt.insert("1.0", getattr(repo, "assumptions", ""))
-
-        btn_frame = ttk.Frame(win)
-        btn_frame.pack(fill=tk.X)
-
-        def save():
-            repo.item_description = desc_txt.get("1.0", tk.END).rstrip()
-            repo.assumptions = assum_txt.get("1.0", tk.END).rstrip()
-
-        def reload():
-            desc_txt.delete("1.0", tk.END)
-            desc_txt.insert("1.0", getattr(repo, "item_description", ""))
-            assum_txt.delete("1.0", tk.END)
-            assum_txt.insert("1.0", getattr(repo, "assumptions", ""))
-
-        ttk.Button(btn_frame, text="Save", command=save).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(btn_frame, text="Reload", command=reload).pack(side=tk.LEFT, padx=5, pady=5)
 
     def show_requirements_editor(self):
         """Open an editor to manage global requirements and traceability."""
