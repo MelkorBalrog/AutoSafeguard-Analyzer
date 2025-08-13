@@ -12516,6 +12516,19 @@ class FaultTreeApp:
 
         refresh_tree()
 
+    def _spi_label(self, sg):
+        """Return a human-readable label for a product goal's SPI."""
+        return (
+            getattr(sg, "validation_desc", "")
+            or getattr(sg, "safety_goal_description", "")
+            or getattr(sg, "user_name", "")
+            or f"SG {getattr(sg, 'unique_id', '')}"
+        )
+
+    def get_spi_targets(self) -> list[str]:
+        """Return sorted unique SPI target descriptions for the project."""
+        return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""
         if hasattr(self, "_spi_tab") and self._spi_tab.winfo_exists():
@@ -12541,7 +12554,7 @@ class FaultTreeApp:
                 values=[
                     sg.user_name or f"SG {sg.unique_id}",
                     getattr(sg, "validation_target", ""),
-                    getattr(sg, "validation_desc", ""),
+                    self._spi_label(sg),
                     getattr(sg, "acceptance_criteria", ""),
                 ],
             )
