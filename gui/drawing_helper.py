@@ -29,12 +29,14 @@ _NAMED_COLORS = {
     "lightyellow": "#ffffe0",
 }
 
+
 class FTADrawingHelper:
     """
     A helper class that provides drawing functions for fault tree diagrams.
     These methods can be used to draw shapes (gates, events, connectors, etc.)
     onto a tkinter Canvas.
     """
+
     def __init__(self):
         pass
 
@@ -91,7 +93,9 @@ class FTADrawingHelper:
                     canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
             x += 0.5
 
-    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
+    def _fill_gradient_circle(
+        self, canvas, cx: float, cy: float, radius: float, color: str
+    ) -> None:
         """Fill circle with gradient from white to *color*."""
         left = math.floor(cx - radius)
         right = math.ceil(cx + radius)
@@ -102,11 +106,13 @@ class FTADrawingHelper:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
             dx = x - cx
-            dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
+            dy = math.sqrt(max(radius**2 - dx**2, 0))
             canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
             x += 0.5
 
-    def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
+    def _fill_gradient_rect(
+        self, canvas, left: float, top: float, right: float, bottom: float, color: str
+    ) -> None:
         """Fill rectangle with gradient from white to *color*."""
         if right <= left:
             return
@@ -154,26 +160,37 @@ class FTADrawingHelper:
         )
         # Determine a baseline for the bottom of the triangle.
         # (You may need to adjust this value to match your triangle's dimensions.)
-        bottom_y = y + scale * 0.75  
+        bottom_y = y + scale * 0.75
         # Draw two horizontal lines at the bottom
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset1,
+            x + scale / 2,
+            bottom_y - line_offset1,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset2,
+            x + scale / 2,
+            bottom_y - line_offset2,
+            fill=outline_color,
+            width=line_width,
+        )
         # Draw a small triangle on the right side as a clone indicator.
         tri_side = scale * 0.5
         tri_height = (math.sqrt(3) / 2) * tri_side
         att_x = x + scale  # position to the right of the main triangle
-        att_y = y - tri_height / 2 - tri_height# adjust vertical position as needed
+        att_y = y - tri_height / 2 - tri_height  # adjust vertical position as needed
         v1 = (att_x, att_y)
         v2 = (att_x + tri_side, att_y)
-        v3 = (att_x + tri_side/2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue", outline=outline_color,
-                              width=line_width)
+        v3 = (att_x + tri_side / 2, att_y - tri_height)
+        canvas.create_polygon(
+            v1, v2, v3, fill="lightblue", outline=outline_color, width=line_width
+        )
 
     def draw_shared_marker(self, canvas, x, y, zoom):
         """Draw a small shared marker at the given canvas coordinates."""
@@ -249,8 +266,17 @@ class FTADrawingHelper:
                 return best[0], best[1]
         return target_pt
 
-    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color="dimgray", line_width=1,
-                           fixed_length=40, parent_shape=None, child_shape=None):
+    def draw_90_connection(
+        self,
+        canvas,
+        parent_pt,
+        child_pt,
+        outline_color="dimgray",
+        line_width=1,
+        fixed_length=40,
+        parent_shape=None,
+        child_shape=None,
+    ):
         """Draw a 90° connection line from a parent point to a child point.
 
         If *parent_shape* or *child_shape* dictionaries are provided, the start
@@ -262,12 +288,30 @@ class FTADrawingHelper:
             child_pt = self.point_on_shape(child_shape, parent_pt)
 
         fixed_y = parent_pt[1] + fixed_length
-        canvas.create_line(parent_pt[0], parent_pt[1], parent_pt[0], fixed_y,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(parent_pt[0], fixed_y, child_pt[0], fixed_y,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(child_pt[0], fixed_y, child_pt[0], child_pt[1],
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            parent_pt[0],
+            parent_pt[1],
+            parent_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            parent_pt[0],
+            fixed_y,
+            child_pt[0],
+            fixed_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            child_pt[0],
+            fixed_y,
+            child_pt[0],
+            child_pt[1],
+            fill=outline_color,
+            width=line_width,
+        )
 
     def compute_rotated_and_gate_vertices(self, scale):
         """Compute vertices for a rotated AND gate shape scaled by 'scale'."""
@@ -277,9 +321,11 @@ class FTADrawingHelper:
             theta = math.pi / 2 - math.pi * i / num_points
             vertices.append((1 + math.cos(theta), 1 + math.sin(theta)))
         vertices.append((0, 0))
+
         def rotate_point(pt):
             x, y = pt
             return (2 - y, x)
+
         rotated = [rotate_point(pt) for pt in vertices]
         translated = [(vx + 2, vy + 1) for (vx, vy) in rotated]
         scaled = [(vx * scale, vy * scale) for (vx, vy) in translated]
@@ -341,12 +387,14 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(top_box_x + top_box_width / 2,
-                           top_y + top_box_height / 2,
-                           text=top_text,
-                           font=font_obj,
-                           anchor="center",
-                           width=top_box_width)
+        canvas.create_text(
+            top_box_x + top_box_width / 2,
+            top_y + top_box_height / 2,
+            text=top_text,
+            font=font_obj,
+            anchor="center",
+            width=top_box_width,
+        )
 
         # Draw the bottom label box
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
@@ -372,12 +420,14 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(bottom_box_x + bottom_box_width / 2,
-                           bottom_y + bottom_box_height / 2,
-                           text=bottom_text,
-                           font=font_obj,
-                           anchor="center",
-                           width=bottom_box_width)
+        canvas.create_text(
+            bottom_box_x + bottom_box_width / 2,
+            bottom_y + bottom_box_height / 2,
+            text=bottom_text,
+            font=font_obj,
+            anchor="center",
+            width=bottom_box_width,
+        )
 
     def draw_rotated_or_gate_shape(
         self,
@@ -396,11 +446,19 @@ class FTADrawingHelper:
         """Draw a rotated OR gate shape with text labels."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
+
         def cubic_bezier(P0, P1, P2, P3, t):
-            return ((1 - t) ** 3 * P0[0] + 3 * (1 - t) ** 2 * t * P1[0] +
-                    3 * (1 - t) * t ** 2 * P2[0] + t ** 3 * P3[0],
-                    (1 - t) ** 3 * P0[1] + 3 * (1 - t) ** 2 * t * P1[1] +
-                    3 * (1 - t) * t ** 2 * P2[1] + t ** 3 * P3[1])
+            return (
+                (1 - t) ** 3 * P0[0]
+                + 3 * (1 - t) ** 2 * t * P1[0]
+                + 3 * (1 - t) * t**2 * P2[0]
+                + t**3 * P3[0],
+                (1 - t) ** 3 * P0[1]
+                + 3 * (1 - t) ** 2 * t * P1[1]
+                + 3 * (1 - t) * t**2 * P2[1]
+                + t**3 * P3[1],
+            )
+
         num_points = 30
         t_values = [i / num_points for i in range(num_points + 1)]
         seg1 = [cubic_bezier((0, 0), (0.6, 0), (0.6, 2), (0, 2), t) for t in t_values]
@@ -448,10 +506,14 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(top_box_x + top_box_width / 2,
-                           top_y + top_box_height / 2,
-                           text=top_text, font=font_obj, anchor="center",
-                           width=top_box_width)
+        canvas.create_text(
+            top_box_x + top_box_width / 2,
+            top_y + top_box_height / 2,
+            text=top_text,
+            font=font_obj,
+            anchor="center",
+            width=top_box_width,
+        )
 
         # Draw the bottom label box
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
@@ -477,10 +539,14 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(bottom_box_x + bottom_box_width / 2,
-                           bottom_y + bottom_box_height / 2,
-                           text=bottom_text, font=font_obj,
-                           anchor="center", width=bottom_box_width)
+        canvas.create_text(
+            bottom_box_x + bottom_box_width / 2,
+            bottom_y + bottom_box_height / 2,
+            text=bottom_text,
+            font=font_obj,
+            anchor="center",
+            width=bottom_box_width,
+        )
 
     def draw_rotated_and_gate_clone_shape(
         self,
@@ -513,12 +579,22 @@ class FTADrawingHelper:
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset1,
+            x + scale / 2,
+            bottom_y - line_offset1,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset2,
+            x + scale / 2,
+            bottom_y - line_offset2,
+            fill=outline_color,
+            width=line_width,
+        )
         tri_side = scale * 0.5
         tri_height = (math.sqrt(3) / 2) * tri_side
         att_x = x + scale
@@ -526,12 +602,18 @@ class FTADrawingHelper:
         v1 = (att_x, att_y)
         v2 = (att_x + tri_side, att_y)
         v3 = (att_x + tri_side / 2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue", outline=outline_color,
-                              width=line_width)
+        canvas.create_polygon(
+            v1, v2, v3, fill="lightblue", outline=outline_color, width=line_width
+        )
         final_line_offset = scale * 0.15
-        canvas.create_line(x - scale/2, bottom_y + final_line_offset,
-                           x + scale/2, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y + final_line_offset,
+            x + scale / 2,
+            bottom_y + final_line_offset,
+            fill=outline_color,
+            width=line_width,
+        )
 
     def draw_rotated_or_gate_clone_shape(
         self,
@@ -564,12 +646,22 @@ class FTADrawingHelper:
         bottom_y = y + scale * 1.5
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset1,
+            x + scale / 2,
+            bottom_y - line_offset1,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y - line_offset2,
+            x + scale / 2,
+            bottom_y - line_offset2,
+            fill=outline_color,
+            width=line_width,
+        )
         tri_side = scale * 0.5
         tri_height = (math.sqrt(3) / 2) * tri_side
         att_x = x + scale
@@ -577,12 +669,18 @@ class FTADrawingHelper:
         v1 = (att_x, att_y)
         v2 = (att_x + tri_side, att_y)
         v3 = (att_x + tri_side / 2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue",
-                              outline=outline_color, width=line_width)
+        canvas.create_polygon(
+            v1, v2, v3, fill="lightblue", outline=outline_color, width=line_width
+        )
         final_line_offset = scale * 0.15
-        canvas.create_line(x - scale/2, bottom_y + final_line_offset,
-                           x + scale/2, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
+        canvas.create_line(
+            x - scale / 2,
+            bottom_y + final_line_offset,
+            x + scale / 2,
+            bottom_y + final_line_offset,
+            fill=outline_color,
+            width=line_width,
+        )
 
     def draw_triangle_shape(
         self,
@@ -600,7 +698,7 @@ class FTADrawingHelper:
     ):
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
-        effective_scale = scale * 2  
+        effective_scale = scale * 2
         h = effective_scale * math.sqrt(3) / 2
         v1 = (0, -2 * h / 3)
         v2 = (-effective_scale / 2, h / 3)
@@ -611,8 +709,10 @@ class FTADrawingHelper:
             (x + v3[0], y + v3[1]),
         ]
         self._fill_gradient_polygon(canvas, vertices, fill)
-        canvas.create_polygon(vertices, fill="", outline=outline_color, width=line_width)
-        
+        canvas.create_polygon(
+            vertices, fill="", outline=outline_color, width=line_width
+        )
+
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
         top_box_width = t_width + 2 * padding
@@ -636,11 +736,15 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(top_box_x + top_box_width / 2,
-                           top_box_y + top_box_height / 2,
-                           text=top_text,
-                           font=font_obj, anchor="center", width=top_box_width)
-        
+        canvas.create_text(
+            top_box_x + top_box_width / 2,
+            top_box_y + top_box_height / 2,
+            text=top_text,
+            font=font_obj,
+            anchor="center",
+            width=top_box_width,
+        )
+
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
         bottom_box_width = b_width + 2 * padding
         bottom_box_height = b_height + 2 * padding
@@ -663,11 +767,15 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(bottom_box_x + bottom_box_width / 2,
-                           bottom_box_y + bottom_box_height / 2,
-                           text=bottom_text,
-                           font=font_obj, anchor="center", width=bottom_box_width)
-                           
+        canvas.create_text(
+            bottom_box_x + bottom_box_width / 2,
+            bottom_box_y + bottom_box_height / 2,
+            text=bottom_text,
+            font=font_obj,
+            anchor="center",
+            width=bottom_box_width,
+        )
+
     def draw_circle_event_shape(
         self,
         canvas,
@@ -723,11 +831,14 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(top_box_x + top_box_width / 2,
-                           top_box_y + top_box_height / 2,
-                           text=top_text,
-                           font=font_obj, anchor="center",
-                           width=top_box_width)
+        canvas.create_text(
+            top_box_x + top_box_width / 2,
+            top_box_y + top_box_height / 2,
+            text=top_text,
+            font=font_obj,
+            anchor="center",
+            width=top_box_width,
+        )
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
         bottom_box_width = b_width + 2 * padding
         bottom_box_height = b_height + 2 * padding
@@ -750,12 +861,15 @@ class FTADrawingHelper:
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(bottom_box_x + bottom_box_width / 2,
-                           bottom_box_y + bottom_box_height / 2,
-                           text=bottom_text,
-                           font=font_obj, anchor="center",
-                           width=bottom_box_width)
-                           
+        canvas.create_text(
+            bottom_box_x + bottom_box_width / 2,
+            bottom_box_y + bottom_box_height / 2,
+            text=bottom_text,
+            font=font_obj,
+            anchor="center",
+            width=bottom_box_width,
+        )
+
     def draw_triangle_clone_shape(
         self,
         canvas,
@@ -793,29 +907,41 @@ class FTADrawingHelper:
             obj_id=obj_id,
         )
         # Compute the vertices of the big triangle.
-        effective_scale = scale * 2  
+        effective_scale = scale * 2
         h = effective_scale * math.sqrt(3) / 2
         v1 = (0, -2 * h / 3)
         v2 = (-effective_scale / 2, h / 3)
         v3 = (effective_scale / 2, h / 3)
-        vertices = [(x + v1[0], y + v1[1]),
-                    (x + v2[0], y + v2[1]),
-                    (x + v3[0], y + v3[1])]
+        vertices = [
+            (x + v1[0], y + v1[1]),
+            (x + v2[0], y + v2[1]),
+            (x + v3[0], y + v3[1]),
+        ]
         # Compute the bottom and top y-values of the big triangle.
         bottom_y = max(v[1] for v in vertices) + scale * 0.2
         top_y = min(v[1] for v in vertices)  # top edge of the big triangle
         half_width = effective_scale / 2  # equals 'scale'
-        
+
         # Draw two horizontal lines at the bottom (unchanged).
         line_offset1 = scale * 0.05
         line_offset2 = scale * 0.1
-        canvas.create_line(x - half_width, bottom_y - line_offset1,
-                           x + half_width, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - half_width, bottom_y - line_offset2,
-                           x + half_width, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
-        
+        canvas.create_line(
+            x - half_width,
+            bottom_y - line_offset1,
+            x + half_width,
+            bottom_y - line_offset1,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            x - half_width,
+            bottom_y - line_offset2,
+            x + half_width,
+            bottom_y - line_offset2,
+            fill=outline_color,
+            width=line_width,
+        )
+
         # Draw the small clone indicator triangle.
         tri_side = scale * 0.5
         tri_height = (math.sqrt(3) / 2) * tri_side
@@ -826,19 +952,31 @@ class FTADrawingHelper:
         att_y = top_y + tri_height
         v1_small = (att_x, att_y)
         v2_small = (att_x + tri_side, att_y)
-        v3_small = (att_x + tri_side/2, att_y - tri_height)
-        canvas.create_polygon(v1_small, v2_small, v3_small,
-                              fill="lightblue", outline=outline_color,
-                              width=line_width)
-        
+        v3_small = (att_x + tri_side / 2, att_y - tri_height)
+        canvas.create_polygon(
+            v1_small,
+            v2_small,
+            v3_small,
+            fill="lightblue",
+            outline=outline_color,
+            width=line_width,
+        )
+
         # Draw the final horizontal line below the bottom.
         final_line_offset = scale * 0.15
-        canvas.create_line(x - half_width, bottom_y + final_line_offset,
-                           x + half_width, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
-                           
+        canvas.create_line(
+            x - half_width,
+            bottom_y + final_line_offset,
+            x + half_width,
+            bottom_y + final_line_offset,
+            fill=outline_color,
+            width=line_width,
+        )
+
+
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
+
 
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""
@@ -973,7 +1111,9 @@ class GSNDrawingHelper(FTADrawingHelper):
             (x - w / 2, y + h / 2),
         ]
         self._fill_gradient_polygon(canvas, points, fill)
-        canvas.create_polygon(points, outline=outline_color, width=line_width, fill="", tags=(obj_id,))
+        canvas.create_polygon(
+            points, outline=outline_color, width=line_width, fill="", tags=(obj_id,)
+        )
         canvas.create_text(
             x,
             y,
@@ -988,7 +1128,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         canvas,
         x,
         y,
-        scale=40.0,
+        scale=60.0,
         top_text="Solution",
         bottom_text="",
         fill="lightyellow",
@@ -997,20 +1137,54 @@ class GSNDrawingHelper(FTADrawingHelper):
         font_obj=None,
         obj_id: str = "",
     ):
-        radius = scale / 2
-        self.draw_circle_event_shape(
-            canvas,
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        top_w, top_h = self.get_text_size(top_text, font_obj)
+        bottom_w, bottom_h = self.get_text_size(bottom_text, font_obj)
+        w = max(scale, top_w + 2 * padding, bottom_w + 2 * padding)
+        top_box_h = top_h + 2 * padding
+        bottom_box_h = bottom_h + 2 * padding
+        h = top_box_h + bottom_box_h
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        canvas.create_rectangle(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        sep_y = top + top_box_h
+        canvas.create_line(
+            left,
+            sep_y,
+            right,
+            sep_y,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_text(
             x,
-            y,
-            radius,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            base_event=True,
-            obj_id=obj_id,
+            top + top_box_h / 2,
+            text=top_text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
+        canvas.create_text(
+            x,
+            sep_y + bottom_box_h / 2,
+            text=bottom_text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
         )
 
     def draw_assumption_shape(
@@ -1152,10 +1326,9 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=w - 2 * padding,
         )
 
-    def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
+    def draw_away_solution_shape(self, canvas, x, y, scale=60.0, **kwargs):
         self.draw_solution_shape(canvas, x, y, scale=scale, **kwargs)
-        radius = scale / 2
-        self.draw_shared_marker(canvas, x + radius, y - radius, 1)
+        self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
 
     def draw_away_goal_shape(self, canvas, x, y, scale=60.0, **kwargs):
         self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)

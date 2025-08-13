@@ -1,4 +1,5 @@
 """Simple rendering support for GSN diagrams."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -43,7 +44,9 @@ class GSNDiagram:
         return list(self.nodes)
 
     # ------------------------------------------------------------------
-    def draw(self, canvas, zoom: float = 1.0) -> None:  # pragma: no cover - requires tkinter
+    def draw(
+        self, canvas, zoom: float = 1.0
+    ) -> None:  # pragma: no cover - requires tkinter
         """Render the diagram on a :class:`tkinter.Canvas` instance."""
         # draw connectors first so they appear behind nodes
         for parent in self._traverse():
@@ -51,18 +54,16 @@ class GSNDiagram:
                 p_pt = (parent.x * zoom, parent.y * zoom)
                 c_pt = (child.x * zoom, child.y * zoom)
                 if child.node_type in {"Context", "Assumption", "Justification"}:
-                    self.drawing_helper.draw_in_context_connection(
-                        canvas, p_pt, c_pt
-                    )
+                    self.drawing_helper.draw_in_context_connection(canvas, p_pt, c_pt)
                 else:
-                    self.drawing_helper.draw_solved_by_connection(
-                        canvas, p_pt, c_pt
-                    )
+                    self.drawing_helper.draw_solved_by_connection(canvas, p_pt, c_pt)
         for node in self._traverse():
             self._draw_node(canvas, node, zoom)
 
     # ------------------------------------------------------------------
-    def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
+    def _draw_node(
+        self, canvas, node: GSNNode, zoom: float
+    ) -> None:  # pragma: no cover - requires tkinter
         x, y = node.x * zoom, node.y * zoom
         typ = node.node_type.lower()
         text = self._format_text(node)
@@ -87,40 +88,27 @@ class GSNDiagram:
                 method(*args, **kwargs)
 
         if typ == "solution":
-            top_w, top_h = self.drawing_helper.get_text_size(node.user_name, font_obj)
-            bottom_w, bottom_h = self.drawing_helper.get_text_size(
+            top_w, _ = self.drawing_helper.get_text_size(node.user_name, font_obj)
+            bottom_w, _ = self.drawing_helper.get_text_size(
                 getattr(node, "description", ""), font_obj
             )
-            radius = max(
-                base_scale / 2,
-                bottom_w / 2 + padding,
-                bottom_h + padding,
+            scale = max(base_scale, top_w + 2 * padding, bottom_w + 2 * padding)
+            draw_func = (
+                self.drawing_helper.draw_solution_shape
+                if node.is_primary_instance
+                else self.drawing_helper.draw_away_solution_shape
             )
-            scale = radius * 2
-            if node.is_primary_instance:
-                _call(
-                    self.drawing_helper.draw_solution_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    top_text=node.user_name,
-                    bottom_text=node.description,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                _call(
-                    self.drawing_helper.draw_away_solution_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    top_text=node.user_name,
-                    bottom_text=node.description,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
+            _call(
+                draw_func,
+                canvas,
+                x,
+                y,
+                scale,
+                top_text=node.user_name,
+                bottom_text=node.description,
+                font_obj=font_obj,
+                obj_id=node.unique_id,
+            )
         elif typ in {"goal", "module"}:
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)
