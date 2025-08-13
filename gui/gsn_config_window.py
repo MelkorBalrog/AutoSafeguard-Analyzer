@@ -26,15 +26,20 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
         app = getattr(diagram, "app", None)
     toolbox = getattr(app, "safety_mgmt_toolbox", None)
     if toolbox:
+        # Include diagrams tracked by the toolbox even when not part of a
+        # registered work product so users can reference them directly.
+        for name in getattr(toolbox, "list_diagrams", lambda: [])():
+            if name:
+                products.add(name)
         for wp in getattr(toolbox, "get_work_products", lambda: [])():
-            parts = [getattr(wp, "diagram", ""), getattr(wp, "analysis", "")]
-            parts = [p for p in parts if p]
-            if parts:
-                # Include the individual components (diagram or analysis)
-                products.update(parts)
-                # and the combined "diagram - analysis" name for clarity
-                if len(parts) > 1:
-                    products.add(" - ".join(parts))
+            diagram = getattr(wp, "diagram", "")
+            analysis = getattr(wp, "analysis", "")
+            if diagram:
+                products.add(diagram)
+            if analysis:
+                products.add(analysis)
+            if diagram and analysis:
+                products.add(f"{diagram} - {analysis}")
 
     return sorted(products)
 
@@ -137,8 +142,6 @@ class GSNElementConfig(tk.Toplevel):
             )
             spi_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
             spi_cb.configure(values=spi_targets)
-            if not self.spi_var.get() and spi_targets:
-                self.spi_var.set(spi_targets[0])
             row += 1
         btns = ttk.Frame(self)
         btns.grid(row=row, column=0, columnspan=2, pady=4)
