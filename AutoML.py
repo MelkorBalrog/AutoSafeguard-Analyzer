@@ -13048,8 +13048,23 @@ class FaultTreeApp:
         )
 
     def get_spi_targets(self) -> list[str]:
-        """Return sorted unique SPI target descriptions for the project."""
-        return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+        """Return sorted unique SPI target descriptions for the project.
+
+        Only include product goals that define a validation target (or an
+        equivalent SPI) so dialogs referencing these targets do not present
+        goals without an associated SPI.
+        """
+
+        targets = set()
+        for sg in getattr(self, "top_events", []):
+            v_target = getattr(sg, "validation_target", None)
+            asil = getattr(sg, "safety_goal_asil", "")
+            if v_target in ("", None) and asil not in PMHF_TARGETS:
+                continue
+            label = self._spi_label(sg)
+            if label:
+                targets.add(label)
+        return sorted(targets)
 
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""

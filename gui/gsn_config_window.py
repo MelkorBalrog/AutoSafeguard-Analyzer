@@ -94,10 +94,13 @@ def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:
             targets.update(app.get_spi_targets())
         else:
             for te in getattr(app, "top_events", []):
+                if getattr(te, "validation_target", None) in ("", None):
+                    continue
                 name = (
                     getattr(te, "validation_desc", "")
                     or getattr(te, "safety_goal_description", "")
                     or getattr(te, "user_name", "")
+                    or f"SG {getattr(te, 'unique_id', '')}"
                 )
                 if name:
                     targets.add(name)
