@@ -255,6 +255,78 @@ def test_rename_node(monkeypatch):
     assert child.user_name == "Renamed"
 
 
+def _setup_dummy_tree():
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    return DummyTree()
+
+
+def test_rename_module_disallowed(monkeypatch):
+    mod = GSNModule("Pkg")
+    explorer = GSNExplorer.__new__(GSNExplorer)
+    explorer.tree = _setup_dummy_tree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[mod], gsn_diagrams=[])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+    GSNExplorer.populate(explorer)
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is mod:
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: "New")
+    GSNExplorer.rename_item(explorer)
+    assert mod.name == "Pkg"
+
+
+def test_rename_module_node_disallowed(monkeypatch):
+    root = GSNNode("Root", "Goal")
+    mnode = GSNNode("Pkg", "Module")
+    root.add_child(mnode)
+    diag = GSNDiagram(root)
+    diag.add_node(mnode)
+    explorer = GSNExplorer.__new__(GSNExplorer)
+    explorer.tree = _setup_dummy_tree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[], gsn_diagrams=[diag])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+    GSNExplorer.populate(explorer)
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is mnode:
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: "New")
+    GSNExplorer.rename_item(explorer)
+    assert mnode.user_name == "Pkg"
+
+
 def test_delete_node():
     root = GSNNode("Root", "Goal")
     child = GSNNode("Child", "Goal")

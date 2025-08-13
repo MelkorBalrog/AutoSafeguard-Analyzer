@@ -171,14 +171,14 @@ class GSNExplorer(tk.Frame):
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
         if typ == "module":
-            new = simpledialog.askstring("Rename Module", "Name:", initialvalue=obj.name, parent=self)
-            if new:
-                obj.name = new
+            return
         elif typ == "diagram":
             new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj.root.user_name, parent=self)
             if new:
                 obj.root.user_name = new
         elif typ == "node":
+            if getattr(obj, "node_type", "") == "Module":
+                return
             new = simpledialog.askstring(
                 "Rename Node", "Name:", initialvalue=obj.user_name, parent=self
             )
