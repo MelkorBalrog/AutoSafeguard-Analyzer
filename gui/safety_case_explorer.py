@@ -7,6 +7,7 @@ from typing import Dict, Tuple
 
 from analysis.safety_case import SafetyCaseLibrary, SafetyCase
 from gui import messagebox
+from gui.safety_case_table import SafetyCaseTable
 
 
 class SafetyCaseExplorer(tk.Frame):
@@ -154,10 +155,9 @@ class SafetyCaseExplorer(tk.Frame):
         if not sel:
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
-        if typ == "case" and self.app:
-            opener = getattr(self.app, "open_gsn_diagram", None)
-            if opener:
-                opener(obj.diagram)
+        if typ == "case":
+            win = tk.Toplevel(self)
+            SafetyCaseTable(win, obj, app=self.app)
         elif typ == "solution" and self.app:
             for case in self.library.cases:
                 if obj in case.solutions:

@@ -1,8 +1,10 @@
 import types
 from tkinter import simpledialog
+
 from gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
 from gui.safety_case_explorer import SafetyCaseExplorer
+from gui.safety_case_table import SafetyCaseTable
 from gui import messagebox
 
 class DummyTree:
@@ -25,6 +27,20 @@ class DummyTree:
 
     def selection(self):
         return (self.selection_item,) if self.selection_item else ()
+
+class DummyTable:
+    def __init__(self):
+        self.items = []
+
+    def delete(self, *items):
+        self.items = []
+
+    def get_children(self, item=""):
+        return list(range(len(self.items)))
+
+    def insert(self, parent, index, values=(), tags=()):
+        self.items.append(values)
+        return str(len(self.items) - 1)
 
 def test_create_edit_delete_case(monkeypatch):
     root = GSNNode("G", "Goal")
@@ -86,3 +102,19 @@ def test_create_case_from_module(monkeypatch):
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: next(inputs))
     SafetyCaseExplorer.new_case(explorer)
     assert explorer.library.cases and explorer.library.cases[0].diagram is diag
+
+
+def test_safety_case_table_lists_solutions():
+    root = GSNNode("G", "Goal")
+    sol1 = GSNNode("S1", "Solution", description="d1")
+    root.add_child(sol1)
+    diag = GSNDiagram(root)
+    diag.add_node(sol1)
+    lib = SafetyCaseLibrary()
+    case = lib.create_case("Case", diag)
+
+    table = SafetyCaseTable.__new__(SafetyCaseTable)
+    table.case = case
+    table.tree = DummyTable()
+    SafetyCaseTable.populate(table)
+    assert table.tree.items and table.tree.items[0][0] == "S1"
