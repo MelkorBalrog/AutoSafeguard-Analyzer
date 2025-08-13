@@ -8627,6 +8627,11 @@ class FaultTreeApp:
             except tk.TclError:
                 pass
         self.enabled_work_products.add(name)
+        if hasattr(self, "update_views"):
+            try:
+                self.update_views()
+            except Exception:
+                pass
 
     # ------------------------------------------------------------------
     def can_remove_work_product(self, name: str) -> bool:
@@ -8681,10 +8686,21 @@ class FaultTreeApp:
                         lb.delete(i)
                         break
             self.tool_actions.pop(tool_name, None)
+        if hasattr(self, "update_views"):
+            try:
+                self.update_views()
+            except Exception:
+                pass
         return True
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
+        wp = next(
+            (wp for wp, info in self.WORK_PRODUCT_INFO.items() if info[1] == name or wp == name),
+            None,
+        )
+        if wp and wp not in self.enabled_work_products:
+            return
         action = self.tool_actions.get(name)
         if callable(action):
             action()
@@ -9555,6 +9571,7 @@ class FaultTreeApp:
             tree.delete(*tree.get_children())
 
             repo = SysMLRepository.get_instance()
+            enabled = getattr(self, "enabled_work_products", set())
 
             # --- Safety & Security Management Section ---
             self.management_diagrams = sorted(
@@ -9709,7 +9726,9 @@ class FaultTreeApp:
                 ],
                 key=lambda d: d.name or d.diag_id,
             )
-            arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
+            arch_root = None
+            if "Architecture Diagram" in enabled or getattr(self, "arch_diagrams", []):
+                arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
 
             def add_pkg(pkg_id: str, parent: str) -> None:
                 pkg = repo.elements.get(pkg_id)
@@ -9762,56 +9781,90 @@ class FaultTreeApp:
                     )
 
             # --- Safety & Security Concept and Requirements Tools ---
-            tree.insert(
-                sys_root,
-                "end",
-                text="Safety & Security Concept",
-                tags=("safetyconcept", "0"),
-            )
-            tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
-            tree.insert(
-                sys_root,
-                "end",
-                text="Requirements Explorer",
-                tags=("reqexp", "0"),
-            )
+            if "Safety & Security Concept" in enabled:
+                tree.insert(
+                    sys_root,
+                    "end",
+                    text="Safety & Security Concept",
+                    tags=("safetyconcept", "0"),
+                )
+            if "Requirement Specification" in enabled:
+                tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
+                tree.insert(
+                    sys_root,
+                    "end",
+                    text="Requirements Explorer",
+                    tags=("reqexp", "0"),
+                )
 
             # --- Hazard & Threat Analysis Section ---
-            haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
-            hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
-            for idx, doc in enumerate(self.hazop_docs):
-                tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
-            stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
-            for idx, doc in enumerate(self.stpa_docs):
-                tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
-            threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
-            for idx, doc in enumerate(self.threat_docs):
-                tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
-            fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
-            for idx, doc in enumerate(self.fi2tc_docs):
-                tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
-            tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
-            for idx, doc in enumerate(self.tc2fi_docs):
-                tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
+            haz_root = None
+            def _ensure_haz_root():
+                nonlocal haz_root
+                if haz_root is None:
+                    haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
+            if "HAZOP" in enabled or getattr(self, "hazop_docs", []):
+                _ensure_haz_root()
+                hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
+                for idx, doc in enumerate(self.hazop_docs):
+                    tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
+            if "STPA" in enabled or getattr(self, "stpa_docs", []):
+                _ensure_haz_root()
+                stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
+                for idx, doc in enumerate(self.stpa_docs):
+                    tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
+            if "Threat Analysis" in enabled or getattr(self, "threat_docs", []):
+                _ensure_haz_root()
+                threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
+                for idx, doc in enumerate(self.threat_docs):
+                    tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
+            if "FI2TC" in enabled or getattr(self, "fi2tc_docs", []):
+                _ensure_haz_root()
+                fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
+                for idx, doc in enumerate(self.fi2tc_docs):
+                    tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
+            if "TC2FI" in enabled or getattr(self, "tc2fi_docs", []):
+                _ensure_haz_root()
+                tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
+                for idx, doc in enumerate(self.tc2fi_docs):
+                    tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
 
             # --- Risk Assessment Section ---
-            risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
-            assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
-            for idx, doc in enumerate(self.hara_docs):
-                tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
-            tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
+            risk_root = None
+            def _ensure_risk_root():
+                nonlocal risk_root
+                if risk_root is None:
+                    risk_root = tree.insert("", "end", text="Risk Assessment", open=True)
+            if "Risk Assessment" in enabled or getattr(self, "hara_docs", []):
+                _ensure_risk_root()
+                assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
+                for idx, doc in enumerate(self.hara_docs):
+                    tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
+            if "Product Goal Specification" in enabled:
+                _ensure_risk_root()
+                tree.insert(risk_root, "end", text="Product Goals", tags=("sg", "0"))
 
             # --- Safety Analysis Section ---
-            safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
-            fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
-            for idx, te in enumerate(self.top_events):
-                tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
-            fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
-            for idx, fmea in enumerate(self.fmeas):
-                tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
-            fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
-            for idx, doc in enumerate(self.fmedas):
-                tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
+            safety_root = None
+            def _ensure_safety_root():
+                nonlocal safety_root
+                if safety_root is None:
+                    safety_root = tree.insert("", "end", text="Safety Analysis", open=True)
+            if "FTA" in enabled or getattr(self, "top_events", []):
+                _ensure_safety_root()
+                fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
+                for idx, te in enumerate(self.top_events):
+                    tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
+            if "FMEA" in enabled or getattr(self, "fmeas", []):
+                _ensure_safety_root()
+                fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
+                for idx, fmea in enumerate(self.fmeas):
+                    tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
+            if "FMEDA" in enabled or getattr(self, "fmedas", []):
+                _ensure_safety_root()
+                fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
+                for idx, doc in enumerate(self.fmedas):
+                    tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
 
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             if self.page_diagram.canvas.winfo_exists():
