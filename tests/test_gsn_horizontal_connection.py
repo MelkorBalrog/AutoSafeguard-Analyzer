@@ -55,6 +55,7 @@ class ArrowHelper(GSNDrawingHelper):
     draw_context_shape = draw_goal_shape
     draw_away_solution_shape = draw_goal_shape
     draw_away_goal_shape = draw_goal_shape
+    draw_module_shape = draw_goal_shape
     draw_away_module_shape = draw_goal_shape
 
     def _draw_arrow(self, canvas, start_pt, end_pt, fill="black", outline="black", obj_id=""):

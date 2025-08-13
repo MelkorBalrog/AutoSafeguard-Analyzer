@@ -83,6 +83,8 @@ class TrackingHelper(GSNDrawingHelper):
     draw_away_goal_shape = draw_goal_shape
     draw_assumption_shape = draw_goal_shape
     draw_justification_shape = draw_goal_shape
+    draw_context_shape = draw_goal_shape
+    draw_module_shape = draw_goal_shape
     draw_away_module_shape = draw_goal_shape
 
     def draw_context_shape(self, canvas, x, y, scale=60.0, **kwargs):

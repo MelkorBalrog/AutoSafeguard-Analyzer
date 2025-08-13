@@ -252,21 +252,32 @@ class GSNDiagram:
                 font_obj=font_obj,
                 obj_id=node.unique_id,
             )
-        elif typ in {"goal", "module"}:
+        elif typ == "goal":
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)
-            if typ == "goal":
-                draw_func = (
-                    self.drawing_helper.draw_goal_shape
-                    if node.is_primary_instance
-                    else self.drawing_helper.draw_away_goal_shape
-                )
-            else:  # module
-                draw_func = (
-                    self.drawing_helper.draw_goal_shape
-                    if node.is_primary_instance
-                    else self.drawing_helper.draw_away_module_shape
-                )
+            draw_func = (
+                self.drawing_helper.draw_goal_shape
+                if node.is_primary_instance
+                else self.drawing_helper.draw_away_goal_shape
+            )
+            _call(
+                draw_func,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                font_obj=font_obj,
+                obj_id=node.unique_id,
+            )
+        elif typ == "module":
+            ratio = 0.6
+            scale = max(base_scale, width + padding, (height + padding) / ratio)
+            draw_func = (
+                self.drawing_helper.draw_module_shape
+                if node.is_primary_instance
+                else self.drawing_helper.draw_away_module_shape
+            )
             _call(
                 draw_func,
                 canvas,

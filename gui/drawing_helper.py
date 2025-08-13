@@ -938,6 +938,64 @@ class GSNDrawingHelper(FTADrawingHelper):
             tags=(obj_id,),
         )
 
+    def draw_module_shape(
+        self,
+        canvas,
+        x,
+        y,
+        scale=60.0,
+        text="Module",
+        fill="lightyellow",
+        outline_color="dimgray",
+        line_width=1,
+        font_obj=None,
+        obj_id: str = "",
+    ):
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        base_h = max(scale * 0.6, t_height + 2 * padding)
+        tab_h = base_h * 0.25
+        left = x - w / 2
+        base_top = y - base_h / 2
+        right = x + w / 2
+        bottom = y + base_h / 2
+        tab_top = base_top - tab_h
+        tab_w = w * 0.4
+        self._fill_gradient_rect(canvas, left, base_top, right, bottom, fill)
+        self._fill_gradient_rect(canvas, left, tab_top, left + tab_w, base_top, fill)
+        canvas.create_polygon(
+            left,
+            base_top,
+            left,
+            bottom,
+            right,
+            bottom,
+            right,
+            tab_top,
+            left + tab_w,
+            tab_top,
+            left + tab_w,
+            base_top,
+            left,
+            base_top,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
+            x,
+            (base_top + bottom) / 2,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+
     def _draw_arrow(
         self,
         canvas,
@@ -1438,7 +1496,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
 
     def draw_away_module_shape(self, canvas, x, y, scale=60.0, **kwargs):
-        self.draw_goal_shape(canvas, x, y, scale=scale, **kwargs)
+        self.draw_module_shape(canvas, x, y, scale=scale, **kwargs)
         self.draw_shared_marker(canvas, x + scale / 2, y - scale * 0.3, 1)
 
 
