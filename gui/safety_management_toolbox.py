@@ -3,6 +3,7 @@ from tkinter import ttk, simpledialog
 
 from analysis import SafetyManagementToolbox
 from gui.architecture import BPMNDiagramWindow
+from gui import messagebox
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -55,13 +56,10 @@ class SafetyManagementWindow(tk.Frame):
             self.open_diagram(None)
 
     def new_diagram(self):
-        name = simpledialog.askstring("New Diagram", "Name:", parent=self)
-        if not name:
-            return
-        self.toolbox.create_diagram(name)
-        self.refresh_diagrams()
-        self.diag_var.set(name)
-        self.open_diagram(name)
+        messagebox.showerror(
+            "New Diagram",
+            "Governance diagrams must be created inside a folder in the Explorer",
+        )
 
     def delete_diagram(self):
         name = self.diag_var.get()

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
+from gui import messagebox
 from dataclasses import dataclass, field
 from typing import List, Dict
 
@@ -100,15 +101,19 @@ class SafetyManagementExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def new_diagram(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showerror("New Diagram", "Please select a folder for the diagram")
+            return
+        typ, obj = self.item_map.get(sel[0], (None, None))
+        if typ != "module":
+            messagebox.showerror("New Diagram", "Please select a folder for the diagram")
+            return
         name = simpledialog.askstring("New Diagram", "Name:", parent=self)
         if not name:
             return
         self.toolbox.create_diagram(name)
-        sel = self.tree.selection()
-        if sel:
-            typ, obj = self.item_map.get(sel[0], (None, None))
-            if typ == "module":
-                obj.diagrams.append(name)
+        obj.diagrams.append(name)
         self.populate()
 
     # ------------------------------------------------------------------
