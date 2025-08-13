@@ -2116,7 +2116,7 @@ class FaultTreeApp:
         self.review_data = None
         self.review_window = None
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
+        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -8687,6 +8687,13 @@ class FaultTreeApp:
         if action:
             action()
 
+    def _on_toolbox_change(self) -> None:
+        self.refresh_tool_enablement()
+        try:
+            self.update_views()
+        except Exception:
+            pass
+
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
@@ -8695,6 +8702,7 @@ class FaultTreeApp:
             if self.safety_mgmt_toolbox
             else set()
         )
+        self.enabled_work_products = set(enabled)
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
                 analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
@@ -8702,6 +8710,13 @@ class FaultTreeApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        for name, entries in getattr(self, "work_product_menus", {}).items():
+            state = tk.NORMAL if name in enabled else tk.DISABLED
+            for menu, idx in entries:
+                try:
+                    menu.entryconfig(idx, state=state)
+                except tk.TclError:
+                    pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -8709,7 +8724,6 @@ class FaultTreeApp:
             self.safety_mgmt_toolbox.set_active_module(None)
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
-        self.refresh_tool_enablement()
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
