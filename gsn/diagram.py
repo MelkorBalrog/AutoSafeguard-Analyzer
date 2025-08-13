@@ -179,11 +179,12 @@ class GSNDiagram:
         app = getattr(self, "app", None)
         if not app:
             return None
-        name, _typ = self._parse_spi_target(target)
+        name, spi_type = self._parse_spi_target(target)
         for te in getattr(app, "top_events", []):
             te_name = getattr(te, "user_name", "") or f"SG {getattr(te, 'unique_id', '')}"
             if te_name == name:
-                return getattr(te, "probability", None)
+                attr = "probability" if spi_type == "FUSA" else "spi_probability"
+                return getattr(te, attr, None)
         return None
 
     # ------------------------------------------------------------------

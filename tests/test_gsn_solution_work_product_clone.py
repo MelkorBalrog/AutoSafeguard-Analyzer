@@ -101,7 +101,7 @@ def test_format_text_shows_calculated_spi():
             self.user_name = "Brake Time"
             self.validation_desc = "Brake Time"
             self.validation_target = 1e-4
-            self.probability = 1e-5
+            self.spi_probability = 1e-5
 
     diag.app = types.SimpleNamespace(top_events=[TopEvent()])
     text = diag._format_text(sol)
