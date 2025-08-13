@@ -18,6 +18,15 @@ class StubCanvas:
     def create_rectangle(self, *args, **kwargs):
         pass
 
+    def bbox(self, tag):
+        return None
+
+    def tag_lower(self, *args, **kwargs):
+        pass
+
+    def tag_raise(self, *args, **kwargs):
+        pass
+
 
 class DummyHelper:
     def draw_solved_by_connection(self, canvas, parent_pt, child_pt, obj_id=""):
@@ -37,6 +46,6 @@ def test_connection_tags_present():
     diag._draw_node = lambda *a, **k: None  # avoid tkinter font
     canvas = StubCanvas()
     diag.draw(canvas)
-    tag = f"{parent.unique_id}->{child.unique_id}"
+    tag = f"rel:{parent.unique_id}:{child.unique_id}"
     assert canvas.lines[0] == (tag,)
     assert canvas.polys[0] == (tag,)

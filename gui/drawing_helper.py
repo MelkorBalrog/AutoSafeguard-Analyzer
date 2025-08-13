@@ -1227,10 +1227,10 @@ class GSNDrawingHelper(FTADrawingHelper):
         offset = padding
         canvas.create_text(
             right + offset,
-            bottom + offset,
+            bottom - offset,
             text="A",
             font=label_font,
-            anchor="nw",
+            anchor="sw",
             tags=(obj_id,),
         )
 
@@ -1281,10 +1281,10 @@ class GSNDrawingHelper(FTADrawingHelper):
         offset = padding
         canvas.create_text(
             right + offset,
-            bottom + offset,
+            bottom - offset,
             text="J",
             font=label_font,
-            anchor="nw",
+            anchor="sw",
             tags=(obj_id,),
         )
 
