@@ -12720,7 +12720,10 @@ class FaultTreeApp:
         self._solution_lookup = {}
         for diag in getattr(self, "all_gsn_diagrams", []):
             for node in getattr(diag, "nodes", []):
-                if getattr(node, "node_type", "").lower() == "solution":
+                if (
+                    getattr(node, "node_type", "").lower() == "solution"
+                    and getattr(node, "is_primary_instance", True)
+                ):
                     self._solution_lookup[node.unique_id] = (node, diag)
                     prob = ""
                     v_target = ""
@@ -12918,26 +12921,12 @@ class FaultTreeApp:
                 writer.writerow(columns)
                 for iid in tree.get_children():
                     writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Safety case exported.")
-
-        btn = ttk.Button(win, text="Edit", command=edit_selected)
-        btn.pack(pady=4)
-        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=4)
-
-        def export_csv():
-            path = filedialog.asksaveasfilename(
-                defaultextension=".csv", filetypes=[("CSV", "*.csv")]
-            )
-            if not path:
-                return
-            with open(path, "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(columns)
-                for iid in tree.get_children():
-                    writer.writerow(tree.item(iid, "values"))
             messagebox.showinfo("Export", "Safety case exported")
 
         self.export_safety_case_csv = export_csv
+
+        btn = ttk.Button(win, text="Edit", command=edit_selected)
+        btn.pack(pady=4)
         ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=4)
 
         menu = tk.Menu(win, tearoff=0)
