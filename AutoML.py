@@ -17282,9 +17282,6 @@ class FaultTreeApp:
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.tc2fi_docs
             ],
-            "hazop_entries": [asdict(e) for e in self.hazop_entries],
-            "fi2tc_entries": copy.deepcopy(self.fi2tc_entries),
-            "tc2fi_entries": copy.deepcopy(self.tc2fi_entries),
             "scenario_libraries": copy.deepcopy(self.scenario_libraries),
             "odd_libraries": copy.deepcopy(self.odd_libraries),
             "faults": self.faults.copy(),
@@ -17310,6 +17307,12 @@ class FaultTreeApp:
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             ).to_dict(),
         }
+        if self.hazop_docs:
+            data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
+        if self.fi2tc_docs:
+            data["fi2tc_entries"] = copy.deepcopy(self.fi2tc_entries)
+        if self.tc2fi_docs:
+            data["tc2fi_entries"] = copy.deepcopy(self.tc2fi_entries)
         if include_versions:
             data["versions"] = self.versions
         return data
@@ -17475,9 +17478,10 @@ class FaultTreeApp:
             self.hazop_docs.append(
                 HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
             )
-        if not self.hazop_docs and "hazop_entries" in data:
+        hazop_entries = data.get("hazop_entries")
+        if not self.hazop_docs and hazop_entries:
             entries = []
-            for h in data.get("hazop_entries", []):
+            for h in hazop_entries:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
@@ -17685,8 +17689,9 @@ class FaultTreeApp:
             self.fi2tc_docs.append(
                 FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
             )
-        if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+        fi2tc_entries = data.get("fi2tc_entries")
+        if not self.fi2tc_docs and fi2tc_entries:
+            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
@@ -17695,8 +17700,9 @@ class FaultTreeApp:
             self.tc2fi_docs.append(
                 TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
             )
-        if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+        tc2fi_entries = data.get("tc2fi_entries")
+        if not self.tc2fi_docs and tc2fi_entries:
+            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -18005,9 +18011,10 @@ class FaultTreeApp:
             self.hazop_docs.append(
                 HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
             )
-        if not self.hazop_docs and "hazop_entries" in data:
+        hazop_entries = data.get("hazop_entries")
+        if not self.hazop_docs and hazop_entries:
             entries = []
-            for h in data.get("hazop_entries", []):
+            for h in hazop_entries:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
@@ -18215,8 +18222,9 @@ class FaultTreeApp:
             self.fi2tc_docs.append(
                 FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
             )
-        if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+        fi2tc_entries = data.get("fi2tc_entries")
+        if not self.fi2tc_docs and fi2tc_entries:
+            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
@@ -18225,8 +18233,9 @@ class FaultTreeApp:
             self.tc2fi_docs.append(
                 TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
             )
-        if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+        tc2fi_entries = data.get("tc2fi_entries")
+        if not self.tc2fi_docs and tc2fi_entries:
+            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
