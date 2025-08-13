@@ -23,6 +23,23 @@ from typing import Dict, List, Callable, Optional
 
 from sysml.sysml_repository import SysMLRepository
 
+# Relationships that allow propagation of results between work products. Each
+# entry is a directed edge from source to target analysis name.
+ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
+    ("HAZOP", "Risk Assessment"),
+    ("FI2TC", "Risk Assessment"),
+    ("TC2FI", "Risk Assessment"),
+    ("Threat Analysis", "Cyber Risk Assessment"),
+    ("Cyber Risk Assessment", "Risk Assessment"),
+    ("Risk Assessment", "FMEA"),
+    ("Risk Assessment", "FMEDA"),
+    ("Risk Assessment", "FTA"),
+    ("Risk Assessment", "Product Goal Specification"),
+    ("FMEA", "FTA"),
+    ("FMEDA", "FTA"),
+    ("FTA", "Product Goal Specification"),
+}
+
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -166,6 +183,65 @@ class SafetyManagementToolbox:
     def is_enabled(self, analysis: str) -> bool:
         """Check whether ``analysis`` has been enabled via governance."""
         return analysis in self.enabled_products()
+
+    # ------------------------------------------------------------------
+    def propagation_type(self, source: str, target: str) -> Optional[str]:
+        """Return propagation relationship type from ``source`` to ``target``.
+
+        The method searches all governance diagrams for a connection linking
+        the two named work products using one of the propagation relationship
+        types. ``None`` is returned when no such link exists."""
+
+        repo = SysMLRepository.get_instance()
+        for diag_id in self.diagrams.values():
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            src_id = dst_id = None
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Work Product":
+                    continue
+                name = obj.get("properties", {}).get("name")
+                if name == source:
+                    src_id = obj.get("obj_id")
+                elif name == target:
+                    dst_id = obj.get("obj_id")
+            if src_id is None or dst_id is None:
+                continue
+            for c in getattr(diag, "connections", []):
+                if (
+                    c.get("src") == src_id
+                    and c.get("dst") == dst_id
+                    and c.get("conn_type")
+                    in {"Propagate", "Propagate by Review", "Propagate by Approval"}
+                ):
+                    return c.get("conn_type")
+        return None
+
+    # ------------------------------------------------------------------
+    def can_propagate(
+        self,
+        source: str,
+        target: str,
+        *,
+        reviewed: bool = False,
+        joint_review: bool = False,
+    ) -> bool:
+        """Return ``True`` if results may propagate from ``source`` to ``target``.
+
+        ``Propagate`` links always allow propagation. ``Propagate by Review``
+        requires that a peer review has been performed (``reviewed``). ``Propagate
+        by Approval`` requires a completed joint review (``joint_review``).
+        ``False`` is returned when no propagation relationship exists."""
+
+        rel = self.propagation_type(source, target)
+        if rel == "Propagate":
+            return True
+        if rel == "Propagate by Review":
+            return reviewed
+        if rel == "Propagate by Approval":
+            return joint_review
+        return False
 
     def build_lifecycle(self, stages: List[str]) -> None:
         """Define the project lifecycle stages."""

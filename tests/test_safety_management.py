@@ -1031,3 +1031,41 @@ def test_work_product_color_and_text_wrapping():
     _, rect_kwargs = win.canvas.rect_calls[0]
     assert rect_kwargs["fill"] == "lightgreen"
 
+
+def test_propagation_connection_validation():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    wp1 = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Risk Assessment"})
+    wp2 = SysMLObject(2, "Work Product", 0.0, 0.0, properties={"name": "FTA"})
+    win.objects = [wp1, wp2]
+    valid, _ = BPMNDiagramWindow.validate_connection(win, wp1, wp2, "Propagate")
+    assert valid
+    wp3 = SysMLObject(3, "Work Product", 0.0, 0.0, properties={"name": "STPA"})
+    win.objects.append(wp3)
+    valid, _ = BPMNDiagramWindow.validate_connection(win, wp1, wp3, "Propagate")
+    assert not valid
+
+
+def test_can_propagate_respects_review_states():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "FTA"}},
+    ]
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Propagate by Review"}]
+    assert not toolbox.can_propagate("Risk Assessment", "FTA", reviewed=False)
+    assert toolbox.can_propagate("Risk Assessment", "FTA", reviewed=True)
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Propagate by Approval"}]
+    assert not toolbox.can_propagate("Risk Assessment", "FTA", joint_review=False)
+    assert toolbox.can_propagate("Risk Assessment", "FTA", joint_review=True)
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Propagate"}]
+    assert toolbox.can_propagate("Risk Assessment", "FTA", reviewed=False)
+
