@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import types
 import sys
+import tkinter as tk
 
 # Stub out Pillow dependencies so importing the main app doesn't require Pillow
 PIL_stub = types.ModuleType("PIL")
@@ -103,6 +104,31 @@ def test_toolbox_manages_diagram_lifecycle():
     toolbox.delete_diagram("Gov2")
     assert diag_id not in repo.diagrams
     assert not toolbox.diagrams
+
+
+def test_disable_work_product_rejects_existing_docs():
+    """Work product types with existing documents cannot be removed."""
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.enabled_work_products = {"HAZOP"}
+    app.work_product_menus = {}
+    app.tool_listboxes = {}
+    app.tool_actions = {}
+    app.hazop_docs = [object()]
+    assert not app.disable_work_product("HAZOP")
+
+    # When no documents exist the work product can be disabled
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, idx, state=tk.DISABLED):
+            self.state = state
+
+    menu = DummyMenu()
+    app.hazop_docs = []
+    app.work_product_menus["HAZOP"] = (menu, 0)
+    assert app.disable_work_product("HAZOP")
+    assert menu.state == tk.DISABLED
 
 
 def test_open_safety_management_toolbox_uses_browser():
@@ -417,6 +443,94 @@ def test_toolbox_serializes_modules():
     assert loaded.modules[0].modules[0].name == "Child"
     assert loaded.modules[0].modules[0].diagrams == ["D1"]
     assert loaded.modules[0].diagrams == ["D2"]
+
+
+def test_disabled_work_products_absent_from_analysis_tree():
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            self.items.clear()
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.arch_diagrams = []
+    app.management_diagrams = []
+    app.gsn_diagrams = []
+    app.gsn_modules = []
+    app.reviews = []
+    app.enabled_work_products = set()
+    app.analysis_tree = DummyTree()
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "Hazard & Threat Analysis" not in texts
+    assert "Risk Assessment" not in texts
+    assert "Safety Analysis" not in texts
+
+    app.enabled_work_products = {"HAZOP"}
+    app.analysis_tree = DummyTree()
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "Hazard & Threat Analysis" in texts
+    assert "HAZOPs" in texts
+
+
+def test_enable_work_product_refreshes_views():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    called = {"count": 0}
+    app.update_views = lambda: called.__setitem__("count", called["count"] + 1)
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.work_product_menus = {}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    FaultTreeApp.enable_work_product(app, "HAZOP")
+    assert called["count"] == 1
+    app.hazop_docs = []
+    FaultTreeApp.disable_work_product(app, "HAZOP")
+    assert called["count"] == 2
+
+
+def test_open_work_product_requires_enablement():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    opened = {"count": 0}
+    app.tool_actions = {"HAZOP Analysis": lambda: opened.__setitem__("count", opened["count"] + 1)}
+    app.arch_diagrams = []
+    app.management_diagrams = []
+    app.all_gsn_diagrams = []
+    app.enabled_work_products = set()
+    app.open_work_product("HAZOP Analysis")
+    assert opened["count"] == 0
+    app.enabled_work_products.add("HAZOP")
+    app.open_work_product("HAZOP Analysis")
+    assert opened["count"] == 1
 
 
 def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
