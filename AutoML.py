@@ -244,6 +244,7 @@ from gui.review_toolbox import (
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
+from gsn import GSNDiagram, GSNModule
 from gui.closable_notebook import ClosableNotebook
 from dataclasses import asdict
 from analysis.mechanisms import (
@@ -15526,6 +15527,8 @@ class FaultTreeApp:
             "reviews": reviews,
             "current_review": current_name,
             "sysml_repository": repo.to_dict(),
+            "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
+            "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
         }
         if include_versions:
             data["versions"] = self.versions
@@ -15551,6 +15554,13 @@ class FaultTreeApp:
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
         self.root_node = self.top_events[0] if self.top_events else None
+
+        self.gsn_modules = [
+            GSNModule.from_dict(m) for m in data.get("gsn_modules", [])
+        ]
+        self.gsn_diagrams = [
+            GSNDiagram.from_dict(d) for d in data.get("gsn_diagrams", [])
+        ]
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):

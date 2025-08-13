@@ -36,6 +36,29 @@ class GSNDiagram:
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation of this diagram."""
+        return {
+            "diag_id": self.diag_id,
+            "root": self.root.unique_id,
+            "nodes": [n.to_dict() for n in self.nodes],
+        }
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: dict) -> "GSNDiagram":
+        """Reconstruct a :class:`GSNDiagram` from *data*."""
+        node_map: dict[str, GSNNode] = {}
+        for nd in data.get("nodes", []):
+            GSNNode.from_dict(nd, nodes=node_map)
+        GSNNode.resolve_references(node_map)
+        root_id = data.get("root")
+        root = node_map.get(root_id)
+        diag = cls(root, diag_id=data.get("diag_id", str(uuid.uuid4())))
+        diag.nodes = list(node_map.values())
+        return diag
+
+    # ------------------------------------------------------------------
     def _traverse(self) -> Iterable[GSNNode]:
         # ``nodes`` already contains all diagram nodes, including ones that
         # are not connected yet.  Simply iterate over the list to avoid
