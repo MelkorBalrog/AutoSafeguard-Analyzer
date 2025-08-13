@@ -209,12 +209,22 @@ class SafetyManagementToolbox:
     def enabled_products(self) -> set[str]:
         """Return the set of analysis names enabled for the active phase."""
         all_products = {wp.analysis for wp in self.work_products}
+        all_products.update(self.doc_phases.keys())
         if not self.active_module:
             return all_products
         diagrams = self.diagrams_in_module(self.active_module)
-        if not diagrams:
+        result = {
+            wp.analysis for wp in self.work_products if wp.diagram in diagrams
+        }
+        phase_docs = {
+            analysis
+            for analysis, docs in self.doc_phases.items()
+            if any(phase == self.active_module for phase in docs.values())
+        }
+        result.update(phase_docs)
+        if not diagrams and not phase_docs:
             return all_products
-        return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
+        return result
 
     # ------------------------------------------------------------------
     def is_enabled(self, analysis: str) -> bool:
