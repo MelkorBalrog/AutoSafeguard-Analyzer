@@ -2,6 +2,7 @@ import os
 import sys
 import types
 import math
+import csv
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -60,6 +61,8 @@ class DummyTree:
     def item(self, iid, option):
         if option == "tags":
             return self.data.get(iid, {}).get("tags", ())
+        if option == "values":
+            return self.data.get(iid, {}).get("values", [])
         return None
 
     def set(self, iid, column, value=None):
@@ -415,3 +418,47 @@ def test_safety_case_undo_redo_toggle(monkeypatch):
 
     app.redo()
     assert app.gsn_diagrams[0].nodes[1].evidence_sufficient
+
+
+def test_export_safety_case_writes_rows(tmp_path, monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("S", "Solution")
+    sol.user_name = "Sol"
+    sol.description = "Desc"
+    sol.work_product = "WP"
+    sol.evidence_link = "Link"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.top_events = []
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.messagebox.showinfo", lambda *a, **k: None)
+
+    path = tmp_path / "out.csv"
+    monkeypatch.setattr("AutoML.filedialog.asksaveasfilename", lambda **k: str(path))
+
+    FaultTreeApp.show_safety_case(app)
+    app.export_safety_case_csv()
+
+    with open(path, newline="") as f:
+        rows = list(csv.reader(f))
+    assert rows[0] == [
+        "Solution",
+        "Description",
+        "Work Product",
+        "Evidence Link",
+        "Verification Target",
+        "Achieved Probability",
+        "SPI",
+        "Evidence OK",
+        "Notes",
+    ]
+    assert rows[1][:4] == ["Sol", "Desc", "WP", "Link"]
