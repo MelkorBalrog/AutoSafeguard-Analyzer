@@ -8,6 +8,7 @@ from typing import Optional
 
 from gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
+from .gsn_connection_config import GSNConnectionConfig
 
 
 class GSNDiagramWindow(tk.Frame):
@@ -146,6 +147,10 @@ class GSNDiagramWindow(tk.Frame):
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
+        if not hasattr(self, "selected_connection"):
+            self.selected_connection = None
+        if not hasattr(self, "_selected_conn_id"):
+            self._selected_conn_id = ""
         node = self._node_at(cx, cy)
         connection = self._connection_at(cx, cy)
         if self._connect_mode:
@@ -254,18 +259,24 @@ class GSNDiagramWindow(tk.Frame):
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
         node = self._node_at(cx, cy)
-        if not node:
-            return
-        if (
-            node.node_type == "Solution"
-            and getattr(node, "evidence_link", "")
-        ):
-            webbrowser.open(node.evidence_link)
-        else:
-            GSNElementConfig(self, node, self.diagram)
+        if node:
+            if (
+                node.node_type == "Solution"
+                and getattr(node, "evidence_link", "")
+            ):
+                webbrowser.open(node.evidence_link)
+            else:
+                GSNElementConfig(self, node, self.diagram)
+                self.refresh()
+                return
             self.refresh()
             return
-        self.refresh()
+        conn, _ = self._connection_at(cx, cy)
+        if conn:
+            parent, child = conn
+            GSNConnectionConfig(self, parent, child, self.diagram)
+            self.refresh()
+            return
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
         items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
