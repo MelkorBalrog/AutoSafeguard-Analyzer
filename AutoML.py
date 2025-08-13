@@ -8690,10 +8690,23 @@ class FaultTreeApp:
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox:
+            declared = {wp.analysis for wp in getattr(toolbox, "work_products", [])}
+            current = set(getattr(self, "enabled_work_products", set()))
+            for name in declared - current:
+                try:
+                    self.enable_work_product(name)
+                except Exception:
+                    self.enabled_work_products.add(name)
+            for name in current - declared:
+                try:
+                    self.disable_work_product(name)
+                except Exception:
+                    pass
         global_enabled = getattr(self, "enabled_work_products", set())
-        smt = getattr(self, "safety_mgmt_toolbox", None)
-        if smt and getattr(smt, "work_products", None):
-            phase_enabled = smt.enabled_products()
+        if toolbox and getattr(toolbox, "work_products", None):
+            phase_enabled = toolbox.enabled_products()
         else:
             phase_enabled = global_enabled
         enabled = global_enabled & phase_enabled
@@ -17223,14 +17236,7 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
-
-        # Enable work products declared in governance.  When no governance is
-        # present the set is empty and all work products remain disabled.
-        for name in self.safety_mgmt_toolbox.enabled_products():
-            try:
-                self.enable_work_product(name)
-            except Exception:
-                self.enabled_work_products.add(name)
+        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
         try:
             self.refresh_tool_enablement()
         except Exception:
