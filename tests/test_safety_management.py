@@ -1001,3 +1001,56 @@ def test_work_product_color_and_text_wrapping():
     _, rect_kwargs = win.canvas.rect_calls[0]
     assert rect_kwargs["fill"] == "lightgreen"
 
+
+def test_add_lifecycle_phase_adds_object(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = []
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="PhaseA"), GovernanceModule(name="PhaseB")]
+    win.app = types.SimpleNamespace(safety_mgmt_toolbox=toolbox)
+
+    class FakeDialog:
+        def __init__(self, *args, **kwargs):
+            self.selection = "PhaseB"
+
+    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    win.add_lifecycle_phase()
+
+    phase = [o for o in win.objects if o.obj_type == "Lifecycle Phase"][0]
+    assert phase.properties["name"] == "PhaseB"
+
+
+def test_lifecycle_phase_drawing():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+
+    obj = SysMLObject(
+        1,
+        "Lifecycle Phase",
+        0.0,
+        0.0,
+        width=120.0,
+        height=80.0,
+        properties={"name": "Phase"},
+    )
+    win.draw_object(obj)
+    assert len(win.canvas.rect_calls) >= 2
+    assert win.canvas.text_calls[0][2]["text"] == "Phase"
+
