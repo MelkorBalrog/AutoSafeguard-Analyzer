@@ -81,6 +81,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: True)
 
     FaultTreeApp.show_safety_case(app)
     tree = app._safety_case_tree
@@ -96,3 +97,28 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     app.refresh_safety_case_table()
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][5] == CHECK_MARK
+
+
+def test_safety_case_cancel_does_not_toggle(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: types.SimpleNamespace(winfo_exists=lambda: True)
+    app.all_gsn_diagrams = [diag]
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: False)
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    iid = next(iter(tree.data))
+
+    event = types.SimpleNamespace(x=0, y=0)
+    tree.bindings["<Double-1>"](event)
+    assert not sol.evidence_sufficient
+    assert tree.data[iid]["values"][5] == ""
