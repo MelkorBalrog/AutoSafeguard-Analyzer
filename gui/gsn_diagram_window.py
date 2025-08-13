@@ -247,6 +247,23 @@ class GSNDiagramWindow(tk.Frame):
         self._drag_offset = (cx - sx, cy - sy)
         self.refresh()
 
+    def _move_subtree(self, node: GSNNode, dx: float, dy: float, visited: set[str] | None = None) -> None:
+        """Move *node* and all its descendants by ``dx`` and ``dy``.
+
+        A ``visited`` set is used to avoid processing the same node multiple
+        times when the diagram contains shared children.  Each node's
+        coordinates are updated in place.
+        """
+        if visited is None:
+            visited = set()
+        if node.unique_id in visited:
+            return
+        visited.add(node.unique_id)
+        node.x += dx
+        node.y += dy
+        for child in getattr(node, "children", []):
+            self._move_subtree(child, dx, dy, visited)
+
     def _on_drag(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
@@ -279,8 +296,11 @@ class GSNDiagramWindow(tk.Frame):
             return
         nx = (cx - self._drag_offset[0]) / self.zoom
         ny = (cy - self._drag_offset[1]) / self.zoom
-        self._drag_node.x = nx
-        self._drag_node.y = ny
+        dx = nx - self._drag_node.x
+        dy = ny - self._drag_node.y
+        # Move the dragged node along with all of its children so the
+        # relative layout of the subtree remains intact.
+        self._move_subtree(self._drag_node, dx, dy)
         self.refresh()
 
     def _on_release(self, event):  # pragma: no cover - requires tkinter
