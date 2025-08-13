@@ -16296,6 +16296,8 @@ class FaultTreeApp:
 
     def push_undo_state(self):
         """Save the current model state for undo operations."""
+        repo = SysMLRepository.get_instance()
+        repo.push_undo_state()
         self._undo_stack.append(self.export_model_data(include_versions=False))
         if len(self._undo_stack) > 20:
             self._undo_stack.pop(0)
