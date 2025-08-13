@@ -12910,6 +12910,22 @@ class FaultTreeApp:
         btn = ttk.Button(win, text="Edit", command=edit_selected)
         btn.pack(pady=4)
 
+        def export_csv():
+            path = filedialog.asksaveasfilename(
+                defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+            )
+            if not path:
+                return
+            with open(path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(columns)
+                for iid in tree.get_children():
+                    writer.writerow(tree.item(iid, "values"))
+            messagebox.showinfo("Export", "Safety case exported")
+
+        self.export_safety_case_csv = export_csv
+        ttk.Button(win, text="Export CSV", command=export_csv).pack(pady=4)
+
         menu = tk.Menu(win, tearoff=0)
         menu.add_command(label="Edit", command=edit_selected)
 
