@@ -12723,6 +12723,9 @@ class FaultTreeApp:
                     self._solution_lookup[node.unique_id] = (node, diag)
                     prob = ""
                     v_target = ""
+                    spi_val = ""
+                    p_val = None
+                    vt_val = None
                     target = getattr(node, "spi_target", "")
                     if target:
                         for te in getattr(self, "top_events", []):
@@ -12736,9 +12739,24 @@ class FaultTreeApp:
                                 p = getattr(te, "probability", "")
                                 vt = getattr(te, "validation_target", "")
                                 if p not in ("", None):
-                                    prob = f"{p:.2e}"
+                                    try:
+                                        p_val = float(p)
+                                        prob = f"{p_val:.2e}"
+                                    except Exception:
+                                        prob = ""
+                                        p_val = None
                                 if vt not in ("", None):
-                                    v_target = f"{vt:.2e}"
+                                    try:
+                                        vt_val = float(vt)
+                                        v_target = f"{vt_val:.2e}"
+                                    except Exception:
+                                        v_target = ""
+                                        vt_val = None
+                                try:
+                                    if vt_val not in (None, 0) and p_val not in (None, 0):
+                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                                except Exception:
+                                    spi_val = ""
                                 break
                     tree.insert(
                         "",
@@ -12750,6 +12768,7 @@ class FaultTreeApp:
                             node.evidence_link,
                             v_target,
                             prob,
+                            spi_val,
                             CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
                             getattr(node, "manager_notes", ""),
                         ],
@@ -12772,6 +12791,7 @@ class FaultTreeApp:
             "Evidence Link",
             "Verification Target",
             "Achieved Probability",
+            "SPI",
             "Evidence OK",
             "Notes",
         ]
