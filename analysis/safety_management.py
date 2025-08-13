@@ -34,6 +34,15 @@ class Workflow:
 
 
 @dataclass
+class GovernanceModule:
+    """Container for organising governance diagrams into folders."""
+
+    name: str
+    modules: List["GovernanceModule"] = field(default_factory=list)
+    diagrams: List[str] = field(default_factory=list)
+
+
+@dataclass
 class SafetyManagementToolbox:
     """Collect work products and governance artifacts for safety management.
 
@@ -46,6 +55,7 @@ class SafetyManagementToolbox:
     lifecycle: List[str] = field(default_factory=list)
     workflows: Dict[str, List[str]] = field(default_factory=dict)
     diagrams: Dict[str, str] = field(default_factory=dict)
+    modules: List[GovernanceModule] = field(default_factory=list)
 
     def add_work_product(self, diagram: str, analysis: str, rationale: str) -> None:
         """Add a work product linking a diagram to an analysis with rationale."""
@@ -181,6 +191,7 @@ class SafetyManagementToolbox:
                         else getattr(obj, "properties", {})
                     )
                     target = props.get("view") or props.get("diagram")
+
                 if target in edges:
                     edges[diag_id].add(target)
                     reverse[target].add(diag_id)

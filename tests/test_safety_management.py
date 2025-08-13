@@ -21,8 +21,10 @@ from AutoML import FaultTreeApp
 import AutoML
 from analysis import SafetyManagementToolbox
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
+from tkinter import simpledialog
 
 
 def test_work_product_registration():
@@ -435,6 +437,7 @@ def test_diagram_hierarchy_orders_levels():
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["A"], ["B"], ["C"]]
 
+
 def test_diagram_hierarchy_from_object_properties():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
@@ -463,4 +466,57 @@ def test_diagram_hierarchy_from_object_properties():
 
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["Parent"], ["Child"]]
+
+
+def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+
+    SafetyManagementExplorer.populate(explorer)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
+    explorer.new_folder()
+    assert toolbox.modules and toolbox.modules[0].name == "Pkg"
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    explorer.new_diagram()
+    assert "Diag" in toolbox.modules[0].diagrams
+    assert "Diag" in toolbox.diagrams
 
