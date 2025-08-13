@@ -2172,9 +2172,6 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
-        gsn_menu.add_command(
-            label="Safety Management Explorer", command=self.manage_safety_management
-        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
