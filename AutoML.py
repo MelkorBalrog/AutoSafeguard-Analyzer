@@ -244,6 +244,7 @@ from gui.review_toolbox import (
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
+from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
 from gui.closable_notebook import ClosableNotebook
 from dataclasses import asdict
@@ -12626,7 +12627,7 @@ class FaultTreeApp:
         for diag in getattr(self, "all_gsn_diagrams", []):
             for node in getattr(diag, "nodes", []):
                 if getattr(node, "node_type", "").lower() == "solution":
-                    self._solution_lookup[node.unique_id] = node
+                    self._solution_lookup[node.unique_id] = (node, diag)
                     tree.insert(
                         "",
                         "end",
@@ -12682,9 +12683,10 @@ class FaultTreeApp:
             if not tags:
                 return
             uid = tags[0]
-            node = self._solution_lookup.get(uid)
-            if not node:
+            node_diag = self._solution_lookup.get(uid)
+            if not node_diag:
                 return
+            node = node_diag[0]
             current = tree.set(row, "Evidence OK")
             new_val = "" if current == CHECK_MARK else CHECK_MARK
             if messagebox.askokcancel("Evidence", "Are you sure?"):
@@ -12693,6 +12695,40 @@ class FaultTreeApp:
 
         for seq in ("<Double-Button-1>", "<Double-1>"):
             tree.bind(seq, on_double_click)
+
+        def edit_selected(row=None):
+            if row is None:
+                sel = tree.selection()
+                if not sel:
+                    return
+                row = sel[0]
+            tags = tree.item(row, "tags")
+            if not tags:
+                return
+            uid = tags[0]
+            node_diag = self._solution_lookup.get(uid)
+            if not node_diag:
+                return
+            node, diag = node_diag
+            GSNElementConfig(win, node, diag)
+            self.refresh_safety_case_table()
+
+        self._edit_safety_case_item = edit_selected
+
+        btn = ttk.Button(win, text="Edit", command=edit_selected)
+        btn.pack(pady=4)
+
+        menu = tk.Menu(win, tearoff=0)
+        menu.add_command(label="Edit", command=edit_selected)
+
+        def on_right_click(event):
+            row = tree.identify_row(event.y)
+            if row:
+                tree.selection_set(row)
+                menu.post(event.x_root, event.y_root)
+
+        tree.bind("<Button-3>", on_right_click)
+
         self.refresh_safety_case_table()
 
     def export_product_goal_requirements(self):

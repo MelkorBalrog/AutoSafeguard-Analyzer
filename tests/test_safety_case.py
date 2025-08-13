@@ -23,6 +23,7 @@ class DummyTree:
         self.counter = 0
         self.bindings = {}
         self.next_column = "Evidence OK"
+        self.selection_value = ()
 
     def heading(self, column, text=""):
         pass
@@ -69,6 +70,12 @@ class DummyTree:
     def winfo_exists(self):
         return True
 
+    def selection(self):
+        return self.selection_value
+
+    def selection_set(self, row):
+        self.selection_value = (row,)
+
 
 class DummyTab:
     def winfo_exists(self):
@@ -76,6 +83,25 @@ class DummyTab:
 
     def winfo_children(self):
         return []
+
+
+class DummyButton:
+    def __init__(self, *a, **k):
+        pass
+
+    def pack(self, *a, **k):
+        pass
+
+
+class DummyMenu:
+    def __init__(self, *a, **k):
+        pass
+
+    def add_command(self, *a, **k):
+        pass
+
+    def post(self, *a, **k):
+        pass
 
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
@@ -90,6 +116,8 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: True)
 
     FaultTreeApp.show_safety_case(app)
@@ -123,13 +151,40 @@ def test_safety_case_cancel_does_not_toggle(monkeypatch):
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: False)
+
+
+def test_safety_case_edit_updates_table(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+
+    called = {}
+
+    def fake_config(master, node, diag):
+        called["ok"] = True
+        node.work_product = "WP"
+
+    monkeypatch.setattr("AutoML.GSNElementConfig", fake_config)
 
     FaultTreeApp.show_safety_case(app)
     tree = app._safety_case_tree
     iid = next(iter(tree.data))
-
-    event = types.SimpleNamespace(x=0, y=0)
-    tree.bindings["<Double-Button-1>"](event)
-    assert not sol.evidence_sufficient
-    assert tree.data[iid]["values"][5] == ""
+    tree.selection_set(iid)
+    app._edit_safety_case_item()
+    assert called.get("ok")
+    iid = next(iter(tree.data))
+    assert tree.data[iid]["values"][2] == "WP"
