@@ -257,7 +257,11 @@ def test_add_module_uses_existing_modules(monkeypatch):
     win.diagram = diagram
     win.selected_node = None
     win.refresh = lambda: None
-    monkeypatch.setattr(gdw.simpledialog, "askstring", lambda *a, **k: "Pkg2")
+    class DummyDialog:
+        def __init__(self, *a, **k):
+            self.selection = "Pkg2"
+
+    monkeypatch.setattr(gdw, "ModuleSelectDialog", DummyDialog)
     GSNDiagramWindow.add_module(win)
     names = [n.user_name for n in diagram.nodes if n.node_type == "Module"]
     assert names == ["Pkg2"]
