@@ -578,5 +578,7 @@ def test_config_dialog_lists_toolbox_diagrams(monkeypatch):
 
     wp_cb = combo_holder[0]
     assert wp_cb.configured["values"] == ["DiagA", "DiagB"]
-    assert cfg.work_var.get() == "DiagA"
+    # The combobox should start without a selected value so the user must
+    # explicitly choose a work product.
+    assert cfg.work_var.get() == ""
 
