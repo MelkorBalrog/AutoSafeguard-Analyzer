@@ -61,6 +61,12 @@ def _minimal_app():
     app.close_page_diagram = lambda: None
     app.update_views = lambda: None
     app.safety_mgmt_toolbox = SafetyManagementToolbox()
+    app.tool_listboxes = {}
+    app.work_product_menus = {}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.refresh_tool_enablement = lambda: None
     return app
 
 
@@ -89,11 +95,11 @@ def test_safety_management_roundtrip_serialisation():
 
 def test_apply_model_enables_governed_work_products(monkeypatch):
     app = _minimal_app()
-    app.refresh_tool_enablement = lambda: None
     enabled = []
     monkeypatch.setattr(
         FaultTreeApp, "enable_work_product", lambda self, name: enabled.append(name)
     )
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Gov", "HAZOP", "Rationale")
     data = {"safety_mgmt_toolbox": toolbox.to_dict()}
@@ -103,7 +109,6 @@ def test_apply_model_enables_governed_work_products(monkeypatch):
 
 def test_apply_model_without_governance_disables_work_products(monkeypatch):
     app = _minimal_app()
-    app.refresh_tool_enablement = lambda: None
     app.enabled_work_products = {"HAZOP"}
     disabled = []
     monkeypatch.setattr(
@@ -111,6 +116,7 @@ def test_apply_model_without_governance_disables_work_products(monkeypatch):
         "disable_work_product",
         lambda self, name: disabled.append(name) or True,
     )
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
     app.apply_model_data({}, ensure_root=False)
     assert disabled == ["HAZOP"]
     assert app.enabled_work_products == set()
