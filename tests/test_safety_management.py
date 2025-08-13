@@ -127,7 +127,7 @@ def test_disable_work_product_rejects_existing_docs():
 
     menu = DummyMenu()
     app.hazop_docs = []
-    app.work_product_menus["HAZOP"] = (menu, 0)
+    app.work_product_menus["HAZOP"] = [(menu, 0)]
     assert app.disable_work_product("HAZOP")
     assert menu.state == tk.DISABLED
 
@@ -553,6 +553,48 @@ def test_open_work_product_requires_enablement():
     app.open_work_product("HAZOP Analysis")
     assert opened["count"] == 1
 
+
+def test_menu_work_products_toggle_and_guard_existing_docs():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.tool_actions = {}
+    app.enable_process_area = lambda area: None
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, idx, state=tk.DISABLED):
+            self.state = state
+
+    cases = [
+        ("Process", None),
+        ("Quantitative Analysis", "fmeas"),
+        ("Qualitative Analysis", "hazop_docs"),
+        ("Architecture Diagram", "arch_diagrams"),
+        ("Scenario", "scenario_libraries"),
+        ("FTA", "top_events"),
+    ]
+
+    for name, attr in cases:
+        menu = DummyMenu()
+        app.work_product_menus = {name: [(menu, 0)]}
+        app.enabled_work_products = set()
+        app.tool_actions = {}
+        app.tool_listboxes = {}
+        app.tool_categories = {}
+        if attr:
+            setattr(app, attr, [])
+        FaultTreeApp.enable_work_product(app, name)
+        assert menu.state == tk.NORMAL
+        if attr:
+            getattr(app, attr).append(object())
+            assert not FaultTreeApp.disable_work_product(app, name)
+            assert menu.state == tk.NORMAL
+            getattr(app, attr).clear()
+        assert FaultTreeApp.disable_work_product(app, name)
+        assert menu.state == tk.DISABLED
 
 def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     """Governance diagrams open as BPMN diagrams with their toolbox."""
