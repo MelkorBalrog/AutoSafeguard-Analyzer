@@ -72,6 +72,8 @@ class SysMLRepository:
         # maintain undo and redo history of repository snapshots
         self._undo_stack: list[dict] = []
         self._redo_stack: list[dict] = []
+        self.item_description: str = ""
+        self.assumptions: str = ""
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -344,6 +346,8 @@ class SysMLRepository:
             diag = SysMLDiagram(**d)
             self.diagrams[diag.diag_id] = diag
         self.element_diagrams = data.get("element_diagrams", {})
+        self.item_description = data.get("item_description", "")
+        self.assumptions = data.get("assumptions", "")
         self.root_package = None
         for elem in self.elements.values():
             if elem.elem_type == "Package" and elem.owner is None:
@@ -392,6 +396,8 @@ class SysMLRepository:
             "relationships": [asdict(rel) for rel in self.relationships],
             "diagrams": [asdict(diag) for diag in self.diagrams.values()],
             "element_diagrams": self.element_diagrams,
+            "item_description": self.item_description,
+            "assumptions": self.assumptions,
         }
         return json.dumps(data, indent=2)
 
@@ -414,6 +420,8 @@ class SysMLRepository:
             diag = SysMLDiagram(**d)
             self.diagrams[diag.diag_id] = diag
         self.element_diagrams = data.get("element_diagrams", {})
+        self.item_description = data.get("item_description", "")
+        self.assumptions = data.get("assumptions", "")
         self.root_package = None
         for elem in self.elements.values():
             if elem.elem_type == "Package" and elem.owner is None:
