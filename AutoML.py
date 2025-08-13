@@ -15435,16 +15435,35 @@ class FaultTreeApp:
         self.refresh_all()
         
     def copy_node(self):
-        if self.selected_node and self.selected_node != self.root_node:
-            self.clipboard_node = self.selected_node
+        """Copy the currently selected node into the clipboard."""
+        node = self.selected_node
+        # If selected_node is not set, try to get it from the tree selection.
+        if not node:
+            sel = self.analysis_tree.selection()
+            if sel:
+                tags = self.analysis_tree.item(sel[0], "tags")
+                if tags:
+                    node = self.find_node_by_id(self.root_node, int(tags[0]))
+        if node and node != self.root_node:
+            # Ensure selected_node tracks the node being copied.
+            self.selected_node = node
+            self.clipboard_node = node
             self.cut_mode = False
         else:
             messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_node(self):
         """Store the currently selected node for a cut & paste operation."""
-        if self.selected_node and self.selected_node != self.root_node:
-            self.clipboard_node = self.selected_node
+        node = self.selected_node
+        if not node:
+            sel = self.analysis_tree.selection()
+            if sel:
+                tags = self.analysis_tree.item(sel[0], "tags")
+                if tags:
+                    node = self.find_node_by_id(self.root_node, int(tags[0]))
+        if node and node != self.root_node:
+            self.selected_node = node
+            self.clipboard_node = node
             self.cut_mode = True
         else:
             messagebox.showwarning("Cut", "Select a non-root node to cut.")
