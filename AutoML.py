@@ -244,6 +244,7 @@ from gui.review_toolbox import (
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
@@ -310,10 +311,12 @@ from analysis.models import (
     calc_asil,
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
     CyberRiskEntry,
 )
+from gui.safety_case_table import SafetyCaseTable
 from gui.architecture import (
     UseCaseDiagramWindow,
     ActivityDiagramWindow,
@@ -328,6 +331,10 @@ from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
+import builtins
+
+builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
+builtins.SafetyCaseTable = SafetyCaseTable
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
@@ -1236,7 +1243,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": req_text,
                 "custom_id": custom_id,
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
 
@@ -1258,7 +1272,14 @@ class EditNodeDialog(simpledialog.Dialog):
 
         def _toggle_fields(self, event=None):
             req_type = self.type_var.get()
-            hide = req_type in ("operational", "functional modification", "production", "service")
+            hide = req_type in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
                 for w in widgets:
@@ -1354,7 +1375,14 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             req["asil"] = asil
             req["cal"] = cal
         global_requirements[custom_id] = req
@@ -1539,7 +1567,14 @@ class EditNodeDialog(simpledialog.Dialog):
             req_type = dialog.result["req_type"]
             req["req_type"] = req_type
             req["text"] = dialog.result["text"]
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1560,7 +1595,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1609,7 +1651,14 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["req_type"] = req_type
         current_req["text"] = dialog.result["text"]
         current_req["status"] = "draft"
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
                 # editing within a base event so the value set during
@@ -1942,8 +1991,8 @@ class FaultTreeApp:
         ),
         "Safety & Security Concept": (
             "System Design (Item Definition)",
-            "Safety & Security Case",
-            "show_safety_case",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
         ),
         "Requirement Specification": (
             "System Design (Item Definition)",
@@ -2021,6 +2070,16 @@ class FaultTreeApp:
             "manage_scenario_libraries",
         ),
     }
+
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_INFO.setdefault(
+            _wp,
+            (
+                "System Design (Item Definition)",
+                "Requirements Editor",
+                "show_requirements_editor",
+            ),
+        )
 
     def __init__(self, root):
         self.root = root
@@ -2116,7 +2175,7 @@ class FaultTreeApp:
         self.review_data = None
         self.review_window = None
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
+        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -2221,9 +2280,11 @@ class FaultTreeApp:
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Requirement Specification", []).append(
-            (requirements_menu, requirements_menu.index("end"))
-        )
+        req_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).append(
+                (requirements_menu, req_idx)
+            )
         requirements_menu.add_command(
             label="Requirements Explorer", command=self.show_requirements_explorer
         )
@@ -2386,6 +2447,9 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(
+            label="Safety & Security Case Explorer", command=self.manage_safety_cases
+        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
@@ -2503,17 +2567,22 @@ class FaultTreeApp:
         self.tool_actions = {
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety & Security Management Explorer": self.manage_safety_management,
+            "Safety & Security Case Explorer": self.manage_safety_cases,
         }
 
         self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
-                "Safety & Security Management Explorer",
-            ]
+            "Safety & Security Management Explorer",
+            "Safety & Security Case Explorer",
+        ]
         }
         self.tool_to_work_product = {
             info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
         }
+        self.tool_to_work_product = {}
+        for name, info in self.WORK_PRODUCT_INFO.items():
+            self.tool_to_work_product.setdefault(info[1], set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -8550,7 +8619,7 @@ class FaultTreeApp:
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "safetycase":
-            self.show_safety_case()
+            self.manage_safety_cases()
         elif kind == "safetyconcept":
             self.show_safety_concept_editor()
         elif kind == "itemdef":
@@ -8674,7 +8743,10 @@ class FaultTreeApp:
             self.joint_reviews[idx].name = new
             self.safety_mgmt_toolbox.rename_document("Joint Review", old, new)
         elif kind == "fta" and node:
+            old = node.name
             node.user_name = new
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FTA", old, node.name)
         elif kind == "pkg" and repo.elements.get(ident):
             repo.elements[ident].name = new
         self.update_views()
@@ -8687,16 +8759,26 @@ class FaultTreeApp:
         if not sel:
             return
         name = lb.get(sel[0])
-        analysis_name = self.tool_to_work_product.get(name)
+        analysis_names = self.tool_to_work_product.get(name, set())
         if (
-            analysis_name
+            analysis_names
             and self.safety_mgmt_toolbox
-            and analysis_name not in self.safety_mgmt_toolbox.enabled_products()
+            and not any(
+                n in self.safety_mgmt_toolbox.enabled_products()
+                for n in analysis_names
+            )
         ):
             return
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def _on_toolbox_change(self) -> None:
+        self.refresh_tool_enablement()
+        try:
+            self.update_views()
+        except Exception:
+            pass
 
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
@@ -8724,8 +8806,14 @@ class FaultTreeApp:
         enabled = global_enabled & phase_enabled
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
-                if analysis_name and analysis_name not in enabled:
+                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
+                if isinstance(analysis_names, str):
+                    analysis_names = {analysis_names}
+                if not analysis_names:
+                    in_enabled = tool_name in enabled
+                else:
+                    in_enabled = any(n in enabled for n in analysis_names)
+                if not in_enabled:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
@@ -8789,6 +8877,14 @@ class FaultTreeApp:
                 lb = self.tool_listboxes.get(area)
                 if lb:
                     lb.insert(tk.END, tool_name)
+        mapping = getattr(self, "tool_to_work_product", {})
+        existing = mapping.get(tool_name)
+        if isinstance(existing, set):
+            existing.add(name)
+        elif existing:
+            mapping[tool_name] = {existing, name}
+        else:
+            mapping.setdefault(tool_name, set()).add(name)
         # Enable corresponding menu entry if one was registered
         for menu, idx in self.work_product_menus.get(name, []):
             try:
@@ -8856,20 +8952,33 @@ class FaultTreeApp:
             return False
         self.enabled_work_products.discard(name)
         for menu, idx in self.work_product_menus.get(name, []):
+            state = tk.DISABLED
+            for other, entries in self.work_product_menus.items():
+                if (
+                    other != name
+                    and other in self.enabled_work_products
+                    and (menu, idx) in entries
+                ):
+                    state = tk.NORMAL
+                    break
             try:
-                menu.entryconfig(idx, state=tk.DISABLED)
+                menu.entryconfig(idx, state=state)
             except tk.TclError:
                 pass
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            lb = self.tool_listboxes.get(area)
-            if lb:
-                for i in range(lb.size()):
-                    if lb.get(i) == tool_name:
-                        lb.delete(i)
-                        break
-            self.tool_actions.pop(tool_name, None)
+            if not any(
+                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
+                for wp in self.enabled_work_products
+            ):
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    for i in range(lb.size()):
+                        if lb.get(i) == tool_name:
+                            lb.delete(i)
+                            break
+                self.tool_actions.pop(tool_name, None)
         if hasattr(self, "update_views"):
             try:
                 self.update_views()
@@ -9898,7 +10007,12 @@ class FaultTreeApp:
             ):
                 add_gsn_diagram(diag, gsn_root)
 
-            tree.insert(mgmt_root, "end", text="Safety & Security Case", tags=("safetycase", "0"))
+            tree.insert(
+                mgmt_root,
+                "end",
+                text="Safety & Security Case Explorer",
+                tags=("safetycase", "0"),
+            )
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -9989,7 +10103,7 @@ class FaultTreeApp:
                     text="Safety & Security Concept",
                     tags=("safetyconcept", "0"),
                 )
-            if "Requirement Specification" in enabled:
+            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
                 tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
                 tree.insert(
                     sys_root,
@@ -10844,6 +10958,8 @@ class FaultTreeApp:
         new_event.malfunction = name
         self.top_events.append(new_event)
         self.root_node = new_event
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product("FTA", new_event.name)
         self.update_views()
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
@@ -10853,6 +10969,8 @@ class FaultTreeApp:
         if not removed:
             return
         for te in removed:
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FTA", te.name)
             self.top_events.remove(te)
             if hasattr(self, "safety_mgmt_toolbox"):
                 self.safety_mgmt_toolbox.register_deleted_work_product(
@@ -11357,7 +11475,14 @@ class FaultTreeApp:
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
                 }
-                if req_type not in ("operational", "functional modification", "production", "service"):
+                if req_type not in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
 
@@ -11370,7 +11495,14 @@ class FaultTreeApp:
 
             def _toggle_fields(self, event=None):
                 req_type = self.type_var.get()
-                hide = req_type in ("operational", "functional modification", "production", "service")
+                hide = req_type in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
                     for w in widgets:
@@ -11524,6 +11656,8 @@ class FaultTreeApp:
                     "modified_by": CURRENT_USER_NAME,
                 }
                 self.fmeas.append(doc)
+                if hasattr(self, "safety_mgmt_toolbox"):
+                    self.safety_mgmt_toolbox.register_created_work_product("FMEA", doc["name"])
                 iid = tree.insert(
                     "",
                     "end",
@@ -11538,6 +11672,8 @@ class FaultTreeApp:
             if not doc:
                 return
             self.fmeas.remove(doc)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FMEA", doc["name"])
             tree.delete(iid)
             item_map.pop(iid, None)
             self.update_views()
@@ -11551,7 +11687,10 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
+            old = doc["name"]
             doc["name"] = name
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FMEA", old, name)
             self.touch_doc(doc)
             tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
@@ -11618,6 +11757,8 @@ class FaultTreeApp:
                     "modified_by": CURRENT_USER_NAME,
                 }
                 self.fmedas.append(doc)
+                if hasattr(self, "safety_mgmt_toolbox"):
+                    self.safety_mgmt_toolbox.register_created_work_product("FMEDA", doc["name"])
                 iid = tree.insert(
                     "",
                     "end",
@@ -11632,6 +11773,8 @@ class FaultTreeApp:
             if not d:
                 return
             self.fmedas.remove(d)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FMEDA", d["name"])
             tree.delete(iid)
             item_map.pop(iid, None)
             self.update_views()
@@ -11645,7 +11788,10 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
             if not name:
                 return
+            old = d["name"]
             d["name"] = name
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FMEDA", old, name)
             self.touch_doc(d)
             tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
             self.update_views()
@@ -16486,6 +16632,21 @@ class FaultTreeApp:
             self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
+    def manage_safety_cases(self):
+        if not hasattr(self, "safety_case_library"):
+            from analysis import SafetyCaseLibrary as _SCL
+
+            self.safety_case_library = _SCL()
+        if hasattr(self, "_safety_case_exp_tab") and self._safety_case_exp_tab.winfo_exists():
+            self.doc_nb.select(self._safety_case_exp_tab)
+        else:
+            self._safety_case_exp_tab = self._new_tab("Safety & Security Case Explorer")
+            self._safety_case_window = SafetyCaseExplorer(
+                self._safety_case_exp_tab, self, self.safety_case_library
+            )
+            self._safety_case_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
     def open_gsn_diagram(self, diagram):
         """Open a GSN diagram inside a new notebook tab."""
         existing = self.diagram_tabs.get(diagram.diag_id)
@@ -17176,9 +17337,6 @@ class FaultTreeApp:
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.tc2fi_docs
             ],
-            "hazop_entries": [asdict(e) for e in self.hazop_entries],
-            "fi2tc_entries": copy.deepcopy(self.fi2tc_entries),
-            "tc2fi_entries": copy.deepcopy(self.tc2fi_entries),
             "scenario_libraries": copy.deepcopy(self.scenario_libraries),
             "odd_libraries": copy.deepcopy(self.odd_libraries),
             "faults": self.faults.copy(),
@@ -17204,6 +17362,12 @@ class FaultTreeApp:
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             ).to_dict(),
         }
+        if self.hazop_docs:
+            data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
+        if self.fi2tc_docs:
+            data["fi2tc_entries"] = copy.deepcopy(self.fi2tc_entries)
+        if self.tc2fi_docs:
+            data["tc2fi_entries"] = copy.deepcopy(self.tc2fi_entries)
         if include_versions:
             data["versions"] = self.versions
         return data
@@ -17236,7 +17400,12 @@ class FaultTreeApp:
         else:
             self.top_events = []
 
-        if ensure_root and not self.top_events:
+        if (
+            ensure_root
+            and not self.top_events
+            and "top_events" not in data
+            and "root_node" not in data
+        ):
             new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
@@ -17364,9 +17533,10 @@ class FaultTreeApp:
             self.hazop_docs.append(
                 HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
             )
-        if not self.hazop_docs and "hazop_entries" in data:
+        hazop_entries = data.get("hazop_entries")
+        if not self.hazop_docs and hazop_entries:
             entries = []
-            for h in data.get("hazop_entries", []):
+            for h in hazop_entries:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
@@ -17574,8 +17744,9 @@ class FaultTreeApp:
             self.fi2tc_docs.append(
                 FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
             )
-        if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+        fi2tc_entries = data.get("fi2tc_entries")
+        if not self.fi2tc_docs and fi2tc_entries:
+            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
@@ -17584,8 +17755,9 @@ class FaultTreeApp:
             self.tc2fi_docs.append(
                 TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
             )
-        if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+        tc2fi_entries = data.get("tc2fi_entries")
+        if not self.tc2fi_docs and tc2fi_entries:
+            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -17894,9 +18066,10 @@ class FaultTreeApp:
             self.hazop_docs.append(
                 HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
             )
-        if not self.hazop_docs and "hazop_entries" in data:
+        hazop_entries = data.get("hazop_entries")
+        if not self.hazop_docs and hazop_entries:
             entries = []
-            for h in data.get("hazop_entries", []):
+            for h in hazop_entries:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
@@ -18104,8 +18277,9 @@ class FaultTreeApp:
             self.fi2tc_docs.append(
                 FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
             )
-        if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+        fi2tc_entries = data.get("fi2tc_entries")
+        if not self.fi2tc_docs and fi2tc_entries:
+            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
@@ -18114,8 +18288,9 @@ class FaultTreeApp:
             self.tc2fi_docs.append(
                 TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
             )
-        if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+        tc2fi_entries = data.get("tc2fi_entries")
+        if not self.tc2fi_docs and tc2fi_entries:
+            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -18144,6 +18319,26 @@ class FaultTreeApp:
                 "entries": entries,
                 "bom": doc.get("bom", ""),
             })
+
+        if getattr(self, "safety_mgmt_toolbox", None):
+            for doc in self.hazop_docs:
+                self._reregister_document("HAZOP", doc.name)
+            for doc in self.hara_docs:
+                self._reregister_document("Risk Assessment", doc.name)
+            for doc in self.stpa_docs:
+                self._reregister_document("STPA", doc.name)
+            for doc in self.threat_docs:
+                self._reregister_document("Threat Analysis", doc.name)
+            for doc in self.fi2tc_docs:
+                self._reregister_document("FI2TC", doc.name)
+            for doc in self.tc2fi_docs:
+                self._reregister_document("TC2FI", doc.name)
+            for doc in self.fmeas:
+                self._reregister_document("FMEA", doc["name"])
+            for doc in self.fmedas:
+                self._reregister_document("FMEDA", doc["name"])
+            for te in self.top_events:
+                self._reregister_document("FTA", te.name)
 
         # Fix clone references for each top event.
         for event in self.top_events:
@@ -18248,7 +18443,16 @@ class FaultTreeApp:
             self.close_page_diagram()
         self.update_views()
         self.set_last_saved_state()
-        
+
+    def _reregister_document(self, analysis: str, name: str) -> None:
+        phase = self.safety_mgmt_toolbox.doc_phases.get(analysis, {}).get(name)
+        current = self.safety_mgmt_toolbox.active_module
+        try:
+            self.safety_mgmt_toolbox.active_module = phase
+            self.safety_mgmt_toolbox.register_created_work_product(analysis, name)
+        finally:
+            self.safety_mgmt_toolbox.active_module = current
+
     def update_global_requirements_from_nodes(self,node):
         if hasattr(node, "safety_requirements"):
             for req in node.safety_requirements:
