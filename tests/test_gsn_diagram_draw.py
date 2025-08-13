@@ -1,5 +1,6 @@
 
 from gsn import GSNNode, GSNDiagram
+import gsn.diagram as gsn_diagram
 
 
 class StubCanvas:
@@ -44,6 +45,9 @@ class DummyHelper:
     draw_justification_shape = draw_goal_shape
     draw_context_shape = draw_goal_shape
     draw_away_module_shape = draw_goal_shape
+
+    def get_text_size(self, text, font_obj):
+        return len(text), 10
 
     def draw_solved_by_connection(self, *args, **kwargs):
         pass
@@ -100,14 +104,15 @@ def test_draw_respects_context_links():
     assert calls == ["context"]
 
 
-def test_solution_draws_on_small_circle():
-    """Solution nodes should render on a fixed smaller circle."""
+def test_solution_scales_with_text(monkeypatch):
+    """Solution nodes grow to fit their text."""
+    monkeypatch.setattr(gsn_diagram.tkFont, "Font", lambda *a, **k: _StubFont())
     node = GSNNode("Sol", "Solution", x=10, y=10, description="long text " * 10)
     diag = GSNDiagram(node, drawing_helper=DummyHelper())
     canvas = StubCanvas()
     diag.draw(canvas)
     rect = _rect_for(node.unique_id, canvas)
-    assert rect[2] - rect[0] == 40
+    assert rect[2] - rect[0] > 40
 
 
 class _StubFont:

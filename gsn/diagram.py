@@ -165,8 +165,9 @@ class GSNDiagram:
                     raise_(f"{rel_id}-arrow")
 
     # ------------------------------------------------------------------
-    def _lookup_spi_probability(self, target: str) -> float | None:
-        """Return probability for SPI target ``target`` if available."""
+    def _lookup_validation_target(self, target: str) -> float | None:
+        """Return validation target for SPI ``target`` if available."""
+
         app = getattr(self, "app", None)
         if not app:
             return None
@@ -178,7 +179,7 @@ class GSNDiagram:
                 or f"SG {getattr(te, 'unique_id', '')}"
             )
             if name == target:
-                return getattr(te, "probability", None)
+                return getattr(te, "validation_target", None)
         return None
 
     # ------------------------------------------------------------------
@@ -207,33 +208,14 @@ class GSNDiagram:
                 method(*args, **kwargs)
 
         if typ == "solution":
-            # Render solution nodes on a fixed, smaller circle.  Long text is
-            # wrapped and the font is reduced until it fits within this
-            # bounding box instead of growing the circle itself.
+            # Render solution nodes on a fixed, smaller circle but keep the
+            # same font as other elements.  The circle grows as required to fit
+            # the text instead of reducing the font size.
             padding = 6 * zoom
             base_scale = 40 * zoom
-            max_dim = base_scale - 2 * padding
+            diameter = max(width + 2 * padding, height + 2 * padding)
+            scale = max(base_scale, diameter)
 
-            try:
-                # Re-create the font so we can adjust it if required.  When
-                # running headless, ``tkFont.Font`` will raise an exception and
-                # we fall back to the default rendering behaviour below.
-                font_obj = tkFont.Font(family="Arial", size=max(int(10 * zoom), 1))
-
-                text = self._wrap_text(text, font_obj, max_dim)
-                t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
-                while t_width > max_dim or t_height > max_dim:
-                    size = font_obj.cget("size") - 1
-                    if size <= 1:
-                        break
-                    font_obj = tkFont.Font(family="Arial", size=size)
-                    text = self._wrap_text(self._format_text(node), font_obj, max_dim)
-                    t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
-            except Exception:  # pragma: no cover - headless fallback
-                text = self._format_text(node)
-                font_obj = None
-
-            scale = base_scale
             draw_func = (
                 self.drawing_helper.draw_solution_shape
                 if node.is_primary_instance
@@ -311,8 +293,8 @@ class GSNDiagram:
         if node.node_type == "Solution":
             lines = [node.user_name]
             if getattr(node, "spi_target", ""):
-                prob = self._lookup_spi_probability(node.spi_target)
-                label = f"SPI: {prob:.2e}" if prob is not None else f"SPI: {node.spi_target}"
+                target = self._lookup_validation_target(node.spi_target)
+                label = f"SPI: {target:.2e}" if target is not None else f"SPI: {node.spi_target}"
                 lines.append(label)
             if getattr(node, "description", ""):
                 lines.append(node.description)
