@@ -1,4 +1,7 @@
 import types
+import os
+import sys
+import subprocess
 
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig
@@ -244,7 +247,13 @@ def test_double_click_uses_tool_action():
 
 def test_double_click_falls_back_to_webbrowser(monkeypatch, tmp_path):
     opened = {}
-    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    def fake_run(cmd, check=False):
+        opened["cmd"] = cmd
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    if hasattr(os, "startfile"):
+        monkeypatch.setattr(os, "startfile", lambda p: opened.setdefault("startfile", p))
 
     path = tmp_path / "wp.txt"
     path.write_text("data")
@@ -271,5 +280,10 @@ def test_double_click_falls_back_to_webbrowser(monkeypatch, tmp_path):
     event = types.SimpleNamespace(x=0, y=0)
     GSNDiagramWindow._on_double_click(wnd, event)
 
-    assert opened["url"] == path.resolve().as_uri()
+    if os.name == "nt":
+        assert opened["startfile"] == str(path)
+    elif sys.platform == "darwin":
+        assert opened["cmd"] == ["open", str(path)]
+    else:
+        assert opened["cmd"] == ["xdg-open", str(path)]
 
