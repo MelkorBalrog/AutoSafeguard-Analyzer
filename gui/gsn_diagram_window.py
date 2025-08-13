@@ -87,6 +87,8 @@ class GSNDiagramWindow(tk.Frame):
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
+        # Ensure the diagram has access to the application for SPI lookups
+        setattr(self.diagram, "app", getattr(self, "app", None))
         self.canvas.delete("all")
         self.id_to_node = {n.unique_id: n for n in self.diagram._traverse()}
         self.id_to_relation = {}
