@@ -30,6 +30,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
+from analysis.models import HazopDoc
 
 
 def test_work_product_registration():
@@ -243,12 +244,12 @@ def test_work_product_enabling_and_deletion_guard():
     assert toolbox.is_enabled("HAZOP")
 
     # An existing document blocks removal of the work product declaration
-    toolbox.register_created_work_product("HAZOP")
+    toolbox.register_created_work_product("HAZOP", "Doc1")
     removed = toolbox.remove_work_product("Gov", "HAZOP")
     assert removed is False
 
     # After deleting the document removal succeeds
-    toolbox.register_deleted_work_product("HAZOP")
+    toolbox.register_deleted_work_product("HAZOP", "Doc1")
     removed = toolbox.remove_work_product("Gov", "HAZOP")
     assert removed is True
     assert not toolbox.is_enabled("HAZOP")
@@ -581,6 +582,14 @@ def test_open_work_product_requires_enablement():
     assert opened["count"] == 1
 
 
+def test_phase_without_diagrams_keeps_products_enabled():
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov1", "HAZOP", "link")
+    toolbox.modules = [GovernanceModule(name="P1")]
+    toolbox.set_active_module("P1")
+    assert toolbox.enabled_products() == {"HAZOP"}
+
+
 def test_menu_work_products_toggle_and_guard_existing_docs():
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.tool_listboxes = {}
@@ -729,6 +738,86 @@ def test_diagram_hierarchy_from_object_properties():
 
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["Parent"], ["Child"]]
+
+
+def test_work_products_filtered_by_phase_in_tree():
+    """Documents appear only when their creation phase is active."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+
+    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
+    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    for d in (d1, d2):
+        d.tags.append("safety-management")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.list_diagrams()
+    toolbox.modules = [
+        GovernanceModule(name="P1", diagrams=["Gov1"]),
+        GovernanceModule(name="P2", diagrams=["Gov2"]),
+    ]
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = [HazopDoc("HZ1", []), HazopDoc("HZ2", [])]
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.tool_listboxes = {}
+    app.analysis_tree = DummyTree()
+    app.safety_mgmt_toolbox = toolbox
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app.lifecycle_var = DummyVar("P1")
+    app.on_lifecycle_selected()
+    toolbox.register_created_work_product("HAZOP", "HZ1")
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    toolbox.register_created_work_product("HAZOP", "HZ2")
+
+    app.lifecycle_var.set("P1")
+    app.on_lifecycle_selected()
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "HZ1" in names and "HZ2" not in names
+
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "HZ2" in names and "HZ1" not in names
 
 
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
