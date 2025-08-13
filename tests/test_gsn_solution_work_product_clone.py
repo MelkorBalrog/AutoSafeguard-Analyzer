@@ -155,6 +155,29 @@ def test_collect_work_products_includes_toolbox_entries():
     ]
 
 
+def test_collect_work_products_includes_toolbox_diagrams():
+    """Diagrams registered in the toolbox should appear even without work products."""
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+
+    class Toolbox:
+        def list_diagrams(self):
+            return ["DiagB", "DiagA"]
+
+        def get_work_products(self):
+            return []
+
+    class App:
+        def __init__(self):
+            self.safety_mgmt_toolbox = Toolbox()
+
+    diag.app = App()
+
+    # Result should be sorted and include all diagrams
+    assert _collect_work_products(diag) == ["DiagA", "DiagB"]
+
+
 def test_config_dialog_populates_comboboxes(monkeypatch):
     """Work product and SPI combos should list existing entries."""
 
@@ -239,9 +262,10 @@ def test_config_dialog_populates_comboboxes(monkeypatch):
     assert spi_cb.init_values is None
     assert wp_cb.configured["values"] == ["WP1"]
     assert spi_cb.configured["values"] == ["SPI1"]
-    # first existing entries should be preselected when the node has none
+    # work product should default to the first existing entry when the node has
+    # none, while the SPI target remains blank until explicitly selected.
     assert cfg.work_var.get() == "WP1"
-    assert cfg.spi_var.get() == "SPI1"
+    assert cfg.spi_var.get() == ""
 
 
 def test_config_dialog_lists_project_spis(monkeypatch):
@@ -336,7 +360,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
     # work product combobox is first, spi combobox second
     _, spi_cb = combo_holder
     assert spi_cb.configured["values"] == ["SPI1"]
-    assert cfg.spi_var.get() == "SPI1"
+    assert cfg.spi_var.get() == ""
 
 
 def test_config_dialog_lists_toolbox_work_products(monkeypatch):
