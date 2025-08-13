@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+import math
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -103,6 +104,107 @@ class DummyMenu:
     def post(self, *a, **k):
         pass
 
+
+def test_edit_probability_updates_spi(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    sol.spi_target = "SG1"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        probability=1e-4,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+    app.update_views = lambda: None
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 2e-4)
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    row = next(iter(tree.data))
+    tree.next_column = "Achieved Probability"
+    event = types.SimpleNamespace(x=0, y=0)
+    tree.bindings["<Double-Button-1>"](event)
+    assert te.probability == 2e-4
+    row = next(iter(tree.data))
+    assert tree.data[row]["values"][5] == f"{2e-4:.2e}"
+
+    class CaptureTree(DummyTree):
+        instances = []
+
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            CaptureTree.instances.append(self)
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", CaptureTree)
+    FaultTreeApp.show_safety_performance_indicators(app)
+    spi_tree = CaptureTree.instances[-1]
+    iid = next(iter(spi_tree.data))
+    assert spi_tree.data[iid]["values"][2] == f"{2e-4:.2e}"
+    expected_spi = math.log10(1e-5 / 2e-4)
+    assert spi_tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
+
+
+def test_edit_probability_in_spi_explorer(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    sol.spi_target = "SG1"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        probability=1e-4,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+    app.refresh_safety_case_table = lambda: None
+    app.update_views = lambda: None
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 5e-5)
+
+    FaultTreeApp.show_safety_performance_indicators(app)
+    tree = app._spi_tree
+    iid = next(iter(tree.data))
+    tree.selection_set(iid)
+    app._edit_spi_item()
+    iid = next(iter(tree.data))
+    assert te.probability == 5e-5
+    assert tree.data[iid]["values"][2] == f"{5e-5:.2e}"
+    expected_spi = math.log10(1e-5 / 5e-5)
+    assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
@@ -130,11 +232,11 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
     assert sol.evidence_sufficient
-    assert tree.data[iid]["values"][5] == CHECK_MARK
+    assert tree.data[iid]["values"][6] == CHECK_MARK
 
     app.refresh_safety_case_table()
     iid = next(iter(tree.data))
-    assert tree.data[iid]["values"][5] == CHECK_MARK
+    assert tree.data[iid]["values"][6] == CHECK_MARK
 
 
 def test_safety_case_cancel_does_not_toggle(monkeypatch):
