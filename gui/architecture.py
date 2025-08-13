@@ -3718,11 +3718,18 @@ class SysMLDiagramWindow(tk.Frame):
                                     conn.arrow = "both"
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
+                        rel_stereo = (
+                            "control action"
+                            if self.current_tool == "Control Action"
+                            else "feedback"
+                            if self.current_tool == "Feedback"
+                            else None
+                        )
                         rel = self.repo.create_relationship(
                             self.current_tool,
                             self.start.element_id,
                             obj.element_id,
-                            stereotype=stereo,
+                            stereotype=rel_stereo,
                         )
                         self.repo.add_relationship_to_diagram(
                             self.diagram_id, rel.rel_id
