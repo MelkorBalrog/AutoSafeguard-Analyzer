@@ -8103,17 +8103,17 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             self.toolbox,
             text="Add Work Product",
             command=self.add_work_product,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
         ttk.Button(
             self.toolbox,
             text="Add Process Area",
             command=self.add_process_area,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
         ttk.Button(
             self.toolbox,
             text="Add Lifecycle Phase",
             command=self.add_lifecycle_phase,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
