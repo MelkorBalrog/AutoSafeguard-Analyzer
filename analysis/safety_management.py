@@ -41,6 +41,29 @@ class GovernanceModule:
     modules: List["GovernanceModule"] = field(default_factory=list)
     diagrams: List[str] = field(default_factory=list)
 
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation of this module."""
+        return {
+            "name": self.name,
+            "modules": [m.to_dict() for m in self.modules],
+            "diagrams": list(self.diagrams),
+        }
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: dict) -> "GovernanceModule":
+        """Recreate a :class:`GovernanceModule` from *data*.
+
+        Nested modules are reconstructed recursively so the folder
+        hierarchy can be restored exactly as it was when saved.
+        """
+        return cls(
+            data.get("name", ""),
+            [cls.from_dict(m) for m in data.get("modules", [])],
+            list(data.get("diagrams", [])),
+        )
+
 
 @dataclass
 class SafetyManagementToolbox:
@@ -149,6 +172,47 @@ class SafetyManagementToolbox:
         """
         self._sync_diagrams()
         return list(self.diagrams.keys())
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a JSON serialisable representation of the toolbox.
+
+        All dataclass members, including the folder hierarchy stored in
+        :attr:`modules`, are converted into primitive Python types so they can
+        be saved using :mod:`json` or similar libraries.
+        """
+        return {
+            "work_products": [wp.__dict__ for wp in self.work_products],
+            "lifecycle": list(self.lifecycle),
+            "workflows": {k: list(v) for k, v in self.workflows.items()},
+            "diagrams": dict(self.diagrams),
+            "modules": [m.to_dict() for m in self.modules],
+        }
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: dict) -> "SafetyManagementToolbox":
+        """Create a toolbox instance from serialized *data*.
+
+        The folder structure is reconstructed using
+        :meth:`GovernanceModule.from_dict` ensuring that the Safety Management
+        Explorer reflects the saved hierarchy on reload.
+        """
+        toolbox = cls()
+        toolbox.work_products = [
+            SafetyWorkProduct(**wp) for wp in data.get("work_products", [])
+        ]
+        toolbox.lifecycle = list(data.get("lifecycle", []))
+        toolbox.workflows = {
+            k: list(v) for k, v in data.get("workflows", {}).items()
+        }
+        toolbox.diagrams = dict(data.get("diagrams", {}))
+        toolbox.modules = [
+            GovernanceModule.from_dict(m) for m in data.get("modules", [])
+        ]
+        return toolbox
 
     # ------------------------------------------------------------------
     def diagram_hierarchy(self) -> List[List[str]]:
