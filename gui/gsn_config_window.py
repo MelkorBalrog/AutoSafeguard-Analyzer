@@ -35,14 +35,15 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
 
     return sorted(products)
 
-
 def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:
     """Return sorted list of SPI targets available for *diagram*.
 
     Besides existing solution nodes in the diagram, this also includes
     validation targets defined on the application's top level product goals
     when an ``app`` instance is provided.  Duplicates and empty entries are
-    removed.
+    removed.  If a product goal lacks a target description, fall back to the
+    safety goal description or the node's name so that at least one identifier
+    is presented to the user.
     """
 
     targets = {
@@ -52,12 +53,18 @@ def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:
     }
     if app is None:
         app = getattr(diagram, "app", None)
-    top_events = getattr(app, "top_events", []) if app else []
-    targets.update(
-        getattr(te, "validation_desc", "")
-        for te in top_events
-        if getattr(te, "validation_desc", "")
-    )
+    if app:
+        if hasattr(app, "get_spi_targets"):
+            targets.update(app.get_spi_targets())
+        else:
+            for te in getattr(app, "top_events", []):
+                name = (
+                    getattr(te, "validation_desc", "")
+                    or getattr(te, "safety_goal_description", "")
+                    or getattr(te, "user_name", "")
+                )
+                if name:
+                    targets.add(name)
     return sorted(targets)
 
 
