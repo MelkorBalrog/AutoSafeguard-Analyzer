@@ -1416,6 +1416,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             fill=fill,
             outline="",
             width=0,
+            tags=(obj_id,),
         )
         canvas.create_oval(
             left,
@@ -1425,6 +1426,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             fill=fill,
             outline="",
             width=0,
+            tags=(obj_id,),
         )
         canvas.create_oval(
             right - h,
@@ -1434,6 +1436,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             fill=fill,
             outline="",
             width=0,
+            tags=(obj_id,),
         )
         canvas.create_line(
             left + radius,
