@@ -4215,32 +4215,43 @@ class SysMLDiagramWindow(tk.Frame):
                     return conn
                 continue
 
-            sx, sy = self.edge_point(
-                src,
-                dst.x * self.zoom,
-                dst.y * self.zoom,
-                conn.src_pos,
-            )
-            points = [(sx, sy)]
-            if conn.style == "Squared":
-                if conn.points:
-                    mx = conn.points[0][0] * self.zoom
-                else:
-                    mx = (src.x + dst.x) / 2 * self.zoom
-                points.extend([(mx, points[-1][1]), (mx, dst.y * self.zoom)])
-            elif conn.style == "Custom":
-                for px, py in conn.points:
-                    xpt = px * self.zoom
-                    ypt = py * self.zoom
-                    last = points[-1]
-                    points.extend([(xpt, last[1]), (xpt, ypt)])
-            ex, ey = self.edge_point(
-                dst,
-                src.x * self.zoom,
-                src.y * self.zoom,
-                conn.dst_pos,
-            )
-            points.append((ex, ey))
+            if conn.src == conn.dst:
+                sx, sy = self.edge_point(src, 0, 0, (1, 0))
+                size = max(src.width, src.height) * 0.5 * self.zoom
+                points = [
+                    (sx, sy),
+                    (sx + size, sy),
+                    (sx + size, sy - size),
+                    (sx, sy - size),
+                    (sx, sy),
+                ]
+            else:
+                sx, sy = self.edge_point(
+                    src,
+                    dst.x * self.zoom,
+                    dst.y * self.zoom,
+                    conn.src_pos,
+                )
+                points = [(sx, sy)]
+                if conn.style == "Squared":
+                    if conn.points:
+                        mx = conn.points[0][0] * self.zoom
+                    else:
+                        mx = (src.x + dst.x) / 2 * self.zoom
+                    points.extend([(mx, points[-1][1]), (mx, dst.y * self.zoom)])
+                elif conn.style == "Custom":
+                    for px, py in conn.points:
+                        xpt = px * self.zoom
+                        ypt = py * self.zoom
+                        last = points[-1]
+                        points.extend([(xpt, last[1]), (xpt, ypt)])
+                ex, ey = self.edge_point(
+                    dst,
+                    src.x * self.zoom,
+                    src.y * self.zoom,
+                    conn.dst_pos,
+                )
+                points.append((ex, ey))
             for a, b in zip(points[:-1], points[1:]):
                 if self._dist_to_segment((x, y), a, b) <= CONNECTION_SELECT_RADIUS:
                     return conn
@@ -5816,8 +5827,12 @@ class SysMLDiagramWindow(tk.Frame):
                         tags="connection",
                     )
             return
-        ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
-        bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
+        if a.obj_id == b.obj_id:
+            ax, ay = self.edge_point(a, 0, 0, (1, 0))
+            bx, by = ax, ay
+        else:
+            ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
+            bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
             incl_label = f"<<{conn.conn_type.lower()}>>"
@@ -5827,7 +5842,16 @@ class SysMLDiagramWindow(tk.Frame):
         src_flow = a.properties.get("flow") if a.obj_type == "Port" else None
         dst_flow = b.properties.get("flow") if b.obj_type == "Port" else None
         points = [(ax, ay)]
-        if conn.style == "Squared":
+        if a.obj_id == b.obj_id:
+            size = max(a.width, a.height) * 0.5 * self.zoom
+            points.extend(
+                [
+                    (ax + size, ay),
+                    (ax + size, ay - size),
+                    (ax, ay - size),
+                ]
+            )
+        elif conn.style == "Squared":
             if conn.points:
                 mx = conn.points[0][0] * self.zoom
             else:
