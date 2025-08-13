@@ -19,10 +19,12 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 import AutoML
-from analysis import SafetyManagementToolbox
+from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
+from tkinter import simpledialog
 
 
 def test_work_product_registration():
@@ -403,4 +405,194 @@ def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
 
     assert calls["bpmn"]
     assert not calls["activity"]
+
+
+def test_diagram_hierarchy_orders_levels():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    a = repo.create_diagram("BPMN Diagram", name="A")
+    b = repo.create_diagram("BPMN Diagram", name="B")
+    c = repo.create_diagram("BPMN Diagram", name="C")
+    for diag in (a, b, c):
+        diag.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    act_ab = repo.create_element("Action", name="AB", owner=a.package)
+    repo.add_element_to_diagram(a.diag_id, act_ab.elem_id)
+    repo.link_diagram(act_ab.elem_id, b.diag_id)
+    a.objects.append(
+        SysMLObject(1, "Action", 0.0, 0.0, element_id=act_ab.elem_id, properties={}).__dict__
+    )
+
+    act_bc = repo.create_element("Action", name="BC", owner=b.package)
+    repo.add_element_to_diagram(b.diag_id, act_bc.elem_id)
+    repo.link_diagram(act_bc.elem_id, c.diag_id)
+    b.objects.append(
+        SysMLObject(2, "Action", 0.0, 0.0, element_id=act_bc.elem_id, properties={}).__dict__
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["A"], ["B"], ["C"]]
+
+
+def test_diagram_hierarchy_from_object_properties():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    parent = repo.create_diagram("BPMN Diagram", name="Parent")
+    child = repo.create_diagram("BPMN Diagram", name="Child")
+    for d in (parent, child):
+        d.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    # Create an action object on the parent that references the child diagram
+    act = repo.create_element("Action", name="link", owner=parent.package)
+    repo.add_element_to_diagram(parent.diag_id, act.elem_id)
+    parent.objects.append(
+        SysMLObject(
+            3,
+            "Action",
+            0.0,
+            0.0,
+            element_id=act.elem_id,
+            properties={"view": child.diag_id},
+        )
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["Parent"], ["Child"]]
+
+
+def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+
+    SafetyManagementExplorer.populate(explorer)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
+    explorer.new_folder()
+    assert toolbox.modules and toolbox.modules[0].name == "Pkg"
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    explorer.new_diagram()
+    assert "Diag" in toolbox.modules[0].diagrams
+    assert "Diag" in toolbox.diagrams
+
+
+def test_tools_include_safety_management_explorer():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.manage_safety_management = lambda: None
+    app.open_safety_management_toolbox = lambda: None
+    app.show_safety_performance_indicators = lambda: None
+    app.show_safety_case = lambda: None
+    app.manage_gsn = lambda: None
+
+    app.tools = {
+        "Safety Management": app.open_safety_management_toolbox,
+        "Safety Performance Indicators": app.show_safety_performance_indicators,
+        "Safety Case": app.show_safety_case,
+        "Safety Management Explorer": app.manage_safety_management,
+        "GSN Explorer": app.manage_gsn,
+    }
+    app.tool_categories = {
+        "Safety Management": [
+            "Safety Management",
+            "Safety Management Explorer",
+            "Safety Case",
+            "Safety Performance Indicators",
+            "GSN Explorer",
+        ]
+    }
+
+    assert "Safety Management Explorer" in app.tools
+    assert "Safety Management Explorer" in app.tool_categories["Safety Management"]
+
+
+def test_diagram_drag_and_drop_between_modules():
+    toolbox = SafetyManagementToolbox()
+    toolbox.create_diagram("Diag1")
+    mod1 = GovernanceModule("Mod1", diagrams=["Diag1"])
+    mod2 = GovernanceModule("Mod2")
+    toolbox.modules.extend([mod1, mod2])
+
+    class DummyTree:
+        def __init__(self):
+            self.drop_target = ""
+            self.parents = {"mod1": "", "mod2": "", "diag1": "mod1"}
+
+        def identify_row(self, _y):
+            return self.drop_target
+
+        def move(self, item, parent, _index):
+            self.parents[item] = parent
+
+        def parent(self, item):
+            return self.parents.get(item, "")
+
+    explorer = types.SimpleNamespace()
+    explorer.toolbox = toolbox
+    explorer.tree = DummyTree()
+    explorer.item_map = {
+        "mod1": ("module", mod1),
+        "mod2": ("module", mod2),
+        "diag1": ("diagram", "Diag1"),
+    }
+    explorer._remove_name = SafetyManagementExplorer._remove_name.__get__(
+        explorer, types.SimpleNamespace
+    )
+    explorer._remove_module = SafetyManagementExplorer._remove_module.__get__(
+        explorer, types.SimpleNamespace
+    )
+    explorer._drag_item = "diag1"
+    explorer.tree.drop_target = "mod2"
+    SafetyManagementExplorer._on_drop(explorer, types.SimpleNamespace(y=0))
+    assert "Diag1" in mod2.diagrams and "Diag1" not in mod1.diagrams
+
+    explorer._drag_item = "diag1"
+    explorer.tree.drop_target = ""
+    SafetyManagementExplorer._on_drop(explorer, types.SimpleNamespace(y=0))
+    assert "Diag1" not in mod2.diagrams
+    assert explorer.tree.parents["diag1"] == ""
 

@@ -243,6 +243,7 @@ from gui.review_toolbox import (
 )
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
+from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
@@ -1959,6 +1960,12 @@ class FaultTreeApp:
         self.gsn_module_icon = self.pkg_icon
         self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
         # small icons for diagram types shown in the explorer
+        # an icon for packages is also required when building the
+        # architecture tree; previously this attribute was missing which
+        # resulted in `AttributeError` when refreshing views.  Creating a
+        # dedicated package icon here keeps it available throughout the
+        # application lifecycle.
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
@@ -2165,6 +2172,9 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(
+            label="Safety Management Explorer", command=self.manage_safety_management
+        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
@@ -2291,6 +2301,7 @@ class FaultTreeApp:
             "Safety Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Safety Case": self.show_safety_case,
+            "Safety Management Explorer": self.manage_safety_management,
             "GSN Explorer": self.manage_gsn,
         }
 
@@ -2346,6 +2357,7 @@ class FaultTreeApp:
             ],
             "Safety Management": [
                 "Safety Management",
+                "Safety Management Explorer",
                 "Safety Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",
@@ -7373,27 +7385,7 @@ class FaultTreeApp:
 
         diagram_section_added = False
 
-        if arch_diagrams:
-            Story.append(Paragraph("Architecture", pdf_styles["Heading1"]))
-            Story.append(Spacer(1, 12))
-            for diag in arch_diagrams:
-                img = self.capture_sysml_diagram(diag)
-                if img is None:
-                    continue
-                buf = BytesIO()
-                img.save(buf, format="PNG")
-                buf.seek(0)
-                desired_width, desired_height = scale_image(img)
-                rl_img = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
-                Story.append(Spacer(1, 12))
-                Story.append(rl_img)
-                Story.append(Spacer(1, 12))
-            diagram_section_added = True
-
         if gov_diagrams:
-            if diagram_section_added:
-                Story.append(PageBreak())
             Story.append(Paragraph("Governance Diagrams", pdf_styles["Heading1"]))
             Story.append(Spacer(1, 12))
             for diag in gov_diagrams:
@@ -7426,6 +7418,119 @@ class FaultTreeApp:
                 desired_width, desired_height = scale_image(img)
                 rl_img = RLImage(buf, width=desired_width, height=desired_height)
                 Story.append(Paragraph(diag.root.user_name or diag.diag_id, pdf_styles["Heading2"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_img)
+                Story.append(Spacer(1, 12))
+            diagram_section_added = True
+
+        # --- Safety Case ---
+        all_gsn_diagrams = list(getattr(self, "gsn_diagrams", [])) + [
+            d for m in getattr(self, "gsn_modules", []) for d in _collect_gsn_diagrams(m)
+        ]
+        safety_rows = []
+        for diag in all_gsn_diagrams:
+            for node in getattr(diag, "nodes", []):
+                if (
+                    getattr(node, "node_type", "").lower() == "solution"
+                    and getattr(node, "is_primary_instance", True)
+                ):
+                    prob = ""
+                    v_target = ""
+                    spi_val = ""
+                    p_val = None
+                    vt_val = None
+                    target = getattr(node, "spi_target", "")
+                    if target:
+                        for te in getattr(self, "top_events", []):
+                            label = (
+                                getattr(te, "validation_desc", "")
+                                or getattr(te, "safety_goal_description", "")
+                                or getattr(te, "user_name", "")
+                                or f"SG {getattr(te, 'unique_id', '')}"
+                            )
+                            if label == target:
+                                p = getattr(te, "probability", "")
+                                vt = getattr(te, "validation_target", "")
+                                if p not in ("", None):
+                                    try:
+                                        p_val = float(p)
+                                        prob = f"{p_val:.2e}"
+                                    except Exception:
+                                        prob = ""
+                                if vt not in ("", None):
+                                    try:
+                                        vt_val = float(vt)
+                                        v_target = f"{vt_val:.2e}"
+                                    except Exception:
+                                        v_target = ""
+                                try:
+                                    if vt_val not in (None, 0) and p_val not in (None, 0):
+                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                                except Exception:
+                                    spi_val = ""
+                                break
+                    safety_rows.append(
+                        [
+                            node.user_name,
+                            node.description,
+                            node.work_product,
+                            node.evidence_link,
+                            v_target,
+                            prob,
+                            spi_val,
+                            CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
+                            getattr(node, "manager_notes", ""),
+                        ]
+                    )
+        if safety_rows:
+            if diagram_section_added:
+                Story.append(PageBreak())
+            Story.append(Paragraph("Safety Case", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            data = [
+                [
+                    "Solution",
+                    "Description",
+                    "Work Product",
+                    "Evidence Link",
+                    "Verification Target",
+                    "Achieved Probability",
+                    "SPI",
+                    "Evidence OK",
+                    "Notes",
+                ]
+            ] + safety_rows
+            table = Table(data, repeatRows=1)
+            table.setStyle(
+                TableStyle(
+                    [
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTSIZE', (0,0), (-1,-1), 10),
+                        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+                    ]
+                )
+            )
+            Story.append(table)
+            Story.append(Spacer(1, 12))
+            diagram_section_added = True
+
+        if arch_diagrams:
+            if diagram_section_added:
+                Story.append(PageBreak())
+            Story.append(Paragraph("Architecture", pdf_styles["Heading1"]))
+            Story.append(Spacer(1, 12))
+            for diag in arch_diagrams:
+                img = self.capture_sysml_diagram(diag)
+                if img is None:
+                    continue
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(img)
+                rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
                 Story.append(Spacer(1, 12))
                 Story.append(rl_img)
                 Story.append(Spacer(1, 12))
@@ -7552,259 +7657,6 @@ class FaultTreeApp:
         # Define mapping from numeric level to qualitative label.
         level_labels = {1: "PAL1", 2: "PAL2", 3: "PAL3", 4: "PAL4", 5: "PAL5"}
     
-        # ------------------------------------------------------------------
-        # Helper: Get the highest Prototype Assurance Level (PAL) from immediate parents.
-        # For a given node (or its clone), this returns the maximum assurance (as an integer 1-5)
-        # among all its immediate parents. If no parent exists, it returns the node's own assurance.
-        def get_immediate_parent_assurance(node):
-            if node.parents:
-                assurances = []
-                for p in node.parents:
-                    # For clones, use the original parent's assurance value.
-                    parent = p if p.is_primary_instance else p.original
-                    try:
-                        val = int(parent.quant_value)
-                    except (TypeError, ValueError):
-                        val = 1
-                    assurances.append(val)
-                return max(assurances) if assurances else int(node.quant_value if node.quant_value is not None else 1)
-            else:
-                return int(node.quant_value if node.quant_value is not None else 1)
-        # ------------------------------------------------------------------
-    
-        # --- Safety Goals Summary Table ---
-        safety_goals_data = []
-        header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
-        safety_goals_data.append([
-            Paragraph("<b>Safety Goal</b>", header_style),
-            Paragraph("<b>Highest Immediate Parent Assurance</b>", header_style),
-            Paragraph("<b>Linked Recommendations</b>", header_style)
-        ])
-                
-        # Instead of iterating over only top-level events,
-        # we iterate over all nodes that have safety requirements.
-        grouped_by_linked = {}
-        for node in self.get_all_nodes_in_model():
-            if hasattr(node, "safety_requirements") and node.safety_requirements:
-                # Determine the safety goal from the node.
-                safety_goal = node.safety_goal_description.strip() if node.safety_goal_description.strip() != "" else node.name
-                # Get the highest assurance from its immediate parent(s)
-                parent_assur = get_immediate_parent_assurance(node)
-                assurance_str = f"Level {parent_assur} ({level_labels.get(parent_assur, 'N/A')})"
-                # Use the node's description to generate a linked recommendation.
-                # (You can adjust this method as needed.)
-                linked_rec = self.generate_recommendations_for_top_event(node)
-                extra_recs = self.get_extra_recommendations_list(node.description,
-                                                                  AutoML_Helper.discretize_level(node.quant_value))
-                if not extra_recs:
-                    extra_recs = ["No Extra Recommendation"]
-                # Group by the linked recommendation text.
-                grouped_by_linked.setdefault(linked_rec, {})
-                for extra in extra_recs:
-                    grouped_by_linked[linked_rec].setdefault(extra, [])
-                    grouped_by_linked[linked_rec][extra].append(f"- {safety_goal} (Assurance: {assurance_str})")
-    
-        sg_data = []
-        sg_data.append([
-            Paragraph("<b>Linked Recommendation</b>", header_style),
-            Paragraph("<b>Safety Goals Grouped by Extra Recommendation</b>", header_style)
-        ])
-        for linked_rec, extra_groups in grouped_by_linked.items():
-            nested_text = ""
-            for extra_rec, goals in extra_groups.items():
-                nested_text += f"<b>{extra_rec}:</b><br/>" + "<br/>".join(goals) + "<br/><br/>"
-            sg_data.append([
-                Paragraph(linked_rec, pdf_styles["Normal"]),
-                Paragraph(nested_text, pdf_styles["Normal"])
-            ])
-        if len(sg_data) > 1:
-            sg_table = Table(sg_data, colWidths=[200, 400])
-            sg_table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('FONTSIZE', (0,0), (-1,-1), 10),
-                ('ALIGN', (0,0), (-1,0), 'CENTER')
-            ]))
-            Story.append(Paragraph("Safety Goals Summary:", pdf_styles["Heading2"]))
-            Story.append(Spacer(1, 12))
-            Story.append(sg_table)
-            Story.append(Spacer(1, 12))
-        Story.append(PageBreak())
-        
-        # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
-
-        cause_effect_rows = self.build_cause_effect_data()
-        processed_ids = set()
-        for idx, event in enumerate(self.top_events, start=1):
-            if event.unique_id in processed_ids:
-                continue
-            processed_ids.add(event.unique_id)
-            
-            Story.append(Paragraph(f"Top-Level Event #{idx}: {event.name}", pdf_styles["Heading2"]))
-            Story.append(Spacer(1, 12))
-            
-            # Argumentation text
-            argumentation_text = self.generate_argumentation_report(event)
-            if isinstance(argumentation_text, list):
-                argumentation_text = "\n".join(str(x) for x in argumentation_text)
-            argumentation_text = argumentation_text.replace("\n", "<br/>")
-            Story.append(Paragraph(argumentation_text, preformatted_style))
-            Story.append(Spacer(1, 12))
-
-            # (A) "Detailed" event diagram (the subtree as captured in code)
-            event_img = self.capture_event_diagram(event)
-            if event_img is not None:
-                buf = BytesIO()
-                event_img.save(buf, format="PNG")
-                buf.seek(0)
-                desired_width, desired_height = scale_image(event_img)
-                rl_img = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph("Detailed Diagram (Subtree):", pdf_styles["Heading3"]))
-                Story.append(Spacer(1, 12))
-                Story.append(rl_img)
-                Story.append(Spacer(1, 12))
-
-            # (B) Cause and effect chain matching the on-screen diagram
-            ce_row = next((r for r in cause_effect_rows if r["malfunction"] == getattr(event, "malfunction", "")), None)
-            if ce_row:
-                ce_img = self.render_cause_effect_diagram(ce_row)
-                if ce_img:
-                    buf = BytesIO()
-                    ce_img.save(buf, format="PNG")
-                    buf.seek(0)
-                    desired_width, desired_height = scale_image(ce_img)
-                    rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
-                    Story.append(Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"]))
-                    Story.append(Spacer(1, 12))
-                    Story.append(rl_img2)
-                    Story.append(Spacer(1, 12))
-            Story.append(PageBreak())
-        
-        # --- Insert Page Diagrams (for 'page gates') ---
-        unique_page_nodes = {}
-        for evt in self.top_events:
-            for pg in self.get_page_nodes(evt):
-                if pg.is_primary_instance:
-                    unique_page_nodes[pg.unique_id] = pg
-
-        if unique_page_nodes:
-            Story.append(Paragraph("Page Diagrams:", pdf_styles["Heading2"]))
-            Story.append(Spacer(1, 12))
-
-        for page_node in unique_page_nodes.values():
-            page_img = self.capture_page_diagram(page_node)
-            if page_img is not None:
-                buf = BytesIO()
-                page_img.save(buf, format="PNG")
-                buf.seek(0)
-                desired_width, desired_height = scale_image(page_img)
-                rl_page_img = RLImage(buf, width=desired_width, height=desired_height)
-                Story.append(Paragraph(f"Page Diagram for: {page_node.name}", pdf_styles["Heading3"]))
-                Story.append(Spacer(1, 12))
-                Story.append(rl_page_img)
-                Story.append(Spacer(1, 12))
-            else:
-                Story.append(Paragraph("A page diagram could not be captured.", pdf_styles["Normal"]))
-                Story.append(Spacer(1, 12))
-
-        # --- Safety Case ---
-        def _collect_gsn_diagrams(module):
-            diagrams = list(module.diagrams)
-            for sub in module.modules:
-                diagrams.extend(_collect_gsn_diagrams(sub))
-            return diagrams
-
-        all_gsn_diagrams = list(getattr(self, "gsn_diagrams", [])) + [
-            d for m in getattr(self, "gsn_modules", []) for d in _collect_gsn_diagrams(m)
-        ]
-        safety_rows = []
-        for diag in all_gsn_diagrams:
-            for node in getattr(diag, "nodes", []):
-                if (
-                    getattr(node, "node_type", "").lower() == "solution"
-                    and getattr(node, "is_primary_instance", True)
-                ):
-                    prob = ""
-                    v_target = ""
-                    spi_val = ""
-                    p_val = None
-                    vt_val = None
-                    target = getattr(node, "spi_target", "")
-                    if target:
-                        for te in getattr(self, "top_events", []):
-                            label = (
-                                getattr(te, "validation_desc", "")
-                                or getattr(te, "safety_goal_description", "")
-                                or getattr(te, "user_name", "")
-                                or f"SG {getattr(te, 'unique_id', '')}"
-                            )
-                            if label == target:
-                                p = getattr(te, "probability", "")
-                                vt = getattr(te, "validation_target", "")
-                                if p not in ("", None):
-                                    try:
-                                        p_val = float(p)
-                                        prob = f"{p_val:.2e}"
-                                    except Exception:
-                                        prob = ""
-                                if vt not in ("", None):
-                                    try:
-                                        vt_val = float(vt)
-                                        v_target = f"{vt_val:.2e}"
-                                    except Exception:
-                                        v_target = ""
-                                try:
-                                    if vt_val not in (None, 0) and p_val not in (None, 0):
-                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                                except Exception:
-                                    spi_val = ""
-                                break
-                    safety_rows.append(
-                        [
-                            node.user_name,
-                            node.description,
-                            node.work_product,
-                            node.evidence_link,
-                            v_target,
-                            prob,
-                            spi_val,
-                            CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
-                            getattr(node, "manager_notes", ""),
-                        ]
-                    )
-        if safety_rows:
-            Story.append(PageBreak())
-            Story.append(Paragraph("Safety Case", pdf_styles["Heading2"]))
-            Story.append(Spacer(1, 12))
-            data = [
-                [
-                    "Solution",
-                    "Description",
-                    "Work Product",
-                    "Evidence Link",
-                    "Verification Target",
-                    "Achieved Probability",
-                    "SPI",
-                    "Evidence OK",
-                    "Notes",
-                ]
-            ] + safety_rows
-            table = Table(data, repeatRows=1)
-            table.setStyle(
-                TableStyle(
-                    [
-                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                        ('FONTSIZE', (0,0), (-1,-1), 10),
-                        ('ALIGN', (0,0), (-1,0), 'CENTER'),
-                    ]
-                )
-            )
-            Story.append(table)
-            Story.append(Spacer(1, 12))
-
         # --- HAZOP Analyses ---
         if self.hazop_docs:
             Story.append(PageBreak())
@@ -7822,49 +7674,6 @@ class FaultTreeApp:
                     ('VALIGN', (0,0), (-1,-1), 'TOP'),
                     ('FONTSIZE', (0,0), (-1,-1), 8)
                 ]))
-                Story.append(table)
-                Story.append(Spacer(1, 12))
-
-        # --- Risk Assessment ---
-        if self.hara_docs:
-            Story.append(PageBreak())
-            Story.append(
-                Paragraph(
-                    "Risk Assessment",
-                    pdf_styles["Heading2"],
-                )
-            )
-            Story.append(Spacer(1, 12))
-            for hara_doc in self.hara_docs:
-                Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
-                data = [[
-                    "Malfunction",
-                    "Hazard",
-                    "Severity",
-                    "Exposure",
-                    "Controllability",
-                    "ASIL",
-                    "Safety Goal",
-                ]]
-                for e in hara_doc.entries:
-                    data.append([
-                        e.malfunction,
-                        e.hazard,
-                        str(e.severity),
-                        str(e.exposure),
-                        str(e.controllability),
-                        e.asil,
-                        e.safety_goal,
-                    ])
-                table = Table(data, repeatRows=1)
-                table.setStyle(
-                    TableStyle([
-                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                        ('FONTSIZE', (0,0), (-1,-1), 8)
-                    ])
-                )
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
@@ -7916,6 +7725,191 @@ class FaultTreeApp:
                     ('FONTSIZE', (0,0), (-1,-1), 8)
                 ]))
                 Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- Risk Assessment ---
+        if self.hara_docs:
+            Story.append(PageBreak())
+            Story.append(Paragraph("Risk Assessment", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for hara_doc in self.hara_docs:
+                Story.append(Paragraph(hara_doc.name, pdf_styles["Heading3"]))
+                data = [[
+                    "Malfunction",
+                    "Hazard",
+                    "Severity",
+                    "Exposure",
+                    "Controllability",
+                    "ASIL",
+                    "Safety Goal",
+                ]]
+                for e in hara_doc.entries:
+                    data.append([
+                        e.malfunction,
+                        e.hazard,
+                        str(e.severity),
+                        str(e.exposure),
+                        str(e.controllability),
+                        e.asil,
+                        e.safety_goal,
+                    ])
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTSIZE', (0,0), (-1,-1), 8)
+                    ])
+                )
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # ------------------------------------------------------------------
+        # Helper: Get the highest Prototype Assurance Level (PAL) from immediate parents.
+        # For a given node (or its clone), this returns the maximum assurance (as an integer 1-5)
+        # among all its immediate parents. If no parent exists, it returns the node's own assurance.
+        def get_immediate_parent_assurance(node):
+            if node.parents:
+                assurances = []
+                for p in node.parents:
+                    parent = p if p.is_primary_instance else p.original
+                    try:
+                        val = int(parent.quant_value)
+                    except (TypeError, ValueError):
+                        val = 1
+                    assurances.append(val)
+                return max(assurances) if assurances else int(node.quant_value if node.quant_value is not None else 1)
+            else:
+                return int(node.quant_value if node.quant_value is not None else 1)
+        # ------------------------------------------------------------------
+
+        # --- Safety Goals Summary Table ---
+        safety_goals_data = []
+        header_style = ParagraphStyle(name="SafetyGoalsHeader", parent=pdf_styles["Normal"], fontSize=10, leading=12, alignment=1)
+        safety_goals_data.append([
+            Paragraph("<b>Safety Goal</b>", header_style),
+            Paragraph("<b>Highest Immediate Parent Assurance</b>", header_style),
+            Paragraph("<b>Linked Recommendations</b>", header_style)
+        ])
+
+        # Instead of iterating over only top-level events,
+        # we iterate over all nodes that have safety requirements.
+        grouped_by_linked = {}
+        for node in self.get_all_nodes_in_model():
+            if hasattr(node, "safety_requirements") and node.safety_requirements:
+                safety_goal = node.safety_goal_description.strip() if node.safety_goal_description.strip() != "" else node.name
+                parent_assur = get_immediate_parent_assurance(node)
+                assurance_str = f"Level {parent_assur} ({level_labels.get(parent_assur, 'N/A')})"
+                linked_rec = self.generate_recommendations_for_top_event(node)
+                extra_recs = self.get_extra_recommendations_list(node.description,
+                                                                  AutoML_Helper.discretize_level(node.quant_value))
+                if not extra_recs:
+                    extra_recs = ["No Extra Recommendation"]
+                grouped_by_linked.setdefault(linked_rec, {})
+                for extra in extra_recs:
+                    grouped_by_linked[linked_rec].setdefault(extra, [])
+                    grouped_by_linked[linked_rec][extra].append(f"- {safety_goal} (Assurance: {assurance_str})")
+
+        sg_data = []
+        sg_data.append([
+            Paragraph("<b>Linked Recommendation</b>", header_style),
+            Paragraph("<b>Safety Goals Grouped by Extra Recommendation</b>", header_style)
+        ])
+        for linked_rec, extra_groups in grouped_by_linked.items():
+            nested_text = ""
+            for extra_rec, goals in extra_groups.items():
+                nested_text += f"<b>{extra_rec}:</b><br/>" + "<br/>".join(goals) + "<br/><br/>"
+            sg_data.append([
+                Paragraph(linked_rec, pdf_styles["Normal"]),
+                Paragraph(nested_text, pdf_styles["Normal"])
+            ])
+        if len(sg_data) > 1:
+            sg_table = Table(sg_data, colWidths=[200, 400])
+            sg_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('FONTSIZE', (0,0), (-1,-1), 10),
+                ('ALIGN', (0,0), (-1,0), 'CENTER')
+            ]))
+            Story.append(Paragraph("Safety Goals Summary:", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            Story.append(sg_table)
+            Story.append(Spacer(1, 12))
+        Story.append(PageBreak())
+
+        # --- Per-Top-Level-Event Content (Diagrams and Argumentation) ---
+
+        cause_effect_rows = self.build_cause_effect_data()
+        processed_ids = set()
+        for idx, event in enumerate(self.top_events, start=1):
+            if event.unique_id in processed_ids:
+                continue
+            processed_ids.add(event.unique_id)
+
+            Story.append(Paragraph(f"Top-Level Event #{idx}: {event.name}", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+
+            argumentation_text = self.generate_argumentation_report(event)
+            if isinstance(argumentation_text, list):
+                argumentation_text = "\n".join(str(x) for x in argumentation_text)
+            argumentation_text = argumentation_text.replace("\n", "<br/>")
+            Story.append(Paragraph(argumentation_text, preformatted_style))
+            Story.append(Spacer(1, 12))
+
+            event_img = self.capture_event_diagram(event)
+            if event_img is not None:
+                buf = BytesIO()
+                event_img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(event_img)
+                rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph("Detailed Diagram (Subtree):", pdf_styles["Heading3"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_img)
+                Story.append(Spacer(1, 12))
+
+            ce_row = next((r for r in cause_effect_rows if r["malfunction"] == getattr(event, "malfunction", "")), None)
+            if ce_row:
+                ce_img = self.render_cause_effect_diagram(ce_row)
+                if ce_img:
+                    buf = BytesIO()
+                    ce_img.save(buf, format="PNG")
+                    buf.seek(0)
+                    desired_width, desired_height = scale_image(ce_img)
+                    rl_img2 = RLImage(buf, width=desired_width, height=desired_height)
+                    Story.append(Paragraph("Cause and Effect Diagram:", pdf_styles["Heading3"]))
+                    Story.append(Spacer(1, 12))
+                    Story.append(rl_img2)
+                    Story.append(Spacer(1, 12))
+            Story.append(PageBreak())
+
+        # --- Insert Page Diagrams (for 'page gates') ---
+        unique_page_nodes = {}
+        for evt in self.top_events:
+            for pg in self.get_page_nodes(evt):
+                if pg.is_primary_instance:
+                    unique_page_nodes[pg.unique_id] = pg
+
+        if unique_page_nodes:
+            Story.append(Paragraph("Page Diagrams:", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+
+        for page_node in unique_page_nodes.values():
+            page_img = self.capture_page_diagram(page_node)
+            if page_img is not None:
+                buf = BytesIO()
+                page_img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(page_img)
+                rl_page_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph(f"Page Diagram for: {page_node.name}", pdf_styles["Heading3"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_page_img)
+                Story.append(Spacer(1, 12))
+            else:
+                Story.append(Paragraph("A page diagram could not be captured.", pdf_styles["Normal"]))
                 Story.append(Spacer(1, 12))
 
         # --- FMEA Tables ---
@@ -8498,6 +8492,11 @@ class FaultTreeApp:
         for diag in self.management_diagrams:
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
                 self.open_management_window(diag.diag_id)
+                return
+
+        for diag in getattr(self, "all_gsn_diagrams", []):
+            if getattr(diag.root, "user_name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_gsn_diagram(diag)
                 return
 
         for diag in getattr(self, "all_gsn_diagrams", []):
@@ -15797,6 +15796,21 @@ class FaultTreeApp:
             self._gsn_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
+    def manage_safety_management(self):
+        if not hasattr(self, "safety_mgmt_toolbox"):
+            from analysis import SafetyManagementToolbox as _SMT
+
+            self.safety_mgmt_toolbox = _SMT()
+        if hasattr(self, "_safety_exp_tab") and self._safety_exp_tab.winfo_exists():
+            self.doc_nb.select(self._safety_exp_tab)
+        else:
+            self._safety_exp_tab = self._new_tab("Safety Management Explorer")
+            self._safety_exp_window = SafetyManagementExplorer(
+                self._safety_exp_tab, self, self.safety_mgmt_toolbox
+            )
+            self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
     def open_gsn_diagram(self, diagram):
         """Open a GSN diagram inside a new notebook tab."""
         existing = self.diagram_tabs.get(diagram.diag_id)
@@ -16070,9 +16084,55 @@ class FaultTreeApp:
         return _search_modules(getattr(self, "gsn_modules", []))
 
     def sync_nodes_by_id(self, updated_node):
-        # Always work with the primary instance.
+        """Synchronize all nodes (original and clones) sharing an ID.
+
+        If *updated_node* is a clone, its values are first copied back to the
+        original before propagating to all other clones.  If *updated_node* is
+        the original, the values are simply pushed to all clones.
+        """
+
+        # If a clone was edited, copy its changes to the original before
+        # propagating.
         if not updated_node.is_primary_instance and updated_node.original:
-            updated_node = updated_node.original
+            clone = updated_node
+            updated_node = clone.original
+
+            attrs = [
+                "node_type",
+                "user_name",
+                "description",
+                "rationale",
+                "quant_value",
+                "gate_type",
+                "severity",
+                "input_subtype",
+                "equation",
+                "detailed_equation",
+                "is_page",
+                "failure_prob",
+                "prob_formula",
+                "failure_mode_ref",
+                "fmea_effect",
+                "fmea_cause",
+                "fmea_severity",
+                "fmea_occurrence",
+                "fmea_detection",
+                "fmea_component",
+                "fmeda_malfunction",
+                "fmeda_safety_goal",
+                "fmeda_diag_cov",
+                "fmeda_fit",
+                "fmeda_spfm",
+                "fmeda_lpfm",
+                "fmeda_fault_type",
+                "fmeda_fault_fraction",
+            ]
+            for attr in attrs:
+                setattr(updated_node, attr, getattr(clone, attr))
+
+            # Remove the clone marker before storing the label on the original.
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+
         updated_primary_id = updated_node.unique_id
 
         nodes_to_check = self.get_all_nodes(self.root_node)
@@ -16153,6 +16213,8 @@ class FaultTreeApp:
             new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
             if new_name is not None:
                 self.selected_node.user_name = new_name.strip()
+                # Ensure all clones and the original stay in sync.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit User Name", "Select a node first.")
@@ -16162,6 +16224,8 @@ class FaultTreeApp:
             new_desc = simpledialog.askstring("Edit Description", "Enter new description:", initialvalue=self.selected_node.description)
             if new_desc is not None:
                 self.selected_node.description = new_desc
+                # Propagate the updated description across clones/original.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit Description", "Select a node first.")
@@ -16171,6 +16235,8 @@ class FaultTreeApp:
             new_rat = simpledialog.askstring("Edit Rationale", "Enter new rationale:", initialvalue=self.selected_node.rationale)
             if new_rat is not None:
                 self.selected_node.rationale = new_rat
+                # Synchronize rationale changes with related clones.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit Rationale", "Select a node first.")
@@ -16181,6 +16247,8 @@ class FaultTreeApp:
                 new_val = simpledialog.askfloat("Edit Value", "Enter new value (1-5):", initialvalue=self.selected_node.quant_value)
                 if new_val is not None and 1 <= new_val <= 5:
                     self.selected_node.quant_value = new_val
+                    # Keep all nodes sharing this ID up to date.
+                    self.sync_nodes_by_id(self.selected_node)
                     self.update_views()
                 else:
                     messagebox.showerror("Error", "Value must be between 1 and 5.")
@@ -16194,6 +16262,8 @@ class FaultTreeApp:
             new_gt = simpledialog.askstring("Edit Gate Type", "Enter new gate type (AND/OR):", initialvalue=self.selected_node.gate_type)
             if new_gt is not None and new_gt.upper() in ["AND", "OR"]:
                 self.selected_node.gate_type = new_gt.upper()
+                # Reflect gate type changes everywhere.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
             else:
                 messagebox.showerror("Error", "Gate type must be AND or OR.")
