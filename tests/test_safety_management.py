@@ -72,6 +72,12 @@ class DummyCanvas:
     def create_polygon(self, *args, **kwargs):
         self.polygon_calls.append((args, kwargs))
 
+    def canvasx(self, x):
+        return x
+
+    def canvasy(self, y):
+        return y
+
 
 def test_activity_boundary_label_rotated_left():
     SysMLRepository._instance = None
@@ -1496,6 +1502,42 @@ def test_work_product_color_and_text_wrapping():
     win.draw_object(obj)
     _, poly_kwargs = win.canvas.polygon_calls[0]
     assert poly_kwargs["fill"] == "#d5e8d4"
+
+
+def test_work_product_shapes_fixed_size():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.start = None
+    win.current_tool = "Select"
+    win.select_rect_start = None
+    win.dragging_endpoint = None
+    win.selected_conn = None
+    win.dragging_point_index = None
+    win.conn_drag_offset = None
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        width=60.0,
+        height=80.0,
+        properties={"name": "HAZOP"},
+    )
+    win.objects = [obj]
+    win.selected_obj = obj
+    assert win.hit_resize_handle(obj, 0.0, 0.0) is None
+    win.resizing_obj = obj
+    win.resize_edge = "se"
+    event = types.SimpleNamespace(x=100, y=100)
+    win.on_left_drag(event)
+    assert obj.width == 60.0
+    assert obj.height == 80.0
 
 
 def test_propagation_connection_validation():
