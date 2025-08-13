@@ -15456,19 +15456,16 @@ class FaultTreeApp:
         self.refresh_all()
         
     def copy_node(self):
-        """Copy the currently selected node into the clipboard."""
         node = self.selected_node
-        # If selected_node is not set, try to get it from the tree selection.
-        if not node:
+        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
             if sel:
                 tags = self.analysis_tree.item(sel[0], "tags")
                 if tags:
                     node = self.find_node_by_id(self.root_node, int(tags[0]))
         if node and node != self.root_node:
-            # Ensure selected_node tracks the node being copied.
-            self.selected_node = node
             self.clipboard_node = node
+            self.selected_node = node
             self.cut_mode = False
         else:
             messagebox.showwarning("Copy", "Select a non-root node to copy.")
@@ -15476,21 +15473,26 @@ class FaultTreeApp:
     def cut_node(self):
         """Store the currently selected node for a cut & paste operation."""
         node = self.selected_node
-        if not node:
+        if (node is None or node == self.root_node) and hasattr(self, "analysis_tree"):
             sel = self.analysis_tree.selection()
             if sel:
                 tags = self.analysis_tree.item(sel[0], "tags")
                 if tags:
                     node = self.find_node_by_id(self.root_node, int(tags[0]))
         if node and node != self.root_node:
-            self.selected_node = node
             self.clipboard_node = node
+            self.selected_node = node
             self.cut_mode = True
         else:
             messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_node(self):
-        # 1) Determine target from selection or current selected node.
+        # 1) Ensure clipboard is not empty.
+        if not self.clipboard_node:
+            messagebox.showwarning("Paste", "Clipboard is empty.")
+            return
+
+        # 2) Determine target from selection or current selected node.
         target = None
         sel = self.analysis_tree.selection()
         if sel:
@@ -15503,19 +15505,14 @@ class FaultTreeApp:
             messagebox.showwarning("Paste", "Select a target node to paste into.")
             return
 
-        # 2) Do not allow pasting into base events.
+        # 3) Do not allow pasting into base events.
         if target.node_type.upper() in ["CONFIDENCE LEVEL", "ROBUSTNESS SCORE"]:
             messagebox.showwarning("Paste", "Cannot paste into a base event.")
             return
 
-        # 3) Always use the primary instance of target.
+        # 4) Always use the primary instance of target.
         if not target.is_primary_instance:
             target = target.original
-
-        # 4) Ensure clipboard is not empty.
-        if not self.clipboard_node:
-            messagebox.showwarning("Paste", "Clipboard is empty.")
-            return
 
         # 5) Prevent self-pasting.
         if target.unique_id == self.clipboard_node.unique_id:
