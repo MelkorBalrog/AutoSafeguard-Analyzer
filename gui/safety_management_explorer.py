@@ -50,6 +50,7 @@ class SafetyManagementExplorer(tk.Frame):
         self.folder_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icon = self._create_icon("rect", "#4682b4")
         self.item_map: Dict[str, tuple[str, object]] = {}
+        self.root_iid = ""
 
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<ButtonPress-1>", self._on_drag_start)
@@ -63,6 +64,11 @@ class SafetyManagementExplorer(tk.Frame):
         self.tree.delete(*self.tree.get_children(""))
         self.toolbox.list_diagrams()
 
+        self.root_iid = self.tree.insert(
+            "", "end", text="Diagrams", image=self.folder_icon, open=True
+        )
+        self.item_map[self.root_iid] = ("root", None)
+
         def _add_module(parent: str, mod: GovernanceModule) -> None:
             for sub in mod.modules:
                 sub_id = self.tree.insert(parent, "end", text=sub.name, image=self.folder_icon)
@@ -73,13 +79,17 @@ class SafetyManagementExplorer(tk.Frame):
                 self.item_map[diag_id] = ("diagram", name)
 
         for mod in self.toolbox.modules:
-            mod_id = self.tree.insert("", "end", text=mod.name, image=self.folder_icon)
+            mod_id = self.tree.insert(
+                self.root_iid, "end", text=mod.name, image=self.folder_icon
+            )
             self.item_map[mod_id] = ("module", mod)
             _add_module(mod_id, mod)
 
         for name in sorted(self.toolbox.diagrams.keys()):
             if not self._in_any_module(name, self.toolbox.modules):
-                iid = self.tree.insert("", "end", text=name, image=self.diagram_icon)
+                iid = self.tree.insert(
+                    self.root_iid, "end", text=name, image=self.diagram_icon
+                )
                 self.item_map[iid] = ("diagram", name)
 
     # ------------------------------------------------------------------
@@ -93,7 +103,7 @@ class SafetyManagementExplorer(tk.Frame):
             typ, obj = self.item_map.get(sel[0], (None, None))
             if typ == "module":
                 obj.modules.append(folder)
-            else:
+            else:  # root or other selections add to top level
                 self.toolbox.modules.append(folder)
         else:
             self.toolbox.modules.append(folder)
@@ -103,17 +113,22 @@ class SafetyManagementExplorer(tk.Frame):
     def new_diagram(self):
         sel = self.tree.selection()
         if not sel:
-            messagebox.showerror("New Diagram", "Please select a folder for the diagram")
+            messagebox.showerror(
+                "New Diagram", "Please select a folder or the root for the diagram"
+            )
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
-        if typ != "module":
-            messagebox.showerror("New Diagram", "Please select a folder for the diagram")
+        if typ not in {"module", "root"}:
+            messagebox.showerror(
+                "New Diagram", "Please select a folder or the root for the diagram"
+            )
             return
         name = simpledialog.askstring("New Diagram", "Name:", parent=self)
         if not name:
             return
         self.toolbox.create_diagram(name)
-        obj.diagrams.append(name)
+        if typ == "module" and obj is not None:
+            obj.diagrams.append(name)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -191,12 +206,12 @@ class SafetyManagementExplorer(tk.Frame):
             target = self.tree.parent(target)
             tgt_type, tgt_obj = self.item_map.get(target, (None, None))
 
-        if target and tgt_type == "module":
-            parent_mod = tgt_obj
+        if target and tgt_type in {"module", "root"}:
+            parent_mod = tgt_obj if tgt_type == "module" else None
             new_parent = target
         else:
             parent_mod = None
-            new_parent = ""
+            new_parent = self.root_iid
 
         self.tree.move(self._drag_item, new_parent, "end")
 

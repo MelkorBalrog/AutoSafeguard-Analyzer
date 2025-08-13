@@ -750,7 +750,7 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
         def get_children(self, item=""):
             return [iid for iid, meta in self.items.items() if meta["parent"] == item]
 
-        def insert(self, parent, index, text="", image=None):
+        def insert(self, parent, index, text="", image=None, **_kwargs):
             iid = f"i{self.counter}"
             self.counter += 1
             self.items[iid] = {"parent": parent, "text": text}
@@ -814,6 +814,45 @@ def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
     assert called["count"] == 1
 
 
+def test_explorer_allows_diagram_at_root(monkeypatch):
+    toolbox = SafetyManagementToolbox()
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None, **_kwargs):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+
+    SafetyManagementExplorer.populate(explorer)
+    explorer.tree.selection_item = explorer.root_iid
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    explorer.new_diagram()
+    assert "Diag" in toolbox.diagrams
+    assert all("Diag" not in m.diagrams for m in toolbox.modules)
+
+
 def test_tools_include_safety_management_explorer():
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.manage_safety_management = lambda: None
@@ -872,6 +911,7 @@ def test_diagram_drag_and_drop_between_modules():
         "mod2": ("module", mod2),
         "diag1": ("diagram", "Diag1"),
     }
+    explorer.root_iid = ""
     explorer._remove_name = SafetyManagementExplorer._remove_name.__get__(
         explorer, types.SimpleNamespace
     )

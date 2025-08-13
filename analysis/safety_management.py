@@ -222,6 +222,18 @@ class SafetyManagementToolbox:
         _collect(mod)
         return names
 
+    def list_modules(self) -> List[str]:
+        """Return names of all governance modules including submodules."""
+        names: List[str] = []
+
+        def _collect(mods: List[GovernanceModule]) -> None:
+            for m in mods:
+                names.append(m.name)
+                _collect(m.modules)
+
+        _collect(self.modules)
+        return names
+
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
         """Return propagation relationship type from ``source`` to ``target``.
