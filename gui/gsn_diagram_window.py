@@ -345,7 +345,12 @@ class GSNDiagramWindow(tk.Frame):
                 undo = getattr(app, "push_undo_state", None)
                 if undo:
                     undo()
-                self._connect_parent.add_child(node, relation=relation)
+                try:
+                    self._connect_parent.add_child(node, relation=relation)
+                except ValueError as exc:
+                    showerror = getattr(messagebox, "showerror", None)
+                    if showerror:
+                        showerror("Invalid Relationship", str(exc))
             self._connect_mode = None
             self._connect_parent = None
             # Restore the default cursor once the connection is made.

@@ -68,7 +68,7 @@ class ArrowHelper(GSNDrawingHelper):
 
 def test_horizontal_connection_uses_side_and_arrow_points_right():
     parent = GSNNode("p", "Goal", x=0, y=0)
-    child = GSNNode("c", "Assumption", x=100, y=0)
+    child = GSNNode("c", "Goal", x=100, y=0)
     parent.add_child(child)
 
     helper = ArrowHelper()
