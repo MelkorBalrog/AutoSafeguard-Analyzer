@@ -21,8 +21,10 @@ from AutoML import FaultTreeApp
 import AutoML
 from analysis import SafetyManagementToolbox
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
+from tkinter import simpledialog
 
 
 def test_work_product_registration():
@@ -403,4 +405,118 @@ def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
 
     assert calls["bpmn"]
     assert not calls["activity"]
+
+
+def test_diagram_hierarchy_orders_levels():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    a = repo.create_diagram("BPMN Diagram", name="A")
+    b = repo.create_diagram("BPMN Diagram", name="B")
+    c = repo.create_diagram("BPMN Diagram", name="C")
+    for diag in (a, b, c):
+        diag.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    act_ab = repo.create_element("Action", name="AB", owner=a.package)
+    repo.add_element_to_diagram(a.diag_id, act_ab.elem_id)
+    repo.link_diagram(act_ab.elem_id, b.diag_id)
+    a.objects.append(
+        SysMLObject(1, "Action", 0.0, 0.0, element_id=act_ab.elem_id, properties={}).__dict__
+    )
+
+    act_bc = repo.create_element("Action", name="BC", owner=b.package)
+    repo.add_element_to_diagram(b.diag_id, act_bc.elem_id)
+    repo.link_diagram(act_bc.elem_id, c.diag_id)
+    b.objects.append(
+        SysMLObject(2, "Action", 0.0, 0.0, element_id=act_bc.elem_id, properties={}).__dict__
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["A"], ["B"], ["C"]]
+
+
+def test_diagram_hierarchy_from_object_properties():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    parent = repo.create_diagram("BPMN Diagram", name="Parent")
+    child = repo.create_diagram("BPMN Diagram", name="Child")
+    for d in (parent, child):
+        d.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    # Create an action object on the parent that references the child diagram
+    act = repo.create_element("Action", name="link", owner=parent.package)
+    repo.add_element_to_diagram(parent.diag_id, act.elem_id)
+    parent.objects.append(
+        SysMLObject(
+            3,
+            "Action",
+            0.0,
+            0.0,
+            element_id=act.elem_id,
+            properties={"view": child.diag_id},
+        )
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["Parent"], ["Child"]]
+
+
+def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+
+    SafetyManagementExplorer.populate(explorer)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
+    explorer.new_folder()
+    assert toolbox.modules and toolbox.modules[0].name == "Pkg"
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    explorer.new_diagram()
+    assert "Diag" in toolbox.modules[0].diagrams
+    assert "Diag" in toolbox.diagrams
 

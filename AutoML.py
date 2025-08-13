@@ -243,6 +243,7 @@ from gui.review_toolbox import (
 )
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
+from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
@@ -2167,6 +2168,9 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(
+            label="Safety Management Explorer", command=self.manage_safety_management
+        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
@@ -15730,6 +15734,21 @@ class FaultTreeApp:
             self._gsn_tab = self._new_tab("GSN Explorer")
             self._gsn_window = GSNExplorer(self._gsn_tab, self)
             self._gsn_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def manage_safety_management(self):
+        if not hasattr(self, "safety_mgmt_toolbox"):
+            from analysis import SafetyManagementToolbox as _SMT
+
+            self.safety_mgmt_toolbox = _SMT()
+        if hasattr(self, "_safety_exp_tab") and self._safety_exp_tab.winfo_exists():
+            self.doc_nb.select(self._safety_exp_tab)
+        else:
+            self._safety_exp_tab = self._new_tab("Safety Management Explorer")
+            self._safety_exp_window = SafetyManagementExplorer(
+                self._safety_exp_tab, self, self.safety_mgmt_toolbox
+            )
+            self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
     def open_gsn_diagram(self, diagram):
