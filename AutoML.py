@@ -244,6 +244,7 @@ from gui.review_toolbox import (
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
@@ -1985,8 +1986,8 @@ class FaultTreeApp:
         ),
         "Safety & Security Concept": (
             "System Design (Item Definition)",
-            "Safety & Security Case",
-            "show_safety_case",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
         ),
         "Requirement Specification": (
             "System Design (Item Definition)",
@@ -2441,6 +2442,9 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(
+            label="Safety & Security Case Explorer", command=self.manage_safety_cases
+        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
@@ -2558,13 +2562,15 @@ class FaultTreeApp:
         self.tool_actions = {
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety & Security Management Explorer": self.manage_safety_management,
+            "Safety & Security Case Explorer": self.manage_safety_cases,
         }
 
         self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
-                "Safety & Security Management Explorer",
-            ]
+            "Safety & Security Management Explorer",
+            "Safety & Security Case Explorer",
+        ]
         }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
@@ -8600,7 +8606,7 @@ class FaultTreeApp:
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "safetycase":
-            self.show_safety_case()
+            self.manage_safety_cases()
         elif kind == "safetyconcept":
             self.show_safety_concept_editor()
         elif kind == "itemdef":
@@ -9938,7 +9944,12 @@ class FaultTreeApp:
             ):
                 add_gsn_diagram(diag, gsn_root)
 
-            tree.insert(mgmt_root, "end", text="Safety & Security Case", tags=("safetycase", "0"))
+            tree.insert(
+                mgmt_root,
+                "end",
+                text="Safety & Security Case Explorer",
+                tags=("safetycase", "0"),
+            )
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -16534,6 +16545,21 @@ class FaultTreeApp:
                 self._safety_exp_tab, self, self.safety_mgmt_toolbox
             )
             self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def manage_safety_cases(self):
+        if not hasattr(self, "safety_case_library"):
+            from analysis import SafetyCaseLibrary as _SCL
+
+            self.safety_case_library = _SCL()
+        if hasattr(self, "_safety_case_exp_tab") and self._safety_case_exp_tab.winfo_exists():
+            self.doc_nb.select(self._safety_case_exp_tab)
+        else:
+            self._safety_case_exp_tab = self._new_tab("Safety & Security Case Explorer")
+            self._safety_case_window = SafetyCaseExplorer(
+                self._safety_case_exp_tab, self, self.safety_case_library
+            )
+            self._safety_case_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
     def open_gsn_diagram(self, diagram):
