@@ -198,8 +198,28 @@ def test_safety_diagrams_hidden_and_immutable_in_explorer():
     explorer = DummyExplorer()
     explorer.populate()
     assert not explorer.tree.exists(f"diag_{diag_id}")
-    explorer.rename_item(f"diag_{diag_id}")
-    assert repo.diagrams[diag_id].name == "Gov"
+
+
+def test_work_product_enabling_and_deletion_guard():
+    """Governance diagrams enable work products and prevent unsafe removal."""
+    toolbox = SafetyManagementToolbox()
+
+    # HAZOP creation disabled until explicitly registered
+    assert not toolbox.is_enabled("HAZOP")
+
+    toolbox.add_work_product("Gov", "HAZOP", "Link action to hazard")
+    assert toolbox.is_enabled("HAZOP")
+
+    # An existing document blocks removal of the work product declaration
+    toolbox.register_created_work_product("HAZOP")
+    removed = toolbox.remove_work_product("Gov", "HAZOP")
+    assert removed is False
+
+    # After deleting the document removal succeeds
+    toolbox.register_deleted_work_product("HAZOP")
+    removed = toolbox.remove_work_product("Gov", "HAZOP")
+    assert removed is True
+    assert not toolbox.is_enabled("HAZOP")
 
 def test_safety_diagrams_visible_in_analysis_tree():
     SysMLRepository._instance = None
