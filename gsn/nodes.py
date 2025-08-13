@@ -65,3 +65,61 @@ class GSNNode:
         if parent is not None:
             parent.add_child(clone)
         return clone
+
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation of this node."""
+        return {
+            "unique_id": self.unique_id,
+            "user_name": self.user_name,
+            "description": self.description,
+            "node_type": self.node_type,
+            "x": self.x,
+            "y": self.y,
+            "children": [c.unique_id for c in self.children],
+            "is_primary_instance": self.is_primary_instance,
+            "original": self.original.unique_id if self.original else None,
+        }
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: dict, nodes: Optional[dict] = None) -> "GSNNode":
+        """Reconstruct a :class:`GSNNode` from *data*.
+
+        The *nodes* mapping is used internally to resolve references
+        between nodes when loading a full diagram.
+        """
+        nodes = nodes if nodes is not None else {}
+        node = cls(
+            data.get("user_name", ""),
+            data.get("node_type", "Goal"),
+            description=data.get("description", ""),
+            x=data.get("x", 50),
+            y=data.get("y", 50),
+            is_primary_instance=data.get("is_primary_instance", True),
+            unique_id=data.get("unique_id", str(uuid.uuid4())),
+        )
+        nodes[node.unique_id] = node
+        # Temporarily store child and original references for second pass
+        node._tmp_children = list(data.get("children", []))  # type: ignore[attr-defined]
+        node._tmp_original = data.get("original")  # type: ignore[attr-defined]
+        return node
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def resolve_references(nodes: dict) -> None:
+        """Resolve child and original references after initial loading."""
+        for node in nodes.values():
+            children_ids = getattr(node, "_tmp_children", [])
+            for cid in children_ids:
+                child = nodes.get(cid)
+                if child:
+                    node.add_child(child)
+            orig_id = getattr(node, "_tmp_original", None)
+            if orig_id and orig_id in nodes:
+                node.original = nodes[orig_id]
+            # cleanup temporary attributes
+            if hasattr(node, "_tmp_children"):
+                delattr(node, "_tmp_children")
+            if hasattr(node, "_tmp_original"):
+                delattr(node, "_tmp_original")
