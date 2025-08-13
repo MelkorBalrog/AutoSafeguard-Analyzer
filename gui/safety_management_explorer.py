@@ -26,8 +26,17 @@ class SafetyManagementExplorer(tk.Frame):
             master.geometry("350x400")
             self.pack(fill=tk.BOTH, expand=True)
 
+        btns = ttk.Frame(self)
+        btns.pack(side=tk.TOP, fill=tk.X, padx=4, pady=4)
+        ttk.Button(btns, text="Open", command=self.open_item).pack(side=tk.LEFT)
+        ttk.Button(btns, text="New Folder", command=self.new_folder).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btns, text="New Diagram", command=self.new_diagram).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btns, text="Rename", command=self.rename_item).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
+
         tree_frame = ttk.Frame(self)
-        tree_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        tree_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=4)
         self.tree = ttk.Treeview(tree_frame)
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
@@ -41,15 +50,6 @@ class SafetyManagementExplorer(tk.Frame):
         self.folder_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icon = self._create_icon("rect", "#4682b4")
         self.item_map: Dict[str, tuple[str, object]] = {}
-
-        btns = ttk.Frame(self)
-        btns.pack(fill=tk.X, padx=4, pady=4)
-        ttk.Button(btns, text="Open", command=self.open_item).pack(side=tk.LEFT)
-        ttk.Button(btns, text="New Folder", command=self.new_folder).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btns, text="New Diagram", command=self.new_diagram).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btns, text="Rename", command=self.rename_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
 
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<ButtonPress-1>", self._on_drag_start)
