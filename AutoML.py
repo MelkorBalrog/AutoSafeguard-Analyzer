@@ -3809,8 +3809,30 @@ class FaultTreeApp:
             "goal_metrics": goal_metrics,
         }
 
+    def _allow_propagation(self, src: str, dst: str) -> bool:
+        """Return ``True`` if governance allows propagation from ``src`` to ``dst``."""
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if not toolbox:
+            return False
+        rel = toolbox.propagation_type(src, dst)
+        if not rel:
+            return False
+        if rel == "Propagate":
+            return True
+        if rel == "Propagate by Review":
+            return any(getattr(r, "reviewed", False) for r in getattr(self, "reviews", []))
+        if rel == "Propagate by Approval":
+            return any(
+                getattr(r, "mode", "") == "joint" and getattr(r, "approved", False)
+                for r in getattr(self, "reviews", [])
+            )
+        return False
+
     def sync_hara_to_safety_goals(self):
         """Propagate risk assessment values to top events, inheriting ASILs from assessment rows."""
+        if not self._allow_propagation("Risk Assessment", "FTA"):
+            return
+        sg_allowed = self._allow_propagation("FTA", "Safety Goal")
         sg_data = {}
         sg_asil = {}
         for doc in getattr(self, "hara_docs", []):
@@ -3858,7 +3880,9 @@ class FaultTreeApp:
                     te.update_validation_target()
             sg_name = te.safety_goal_description
             asil = sg_asil.get(sg_name)
-            if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
+            if sg_allowed and asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(
+                te.safety_goal_asil or "QM", 0
+            ):
                 te.safety_goal_asil = asil
 
     def sync_cyber_risk_to_goals(self):
