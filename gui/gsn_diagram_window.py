@@ -118,6 +118,7 @@ class GSNDiagramWindow(tk.Frame):
         # Provide a context menu for nodes and relationships via right-click.
         self.canvas.bind("<Button-3>", self._on_right_click)
         self.refresh()
+        self._bind_shortcuts()
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
@@ -147,6 +148,13 @@ class GSNDiagramWindow(tk.Frame):
         # update scroll region to encompass all drawn items
         bbox = self.canvas.bbox("all") or (0, 0, 0, 0)
         self.canvas.configure(scrollregion=bbox)
+
+    # ------------------------------------------------------------------
+    def _bind_shortcuts(self):
+        """Bind common keyboard shortcuts for undo/redo actions."""
+        if self.app:
+            self.bind("<Control-z>", lambda e: self.app.undo())
+            self.bind("<Control-y>", lambda e: self.app.redo())
 
     # The following methods simply extend the diagram with new nodes.
     # Placement is very rudimentary but sufficient for tests.

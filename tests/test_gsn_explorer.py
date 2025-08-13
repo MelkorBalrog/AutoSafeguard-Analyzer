@@ -497,3 +497,19 @@ def test_drag_diagram_to_root():
 
     assert diag not in mod.diagrams
     assert diag in explorer.app.gsn_diagrams
+
+
+def test_gsn_explorer_binds_undo_redo():
+    explorer = GSNExplorer.__new__(GSNExplorer)
+    bindings = {}
+    explorer.bind = lambda seq, func: bindings.setdefault(seq, func)
+    calls = []
+    explorer.app = types.SimpleNamespace(
+        undo=lambda: calls.append("undo"),
+        redo=lambda: calls.append("redo"),
+    )
+    GSNExplorer._bind_shortcuts(explorer)
+    assert "<Control-z>" in bindings and "<Control-y>" in bindings
+    bindings["<Control-z>"](None)
+    bindings["<Control-y>"](None)
+    assert calls == ["undo", "redo"]
