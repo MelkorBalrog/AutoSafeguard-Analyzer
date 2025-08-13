@@ -141,6 +141,57 @@ class SafetyManagementToolbox:
         return list(self.diagrams.keys())
 
     # ------------------------------------------------------------------
+    def diagram_hierarchy(self) -> List[List[str]]:
+        """Return governance diagrams arranged into hierarchy levels.
+
+        Diagrams appear in successive levels when a task in one diagram links
+        to another diagram. Any diagrams not referenced by others start at the
+        top level. Each level lists diagram names sorted alphabetically.
+        """
+        self._sync_diagrams()
+        repo = SysMLRepository.get_instance()
+
+        edges: dict[str, set[str]] = {d: set() for d in self.diagrams.values()}
+        reverse: dict[str, set[str]] = {d: set() for d in self.diagrams.values()}
+
+        for diag_id in edges:
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            for obj in getattr(diag, "objects", []):
+                elem_id = obj.get("element_id")
+                if not elem_id:
+                    continue
+                target = repo.get_linked_diagram(elem_id)
+                if target in edges:
+                    edges[diag_id].add(target)
+                    reverse[target].add(diag_id)
+
+        roots = sorted(
+            (d for d in edges if not reverse[d]),
+            key=lambda d: repo.diagrams[d].name,
+        )
+        levels: List[List[str]] = []
+        visited: set[str] = set()
+        current = roots
+        while current:
+            levels.append([repo.diagrams[d].name for d in current])
+            visited.update(current)
+            next_level: set[str] = set()
+            for d in current:
+                next_level.update(child for child in edges[d] if child not in visited)
+            current = sorted(next_level, key=lambda d: repo.diagrams[d].name)
+
+        remaining = sorted(
+            [d for d in edges if d not in visited],
+            key=lambda d: repo.diagrams[d].name,
+        )
+        for d in remaining:
+            levels.append([repo.diagrams[d].name])
+
+        return levels
+
+    # ------------------------------------------------------------------
     def _sync_diagrams(self) -> None:
         """Synchronize ``self.diagrams`` with repository contents.
 

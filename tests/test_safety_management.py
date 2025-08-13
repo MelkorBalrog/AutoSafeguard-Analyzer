@@ -404,3 +404,34 @@ def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     assert calls["bpmn"]
     assert not calls["activity"]
 
+
+def test_diagram_hierarchy_orders_levels():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    a = repo.create_diagram("BPMN Diagram", name="A")
+    b = repo.create_diagram("BPMN Diagram", name="B")
+    c = repo.create_diagram("BPMN Diagram", name="C")
+    for diag in (a, b, c):
+        diag.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    act_ab = repo.create_element("Action", name="AB", owner=a.package)
+    repo.add_element_to_diagram(a.diag_id, act_ab.elem_id)
+    repo.link_diagram(act_ab.elem_id, b.diag_id)
+    a.objects.append(
+        SysMLObject(1, "Action", 0.0, 0.0, element_id=act_ab.elem_id, properties={}).__dict__
+    )
+
+    act_bc = repo.create_element("Action", name="BC", owner=b.package)
+    repo.add_element_to_diagram(b.diag_id, act_bc.elem_id)
+    repo.link_diagram(act_bc.elem_id, c.diag_id)
+    b.objects.append(
+        SysMLObject(2, "Action", 0.0, 0.0, element_id=act_bc.elem_id, properties={}).__dict__
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["A"], ["B"], ["C"]]
+
