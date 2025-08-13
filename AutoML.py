@@ -244,6 +244,7 @@ from gui.review_toolbox import (
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
@@ -310,6 +311,7 @@ from analysis.models import (
     calc_asil,
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
     CyberRiskEntry,
@@ -1236,7 +1238,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": req_text,
                 "custom_id": custom_id,
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
 
@@ -1258,7 +1267,14 @@ class EditNodeDialog(simpledialog.Dialog):
 
         def _toggle_fields(self, event=None):
             req_type = self.type_var.get()
-            hide = req_type in ("operational", "functional modification", "production", "service")
+            hide = req_type in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
                 for w in widgets:
@@ -1354,7 +1370,14 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             req["asil"] = asil
             req["cal"] = cal
         global_requirements[custom_id] = req
@@ -1539,7 +1562,14 @@ class EditNodeDialog(simpledialog.Dialog):
             req_type = dialog.result["req_type"]
             req["req_type"] = req_type
             req["text"] = dialog.result["text"]
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1560,7 +1590,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1609,7 +1646,14 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["req_type"] = req_type
         current_req["text"] = dialog.result["text"]
         current_req["status"] = "draft"
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
                 # editing within a base event so the value set during
@@ -1942,8 +1986,8 @@ class FaultTreeApp:
         ),
         "Safety & Security Concept": (
             "System Design (Item Definition)",
-            "Safety & Security Case",
-            "show_safety_case",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
         ),
         "Requirement Specification": (
             "System Design (Item Definition)",
@@ -2021,6 +2065,16 @@ class FaultTreeApp:
             "manage_scenario_libraries",
         ),
     }
+
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_INFO.setdefault(
+            _wp,
+            (
+                "System Design (Item Definition)",
+                "Requirements Editor",
+                "show_requirements_editor",
+            ),
+        )
 
     def __init__(self, root):
         self.root = root
@@ -2116,7 +2170,7 @@ class FaultTreeApp:
         self.review_data = None
         self.review_window = None
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
+        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -2221,9 +2275,11 @@ class FaultTreeApp:
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Requirement Specification", []).append(
-            (requirements_menu, requirements_menu.index("end"))
-        )
+        req_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).append(
+                (requirements_menu, req_idx)
+            )
         requirements_menu.add_command(
             label="Requirements Explorer", command=self.show_requirements_explorer
         )
@@ -2386,6 +2442,9 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        gsn_menu.add_command(
+            label="Safety & Security Case Explorer", command=self.manage_safety_cases
+        )
 
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
@@ -2503,17 +2562,22 @@ class FaultTreeApp:
         self.tool_actions = {
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety & Security Management Explorer": self.manage_safety_management,
+            "Safety & Security Case Explorer": self.manage_safety_cases,
         }
 
         self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
-                "Safety & Security Management Explorer",
-            ]
+            "Safety & Security Management Explorer",
+            "Safety & Security Case Explorer",
+        ]
         }
         self.tool_to_work_product = {
             info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
         }
+        self.tool_to_work_product = {}
+        for name, info in self.WORK_PRODUCT_INFO.items():
+            self.tool_to_work_product.setdefault(info[1], set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -8545,7 +8609,7 @@ class FaultTreeApp:
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
         elif kind == "safetycase":
-            self.show_safety_case()
+            self.manage_safety_cases()
         elif kind == "safetyconcept":
             self.show_safety_concept_editor()
         elif kind == "itemdef":
@@ -8676,16 +8740,26 @@ class FaultTreeApp:
         if not sel:
             return
         name = lb.get(sel[0])
-        analysis_name = self.tool_to_work_product.get(name)
+        analysis_names = self.tool_to_work_product.get(name, set())
         if (
-            analysis_name
+            analysis_names
             and self.safety_mgmt_toolbox
-            and analysis_name not in self.safety_mgmt_toolbox.enabled_products()
+            and not any(
+                n in self.safety_mgmt_toolbox.enabled_products()
+                for n in analysis_names
+            )
         ):
             return
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def _on_toolbox_change(self) -> None:
+        self.refresh_tool_enablement()
+        try:
+            self.update_views()
+        except Exception:
+            pass
 
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
@@ -8713,8 +8787,8 @@ class FaultTreeApp:
         enabled = global_enabled & phase_enabled
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
-                if analysis_name and analysis_name not in enabled:
+                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
+                if analysis_names and not any(n in enabled for n in analysis_names):
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
@@ -8845,20 +8919,33 @@ class FaultTreeApp:
             return False
         self.enabled_work_products.discard(name)
         for menu, idx in self.work_product_menus.get(name, []):
+            state = tk.DISABLED
+            for other, entries in self.work_product_menus.items():
+                if (
+                    other != name
+                    and other in self.enabled_work_products
+                    and (menu, idx) in entries
+                ):
+                    state = tk.NORMAL
+                    break
             try:
-                menu.entryconfig(idx, state=tk.DISABLED)
+                menu.entryconfig(idx, state=state)
             except tk.TclError:
                 pass
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            lb = self.tool_listboxes.get(area)
-            if lb:
-                for i in range(lb.size()):
-                    if lb.get(i) == tool_name:
-                        lb.delete(i)
-                        break
-            self.tool_actions.pop(tool_name, None)
+            if not any(
+                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
+                for wp in self.enabled_work_products
+            ):
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    for i in range(lb.size()):
+                        if lb.get(i) == tool_name:
+                            lb.delete(i)
+                            break
+                self.tool_actions.pop(tool_name, None)
         if hasattr(self, "update_views"):
             try:
                 self.update_views()
@@ -9887,7 +9974,12 @@ class FaultTreeApp:
             ):
                 add_gsn_diagram(diag, gsn_root)
 
-            tree.insert(mgmt_root, "end", text="Safety & Security Case", tags=("safetycase", "0"))
+            tree.insert(
+                mgmt_root,
+                "end",
+                text="Safety & Security Case Explorer",
+                tags=("safetycase", "0"),
+            )
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -9978,7 +10070,7 @@ class FaultTreeApp:
                     text="Safety & Security Concept",
                     tags=("safetyconcept", "0"),
                 )
-            if "Requirement Specification" in enabled:
+            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
                 tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
                 tree.insert(
                     sys_root,
@@ -11342,7 +11434,14 @@ class FaultTreeApp:
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
                 }
-                if req_type not in ("operational", "functional modification", "production", "service"):
+                if req_type not in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
 
@@ -11355,7 +11454,14 @@ class FaultTreeApp:
 
             def _toggle_fields(self, event=None):
                 req_type = self.type_var.get()
-                hide = req_type in ("operational", "functional modification", "production", "service")
+                hide = req_type in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
                     for w in widgets:
@@ -16469,6 +16575,21 @@ class FaultTreeApp:
                 self._safety_exp_tab, self, self.safety_mgmt_toolbox
             )
             self._safety_exp_window.pack(fill=tk.BOTH, expand=True)
+        self.refresh_all()
+
+    def manage_safety_cases(self):
+        if not hasattr(self, "safety_case_library"):
+            from analysis import SafetyCaseLibrary as _SCL
+
+            self.safety_case_library = _SCL()
+        if hasattr(self, "_safety_case_exp_tab") and self._safety_case_exp_tab.winfo_exists():
+            self.doc_nb.select(self._safety_case_exp_tab)
+        else:
+            self._safety_case_exp_tab = self._new_tab("Safety & Security Case Explorer")
+            self._safety_case_window = SafetyCaseExplorer(
+                self._safety_case_exp_tab, self, self.safety_case_library
+            )
+            self._safety_case_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
 
     def open_gsn_diagram(self, diagram):
