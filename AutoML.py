@@ -317,6 +317,7 @@ from gui.architecture import (
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
     ControlFlowDiagramWindow,
+    BPMNDiagramWindow,
     ArchitectureManagerDialog,
     parse_behaviors,
 )
@@ -1955,6 +1956,7 @@ class FaultTreeApp:
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
+            "BPMN Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
             "Control Flow Diagram": self._create_icon("arrow", "red"),
@@ -15036,6 +15038,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "BPMN Diagram":
+            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
@@ -15063,6 +15067,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "BPMN Diagram":
+            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
