@@ -15,6 +15,7 @@ _NAMED_COLORS = {
     "lightgrey": "#d3d3d3",
     "lightblue": "#add8e6",
     "lightyellow": "#ffffe0",
+    "yellow": "#ffff00",
 }
 
 # Basic mapping of a few common color names to their hex equivalents. The
@@ -27,6 +28,7 @@ _NAMED_COLORS = {
     "lightgrey": "#d3d3d3",
     "lightblue": "#add8e6",
     "lightyellow": "#ffffe0",
+    "yellow": "#ffff00",
 }
 
 class FTADrawingHelper:
@@ -850,7 +852,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Goal",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -939,7 +941,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Strategy",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -968,7 +970,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=40.0,
         top_text="Solution",
         bottom_text="",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -997,7 +999,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Assumption",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -1032,7 +1034,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Justification",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -1075,7 +1077,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Context",
-        fill="lightyellow",
+        fill="yellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,

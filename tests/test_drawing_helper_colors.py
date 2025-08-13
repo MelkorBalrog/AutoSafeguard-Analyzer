@@ -1,3 +1,4 @@
+import pytest
 from gui.drawing_helper import GSNDrawingHelper
 
 
@@ -11,11 +12,12 @@ class DummyCanvas:
         self.lines.append(fill)
 
 
-def test_fill_gradient_rect_accepts_named_color():
+@pytest.mark.parametrize("color", ["lightyellow", "yellow"])
+def test_fill_gradient_rect_accepts_named_color(color):
     helper = GSNDrawingHelper()
     canvas = DummyCanvas()
     # Using a Tk-style color name previously triggered a ValueError
-    helper._fill_gradient_rect(canvas, 0, 0, 4, 4, "lightyellow")
+    helper._fill_gradient_rect(canvas, 0, 0, 4, 4, color)
     assert canvas.lines  # some lines were drawn
     assert all(line.startswith("#") for line in canvas.lines)
 
