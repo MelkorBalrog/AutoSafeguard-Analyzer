@@ -360,6 +360,22 @@ def test_external_safety_diagrams_load_in_toolbox_list():
     assert "GovX" in names
 
 
+def test_toolbox_serializes_modules():
+    """Folder hierarchy survives a save/load round trip."""
+    toolbox = SafetyManagementToolbox()
+    toolbox.diagrams = {"D1": "id1", "D2": "id2"}
+    child = GovernanceModule(name="Child", diagrams=["D1"])
+    toolbox.modules = [GovernanceModule(name="Root", modules=[child], diagrams=["D2"])]
+
+    data = toolbox.to_dict()
+    loaded = SafetyManagementToolbox.from_dict(data)
+
+    assert loaded.modules[0].name == "Root"
+    assert loaded.modules[0].modules[0].name == "Child"
+    assert loaded.modules[0].modules[0].diagrams == ["D1"]
+    assert loaded.modules[0].diagrams == ["D2"]
+
+
 def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     """Governance diagrams open as BPMN diagrams with their toolbox."""
     SysMLRepository._instance = None
