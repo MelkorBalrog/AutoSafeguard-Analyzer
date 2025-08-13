@@ -19,6 +19,7 @@ def test_compute_metrics_basic():
     rec = 50 / (50 + 10)
     expected_f1 = 2 * prec * rec / (prec + rec)
     assert math.isclose(metrics["f1"], expected_f1)
+    assert metrics["units"]["accuracy"] == "ratio"
 
 
 def test_compute_metrics_zero_division():
@@ -37,6 +38,8 @@ def test_compute_rates_basic():
     assert math.isclose(counts["fn"], 10)
     assert math.isclose(counts["p"], 60)
     assert math.isclose(counts["n"], 40)
+    assert counts["units"]["tp"] == "count"
+    assert counts["units"]["validation_target"] == "events/h"
 
 
 def test_compute_rates_auto_counts():
@@ -67,3 +70,4 @@ def test_compute_metrics_from_target():
     assert math.isclose(data["fp"], 1.0)
     assert math.isclose(data["tn"], 39.0)
     assert math.isclose(data["fn"], 1.0)
+    assert data["units"]["validation_target"] == "events/h"

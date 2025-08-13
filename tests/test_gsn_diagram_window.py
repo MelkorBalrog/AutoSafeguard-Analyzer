@@ -342,4 +342,4 @@ def test_refresh_sets_app_for_spi_lookup():
 
     GSNDiagramWindow.refresh(win)
     assert diag.app is app
-    assert "SPI: 1e-5" in captured.get("text", "")
+    assert "SPI: 1e-5/h" in captured.get("text", "")

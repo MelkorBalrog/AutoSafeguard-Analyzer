@@ -100,7 +100,7 @@ def test_format_text_shows_spi_probability():
 
     diag.app = types.SimpleNamespace(top_events=[TopEvent()])
     text = diag._format_text(sol)
-    assert f"SPI: {1e-5:.2e}" in text
+    assert f"SPI: {1e-5:.2e}/h" in text
 
 
 def test_format_text_shows_validation_target_when_no_probability():
@@ -117,7 +117,7 @@ def test_format_text_shows_validation_target_when_no_probability():
 
     diag.app = types.SimpleNamespace(top_events=[TopEvent()])
     text = diag._format_text(sol)
-    assert "SPI: 1e-5" in text
+    assert "SPI: 1e-5/h" in text
 
 
 def test_collect_work_products_returns_unique_sorted():
