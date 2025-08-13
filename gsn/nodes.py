@@ -30,6 +30,11 @@ class GSNNode:
     y: float = 50
     children: List["GSNNode"] = field(default_factory=list)
     parents: List["GSNNode"] = field(default_factory=list)
+    # Track which child links are "in context" relationships.  We keep a
+    # separate list rather than encoding the relationship directly in
+    # ``children`` so existing code that iterates over ``children`` continues
+    # to work unchanged.
+    context_children: List["GSNNode"] = field(default_factory=list)
     is_primary_instance: bool = True
     original: Optional["GSNNode"] = field(default=None, repr=False)
     unique_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -43,10 +48,23 @@ class GSNNode:
             self.original = self
 
     # ------------------------------------------------------------------
-    def add_child(self, child: "GSNNode") -> None:
-        """Attach *child* to this node, updating parent/child lists."""
-        self.children.append(child)
-        child.parents.append(self)
+    def add_child(self, child: "GSNNode", relation: str = "solved") -> None:
+        """Attach *child* to this node, updating parent/child lists.
+
+        Parameters
+        ----------
+        child:
+            The :class:`GSNNode` to attach as a child.
+        relation:
+            Either ``"solved"`` for a solved-by connection or ``"context"``
+            for an in-context-of relationship.  Defaults to ``"solved"``.
+        """
+        if child not in self.children:
+            self.children.append(child)
+        if self not in child.parents:
+            child.parents.append(self)
+        if relation == "context" and child not in self.context_children:
+            self.context_children.append(child)
 
     # ------------------------------------------------------------------
     def clone(self, parent: Optional["GSNNode"] = None) -> "GSNNode":
@@ -84,6 +102,7 @@ class GSNNode:
             "x": self.x,
             "y": self.y,
             "children": [c.unique_id for c in self.children],
+            "context": [c.unique_id for c in self.context_children],
             "is_primary_instance": self.is_primary_instance,
             "original": self.original.unique_id if self.original else None,
             "work_product": self.work_product,
@@ -113,8 +132,11 @@ class GSNNode:
             spi_target=data.get("spi_target", ""),
         )
         nodes[node.unique_id] = node
-        # Temporarily store child and original references for second pass
+        # Temporarily store child and original references for second pass.
+        # ``context`` links are tracked separately to distinguish relationship
+        # types during deserialisation.
         node._tmp_children = list(data.get("children", []))  # type: ignore[attr-defined]
+        node._tmp_context = list(data.get("context", []))  # type: ignore[attr-defined]
         node._tmp_original = data.get("original")  # type: ignore[attr-defined]
         return node
 
@@ -127,12 +149,19 @@ class GSNNode:
             for cid in children_ids:
                 child = nodes.get(cid)
                 if child:
-                    node.add_child(child)
+                    node.add_child(child, relation="solved")
+            context_ids = getattr(node, "_tmp_context", [])
+            for cid in context_ids:
+                child = nodes.get(cid)
+                if child:
+                    node.add_child(child, relation="context")
             orig_id = getattr(node, "_tmp_original", None)
             if orig_id and orig_id in nodes:
                 node.original = nodes[orig_id]
             # cleanup temporary attributes
             if hasattr(node, "_tmp_children"):
                 delattr(node, "_tmp_children")
+            if hasattr(node, "_tmp_context"):
+                delattr(node, "_tmp_context")
             if hasattr(node, "_tmp_original"):
                 delattr(node, "_tmp_original")

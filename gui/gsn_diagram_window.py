@@ -163,7 +163,10 @@ class GSNDiagramWindow(tk.Frame):
             self.canvas.delete("_temp_conn")
             node = self._node_at(event.x, event.y)
             if node and node is not self._connect_parent:
-                self._connect_parent.add_child(node)
+                # Use the current connect mode to decide whether this is a
+                # solved-by or in-context-of relationship.
+                relation = self._connect_mode
+                self._connect_parent.add_child(node, relation=relation)
             self._connect_mode = None
             self._connect_parent = None
             self.refresh()

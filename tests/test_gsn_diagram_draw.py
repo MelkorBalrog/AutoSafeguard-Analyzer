@@ -1,3 +1,4 @@
+
 from gsn import GSNNode, GSNDiagram
 
 
@@ -60,3 +61,25 @@ def test_draw_tags_and_zoom_scaling():
 
     assert rect2[0] == rect1[0] * 2
     assert rect1[4]["tags"] == (root.unique_id,)
+
+
+def test_draw_respects_context_links():
+    """Connections use the stored relationship type, not node type."""
+    root = GSNNode("Root", "Goal")
+    child = GSNNode("Child", "Goal")
+    root.add_child(child, relation="context")
+    diag = GSNDiagram(root, drawing_helper=DummyHelper())
+    diag.add_node(child)
+
+    calls = []
+
+    def solved(*args, **kwargs):
+        calls.append("solved")
+
+    def ctx(*args, **kwargs):
+        calls.append("context")
+
+    diag.drawing_helper.draw_solved_by_connection = solved
+    diag.drawing_helper.draw_in_context_connection = ctx
+    diag.draw(StubCanvas())
+    assert calls == ["context"]

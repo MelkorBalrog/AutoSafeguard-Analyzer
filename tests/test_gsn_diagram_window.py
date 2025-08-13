@@ -66,3 +66,19 @@ def test_temp_connection_line_no_arrow_in_context_mode():
     win._on_drag(event)
     assert lines and lines[0].get("dash") == (2, 2)
     assert not lines[0].get("arrow")
+
+
+def test_on_release_creates_context_link():
+    """Releasing in context mode should mark the relation accordingly."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    parent = GSNNode("p", "Goal")
+    child = GSNNode("c", "Goal")
+    win._connect_mode = "context"
+    win._connect_parent = parent
+    win.canvas = type("CanvasStub", (), {"delete": lambda self, *a, **k: None})()
+    win._node_at = lambda x, y: child
+    win.refresh = lambda: None
+    event = type("Event", (), {"x": 0, "y": 0})
+    win._on_release(event)
+    assert child in parent.children
+    assert child in parent.context_children
