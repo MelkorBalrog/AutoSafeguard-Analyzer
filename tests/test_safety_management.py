@@ -930,6 +930,71 @@ def test_governance_enables_tools_per_phase():
     assert menu_arch.state == tk.DISABLED and menu_req.state == tk.DISABLED
     assert lb.colors == ["gray", "gray"]
 
+def test_governance_without_declarations_keeps_tools_enabled():
+    """Tools remain enabled when no work products are declared."""
+
+    toolbox = SafetyManagementToolbox()
+
+    class DummyListbox:
+        def __init__(self):
+            self.items: list[str] = []
+            self.colors: list[str] = []
+
+        def get(self, _start, _end):
+            return list(self.items)
+
+        def insert(self, _index, item):
+            self.items.append(item)
+            self.colors.append("black")
+
+        def itemconfig(self, index, foreground="black"):
+            self.colors[index] = foreground
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    lb = DummyListbox()
+    menu_arch = DummyMenu()
+    menu_req = DummyMenu()
+    app.tool_listboxes = {"System Design (Item Definition)": lb}
+    app.tool_categories = {"System Design (Item Definition)": []}
+    app.tool_actions = {}
+    app.work_product_menus = {
+        "Architecture Diagram": [(menu_arch, 0)],
+        "Requirement Specification": [(menu_req, 0)],
+    }
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.manage_architecture = lambda: None
+    app.show_requirements_editor = lambda: None
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        app, FaultTreeApp
+    )
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.safety_mgmt_toolbox = toolbox
+
+    app.enable_work_product("Architecture Diagram")
+    app.enable_work_product("Requirement Specification")
+
+    app.refresh_tool_enablement()
+
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.NORMAL
+    assert lb.colors == ["black", "black"]
+
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     SysMLRepository._instance = None
     SysMLRepository.get_instance()

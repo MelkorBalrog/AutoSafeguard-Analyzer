@@ -8773,11 +8773,12 @@ class FaultTreeApp:
                     self.enable_work_product(name)
                 except Exception:
                     self.enabled_work_products.add(name)
-            for name in current - declared:
-                try:
-                    self.disable_work_product(name)
-                except Exception:
-                    pass
+            if declared:
+                for name in current - declared:
+                    try:
+                        self.disable_work_product(name)
+                    except Exception:
+                        pass
         global_enabled = getattr(self, "enabled_work_products", set())
         if toolbox and getattr(toolbox, "work_products", None):
             phase_enabled = toolbox.enabled_products()
