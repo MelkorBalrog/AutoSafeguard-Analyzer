@@ -119,6 +119,10 @@ class GSNDiagramWindow(tk.Frame):
     # The following methods simply extend the diagram with new nodes.
     # Placement is very rudimentary but sufficient for tests.
     def _add_node(self, node_type: str):  # pragma: no cover - requires tkinter
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         node = GSNNode(node_type, node_type, x=50, y=50)
         self.diagram.add_node(node)
         self.selected_node = node
@@ -143,9 +147,10 @@ class GSNDiagramWindow(tk.Frame):
         self._add_node("Context")
 
     def add_module(self):  # pragma: no cover - requires tkinter
-        if not self.app:
+        app = getattr(self, "app", None)
+        if not app:
             return
-        modules = getattr(self.app, "gsn_modules", [])
+        modules = getattr(app, "gsn_modules", [])
         if not modules:
             return
         names = [m.name for m in modules]
@@ -154,6 +159,9 @@ class GSNDiagramWindow(tk.Frame):
         )
         if not name or name not in names:
             return
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         node = GSNNode(name, "Module", x=50, y=50)
         self.diagram.add_node(node)
         self.selected_node = node
@@ -205,6 +213,10 @@ class GSNDiagramWindow(tk.Frame):
             self._selected_connection = None
             self.refresh()
             return
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         self.selected_node = node
         self._selected_connection = None
         self._drag_node = node
@@ -262,6 +274,10 @@ class GSNDiagramWindow(tk.Frame):
                 # Use the current connect mode to decide whether this is a
                 # solved-by or in-context-of relationship.
                 relation = self._connect_mode
+                app = getattr(self, "app", None)
+                undo = getattr(app, "push_undo_state", None)
+                if undo:
+                    undo()
                 self._connect_parent.add_child(node, relation=relation)
             self._connect_mode = None
             self._connect_parent = None
@@ -300,6 +316,10 @@ class GSNDiagramWindow(tk.Frame):
             ):
                 webbrowser.open(node.evidence_link)
             else:
+                app = getattr(self, "app", None)
+                undo = getattr(app, "push_undo_state", None)
+                if undo:
+                    undo()
                 GSNElementConfig(self, node, self.diagram)
                 self.refresh()
                 return
@@ -308,6 +328,10 @@ class GSNDiagramWindow(tk.Frame):
         conn = self._connection_at(cx, cy)
         if conn:
             parent, child = conn
+            app = getattr(self, "app", None)
+            undo = getattr(app, "push_undo_state", None)
+            if undo:
+                undo()
             GSNConnectionConfig(self, parent, child, self.diagram)
             self.refresh()
             return
@@ -349,10 +373,18 @@ class GSNDiagramWindow(tk.Frame):
 
     # ------------------------------------------------------------------
     def _edit_node(self, node: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         GSNElementConfig(self, node, self.diagram)
         self.refresh()
 
     def _delete_node(self, node: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         if node in self.diagram.nodes:
             self.diagram.nodes.remove(node)
         for parent in list(getattr(node, "parents", [])):
@@ -368,10 +400,18 @@ class GSNDiagramWindow(tk.Frame):
         self.refresh()
 
     def _edit_connection(self, parent: GSNNode, child: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         GSNConnectionConfig(self, parent, child, self.diagram)
         self.refresh()
 
     def _delete_connection(self, parent: GSNNode, child: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         if child in parent.children:
             parent.children.remove(child)
         if parent in child.parents:
@@ -406,6 +446,10 @@ class GSNDiagramWindow(tk.Frame):
     def _move_connection(
         self, parent: GSNNode, old_child: GSNNode, new_child: GSNNode
     ) -> None:
+        app = getattr(self, "app", None)
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         relation = "context" if old_child in parent.context_children else "solved"
         if old_child in parent.children:
             parent.children.remove(old_child)
@@ -417,6 +461,10 @@ class GSNDiagramWindow(tk.Frame):
 
     def _on_delete(self, event):  # pragma: no cover - requires tkinter
         if self._selected_connection:
+            app = getattr(self, "app", None)
+            undo = getattr(app, "push_undo_state", None)
+            if undo:
+                undo()
             parent, child = self._selected_connection
             if child in parent.children:
                 parent.children.remove(child)

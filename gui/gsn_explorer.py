@@ -131,6 +131,9 @@ class GSNExplorer(tk.Frame):
         name = simpledialog.askstring("New GSN Diagram", "Root goal name:", parent=self)
         if not name:
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         root = GSNNode(name, "Goal")
         diag = GSNDiagram(root)
         sel = self.tree.selection()
@@ -151,6 +154,9 @@ class GSNExplorer(tk.Frame):
         name = simpledialog.askstring("New GSN Module", "Module name:", parent=self)
         if not name:
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         module = GSNModule(name)
         sel = self.tree.selection()
         if sel:
@@ -173,16 +179,25 @@ class GSNExplorer(tk.Frame):
         if typ == "module":
             new = simpledialog.askstring("Rename Module", "Name:", initialvalue=obj.name, parent=self)
             if new:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 obj.name = new
         elif typ == "diagram":
             new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj.root.user_name, parent=self)
             if new:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 obj.root.user_name = new
         elif typ == "node":
             new = simpledialog.askstring(
                 "Rename Node", "Name:", initialvalue=obj.user_name, parent=self
             )
             if new:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 obj.user_name = new
         self.populate()
 
@@ -195,6 +210,9 @@ class GSNExplorer(tk.Frame):
             return
         item = sel[0]
         typ, obj = self.item_map.get(item, (None, None))
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         if typ == "diagram":
             parent = self._find_parent_module(item)
             if parent:
@@ -299,6 +317,9 @@ class GSNExplorer(tk.Frame):
         if drag_type not in ("diagram", "module"):
             self.drag_item = None
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         parent_module = None
         if target:
             target_type, target_obj = self.item_map.get(target, (None, None))

@@ -114,6 +114,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
@@ -149,6 +150,7 @@ def test_safety_case_cancel_does_not_toggle(monkeypatch):
         winfo_exists=lambda: True, winfo_children=lambda: []
     )
     app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
@@ -167,6 +169,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
@@ -188,3 +191,53 @@ def test_safety_case_edit_updates_table(monkeypatch):
     assert called.get("ok")
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][2] == "WP"
+
+
+def test_safety_case_undo_redo_toggle(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.gsn_diagrams = [diag]
+    app.update_views = lambda: None
+    app._undo_stack = []
+    app._redo_stack = []
+
+    def export_model_data(include_versions=False):
+        return {
+            "gsn_diagrams": [d.to_dict() for d in app.gsn_diagrams],
+            "gsn_modules": [],
+        }
+
+    def apply_model_data(data):
+        app.gsn_diagrams = [GSNDiagram.from_dict(d) for d in data.get("gsn_diagrams", [])]
+        app.all_gsn_diagrams = list(app.gsn_diagrams)
+
+    app.export_model_data = export_model_data
+    app.apply_model_data = apply_model_data
+    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
+    app.undo = FaultTreeApp.undo.__get__(app)
+    app.redo = FaultTreeApp.redo.__get__(app)
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: True)
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    event = types.SimpleNamespace(x=0, y=0)
+    tree.bindings["<Double-Button-1>"](event)
+    assert app.gsn_diagrams[0].nodes[1].evidence_sufficient
+
+    app.undo()
+    assert not app.gsn_diagrams[0].nodes[1].evidence_sufficient
+
+    app.redo()
+    assert app.gsn_diagrams[0].nodes[1].evidence_sufficient

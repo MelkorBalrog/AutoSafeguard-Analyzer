@@ -12690,6 +12690,7 @@ class FaultTreeApp:
             current = tree.set(row, "Evidence OK")
             new_val = "" if current == CHECK_MARK else CHECK_MARK
             if messagebox.askokcancel("Evidence", "Are you sure?"):
+                self.push_undo_state()
                 tree.set(row, "Evidence OK", new_val)
                 node.evidence_sufficient = new_val == CHECK_MARK
 
@@ -12710,6 +12711,7 @@ class FaultTreeApp:
             if not node_diag:
                 return
             node, diag = node_diag
+            self.push_undo_state()
             GSNElementConfig(win, node, diag)
             self.refresh_safety_case_table()
 
