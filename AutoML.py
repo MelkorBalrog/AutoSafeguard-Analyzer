@@ -17342,7 +17342,12 @@ class FaultTreeApp:
         else:
             self.top_events = []
 
-        if ensure_root and not self.top_events:
+        if (
+            ensure_root
+            and not self.top_events
+            and "top_events" not in data
+            and "root_node" not in data
+        ):
             new_root = FaultTreeNode("Vehicle Level Function", "TOP EVENT")
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
