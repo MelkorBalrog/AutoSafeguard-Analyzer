@@ -1,8 +1,10 @@
 import tkinter as tk
 import types
 
+import types
+import gui.gsn_diagram_window as gdw
 from gui.gsn_diagram_window import GSNDiagramWindow
-from gsn import GSNNode, GSNDiagram
+from gsn import GSNNode, GSNDiagram, GSNModule
 
 
 def test_gsn_diagram_window_button_labels():
@@ -11,6 +13,7 @@ def test_gsn_diagram_window_button_labels():
     assert "Solved By" in labels
     assert "In Context Of" in labels
     assert "Zoom In" in labels
+    assert "Module" in labels
 
 
 def test_zoom_methods_adjust_factor():
@@ -196,6 +199,20 @@ def test_click_and_drag_uses_canvas_coordinates():
     drag = type("Evt", (), {"x": 60, "y": 60})
     win._on_drag(drag)
     assert node.x == 160 and node.y == 260
+
+
+def test_add_module_uses_existing_modules(monkeypatch):
+    app = types.SimpleNamespace(gsn_modules=[GSNModule("Pkg1"), GSNModule("Pkg2")])
+    diagram = GSNDiagram(GSNNode("r", "Goal"))
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.app = app
+    win.diagram = diagram
+    win.selected_node = None
+    win.refresh = lambda: None
+    monkeypatch.setattr(gdw.simpledialog, "askstring", lambda *a, **k: "Pkg2")
+    GSNDiagramWindow.add_module(win)
+    names = [n.user_name for n in diagram.nodes if n.node_type == "Module"]
+    assert names == ["Pkg2"]
 
 
 def test_right_click_node_shows_menu(monkeypatch):

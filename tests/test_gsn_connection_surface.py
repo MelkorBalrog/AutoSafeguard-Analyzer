@@ -58,6 +58,7 @@ class TrackingHelper(GSNDrawingHelper):
     draw_assumption_shape = draw_goal_shape
     draw_justification_shape = draw_goal_shape
     draw_context_shape = draw_goal_shape
+    draw_module_shape = draw_goal_shape
     draw_away_module_shape = draw_goal_shape
 
     def point_on_shape(self, shape, target_pt):

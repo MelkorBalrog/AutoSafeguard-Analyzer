@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 import webbrowser
 from typing import Optional
 
@@ -21,6 +21,7 @@ class GSNDiagramWindow(tk.Frame):
         "Assumption",
         "Justification",
         "Context",
+        "Module",
         "Solved By",
         "In Context Of",
         "Zoom In",
@@ -42,6 +43,7 @@ class GSNDiagramWindow(tk.Frame):
             ("Assumption", self.add_assumption),
             ("Justification", self.add_justification),
             ("Context", self.add_context),
+            ("Module", self.add_module),
             ("Solved By", self.connect_solved_by),
             ("In Context Of", self.connect_in_context),
             ("Zoom In", self.zoom_in),
@@ -139,6 +141,23 @@ class GSNDiagramWindow(tk.Frame):
 
     def add_context(self):  # pragma: no cover - requires tkinter
         self._add_node("Context")
+
+    def add_module(self):  # pragma: no cover - requires tkinter
+        if not self.app:
+            return
+        modules = getattr(self.app, "gsn_modules", [])
+        if not modules:
+            return
+        names = [m.name for m in modules]
+        name = simpledialog.askstring(
+            "Add Existing Module", "Module:", initialvalue=names[0], parent=self
+        )
+        if not name or name not in names:
+            return
+        node = GSNNode(name, "Module", x=50, y=50)
+        self.diagram.add_node(node)
+        self.selected_node = node
+        self.refresh()
 
     def connect_solved_by(self):  # pragma: no cover - GUI interaction stub
         self._connect_mode = "solved"

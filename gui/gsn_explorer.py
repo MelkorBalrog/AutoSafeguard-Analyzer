@@ -44,6 +44,7 @@ class GSNExplorer(tk.Frame):
             "Assumption": self._create_icon("rect", "#b22222"),
             "Justification": self._create_icon("rect", "#ff8c00"),
             "Context": self._create_icon("rect", "#696969"),
+            "Module": self.module_icon,
         }
         self.default_node_icon = self._create_icon("rect")
         self.item_map: dict[str, tuple[str, object]] = {}
