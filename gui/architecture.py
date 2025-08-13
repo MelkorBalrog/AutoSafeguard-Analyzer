@@ -8195,6 +8195,45 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         ).pack(fill=tk.X, padx=2, pady=2)
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self._activate_parent_phase()
+
+    def _activate_parent_phase(self) -> None:
+        """Activate the lifecycle phase containing this diagram.
+
+        When a BPMN diagram window is opened, switch the application's active
+        lifecycle phase to the module that owns the diagram. Any tooling not
+        enabled for that phase is hidden via ``on_lifecycle_selected`` or
+        ``refresh_tool_enablement``.
+        """
+
+        app = getattr(self, "app", None)
+        if not app or not getattr(app, "safety_mgmt_toolbox", None):
+            return
+        toolbox = app.safety_mgmt_toolbox
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if not diag:
+            return
+        name = diag.name or ""
+        phase = toolbox.module_for_diagram(name)
+        if not phase:
+            return
+        if hasattr(app, "lifecycle_var"):
+            try:
+                app.lifecycle_var.set(phase)
+            except Exception:
+                pass
+        if hasattr(app, "on_lifecycle_selected"):
+            try:
+                app.on_lifecycle_selected()
+                return
+            except Exception:
+                pass
+        toolbox.set_active_module(phase)
+        if hasattr(app, "refresh_tool_enablement"):
+            try:
+                app.refresh_tool_enablement()
+            except Exception:
+                pass
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):

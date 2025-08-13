@@ -8760,15 +8760,14 @@ class FaultTreeApp:
             return
         name = lb.get(sel[0])
         analysis_names = self.tool_to_work_product.get(name, set())
-        if (
-            analysis_names
-            and self.safety_mgmt_toolbox
-            and not any(
-                n in self.safety_mgmt_toolbox.enabled_products()
-                for n in analysis_names
-            )
-        ):
-            return
+        if isinstance(analysis_names, str):
+            analysis_names = {analysis_names}
+        if analysis_names:
+            enabled = set(getattr(self, "enabled_work_products", set()))
+            if self.safety_mgmt_toolbox:
+                enabled.update(self.safety_mgmt_toolbox.enabled_products())
+            if not any(n in enabled for n in analysis_names):
+                return
         action = self.tool_actions.get(name)
         if action:
             action()
