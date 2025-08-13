@@ -12722,6 +12722,7 @@ class FaultTreeApp:
                 if getattr(node, "node_type", "").lower() == "solution":
                     self._solution_lookup[node.unique_id] = (node, diag)
                     prob = ""
+                    v_target = ""
                     target = getattr(node, "spi_target", "")
                     if target:
                         for te in getattr(self, "top_events", []):
@@ -12733,8 +12734,11 @@ class FaultTreeApp:
                             )
                             if label == target:
                                 p = getattr(te, "probability", "")
+                                vt = getattr(te, "validation_target", "")
                                 if p not in ("", None):
                                     prob = f"{p:.2e}"
+                                if vt not in ("", None):
+                                    v_target = f"{vt:.2e}"
                                 break
                     tree.insert(
                         "",
@@ -12744,7 +12748,7 @@ class FaultTreeApp:
                             node.description,
                             node.work_product,
                             node.evidence_link,
-                            node.spi_target,
+                            v_target,
                             prob,
                             CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
                             getattr(node, "manager_notes", ""),
@@ -12766,7 +12770,7 @@ class FaultTreeApp:
             "Description",
             "Work Product",
             "Evidence Link",
-            "SPI Target",
+            "Verification Target",
             "Achieved Probability",
             "Evidence OK",
             "Notes",

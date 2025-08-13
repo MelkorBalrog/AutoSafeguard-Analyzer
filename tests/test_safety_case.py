@@ -162,6 +162,42 @@ def test_edit_probability_updates_spi(monkeypatch):
     assert spi_tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
 
+def test_safety_case_shows_verification_target(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    sol.spi_target = "SG1"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        probability=1e-4,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    assert tree.columns[4] == "Verification Target"
+    iid = next(iter(tree.data))
+    assert tree.data[iid]["values"][4] == f"{1e-5:.2e}"
+
+
 def test_edit_probability_in_spi_explorer(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")

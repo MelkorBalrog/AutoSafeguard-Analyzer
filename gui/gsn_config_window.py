@@ -164,7 +164,7 @@ class GSNElementConfig(tk.Toplevel):
                 row=row, column=1, padx=4, pady=4, sticky="ew"
             )
             row += 1
-            tk.Label(self, text="SPI Target:").grid(
+            tk.Label(self, text="Verification Target:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
             spi_targets = _collect_spi_targets(diagram, getattr(master, "app", None))
