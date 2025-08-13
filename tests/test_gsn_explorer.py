@@ -200,6 +200,115 @@ def test_open_item_delegates_to_app(monkeypatch):
     assert explorer.app.opened is diag
 
 
+def test_rename_node(monkeypatch):
+    root = GSNNode("Root", "Goal")
+    child = GSNNode("Child", "Goal")
+    root.add_child(child)
+    diag = GSNDiagram(root)
+    diag.add_node(child)
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[], gsn_diagrams=[diag])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is child:
+            explorer.tree.selection_item = iid
+            break
+
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Renamed")
+
+    GSNExplorer.rename_item(explorer)
+
+    assert child.user_name == "Renamed"
+
+
+def test_delete_node():
+    root = GSNNode("Root", "Goal")
+    child = GSNNode("Child", "Goal")
+    root.add_child(child)
+    diag = GSNDiagram(root)
+    diag.add_node(child)
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[], gsn_diagrams=[diag])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is child:
+            explorer.tree.selection_item = iid
+            break
+
+    GSNExplorer.delete_item(explorer)
+
+    assert child not in diag.nodes
+    assert child not in root.children
+
+
 def test_drag_diagram_into_module():
     root = GSNNode("Root", "Goal")
     diag = GSNDiagram(root)

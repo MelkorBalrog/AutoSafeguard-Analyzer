@@ -317,6 +317,7 @@ from gui.architecture import (
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
     ControlFlowDiagramWindow,
+    BPMNDiagramWindow,
     ArchitectureManagerDialog,
     parse_behaviors,
 )
@@ -1955,6 +1956,7 @@ class FaultTreeApp:
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
+            "BPMN Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
             "Control Flow Diagram": self._create_icon("arrow", "red"),
@@ -1966,6 +1968,7 @@ class FaultTreeApp:
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
         }
+        self.item_definition = {"description": "", "assumptions": ""}
         self.mission_profiles = []
         self.fmeda_components = []
         self.reliability_analyses = []
@@ -8129,8 +8132,19 @@ class FaultTreeApp:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
+        elif kind == "gsn":
+            if 0 <= idx < len(getattr(self, "all_gsn_diagrams", [])):
+                self.open_gsn_diagram(self.all_gsn_diagrams[idx])
+        elif kind == "jrev":
+            if 0 <= idx < len(getattr(self, "joint_reviews", [])):
+                review = self.joint_reviews[idx]
+                self.review_data = review
+                self.open_review_document(review)
+                self.open_review_toolbox()
         elif kind == "gov":
             self.open_management_window(idx)
+        elif kind == "itemdef":
+            self.show_item_definition_editor()
         elif kind == "arch":
             self.open_arch_window(idx)
 
@@ -8167,6 +8181,10 @@ class FaultTreeApp:
             current = self.arch_diagrams[idx].name
         elif kind == "gov":
             current = self.management_diagrams[idx].name
+        elif kind == "gsn":
+            current = self.all_gsn_diagrams[idx].root.user_name
+        elif kind == "jrev":
+            current = self.joint_reviews[idx].name
         elif kind == "fta":
             node = next((t for t in self.top_events if t.unique_id == idx), None)
             current = node.user_name if node else ""
@@ -8191,6 +8209,13 @@ class FaultTreeApp:
             self.arch_diagrams[idx].name = new
         elif kind == "gov":
             self.management_diagrams[idx].name = new
+        elif kind == "gsn":
+            self.all_gsn_diagrams[idx].root.user_name = new
+        elif kind == "jrev":
+            if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
+                messagebox.showerror("Review", "Name already exists")
+                return
+            self.joint_reviews[idx].name = new
         elif kind == "fta" and node:
             node.user_name = new
         self.update_views()
@@ -9085,12 +9110,49 @@ class FaultTreeApp:
                     image=icon,
                 )
 
+            # --- GSN Diagrams Section ---
+            def _collect_gsn_diagrams(module):
+                diagrams = list(module.diagrams)
+                for sub in module.modules:
+                    diagrams.extend(_collect_gsn_diagrams(sub))
+                return diagrams
+
+            self.all_gsn_diagrams = sorted(
+                list(getattr(self, "gsn_diagrams", []))
+                + [
+                    d
+                    for m in getattr(self, "gsn_modules", [])
+                    for d in _collect_gsn_diagrams(m)
+                ],
+                key=lambda d: d.root.user_name or d.diag_id,
+            )
+            gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
+            for idx, diag in enumerate(self.all_gsn_diagrams):
+                tree.insert(
+                    gsn_root,
+                    "end",
+                    text=diag.root.user_name or f"Diagram {idx + 1}",
+                    tags=("gsn", str(idx)),
+                )
+
+            # --- Verification Reviews Section ---
+            self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
+            rev_root = tree.insert(mgmt_root, "end", text="Verification Reviews", open=True)
+            for idx, review in enumerate(self.joint_reviews):
+                tree.insert(
+                    rev_root,
+                    "end",
+                    text=review.name,
+                    tags=("jrev", str(idx)),
+                )
+
             # --- System Design (Item Definition) Section ---
             sys_root = tree.insert(
                 "",
                 "end",
                 text="System Design (Item Definition)",
                 open=True,
+                tags=("itemdef", "0"),
             )
             self.arch_diagrams = sorted(
                 [
@@ -10232,6 +10294,28 @@ class FaultTreeApp:
             text.insert(tk.END, "\n\n")
 
         tk.Button(win, text="Open Requirements Editor", command=self.show_requirements_editor).pack(pady=5)
+
+    def show_item_definition_editor(self):
+        """Open editor for item description and assumptions."""
+        if hasattr(self, "_item_def_tab") and self._item_def_tab.winfo_exists():
+            self.doc_nb.select(self._item_def_tab)
+            return
+        self._item_def_tab = self._new_tab("Item Definition")
+        win = self._item_def_tab
+        ttk.Label(win, text="Item Description:").pack(anchor="w")
+        self._item_desc_text = tk.Text(win, height=8, wrap="word")
+        self._item_desc_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        ttk.Label(win, text="Assumptions:").pack(anchor="w")
+        self._item_assum_text = tk.Text(win, height=8, wrap="word")
+        self._item_assum_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._item_desc_text.insert("1.0", self.item_definition.get("description", ""))
+        self._item_assum_text.insert("1.0", self.item_definition.get("assumptions", ""))
+
+        def save():
+            self.item_definition["description"] = self._item_desc_text.get("1.0", "end").strip()
+            self.item_definition["assumptions"] = self._item_assum_text.get("1.0", "end").strip()
+
+        ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
 
     def show_requirements_editor(self):
         """Open an editor to manage global requirements and traceability."""
@@ -15004,6 +15088,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "BPMN Diagram":
+            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
@@ -15031,6 +15117,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "BPMN Diagram":
+            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
@@ -15528,6 +15616,9 @@ class FaultTreeApp:
             "hazards": self.hazards.copy(),
             "failures": self.failures.copy(),
             "project_properties": self.project_properties.copy(),
+            "item_definition": getattr(
+                self, "item_definition", {"description": "", "assumptions": ""}
+            ).copy(),
             "global_requirements": global_requirements,
             "reviews": reviews,
             "current_review": current_name,
@@ -15932,6 +16023,10 @@ class FaultTreeApp:
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
         self.project_properties = data.get("project_properties", self.project_properties)
+        self.item_definition = data.get(
+            "item_definition",
+            getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
         self.reviews = []
         reviews_data = data.get("reviews")
         if reviews_data:
@@ -16453,6 +16548,10 @@ class FaultTreeApp:
         
         # Load project properties.
         self.project_properties = data.get("project_properties", self.project_properties)
+        self.item_definition = data.get(
+            "item_definition",
+            getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
         self.reviews = []
         reviews_data = data.get("reviews")
         if reviews_data:

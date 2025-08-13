@@ -7,32 +7,58 @@ from tkinter import ttk
 from gsn import GSNNode, GSNDiagram
 
 
-def _collect_work_products(diagram: GSNDiagram) -> list[str]:
-    """Return sorted unique work product names from *diagram*.
+def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
+    """Return sorted unique work product names for *diagram*.
 
-    Only non-empty ``work_product`` attributes of nodes are considered to
-    provide meaningful options in the configuration dialog.
+    The list includes ``work_product`` attributes from existing solution
+    nodes and any registered work products from the application's safety
+    management toolbox.  When supplied, *app* should provide a
+    ``safety_mgmt_toolbox`` attribute with a ``get_work_products`` method.
     """
 
-    return sorted(
-        {
-            getattr(n, "work_product", "")
-            for n in getattr(diagram, "nodes", [])
-            if getattr(n, "work_product", "")
-        }
+    products = {
+        getattr(n, "work_product", "")
+        for n in getattr(diagram, "nodes", [])
+        if getattr(n, "work_product", "")
+    }
+
+    if app is None:
+        app = getattr(diagram, "app", None)
+    toolbox = getattr(app, "safety_mgmt_toolbox", None)
+    if toolbox:
+        for wp in getattr(toolbox, "get_work_products", lambda: [])():
+            name = " - ".join(
+                filter(None, [getattr(wp, "diagram", ""), getattr(wp, "analysis", "")])
+            )
+            if name:
+                products.add(name)
+
+    return sorted(products)
+
+
+def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:
+    """Return sorted list of SPI targets available for *diagram*.
+
+    Besides existing solution nodes in the diagram, this also includes
+    validation targets defined on the application's top level product goals
+    when an ``app`` instance is provided.  Duplicates and empty entries are
+    removed.
+    """
+
+    targets = {
+        getattr(n, "spi_target", "")
+        for n in getattr(diagram, "nodes", [])
+        if getattr(n, "spi_target", "")
+    }
+    if app is None:
+        app = getattr(diagram, "app", None)
+    top_events = getattr(app, "top_events", []) if app else []
+    targets.update(
+        getattr(te, "validation_desc", "")
+        for te in top_events
+        if getattr(te, "validation_desc", "")
     )
-
-
-def _collect_spi_targets(diagram: GSNDiagram) -> list[str]:
-    """Return sorted list of SPI targets referenced in *diagram*."""
-
-    return sorted(
-        {
-            getattr(n, "spi_target", "")
-            for n in getattr(diagram, "nodes", [])
-            if getattr(n, "spi_target", "")
-        }
-    )
+    return sorted(targets)
 
 
 class GSNElementConfig(tk.Toplevel):
@@ -64,15 +90,22 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="Work Product:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
-            work_products = _collect_work_products(diagram)
+            work_products = _collect_work_products(diagram, getattr(master, "app", None))
             if self.work_var.get() and self.work_var.get() not in work_products:
                 work_products.append(self.work_var.get())
-            ttk.Combobox(
+            wp_cb = ttk.Combobox(
                 self,
                 textvariable=self.work_var,
-                values=work_products,
                 state="readonly",
-            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            )
+            wp_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            # Explicitly configure the combobox values after creation so Tk
+            # updates the drop-down list reliably across platforms.  Passing
+            # ``values`` to the constructor can result in an empty list on
+            # some systems.
+            wp_cb.configure(values=work_products)
+            if not self.work_var.get() and work_products:
+                self.work_var.set(work_products[0])
             row += 1
             tk.Label(self, text="Evidence Link:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
@@ -84,15 +117,18 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="SPI Target:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
-            spi_targets = _collect_spi_targets(diagram)
+            spi_targets = _collect_spi_targets(diagram, getattr(master, "app", None))
             if self.spi_var.get() and self.spi_var.get() not in spi_targets:
                 spi_targets.append(self.spi_var.get())
-            ttk.Combobox(
+            spi_cb = ttk.Combobox(
                 self,
                 textvariable=self.spi_var,
-                values=spi_targets,
                 state="readonly",
-            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            )
+            spi_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            spi_cb.configure(values=spi_targets)
+            if not self.spi_var.get() and spi_targets:
+                self.spi_var.set(spi_targets[0])
             row += 1
         btns = ttk.Frame(self)
         btns.grid(row=row, column=0, columnspan=2, pady=4)

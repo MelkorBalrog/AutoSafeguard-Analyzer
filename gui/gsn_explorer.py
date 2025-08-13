@@ -57,6 +57,7 @@ class GSNExplorer(tk.Frame):
         ttk.Button(btns, text="Delete", command=self.delete_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
         self.tree.bind("<Double-1>", self._on_double_click)
+        self.tree.bind("<Button-3>", self._on_right_click)
         # drag and drop support
         self.drag_item: str | None = None
         self.tree.bind("<ButtonPress-1>", self._on_drag_start)
@@ -176,6 +177,12 @@ class GSNExplorer(tk.Frame):
             new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj.root.user_name, parent=self)
             if new:
                 obj.root.user_name = new
+        elif typ == "node":
+            new = simpledialog.askstring(
+                "Rename Node", "Name:", initialvalue=obj.user_name, parent=self
+            )
+            if new:
+                obj.user_name = new
         self.populate()
 
     # ------------------------------------------------------------------
@@ -203,6 +210,20 @@ class GSNExplorer(tk.Frame):
             for d in self._collect_diagrams(obj):
                 if d in self.app.gsn_diagrams:
                     self.app.gsn_diagrams.remove(d)
+        elif typ == "node":
+            diagram = self._find_parent_diagram(item)
+            if diagram and obj in diagram.nodes:
+                diagram.nodes.remove(obj)
+                if obj is diagram.root and diagram.nodes:
+                    diagram.root = diagram.nodes[0]
+            for parent in list(obj.parents):
+                if obj in parent.children:
+                    parent.children.remove(obj)
+                if obj in parent.context_children:
+                    parent.context_children.remove(obj)
+            for child in list(obj.children):
+                if obj in child.parents:
+                    child.parents.remove(obj)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -221,6 +242,42 @@ class GSNExplorer(tk.Frame):
                 return obj
             parent = self.tree.parent(parent)
         return None
+
+    # ------------------------------------------------------------------
+    def _find_parent_diagram(self, item: str):
+        parent = self.tree.parent(item)
+        while parent:
+            typ, obj = self.item_map.get(parent, (None, None))
+            if typ == "diagram":
+                return obj
+            parent = self.tree.parent(parent)
+        return None
+
+    # ------------------------------------------------------------------
+    def _on_right_click(self, event):  # pragma: no cover - requires tkinter
+        item = self.tree.identify_row(event.y)
+        if not item:
+            return
+        self.tree.selection_set(item)
+        menu = tk.Menu(self.tree, tearoff=0)
+        typ, _obj = self.item_map.get(item, (None, None))
+        if typ == "module":
+            menu.add_command(label="New Module", command=self.new_module)
+            menu.add_command(label="New Diagram", command=self.new_diagram)
+            menu.add_separator()
+            menu.add_command(label="Rename", command=self.rename_item)
+            menu.add_command(label="Delete", command=self.delete_item)
+        elif typ == "diagram":
+            menu.add_command(label="Open", command=self.open_item)
+            menu.add_separator()
+            menu.add_command(label="Rename", command=self.rename_item)
+            menu.add_command(label="Delete", command=self.delete_item)
+        elif typ == "node":
+            menu.add_command(label="Rename", command=self.rename_item)
+            menu.add_command(label="Delete", command=self.delete_item)
+        else:
+            menu.add_command(label="Refresh", command=self.populate)
+        menu.tk_popup(event.x_root, event.y_root)
 
     # ------------------------------------------------------------------
     def _on_drag_start(self, event):

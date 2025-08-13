@@ -18,8 +18,10 @@ sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
+import AutoML
 from analysis import SafetyManagementToolbox
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 
 
@@ -245,6 +247,106 @@ def test_safety_diagrams_visible_in_analysis_tree():
     assert "Arch" in texts
 
 
+def test_gsn_diagrams_visible_in_analysis_tree():
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            pass
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    from gsn import GSNNode, GSNDiagram
+
+    root = GSNNode("Goal1", "Goal")
+    diag = GSNDiagram(root)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.gsn_diagrams = [diag]
+    app.gsn_modules = []
+    app.analysis_tree = DummyTree()
+
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "GSN Diagrams" in texts
+    assert "Goal1" in texts
+
+
+def test_joint_reviews_visible_in_analysis_tree():
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            pass
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    joint = ReviewData(name="JR1", mode="joint")
+    peer = ReviewData(name="PR1", mode="peer")
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.gsn_diagrams = []
+    app.gsn_modules = []
+    app.reviews = [joint, peer]
+    app.analysis_tree = DummyTree()
+
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "Verification Reviews" in texts
+    assert "JR1" in texts
+    assert "PR1" not in texts
+
+
 def test_external_safety_diagrams_load_in_toolbox_list():
     """Diagrams tagged for governance appear even if created elsewhere."""
     SysMLRepository._instance = None
@@ -254,4 +356,51 @@ def test_external_safety_diagrams_load_in_toolbox_list():
     toolbox = SafetyManagementToolbox()
     names = toolbox.list_diagrams()
     assert "GovX" in names
+
+
+def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
+    """Governance diagrams open as BPMN diagrams with their toolbox."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram", name="GovA")
+    diag.tags.append("safety-management")
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.management_diagrams = [diag]
+    app.diagram_tabs = {}
+
+    class DummyNotebook:
+        def __init__(self):
+            self._tabs = []
+        def tabs(self):
+            return self._tabs
+        def select(self, tab):
+            self.selected = tab
+
+    app.doc_nb = DummyNotebook()
+    app._format_diag_title = lambda d: d.name
+
+    def _new_tab(title):
+        app.doc_nb._tabs.append(title)
+        return title
+
+    app._new_tab = _new_tab
+    app.refresh_all = lambda: None
+
+    calls = {"bpmn": False, "activity": False}
+
+    def fake_bpmn(tab, _app, diagram_id):
+        calls["bpmn"] = True
+        assert diagram_id == diag.diag_id
+
+    def fake_activity(tab, _app, diagram_id):
+        calls["activity"] = True
+
+    monkeypatch.setattr(AutoML, "BPMNDiagramWindow", fake_bpmn)
+    monkeypatch.setattr(AutoML, "ActivityDiagramWindow", fake_activity)
+
+    app.open_management_window(0)
+
+    assert calls["bpmn"]
+    assert not calls["activity"]
 

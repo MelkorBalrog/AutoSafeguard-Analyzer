@@ -928,6 +928,44 @@ class GSNDrawingHelper(FTADrawingHelper):
             tags=(obj_id,),
         )
 
+    def _draw_arrow(
+        self,
+        canvas,
+        start_pt,
+        end_pt,
+        *,
+        fill="black",
+        outline="black",
+        obj_id: str = "",
+    ) -> None:
+        """Draw a triangular arrow head from *start_pt* to *end_pt*."""
+        x1, y1 = start_pt
+        x2, y2 = end_pt
+        dx = x2 - x1
+        dy = y2 - y1
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        ux, uy = dx / length, dy / length
+        arrow_length = 10
+        arrow_width = 6
+        base_x = x2 - arrow_length * ux
+        base_y = y2 - arrow_length * uy
+        perp_x = -uy
+        perp_y = ux
+        points = [
+            (x2, y2),
+            (
+                base_x + (arrow_width / 2) * perp_x,
+                base_y + (arrow_width / 2) * perp_y,
+            ),
+            (
+                base_x - (arrow_width / 2) * perp_x,
+                base_y - (arrow_width / 2) * perp_y,
+            ),
+        ]
+        canvas.create_polygon(points, fill=fill, outline=outline, tags=(obj_id,))
+
     def draw_solved_by_connection(
         self,
         canvas,
@@ -935,42 +973,54 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a curved connector indicating a 'solved by' relationship."""
         px, py = parent_pt
         cx, cy = child_pt
         if parent_pt == child_pt:
             size = 20
+            path = [
+                px,
+                py,
+                px,
+                py - size,
+                px + size,
+                py - size,
+                px + size,
+                py,
+                px,
+                py,
+            ]
             canvas.create_line(
+                *path, fill=outline_color, width=line_width, tags=(obj_id,)
+            )
+        else:
+            offset = (cy - py) / 2
+            path = [
                 px,
                 py,
                 px,
-                py - size,
-                px + size,
-                py - size,
-                px + size,
-                py,
-                px,
-                py,
+                py + offset,
+                cx,
+                cy - offset,
+                cx,
+                cy,
+            ]
+            canvas.create_line(
+                *path,
+                smooth=True,
                 fill=outline_color,
                 width=line_width,
-                arrow=tk.LAST,
+                tags=(obj_id,),
             )
-            return
-        offset = (cy - py) / 2
-        canvas.create_line(
-            px,
-            py,
-            px,
-            py + offset,
-            cx,
-            cy - offset,
-            cx,
-            cy,
-            smooth=True,
-            fill=outline_color,
-            width=line_width,
-            arrow=tk.LAST,
+        self._draw_arrow(
+            canvas,
+            (path[-4], path[-3]),
+            (path[-2], path[-1]),
+            fill="black",
+            outline="black",
+            obj_id=obj_id,
         )
 
     def draw_in_context_connection(
@@ -980,6 +1030,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a dashed curved connector for an 'in context of' relationship."""
         px, py = parent_pt
@@ -988,37 +1039,51 @@ class GSNDrawingHelper(FTADrawingHelper):
         dash = (4, 2)
         if parent_pt == child_pt:
             size = 20
+            path = [
+                px,
+                py,
+                px,
+                py - size,
+                px + size,
+                py - size,
+                px + size,
+                py,
+                px,
+                py,
+            ]
             canvas.create_line(
-                px,
-                py,
-                px,
-                py - size,
-                px + size,
-                py - size,
-                px + size,
-                py,
-                px,
-                py,
+                *path,
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
-                arrow=tk.LAST,
+                tags=(obj_id,),
             )
-            return
-        canvas.create_line(
-            px,
-            py,
-            px,
-            py + offset,
-            cx,
-            cy - offset,
-            cx,
-            cy,
-            smooth=True,
-            fill=outline_color,
-            width=line_width,
-            dash=dash,
-            arrow=tk.LAST,
+        else:
+            path = [
+                px,
+                py,
+                px,
+                py + offset,
+                cx,
+                cy - offset,
+                cx,
+                cy,
+            ]
+            canvas.create_line(
+                *path,
+                smooth=True,
+                fill=outline_color,
+                width=line_width,
+                dash=dash,
+                tags=(obj_id,),
+            )
+        self._draw_arrow(
+            canvas,
+            (path[-4], path[-3]),
+            (path[-2], path[-1]),
+            fill="white",
+            outline=outline_color,
+            obj_id=obj_id,
         )
 
     def draw_strategy_shape(
