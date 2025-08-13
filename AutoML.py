@@ -8293,7 +8293,7 @@ class FaultTreeApp:
         if len(tags) != 2:
             return
         kind, ident = tags[0], tags[1]
-        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
+        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev"}:
             idx = int(ident)
             if kind == "fmea":
                 self.show_fmea_table(self.fmeas[idx])
@@ -8341,8 +8341,8 @@ class FaultTreeApp:
                     self.review_data = review
                     self.open_review_document(review)
                     self.open_review_toolbox()
-            elif kind == "gov":
-                self.open_management_window(idx)
+        elif kind == "gov":
+            self.open_management_window(ident)
         elif kind == "gsn":
             diag = getattr(self, "gsn_diagram_map", {}).get(ident)
             if diag:
@@ -8417,8 +8417,8 @@ class FaultTreeApp:
             diag = repo.diagrams.get(ident)
             current = diag.name if diag else ""
         elif kind == "gov":
-            idx = int(ident)
-            current = self.management_diagrams[idx].name
+            diag = repo.diagrams.get(ident)
+            current = diag.name if diag else ""
         elif kind == "fta":
             node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             current = node.user_name if node else ""
@@ -8444,8 +8444,8 @@ class FaultTreeApp:
             self.tc2fi_docs[idx].name = new
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
-        elif kind == "gov":
-            self.management_diagrams[idx].name = new
+        elif kind == "gov" and repo.diagrams.get(ident):
+            repo.diagrams[ident].name = new
         elif kind == "gsn":
             diag = self.gsn_diagram_map.get(ident)
             if diag:
@@ -8489,9 +8489,14 @@ class FaultTreeApp:
                 self.open_arch_window(diag.diag_id)
                 return
 
-        for idx, diag in enumerate(self.management_diagrams):
+        for diag in self.management_diagrams:
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
-                self.open_management_window(idx)
+                self.open_management_window(diag.diag_id)
+                return
+
+        for diag in getattr(self, "all_gsn_diagrams", []):
+            if getattr(diag.root, "user_name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_gsn_diagram(diag)
                 return
 
         for diag in getattr(self, "all_gsn_diagrams", []):
@@ -9359,6 +9364,7 @@ class FaultTreeApp:
                 ],
                 key=lambda d: d.name or d.diag_id,
             )
+            self.management_diagram_map = {d.diag_id: d for d in self.management_diagrams}
             mgmt_root = tree.insert("", "end", text="Safety Management", open=True)
             gov_root = tree.insert(
                 mgmt_root,
@@ -9366,16 +9372,62 @@ class FaultTreeApp:
                 text="Safety & Security Governance Diagrams",
                 open=True,
             )
-            for idx, diag in enumerate(self.management_diagrams):
-                name = diag.name or f"Diagram {idx + 1}"
-                icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                tree.insert(
-                    gov_root,
-                    "end",
-                    text=name,
-                    tags=("gov", str(idx)),
-                    image=icon,
+
+            def add_pkg(pkg_id: str, parent: str) -> None:
+                pkg = repo.elements.get(pkg_id)
+                if not pkg or pkg.elem_type != "Package":
+                    return
+                node = parent
+                if pkg_id != repo.root_package.elem_id:
+                    node = tree.insert(
+                        parent,
+                        "end",
+                        text=pkg.name or pkg_id,
+                        open=True,
+                        tags=("pkg", pkg_id),
+                        image=getattr(self, "pkg_icon", None),
+                    )
+                sub_pkgs = sorted(
+                    [
+                        e.elem_id
+                        for e in repo.elements.values()
+                        if e.elem_type == "Package" and e.owner == pkg_id
+                    ],
+                    key=lambda i: repo.elements[i].name or i,
                 )
+                for child_id in sub_pkgs:
+                    add_pkg(child_id, node)
+                diags = sorted(
+                    [
+                        d
+                        for d in repo.diagrams.values()
+                        if d.package == pkg_id and "safety-management" in getattr(d, "tags", [])
+                    ],
+                    key=lambda d: d.name or d.diag_id,
+                )
+                for diag in diags:
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
+                    tree.insert(
+                        node,
+                        "end",
+                        text=diag.name or diag.diag_id,
+                        tags=("gov", diag.diag_id),
+                        image=icon,
+                    )
+
+            root_pkg = getattr(repo, "root_package", None)
+            if root_pkg is not None:
+                add_pkg(root_pkg.elem_id, gov_root)
+            else:
+                for diag in self.management_diagrams:
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
+                    tree.insert(
+                        gov_root,
+                        "end",
+                        text=diag.name or diag.diag_id,
+                        tags=("gov", diag.diag_id),
+                        image=icon,
+                    )
 
             # --- GSN Diagrams Section ---
             def _collect_gsn_diagrams(module):
@@ -15805,11 +15857,14 @@ class FaultTreeApp:
             ControlFlowDiagramWindow(tab, self, diagram_id=diag.diag_id)
         self.refresh_all()
 
-    def open_management_window(self, idx: int) -> None:
+    def open_management_window(self, diag_id: str) -> None:
         """Open a safety management diagram from the repository."""
-        if idx < 0 or idx >= len(self.management_diagrams):
+        diag = getattr(self, "management_diagram_map", {}).get(diag_id)
+        if diag is None:
+            repo = SysMLRepository.get_instance()
+            diag = repo.diagrams.get(diag_id)
+        if not diag:
             return
-        diag = self.management_diagrams[idx]
         existing = self.diagram_tabs.get(diag.diag_id)
         if existing and str(existing) in self.doc_nb.tabs():
             if existing.winfo_exists():
