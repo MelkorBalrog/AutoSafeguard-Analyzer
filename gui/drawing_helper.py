@@ -1011,17 +1011,32 @@ class GSNDrawingHelper(FTADrawingHelper):
                 *path, fill=outline_color, width=line_width, tags=(obj_id,)
             )
         else:
-            offset = (cy - py) / 2
-            path = [
-                px,
-                py,
-                px,
-                py + offset,
-                cx,
-                cy - offset,
-                cx,
-                cy,
-            ]
+            dx = cx - px
+            dy = cy - py
+            if abs(dx) > abs(dy):
+                offset = dx / 2
+                path = [
+                    px,
+                    py,
+                    px + offset,
+                    py,
+                    cx - offset,
+                    cy,
+                    cx,
+                    cy,
+                ]
+            else:
+                offset = dy / 2
+                path = [
+                    px,
+                    py,
+                    px,
+                    py + offset,
+                    cx,
+                    cy - offset,
+                    cx,
+                    cy,
+                ]
             canvas.create_line(
                 *path,
                 smooth=True,
@@ -1029,10 +1044,14 @@ class GSNDrawingHelper(FTADrawingHelper):
                 width=line_width,
                 tags=(obj_id,),
             )
+        start = (path[-4], path[-3])
+        end = (path[-2], path[-1])
+        if start == end:
+            start = parent_pt
         self._draw_arrow(
             canvas,
-            (path[-4], path[-3]),
-            (path[-2], path[-1]),
+            start,
+            end,
             fill="black",
             outline="black",
             obj_id=obj_id,
@@ -1050,7 +1069,6 @@ class GSNDrawingHelper(FTADrawingHelper):
         """Draw a dashed curved connector for an 'in context of' relationship."""
         px, py = parent_pt
         cx, cy = child_pt
-        offset = (cy - py) / 2
         dash = (4, 2)
         if parent_pt == child_pt:
             size = 20
@@ -1074,16 +1092,32 @@ class GSNDrawingHelper(FTADrawingHelper):
                 tags=(obj_id,),
             )
         else:
-            path = [
-                px,
-                py,
-                px,
-                py + offset,
-                cx,
-                cy - offset,
-                cx,
-                cy,
-            ]
+            dx = cx - px
+            dy = cy - py
+            if abs(dx) > abs(dy):
+                offset = dx / 2
+                path = [
+                    px,
+                    py,
+                    px + offset,
+                    py,
+                    cx - offset,
+                    cy,
+                    cx,
+                    cy,
+                ]
+            else:
+                offset = dy / 2
+                path = [
+                    px,
+                    py,
+                    px,
+                    py + offset,
+                    cx,
+                    cy - offset,
+                    cx,
+                    cy,
+                ]
             canvas.create_line(
                 *path,
                 smooth=True,
@@ -1092,10 +1126,14 @@ class GSNDrawingHelper(FTADrawingHelper):
                 dash=dash,
                 tags=(obj_id,),
             )
+        start = (path[-4], path[-3])
+        end = (path[-2], path[-1])
+        if start == end:
+            start = parent_pt
         self._draw_arrow(
             canvas,
-            (path[-4], path[-3]),
-            (path[-2], path[-1]),
+            start,
+            end,
             fill="white",
             outline=outline_color,
             obj_id=obj_id,
