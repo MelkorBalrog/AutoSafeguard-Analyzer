@@ -8,6 +8,7 @@ from typing import Optional
 
 from gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
+from .gsn_connection_config import GSNConnectionConfig
 
 
 class GSNDiagramWindow(tk.Frame):
@@ -64,7 +65,10 @@ class GSNDiagramWindow(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
 
         self.id_to_node = {}
+        self.id_to_conn = {}
         self.selected_node: Optional[GSNNode] = None
+        self.selected_connection: Optional[tuple[GSNNode, GSNNode]] = None
+        self._selected_conn_id: str = ""
         self._drag_node: Optional[GSNNode] = None
         self._drag_offset = (0, 0)
         self._connect_mode: Optional[str] = None
@@ -76,17 +80,28 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
         self.canvas.bind("<Double-1>", self._on_double_click)
+        self.canvas.bind_all("<Delete>", self._on_delete)
         self.refresh()
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
         self.canvas.delete("all")
         self.id_to_node = {n.unique_id: n for n in self.diagram._traverse()}
+        self.id_to_conn = {}
+        for parent in self.diagram._traverse():
+            for child in parent.children:
+                cid = f"{parent.unique_id}->{child.unique_id}"
+                relation = "context" if child in parent.context_children else "solved"
+                self.id_to_conn[cid] = (parent, child, relation)
         self.diagram.draw(self.canvas, zoom=self.zoom)
         if self.selected_node:
             bbox = self.canvas.bbox(self.selected_node.unique_id)
             if bbox:
                 self.canvas.create_rectangle(*bbox, outline="red", width=2)
+        if getattr(self, "_selected_conn_id", ""):
+            self.canvas.itemconfigure(
+                self._selected_conn_id, fill="red", outline="red", width=2
+            )
         # update scroll region to encompass all drawn items
         bbox = self.canvas.bbox("all") or (0, 0, 0, 0)
         self.canvas.configure(scrollregion=bbox)
@@ -128,18 +143,33 @@ class GSNDiagramWindow(tk.Frame):
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
+        if not hasattr(self, "selected_connection"):
+            self.selected_connection = None
+        if not hasattr(self, "_selected_conn_id"):
+            self._selected_conn_id = ""
         node = self._node_at(cx, cy)
         if self._connect_mode:
             self._connect_parent = node
             return
-        if not node:
-            self.selected_node = None
+        if node:
+            self.selected_connection = None
+            self._selected_conn_id = ""
+            self.selected_node = node
+            self._drag_node = node
+            sx, sy = node.x * self.zoom, node.y * self.zoom
+            self._drag_offset = (cx - sx, cy - sy)
             self.refresh()
             return
-        self.selected_node = node
-        self._drag_node = node
-        sx, sy = node.x * self.zoom, node.y * self.zoom
-        self._drag_offset = (cx - sx, cy - sy)
+        conn, cid = self._connection_at(cx, cy)
+        if conn:
+            self.selected_node = None
+            self.selected_connection = conn
+            self._selected_conn_id = cid
+            self.refresh()
+            return
+        self.selected_node = None
+        self.selected_connection = None
+        self._selected_conn_id = ""
         self.refresh()
 
     def _on_drag(self, event):  # pragma: no cover - requires tkinter
@@ -219,18 +249,24 @@ class GSNDiagramWindow(tk.Frame):
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
         node = self._node_at(cx, cy)
-        if not node:
-            return
-        if (
-            node.node_type == "Solution"
-            and getattr(node, "evidence_link", "")
-        ):
-            webbrowser.open(node.evidence_link)
-        else:
-            GSNElementConfig(self, node, self.diagram)
+        if node:
+            if (
+                node.node_type == "Solution"
+                and getattr(node, "evidence_link", "")
+            ):
+                webbrowser.open(node.evidence_link)
+            else:
+                GSNElementConfig(self, node, self.diagram)
+                self.refresh()
+                return
             self.refresh()
             return
-        self.refresh()
+        conn, _ = self._connection_at(cx, cy)
+        if conn:
+            parent, child = conn
+            GSNConnectionConfig(self, parent, child, self.diagram)
+            self.refresh()
+            return
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
         items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
@@ -240,6 +276,29 @@ class GSNDiagramWindow(tk.Frame):
                 if node:
                     return node
         return None
+
+    def _connection_at(self, x: float, y: float):
+        items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
+        for item in items:
+            for tag in self.canvas.gettags(item):
+                conn = self.id_to_conn.get(tag)
+                if conn:
+                    return (conn[0], conn[1]), tag
+        return (None, None)
+
+    def _on_delete(self, event):  # pragma: no cover - requires tkinter
+        if not getattr(self, "selected_connection", None):
+            return
+        parent, child = self.selected_connection
+        if child in parent.children:
+            parent.children.remove(child)
+        if parent in child.parents:
+            child.parents.remove(parent)
+        if child in parent.context_children:
+            parent.context_children.remove(child)
+        self.selected_connection = None
+        self._selected_conn_id = ""
+        self.refresh()
 
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2

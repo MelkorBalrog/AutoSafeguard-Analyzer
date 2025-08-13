@@ -936,6 +936,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         *,
         fill="black",
         outline="black",
+        obj_id: str = "",
     ) -> None:
         """Draw a triangular arrow head from *start_pt* to *end_pt*."""
         x1, y1 = start_pt
@@ -963,7 +964,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 base_y - (arrow_width / 2) * perp_y,
             ),
         ]
-        canvas.create_polygon(points, fill=fill, outline=outline)
+        canvas.create_polygon(points, fill=fill, outline=outline, tags=(obj_id,))
 
     def draw_solved_by_connection(
         self,
@@ -972,6 +973,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a curved connector indicating a 'solved by' relationship."""
         px, py = parent_pt
@@ -990,7 +992,9 @@ class GSNDrawingHelper(FTADrawingHelper):
                 px,
                 py,
             ]
-            canvas.create_line(*path, fill=outline_color, width=line_width)
+            canvas.create_line(
+                *path, fill=outline_color, width=line_width, tags=(obj_id,)
+            )
         else:
             offset = (cy - py) / 2
             path = [
@@ -1008,6 +1012,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 smooth=True,
                 fill=outline_color,
                 width=line_width,
+                tags=(obj_id,),
             )
         self._draw_arrow(
             canvas,
@@ -1015,6 +1020,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             (path[-2], path[-1]),
             fill="black",
             outline="black",
+            obj_id=obj_id,
         )
 
     def draw_in_context_connection(
@@ -1024,6 +1030,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a dashed curved connector for an 'in context of' relationship."""
         px, py = parent_pt
@@ -1049,6 +1056,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
+                tags=(obj_id,),
             )
         else:
             path = [
@@ -1067,6 +1075,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
+                tags=(obj_id,),
             )
         self._draw_arrow(
             canvas,
@@ -1074,6 +1083,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             (path[-2], path[-1]),
             fill="white",
             outline=outline_color,
+            obj_id=obj_id,
         )
 
     def draw_strategy_shape(
