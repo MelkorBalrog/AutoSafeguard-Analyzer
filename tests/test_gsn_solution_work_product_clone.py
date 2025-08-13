@@ -55,7 +55,7 @@ def test_solution_requires_matching_spi_for_clone():
     diag = GSNDiagram(root)
     original = GSNNode("Orig", "Solution")
     original.work_product = "WP1"
-    original.spi_target = "Brake Time"
+    original.spi_target = "Brake Time (SOTIF)"
     diag.add_node(original)
 
     node = GSNNode("New", "Solution")
@@ -67,7 +67,7 @@ def test_solution_requires_matching_spi_for_clone():
     cfg.desc_text = DummyText(node.description)
     cfg.work_var = DummyVar("WP1")
     cfg.link_var = DummyVar("")
-    cfg.spi_var = DummyVar("Other SPI")
+    cfg.spi_var = DummyVar("Other SPI (SOTIF)")
     cfg.destroy = lambda: None
     cfg._on_ok()
 
@@ -82,7 +82,7 @@ def test_solution_requires_matching_spi_for_clone():
     cfg2.desc_text = DummyText(node2.description)
     cfg2.work_var = DummyVar("WP1")
     cfg2.link_var = DummyVar("")
-    cfg2.spi_var = DummyVar("Brake Time")
+    cfg2.spi_var = DummyVar("Brake Time (SOTIF)")
     cfg2.destroy = lambda: None
     cfg2._on_ok()
 
@@ -92,12 +92,13 @@ def test_solution_requires_matching_spi_for_clone():
 def test_format_text_shows_calculated_spi():
     root = GSNNode("Root", "Goal")
     sol = GSNNode("Sol", "Solution")
-    sol.spi_target = "Brake Time"
+    sol.spi_target = "Brake Time (SOTIF)"
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
     class TopEvent:
         def __init__(self):
+            self.user_name = "Brake Time"
             self.validation_desc = "Brake Time"
             self.validation_target = 1e-4
             self.probability = 1e-5
@@ -111,12 +112,13 @@ def test_format_text_shows_calculated_spi():
 def test_format_text_shows_validation_target_when_no_probability():
     root = GSNNode("Root", "Goal")
     sol = GSNNode("Sol", "Solution")
-    sol.spi_target = "Brake Time"
+    sol.spi_target = "Brake Time (SOTIF)"
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
     class TopEvent:
         def __init__(self):
+            self.user_name = "Brake Time"
             self.validation_desc = "Brake Time"
             self.validation_target = "1e-5"
 
@@ -225,7 +227,7 @@ def test_config_dialog_populates_comboboxes(monkeypatch):
     diag = GSNDiagram(root)
     existing = GSNNode("Orig", "Solution")
     existing.work_product = "WP1"
-    existing.spi_target = "SPI1"
+    existing.spi_target = "SPI1 (SOTIF)"
     diag.add_node(existing)
 
     node = GSNNode("New", "Solution")
@@ -301,7 +303,7 @@ def test_config_dialog_populates_comboboxes(monkeypatch):
     assert wp_cb.init_values is None
     assert spi_cb.init_values is None
     assert wp_cb.configured["values"] == ["WP1"]
-    assert spi_cb.configured["values"] == ["SPI1"]
+    assert spi_cb.configured["values"] == ["SPI1 (SOTIF)"]
     # Both comboboxes should remain blank until the user picks an option.
     assert cfg.work_var.get() == ""
     assert cfg.spi_var.get() == ""
@@ -325,7 +327,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
             self.top_events = [TopEvent("SPI1")]
 
         def get_spi_targets(self):
-            return ["SPI1"]
+            return ["SPI1 (SOTIF)"]
 
     class Master:
         def __init__(self):
@@ -398,7 +400,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
 
     # work product combobox is first, spi combobox second
     _, spi_cb = combo_holder
-    assert spi_cb.configured["values"] == ["SPI1"]
+    assert spi_cb.configured["values"] == ["SPI1 (SOTIF)"]
     assert cfg.spi_var.get() == ""
 
 
