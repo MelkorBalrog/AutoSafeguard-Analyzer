@@ -47,6 +47,28 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
             if diag_name and analysis_name:
                 products.add(f"{diag_name} - {analysis_name}")
 
+    if app:
+        # Reuse helpers that supply items for the Analyses & Architecture
+        # combo boxes so the work product list remains consistent with those
+        # dialogs.  Fallback to common attributes when the helpers are absent.
+        for name in getattr(app, "get_architecture_box_list", lambda: [])():
+            if name:
+                products.add(name)
+        for name in getattr(app, "get_analysis_box_list", lambda: [])():
+            if name:
+                products.add(name)
+
+        if not hasattr(app, "get_architecture_box_list"):
+            for diag in getattr(app, "arch_diagrams", []):
+                name = getattr(diag, "name", "") or getattr(diag, "diag_id", "")
+                if name:
+                    products.add(name)
+        if not hasattr(app, "get_analysis_box_list"):
+            for ra in getattr(app, "reliability_analyses", []):
+                name = getattr(ra, "name", "")
+                if name:
+                    products.add(name)
+
     return sorted(products)
 
 def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:

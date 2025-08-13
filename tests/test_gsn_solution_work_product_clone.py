@@ -181,6 +181,41 @@ def test_collect_work_products_includes_toolbox_diagrams():
     assert _collect_work_products(diag) == ["DiagA", "DiagB"]
 
 
+def test_collect_work_products_reuses_app_lists():
+    """Names from app combo-box helpers should be included."""
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+
+    class App:
+        def get_architecture_box_list(self):
+            return ["Arch1"]
+
+        def get_analysis_box_list(self):
+            return ["RA1"]
+
+    assert _collect_work_products(diag, App()) == ["Arch1", "RA1"]
+
+
+def test_collect_work_products_falls_back_to_app_objects():
+    """Fallback to app attributes when helper functions are absent."""
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+
+    class Diagram:
+        name = "Diag1"
+
+    class Analysis:
+        name = "Analysis1"
+
+    class App:
+        arch_diagrams = [Diagram()]
+        reliability_analyses = [Analysis()]
+
+    assert _collect_work_products(diag, App()) == ["Analysis1", "Diag1"]
+
+
 def test_config_dialog_populates_comboboxes(monkeypatch):
     """Work product and SPI combos should list existing entries."""
 
