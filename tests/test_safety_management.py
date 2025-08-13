@@ -106,7 +106,7 @@ def test_toolbox_manages_diagram_lifecycle():
 
 
 def test_open_safety_management_toolbox_uses_browser():
-    """FaultTreeApp opens the Safety Management window and toolbox."""
+    """FaultTreeApp opens the Safety & Security Management window and toolbox."""
     SysMLRepository._instance = None
 
     class DummyTab:
@@ -243,7 +243,7 @@ def test_safety_diagrams_visible_in_analysis_tree():
 
     app.update_views()
     texts = [meta["text"] for meta in app.analysis_tree.items.values()]
-    assert "Safety Management" in texts
+    assert "Safety & Security Management" in texts
     assert "Safety & Security Governance Diagrams" in texts
     assert "Gov" in texts
     assert "Arch" in texts
@@ -546,24 +546,24 @@ def test_tools_include_safety_management_explorer():
     app.manage_gsn = lambda: None
 
     app.tools = {
-        "Safety Management": app.open_safety_management_toolbox,
+        "Safety & Security Management": app.open_safety_management_toolbox,
         "Safety Performance Indicators": app.show_safety_performance_indicators,
         "Safety Case": app.show_safety_case,
-        "Safety Management Explorer": app.manage_safety_management,
+        "Safety & Security Management Explorer": app.manage_safety_management,
         "GSN Explorer": app.manage_gsn,
     }
     app.tool_categories = {
-        "Safety Management": [
-            "Safety Management",
-            "Safety Management Explorer",
+        "Safety & Security Management": [
+            "Safety & Security Management",
+            "Safety & Security Management Explorer",
             "Safety Case",
             "Safety Performance Indicators",
             "GSN Explorer",
         ]
     }
 
-    assert "Safety Management Explorer" in app.tools
-    assert "Safety Management Explorer" in app.tool_categories["Safety Management"]
+    assert "Safety & Security Management Explorer" in app.tools
+    assert "Safety & Security Management Explorer" in app.tool_categories["Safety & Security Management"]
 
 
 def test_diagram_drag_and_drop_between_modules():

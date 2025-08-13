@@ -21,7 +21,7 @@ class SafetyManagementExplorer(tk.Frame):
         self.app = app
         self.toolbox = toolbox or SafetyManagementToolbox()
         if isinstance(master, tk.Toplevel):
-            master.title("Safety Management Explorer")
+            master.title("Safety & Security Management Explorer")
             master.geometry("350x400")
             self.pack(fill=tk.BOTH, expand=True)
 
