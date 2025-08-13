@@ -3897,6 +3897,39 @@ class FaultTreeApp:
         temp.destroy()
         return img.convert("RGB") if img else None
 
+    def capture_gsn_diagram(self, diagram):
+        """Return a PIL Image of the given GSN diagram."""
+        from io import BytesIO
+        from PIL import Image
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas.pack()
+
+        try:
+            diagram.draw(canvas)
+        except Exception:
+            temp.destroy()
+            return None
+
+        canvas.update()
+        bbox = canvas.bbox("all")
+        if not bbox:
+            temp.destroy()
+            return None
+        x, y, x2, y2 = bbox
+        width, height = x2 - x, y2 - y
+        ps = canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+        ps_bytes = BytesIO(ps.encode("utf-8"))
+        try:
+            img = Image.open(ps_bytes)
+            img.load(scale=3)
+        except Exception:
+            img = None
+        temp.destroy()
+        return img.convert("RGB") if img else None
+
     def capture_sysml_diagram(self, diagram):
         """Return a PIL Image of the given SysML diagram."""
         from io import BytesIO
@@ -3914,6 +3947,8 @@ class FaultTreeApp:
             win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         elif diagram.diag_type == "Control Flow Diagram":
             win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "BPMN Diagram":
+            win = BPMNDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         else:
             temp.destroy()
             return None
@@ -7298,24 +7333,101 @@ class FaultTreeApp:
         Story.append(Paragraph(report_title, pdf_styles["Title"]))
         Story.append(Spacer(1, 12))
 
-        Story.append(Paragraph("Architecture", pdf_styles["Heading1"]))
-        Story.append(Spacer(1, 12))
         repo = SysMLRepository.get_instance()
-        arch_diagrams = sorted(repo.diagrams.values(), key=lambda d: d.name or d.diag_id)
-        for diag in arch_diagrams:
-            img = self.capture_sysml_diagram(diag)
-            if img is None:
-                continue
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            buf.seek(0)
-            desired_width, desired_height = scale_image(img)
-            rl_img = RLImage(buf, width=desired_width, height=desired_height)
-            Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
-            Story.append(Spacer(1, 12))
-            Story.append(rl_img)
-            Story.append(Spacer(1, 12))
+        arch_diagrams = sorted(
+            [
+                d
+                for d in repo.diagrams.values()
+                if "safety-management" not in getattr(d, "tags", [])
+            ],
+            key=lambda d: d.name or d.diag_id,
+        )
+        gov_diagrams = sorted(
+            [
+                d
+                for d in repo.diagrams.values()
+                if "safety-management" in getattr(d, "tags", [])
+            ],
+            key=lambda d: d.name or d.diag_id,
+        )
+
+        def _collect_gsn_diagrams(module):
+            diagrams = list(module.diagrams)
+            for sub in module.modules:
+                diagrams.extend(_collect_gsn_diagrams(sub))
+            return diagrams
+
+        gsn_diagrams = sorted(
+            list(getattr(self, "gsn_diagrams", []))
+            + [
+                d
+                for m in getattr(self, "gsn_modules", [])
+                for d in _collect_gsn_diagrams(m)
+            ],
+            key=lambda d: d.root.user_name or d.diag_id,
+        )
+
+        diagram_section_added = False
+
         if arch_diagrams:
+            Story.append(Paragraph("Architecture", pdf_styles["Heading1"]))
+            Story.append(Spacer(1, 12))
+            for diag in arch_diagrams:
+                img = self.capture_sysml_diagram(diag)
+                if img is None:
+                    continue
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(img)
+                rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_img)
+                Story.append(Spacer(1, 12))
+            diagram_section_added = True
+
+        if gov_diagrams:
+            if diagram_section_added:
+                Story.append(PageBreak())
+            Story.append(Paragraph("Governance Diagrams", pdf_styles["Heading1"]))
+            Story.append(Spacer(1, 12))
+            for diag in gov_diagrams:
+                img = self.capture_sysml_diagram(diag)
+                if img is None:
+                    continue
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(img)
+                rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph(diag.name or diag.diag_id, pdf_styles["Heading2"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_img)
+                Story.append(Spacer(1, 12))
+            diagram_section_added = True
+
+        if gsn_diagrams:
+            if diagram_section_added:
+                Story.append(PageBreak())
+            Story.append(Paragraph("GSN Diagrams", pdf_styles["Heading1"]))
+            Story.append(Spacer(1, 12))
+            for diag in gsn_diagrams:
+                img = self.capture_gsn_diagram(diag)
+                if img is None:
+                    continue
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                desired_width, desired_height = scale_image(img)
+                rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                Story.append(Paragraph(diag.root.user_name or diag.diag_id, pdf_styles["Heading2"]))
+                Story.append(Spacer(1, 12))
+                Story.append(rl_img)
+                Story.append(Spacer(1, 12))
+            diagram_section_added = True
+
+        if diagram_section_added:
             Story.append(PageBreak())
 
         # -------------------------------------------------------------
@@ -7591,6 +7703,103 @@ class FaultTreeApp:
             else:
                 Story.append(Paragraph("A page diagram could not be captured.", pdf_styles["Normal"]))
                 Story.append(Spacer(1, 12))
+
+        # --- Safety Case ---
+        def _collect_gsn_diagrams(module):
+            diagrams = list(module.diagrams)
+            for sub in module.modules:
+                diagrams.extend(_collect_gsn_diagrams(sub))
+            return diagrams
+
+        all_gsn_diagrams = list(getattr(self, "gsn_diagrams", [])) + [
+            d for m in getattr(self, "gsn_modules", []) for d in _collect_gsn_diagrams(m)
+        ]
+        safety_rows = []
+        for diag in all_gsn_diagrams:
+            for node in getattr(diag, "nodes", []):
+                if (
+                    getattr(node, "node_type", "").lower() == "solution"
+                    and getattr(node, "is_primary_instance", True)
+                ):
+                    prob = ""
+                    v_target = ""
+                    spi_val = ""
+                    p_val = None
+                    vt_val = None
+                    target = getattr(node, "spi_target", "")
+                    if target:
+                        for te in getattr(self, "top_events", []):
+                            label = (
+                                getattr(te, "validation_desc", "")
+                                or getattr(te, "safety_goal_description", "")
+                                or getattr(te, "user_name", "")
+                                or f"SG {getattr(te, 'unique_id', '')}"
+                            )
+                            if label == target:
+                                p = getattr(te, "probability", "")
+                                vt = getattr(te, "validation_target", "")
+                                if p not in ("", None):
+                                    try:
+                                        p_val = float(p)
+                                        prob = f"{p_val:.2e}"
+                                    except Exception:
+                                        prob = ""
+                                if vt not in ("", None):
+                                    try:
+                                        vt_val = float(vt)
+                                        v_target = f"{vt_val:.2e}"
+                                    except Exception:
+                                        v_target = ""
+                                try:
+                                    if vt_val not in (None, 0) and p_val not in (None, 0):
+                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                                except Exception:
+                                    spi_val = ""
+                                break
+                    safety_rows.append(
+                        [
+                            node.user_name,
+                            node.description,
+                            node.work_product,
+                            node.evidence_link,
+                            v_target,
+                            prob,
+                            spi_val,
+                            CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
+                            getattr(node, "manager_notes", ""),
+                        ]
+                    )
+        if safety_rows:
+            Story.append(PageBreak())
+            Story.append(Paragraph("Safety Case", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            data = [
+                [
+                    "Solution",
+                    "Description",
+                    "Work Product",
+                    "Evidence Link",
+                    "Verification Target",
+                    "Achieved Probability",
+                    "SPI",
+                    "Evidence OK",
+                    "Notes",
+                ]
+            ] + safety_rows
+            table = Table(data, repeatRows=1)
+            table.setStyle(
+                TableStyle(
+                    [
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTSIZE', (0,0), (-1,-1), 10),
+                        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+                    ]
+                )
+            )
+            Story.append(table)
+            Story.append(Spacer(1, 12))
 
         # --- HAZOP Analyses ---
         if self.hazop_docs:
