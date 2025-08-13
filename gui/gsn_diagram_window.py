@@ -49,9 +49,18 @@ class GSNDiagramWindow(tk.Frame):
         for name, cmd in btn_cmds:
             ttk.Button(self.toolbox, text=name, command=cmd).pack(side=tk.LEFT)
 
-        # drawing canvas
-        self.canvas = tk.Canvas(self, width=800, height=600, bg="white")
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        # drawing canvas with scrollbars so large diagrams remain accessible
+        canvas_frame = ttk.Frame(self)
+        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(canvas_frame, width=800, height=600, bg="white")
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        hbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        vbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.canvas.configure(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
+        hbar.grid(row=1, column=0, sticky="ew")
+        vbar.grid(row=0, column=1, sticky="ns")
+        canvas_frame.rowconfigure(0, weight=1)
+        canvas_frame.columnconfigure(0, weight=1)
         self.pack(fill=tk.BOTH, expand=True)
 
         self.id_to_node = {}
@@ -78,6 +87,9 @@ class GSNDiagramWindow(tk.Frame):
             bbox = self.canvas.bbox(self.selected_node.unique_id)
             if bbox:
                 self.canvas.create_rectangle(*bbox, outline="red", width=2)
+        # update scroll region to encompass all drawn items
+        bbox = self.canvas.bbox("all") or (0, 0, 0, 0)
+        self.canvas.configure(scrollregion=bbox)
 
     # The following methods simply extend the diagram with new nodes.
     # Placement is very rudimentary but sufficient for tests.
