@@ -132,14 +132,16 @@ class GSNDiagramWindow(tk.Frame):
                 self._connect_parent.x * self.zoom,
                 self._connect_parent.y * self.zoom,
             )
-            dash = (4, 2) if self._connect_mode == "context" else None
+            # Always show a dotted preview line similar to SysML diagrams.
+            # The final connection style (solid or dashed) is handled during
+            # diagram rendering depending on the target node type.
             self.canvas.create_line(
                 px,
                 py,
                 event.x,
                 event.y,
                 fill="dimgray",
-                dash=dash,
+                dash=(2, 2),
                 smooth=True,
                 arrow=tk.LAST,
                 tags="_temp_conn",
