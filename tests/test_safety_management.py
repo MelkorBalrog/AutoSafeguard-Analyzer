@@ -1641,3 +1641,49 @@ def test_disable_requirement_work_product_keeps_editor():
     assert "Requirements Editor" in app.tool_actions
     FaultTreeApp.disable_work_product(app, wp2)
     assert "Requirements Editor" not in app.tool_actions
+
+
+def test_tool_double_click_uses_global_enablement():
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov2", "Requirement Specification", "r")
+
+    class DummyListbox:
+        def __init__(self):
+            self.items: list[str] = []
+
+        def insert(self, _index, item):
+            self.items.append(item)
+
+        def curselection(self):
+            return [0] if self.items else []
+
+        def get(self, idx):
+            return self.items[idx]
+
+    lb = DummyListbox()
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.tool_listboxes = {"System Design (Item Definition)": lb}
+    app.tool_categories = {"System Design (Item Definition)": []}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.work_product_menus = {}
+    called = {"flag": False}
+    app.manage_architecture = lambda: called.__setitem__("flag", True)
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.on_tool_list_double_click = FaultTreeApp.on_tool_list_double_click.__get__(
+        app, FaultTreeApp
+    )
+    app.safety_mgmt_toolbox = toolbox
+
+    app.enable_work_product("Architecture Diagram")
+
+    event = types.SimpleNamespace(widget=lb)
+    app.on_tool_list_double_click(event)
+
+    assert called["flag"] is True
