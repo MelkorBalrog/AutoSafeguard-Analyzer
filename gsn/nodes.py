@@ -189,19 +189,12 @@ class GSNNode:
     def resolve_references(nodes: dict) -> None:
         """Resolve child and original references after initial loading."""
         for node in nodes.values():
-            # ``children`` in previously saved models may contain context
-            # node identifiers as well as solved-by relationships.  To avoid
-            # loading errors when enforcing strict relationship validation we
-            # ignore any IDs that are also listed in ``context`` and handle
-            # them only as context links below.
-            context_ids = set(getattr(node, "_tmp_context", []))
             children_ids = getattr(node, "_tmp_children", [])
             for cid in children_ids:
-                if cid in context_ids:
-                    continue
                 child = nodes.get(cid)
                 if child:
                     node.add_child(child, relation="solved")
+            context_ids = getattr(node, "_tmp_context", [])
             for cid in context_ids:
                 child = nodes.get(cid)
                 if child:
