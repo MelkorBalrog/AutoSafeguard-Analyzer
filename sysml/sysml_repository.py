@@ -218,7 +218,13 @@ class SysMLRepository:
         if package is None:
             package = self.root_package.elem_id
         if name:
-            same_name_diagrams = [d for d in self.diagrams.values() if d.name == name]
+            same_name_diagrams = [
+                d
+                for d in self.diagrams.values()
+                if d.name == name
+                or d.name.startswith(f"{name} ")
+                or d.name.startswith(f"{name}_")
+            ]
             if same_name_diagrams:
                 if any(d.diag_type != diag_type for d in same_name_diagrams):
                     for d in same_name_diagrams:
@@ -241,13 +247,17 @@ class SysMLRepository:
                     }
                     base = name
                     suffix = 1
-                    while name in existing:
+                    while name in existing or any(
+                        n.startswith(f"{name} ") or n.startswith(f"{name}_") for n in existing
+                    ):
                         name = f"{base}_{suffix}"
                         suffix += 1
             existing_all = {d.name for d in self.diagrams.values()}
             base = name
             suffix = 1
-            while name in existing_all:
+            while name in existing_all or any(
+                n.startswith(f"{name} ") or n.startswith(f"{name}_") for n in existing_all
+            ):
                 name = f"{base}_{suffix}"
                 suffix += 1
         diagram = SysMLDiagram(
