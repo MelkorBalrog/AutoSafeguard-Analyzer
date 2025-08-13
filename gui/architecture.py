@@ -5436,6 +5436,28 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
+            label = obj.properties.get("name", "")
+            diagram_products = {
+                "Architecture Diagram",
+                "Safety & Security Concept",
+                "Requirement Specification",
+                "Product Goal Specification",
+            }
+            analysis_products = {
+                "HAZOP",
+                "STPA",
+                "Threat Analysis",
+                "FI2TC",
+                "TC2FI",
+                "Risk Assessment",
+                "FTA",
+                "FMEA",
+                "FMEDA",
+            }
+            if label in diagram_products:
+                color = "lightblue"
+            elif label in analysis_products:
+                color = "lightgreen"
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
@@ -5459,7 +5481,6 @@ class SysMLDiagramWindow(tk.Frame):
                 y - h + fold,
                 fill=outline,
             )
-            label = obj.properties.get("name", "")
             if label:
                 self.canvas.create_text(
                     x,
@@ -5467,6 +5488,7 @@ class SysMLDiagramWindow(tk.Frame):
                     text=label,
                     anchor="center",
                     font=self.font,
+                    width=obj.width * self.zoom,
                 )
         elif obj.obj_type == "Existing Element":
             element = self.repo.elements.get(obj.element_id)
@@ -8102,7 +8124,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Work Product",
             100.0,
             100.0,
-            width=120.0,
+            width=60.0,
             height=80.0,
             properties={"name": name},
         )
