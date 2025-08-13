@@ -1,7 +1,7 @@
 import types
 
 from gsn import GSNNode, GSNDiagram
-from gui.gsn_config_window import GSNElementConfig, WORK_PRODUCTS
+from gui.gsn_config_window import GSNElementConfig
 from gui.gsn_diagram_window import GSNDiagramWindow
 
 
@@ -32,8 +32,9 @@ def test_solution_config_sets_evidence_link():
     cfg.diagram = diag
     cfg.name_var = DummyVar(node.user_name)
     cfg.desc_text = DummyText(node.description)
-    cfg.work_var = DummyVar(WORK_PRODUCTS[0])
+    cfg.work_var = DummyVar("WP1")
     cfg.link_var = DummyVar("http://example.com")
+    cfg.spi_var = DummyVar("")
     cfg.destroy = lambda: None
 
     cfg._on_ok()
