@@ -12683,8 +12683,9 @@ class FaultTreeApp:
                 return
             current = tree.set(row, "Evidence OK")
             new_val = "" if current == CHECK_MARK else CHECK_MARK
-            tree.set(row, "Evidence OK", new_val)
-            node.evidence_sufficient = new_val == CHECK_MARK
+            if messagebox.askokcancel("Evidence", "Are you sure?"):
+                tree.set(row, "Evidence OK", new_val)
+                node.evidence_sufficient = new_val == CHECK_MARK
 
         tree.bind("<Double-1>", on_double_click)
         self.refresh_safety_case_table()
