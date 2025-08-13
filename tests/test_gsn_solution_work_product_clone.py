@@ -577,4 +577,3 @@ def test_config_dialog_lists_toolbox_diagrams(monkeypatch):
     wp_cb = combo_holder[0]
     assert wp_cb.configured["values"] == ["DiagA", "DiagB"]
     assert cfg.work_var.get() == ""
-
