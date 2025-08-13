@@ -214,6 +214,7 @@ class GSNDiagramWindow(tk.Frame):
             self._selected_conn_id = ""
         node = self._node_at(cx, cy)
         connection = self._connection_at(cx, cy)
+        app = getattr(self, "app", None)
         if self._connect_mode:
             self._connect_parent = node
             return
@@ -224,19 +225,24 @@ class GSNDiagramWindow(tk.Frame):
                 self._move_connection(parent, child, node)
             self._selected_connection = None
             self.selected_node = node
+            if app:
+                app.selected_node = node
             self.refresh()
             return
         if connection:
             self._selected_connection = connection
             self.selected_node = None
+            if app:
+                app.selected_node = None
             self.refresh()
             return
         if not node:
             self.selected_node = None
             self._selected_connection = None
+            if app:
+                app.selected_node = None
             self.refresh()
             return
-        app = getattr(self, "app", None)
         undo = getattr(app, "push_undo_state", None)
         if undo:
             undo()
@@ -245,6 +251,8 @@ class GSNDiagramWindow(tk.Frame):
         self._drag_node = node
         sx, sy = node.x * self.zoom, node.y * self.zoom
         self._drag_offset = (cx - sx, cy - sy)
+        if app:
+            app.selected_node = node
         self.refresh()
 
     def _move_subtree(self, node: GSNNode, dx: float, dy: float, visited: set[str] | None = None) -> None:
