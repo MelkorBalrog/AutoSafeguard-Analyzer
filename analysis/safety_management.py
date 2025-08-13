@@ -181,7 +181,6 @@ class SafetyManagementToolbox:
                         else getattr(obj, "properties", {})
                     )
                     target = props.get("view") or props.get("diagram")
-
                 if target in edges:
                     edges[diag_id].add(target)
                     reverse[target].add(diag_id)

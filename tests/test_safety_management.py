@@ -435,7 +435,6 @@ def test_diagram_hierarchy_orders_levels():
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["A"], ["B"], ["C"]]
 
-
 def test_diagram_hierarchy_from_object_properties():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
