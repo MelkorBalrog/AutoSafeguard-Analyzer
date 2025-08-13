@@ -129,10 +129,26 @@ class GSNDiagram:
                 c_pt = (child.x * zoom, child.y * zoom)
                 p_shape = shapes.get(parent.unique_id)
                 c_shape = shapes.get(child.unique_id)
-                if p_shape:
-                    p_pt = self.drawing_helper.point_on_shape(p_shape, c_pt)
-                if c_shape:
-                    c_pt = self.drawing_helper.point_on_shape(c_shape, p_pt)
+                if p_shape and c_shape:
+                    # Use the actual geometric centres of both shapes to
+                    # determine the connector's endpoints.  Relying on the
+                    # stored node coordinates can leave a visible gap when the
+                    # drawn shape is offset (e.g. due to additional markers or
+                    # varying text dimensions).  By intersecting the line
+                    # between the shapes' centres with their outlines we ensure
+                    # that relationships always touch the surface regardless of
+                    # the node type.
+                    p_pt = self.drawing_helper.point_on_shape(
+                        p_shape, c_shape["center"]
+                    )
+                    c_pt = self.drawing_helper.point_on_shape(
+                        c_shape, p_shape["center"]
+                    )
+                else:
+                    if p_shape:
+                        p_pt = self.drawing_helper.point_on_shape(p_shape, c_pt)
+                    if c_shape:
+                        c_pt = self.drawing_helper.point_on_shape(c_shape, p_pt)
                 if child in parent.context_children:
                     self.drawing_helper.draw_in_context_connection(
                         canvas, p_pt, c_pt, obj_id=rel_id
