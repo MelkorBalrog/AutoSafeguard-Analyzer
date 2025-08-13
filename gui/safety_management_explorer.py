@@ -51,6 +51,8 @@ class SafetyManagementExplorer(tk.Frame):
         ttk.Button(btns, text="Refresh", command=self.populate).pack(side=tk.RIGHT)
 
         self.tree.bind("<Double-1>", self._on_double_click)
+        self.tree.bind("<ButtonPress-1>", self._on_drag_start)
+        self.tree.bind("<ButtonRelease-1>", self._on_drop)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -162,6 +164,51 @@ class SafetyManagementExplorer(tk.Frame):
         self.open_item()
 
     # ------------------------------------------------------------------
+    def _on_drag_start(self, event):  # pragma: no cover - UI event
+        """Record the tree item being dragged."""
+        iid = self.tree.identify_row(event.y)
+        self._drag_item = iid if iid else None
+
+    # ------------------------------------------------------------------
+    def _on_drop(self, event):  # pragma: no cover - UI event
+        """Handle dropping of a tree item onto another item or the root."""
+        if not getattr(self, "_drag_item", None):
+            return
+
+        target = self.tree.identify_row(event.y)
+        if target == self._drag_item:
+            self._drag_item = None
+            return
+
+        item_type, item_obj = self.item_map.get(self._drag_item, (None, None))
+        tgt_type, tgt_obj = self.item_map.get(target, (None, None))
+        if tgt_type == "diagram":
+            target = self.tree.parent(target)
+            tgt_type, tgt_obj = self.item_map.get(target, (None, None))
+
+        if target and tgt_type == "module":
+            parent_mod = tgt_obj
+            new_parent = target
+        else:
+            parent_mod = None
+            new_parent = ""
+
+        self.tree.move(self._drag_item, new_parent, "end")
+
+        if item_type == "diagram":
+            self._remove_name(item_obj, self.toolbox.modules)
+            if parent_mod:
+                parent_mod.diagrams.append(item_obj)
+        elif item_type == "module":
+            self._remove_module(item_obj, self.toolbox.modules)
+            if parent_mod:
+                parent_mod.modules.append(item_obj)
+            else:
+                self.toolbox.modules.append(item_obj)
+
+        self._drag_item = None
+
+    # ------------------------------------------------------------------
     def _in_any_module(self, name: str, mods: List[GovernanceModule]) -> bool:
         for mod in mods:
             if name in mod.diagrams or self._in_any_module(name, mod.modules):
@@ -178,6 +225,15 @@ class SafetyManagementExplorer(tk.Frame):
             if name in mod.diagrams:
                 mod.diagrams.remove(name)
             self._remove_name(name, mod.modules)
+
+    def _remove_module(self, target: GovernanceModule, mods: List[GovernanceModule]) -> bool:
+        for mod in mods:
+            if mod is target:
+                mods.remove(mod)
+                return True
+            if self._remove_module(target, mod.modules):
+                return True
+        return False
 
     # ------------------------------------------------------------------
     def _create_icon(self, shape: str, color: str = "black"):

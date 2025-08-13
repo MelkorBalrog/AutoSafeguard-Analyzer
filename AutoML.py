@@ -2301,6 +2301,7 @@ class FaultTreeApp:
             "Safety Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Safety Case": self.show_safety_case,
+            "Safety Management Explorer": self.manage_safety_management,
             "GSN Explorer": self.manage_gsn,
         }
 
@@ -2356,6 +2357,7 @@ class FaultTreeApp:
             ],
             "Safety Management": [
                 "Safety Management",
+                "Safety Management Explorer",
                 "Safety Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",

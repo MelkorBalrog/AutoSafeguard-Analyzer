@@ -19,7 +19,7 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 import AutoML
-from analysis import SafetyManagementToolbox
+from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
@@ -519,4 +519,80 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     explorer.new_diagram()
     assert "Diag" in toolbox.modules[0].diagrams
     assert "Diag" in toolbox.diagrams
+
+
+def test_tools_include_safety_management_explorer():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.manage_safety_management = lambda: None
+    app.open_safety_management_toolbox = lambda: None
+    app.show_safety_performance_indicators = lambda: None
+    app.show_safety_case = lambda: None
+    app.manage_gsn = lambda: None
+
+    app.tools = {
+        "Safety Management": app.open_safety_management_toolbox,
+        "Safety Performance Indicators": app.show_safety_performance_indicators,
+        "Safety Case": app.show_safety_case,
+        "Safety Management Explorer": app.manage_safety_management,
+        "GSN Explorer": app.manage_gsn,
+    }
+    app.tool_categories = {
+        "Safety Management": [
+            "Safety Management",
+            "Safety Management Explorer",
+            "Safety Case",
+            "Safety Performance Indicators",
+            "GSN Explorer",
+        ]
+    }
+
+    assert "Safety Management Explorer" in app.tools
+    assert "Safety Management Explorer" in app.tool_categories["Safety Management"]
+
+
+def test_diagram_drag_and_drop_between_modules():
+    toolbox = SafetyManagementToolbox()
+    toolbox.create_diagram("Diag1")
+    mod1 = GovernanceModule("Mod1", diagrams=["Diag1"])
+    mod2 = GovernanceModule("Mod2")
+    toolbox.modules.extend([mod1, mod2])
+
+    class DummyTree:
+        def __init__(self):
+            self.drop_target = ""
+            self.parents = {"mod1": "", "mod2": "", "diag1": "mod1"}
+
+        def identify_row(self, _y):
+            return self.drop_target
+
+        def move(self, item, parent, _index):
+            self.parents[item] = parent
+
+        def parent(self, item):
+            return self.parents.get(item, "")
+
+    explorer = types.SimpleNamespace()
+    explorer.toolbox = toolbox
+    explorer.tree = DummyTree()
+    explorer.item_map = {
+        "mod1": ("module", mod1),
+        "mod2": ("module", mod2),
+        "diag1": ("diagram", "Diag1"),
+    }
+    explorer._remove_name = SafetyManagementExplorer._remove_name.__get__(
+        explorer, types.SimpleNamespace
+    )
+    explorer._remove_module = SafetyManagementExplorer._remove_module.__get__(
+        explorer, types.SimpleNamespace
+    )
+    explorer._drag_item = "diag1"
+    explorer.tree.drop_target = "mod2"
+    SafetyManagementExplorer._on_drop(explorer, types.SimpleNamespace(y=0))
+    assert "Diag1" in mod2.diagrams and "Diag1" not in mod1.diagrams
+
+    explorer._drag_item = "diag1"
+    explorer.tree.drop_target = ""
+    SafetyManagementExplorer._on_drop(explorer, types.SimpleNamespace(y=0))
+    assert "Diag1" not in mod2.diagrams
+    assert explorer.tree.parents["diag1"] == ""
 
