@@ -1,4 +1,4 @@
-"""Safety management data structures.
+"""Safety & Security management data structures.
 
 This module defines simple data classes used by the GUI and other modules to
 collect work products, lifecycle information and workflows related to safety
@@ -236,7 +236,7 @@ class SafetyManagementToolbox:
         """Create a toolbox instance from serialized *data*.
 
         The folder structure is reconstructed using
-        :meth:`GovernanceModule.from_dict` ensuring that the Safety Management
+        :meth:`GovernanceModule.from_dict` ensuring that the Safety & Security Management
         Explorer reflects the saved hierarchy on reload.
         """
         toolbox = cls()

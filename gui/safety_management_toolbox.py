@@ -6,7 +6,7 @@ from gui.architecture import BPMNDiagramWindow
 
 
 class SafetyManagementWindow(tk.Frame):
-    """Editor and browser for Safety Management diagrams.
+    """Editor and browser for Safety & Security Management diagrams.
 
     Users can create, rename, and delete BPMN Diagrams that model the
     project's safety governance. Only diagrams registered in the provided

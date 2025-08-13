@@ -2296,10 +2296,10 @@ class FaultTreeApp:
             "Product Goals Export": self.export_product_goal_requirements,
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
-            "Safety Management": self.open_safety_management_toolbox,
+            "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Safety Case": self.show_safety_case,
-            "Safety Management Explorer": self.manage_safety_management,
+            "Safety & Security Management Explorer": self.manage_safety_management,
             "GSN Explorer": self.manage_gsn,
         }
 
@@ -2353,9 +2353,9 @@ class FaultTreeApp:
                 "Cause & Effect Chain",
                 "Fault Prioritization",
             ],
-            "Safety Management": [
-                "Safety Management",
-                "Safety Management Explorer",
+            "Safety & Security Management": [
+                "Safety & Security Management",
+                "Safety & Security Management Explorer",
                 "Safety Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",
@@ -9368,7 +9368,7 @@ class FaultTreeApp:
 
             repo = SysMLRepository.get_instance()
 
-            # --- Safety Management Section ---
+            # --- Safety & Security Management Section ---
             self.management_diagrams = sorted(
                 [
                     d
@@ -9377,7 +9377,7 @@ class FaultTreeApp:
                 ],
                 key=lambda d: d.name or d.diag_id,
             )
-            mgmt_root = tree.insert("", "end", text="Safety Management", open=True)
+            mgmt_root = tree.insert("", "end", text="Safety & Security Management", open=True)
             gov_root = tree.insert(
                 mgmt_root,
                 "end",
@@ -9583,7 +9583,7 @@ class FaultTreeApp:
             )
             tree.insert(sc_root, "end", text="Requirements Editor", tags=("reqs", "0"))
             tree.insert(sc_root, "end", text="Requirements Explorer", tags=("reqexp", "0"))
-            tree.insert(sc_root, "end", text="Safety Management Explorer", tags=("safetyexp", "0"))
+            tree.insert(sc_root, "end", text="Safety & Security Management Explorer", tags=("safetyexp", "0"))
             tree.insert(sc_root, "end", text="GSN Explorer", tags=("gsnexp", "0"))
 
             # --- Hazard & Threat Analysis Section ---
@@ -15568,12 +15568,12 @@ class FaultTreeApp:
         self.refresh_all()
 
     def open_safety_management_toolbox(self):
-        """Open a placeholder tab for the Safety Management toolbox."""
+        """Open a placeholder tab for the Safety & Security Management toolbox."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from analysis.safety_management import SafetyManagementToolbox
 
@@ -15581,7 +15581,7 @@ class FaultTreeApp:
         self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
 
         msg = (
-            "Safety Management toolbox initialized.\n"
+            "Safety & Security Management toolbox initialized.\n"
             "Future versions will provide a full graphical interface."
         )
         ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
@@ -15589,12 +15589,12 @@ class FaultTreeApp:
         )
 
     def open_safety_management_toolbox(self):
-        """Open a placeholder tab for the Safety Management toolbox."""
+        """Open a placeholder tab for the Safety & Security Management toolbox."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from analysis.safety_management import SafetyManagementToolbox
 
@@ -15602,7 +15602,7 @@ class FaultTreeApp:
         self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
 
         msg = (
-            "Safety Management toolbox initialized.\n"
+            "Safety & Security Management toolbox initialized.\n"
             "Future versions will provide a full graphical interface."
         )
         ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
@@ -15610,12 +15610,12 @@ class FaultTreeApp:
         )
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management toolbox tab."""
+        """Open the Safety & Security Management toolbox tab."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from analysis.safety_management import SafetyManagementToolbox
         from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
@@ -15627,12 +15627,12 @@ class FaultTreeApp:
         gui.pack(fill=tk.BOTH, expand=True)
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management toolbox tab."""
+        """Open the Safety & Security Management toolbox tab."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from analysis.safety_management import SafetyManagementToolbox
         from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
@@ -15644,24 +15644,24 @@ class FaultTreeApp:
         gui.pack(fill=tk.BOTH, expand=True)
 
     def open_safety_management_toolbox(self):
-        """Open a Safety Management tab with an Activity Diagram."""
+        """Open a Safety & Security Management tab with an Activity Diagram."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from gui.architecture import ActivityDiagramWindow
 
         ActivityDiagramWindow(self._safety_mgmt_tab, self)
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management editor and browser."""
+        """Open the Safety & Security Management editor and browser."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from gui.safety_management_toolbox import SafetyManagementWindow
         from analysis import SafetyManagementToolbox
@@ -15674,12 +15674,12 @@ class FaultTreeApp:
         )
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management editor and browser."""
+        """Open the Safety & Security Management editor and browser."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from gui.safety_management_toolbox import SafetyManagementWindow
         from analysis import SafetyManagementToolbox
@@ -15692,12 +15692,12 @@ class FaultTreeApp:
         )
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management editor and browser."""
+        """Open the Safety & Security Management editor and browser."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from gui.safety_management_toolbox import SafetyManagementWindow
         from analysis import SafetyManagementToolbox
@@ -15710,12 +15710,12 @@ class FaultTreeApp:
         )
 
     def open_safety_management_toolbox(self):
-        """Open the Safety Management editor and browser."""
+        """Open the Safety & Security Management editor and browser."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
             return
 
-        self._safety_mgmt_tab = self._new_tab("Safety Management")
+        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
 
         from gui.safety_management_toolbox import SafetyManagementWindow
         from analysis import SafetyManagementToolbox
@@ -15971,7 +15971,7 @@ class FaultTreeApp:
         if hasattr(self, "_safety_exp_tab") and self._safety_exp_tab.winfo_exists():
             self.doc_nb.select(self._safety_exp_tab)
         else:
-            self._safety_exp_tab = self._new_tab("Safety Management Explorer")
+            self._safety_exp_tab = self._new_tab("Safety & Security Management Explorer")
             self._safety_exp_window = SafetyManagementExplorer(
                 self._safety_exp_tab, self, self.safety_mgmt_toolbox
             )

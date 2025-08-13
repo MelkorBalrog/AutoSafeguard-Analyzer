@@ -34,7 +34,7 @@ Recent updates add a **Review Toolbox** supporting peer and joint review workflo
   - [Risk & Assurance Gate Calculator](#risk--assurance-gate-calculator)
   - [Product Goals Export](#product-goals-export)
   - [Safety Performance Indicators](#safety-performance-indicators)
-  - [Safety Management Toolbox](#safety-management-toolbox)
+  - [Safety & Security Management Toolbox](#safety--security-management-toolbox)
 - [Email Setup](#email-setup)
 - [Dependencies](#dependencies)
 - [Diagram Styles](#diagram-styles)
@@ -1267,7 +1267,7 @@ Use **Export Product Goal Requirements** in the Requirements menu to generate a 
 
 ### Safety Performance Indicators
 
-The **Safety Performance Indicators** tool in the Safety Management tab
+The **Safety Performance Indicators** tool in the Safety & Security Management tab
 aggregates each product goal's validation target and acceptance criteria with
 its safety and AI metrics. Safety metrics such as SPFM, LPFM and DC, along with
 AI-specific measures like false-negative or precision rates, can be compared
@@ -1275,9 +1275,9 @@ against the planned validation targets. This view highlights how acceptance
 criteria translate into measurable indicators and whether current performance
 meets the required safety objectives.
 
-### Safety Management Toolbox
+### Safety & Security Management Toolbox
 
-The **Safety Management Toolbox** lets you organize safety work products across the entire lifecycle. You can define phases, attach tailored work products from any diagram or analysis with a supporting rationale, and capture workflows that govern how these items interact. The resulting lifecycle and workflow definition can be exported as a JSON business diagram to document your safety governance process.
+The **Safety & Security Management Toolbox** lets you organize safety work products across the entire lifecycle. You can define phases, attach tailored work products from any diagram or analysis with a supporting rationale, and capture workflows that govern how these items interact. The resulting lifecycle and workflow definition can be exported as a JSON business diagram to document your safety governance process.
 
 ### Acceptance Criteria and Validation Targets
 
