@@ -14,12 +14,18 @@ class GSNElementConfig(tk.Toplevel):
         super().__init__(master)
         self.node = node
         self.title("Edit GSN Element")
+        self.geometry("400x200")
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(1, weight=1)
         tk.Label(self, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=node.user_name)
-        tk.Entry(self, textvariable=self.name_var).grid(row=0, column=1, padx=4, pady=4)
-        tk.Label(self, text="Description:").grid(row=1, column=0, sticky="e", padx=4, pady=4)
-        self.desc_var = tk.StringVar(value=getattr(node, "description", ""))
-        tk.Entry(self, textvariable=self.desc_var).grid(row=1, column=1, padx=4, pady=4)
+        tk.Entry(self, textvariable=self.name_var, width=40).grid(
+            row=0, column=1, padx=4, pady=4, sticky="ew"
+        )
+        tk.Label(self, text="Description:").grid(row=1, column=0, sticky="ne", padx=4, pady=4)
+        self.desc_text = tk.Text(self, width=40, height=5)
+        self.desc_text.insert("1.0", getattr(node, "description", ""))
+        self.desc_text.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
         btns = ttk.Frame(self)
         btns.grid(row=2, column=0, columnspan=2, pady=4)
         ttk.Button(btns, text="OK", command=self._on_ok).pack(side=tk.LEFT, padx=4)
@@ -30,5 +36,5 @@ class GSNElementConfig(tk.Toplevel):
 
     def _on_ok(self):
         self.node.user_name = self.name_var.get()
-        self.node.description = self.desc_var.get()
+        self.node.description = self.desc_text.get("1.0", tk.END).strip()
         self.destroy()
