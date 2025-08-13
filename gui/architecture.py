@@ -15,6 +15,7 @@ from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import global_requirements, ASIL_ORDER, StpaDoc
+from analysis.safety_management import ALLOWED_PROPAGATIONS
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -2904,41 +2905,53 @@ class SysMLDiagramWindow(tk.Frame):
                     f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
                 )
         elif diag_type == "BPMN Diagram":
-            allowed = {
-                "Initial": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                },
-                "Action": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                    "Final",
-                },
-                "Decision": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                    "Final",
-                },
-                "Merge": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                },
-                "Final": set(),
-            }
-            if src.obj_type == "Final":
-                return False, "Flows cannot originate from Final nodes"
-            if dst.obj_type == "Initial":
-                return False, "Flows cannot terminate at an Initial node"
-            valid_targets = allowed.get(src.obj_type)
-            if valid_targets and dst.obj_type not in valid_targets:
-                return (
-                    False,
-                    f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
-                )
+            if conn_type in (
+                "Propagate",
+                "Propagate by Review",
+                "Propagate by Approval",
+            ):
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Propagation links must connect Work Products"
+                src_name = src.properties.get("name")
+                dst_name = dst.properties.get("name")
+                if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
+                    return False, f"Propagation from {src_name} to {dst_name} is not allowed"
+            else:
+                allowed = {
+                    "Initial": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                    },
+                    "Action": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                        "Final",
+                    },
+                    "Decision": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                        "Final",
+                    },
+                    "Merge": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                    },
+                    "Final": set(),
+                }
+                if src.obj_type == "Final":
+                    return False, "Flows cannot originate from Final nodes"
+                if dst.obj_type == "Initial":
+                    return False, "Flows cannot terminate at an Initial node"
+                valid_targets = allowed.get(src.obj_type)
+                if valid_targets and dst.obj_type not in valid_targets:
+                    return (
+                        False,
+                        f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
+                    )
 
         return True, ""
 
@@ -2992,6 +3005,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Include",
             "Extend",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3395,6 +3411,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Include",
             "Extend",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3623,6 +3642,9 @@ class SysMLDiagramWindow(tk.Frame):
                         "Generalization",
                         "Include",
                         "Extend",
+                        "Propagate",
+                        "Propagate by Review",
+                        "Propagate by Approval",
                     ):
                         arrow_default = "forward"
                     else:
@@ -8067,6 +8089,9 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Decision",
             "Merge",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "System Boundary",
         ]
         super().__init__(master, "BPMN Diagram", tools, diagram_id, app=app, history=history)
