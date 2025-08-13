@@ -2457,6 +2457,7 @@ class DiagramConnection:
     guard: List[str] = field(default_factory=list)
     guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
+    stereotype: str = ""
     multiplicity: str = ""
 
 
@@ -2473,13 +2474,15 @@ def format_control_flow_label(
         elem = repo.elements.get(conn.element_id)
         if elem:
             label = elem.name or ""
-    stereotype = ""
-    if diag_type == "Control Flow Diagram":
+    stereotype = conn.stereotype or ""
+    if not stereotype and diag_type == "Control Flow Diagram":
         if conn.conn_type == "Control Action":
-            stereotype = "<<control action>>"
+            stereotype = "control action"
         elif conn.conn_type == "Feedback":
-            stereotype = "<<feedback>>"
+            stereotype = "feedback"
     if stereotype:
+        if not stereotype.startswith("<<"):
+            stereotype = f"<<{stereotype}>>"
         label = f"{stereotype} {label}".strip()
     if diag_type == "Control Flow Diagram" and conn.conn_type in (
         "Control Action",
@@ -3172,19 +3175,20 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow_default = "forward"
                         else:
                             arrow_default = "none"
+                        stereo = (
+                            "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
+                        )
                         conn = DiagramConnection(
                             self.start.obj_id,
                             obj.obj_id,
                             t,
                             arrow=arrow_default,
+                            stereotype=stereo or "",
                         )
                         self.connections.append(conn)
                         src_id = self.start.element_id
                         dst_id = obj.element_id
                         if src_id and dst_id:
-                            stereo = (
-                                "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
-                            )
                             rel = self.repo.create_relationship(
                                 t, src_id, dst_id, stereotype=stereo
                             )
@@ -3664,11 +3668,17 @@ class SysMLDiagramWindow(tk.Frame):
                         arrow_default = "forward"
                     else:
                         arrow_default = "none"
+                    stereo = (
+                        "control action"
+                        if self.current_tool == "Control Action"
+                        else "feedback" if self.current_tool == "Feedback" else None
+                    )
                     conn = DiagramConnection(
                         self.start.obj_id,
                         obj.obj_id,
                         self.current_tool,
                         arrow=arrow_default,
+                        stereotype=stereo or "",
                     )
                     if self.current_tool == "Connector":
                         src_flow = self.start.properties.get("flow") if self.start.obj_type == "Port" else None
@@ -3707,11 +3717,6 @@ class SysMLDiagramWindow(tk.Frame):
                                     conn.arrow = "both"
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
-                        stereo = (
-                            "control action"
-                            if self.current_tool == "Control Action"
-                            else "feedback" if self.current_tool == "Feedback" else None
-                        )
                         rel = self.repo.create_relationship(
                             self.current_tool,
                             self.start.element_id,
@@ -8366,6 +8371,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
                     dst_id,
                     rel.rel_type,
                     arrow="forward" if rel.rel_type == "Generalization" else "none",
+                    stereotype=rel.stereotype or "",
                 )
                 self.connections.append(conn)
                 diag.connections.append(conn.__dict__)
