@@ -204,6 +204,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     expected_spi = 1e-5 / 5e-5
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
