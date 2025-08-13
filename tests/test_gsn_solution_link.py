@@ -210,9 +210,18 @@ def test_double_click_prompts_link_choice(monkeypatch):
     assert opened == {"url": "http://example.com"}
 
 
-def test_double_click_falls_back_to_webbrowser(monkeypatch, tmp_path):
-    opened = {}
-    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+def test_double_click_uses_system_opener(monkeypatch, tmp_path):
+    opened: dict[str, object] = {}
+
+    def fake_run(cmd, check=False):
+        opened["cmd"] = cmd
+
+    monkeypatch.setattr("gui.gsn_diagram_window.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "gui.gsn_diagram_window.os.startfile",
+        lambda p: opened.setdefault("file", p),
+        raising=False,
+    )
 
     path = tmp_path / "wp.txt"
     path.write_text("data")
@@ -239,5 +248,38 @@ def test_double_click_falls_back_to_webbrowser(monkeypatch, tmp_path):
     event = types.SimpleNamespace(x=0, y=0)
     GSNDiagramWindow._on_double_click(wnd, event)
 
-    assert opened["url"] == path.resolve().as_uri()
+    assert opened  # ensure something was called
+    if "file" in opened:
+        assert opened["file"] == str(path)
+    else:
+        assert opened["cmd"][1] == str(path)
+
+
+def test_double_click_falls_back_to_webbrowser(monkeypatch):
+    opened = {}
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    node.work_product = "missing.txt"
+    diag.add_node(node)
+
+    wnd = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    wnd.diagram = diag
+    wnd.refresh = lambda: None
+    wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
+
+    event = types.SimpleNamespace(x=0, y=0)
+    GSNDiagramWindow._on_double_click(wnd, event)
+
+    assert opened["url"] == "missing.txt"
 
