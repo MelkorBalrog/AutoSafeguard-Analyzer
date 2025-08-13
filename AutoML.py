@@ -8764,12 +8764,26 @@ class FaultTreeApp:
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
-        enabled = (
-            self.safety_mgmt_toolbox.enabled_products()
-            if self.safety_mgmt_toolbox
-            else set()
-        )
-        self.enabled_work_products = set(enabled)
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox:
+            declared = {wp.analysis for wp in getattr(toolbox, "work_products", [])}
+            current = set(getattr(self, "enabled_work_products", set()))
+            for name in declared - current:
+                try:
+                    self.enable_work_product(name)
+                except Exception:
+                    self.enabled_work_products.add(name)
+            for name in current - declared:
+                try:
+                    self.disable_work_product(name)
+                except Exception:
+                    pass
+        global_enabled = getattr(self, "enabled_work_products", set())
+        if toolbox and getattr(toolbox, "work_products", None):
+            phase_enabled = toolbox.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        enabled = global_enabled & phase_enabled
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
                 analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
@@ -8777,9 +8791,9 @@ class FaultTreeApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
-        for name, entries in getattr(self, "work_product_menus", {}).items():
-            state = tk.NORMAL if name in enabled else tk.DISABLED
-            for menu, idx in entries:
+        for wp, menus in getattr(self, "work_product_menus", {}).items():
+            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            for menu, idx in menus:
                 try:
                     menu.entryconfig(idx, state=state)
                 except tk.TclError:
@@ -8791,6 +8805,7 @@ class FaultTreeApp:
             self.safety_mgmt_toolbox.set_active_module(None)
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
+        self.update_views()
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
@@ -8939,12 +8954,17 @@ class FaultTreeApp:
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
-        wps = [
-            wp
-            for wp, info in self.WORK_PRODUCT_INFO.items()
-            if info[1] == name or wp == name
-        ]
-        if wps and not any(wp in self.enabled_work_products for wp in wps):
+        wp = next(
+            (wp for wp, info in self.WORK_PRODUCT_INFO.items() if info[1] == name or wp == name),
+            None,
+        )
+        global_enabled = getattr(self, "enabled_work_products", set())
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        if smt and getattr(smt, "work_products", None):
+            phase_enabled = smt.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        if wp and wp not in (global_enabled & phase_enabled):
             return
         action = self.tool_actions.get(name)
         if callable(action):
@@ -9816,7 +9836,13 @@ class FaultTreeApp:
             tree.delete(*tree.get_children())
 
             repo = SysMLRepository.get_instance()
-            enabled = getattr(self, "enabled_work_products", set())
+            global_enabled = getattr(self, "enabled_work_products", set())
+            smt = getattr(self, "safety_mgmt_toolbox", None)
+            if smt and getattr(smt, "work_products", None):
+                phase_enabled = smt.enabled_products()
+            else:
+                phase_enabled = global_enabled
+            enabled = global_enabled & phase_enabled
 
             # --- Safety & Security Management Section ---
             self.management_diagrams = sorted(
@@ -17331,14 +17357,7 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
-
-        # Enable work products declared in governance.  When no governance is
-        # present the set is empty and all work products remain disabled.
-        for name in self.safety_mgmt_toolbox.enabled_products():
-            try:
-                self.enable_work_product(name)
-            except Exception:
-                self.enabled_work_products.add(name)
+        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
         try:
             self.refresh_tool_enablement()
         except Exception:
