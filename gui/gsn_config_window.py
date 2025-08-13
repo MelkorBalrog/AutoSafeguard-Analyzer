@@ -217,7 +217,10 @@ class GSNElementConfig(tk.Toplevel):
                 self.node.evidence_link = link_var.get()
             if spi_var:
                 self.node.spi_target = spi_var.get()
-            # search for existing solution with same work product and SPI target
+
+            # determine representative original node if another solution
+            # already uses the same work product and SPI target
+            original = None
             for n in self.diagram.nodes:
                 if (
                     n is not self.node
@@ -226,13 +229,44 @@ class GSNElementConfig(tk.Toplevel):
                     and getattr(n, "spi_target", "") == self.node.spi_target
                 ):
                     original = n if n.is_primary_instance else n.original
-                    self.node.user_name = original.user_name
-                    self.node.description = getattr(original, "description", "")
-                    self.node.original = original
-                    self.node.spi_target = getattr(original, "spi_target", "")
-                    self.node.is_primary_instance = False
                     break
-            else:
-                self.node.is_primary_instance = True
-                self.node.original = self.node
+
+            # fall back to the node's existing original (or itself) when no
+            # matching solution exists
+            if original is None:
+                original = self.node.original or self.node
+
+            # propagate changes from the edited node to the representative
+            # original and all of its clones
+            attrs = (
+                "user_name",
+                "description",
+                "work_product",
+                "evidence_link",
+                "spi_target",
+                "manager_notes",
+            )
+            for attr in attrs:
+                setattr(original, attr, getattr(self.node, attr))
+            original.is_primary_instance = True
+            original.original = original
+
+            for n in self.diagram.nodes:
+                if (
+                    n.node_type == "Solution"
+                    and n is not original
+                    and (
+                        getattr(n, "original", None) is original
+                        or (
+                            getattr(n, "work_product", "")
+                            == original.work_product
+                            and getattr(n, "spi_target", "")
+                            == original.spi_target
+                        )
+                    )
+                ):
+                    for attr in attrs:
+                        setattr(n, attr, getattr(original, attr))
+                    n.original = original
+                    n.is_primary_instance = False
         self.destroy()
