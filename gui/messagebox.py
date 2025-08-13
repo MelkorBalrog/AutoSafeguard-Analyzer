@@ -26,3 +26,8 @@ def askyesno(title=None, message=None, **options):
 def askyesnocancel(title=None, message=None, **options):
     logger.log_message(f"{title}: {message}", "ASK")
     return tk_messagebox.askyesnocancel(title, message, **options)
+
+
+def askokcancel(title=None, message=None, **options):
+    logger.log_message(f"{title}: {message}", "ASK")
+    return tk_messagebox.askokcancel(title, message, **options)
