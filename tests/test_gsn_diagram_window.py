@@ -89,9 +89,11 @@ def test_on_release_creates_context_link():
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
     parent = GSNNode("p", "Goal")
     child = GSNNode("c", "Goal")
-    win._connect_mode = "context"
-    win._connect_parent = parent
+
     class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
         def canvasx(self, x):
             return x
 
@@ -101,13 +103,59 @@ def test_on_release_creates_context_link():
         def delete(self, *a, **k):
             pass
 
+        def configure(self, **kwargs):
+            if "cursor" in kwargs:
+                self.cursor = kwargs["cursor"]
+
     win.canvas = CanvasStub()
     win._node_at = lambda x, y: child
     win.refresh = lambda: None
+
+    GSNDiagramWindow.connect_in_context(win)
+    assert win.canvas.cursor == "hand2"
+    win._connect_parent = parent
     event = type("Event", (), {"x": 0, "y": 0})
     win._on_release(event)
     assert child in parent.children
     assert child in parent.context_children
+    assert win.canvas.cursor == ""
+
+
+def test_solved_by_cursor_and_reset():
+    """Solved-by connections change the cursor and reset after completion."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    parent = GSNNode("p", "Goal")
+    child = GSNNode("c", "Goal")
+
+    class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
+        def delete(self, *a, **k):
+            pass
+
+        def configure(self, **kwargs):
+            if "cursor" in kwargs:
+                self.cursor = kwargs["cursor"]
+
+    win.canvas = CanvasStub()
+    win._node_at = lambda x, y: child
+    win.refresh = lambda: None
+
+    GSNDiagramWindow.connect_solved_by(win)
+    assert win.canvas.cursor == "tcross"
+    win._connect_parent = parent
+    event = type("Event", (), {"x": 0, "y": 0})
+    win._on_release(event)
+    assert child in parent.children
+    assert child not in parent.context_children
+    assert win.canvas.cursor == ""
 
 
 def test_refresh_updates_scrollregion():

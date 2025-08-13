@@ -162,10 +162,17 @@ class GSNDiagramWindow(tk.Frame):
     def connect_solved_by(self):  # pragma: no cover - GUI interaction stub
         self._connect_mode = "solved"
         self._connect_parent = None
+        # Change the cursor to indicate connection mode.
+        configure = getattr(self.canvas, "configure", None)
+        if configure:
+            configure(cursor="tcross")
 
     def connect_in_context(self):  # pragma: no cover - GUI interaction stub
         self._connect_mode = "context"
         self._connect_parent = None
+        configure = getattr(self.canvas, "configure", None)
+        if configure:
+            configure(cursor="hand2")
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
@@ -258,6 +265,10 @@ class GSNDiagramWindow(tk.Frame):
                 self._connect_parent.add_child(node, relation=relation)
             self._connect_mode = None
             self._connect_parent = None
+            # Restore the default cursor once the connection is made.
+            configure = getattr(self.canvas, "configure", None)
+            if configure:
+                configure(cursor="")
             self.refresh()
             return
         self._drag_node = None
