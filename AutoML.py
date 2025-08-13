@@ -311,6 +311,7 @@ from analysis.models import (
     calc_asil,
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
     CyberRiskEntry,
@@ -1237,7 +1238,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": req_text,
                 "custom_id": custom_id,
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
 
@@ -1259,7 +1267,14 @@ class EditNodeDialog(simpledialog.Dialog):
 
         def _toggle_fields(self, event=None):
             req_type = self.type_var.get()
-            hide = req_type in ("operational", "functional modification", "production", "service")
+            hide = req_type in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
                 for w in widgets:
@@ -1355,7 +1370,14 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             req["asil"] = asil
             req["cal"] = cal
         global_requirements[custom_id] = req
@@ -1540,7 +1562,14 @@ class EditNodeDialog(simpledialog.Dialog):
             req_type = dialog.result["req_type"]
             req["req_type"] = req_type
             req["text"] = dialog.result["text"]
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1561,7 +1590,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1610,7 +1646,14 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["req_type"] = req_type
         current_req["text"] = dialog.result["text"]
         current_req["status"] = "draft"
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
                 # editing within a base event so the value set during
@@ -2023,6 +2066,16 @@ class FaultTreeApp:
         ),
     }
 
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_INFO.setdefault(
+            _wp,
+            (
+                "System Design (Item Definition)",
+                "Requirements Editor",
+                "show_requirements_editor",
+            ),
+        )
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
@@ -2117,7 +2170,7 @@ class FaultTreeApp:
         self.review_data = None
         self.review_window = None
         self.safety_mgmt_toolbox = SafetyManagementToolbox()
-        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
+        self.safety_mgmt_toolbox.on_change = self._on_toolbox_change
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -2222,9 +2275,11 @@ class FaultTreeApp:
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Requirement Specification", []).append(
-            (requirements_menu, requirements_menu.index("end"))
-        )
+        req_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).append(
+                (requirements_menu, req_idx)
+            )
         requirements_menu.add_command(
             label="Requirements Explorer", command=self.show_requirements_explorer
         )
@@ -2520,6 +2575,9 @@ class FaultTreeApp:
         self.tool_to_work_product = {
             info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
         }
+        self.tool_to_work_product = {}
+        for name, info in self.WORK_PRODUCT_INFO.items():
+            self.tool_to_work_product.setdefault(info[1], set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -8682,32 +8740,64 @@ class FaultTreeApp:
         if not sel:
             return
         name = lb.get(sel[0])
-        analysis_name = self.tool_to_work_product.get(name)
+        analysis_names = self.tool_to_work_product.get(name, set())
         if (
-            analysis_name
+            analysis_names
             and self.safety_mgmt_toolbox
-            and analysis_name not in self.safety_mgmt_toolbox.enabled_products()
+            and not any(
+                n in self.safety_mgmt_toolbox.enabled_products()
+                for n in analysis_names
+            )
         ):
             return
         action = self.tool_actions.get(name)
         if action:
             action()
 
+    def _on_toolbox_change(self) -> None:
+        self.refresh_tool_enablement()
+        try:
+            self.update_views()
+        except Exception:
+            pass
+
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
-        enabled = (
-            self.safety_mgmt_toolbox.enabled_products()
-            if self.safety_mgmt_toolbox
-            else set()
-        )
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox:
+            declared = {wp.analysis for wp in getattr(toolbox, "work_products", [])}
+            current = set(getattr(self, "enabled_work_products", set()))
+            for name in declared - current:
+                try:
+                    self.enable_work_product(name)
+                except Exception:
+                    self.enabled_work_products.add(name)
+            for name in current - declared:
+                try:
+                    self.disable_work_product(name)
+                except Exception:
+                    pass
+        global_enabled = getattr(self, "enabled_work_products", set())
+        if toolbox and getattr(toolbox, "work_products", None):
+            phase_enabled = toolbox.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        enabled = global_enabled & phase_enabled
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
-                if analysis_name and analysis_name not in enabled:
+                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
+                if analysis_names and not any(n in enabled for n in analysis_names):
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        for wp, menus in getattr(self, "work_product_menus", {}).items():
+            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            for menu, idx in menus:
+                try:
+                    menu.entryconfig(idx, state=state)
+                except tk.TclError:
+                    pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -8715,7 +8805,7 @@ class FaultTreeApp:
             self.safety_mgmt_toolbox.set_active_module(None)
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
-        self.refresh_tool_enablement()
+        self.update_views()
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
@@ -8828,20 +8918,33 @@ class FaultTreeApp:
             return False
         self.enabled_work_products.discard(name)
         for menu, idx in self.work_product_menus.get(name, []):
+            state = tk.DISABLED
+            for other, entries in self.work_product_menus.items():
+                if (
+                    other != name
+                    and other in self.enabled_work_products
+                    and (menu, idx) in entries
+                ):
+                    state = tk.NORMAL
+                    break
             try:
-                menu.entryconfig(idx, state=tk.DISABLED)
+                menu.entryconfig(idx, state=state)
             except tk.TclError:
                 pass
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            lb = self.tool_listboxes.get(area)
-            if lb:
-                for i in range(lb.size()):
-                    if lb.get(i) == tool_name:
-                        lb.delete(i)
-                        break
-            self.tool_actions.pop(tool_name, None)
+            if not any(
+                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
+                for wp in self.enabled_work_products
+            ):
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    for i in range(lb.size()):
+                        if lb.get(i) == tool_name:
+                            lb.delete(i)
+                            break
+                self.tool_actions.pop(tool_name, None)
         if hasattr(self, "update_views"):
             try:
                 self.update_views()
@@ -8855,7 +8958,13 @@ class FaultTreeApp:
             (wp for wp, info in self.WORK_PRODUCT_INFO.items() if info[1] == name or wp == name),
             None,
         )
-        if wp and wp not in self.enabled_work_products:
+        global_enabled = getattr(self, "enabled_work_products", set())
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        if smt and getattr(smt, "work_products", None):
+            phase_enabled = smt.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        if wp and wp not in (global_enabled & phase_enabled):
             return
         action = self.tool_actions.get(name)
         if callable(action):
@@ -9727,7 +9836,13 @@ class FaultTreeApp:
             tree.delete(*tree.get_children())
 
             repo = SysMLRepository.get_instance()
-            enabled = getattr(self, "enabled_work_products", set())
+            global_enabled = getattr(self, "enabled_work_products", set())
+            smt = getattr(self, "safety_mgmt_toolbox", None)
+            if smt and getattr(smt, "work_products", None):
+                phase_enabled = smt.enabled_products()
+            else:
+                phase_enabled = global_enabled
+            enabled = global_enabled & phase_enabled
 
             # --- Safety & Security Management Section ---
             self.management_diagrams = sorted(
@@ -9954,7 +10069,7 @@ class FaultTreeApp:
                     text="Safety & Security Concept",
                     tags=("safetyconcept", "0"),
                 )
-            if "Requirement Specification" in enabled:
+            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
                 tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
                 tree.insert(
                     sys_root,
@@ -11318,7 +11433,14 @@ class FaultTreeApp:
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
                 }
-                if req_type not in ("operational", "functional modification", "production", "service"):
+                if req_type not in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
 
@@ -11331,7 +11453,14 @@ class FaultTreeApp:
 
             def _toggle_fields(self, event=None):
                 req_type = self.type_var.get()
-                hide = req_type in ("operational", "functional modification", "production", "service")
+                hide = req_type in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
                     for w in widgets:
@@ -17228,14 +17357,7 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
-
-        # Enable work products declared in governance.  When no governance is
-        # present the set is empty and all work products remain disabled.
-        for name in self.safety_mgmt_toolbox.enabled_products():
-            try:
-                self.enable_work_product(name)
-            except Exception:
-                self.enabled_work_products.add(name)
+        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
         try:
             self.refresh_tool_enablement()
         except Exception:

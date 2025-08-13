@@ -7,7 +7,6 @@ from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.safety_case_table import SafetyCaseTable
 from gui import messagebox
 
-
 class DummyTree:
     def __init__(self):
         self.items = {}
@@ -29,7 +28,6 @@ class DummyTree:
     def selection(self):
         return (self.selection_item,) if self.selection_item else ()
 
-
 class DummyTable:
     def __init__(self):
         self.items = []
@@ -43,7 +41,6 @@ class DummyTable:
     def insert(self, parent, index, values=(), tags=()):
         self.items.append(values)
         return str(len(self.items) - 1)
-
 
 def test_create_edit_delete_case(monkeypatch):
     root = GSNNode("G", "Goal")

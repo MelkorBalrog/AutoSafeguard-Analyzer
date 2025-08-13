@@ -14,7 +14,13 @@ from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
-from analysis.models import global_requirements, ASIL_ORDER, StpaDoc
+from analysis.models import (
+    global_requirements,
+    ASIL_ORDER,
+    StpaDoc,
+    REQUIREMENT_WORK_PRODUCTS,
+    REQUIREMENT_TYPE_OPTIONS,
+)
 from analysis.safety_management import ALLOWED_PROPAGATIONS
 
 # ---------------------------------------------------------------------------
@@ -5498,8 +5504,8 @@ class SysMLDiagramWindow(tk.Frame):
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
-                "Requirement Specification",
                 "Product Goal Specification",
+                *REQUIREMENT_WORK_PRODUCTS,
             }
             analysis_products = {
                 "HAZOP",
@@ -8204,10 +8210,16 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             self.selection = self.var.get()
 
     def add_work_product(self):  # pragma: no cover - requires tkinter
+        def _fmt(req: str) -> str:
+            return " ".join(
+                word.upper() if word.isupper() else word.capitalize()
+                for word in req.split()
+            )
+
         options = [
             "Architecture Diagram",
             "Safety & Security Concept",
-            "Requirement Specification",
+            *REQUIREMENT_WORK_PRODUCTS,
             "HAZOP",
             "STPA",
             "Threat Analysis",
@@ -8219,6 +8231,9 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "FMEA",
             "FMEDA",
         ]
+        options.extend(
+            f"{_fmt(rt)} Requirement Specification" for rt in REQUIREMENT_TYPE_OPTIONS
+        )
         dlg = self._SelectDialog(self, "Add Work Product", options)
         name = getattr(dlg, "selection", "")
         if not name:
@@ -8226,8 +8241,8 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         area_map = {
             "Architecture Diagram": "System Design (Item Definition)",
             "Safety & Security Concept": "System Design (Item Definition)",
-            "Requirement Specification": "System Design (Item Definition)",
             "Product Goal Specification": "System Design (Item Definition)",
+            **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
             "HAZOP": "Hazard & Threat Analysis",
             "STPA": "Hazard & Threat Analysis",
             "Threat Analysis": "Hazard & Threat Analysis",
@@ -8238,6 +8253,8 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
         }
+        for rt in REQUIREMENT_TYPE_OPTIONS:
+            area_map[f"{_fmt(rt)} Requirement Specification"] = "System Design (Item Definition)"
         required = area_map.get(name)
         if required and not any(
             o.obj_type == "System Boundary" and o.properties.get("name") == required
