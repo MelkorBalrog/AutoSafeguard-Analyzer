@@ -246,6 +246,7 @@ from gui.gsn_explorer import GSNExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
+from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from dataclasses import asdict
 from analysis.mechanisms import (
@@ -15566,24 +15567,42 @@ class FaultTreeApp:
         self.update_views()
  
     def clone_node_preserving_id(self, node):
-        # Create a new node with the same properties, but assign a new unique ID.
+        """Return a clone of *node* with a new unique ID.
+
+        The function handles both FaultTreeNode and GSNNode instances.  For
+        FaultTreeNode objects, a new :class:`FaultTreeNode` is created and the
+        relevant attributes are copied across.  For :class:`GSNNode` instances
+        the built-in ``clone`` method is used to ensure GSN-specific fields are
+        preserved.
+        """
+
+        if isinstance(node, GSNNode):
+            # GSN nodes provide their own clone method.  Offset the position of
+            # the cloned node so that it does not overlap the original.
+            new_node = node.clone()
+            new_node.x = node.x + 100
+            new_node.y = node.y + 100
+            return new_node
+
+        # Default behaviour is to treat the node as a FaultTreeNode.  Create a
+        # fresh instance and copy over attributes that exist on the source
+        # object.  ``getattr`` is used to avoid AttributeError if a field is
+        # missing on the source node.
         new_node = FaultTreeNode(node.user_name, node.node_type)
         new_node.unique_id = AutoML_Helper.get_next_unique_id()
-        new_node.quant_value = node.quant_value
-        new_node.gate_type = node.gate_type
-        new_node.description = node.description
-        new_node.rationale = node.rationale
-        # NEW: Offset the new node relative to the original.
-        new_node.x = node.x + 100  
+        new_node.quant_value = getattr(node, "quant_value", None)
+        new_node.gate_type = getattr(node, "gate_type", None)
+        new_node.description = getattr(node, "description", "")
+        new_node.rationale = getattr(node, "rationale", "")
+        new_node.x = node.x + 100
         new_node.y = node.y + 100
-        new_node.severity = node.severity
-        new_node.input_subtype = node.input_subtype
-        new_node.display_label = node.display_label  # (do not append " (clone)" in the copy branch if you prefer)
-        new_node.equation = node.equation
-        new_node.detailed_equation = node.detailed_equation
-        new_node.is_page = node.is_page
+        new_node.severity = getattr(node, "severity", None)
+        new_node.input_subtype = getattr(node, "input_subtype", None)
+        new_node.display_label = getattr(node, "display_label", "")
+        new_node.equation = getattr(node, "equation", "")
+        new_node.detailed_equation = getattr(node, "detailed_equation", "")
+        new_node.is_page = getattr(node, "is_page", False)
         new_node.is_primary_instance = False
-        # Set the clone’s "original" pointer: if the original was primary, use it; otherwise, use its original.
         new_node.original = node if node.is_primary_instance else node.original
         new_node.children = []
         return new_node
