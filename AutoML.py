@@ -12922,6 +12922,8 @@ class FaultTreeApp:
                 nb.add(sotif_tab, text="SOTIF")
                 nb.add(cyber_tab, text="Cybersecurity")
 
+                name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
+
                 # --- Functional Safety fields ---
                 ttk.Label(fs_tab, text="ID:").grid(row=0, column=0, sticky="e")
                 self.id_var = tk.StringVar(value=getattr(self.initial, "user_name", ""))
@@ -12929,7 +12931,6 @@ class FaultTreeApp:
                 self.id_entry.grid(row=0, column=1, padx=5, pady=5)
 
                 ttk.Label(fs_tab, text="ASIL:").grid(row=1, column=0, sticky="e")
-                name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
                 self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
                 ttk.Label(fs_tab, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
@@ -12938,64 +12939,71 @@ class FaultTreeApp:
                 self.pmhf_var = tk.StringVar(value=f"{pmhf:.2e}")
                 tk.Entry(fs_tab, textvariable=self.pmhf_var, state="readonly").grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(fs_tab, text="CAL:").grid(row=3, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
-                ttk.Label(fs_tab, textvariable=self.cal_var).grid(row=3, column=1, padx=5, pady=5, sticky="w")
-
-                ttk.Label(fs_tab, text="Safe State:").grid(row=4, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Safe State:").grid(row=3, column=0, sticky="e")
                 self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
-                tk.Entry(fs_tab, textvariable=self.state_var).grid(row=4, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.state_var).grid(row=3, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="FTTI:").grid(row=5, column=0, sticky="e")
+                ttk.Label(fs_tab, text="FTTI:").grid(row=4, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
                 tk.Entry(
                     fs_tab,
                     textvariable=self.ftti_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=5, column=1, padx=5, pady=5)
+                ).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Acceptance Rate (1/h):").grid(row=6, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Description:").grid(row=5, column=0, sticky="ne")
+                self.desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
+                self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
+                self.desc_text.grid(row=5, column=1, padx=5, pady=5)
+
+                # --- SOTIF fields ---
+                ttk.Label(sotif_tab, text="Acceptance Rate (1/h):").grid(row=0, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
-                    fs_tab,
+                    sotif_tab,
                     textvariable=self.accept_rate_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=6, column=1, padx=5, pady=5)
+                ).grid(row=0, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="On Hours:").grid(row=7, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="On Hours:").grid(row=1, column=0, sticky="e")
                 self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
                 tk.Entry(
-                    fs_tab,
+                    sotif_tab,
                     textvariable=self.op_hours_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=7, column=1, padx=5, pady=5)
+                ).grid(row=1, column=1, padx=5, pady=5)
+
+                ttk.Label(sotif_tab, text="Acceptance Criteria Description:").grid(row=2, column=0, sticky="ne")
+                self.acc_text = tk.Text(sotif_tab, width=30, height=3, wrap="word")
+                self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
+                self.acc_text.grid(row=2, column=1, padx=5, pady=5)
 
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
 
-                ttk.Label(fs_tab, text="P(E|HB):").grid(row=8, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="P(E|HB):").grid(row=3, column=0, sticky="e")
                 self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(fs_tab, textvariable=self.pehb_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
+                tk.Entry(sotif_tab, textvariable=self.pehb_var, state="readonly").grid(row=3, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="P(C|E):").grid(row=9, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="P(C|E):").grid(row=4, column=0, sticky="e")
                 self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(fs_tab, textvariable=self.pce_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+                tk.Entry(sotif_tab, textvariable=self.pce_var, state="readonly").grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="P(S|C):").grid(row=10, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="P(S|C):").grid(row=5, column=0, sticky="e")
                 self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(fs_tab, textvariable=self.psc_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
+                tk.Entry(sotif_tab, textvariable=self.psc_var, state="readonly").grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Validation Target (1/h):").grid(row=11, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="Validation Target (1/h):").grid(row=6, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
                     val = 1.0
                 self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(fs_tab, textvariable=self.val_var, state="readonly").grid(row=11, column=1, padx=5, pady=5)
+                tk.Entry(sotif_tab, textvariable=self.val_var, state="readonly").grid(row=6, column=1, padx=5, pady=5)
 
                 def _update_val(*_):
                     try:
@@ -13007,29 +13015,24 @@ class FaultTreeApp:
 
                 self.accept_rate_var.trace_add("write", _update_val)
 
-                ttk.Label(fs_tab, text="Mission Profile:").grid(row=12, column=0, sticky="e")
+                ttk.Label(sotif_tab, text="Mission Profile:").grid(row=7, column=0, sticky="e")
                 self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
                 ttk.Combobox(
-                    fs_tab,
+                    sotif_tab,
                     textvariable=self.profile_var,
                     values=[mp.name for mp in self.app.mission_profiles],
                     state="readonly",
-                ).grid(row=12, column=1, padx=5, pady=5)
+                ).grid(row=7, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Val Target Desc:").grid(row=13, column=0, sticky="ne")
-                self.val_desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
+                ttk.Label(sotif_tab, text="Val Target Description:").grid(row=8, column=0, sticky="ne")
+                self.val_desc_text = tk.Text(sotif_tab, width=30, height=3, wrap="word")
                 self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=13, column=1, padx=5, pady=5)
+                self.val_desc_text.grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Acceptance Criteria:").grid(row=14, column=0, sticky="ne")
-                self.acc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
-                self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=14, column=1, padx=5, pady=5)
-
-                ttk.Label(fs_tab, text="Description:").grid(row=15, column=0, sticky="ne")
-                self.desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
-                self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=15, column=1, padx=5, pady=5)
+                # --- Cybersecurity fields ---
+                ttk.Label(cyber_tab, text="CAL:").grid(row=0, column=0, sticky="e")
+                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
+                ttk.Label(cyber_tab, textvariable=self.cal_var).grid(row=0, column=1, padx=5, pady=5, sticky="w")
                 return self.id_entry
 
             def apply(self):
