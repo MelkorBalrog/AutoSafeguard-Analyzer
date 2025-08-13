@@ -299,6 +299,39 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
 
+def test_spi_shows_pmhf_and_validation(monkeypatch):
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        probability=2e-6,
+        safety_goal_asil="D",
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+
+    FaultTreeApp.show_safety_performance_indicators(app)
+    tree = app._spi_tree
+    assert len(tree.data) == 2
+    targets = {row["values"][1]: row for row in tree.data.values()}
+    assert f"{1e-5:.2e}" in targets
+    assert f"{PMHF_TARGETS['D']:.2e}" in targets
+    pmhf_row = targets[f"{PMHF_TARGETS['D']:.2e}"]
+    expected_spi = math.log10(PMHF_TARGETS['D'] / 2e-6)
+    assert pmhf_row["values"][3] == f"{expected_spi:.2f}"
+
+
 def test_edit_notes_updates_node(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
