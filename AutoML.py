@@ -12719,14 +12719,17 @@ class FaultTreeApp:
         """Display product goals and derived requirements in a tree view."""
         win = tk.Toplevel(self.root)
         win.title("Product Goals Matrix")
-        tree = ttk.Treeview(win, columns=["ID", "ASIL", "CAL", "SafeState", "Text"], show="tree headings")
+        columns = ["ID", "ASIL", "Target PMHF", "CAL", "SafeState", "Text"]
+        tree = ttk.Treeview(win, columns=columns, show="tree headings")
         tree.heading("ID", text="Requirement ID")
         tree.heading("ASIL", text="ASIL")
+        tree.heading("Target PMHF", text="Target PMHF (1/h)")
         tree.heading("CAL", text="CAL")
         tree.heading("SafeState", text="Safe State")
         tree.heading("Text", text="Text")
         tree.column("ID", width=120)
         tree.column("ASIL", width=60)
+        tree.column("Target PMHF", width=120)
         tree.column("CAL", width=60)
         tree.column("SafeState", width=100)
         tree.column("Text", width=300)
@@ -12736,9 +12739,18 @@ class FaultTreeApp:
             sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
             sg_id = te.user_name or f"SG {te.unique_id}"
             cal = self.get_cyber_goal_cal(sg_id)
+            asil = te.safety_goal_asil or "QM"
+            target = PMHF_TARGETS.get(asil, 1.0)
             parent_iid = tree.insert(
                 "", "end", text=sg_text,
-                values=[sg_id, te.safety_goal_asil, cal, te.safe_state, sg_text],
+                values=[
+                    sg_id,
+                    te.safety_goal_asil,
+                    f"{target:.1e}",
+                    cal,
+                    te.safe_state,
+                    sg_text,
+                ],
             )
             reqs = self.collect_requirements_recursive(te)
             seen_ids = set()
@@ -12751,7 +12763,14 @@ class FaultTreeApp:
                     parent_iid,
                     "end",
                     text="",
-                    values=[req_id, req.get("asil", ""), "", "", req.get("text", "")],
+                    values=[
+                        req_id,
+                        req.get("asil", ""),
+                        "",
+                        "",
+                        "",
+                        req.get("text", ""),
+                    ],
                 )
 
     def show_product_goals_editor(self):
