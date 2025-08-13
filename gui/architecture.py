@@ -6867,7 +6867,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row = 0
         ttk.Label(gen_frame, text="Name:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=self.obj.properties.get("name", ""))
-        ttk.Entry(gen_frame, textvariable=self.name_var).grid(row=gen_row, column=1, padx=4, pady=4)
+        name_state = "readonly" if self.obj.obj_type == "Work Product" else "normal"
+        ttk.Entry(gen_frame, textvariable=self.name_var, state=name_state).grid(
+            row=gen_row, column=1, padx=4, pady=4
+        )
         gen_row += 1
         ttk.Label(gen_frame, text="Width:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=2)
         self.width_var = tk.StringVar(value=str(self.obj.width))
@@ -7515,31 +7518,34 @@ class SysMLObjectDialog(simpledialog.Dialog):
         self._current_def_id = def_id
 
     def apply(self):
-        new_name = self.name_var.get()
         repo = SysMLRepository.get_instance()
         parent_id = None
-        if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
-            diag = repo.diagrams.get(self.master.diagram_id)
-            if diag and diag.diag_type == "Internal Block Diagram":
-                parent_id = getattr(diag, "father", None) or next(
-                    (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
-                    None,
-                )
-        if parent_id and _part_name_exists(repo, parent_id, new_name, self.obj.element_id):
-            messagebox.showinfo("Add Part", "A part with that name already exists")
+        if self.obj.obj_type != "Work Product":
+            new_name = self.name_var.get()
+            if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
+                diag = repo.diagrams.get(self.master.diagram_id)
+                if diag and diag.diag_type == "Internal Block Diagram":
+                    parent_id = getattr(diag, "father", None) or next(
+                        (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
+                        None,
+                    )
+            if parent_id and _part_name_exists(repo, parent_id, new_name, self.obj.element_id):
+                messagebox.showinfo("Add Part", "A part with that name already exists")
+                new_name = self.obj.properties.get("name", "")
+            new_name = repo.ensure_unique_element_name(new_name, self.obj.element_id)
+            if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
+                rename_port(repo, self.obj, self.master.objects, new_name)
+            self.obj.properties["name"] = new_name
+            if self.obj.element_id and self.obj.element_id in repo.elements:
+                elem = repo.elements[self.obj.element_id]
+                if self.obj.obj_type in ("Block", "Block Boundary") and elem.elem_type == "Block":
+                    rename_block(repo, elem.elem_id, new_name)
+                else:
+                    elem.name = new_name
+            if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
+                rename_port(repo, self.obj, self.master.objects, new_name)
+        else:
             new_name = self.obj.properties.get("name", "")
-        new_name = repo.ensure_unique_element_name(new_name, self.obj.element_id)
-        if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
-            rename_port(repo, self.obj, self.master.objects, new_name)
-        self.obj.properties["name"] = new_name
-        if self.obj.element_id and self.obj.element_id in repo.elements:
-            elem = repo.elements[self.obj.element_id]
-            if self.obj.obj_type in ("Block", "Block Boundary") and elem.elem_type == "Block":
-                rename_block(repo, elem.elem_id, new_name)
-            else:
-                elem.name = new_name
-        if self.obj.obj_type == "Port" and hasattr(self.master, "objects"):
-            rename_port(repo, self.obj, self.master.objects, new_name)
         for prop, var in self.entries.items():
             self.obj.properties[prop] = var.get()
             if self.obj.element_id and self.obj.element_id in repo.elements:
