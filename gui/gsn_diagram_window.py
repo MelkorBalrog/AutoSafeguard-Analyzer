@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
+import webbrowser
 from typing import Optional
 
 from gsn import GSNNode, GSNDiagram
@@ -173,7 +174,15 @@ class GSNDiagramWindow(tk.Frame):
         node = self._node_at(event.x, event.y)
         if not node:
             return
-        GSNElementConfig(self, node, self.diagram)
+        if (
+            node.node_type == "Solution"
+            and getattr(node, "evidence_link", "")
+        ):
+            webbrowser.open(node.evidence_link)
+        else:
+            GSNElementConfig(self, node, self.diagram)
+            self.refresh()
+            return
         self.refresh()
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
