@@ -68,6 +68,13 @@ class DummyTree:
         return True
 
 
+class DummyTab:
+    def winfo_exists(self):
+        return True
+
+    def winfo_children(self):
+        return []
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
@@ -77,7 +84,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
 
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
-    app._new_tab = lambda title: types.SimpleNamespace(winfo_exists=lambda: True)
+    app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)

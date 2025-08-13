@@ -15008,6 +15008,8 @@ class FaultTreeApp:
         """Refresh diagrams when their tab becomes active."""
         tab_id = event.widget.select()
         tab = event.widget.nametowidget(tab_id)
+        if tab is getattr(self, "_safety_case_tab", None):
+            self.refresh_safety_case_table()
         for child in tab.winfo_children():
             if hasattr(child, "refresh_from_repository"):
                 child.refresh_from_repository()
