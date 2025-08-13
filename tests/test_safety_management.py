@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import types
 import sys
+import tkinter as tk
 
 # Stub out Pillow dependencies so importing the main app doesn't require Pillow
 PIL_stub = types.ModuleType("PIL")
@@ -103,6 +104,31 @@ def test_toolbox_manages_diagram_lifecycle():
     toolbox.delete_diagram("Gov2")
     assert diag_id not in repo.diagrams
     assert not toolbox.diagrams
+
+
+def test_disable_work_product_rejects_existing_docs():
+    """Work product types with existing documents cannot be removed."""
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.enabled_work_products = {"HAZOP"}
+    app.work_product_menus = {}
+    app.tool_listboxes = {}
+    app.tool_actions = {}
+    app.hazop_docs = [object()]
+    assert not app.disable_work_product("HAZOP")
+
+    # When no documents exist the work product can be disabled
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, idx, state=tk.DISABLED):
+            self.state = state
+
+    menu = DummyMenu()
+    app.hazop_docs = []
+    app.work_product_menus["HAZOP"] = (menu, 0)
+    assert app.disable_work_product("HAZOP")
+    assert menu.state == tk.DISABLED
 
 
 def test_open_safety_management_toolbox_uses_browser():

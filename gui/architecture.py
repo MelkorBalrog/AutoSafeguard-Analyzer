@@ -6256,6 +6256,16 @@ class SysMLDiagramWindow(tk.Frame):
                     else:
                         self.remove_element_model(obj)
                 else:
+                    if obj.obj_type == "Work Product":
+                        name = obj.properties.get("name", "")
+                        if getattr(self.app, "can_remove_work_product", None):
+                            if not self.app.can_remove_work_product(name):
+                                messagebox.showerror(
+                                    "Delete",
+                                    f"Cannot delete work product '{name}' with existing artifacts.",
+                                )
+                                continue
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
                     self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None

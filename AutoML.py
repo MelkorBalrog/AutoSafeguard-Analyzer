@@ -2098,6 +2098,13 @@ class FaultTreeApp:
         self.comment_target = None
         self._undo_stack: list[dict] = []
         self._redo_stack: list[dict] = []
+        # Track which work products are currently enabled. Menu entries for
+        # these products remain disabled until the corresponding governance
+        # diagram adds the work product. The mapping stores references to the
+        # menu and entry index for each work product so they can be toggled at
+        # runtime.
+        self.enabled_work_products: set[str] = set()
+        self.work_product_menus: dict[str, tuple[tk.Menu, int]] = {}
         self.versions = []
         self.diff_nodes = []
         self.fi2tc_entries = []
@@ -2146,7 +2153,12 @@ class FaultTreeApp:
         fta_menu.add_command(label="Add Fault Event", command=self.add_fault_event)
         fta_menu.add_separator()
         fta_menu.add_command(label="FTA-FMEA Traceability", command=self.show_traceability_matrix)
-        fta_menu.add_command(label="FTA Cut Sets", command=self.show_cut_sets)
+        fta_menu.add_command(
+            label="FTA Cut Sets",
+            command=self.show_cut_sets,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["FTA"] = (fta_menu, fta_menu.index("end"))
         fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
         fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
 
@@ -2181,12 +2193,38 @@ class FaultTreeApp:
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
-        requirements_menu.add_command(label="Requirements Editor", command=self.show_requirements_editor)
-        requirements_menu.add_command(label="Requirements Explorer", command=self.show_requirements_explorer)
-        requirements_menu.add_command(label="Product Goals Matrix", command=self.show_safety_goals_matrix)
-        requirements_menu.add_command(label="Product Goals Editor", command=self.show_product_goals_editor)
-        requirements_menu.add_command(label="Safety Performance Indicators", command=self.show_safety_performance_indicators)
-        requirements_menu.add_command(label="Export Product Goal Requirements", command=self.export_product_goal_requirements)
+        requirements_menu.add_command(
+            label="Requirements Editor",
+            command=self.show_requirements_editor,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["Requirement Specification"] = (
+            requirements_menu,
+            requirements_menu.index("end"),
+        )
+        requirements_menu.add_command(
+            label="Requirements Explorer", command=self.show_requirements_explorer
+        )
+        requirements_menu.add_command(
+            label="Product Goals Matrix", command=self.show_safety_goals_matrix
+        )
+        requirements_menu.add_command(
+            label="Product Goals Editor",
+            command=self.show_product_goals_editor,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["Product Goal Specification"] = (
+            requirements_menu,
+            requirements_menu.index("end"),
+        )
+        requirements_menu.add_command(
+            label="Safety Performance Indicators",
+            command=self.show_safety_performance_indicators,
+        )
+        requirements_menu.add_command(
+            label="Export Product Goal Requirements",
+            command=self.export_product_goal_requirements,
+        )
         review_menu = tk.Menu(menubar, tearoff=0)
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
         review_menu.add_command(label="Start Joint Review", command=self.start_joint_review)
@@ -2201,17 +2239,54 @@ class FaultTreeApp:
         architecture_menu.add_command(label="Internal Block Diagram", command=self.open_internal_block_diagram)
         architecture_menu.add_command(label="Control Flow Diagram", command=self.open_control_flow_diagram)
         architecture_menu.add_separator()
-        architecture_menu.add_command(label="AutoML Explorer", command=self.manage_architecture)
+        architecture_menu.add_command(
+            label="AutoML Explorer",
+            command=self.manage_architecture,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["Architecture Diagram"] = (
+            architecture_menu,
+            architecture_menu.index("end"),
+        )
 
         # --- Qualitative Analysis Menu ---
         qualitative_menu = tk.Menu(menubar, tearoff=0)
-        qualitative_menu.add_command(label="HAZOP Analysis", command=self.open_hazop_window)
+        qualitative_menu.add_command(
+            label="HAZOP Analysis",
+            command=self.open_hazop_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["HAZOP"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
         qualitative_menu.add_command(
             label="Risk Assessment",
             command=self.open_risk_assessment_window,
+            state=tk.DISABLED,
         )
-        qualitative_menu.add_command(label="STPA Analysis", command=self.open_stpa_window)
-        qualitative_menu.add_command(label="Threat Analysis", command=self.open_threat_window)
+        self.work_product_menus["Risk Assessment"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
+        qualitative_menu.add_command(
+            label="STPA Analysis",
+            command=self.open_stpa_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["STPA"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
+        qualitative_menu.add_command(
+            label="Threat Analysis",
+            command=self.open_threat_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["Threat Analysis"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunction_editor)
@@ -2222,18 +2297,62 @@ class FaultTreeApp:
         qualitative_menu.add_command(label="Functional Insufficiencies", command=self.show_functional_insufficiency_list)
         qualitative_menu.add_command(label="Malfunctions Editor", command=self.show_malfunctions_editor)
         qualitative_menu.add_separator()
-        qualitative_menu.add_command(label="FI2TC Analysis", command=self.open_fi2tc_window)
-        qualitative_menu.add_command(label="TC2FI Analysis", command=self.open_tc2fi_window)
+        qualitative_menu.add_command(
+            label="FI2TC Analysis",
+            command=self.open_fi2tc_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["FI2TC"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
+        qualitative_menu.add_command(
+            label="TC2FI Analysis",
+            command=self.open_tc2fi_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["TC2FI"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
         qualitative_menu.add_separator()
-        qualitative_menu.add_command(label="FMEA Manager", command=self.show_fmea_list)
-        qualitative_menu.add_command(label="Fault Prioritization", command=self.open_fault_prioritization_window)
+        qualitative_menu.add_command(
+            label="FMEA Manager",
+            command=self.show_fmea_list,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["FMEA"] = (
+            qualitative_menu,
+            qualitative_menu.index("end"),
+        )
+        qualitative_menu.add_command(
+            label="Fault Prioritization",
+            command=self.open_fault_prioritization_window,
+            state=tk.DISABLED,
+        )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
-        quantitative_menu.add_command(label="Mechanism Libraries", command=self.manage_mechanism_libraries)
-        quantitative_menu.add_command(label="Reliability Analysis", command=self.open_reliability_window)
-        quantitative_menu.add_command(label="FMEDA Analysis", command=self.open_fmeda_window)
-        quantitative_menu.add_command(label="FMEDA Manager", command=self.show_fmeda_list)
+        quantitative_menu.add_command(
+            label="Mechanism Libraries", command=self.manage_mechanism_libraries
+        )
+        quantitative_menu.add_command(
+            label="Reliability Analysis", command=self.open_reliability_window
+        )
+        quantitative_menu.add_command(
+            label="FMEDA Analysis",
+            command=self.open_fmeda_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus["FMEDA"] = (
+            quantitative_menu,
+            quantitative_menu.index("end"),
+        )
+        quantitative_menu.add_command(
+            label="FMEDA Manager",
+            command=self.show_fmeda_list,
+            state=tk.DISABLED,
+        )
 
         libs_menu = tk.Menu(menubar, tearoff=0)
         libs_menu.add_command(label="Scenario Libraries", command=self.manage_scenario_libraries)
@@ -8499,6 +8618,70 @@ class FaultTreeApp:
                 lb = self.tool_listboxes.get(area)
                 if lb:
                     lb.insert(tk.END, tool_name)
+        # Enable corresponding menu entry if one was registered
+        menu_info = self.work_product_menus.get(name)
+        if menu_info:
+            menu, idx = menu_info
+            try:
+                menu.entryconfig(idx, state=tk.NORMAL)
+            except tk.TclError:
+                pass
+        self.enabled_work_products.add(name)
+
+    # ------------------------------------------------------------------
+    def can_remove_work_product(self, name: str) -> bool:
+        """Return ``True`` if the work product type can be removed.
+
+        A work product type may only be removed from the governance diagram
+        when there are no existing documents of that type in the project.
+        """
+
+        attr_map = {
+            "HAZOP": "hazop_docs",
+            "Risk Assessment": "hara_docs",
+            "STPA": "stpa_docs",
+            "Threat Analysis": "threat_docs",
+            "FI2TC": "fi2tc_docs",
+            "TC2FI": "tc2fi_docs",
+            "FMEA": "reliability_analyses",
+            "FMEDA": "fmeda_components",
+            "FTA": "top_events",
+        }
+        attr = attr_map.get(name)
+        if not attr:
+            return True
+        return not getattr(self, attr, [])
+
+    # ------------------------------------------------------------------
+    def disable_work_product(self, name: str) -> bool:
+        """Disable menu and toolbox entries for the given work product.
+
+        Returns ``True`` if the work product was disabled. If existing
+        documents of that type are present the work product remains enabled
+        and ``False`` is returned.
+        """
+
+        if not self.can_remove_work_product(name):
+            return False
+        self.enabled_work_products.discard(name)
+        menu_info = self.work_product_menus.get(name)
+        if menu_info:
+            menu, idx = menu_info
+            try:
+                menu.entryconfig(idx, state=tk.DISABLED)
+            except tk.TclError:
+                pass
+        info = self.WORK_PRODUCT_INFO.get(name)
+        if info:
+            area, tool_name, _ = info
+            lb = self.tool_listboxes.get(area)
+            if lb:
+                for i in range(lb.size()):
+                    if lb.get(i) == tool_name:
+                        lb.delete(i)
+                        break
+            self.tool_actions.pop(tool_name, None)
+        return True
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
