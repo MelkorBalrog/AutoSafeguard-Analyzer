@@ -453,3 +453,94 @@ def test_config_dialog_lists_toolbox_work_products(monkeypatch):
         "Architecture Diagram - Safety Analysis",
         "Safety Analysis",
     ]
+
+
+def test_config_dialog_lists_toolbox_diagrams(monkeypatch):
+    """Work product combo should list diagrams tracked in the toolbox."""
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("New", "Solution")
+    diag.add_node(node)
+
+    class Toolbox:
+        def list_diagrams(self):
+            return ["DiagB", "DiagA"]
+
+        def get_work_products(self):
+            return []
+
+    class App:
+        def __init__(self):
+            self.safety_mgmt_toolbox = Toolbox()
+
+    class Master:
+        def __init__(self):
+            self.app = App()
+
+    class DummyWidget:
+        def __init__(self, *a, **k):
+            self.configured = {}
+
+        def grid(self, *a, **k):
+            pass
+
+        def pack(self, *a, **k):
+            pass
+
+        def insert(self, *a, **k):
+            pass
+
+        def configure(self, **k):
+            self.configured.update(k)
+
+    class DummyText(DummyWidget):
+        def get(self, *a, **k):
+            return ""
+
+    class DummyCombobox(DummyWidget):
+        def __init__(self, *a, textvariable=None, values=None, state=None, **k):
+            super().__init__(*a, **k)
+            self.textvariable = textvariable
+            self.state = state
+            self.init_values = values
+
+    combo_holder = []
+
+    def combo_stub(*a, **k):
+        cb = DummyCombobox(*a, **k)
+        combo_holder.append(cb)
+        return cb
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self._value = value
+
+        def get(self):
+            return self._value
+
+        def set(self, v):
+            self._value = v
+
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.__init__", lambda self, master=None: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.title", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.geometry", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.columnconfigure", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.rowconfigure", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.transient", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.grab_set", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Toplevel.wait_window", lambda self, *a, **k: None)
+    monkeypatch.setattr("gui.gsn_config_window.tk.Label", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.gsn_config_window.tk.Entry", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.gsn_config_window.tk.Text", lambda *a, **k: DummyText())
+    monkeypatch.setattr("gui.gsn_config_window.ttk.Button", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.gsn_config_window.ttk.Frame", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.gsn_config_window.ttk.Combobox", combo_stub)
+    monkeypatch.setattr("gui.gsn_config_window.tk.StringVar", lambda value="": DummyVar(value))
+
+    cfg = GSNElementConfig(Master(), node, diag)
+
+    wp_cb = combo_holder[0]
+    assert wp_cb.configured["values"] == ["DiagA", "DiagB"]
+    assert cfg.work_var.get() == "DiagA"
+
