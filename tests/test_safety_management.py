@@ -52,12 +52,13 @@ def test_lifecycle_and_workflow_storage():
 class DummyCanvas:
     def __init__(self):
         self.text_calls = []
+        self.rect_calls = []
 
     def create_text(self, x, y, **kw):
         self.text_calls.append((x, y, kw))
 
     def create_rectangle(self, *args, **kwargs):
-        pass
+        self.rect_calls.append((args, kwargs))
 
     def create_line(self, *args, **kwargs):
         pass
@@ -929,4 +930,74 @@ def test_folder_double_click_opens_safety_management_explorer():
     app.on_analysis_tree_double_click(None)
 
     assert called["explorer"]
+
+
+def test_add_work_product_uses_half_width(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = [
+        SysMLObject(
+            2,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Hazard & Threat Analysis"},
+        )
+    ]
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = types.SimpleNamespace(enable_work_product=lambda name: None)
+
+    class FakeDialog:
+        def __init__(self, *args, **kwargs):
+            self.selection = "HAZOP"
+
+    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+
+    win.add_work_product()
+
+    wp = [o for o in win.objects if o.obj_type == "Work Product"][0]
+    assert wp.width == 60.0
+
+
+def test_work_product_color_and_text_wrapping():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        width=60.0,
+        height=80.0,
+        properties={"name": "Architecture Diagram"},
+    )
+    win.draw_object(obj)
+    _, rect_kwargs = win.canvas.rect_calls[0]
+    assert rect_kwargs["fill"] == "lightblue"
+    assert win.canvas.text_calls[0][2]["width"] == 60.0
+
+    win.canvas.rect_calls.clear()
+    win.canvas.text_calls.clear()
+    obj.properties["name"] = "HAZOP"
+    win.draw_object(obj)
+    _, rect_kwargs = win.canvas.rect_calls[0]
+    assert rect_kwargs["fill"] == "lightgreen"
 
