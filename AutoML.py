@@ -1954,6 +1954,10 @@ class FaultTreeApp:
         self.style.configure(
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
+        # icons used across tree views
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        self.gsn_module_icon = self.pkg_icon
+        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
         # small icons for diagram types shown in the explorer
         # an icon for packages is also required when building the
         # architecture tree; previously this attribute was missing which
@@ -9358,7 +9362,7 @@ class FaultTreeApp:
             )
             for idx, diag in enumerate(self.management_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                icon = self.diagram_icons.get(diag.diag_type)
+                icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                 tree.insert(
                     gov_root,
                     "end",
@@ -9396,6 +9400,7 @@ class FaultTreeApp:
                     text=module.name,
                     open=True,
                     tags=("gsnmod", mid),
+                    image=getattr(self, "gsn_module_icon", None),
                 )
                 self.gsn_module_map[mid] = module
                 for sub in sorted(module.modules, key=lambda m: m.name):
@@ -9411,6 +9416,7 @@ class FaultTreeApp:
                     "end",
                     text=diag.root.user_name or diag.diag_id,
                     tags=("gsn", diag.diag_id),
+                    image=getattr(self, "gsn_diagram_icon", None),
                 )
 
             for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
@@ -9463,7 +9469,7 @@ class FaultTreeApp:
                         text=pkg.name or pkg_id,
                         open=True,
                         tags=("pkg", pkg_id),
-                        image=self.pkg_icon,
+                        image=getattr(self, "pkg_icon", None),
                     )
                 # add subpackages
                 sub_pkgs = sorted(
@@ -9478,7 +9484,7 @@ class FaultTreeApp:
                     key=lambda d: d.name or d.diag_id,
                 )
                 for diag in diags:
-                    icon = self.diagram_icons.get(diag.diag_type)
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                     tree.insert(
                         node,
                         "end",
@@ -9492,7 +9498,7 @@ class FaultTreeApp:
                 add_pkg(root_pkg.elem_id, arch_root)
             else:
                 for diag in self.arch_diagrams:
-                    icon = self.diagram_icons.get(diag.diag_type)
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                     tree.insert(
                         arch_root,
                         "end",
