@@ -1142,13 +1142,15 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=w - 2 * padding,
             tags=(obj_id,),
         )
-        label_font = self._scaled_font(scale * 0.3)
+        label_font = tkFont.Font(font=font_obj)
+        label_font.configure(weight="bold")
+        offset = padding
         canvas.create_text(
-            right - padding,
-            bottom - padding,
+            right + offset,
+            bottom + offset,
             text="A",
             font=label_font,
-            anchor="se",
+            anchor="nw",
             tags=(obj_id,),
         )
 
@@ -1194,13 +1196,15 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=w - 2 * padding,
             tags=(obj_id,),
         )
-        label_font = self._scaled_font(scale * 0.3)
+        label_font = tkFont.Font(font=font_obj)
+        label_font.configure(weight="bold")
+        offset = padding
         canvas.create_text(
-            right - padding,
-            bottom - padding,
+            right + offset,
+            bottom + offset,
             text="J",
             font=label_font,
-            anchor="se",
+            anchor="nw",
             tags=(obj_id,),
         )
 
