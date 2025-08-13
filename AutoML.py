@@ -12680,6 +12680,7 @@ class FaultTreeApp:
         for iid in list(tree.get_children("")):
             tree.delete(iid)
         self._spi_lookup = {}
+
         for sg in getattr(self, "top_events", []):
             v_target = getattr(sg, "validation_target", "")
             prob = getattr(sg, "probability", "")
