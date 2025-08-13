@@ -1661,47 +1661,82 @@ def test_disable_requirement_work_product_keeps_editor():
     assert "Requirements Editor" not in app.tool_actions
 
 
-def test_tool_double_click_uses_global_enablement():
+def test_focus_bpmn_diagram_sets_phase_and_hides_functions():
+    SysMLRepository._instance = None
     toolbox = SafetyManagementToolbox()
-    toolbox.add_work_product("Gov2", "Requirement Specification", "r")
+    d1 = toolbox.create_diagram("Gov1")
+    d2 = toolbox.create_diagram("Gov2")
+    toolbox.modules = [
+        GovernanceModule("Phase1", diagrams=["Gov1"]),
+        GovernanceModule("Phase2", diagrams=["Gov2"]),
+    ]
 
-    class DummyListbox:
+    class DummyNotebook:
+        def __init__(self, app):
+            self.app = app
+            self._tabs = []
+            self._selected = None
+
+        def tabs(self):
+            return list(self._tabs)
+
+        def add(self, tab, text=""):
+            self._tabs.append(tab)
+
+        def select(self, tab=None):
+            if tab is None:
+                return self._selected
+            self._selected = tab
+            self.app._on_tab_change(types.SimpleNamespace(widget=self))
+
+        def nametowidget(self, widget):
+            return widget
+
+    class DummyTab:
+        def winfo_exists(self):
+            return True
+
+        def winfo_children(self):
+            return []
+
+    def _new_tab(self, _title):
+        tab = DummyTab()
+        self.doc_nb.add(tab, text=_title)
+        return tab
+
+    def _fmt(self, diag):
+        return diag.name or diag.diag_id
+
+    class DummyVar:
         def __init__(self):
-            self.items: list[str] = []
+            self.value = ""
 
-        def insert(self, _index, item):
-            self.items.append(item)
+        def set(self, v):
+            self.value = v
 
-        def curselection(self):
-            return [0] if self.items else []
-
-        def get(self, idx):
-            return self.items[idx]
-
-    lb = DummyListbox()
     app = FaultTreeApp.__new__(FaultTreeApp)
-    app.tool_listboxes = {"System Design (Item Definition)": lb}
-    app.tool_categories = {"System Design (Item Definition)": []}
-    app.tool_actions = {}
-    app.enabled_work_products = set()
-    app.enable_process_area = lambda area: None
-    app.work_product_menus = {}
-    called = {"flag": False}
-    app.manage_architecture = lambda: called.__setitem__("flag", True)
-    app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
-    }
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
-    )
-    app.on_tool_list_double_click = FaultTreeApp.on_tool_list_double_click.__get__(
-        app, FaultTreeApp
-    )
+    app.diagram_tabs = {}
+    app.doc_nb = DummyNotebook(app)
+    app._new_tab = types.MethodType(_new_tab, app)
+    app._format_diag_title = types.MethodType(_fmt, app)
+    app.refresh_all = types.MethodType(lambda self: None, app)
+    app.lifecycle_var = DummyVar()
     app.safety_mgmt_toolbox = toolbox
+    changes: list[str] = []
+    toolbox.on_change = lambda: changes.append("x")
+    AutoML.BPMNDiagramWindow = lambda *args, **kwargs: None
 
-    app.enable_work_product("Architecture Diagram")
+    FaultTreeApp.open_arch_window(app, d1)
+    app.doc_nb.select(app.diagram_tabs[d1])
+    assert toolbox.active_module == "Phase1"
+    assert app.lifecycle_var.value == "Phase1"
 
-    event = types.SimpleNamespace(widget=lb)
-    app.on_tool_list_double_click(event)
+    FaultTreeApp.open_arch_window(app, d2)
+    app.doc_nb.select(app.diagram_tabs[d2])
+    assert toolbox.active_module == "Phase2"
+    assert app.lifecycle_var.value == "Phase2"
 
-    assert called["flag"] is True
+    app.doc_nb.select(app.diagram_tabs[d1])
+    assert toolbox.active_module == "Phase1"
+    assert app.lifecycle_var.value == "Phase1"
+    assert len(changes) == 3

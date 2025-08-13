@@ -16450,12 +16450,35 @@ class FaultTreeApp:
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
         tab_id = event.widget.select()
-        tab = event.widget.nametowidget(tab_id)
+        tab = (
+            event.widget.nametowidget(tab_id)
+            if hasattr(event.widget, "nametowidget")
+            else tab_id
+        )
         if tab is getattr(self, "_safety_case_tab", None):
             self.refresh_safety_case_table()
         for child in tab.winfo_children():
             if hasattr(child, "refresh_from_repository"):
                 child.refresh_from_repository()
+
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox and getattr(self, "diagram_tabs", None):
+            for diag_id, widget in self.diagram_tabs.items():
+                if widget == tab:
+                    repo = SysMLRepository.get_instance()
+                    diag = repo.diagrams.get(diag_id)
+                    if diag and diag.diag_type == "BPMN Diagram":
+                        toolbox.list_diagrams()
+                        name = next(
+                            (n for n, did in toolbox.diagrams.items() if did == diag_id),
+                            diag.name,
+                        )
+                        module = toolbox.module_for_diagram(name)
+                        if module != getattr(toolbox, "active_module", None):
+                            toolbox.set_active_module(module)
+                            if hasattr(self, "lifecycle_var") and hasattr(self.lifecycle_var, "set"):
+                                self.lifecycle_var.set(module or "")
+                    break
 
     def _select_prev_tab(self) -> None:
         """Select the tab to the left of the current tab."""

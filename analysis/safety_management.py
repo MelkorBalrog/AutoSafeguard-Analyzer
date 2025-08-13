@@ -255,28 +255,39 @@ class SafetyManagementToolbox:
         _collect(mod)
         return names
 
-    def module_for_diagram(self, name: str) -> Optional[str]:
-        """Return the top-level module name containing diagram ``name``.
+    # ------------------------------------------------------------------
+    def diagrams_for_module(self, name: str) -> set[str]:
+        """Return all diagram names contained within module *name*.
 
-        Diagrams may be organised inside nested :class:`GovernanceModule`
-        objects. This helper walks the module hierarchy and returns the name
-        of the outermost module that lists *name* among its diagrams. ``None``
-        is returned when the diagram is not registered in any module."""
+        This is a compatibility wrapper around :meth:`diagrams_in_module` used
+        by some GUI components."""
+        return self.diagrams_in_module(name)
 
-        def _search(mod: GovernanceModule, top: str) -> Optional[str]:
-            if name in mod.diagrams:
-                return top
-            for sub in mod.modules:
-                found = _search(sub, top)
+    # ------------------------------------------------------------------
+    def module_for_diagram(self, diagram: str) -> Optional[str]:
+        """Return the module name directly containing ``diagram``.
+
+        Parameters
+        ----------
+        diagram:
+            Human readable name of the diagram to locate.
+
+        Returns
+        -------
+        Optional[str]
+            The name of the module containing the diagram or ``None`` when the
+            diagram is not assigned to any module."""
+
+        def _search(mods: List[GovernanceModule]) -> Optional[str]:
+            for mod in mods:
+                if diagram in mod.diagrams:
+                    return mod.name
+                found = _search(mod.modules)
                 if found:
                     return found
             return None
 
-        for mod in self.modules:
-            result = _search(mod, mod.name)
-            if result:
-                return result
-        return None
+        return _search(self.modules)
 
     def list_modules(self) -> List[str]:
         """Return names of all governance modules including submodules."""
