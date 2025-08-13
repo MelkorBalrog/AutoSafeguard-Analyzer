@@ -8832,6 +8832,18 @@ class FaultTreeApp:
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
         self.update_views()
+        for name in (
+            "_hazop_window",
+            "_risk_window",
+            "_stpa_window",
+            "_threat_window",
+            "_fi2tc_window",
+            "_tc2fi_window",
+        ):
+            win = getattr(self, name, None)
+            if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
+                win.refresh_docs()
+
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):

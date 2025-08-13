@@ -1525,12 +1525,29 @@ class FI2TCWindow(tk.Frame):
         messagebox.showinfo("Export", "FI2TC exported")
 
     def refresh_docs(self):
-        names = [d.name for d in self.app.fi2tc_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.fi2tc_docs
+            if not toolbox or toolbox.document_visible("FI2TC", d.name)
+        ]
         self.doc_cb.configure(values=names)
-        if self.app.active_fi2tc:
+        if (
+            self.app.active_fi2tc
+            and self.app.active_fi2tc.name in names
+        ):
             self.doc_var.set(self.app.active_fi2tc.name)
         elif names:
             self.doc_var.set(names[0])
+            for d in self.app.fi2tc_docs:
+                if d.name == names[0]:
+                    self.app.active_fi2tc = d
+                    self.app.fi2tc_entries = d.entries
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_fi2tc = None
+            self.app.fi2tc_entries = []
 
     def select_doc(self, *_):
         name = self.doc_var.get()
@@ -1672,12 +1689,29 @@ class HazopWindow(tk.Frame):
             self.pack(fill=tk.BOTH, expand=True)
 
     def refresh_docs(self):
-        names = [d.name for d in self.app.hazop_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.hazop_docs
+            if not toolbox or toolbox.document_visible("HAZOP", d.name)
+        ]
         self.doc_cb["values"] = names
-        if self.app.active_hazop:
+        if (
+            self.app.active_hazop
+            and self.app.active_hazop.name in names
+        ):
             self.doc_var.set(self.app.active_hazop.name)
         elif names:
             self.doc_var.set(names[0])
+            for d in self.app.hazop_docs:
+                if d.name == names[0]:
+                    self.app.active_hazop = d
+                    self.app.hazop_entries = d.entries
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_hazop = None
+            self.app.hazop_entries = []
 
     def select_doc(self, *_):
         name = self.doc_var.get()
@@ -2156,10 +2190,18 @@ class RiskAssessmentWindow(tk.Frame):
 
     def refresh_docs(self):
         self.app.update_hara_statuses()
-        names = [d.name for d in self.app.hara_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.hara_docs
+            if not toolbox or toolbox.document_visible("Risk Assessment", d.name)
+        ]
         # Explicitly configure the combobox values to ensure Tkinter updates
         self.doc_cb.configure(values=names)
-        if self.app.active_hara:
+        if (
+            self.app.active_hara
+            and self.app.active_hara.name in names
+        ):
             self.doc_var.set(self.app.active_hara.name)
             hazops = ", ".join(getattr(self.app.active_hara, "hazops", []))
             self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
@@ -2173,16 +2215,26 @@ class RiskAssessmentWindow(tk.Frame):
 
         elif names:
             self.doc_var.set(names[0])
-            doc = self.app.hara_docs[0]
-            hazops = ", ".join(getattr(doc, "hazops", []))
-            self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
-            stpa = getattr(doc, "stpa", "")
-            self.stpa_lbl.config(text=f"STPA: {stpa}" if stpa else "STPA: none")
-            threat = getattr(doc, "threat", "")
-            self.threat_lbl.config(text=f"Threat: {threat}" if threat else "Threat: none")
-            self.app.active_hara = doc
-            self.app.hara_entries = doc.entries
-            self.status_lbl.config(text=f"Status: {getattr(doc, 'status', 'draft')}")
+            for d in self.app.hara_docs:
+                if d.name == names[0]:
+                    self.app.active_hara = d
+                    self.app.hara_entries = d.entries
+                    hazops = ", ".join(getattr(d, "hazops", []))
+                    self.hazop_lbl.config(text=f"HAZOPs: {hazops}")
+                    stpa = getattr(d, "stpa", "")
+                    self.stpa_lbl.config(text=f"STPA: {stpa}" if stpa else "STPA: none")
+                    threat = getattr(d, "threat", "")
+                    self.threat_lbl.config(text=f"Threat: {threat}" if threat else "Threat: none")
+                    self.status_lbl.config(text=f"Status: {getattr(d, 'status', 'draft')}")
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_hara = None
+            self.app.hara_entries = []
+            self.hazop_lbl.config(text="")
+            self.stpa_lbl.config(text="")
+            self.threat_lbl.config(text="")
+            self.status_lbl.config(text="")
 
     def select_doc(self, *_):
         name = self.doc_var.get()
@@ -3509,12 +3561,29 @@ class TC2FIWindow(tk.Frame):
         messagebox.showinfo("Export", "TC2FI exported")
 
     def refresh_docs(self):
-        names = [d.name for d in self.app.tc2fi_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.tc2fi_docs
+            if not toolbox or toolbox.document_visible("TC2FI", d.name)
+        ]
         self.doc_cb.configure(values=names)
-        if self.app.active_tc2fi:
+        if (
+            self.app.active_tc2fi
+            and self.app.active_tc2fi.name in names
+        ):
             self.doc_var.set(self.app.active_tc2fi.name)
         elif names:
             self.doc_var.set(names[0])
+            for d in self.app.tc2fi_docs:
+                if d.name == names[0]:
+                    self.app.active_tc2fi = d
+                    self.app.tc2fi_entries = d.entries
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_tc2fi = None
+            self.app.tc2fi_entries = []
 
     def select_doc(self, *_):
         name = self.doc_var.get()

@@ -97,19 +97,35 @@ class StpaWindow(tk.Frame):
     # Document management
     # ------------------------------------------------------------------
     def refresh_docs(self):
-        names = [d.name for d in self.app.stpa_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.stpa_docs
+            if not toolbox or toolbox.document_visible("STPA", d.name)
+        ]
         self.doc_cb.configure(values=names)
         repo = SysMLRepository.get_instance()
-        if self.app.active_stpa:
+        if (
+            self.app.active_stpa
+            and self.app.active_stpa.name in names
+        ):
             self.doc_var.set(self.app.active_stpa.name)
             diag = repo.diagrams.get(self.app.active_stpa.diagram)
             self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
         elif names:
             self.doc_var.set(names[0])
-            self.app.active_stpa = self.app.stpa_docs[0]
-            self.app.stpa_entries = self.app.active_stpa.entries
-            diag = repo.diagrams.get(self.app.active_stpa.diagram)
-            self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+            for d in self.app.stpa_docs:
+                if d.name == names[0]:
+                    self.app.active_stpa = d
+                    self.app.stpa_entries = d.entries
+                    diag = repo.diagrams.get(d.diagram)
+                    self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_stpa = None
+            self.app.stpa_entries = []
+            self.diag_lbl.config(text="")
 
     def select_doc(self, *_):
         name = self.doc_var.get()
