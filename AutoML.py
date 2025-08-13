@@ -2380,11 +2380,21 @@ class FaultTreeApp:
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
         self.pmhf_label.pack(side=tk.BOTTOM, fill=tk.X, pady=2)
 
-        # Notebook for diagrams and analyses
-        self.doc_nb = ClosableNotebook(self.main_pane)
+        # Notebook for diagrams and analyses with navigation buttons
+        self.doc_frame = ttk.Frame(self.main_pane)
+        self.doc_nb = ClosableNotebook(self.doc_frame)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.doc_nb.bind("<<NotebookTabChanged>>", self._on_tab_change)
-        self.main_pane.add(self.doc_nb, stretch="always")
+        self._tab_left_btn = ttk.Button(
+            self.doc_frame, text="<", width=2, command=self._select_prev_tab
+        )
+        self._tab_right_btn = ttk.Button(
+            self.doc_frame, text=">", width=2, command=self._select_next_tab
+        )
+        self._tab_left_btn.pack(side=tk.LEFT, fill=tk.Y)
+        self._tab_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
+        self.doc_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.main_pane.add(self.doc_frame, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
         self.doc_nb.bind("<Motion>", self._on_doc_tab_motion)
@@ -15829,6 +15839,32 @@ class FaultTreeApp:
         for child in tab.winfo_children():
             if hasattr(child, "refresh_from_repository"):
                 child.refresh_from_repository()
+
+    def _select_prev_tab(self) -> None:
+        """Select the tab to the left of the current tab."""
+        tabs = self.doc_nb.tabs()
+        if not tabs:
+            return
+        current = self.doc_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index > 0:
+            self.doc_nb.select(tabs[index - 1])
+
+    def _select_next_tab(self) -> None:
+        """Select the tab to the right of the current tab."""
+        tabs = self.doc_nb.tabs()
+        if not tabs:
+            return
+        current = self.doc_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index < len(tabs) - 1:
+            self.doc_nb.select(tabs[index + 1])
 
     def _new_tab(self, title: str) -> ttk.Frame:
         """Create and select a new tab in the document notebook."""
