@@ -8804,19 +8804,33 @@ class FaultTreeApp:
         else:
             phase_enabled = global_enabled
         enabled = global_enabled & phase_enabled
+        mapping = getattr(self, "tool_to_work_product", {})
+        categories = getattr(self, "tool_categories", {})
         for lb in self.tool_listboxes.values():
-            for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
-                if isinstance(analysis_names, str):
-                    analysis_names = {analysis_names}
-                if not analysis_names:
-                    in_enabled = tool_name in enabled
-                else:
-                    in_enabled = any(n in enabled for n in analysis_names)
-                if not in_enabled:
-                    lb.itemconfig(i, foreground="gray")
-                else:
-                    lb.itemconfig(i, foreground="black")
+            lb.delete(0, tk.END)
+        for tool_name in sorted(getattr(self, "tool_actions", {}).keys()):
+            analysis_names = mapping.get(tool_name, set())
+            if isinstance(analysis_names, str):
+                analysis_names = {analysis_names}
+            if not analysis_names:
+                in_enabled = True
+            else:
+                in_enabled = any(n in enabled for n in analysis_names)
+            if not in_enabled:
+                continue
+            if analysis_names:
+                area = None
+                for name in analysis_names:
+                    info = self.WORK_PRODUCT_INFO.get(name)
+                    if info:
+                        area = info[0]
+                        break
+            else:
+                area = next((cat for cat, names in categories.items() if tool_name in names), None)
+            if area:
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    lb.insert(tk.END, tool_name)
         for wp, menus in getattr(self, "work_product_menus", {}).items():
             state = tk.NORMAL if wp in enabled else tk.DISABLED
             for menu, idx in menus:

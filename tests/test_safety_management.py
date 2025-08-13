@@ -27,6 +27,7 @@ from analysis.safety_management import (
 )
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
@@ -798,6 +799,10 @@ def test_work_products_filtered_by_phase_in_tree():
     app.fmeas = []
     app.fmedas = []
     app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.tool_actions = {}
+    app.enabled_work_products = {"HAZOP", "STPA"}
+    app.work_product_menus = {}
     app.analysis_tree = DummyTree()
     app.safety_mgmt_toolbox = toolbox
 
@@ -868,9 +873,77 @@ def test_governance_enables_tools_per_phase():
         def size(self):
             return len(self.items)
 
-        def delete(self, index):
-            del self.items[index]
-            del self.colors[index]
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
 
     class DummyMenu:
         def __init__(self):
@@ -966,6 +1039,21 @@ def test_governance_without_declarations_keeps_tools_enabled():
 
         def itemconfig(self, index, foreground="black"):
             self.colors[index] = foreground
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, start, end=None):
+            if end is None or end == start:
+                if start in (tk.END, "end"):
+                    start = len(self.items) - 1
+                del self.items[start]
+                del self.colors[start]
+            else:
+                if end in (tk.END, "end"):
+                    end = len(self.items) - 1
+                del self.items[start : end + 1]
+                del self.colors[start : end + 1]
 
     class DummyMenu:
         def __init__(self):
@@ -1599,3 +1687,48 @@ def test_disable_requirement_work_product_keeps_editor():
     assert "Requirements Editor" in app.tool_actions
     FaultTreeApp.disable_work_product(app, wp2)
     assert "Requirements Editor" not in app.tool_actions
+
+
+def test_enabled_products_include_document_phases():
+    tb = SafetyManagementToolbox()
+    tb.set_active_module("Phase1")
+    tb.register_created_work_product("HAZOP", "HZ1")
+    tb.set_active_module("Phase2")
+    tb.register_created_work_product("STPA", "ST1")
+    tb.set_active_module("Phase1")
+    assert tb.enabled_products() == {"HAZOP"}
+    tb.set_active_module("Phase2")
+    assert tb.enabled_products() == {"STPA"}
+    tb.set_active_module(None)
+    assert tb.enabled_products() == {"HAZOP", "STPA"}
+
+
+def test_safety_management_window_select_phase_updates_app():
+    toolbox = SafetyManagementToolbox()
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    class DummyApp:
+        def __init__(self):
+            self.lifecycle_var = DummyVar("")
+            self.called = False
+
+        def on_lifecycle_selected(self, _event=None):
+            self.called = True
+
+    smw = SafetyManagementWindow.__new__(SafetyManagementWindow)
+    smw.app = DummyApp()
+    smw.toolbox = toolbox
+    smw.phase_var = DummyVar("Phase1")
+    smw.refresh_diagrams = lambda: None
+    smw.select_phase()
+    assert smw.app.lifecycle_var.get() == "Phase1"
+    assert smw.app.called

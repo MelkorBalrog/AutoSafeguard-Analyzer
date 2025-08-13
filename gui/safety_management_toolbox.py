@@ -77,9 +77,14 @@ class SafetyManagementWindow(tk.Frame):
     def select_phase(self, *_):
         phase = self.phase_var.get()
         if phase == "All" or not phase:
+            phase = ""
             self.toolbox.set_active_module(None)
         else:
             self.toolbox.set_active_module(phase)
+        if hasattr(self.app, "lifecycle_var"):
+            self.app.lifecycle_var.set(phase)
+            if hasattr(self.app, "on_lifecycle_selected"):
+                self.app.on_lifecycle_selected()
         self.refresh_diagrams()
 
     def new_diagram(self):
