@@ -359,13 +359,15 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text,
                            font=font_obj,
                            anchor="center",
-                           width=top_box_width)
+                           width=top_box_width,
+                           tags=(obj_id,))
 
         # Draw the bottom label box
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
@@ -390,13 +392,15 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text,
                            font=font_obj,
                            anchor="center",
-                           width=bottom_box_width)
+                           width=bottom_box_width,
+                           tags=(obj_id,))
 
     def draw_rotated_or_gate_shape(
         self,
@@ -466,11 +470,13 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_y + top_box_height / 2,
                            text=top_text, font=font_obj, anchor="center",
-                           width=top_box_width)
+                           width=top_box_width,
+                           tags=(obj_id,))
 
         # Draw the bottom label box
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
@@ -495,11 +501,13 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_y + bottom_box_height / 2,
                            text=bottom_text, font=font_obj,
-                           anchor="center", width=bottom_box_width)
+                           anchor="center", width=bottom_box_width,
+                           tags=(obj_id,))
 
     def draw_rotated_and_gate_clone_shape(
         self,
@@ -654,11 +662,13 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
-                           font=font_obj, anchor="center", width=top_box_width)
+                           font=font_obj, anchor="center", width=top_box_width,
+                           tags=(obj_id,))
         
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
         bottom_box_width = b_width + 2 * padding
@@ -681,11 +691,13 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
-                           font=font_obj, anchor="center", width=bottom_box_width)
+                           font=font_obj, anchor="center", width=bottom_box_width,
+                           tags=(obj_id,))
                            
     def draw_circle_event_shape(
         self,
@@ -718,6 +730,7 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         t_width, t_height = self.get_text_size(top_text, font_obj)
         padding = 6
@@ -741,12 +754,14 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(top_box_x + top_box_width / 2,
                            top_box_y + top_box_height / 2,
                            text=top_text,
                            font=font_obj, anchor="center",
-                           width=top_box_width)
+                           width=top_box_width,
+                           tags=(obj_id,))
         b_width, b_height = self.get_text_size(bottom_text, font_obj)
         bottom_box_width = b_width + 2 * padding
         bottom_box_height = b_height + 2 * padding
@@ -768,12 +783,14 @@ class FTADrawingHelper:
             fill="",
             outline=outline_color,
             width=line_width,
+            tags=(obj_id,),
         )
         canvas.create_text(bottom_box_x + bottom_box_width / 2,
                            bottom_box_y + bottom_box_height / 2,
                            text=bottom_text,
                            font=font_obj, anchor="center",
-                           width=bottom_box_width)
+                           width=bottom_box_width,
+                           tags=(obj_id,))
                            
     def draw_triangle_clone_shape(
         self,
@@ -908,6 +925,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
         )
 
     def draw_solved_by_connection(
@@ -1036,6 +1054,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
         )
 
     def draw_solution_shape(
@@ -1076,6 +1095,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=scale - 8,
+            tags=(obj_id,),
         )
 
     def draw_assumption_shape(
@@ -1120,6 +1140,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
         )
 
     def draw_justification_shape(
@@ -1172,6 +1193,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
         )
 
     def draw_context_shape(
@@ -1215,6 +1237,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
         )
 
     def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
