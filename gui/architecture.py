@@ -2457,6 +2457,7 @@ class DiagramConnection:
     guard: List[str] = field(default_factory=list)
     guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
+    stereotype: str = ""
     multiplicity: str = ""
     stereotype: str = ""
 
@@ -3717,11 +3718,6 @@ class SysMLDiagramWindow(tk.Frame):
                                     conn.arrow = "both"
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
-                        stereo = (
-                            "control action"
-                            if self.current_tool == "Control Action"
-                            else "feedback" if self.current_tool == "Feedback" else None
-                        )
                         rel = self.repo.create_relationship(
                             self.current_tool,
                             self.start.element_id,
@@ -8378,6 +8374,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
                     dst_id,
                     rel.rel_type,
                     arrow="forward" if rel.rel_type == "Generalization" else "none",
+                    stereotype=rel.stereotype or "",
                 )
                 self.connections.append(conn)
                 diag.connections.append(conn.__dict__)

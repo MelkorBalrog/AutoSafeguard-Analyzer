@@ -1,7 +1,6 @@
 import types
-import types
 import unittest
-from gui.architecture import SysMLDiagramWindow, SysMLObject
+from gui.architecture import SysMLDiagramWindow, SysMLObject, format_control_flow_label
 from sysml.sysml_repository import SysMLRepository
 
 
@@ -63,6 +62,11 @@ class ControlFlowStereotypeTests(unittest.TestCase):
         event2 = types.SimpleNamespace(x=0, y=100, state=0)
         SysMLDiagramWindow.on_left_press(win, event2)
         self.assertEqual(repo.relationships[0].stereotype, "control action")
+        self.assertEqual(win.connections[0].stereotype, "control action")
+        self.assertEqual(
+            format_control_flow_label(win.connections[0], repo, diag.diag_type),
+            "<<control action>>",
+        )
 
     def test_feedback_relationship_stereotype(self):
         repo = self.repo
@@ -80,6 +84,11 @@ class ControlFlowStereotypeTests(unittest.TestCase):
         event2 = types.SimpleNamespace(x=0, y=100, state=0)
         SysMLDiagramWindow.on_left_press(win, event2)
         self.assertEqual(repo.relationships[0].stereotype, "feedback")
+        self.assertEqual(win.connections[0].stereotype, "feedback")
+        self.assertEqual(
+            format_control_flow_label(win.connections[0], repo, diag.diag_type),
+            "<<feedback>>",
+        )
 
 
 if __name__ == "__main__":
