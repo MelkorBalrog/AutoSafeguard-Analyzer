@@ -70,9 +70,8 @@ class GSNElementConfig(tk.Toplevel):
         self.node.description = self.desc_text.get("1.0", tk.END).strip()
         if self.node.node_type == "Solution":
             self.node.work_product = self.work_var.get()
-            self.node.evidence_link = self.link_var.get()
-            # search for existing solution with same work product
-            self.node.spi_target = self.spi_var.get()
+            self.node.evidence_link = self.link_var.get() if hasattr(self, "link_var") else ""
+            self.node.spi_target = self.spi_var.get() if hasattr(self, "spi_var") else ""
             # search for existing solution with same work product and SPI target
             for n in self.diagram.nodes:
                 if (
