@@ -715,6 +715,36 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     assert "Diag" in toolbox.diagrams
 
 
+def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def selection(self):
+            return ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    from gui import messagebox as gui_messagebox
+    called = {"count": 0}
+
+    def fake_error(*args, **kwargs):
+        called["count"] += 1
+
+    monkeypatch.setattr(gui_messagebox, "showerror", fake_error)
+    explorer.new_diagram()
+    assert not toolbox.diagrams
+    assert called["count"] == 1
+
+
 def test_tools_include_safety_management_explorer():
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.manage_safety_management = lambda: None
