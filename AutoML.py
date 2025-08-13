@@ -16922,6 +16922,9 @@ class FaultTreeApp:
                 "fmeda_names": getattr(r, 'fmeda_names', []),
                 "hazop_names": getattr(r, 'hazop_names', []),
                 "hara_names": getattr(r, 'hara_names', []),
+                "stpa_names": getattr(r, 'stpa_names', []),
+                "fi2tc_names": getattr(r, 'fi2tc_names', []),
+                "tc2fi_names": getattr(r, 'tc2fi_names', []),
             })
         current_name = self.review_data.name if self.review_data else None
         repo = SysMLRepository.get_instance()
@@ -17492,6 +17495,9 @@ class FaultTreeApp:
                         fmeda_names=rd.get("fmeda_names", []),
                         hazop_names=rd.get("hazop_names", []),
                         hara_names=rd.get("hara_names", []),
+                        stpa_names=rd.get("stpa_names", []),
+                        fi2tc_names=rd.get("fi2tc_names", []),
+                        tc2fi_names=rd.get("tc2fi_names", []),
                     )
                 )
             current = data.get("current_review")
@@ -17524,6 +17530,9 @@ class FaultTreeApp:
                     fmeda_names=rd.get("fmeda_names", []),
                     hazop_names=rd.get("hazop_names", []),
                     hara_names=rd.get("hara_names", []),
+                    stpa_names=rd.get("stpa_names", []),
+                    fi2tc_names=rd.get("fi2tc_names", []),
+                    tc2fi_names=rd.get("tc2fi_names", []),
                 )
                 self.reviews = [review]
                 self.review_data = review
@@ -18393,14 +18402,33 @@ class FaultTreeApp:
                 messagebox.showerror("Review", "Name already exists")
                 return
             scope = ReviewScopeDialog(self.root, self)
-            fta_ids, fmea_names, fmeda_names, hazop_names, hara_names = (
-                scope.result if scope.result else ([], [], [], [], [])
+            (
+                fta_ids,
+                fmea_names,
+                fmeda_names,
+                hazop_names,
+                hara_names,
+                stpa_names,
+                fi2tc_names,
+                tc2fi_names,
+            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
+            review = ReviewData(
+                name=name,
+                description=description,
+                mode='peer',
+                moderators=moderators,
+                participants=parts,
+                comments=[],
+                fta_ids=fta_ids,
+                fmea_names=fmea_names,
+                fmeda_names=fmeda_names,
+                hazop_names=hazop_names,
+                hara_names=hara_names,
+                stpa_names=stpa_names,
+                fi2tc_names=fi2tc_names,
+                tc2fi_names=tc2fi_names,
+                due_date=due_date,
             )
-            review = ReviewData(name=name, description=description, mode='peer', moderators=moderators,
-                               participants=parts, comments=[],
-                               fta_ids=fta_ids, fmea_names=fmea_names, fmeda_names=fmeda_names,
-                               hazop_names=hazop_names, hara_names=hara_names,
-                               due_date=due_date)
             self.reviews.append(review)
             self.review_data = review
             self.current_user = moderators[0].name if moderators else parts[0].name
@@ -18432,9 +18460,16 @@ class FaultTreeApp:
                 messagebox.showerror("Review", "Name already exists")
                 return
             scope = ReviewScopeDialog(self.root, self)
-            fta_ids, fmea_names, fmeda_names, hazop_names, hara_names = (
-                scope.result if scope.result else ([], [], [], [], [])
-            )
+            (
+                fta_ids,
+                fmea_names,
+                fmeda_names,
+                hazop_names,
+                hara_names,
+                stpa_names,
+                fi2tc_names,
+                tc2fi_names,
+            ) = scope.result if scope.result else ([], [], [], [], [], [], [], [])
 
             # Ensure each selected element has a completed peer review
             def peer_completed(pred):
@@ -18480,11 +18515,44 @@ class FaultTreeApp:
                         "Peer review must be reviewed before starting joint review",
                     )
                     return
-            review = ReviewData(name=name, description=description, mode='joint', moderators=moderators,
-                               participants=participants, comments=[],
-                               fta_ids=fta_ids, fmea_names=fmea_names, fmeda_names=fmeda_names,
-                               hazop_names=hazop_names, hara_names=hara_names,
-                               due_date=due_date)
+            for name_stpa in stpa_names:
+                if not peer_completed(lambda r: name_stpa in getattr(r, 'stpa_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_fi in fi2tc_names:
+                if not peer_completed(lambda r: name_fi in getattr(r, 'fi2tc_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            for name_tc in tc2fi_names:
+                if not peer_completed(lambda r: name_tc in getattr(r, 'tc2fi_names', [])):
+                    messagebox.showerror(
+                        "Review",
+                        "Peer review must be reviewed before starting joint review",
+                    )
+                    return
+            review = ReviewData(
+                name=name,
+                description=description,
+                mode='joint',
+                moderators=moderators,
+                participants=participants,
+                comments=[],
+                fta_ids=fta_ids,
+                fmea_names=fmea_names,
+                fmeda_names=fmeda_names,
+                hazop_names=hazop_names,
+                hara_names=hara_names,
+                stpa_names=stpa_names,
+                fi2tc_names=fi2tc_names,
+                tc2fi_names=tc2fi_names,
+                due_date=due_date,
+            )
             self.reviews.append(review)
             self.review_data = review
             self.current_user = moderators[0].name if moderators else participants[0].name
@@ -19028,6 +19096,11 @@ class FaultTreeApp:
                     fta_ids=rd.get("fta_ids", []),
                     fmea_names=rd.get("fmea_names", []),
                     fmeda_names=rd.get("fmeda_names", []),
+                    hazop_names=rd.get("hazop_names", []),
+                    hara_names=rd.get("hara_names", []),
+                    stpa_names=rd.get("stpa_names", []),
+                    fi2tc_names=rd.get("fi2tc_names", []),
+                    tc2fi_names=rd.get("tc2fi_names", []),
                     due_date=rd.get("due_date", ""),
                     closed=rd.get("closed", False),
                 )
