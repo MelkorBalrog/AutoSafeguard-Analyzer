@@ -7,6 +7,50 @@ from gsn import GSNNode, GSNDiagram, GSNModule
 from gui.gsn_explorer import GSNExplorer
 
 
+def test_gsn_explorer_has_root_item():
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[], gsn_diagrams=[])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    root_items = explorer.tree.get_children("")
+    assert len(root_items) == 1
+    root_id = root_items[0]
+    assert explorer.tree.items[root_id]["text"] == "GSN"
+    assert explorer.item_map[root_id][0] == "root"
+
+
 def test_gsn_explorer_populates_modules_and_diagrams():
     root = GSNNode("Root", "Goal")
     diag = GSNDiagram(root)
