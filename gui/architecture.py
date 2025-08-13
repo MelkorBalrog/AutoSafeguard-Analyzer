@@ -5498,24 +5498,31 @@ class SysMLDiagramWindow(tk.Frame):
                 "FMEDA",
             }
             if label in diagram_products:
-                color = "lightblue"
+                color = "#cfe2f3"
             elif label in analysis_products:
-                color = "lightgreen"
-            self.canvas.create_rectangle(
+                color = "#d5e8d4"
+            else:
+                color = "#ffffff"
+            self._create_round_rect(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
+                radius=8 * self.zoom,
                 outline=outline,
                 fill=color,
             )
             fold = 10 * self.zoom
-            self.canvas.create_line(
+            fold_color = "#fdfdfd"
+            self.canvas.create_polygon(
                 x + w - fold,
                 y - h,
                 x + w,
+                y - h,
+                x + w,
                 y - h + fold,
-                fill=outline,
+                fill=fold_color,
+                outline=outline,
             )
             self.canvas.create_line(
                 x + w - fold,
