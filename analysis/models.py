@@ -572,6 +572,8 @@ REQUIREMENT_TYPE_OPTIONS = [
     "cybersecurity",
     "production",
     "service",
+    "product",
+    "legal",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [
