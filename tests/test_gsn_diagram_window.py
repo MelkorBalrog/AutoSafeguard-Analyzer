@@ -196,3 +196,85 @@ def test_click_and_drag_uses_canvas_coordinates():
     drag = type("Evt", (), {"x": 60, "y": 60})
     win._on_drag(drag)
     assert node.x == 160 and node.y == 260
+
+
+def test_right_click_node_shows_menu(monkeypatch):
+    """Right-clicking a node should show edit and delete options."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    node = GSNNode("n", "Goal")
+    win.id_to_node = {node.unique_id: node}
+    win.id_to_relation = {}
+    win.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": lambda self, x: x,
+            "canvasy": lambda self, y: y,
+            "find_overlapping": lambda self, a, b, c, d: [1],
+            "gettags": lambda self, item: (node.unique_id,),
+        },
+    )()
+    captured = {}
+
+    class MenuStub:
+        def __init__(self, *a, **k):
+            captured["menu"] = self
+            self.items = []
+
+        def add_command(self, label, command):
+            self.items.append(label)
+
+        def tk_popup(self, x, y):
+            pass
+
+        def grab_release(self):
+            pass
+
+    monkeypatch.setattr(tk, "Menu", MenuStub)
+    win._edit_node = lambda n: None
+    win._delete_node = lambda n: None
+    event = type("Evt", (), {"x": 0, "y": 0, "x_root": 0, "y_root": 0})
+    GSNDiagramWindow._on_right_click(win, event)
+    assert captured["menu"].items == ["Edit", "Delete"]
+
+
+def test_right_click_connection_shows_menu(monkeypatch):
+    """Right-clicking a connection should show edit and delete options."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    parent = GSNNode("p", "Goal")
+    child = GSNNode("c", "Goal")
+    rel_id = win._rel_id(parent, child)
+    win.id_to_node = {}
+    win.id_to_relation = {rel_id: (parent, child)}
+    win.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": lambda self, x: x,
+            "canvasy": lambda self, y: y,
+            "find_overlapping": lambda self, a, b, c, d: [1],
+            "gettags": lambda self, item: (rel_id,),
+        },
+    )()
+    captured = {}
+
+    class MenuStub:
+        def __init__(self, *a, **k):
+            captured["menu"] = self
+            self.items = []
+
+        def add_command(self, label, command):
+            self.items.append(label)
+
+        def tk_popup(self, x, y):
+            pass
+
+        def grab_release(self):
+            pass
+
+    monkeypatch.setattr(tk, "Menu", MenuStub)
+    win._edit_connection = lambda p, c: None
+    win._delete_connection = lambda p, c: None
+    event = type("Evt", (), {"x": 0, "y": 0, "x_root": 0, "y_root": 0})
+    GSNDiagramWindow._on_right_click(win, event)
+    assert captured["menu"].items == ["Edit", "Delete"]

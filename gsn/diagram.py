@@ -72,7 +72,12 @@ class GSNDiagram:
         shapes: dict[str, dict] = {}
         for node in self._traverse():
             self._draw_node(canvas, node, zoom)
-            bbox = canvas.bbox(node.unique_id)
+            # ``canvas`` objects used in unit tests sometimes provide only a
+            # subset of the real :class:`tkinter.Canvas` API.  Accessing a
+            # missing ``bbox`` method would therefore raise an ``AttributeError``
+            # and break the drawing routine.  Use ``getattr`` so that stub
+            # canvases without ``bbox`` simply skip shape calculations.
+            bbox = getattr(canvas, "bbox", lambda *a, **k: None)(node.unique_id)
             if not bbox:
                 continue
             left, top, right, bottom = bbox
@@ -116,7 +121,10 @@ class GSNDiagram:
         # draw connectors; place lines behind nodes but arrowheads on top
         for parent in self._traverse():
             for child in parent.children:
-                rel_id = f"rel:{parent.unique_id}:{child.unique_id}"
+                # Use a stable tag for connections so tests can locate the
+                # created canvas items.  The ``parent->child`` syntax mirrors
+                # other diagram components and keeps tags human readable.
+                rel_id = f"{parent.unique_id}->{child.unique_id}"
                 p_pt = (parent.x * zoom, parent.y * zoom)
                 c_pt = (child.x * zoom, child.y * zoom)
                 p_shape = shapes.get(parent.unique_id)
@@ -133,8 +141,12 @@ class GSNDiagram:
                     self.drawing_helper.draw_solved_by_connection(
                         canvas, p_pt, c_pt, obj_id=rel_id
                     )
-                canvas.tag_lower(rel_id)
-                canvas.tag_raise(f"{rel_id}-arrow")
+                lower = getattr(canvas, "tag_lower", None)
+                if lower:
+                    lower(rel_id)
+                raise_ = getattr(canvas, "tag_raise", None)
+                if raise_:
+                    raise_(f"{rel_id}-arrow")
 
     # ------------------------------------------------------------------
     def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
