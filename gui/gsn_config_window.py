@@ -67,12 +67,19 @@ class GSNElementConfig(tk.Toplevel):
             work_products = _collect_work_products(diagram)
             if self.work_var.get() and self.work_var.get() not in work_products:
                 work_products.append(self.work_var.get())
-            ttk.Combobox(
+            wp_cb = ttk.Combobox(
                 self,
                 textvariable=self.work_var,
-                values=work_products,
                 state="readonly",
-            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            )
+            wp_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            # Explicitly configure the combobox values after creation so Tk
+            # updates the drop-down list reliably across platforms.  Passing
+            # ``values`` to the constructor can result in an empty list on
+            # some systems.
+            wp_cb.configure(values=work_products)
+            if not self.work_var.get() and work_products:
+                self.work_var.set(work_products[0])
             row += 1
             tk.Label(self, text="Evidence Link:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
@@ -87,12 +94,15 @@ class GSNElementConfig(tk.Toplevel):
             spi_targets = _collect_spi_targets(diagram)
             if self.spi_var.get() and self.spi_var.get() not in spi_targets:
                 spi_targets.append(self.spi_var.get())
-            ttk.Combobox(
+            spi_cb = ttk.Combobox(
                 self,
                 textvariable=self.spi_var,
-                values=spi_targets,
                 state="readonly",
-            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            )
+            spi_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            spi_cb.configure(values=spi_targets)
+            if not self.spi_var.get() and spi_targets:
+                self.spi_var.set(spi_targets[0])
             row += 1
         btns = ttk.Frame(self)
         btns.grid(row=row, column=0, columnspan=2, pady=4)
