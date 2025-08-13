@@ -10,6 +10,7 @@ Recent updates add a **Review Toolbox** supporting peer and joint review workflo
 
 ## Index
 
+- [Governance Diagrams](#governance-diagrams)
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
 - [Risk Assessment](#risk-assessment)
@@ -41,6 +42,32 @@ Recent updates add a **Review Toolbox** supporting peer and joint review workflo
 - [License](#license)
 - [Building the Executable](#building-the-executable)
 - [Version History](#version-history)
+
+## Governance Diagrams
+
+Governance diagrams map the lifecycle of an item to the standards it must
+comply with so teams can see when each guideline applies. To build one in
+AutoML:
+
+1. **List the standards** that govern the item (e.g. ISO 26262, ISO 21448,
+   ISO 21434, ISO 8800). Capture their key milestones, work products and
+   review gates.
+2. **Define lifecycle states** for the item such as concept, development,
+   production and operation. For each state note the required evidence and
+   decision points drawn from the standards.
+3. **Create a diagram** that lays out the lifecycle states as nodes. Connect
+   them with transitions that reflect progression or feedback. Use
+   stereotypes or color coding to highlight which standard drives each state
+   and to show shared activities across standards.
+4. **Tailor the flow** by adding optional branches or conditional steps when
+   a standard allows alternative approaches. Document rationale for each
+   tailoring so audits can trace the decision.
+5. **Iterate** as the project evolves. Update the diagram when standards or
+   lifecycle plans change so it remains a current view of governance.
+
+These diagrams provide a single reference for planning work products,
+coordinating reviews and communicating how safety, cybersecurity and AI
+assurance fit together across the item’s lifecycle.
 
 ## Workflow Overview
 
