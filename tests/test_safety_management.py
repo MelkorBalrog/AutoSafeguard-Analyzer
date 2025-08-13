@@ -53,6 +53,7 @@ class DummyCanvas:
     def __init__(self):
         self.text_calls = []
         self.rect_calls = []
+        self.polygon_calls = []
 
     def create_text(self, x, y, **kw):
         self.text_calls.append((x, y, kw))
@@ -64,7 +65,7 @@ class DummyCanvas:
         pass
 
     def create_polygon(self, *args, **kwargs):
-        pass
+        self.polygon_calls.append((args, kwargs))
 
 
 def test_activity_boundary_label_rotated_left():
@@ -1062,16 +1063,16 @@ def test_work_product_color_and_text_wrapping():
         properties={"name": "Architecture Diagram"},
     )
     win.draw_object(obj)
-    _, rect_kwargs = win.canvas.rect_calls[0]
-    assert rect_kwargs["fill"] == "lightblue"
+    _, poly_kwargs = win.canvas.polygon_calls[0]
+    assert poly_kwargs["fill"] == "#cfe2f3"
     assert win.canvas.text_calls[0][2]["width"] == 60.0
 
-    win.canvas.rect_calls.clear()
+    win.canvas.polygon_calls.clear()
     win.canvas.text_calls.clear()
     obj.properties["name"] = "HAZOP"
     win.draw_object(obj)
-    _, rect_kwargs = win.canvas.rect_calls[0]
-    assert rect_kwargs["fill"] == "lightgreen"
+    _, poly_kwargs = win.canvas.polygon_calls[0]
+    assert poly_kwargs["fill"] == "#d5e8d4"
 
 
 def test_propagation_connection_validation():
