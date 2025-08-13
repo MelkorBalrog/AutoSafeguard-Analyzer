@@ -73,14 +73,20 @@ class GSNExplorer(tk.Frame):
         self.tree.delete(*self.tree.get_children(""))
         if not self.app:
             return
+        # add a synthetic root item so that modules and diagrams share a
+        # common parent.  This mirrors the behaviour of other explorer
+        # widgets and allows dropping items onto the "GSN" root to move
+        # them to the top level.
+        root_id = self.tree.insert("", "end", text="GSN", image=self.module_icon)
+        self.item_map[root_id] = ("root", None)
         # modules at root
         for mod in getattr(self.app, "gsn_modules", []):
-            mod_id = self.tree.insert("", "end", text=mod.name, image=self.module_icon)
+            mod_id = self.tree.insert(root_id, "end", text=mod.name, image=self.module_icon)
             self.item_map[mod_id] = ("module", mod)
             self._add_module_children(mod_id, mod)
         # diagrams not in any module
         for diag in getattr(self.app, "gsn_diagrams", []):
-            diag_id = self.tree.insert("", "end", text=diag.root.user_name, image=self.diagram_icon)
+            diag_id = self.tree.insert(root_id, "end", text=diag.root.user_name, image=self.diagram_icon)
             self.item_map[diag_id] = ("diagram", diag)
             self._add_diagram_children(diag_id, diag)
 

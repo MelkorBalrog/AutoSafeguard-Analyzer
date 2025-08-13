@@ -436,7 +436,14 @@ class StpaWindow(tk.Frame):
         def add_sc_new(self):
             dlg = _RequirementDialog(
                 self,
-                type_options=["operational", "functional modification", "production", "service"],
+                type_options=[
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ],
             )
             if dlg.result:
                 req = dlg.result
@@ -463,7 +470,14 @@ class StpaWindow(tk.Frame):
                 self,
                 req,
                 req_type=req.get("req_type", "operational"),
-                type_options=["operational", "functional modification", "production", "service"],
+                type_options=[
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ],
             )
             if dlg.result:
                 req = dlg.result

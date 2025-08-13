@@ -137,13 +137,23 @@ class SafetyManagementExplorer(tk.Frame):
         if not sel:
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
-        if typ != "diagram":
+        if typ == "diagram":
+            new = simpledialog.askstring(
+                "Rename Diagram", "Name:", initialvalue=obj, parent=self
+            )
+            if not new or new == obj:
+                return
+            self.toolbox.rename_diagram(obj, new)
+            self._replace_name_in_modules(obj, new, self.toolbox.modules)
+        elif typ == "module":
+            new = simpledialog.askstring(
+                "Rename Folder", "Name:", initialvalue=obj.name, parent=self
+            )
+            if not new or new == obj.name:
+                return
+            self.toolbox.rename_module(obj.name, new)
+        else:
             return
-        new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj, parent=self)
-        if not new or new == obj:
-            return
-        self.toolbox.rename_diagram(obj, new)
-        self._replace_name_in_modules(obj, new, self.toolbox.modules)
         self.populate()
 
     # ------------------------------------------------------------------
