@@ -79,7 +79,7 @@ class GSNExplorer(tk.Frame):
         for diag in getattr(self.app, "gsn_diagrams", []):
             diag_id = self.tree.insert("", "end", text=diag.root.user_name, image=self.diagram_icon)
             self.item_map[diag_id] = ("diagram", diag)
-            self._add_node_children(diag_id, diag.root)
+            self._add_diagram_children(diag_id, diag)
 
     # ------------------------------------------------------------------
     def _add_module_children(self, parent_id: str, module: GSNModule):
@@ -90,15 +90,36 @@ class GSNExplorer(tk.Frame):
         for diag in module.diagrams:
             diag_id = self.tree.insert(parent_id, "end", text=diag.root.user_name, image=self.diagram_icon)
             self.item_map[diag_id] = ("diagram", diag)
-            self._add_node_children(diag_id, diag.root)
+            self._add_diagram_children(diag_id, diag)
 
     # ------------------------------------------------------------------
-    def _add_node_children(self, parent_id, node: GSNNode):
-        for child in node.children:
-            icon = self.node_icons.get(child.node_type, self.default_node_icon)
-            child_id = self.tree.insert(parent_id, "end", text=child.user_name, image=icon)
-            self.item_map[child_id] = ("node", child)
-            self._add_node_children(child_id, child)
+    def _add_diagram_children(self, diag_id: str, diagram: GSNDiagram) -> None:
+        """Insert all nodes of *diagram* below *diag_id*.
+
+        The previous implementation only traversed nodes reachable from the
+        diagram's root which meant unconnected nodes were omitted from the
+        explorer view.  Iterate over the diagram's ``nodes`` collection to
+        ensure that even orphaned elements become visible.
+        """
+
+        visited_ids: set[int] = set()
+
+        def _add_node(parent_id: str, node: GSNNode) -> None:
+            visited_ids.add(id(node))
+            for child in node.children:
+                icon = self.node_icons.get(child.node_type, self.default_node_icon)
+                child_id = self.tree.insert(parent_id, "end", text=child.user_name, image=icon)
+                self.item_map[child_id] = ("node", child)
+                _add_node(child_id, child)
+
+        # start with the root node and then append any remaining nodes
+        _add_node(diag_id, diagram.root)
+        for node in diagram.nodes:
+            if id(node) not in visited_ids:
+                icon = self.node_icons.get(node.node_type, self.default_node_icon)
+                node_id = self.tree.insert(diag_id, "end", text=node.user_name, image=icon)
+                self.item_map[node_id] = ("node", node)
+                _add_node(node_id, node)
 
     # ------------------------------------------------------------------
     def new_diagram(self):
