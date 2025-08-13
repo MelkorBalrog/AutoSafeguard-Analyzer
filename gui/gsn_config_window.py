@@ -7,20 +7,36 @@ from tkinter import ttk
 from gsn import GSNNode, GSNDiagram
 
 
-def _collect_work_products(diagram: GSNDiagram) -> list[str]:
-    """Return sorted unique work product names from *diagram*.
+def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
+    """Return sorted unique work product names available in the project.
 
-    Only non-empty ``work_product`` attributes of nodes are considered to
-    provide meaningful options in the configuration dialog.
+    When *app* is provided, diagrams and analysis names from the application
+    are included alongside existing ``work_product`` attributes found in
+    *diagram*.
     """
 
-    return sorted(
-        {
-            getattr(n, "work_product", "")
-            for n in getattr(diagram, "nodes", [])
-            if getattr(n, "work_product", "")
-        }
-    )
+    products = {
+        getattr(n, "work_product", "")
+        for n in getattr(diagram, "nodes", [])
+        if getattr(n, "work_product", "")
+    }
+
+    if app is not None:
+        def _name(obj):
+            root = getattr(obj, "root", None)
+            return (
+                getattr(root, "user_name", None)
+                if root is not None
+                else getattr(obj, "name", None)
+            ) or ""
+
+        for attr in ("all_gsn_diagrams", "management_diagrams", "arch_diagrams"):
+            for obj in getattr(app, attr, []):
+                name = _name(obj)
+                if name:
+                    products.add(name)
+
+    return sorted(products)
 
 
 def _collect_spi_targets(diagram: GSNDiagram) -> list[str]:
@@ -64,7 +80,7 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="Work Product:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
-            work_products = _collect_work_products(diagram)
+            work_products = _collect_work_products(diagram, getattr(master, "app", None))
             if self.work_var.get() and self.work_var.get() not in work_products:
                 work_products.append(self.work_var.get())
             wp_cb = ttk.Combobox(
