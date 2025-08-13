@@ -14,7 +14,7 @@ sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
 from gsn import GSNNode, GSNDiagram
-from AutoML import FaultTreeApp
+from AutoML import FaultTreeApp, PMHF_TARGETS
 from analysis.constants import CHECK_MARK
 
 
@@ -167,7 +167,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     assert spi_tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
 
-def test_safety_case_shows_verification_target(monkeypatch):
+def test_safety_case_shows_validation_target(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
     sol.spi_target = "SG1"
@@ -198,11 +198,60 @@ def test_safety_case_shows_verification_target(monkeypatch):
 
     FaultTreeApp.show_safety_case(app)
     tree = app._safety_case_tree
-    assert tree.columns[4] == "Verification Target"
+    assert tree.columns[4] == "Validation Target"
     assert tree.columns[6] == "SPI"
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][4] == f"{1e-5:.2e}"
     expected_spi = math.log10(1e-5 / 1e-4)
+    assert tree.data[iid]["values"][6] == f"{expected_spi:.2f}"
+
+
+def test_pmfh_autopopulates_validation_target_and_probability(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    sol.spi_target = "SG1"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    te = types.SimpleNamespace(
+        user_name="SG1",
+        safety_goal_asil="D",
+        validation_target=1.0,
+        probability=0.0,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+    app.top_events = [te]
+    app.pmhf_var = types.SimpleNamespace(set=lambda text: None)
+    app.pmhf_label = types.SimpleNamespace(config=lambda **k: None)
+    app.update_views = lambda: None
+
+    monkeypatch.setattr("AutoML.AutoML_Helper.calculate_probability_recursive", lambda te: 2e-6)
+    monkeypatch.setattr("AutoML.FaultTreeApp.update_basic_event_probabilities", lambda self: None)
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_basic_events", lambda self: [])
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_failure_mode_node", lambda self, be: None)
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_fmea_entries", lambda self: [])
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+
+    FaultTreeApp.calculate_pmfh(app)
+    FaultTreeApp.show_safety_case(app)
+
+    tree = app._safety_case_tree
+    iid = next(iter(tree.data))
+    assert tree.data[iid]["values"][4] == f"{PMHF_TARGETS['D']:.2e}"
+    assert tree.data[iid]["values"][5] == f"{2e-6:.2e}"
+    expected_spi = math.log10(PMHF_TARGETS['D'] / 2e-6)
     assert tree.data[iid]["values"][6] == f"{expected_spi:.2f}"
 
 
@@ -455,7 +504,7 @@ def test_export_safety_case_writes_rows(tmp_path, monkeypatch):
         "Description",
         "Work Product",
         "Evidence Link",
-        "Verification Target",
+        "Validation Target",
         "Achieved Probability",
         "SPI",
         "Evidence OK",
