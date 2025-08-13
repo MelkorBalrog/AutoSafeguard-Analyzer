@@ -105,29 +105,16 @@ class GSNDiagramWindow(tk.Frame):
 
     def connect_solved_by(self):  # pragma: no cover - GUI interaction stub
         self._connect_mode = "solved"
-        # start connection from the currently selected node if available so
-        # the user can immediately drag from it
-        self._connect_parent = self.selected_node
+        self._connect_parent = None
 
     def connect_in_context(self):  # pragma: no cover - GUI interaction stub
         self._connect_mode = "context"
-        # start connection from the currently selected node if available so
-        # the user can immediately drag from it
-        self._connect_parent = self.selected_node
+        self._connect_parent = None
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
         node = self._node_at(event.x, event.y)
         if self._connect_mode:
-            # first click selects the parent node; a subsequent click on a
-            # different node finalises the connection.  This allows both
-            # click-to-click and drag-and-drop workflows.
-            if self._connect_parent is None and node:
-                self._connect_parent = node
-            elif self._connect_parent and node and node is not self._connect_parent:
-                self._connect_parent.add_child(node)
-                self._connect_mode = None
-                self._connect_parent = None
-                self.refresh()
+            self._connect_parent = node
             return
         if not node:
             self.selected_node = None
