@@ -63,8 +63,14 @@ class FTADrawingHelper:
         nb = int(255 * (1 - ratio) + b * ratio)
         return f"#{nr:02x}{ng:02x}{nb:02x}"
 
-    def _fill_gradient_polygon(self, canvas, points, color: str) -> None:
-        """Fill *points* polygon with a horizontal white → color gradient."""
+    def _fill_gradient_polygon(self, canvas, points, color: str, tags=None) -> None:
+        """Fill *points* polygon with a horizontal white → color gradient.
+
+        Optionally tag the generated gradient items so they can participate in
+        hit-testing.  Without tagging these intermediate lines, ``find``
+        operations on a canvas only recognise the outline, making it impossible
+        to select or drag filled shapes by clicking their interior.
+        """
         xs = [p[0] for p in points]
         left = math.floor(min(xs))
         right = math.ceil(max(xs))
@@ -88,11 +94,18 @@ class FTADrawingHelper:
             yvals.sort()
             for j in range(0, len(yvals), 2):
                 if j + 1 < len(yvals):
-                    canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
+                    if tags:
+                        canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill, tags=tags)
+                    else:
+                        canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
             x += 0.5
 
-    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
-        """Fill circle with gradient from white to *color*."""
+    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str, tags=None) -> None:
+        """Fill circle with gradient from white to *color*.
+
+        The optional *tags* parameter mirrors ``_fill_gradient_polygon`` so the
+        generated lines may be associated with a canvas item identifier.
+        """
         left = math.floor(cx - radius)
         right = math.ceil(cx + radius)
         if right <= left:
@@ -103,18 +116,29 @@ class FTADrawingHelper:
             fill = self._interpolate_color(color, ratio)
             dx = x - cx
             dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
-            canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+            if tags:
+                canvas.create_line(x, cy - dy, x, cy + dy, fill=fill, tags=tags)
+            else:
+                canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
             x += 0.5
 
-    def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
-        """Fill rectangle with gradient from white to *color*."""
+    def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str, tags=None) -> None:
+        """Fill rectangle with gradient from white to *color*.
+
+        Supplying *tags* ensures that the gradient fill responds to canvas
+        hit-tests, allowing the entire shape to be selected rather than only
+        its outline or text.
+        """
         if right <= left:
             return
         x = left
         while x <= right:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
-            canvas.create_line(x, top, x, bottom, fill=fill)
+            if tags:
+                canvas.create_line(x, top, x, bottom, fill=fill, tags=tags)
+            else:
+                canvas.create_line(x, top, x, bottom, fill=fill)
             x += 0.5
 
     def get_text_size(self, text, font_obj):
@@ -907,7 +931,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - h / 2
         right = x + w / 2
         bottom = y + h / 2
-        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        self._fill_gradient_rect(canvas, left, top, right, bottom, fill, tags=(obj_id,))
         canvas.create_rectangle(
             left,
             top,
@@ -1047,7 +1071,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             (x + w / 2 - offset, y + h / 2),
             (x - w / 2, y + h / 2),
         ]
-        self._fill_gradient_polygon(canvas, points, fill)
+        self._fill_gradient_polygon(canvas, points, fill, tags=(obj_id,))
         canvas.create_polygon(points, outline=outline_color, width=line_width, fill="", tags=(obj_id,))
         canvas.create_text(
             x,
@@ -1079,7 +1103,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - radius
         right = x + radius
         bottom = y + radius
-        self._fill_gradient_circle(canvas, x, y, radius, fill)
+        self._fill_gradient_circle(canvas, x, y, radius, fill, tags=(obj_id,))
         canvas.create_oval(
             left,
             top,
