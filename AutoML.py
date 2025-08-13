@@ -9569,16 +9569,20 @@ class FaultTreeApp:
                         image=icon,
                     )
 
-            # --- Safety & Security Concept Section ---
-            sc_root = tree.insert(
-                "",
+            # --- Safety & Security Concept and Requirements Tools ---
+            tree.insert(
+                sys_root,
                 "end",
                 text="Safety & Security Concept",
-                open=True,
                 tags=("safetyconcept", "0"),
             )
-            tree.insert(sc_root, "end", text="Requirements Editor", tags=("reqs", "0"))
-            tree.insert(sc_root, "end", text="Requirements Explorer", tags=("reqexp", "0"))
+            tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
+            tree.insert(
+                sys_root,
+                "end",
+                text="Requirements Explorer",
+                tags=("reqexp", "0"),
+            )
 
             # --- Hazard & Threat Analysis Section ---
             haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
