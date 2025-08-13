@@ -1999,6 +1999,26 @@ class FaultTreeApp:
             "FTA Cut Sets",
             "show_cut_sets",
         ),
+        "Process": (
+            "Process",
+            "Calc Prototype Assurance Level (PAL)",
+            "calculate_overall",
+        ),
+        "Qualitative Analysis": (
+            "Hazard & Threat Analysis",
+            "Hazard Explorer",
+            "show_hazard_explorer",
+        ),
+        "Quantitative Analysis": (
+            "Safety Analysis",
+            "Reliability Analysis",
+            "open_reliability_window",
+        ),
+        "Scenario": (
+            "Scenario",
+            "Scenario Libraries",
+            "manage_scenario_libraries",
+        ),
     }
 
     def __init__(self, root):
@@ -2104,7 +2124,7 @@ class FaultTreeApp:
         # menu and entry index for each work product so they can be toggled at
         # runtime.
         self.enabled_work_products: set[str] = set()
-        self.work_product_menus: dict[str, tuple[tk.Menu, int]] = {}
+        self.work_product_menus: dict[str, list[tuple[tk.Menu, int]]] = {}
         self.versions = []
         self.diff_nodes = []
         self.fi2tc_entries = []
@@ -2158,7 +2178,7 @@ class FaultTreeApp:
             command=self.show_cut_sets,
             state=tk.DISABLED,
         )
-        self.work_product_menus["FTA"] = (fta_menu, fta_menu.index("end"))
+        self.work_product_menus.setdefault("FTA", []).append((fta_menu, fta_menu.index("end")))
         fta_menu.add_command(label="Common Cause Toolbox", command=self.show_common_cause_view)
         fta_menu.add_command(label="Cause & Effect Chain", command=self.show_cause_effect_chain)
 
@@ -2198,9 +2218,8 @@ class FaultTreeApp:
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus["Requirement Specification"] = (
-            requirements_menu,
-            requirements_menu.index("end"),
+        self.work_product_menus.setdefault("Requirement Specification", []).append(
+            (requirements_menu, requirements_menu.index("end"))
         )
         requirements_menu.add_command(
             label="Requirements Explorer", command=self.show_requirements_explorer
@@ -2213,9 +2232,8 @@ class FaultTreeApp:
             command=self.show_product_goals_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus["Product Goal Specification"] = (
-            requirements_menu,
-            requirements_menu.index("end"),
+        self.work_product_menus.setdefault("Product Goal Specification", []).append(
+            (requirements_menu, requirements_menu.index("end"))
         )
         requirements_menu.add_command(
             label="Safety Performance Indicators",
@@ -2244,9 +2262,8 @@ class FaultTreeApp:
             command=self.manage_architecture,
             state=tk.DISABLED,
         )
-        self.work_product_menus["Architecture Diagram"] = (
-            architecture_menu,
-            architecture_menu.index("end"),
+        self.work_product_menus.setdefault("Architecture Diagram", []).append(
+            (architecture_menu, architecture_menu.index("end"))
         )
 
         # --- Qualitative Analysis Menu ---
@@ -2256,36 +2273,32 @@ class FaultTreeApp:
             command=self.open_hazop_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["HAZOP"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("HAZOP", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(
             label="Risk Assessment",
             command=self.open_risk_assessment_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["Risk Assessment"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("Risk Assessment", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(
             label="STPA Analysis",
             command=self.open_stpa_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["STPA"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("STPA", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(
             label="Threat Analysis",
             command=self.open_threat_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["Threat Analysis"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("Threat Analysis", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(label="Hazard Explorer", command=self.show_hazard_explorer)
         qualitative_menu.add_command(label="Hazards Editor", command=self.show_hazard_editor)
@@ -2302,18 +2315,16 @@ class FaultTreeApp:
             command=self.open_fi2tc_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["FI2TC"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("FI2TC", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(
             label="TC2FI Analysis",
             command=self.open_tc2fi_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["TC2FI"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("TC2FI", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_separator()
         qualitative_menu.add_command(
@@ -2321,9 +2332,8 @@ class FaultTreeApp:
             command=self.show_fmea_list,
             state=tk.DISABLED,
         )
-        self.work_product_menus["FMEA"] = (
-            qualitative_menu,
-            qualitative_menu.index("end"),
+        self.work_product_menus.setdefault("FMEA", []).append(
+            (qualitative_menu, qualitative_menu.index("end"))
         )
         qualitative_menu.add_command(
             label="Fault Prioritization",
@@ -2344,9 +2354,8 @@ class FaultTreeApp:
             command=self.open_fmeda_window,
             state=tk.DISABLED,
         )
-        self.work_product_menus["FMEDA"] = (
-            quantitative_menu,
-            quantitative_menu.index("end"),
+        self.work_product_menus.setdefault("FMEDA", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
         )
         quantitative_menu.add_command(
             label="FMEDA Manager",
@@ -2355,8 +2364,22 @@ class FaultTreeApp:
         )
 
         libs_menu = tk.Menu(menubar, tearoff=0)
-        libs_menu.add_command(label="Scenario Libraries", command=self.manage_scenario_libraries)
-        libs_menu.add_command(label="ODD Libraries", command=self.manage_odd_libraries)
+        libs_menu.add_command(
+            label="Scenario Libraries",
+            command=self.manage_scenario_libraries,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Scenario", []).append(
+            (libs_menu, libs_menu.index("end"))
+        )
+        libs_menu.add_command(
+            label="ODD Libraries",
+            command=self.manage_odd_libraries,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Scenario", []).append(
+            (libs_menu, libs_menu.index("end"))
+        )
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
@@ -2367,12 +2390,30 @@ class FaultTreeApp:
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Architecture Diagram", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Scenario", menu=libs_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Scenario", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Qualitative Analysis", menu=qualitative_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Qualitative Analysis", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Quantitative Analysis", menu=quantitative_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Quantitative Analysis", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="FTA/CTA", menu=fta_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="GSN", menu=gsn_menu)
         menubar.add_cascade(label="Process", menu=process_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Process", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Review", menu=review_menu)
         help_menu = tk.Menu(menubar, tearoff=0)
         help_menu.add_command(label="About", command=self.show_about)
@@ -8642,9 +8683,7 @@ class FaultTreeApp:
                 if lb:
                     lb.insert(tk.END, tool_name)
         # Enable corresponding menu entry if one was registered
-        menu_info = self.work_product_menus.get(name)
-        if menu_info:
-            menu, idx = menu_info
+        for menu, idx in self.work_product_menus.get(name, []):
             try:
                 menu.entryconfig(idx, state=tk.NORMAL)
             except tk.TclError:
@@ -8674,10 +8713,27 @@ class FaultTreeApp:
             "FMEA": "reliability_analyses",
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
+            "Architecture Diagram": "arch_diagrams",
+            "Scenario": "scenario_libraries",
+            "Qualitative Analysis": (
+                "hazop_docs",
+                "stpa_docs",
+                "threat_docs",
+                "fi2tc_docs",
+                "tc2fi_docs",
+                "hara_docs",
+            ),
+            "Quantitative Analysis": (
+                "fmeas",
+                "fmedas",
+                "top_events",
+            ),
         }
         attr = attr_map.get(name)
         if not attr:
             return True
+        if isinstance(attr, (tuple, list, set)):
+            return all(not getattr(self, a, []) for a in attr)
         return not getattr(self, attr, [])
 
     # ------------------------------------------------------------------
@@ -8692,9 +8748,7 @@ class FaultTreeApp:
         if not self.can_remove_work_product(name):
             return False
         self.enabled_work_products.discard(name)
-        menu_info = self.work_product_menus.get(name)
-        if menu_info:
-            menu, idx = menu_info
+        for menu, idx in self.work_product_menus.get(name, []):
             try:
                 menu.entryconfig(idx, state=tk.DISABLED)
             except tk.TclError:

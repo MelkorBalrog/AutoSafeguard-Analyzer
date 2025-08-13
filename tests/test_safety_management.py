@@ -127,7 +127,7 @@ def test_disable_work_product_rejects_existing_docs():
 
     menu = DummyMenu()
     app.hazop_docs = []
-    app.work_product_menus["HAZOP"] = (menu, 0)
+    app.work_product_menus["HAZOP"] = [(menu, 0)]
     assert app.disable_work_product("HAZOP")
     assert menu.state == tk.DISABLED
 
@@ -554,6 +554,48 @@ def test_open_work_product_requires_enablement():
     assert opened["count"] == 1
 
 
+def test_menu_work_products_toggle_and_guard_existing_docs():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.tool_actions = {}
+    app.enable_process_area = lambda area: None
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, idx, state=tk.DISABLED):
+            self.state = state
+
+    cases = [
+        ("Process", None),
+        ("Quantitative Analysis", "fmeas"),
+        ("Qualitative Analysis", "hazop_docs"),
+        ("Architecture Diagram", "arch_diagrams"),
+        ("Scenario", "scenario_libraries"),
+        ("FTA", "top_events"),
+    ]
+
+    for name, attr in cases:
+        menu = DummyMenu()
+        app.work_product_menus = {name: [(menu, 0)]}
+        app.enabled_work_products = set()
+        app.tool_actions = {}
+        app.tool_listboxes = {}
+        app.tool_categories = {}
+        if attr:
+            setattr(app, attr, [])
+        FaultTreeApp.enable_work_product(app, name)
+        assert menu.state == tk.NORMAL
+        if attr:
+            getattr(app, attr).append(object())
+            assert not FaultTreeApp.disable_work_product(app, name)
+            assert menu.state == tk.NORMAL
+            getattr(app, attr).clear()
+        assert FaultTreeApp.disable_work_product(app, name)
+        assert menu.state == tk.DISABLED
+
 def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     """Governance diagrams open as BPMN diagrams with their toolbox."""
     SysMLRepository._instance = None
@@ -713,6 +755,36 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     explorer.new_diagram()
     assert "Diag" in toolbox.modules[0].diagrams
     assert "Diag" in toolbox.diagrams
+
+
+def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def selection(self):
+            return ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    from gui import messagebox as gui_messagebox
+    called = {"count": 0}
+
+    def fake_error(*args, **kwargs):
+        called["count"] += 1
+
+    monkeypatch.setattr(gui_messagebox, "showerror", fake_error)
+    explorer.new_diagram()
+    assert not toolbox.diagrams
+    assert called["count"] == 1
 
 
 def test_tools_include_safety_management_explorer():
@@ -1038,4 +1110,3 @@ def test_can_propagate_respects_review_states():
     assert toolbox.can_propagate("Risk Assessment", "FTA", joint_review=True)
     diag.connections = [{"src": 1, "dst": 2, "conn_type": "Propagate"}]
     assert toolbox.can_propagate("Risk Assessment", "FTA", reviewed=False)
-
