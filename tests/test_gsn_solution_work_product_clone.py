@@ -316,16 +316,19 @@ def test_config_dialog_lists_project_spis(monkeypatch):
     diag.add_node(node)
 
     class TopEvent:
-        def __init__(self, desc):
-            self.validation_desc = ""
+        def __init__(self, desc, target=None):
+            self.validation_desc = desc
+            self.validation_target = target
             self.safety_goal_description = desc
 
     class App:
         def __init__(self):
-            self.top_events = [TopEvent("SPI1")]
+            # include one product goal without a validation target to ensure
+            # only existing SPIs are listed
+            self.top_events = [TopEvent("SPI1", 1.0), TopEvent("NoTarget")]
 
         def get_spi_targets(self):
-            return ["SPI1"]
+            return [te.validation_desc for te in self.top_events if getattr(te, "validation_target", None)]
 
     class Master:
         def __init__(self):

@@ -13048,8 +13048,28 @@ class FaultTreeApp:
         )
 
     def get_spi_targets(self) -> list[str]:
-        """Return sorted unique SPI target descriptions for the project."""
-        return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+        """Return sorted unique SPI target descriptions for the project.
+
+        This mirrors the logic used by the Safety Performance Indicator
+        explorer which only lists SPIs for product goals that define a
+        validation target (or derive one from an ASIL via ``PMHF_TARGETS``).
+        Product goals without an associated target are ignored so the
+        configuration dialog does not present unrelated product goals.
+        """
+
+        targets = set()
+        for sg in getattr(self, "top_events", []):
+            v_target = getattr(sg, "validation_target", "")
+            if v_target not in ("", None):
+                label = self._spi_label(sg)
+                if label:
+                    targets.add(label)
+            else:
+                asil = getattr(sg, "safety_goal_asil", "")
+                if asil in PMHF_TARGETS:
+                    targets.add("Target PMHF")
+
+        return sorted(targets)
 
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""
