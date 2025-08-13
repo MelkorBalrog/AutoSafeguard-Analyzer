@@ -27,11 +27,14 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
     toolbox = getattr(app, "safety_mgmt_toolbox", None)
     if toolbox:
         for wp in getattr(toolbox, "get_work_products", lambda: [])():
-            name = " - ".join(
-                filter(None, [getattr(wp, "diagram", ""), getattr(wp, "analysis", "")])
-            )
-            if name:
-                products.add(name)
+            parts = [getattr(wp, "diagram", ""), getattr(wp, "analysis", "")]
+            parts = [p for p in parts if p]
+            if parts:
+                # Include the individual components (diagram or analysis)
+                products.update(parts)
+                # and the combined "diagram - analysis" name for clarity
+                if len(parts) > 1:
+                    products.add(" - ".join(parts))
 
     return sorted(products)
 
