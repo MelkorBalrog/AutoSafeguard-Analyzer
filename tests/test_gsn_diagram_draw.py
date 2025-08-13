@@ -54,6 +54,12 @@ class DummyHelper:
     def point_on_shape(self, shape, target_pt):
         return target_pt
 
+    def get_text_size(self, text, font_obj):
+        lines = text.split("\n")
+        width = max(len(line) for line in lines) * 5
+        height = 10 * len(lines)
+        return width, height
+
 
 def _rect_for(node_id, canvas):
     for left, top, right, bottom, kw in canvas.items:
@@ -100,14 +106,26 @@ def test_draw_respects_context_links():
     assert calls == ["context"]
 
 
-def test_solution_draws_on_small_circle():
-    """Solution nodes should render on a fixed smaller circle."""
+def test_solution_circle_expands_with_text(monkeypatch):
+    """Solution nodes enlarge their circle to fit the text."""
+    class StubFont:
+        def __init__(self, *a, **k):
+            pass
+
+        def measure(self, text):
+            return len(text) * 5
+
+        def metrics(self, key):  # pragma: no cover - simple helper
+            return 10
+
+    monkeypatch.setattr("gsn.diagram.tkFont.Font", lambda *a, **k: StubFont())
+
     node = GSNNode("Sol", "Solution", x=10, y=10, description="long text " * 10)
     diag = GSNDiagram(node, drawing_helper=DummyHelper())
     canvas = StubCanvas()
     diag.draw(canvas)
     rect = _rect_for(node.unique_id, canvas)
-    assert rect[2] - rect[0] == 40
+    assert rect[2] - rect[0] > 40
 
 
 class _StubFont:
