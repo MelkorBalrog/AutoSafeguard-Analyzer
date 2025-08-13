@@ -1,4 +1,4 @@
-"""Custom ttk.Notebook widget with close buttons on each tab."""
+"""Custom ttk.Notebook widget with close buttons on the left of each tab."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from tkinter import ttk
 
 
 class ClosableNotebook(ttk.Notebook):
-    """Notebook widget with an 'x' button on each tab to close it."""
+    """Notebook widget with an 'x' button on the left side of each tab."""
 
     def __init__(self, master: tk.Widget | None = None, **kw):
         self._close_img = self._create_close_image()
@@ -39,8 +39,8 @@ class ClosableNotebook(ttk.Notebook):
                                                 "side": "top",
                                                 "sticky": "nswe",
                                                 "children": [
-                                                    ("Notebook.label", {"side": "left", "sticky": ""}),
                                                     ("close", {"side": "left", "sticky": ""}),
+                                                    ("Notebook.label", {"side": "left", "sticky": ""}),
                                                 ],
                                             },
                                         )
