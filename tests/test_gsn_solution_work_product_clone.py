@@ -300,9 +300,8 @@ def test_config_dialog_populates_comboboxes(monkeypatch):
     assert spi_cb.init_values is None
     assert wp_cb.configured["values"] == ["WP1"]
     assert spi_cb.configured["values"] == ["SPI1"]
-    # work product should default to the first existing entry when the node has
-    # none, while the SPI target remains blank until explicitly selected.
-    assert cfg.work_var.get() == "WP1"
+    # Both comboboxes should remain blank until the user picks an option.
+    assert cfg.work_var.get() == ""
     assert cfg.spi_var.get() == ""
 
 
@@ -577,5 +576,4 @@ def test_config_dialog_lists_toolbox_diagrams(monkeypatch):
 
     wp_cb = combo_holder[0]
     assert wp_cb.configured["values"] == ["DiagA", "DiagB"]
-    assert cfg.work_var.get() == "DiagA"
-
+    assert cfg.work_var.get() == ""
