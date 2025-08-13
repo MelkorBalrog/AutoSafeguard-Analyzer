@@ -328,9 +328,9 @@ class GSNDiagram:
                 prob = self._lookup_spi_probability(node.spi_target)
                 v_target = self._lookup_validation_target(node.spi_target)
                 if prob is not None:
-                    label = f"SPI: {prob:.2e}"
+                    label = f"SPI: {prob:.2e}/h"
                 elif v_target:
-                    label = f"SPI: {v_target}"
+                    label = f"SPI: {v_target}/h"
                 else:
                     label = f"SPI: {node.spi_target}"
                 lines.append(label)

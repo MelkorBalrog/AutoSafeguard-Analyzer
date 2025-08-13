@@ -16,6 +16,7 @@ def compute_metrics(tp: float, fp: float, tn: float, fn: float) -> Dict[str, flo
     -------
     dict
         Dictionary with keys ``accuracy``, ``precision``, ``recall`` and ``f1``.
+        A nested ``units`` mapping records the dimension of each metric.
     """
     tp = float(tp)
     fp = float(fp)
@@ -31,6 +32,12 @@ def compute_metrics(tp: float, fp: float, tn: float, fn: float) -> Dict[str, flo
         "precision": precision,
         "recall": recall,
         "f1": f1,
+        "units": {
+            "accuracy": "ratio",
+            "precision": "ratio",
+            "recall": "ratio",
+            "f1": "ratio",
+        },
     }
 
 
@@ -73,6 +80,8 @@ def compute_rates(
     dict
         Dictionary containing the confusion matrix counts (``tp``, ``fp``,
         ``tn``, ``fn``) and totals ``p`` and ``n``.
+        A nested ``units`` mapping documents the measurement unit for
+        each value.
     """
 
     hours = float(hours)
@@ -96,7 +105,24 @@ def compute_rates(
         p = tp + fn
         n = tn + fp
 
-    return {"tp": tp, "fp": fp, "tn": tn, "fn": fn, "p": p, "n": n}
+    return {
+        "tp": tp,
+        "fp": fp,
+        "tn": tn,
+        "fn": fn,
+        "p": p,
+        "n": n,
+        "units": {
+            "tp": "count",
+            "fp": "count",
+            "tn": "count",
+            "fn": "count",
+            "p": "count",
+            "n": "count",
+            "hours": "h",
+            "validation_target": "events/h",
+        },
+    }
 
 
 def compute_metrics_from_target(
@@ -125,7 +151,8 @@ def compute_metrics_from_target(
         Dictionary containing classification metrics (``accuracy``,
         ``precision``, ``recall`` and ``f1``) together with the confusion
         matrix counts and totals (``tp``, ``fp``, ``tn``, ``fn``, ``p``,
-        ``n``).
+        ``n``). A nested ``units`` mapping annotates every entry with its
+        corresponding unit.
     """
 
     hours = float(hours)
@@ -156,4 +183,18 @@ def compute_metrics_from_target(
         "fn": fn,
         "p": p,
         "n": n,
+        "units": {
+            "accuracy": "ratio",
+            "precision": "ratio",
+            "recall": "ratio",
+            "f1": "ratio",
+            "tp": "count",
+            "fp": "count",
+            "tn": "count",
+            "fn": "count",
+            "p": "count",
+            "n": "count",
+            "hours": "h",
+            "validation_target": "events/h",
+        },
     }
