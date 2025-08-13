@@ -261,6 +261,25 @@ class FTADrawingHelper:
         if child_shape:
             child_pt = self.point_on_shape(child_shape, parent_pt)
 
+        if parent_pt == child_pt:
+            size = fixed_length
+            x, y = parent_pt
+            canvas.create_line(
+                x,
+                y,
+                x,
+                y - size,
+                x + size,
+                y - size,
+                x + size,
+                y,
+                x,
+                y,
+                fill=outline_color,
+                width=line_width,
+            )
+            return
+
         fixed_y = parent_pt[1] + fixed_length
         canvas.create_line(parent_pt[0], parent_pt[1], parent_pt[0], fixed_y,
                            fill=outline_color, width=line_width)
@@ -902,6 +921,24 @@ class GSNDrawingHelper(FTADrawingHelper):
         """Draw a curved connector indicating a 'solved by' relationship."""
         px, py = parent_pt
         cx, cy = child_pt
+        if parent_pt == child_pt:
+            size = 20
+            canvas.create_line(
+                px,
+                py,
+                px,
+                py - size,
+                px + size,
+                py - size,
+                px + size,
+                py,
+                px,
+                py,
+                fill=outline_color,
+                width=line_width,
+                arrow=tk.LAST,
+            )
+            return
         offset = (cy - py) / 2
         canvas.create_line(
             px,
@@ -931,6 +968,24 @@ class GSNDrawingHelper(FTADrawingHelper):
         cx, cy = child_pt
         offset = (cy - py) / 2
         dash = (4, 2)
+        if parent_pt == child_pt:
+            size = 20
+            canvas.create_line(
+                px,
+                py,
+                px,
+                py - size,
+                px + size,
+                py - size,
+                px + size,
+                py,
+                px,
+                py,
+                fill=outline_color,
+                width=line_width,
+                dash=dash,
+            )
+            return
         canvas.create_line(
             px,
             py,
