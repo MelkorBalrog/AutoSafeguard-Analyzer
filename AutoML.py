@@ -7490,7 +7490,7 @@ class FaultTreeApp:
                     "Description",
                     "Work Product",
                     "Evidence Link",
-                    "Verification Target",
+                    "Validation Target",
                     "Achieved Probability",
                     "SPI",
                     "Evidence OK",
@@ -10508,20 +10508,31 @@ class FaultTreeApp:
         for te in self.top_events:
             prob = AutoML_Helper.calculate_probability_recursive(te)
             te.probability = prob
+            asil = getattr(te, "safety_goal_asil", "") or "QM"
+            te.validation_target = PMHF_TARGETS.get(asil, 1.0)
             pmhf += prob
 
         self.update_views()
         lines = [f"Total PMHF: {pmhf:.2e}"]
         overall_ok = True
         for te in self.top_events:
-            asil = te.safety_goal_asil or "QM"
-            target = PMHF_TARGETS.get(asil, 1.0)
+            asil = getattr(te, "safety_goal_asil", "") or "QM"
+            target = getattr(te, "validation_target", PMHF_TARGETS.get(asil, 1.0))
             ok = te.probability <= target
             overall_ok = overall_ok and ok
             symbol = CHECK_MARK if ok else CROSS_MARK
-            lines.append(f"{te.user_name or te.display_label}: {te.probability:.2e} <= {target:.1e} {symbol}")
+            lines.append(
+                f"{te.user_name or te.display_label}: {te.probability:.2e} <= {target:.1e} {symbol}"
+            )
         self.pmhf_var.set("\n".join(lines))
-        self.pmhf_label.config(foreground="green" if overall_ok else "red", font=("Segoe UI", 10, "bold"))
+        self.pmhf_label.config(
+            foreground="green" if overall_ok else "red",
+            font=("Segoe UI", 10, "bold"),
+        )
+
+        # Update any open tables showing safety performance information
+        self.refresh_safety_case_table()
+        self.refresh_safety_performance_indicators()
 
     def show_requirements_matrix(self):
         """Display a matrix table of requirements vs. basic events."""
@@ -13173,7 +13184,7 @@ class FaultTreeApp:
             "Description",
             "Work Product",
             "Evidence Link",
-            "Verification Target",
+            "Validation Target",
             "Achieved Probability",
             "SPI",
             "Evidence OK",
@@ -13256,6 +13267,7 @@ class FaultTreeApp:
                         self.push_undo_state()
                         te.probability = float(new_val)
                         self.refresh_safety_case_table()
+                        self.refresh_safety_performance_indicators()
                         self.update_views()
             elif col_name == "Notes":
                 current = tree.set(row, "Notes")
