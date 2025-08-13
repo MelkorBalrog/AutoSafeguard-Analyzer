@@ -86,3 +86,32 @@ def test_safety_management_roundtrip_serialisation():
     assert new_tb.modules and new_tb.modules[0].name == "Parent"
     assert new_tb.modules[0].modules[0].diagrams == ["GovB"]
 
+
+def test_apply_model_enables_governed_work_products(monkeypatch):
+    app = _minimal_app()
+    app.refresh_tool_enablement = lambda: None
+    enabled = []
+    monkeypatch.setattr(
+        FaultTreeApp, "enable_work_product", lambda self, name: enabled.append(name)
+    )
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov", "HAZOP", "Rationale")
+    data = {"safety_mgmt_toolbox": toolbox.to_dict()}
+    app.apply_model_data(data, ensure_root=False)
+    assert enabled == ["HAZOP"]
+
+
+def test_apply_model_without_governance_disables_work_products(monkeypatch):
+    app = _minimal_app()
+    app.refresh_tool_enablement = lambda: None
+    app.enabled_work_products = {"HAZOP"}
+    disabled = []
+    monkeypatch.setattr(
+        FaultTreeApp,
+        "disable_work_product",
+        lambda self, name: disabled.append(name) or True,
+    )
+    app.apply_model_data({}, ensure_root=False)
+    assert disabled == ["HAZOP"]
+    assert app.enabled_work_products == set()
+

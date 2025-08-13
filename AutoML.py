@@ -17123,6 +17123,19 @@ class FaultTreeApp:
 
     def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
+
+        # Clear any previously enabled work products so new governance can be
+        # applied deterministically.  Minimal test instances may not define the
+        # ``enabled_work_products`` attribute so ``getattr`` is used with a
+        # default.
+        current = list(getattr(self, "enabled_work_products", set()))
+        for name in current:
+            try:
+                self.disable_work_product(name)
+            except Exception:
+                pass
+        self.enabled_work_products = set()
+
         repo_data = data.get("sysml_repository")
         if repo_data:
             repo = SysMLRepository.get_instance()
@@ -17152,6 +17165,18 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
+
+        # Enable work products declared in governance.  When no governance is
+        # present the set is empty and all work products remain disabled.
+        for name in self.safety_mgmt_toolbox.enabled_products():
+            try:
+                self.enable_work_product(name)
+            except Exception:
+                self.enabled_work_products.add(name)
+        try:
+            self.refresh_tool_enablement()
+        except Exception:
+            pass
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
