@@ -1,5 +1,7 @@
 import types
 
+import types
+
 from tkinter import simpledialog
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui.gsn_explorer import GSNExplorer
@@ -379,6 +381,59 @@ def test_delete_node():
 
     assert child not in diag.nodes
     assert child not in root.children
+
+
+def test_delete_item_without_parent_diagram():
+    root = GSNNode("Root", "Goal")
+    loose = GSNNode("Loose", "Goal")
+    diag = GSNDiagram(root)
+    diag.add_node(loose)
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.app = types.SimpleNamespace(gsn_modules=[], gsn_diagrams=[diag])
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+
+    GSNExplorer.populate(explorer)
+
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is loose:
+            explorer.tree.selection_item = iid
+            explorer.tree.items[iid]["parent"] = ""  # simulate missing diagram parent
+            break
+
+    GSNExplorer.delete_item(explorer)
+
+    assert loose not in diag.nodes
 
 
 def test_drag_diagram_into_module():

@@ -12835,11 +12835,23 @@ class FaultTreeApp:
                 super().__init__(parent, title=title)
 
             def body(self, master):
-                ttk.Label(master, text="ID:").grid(row=0, column=0, sticky="e")
-                self.id_var = tk.StringVar(value=getattr(self.initial, "user_name", ""))
-                tk.Entry(master, textvariable=self.id_var).grid(row=0, column=1, padx=5, pady=5)
+                nb = ttk.Notebook(master)
+                nb.pack(fill=tk.BOTH, expand=True)
 
-                ttk.Label(master, text="ASIL:").grid(row=1, column=0, sticky="e")
+                fs_tab = ttk.Frame(nb)
+                sotif_tab = ttk.Frame(nb)
+                cyber_tab = ttk.Frame(nb)
+                nb.add(fs_tab, text="Functional Safety")
+                nb.add(sotif_tab, text="SOTIF")
+                nb.add(cyber_tab, text="Cybersecurity")
+
+                # --- Functional Safety fields ---
+                ttk.Label(fs_tab, text="ID:").grid(row=0, column=0, sticky="e")
+                self.id_var = tk.StringVar(value=getattr(self.initial, "user_name", ""))
+                self.id_entry = tk.Entry(fs_tab, textvariable=self.id_var)
+                self.id_entry.grid(row=0, column=1, padx=5, pady=5)
+
+                ttk.Label(fs_tab, text="ASIL:").grid(row=1, column=0, sticky="e")
                 name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
                 self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
                 ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
@@ -12860,7 +12872,7 @@ class FaultTreeApp:
                 ttk.Label(master, text="FTTI:").grid(row=5, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
                 tk.Entry(
-                    master,
+                    fs_tab,
                     textvariable=self.ftti_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
@@ -12869,7 +12881,7 @@ class FaultTreeApp:
                 ttk.Label(master, text="Acceptance Rate (1/h):").grid(row=6, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
-                    master,
+                    fs_tab,
                     textvariable=self.accept_rate_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
@@ -12878,12 +12890,13 @@ class FaultTreeApp:
                 ttk.Label(master, text="On Hours:").grid(row=7, column=0, sticky="e")
                 self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
                 tk.Entry(
-                    master,
+                    fs_tab,
                     textvariable=self.op_hours_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=7, column=1, padx=5, pady=5)
 
+                ttk.Label(fs_tab, text="Validation Target (1/h):").grid(row=6, column=0, sticky="e")
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
@@ -12921,7 +12934,7 @@ class FaultTreeApp:
                 ttk.Label(master, text="Mission Profile:").grid(row=12, column=0, sticky="e")
                 self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
                 ttk.Combobox(
-                    master,
+                    fs_tab,
                     textvariable=self.profile_var,
                     values=[mp.name for mp in self.app.mission_profiles],
                     state="readonly",
