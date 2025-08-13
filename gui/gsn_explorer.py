@@ -243,6 +243,14 @@ class GSNExplorer(tk.Frame):
                     self.app.gsn_diagrams.remove(d)
         elif typ == "node":
             diagram = self._find_parent_diagram(item)
+            if diagram is None:
+                diagrams = list(getattr(self.app, "gsn_diagrams", []))
+                for m in getattr(self.app, "gsn_modules", []):
+                    diagrams.extend(self._collect_diagrams(m))
+                for d in diagrams:
+                    if obj in d.nodes:
+                        diagram = d
+                        break
             if diagram and obj in diagram.nodes:
                 diagram.nodes.remove(obj)
                 if obj is diagram.root and diagram.nodes:
