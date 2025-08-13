@@ -9085,8 +9085,13 @@ class FaultTreeApp:
                     image=icon,
                 )
 
-            # --- System Design Section ---
-            sys_root = tree.insert("", "end", text="System Design", open=True)
+            # --- System Design (Item Definition) Section ---
+            sys_root = tree.insert(
+                "",
+                "end",
+                text="System Design (Item Definition)",
+                open=True,
+            )
             self.arch_diagrams = sorted(
                 [
                     d
