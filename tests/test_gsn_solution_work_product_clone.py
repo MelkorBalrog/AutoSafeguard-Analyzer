@@ -33,6 +33,7 @@ def test_solution_clones_existing_work_product():
     cfg.name_var = DummyVar(node.user_name)
     cfg.desc_text = DummyText(node.description)
     cfg.work_var = DummyVar(WORK_PRODUCTS[0])
+    cfg.spi_var = DummyVar("")
     cfg.destroy = lambda: None
 
     cfg._on_ok()
@@ -41,4 +42,51 @@ def test_solution_clones_existing_work_product():
     assert not node.is_primary_instance
     assert node.user_name == original.user_name
     assert node.unique_id == original.unique_id
+
+
+def test_solution_requires_matching_spi_for_clone():
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    original = GSNNode("Orig", "Solution")
+    original.work_product = WORK_PRODUCTS[0]
+    original.spi_target = "Brake Time"
+    diag.add_node(original)
+
+    node = GSNNode("New", "Solution")
+    diag.add_node(node)
+    cfg = GSNElementConfig.__new__(GSNElementConfig)
+    cfg.node = node
+    cfg.diagram = diag
+    cfg.name_var = DummyVar(node.user_name)
+    cfg.desc_text = DummyText(node.description)
+    cfg.work_var = DummyVar(WORK_PRODUCTS[0])
+    cfg.spi_var = DummyVar("Other SPI")
+    cfg.destroy = lambda: None
+    cfg._on_ok()
+
+    assert node.original is node
+
+    node2 = GSNNode("New2", "Solution")
+    diag.add_node(node2)
+    cfg2 = GSNElementConfig.__new__(GSNElementConfig)
+    cfg2.node = node2
+    cfg2.diagram = diag
+    cfg2.name_var = DummyVar(node2.user_name)
+    cfg2.desc_text = DummyText(node2.description)
+    cfg2.work_var = DummyVar(WORK_PRODUCTS[0])
+    cfg2.spi_var = DummyVar("Brake Time")
+    cfg2.destroy = lambda: None
+    cfg2._on_ok()
+
+    assert node2.original is original
+
+
+def test_format_text_shows_spi_target():
+    root = GSNNode("Root", "Goal")
+    sol = GSNNode("Sol", "Solution")
+    sol.spi_target = "Brake Time"
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+    text = diag._format_text(sol)
+    assert "SPI: Brake Time" in text
 
