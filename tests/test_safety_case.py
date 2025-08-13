@@ -145,6 +145,8 @@ def test_edit_probability_updates_spi(monkeypatch):
     assert te.probability == 2e-4
     row = next(iter(tree.data))
     assert tree.data[row]["values"][5] == f"{2e-4:.2e}"
+    expected_spi = math.log10(1e-5 / 2e-4)
+    assert tree.data[row]["values"][6] == f"{expected_spi:.2f}"
 
     class CaptureTree(DummyTree):
         instances = []
@@ -194,8 +196,11 @@ def test_safety_case_shows_verification_target(monkeypatch):
     FaultTreeApp.show_safety_case(app)
     tree = app._safety_case_tree
     assert tree.columns[4] == "Verification Target"
+    assert tree.columns[6] == "SPI"
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][4] == f"{1e-5:.2e}"
+    expected_spi = math.log10(1e-5 / 1e-4)
+    assert tree.data[iid]["values"][6] == f"{expected_spi:.2f}"
 
 
 def test_edit_probability_in_spi_explorer(monkeypatch):
@@ -268,7 +273,7 @@ def test_edit_notes_updates_node(monkeypatch):
     tree.bindings["<Double-Button-1>"](event)
 
     assert sol.manager_notes == "new note"
-    assert tree.data[row]["values"][7] == "new note"
+    assert tree.data[row]["values"][8] == "new note"
 
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
@@ -297,11 +302,11 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
     assert sol.evidence_sufficient
-    assert tree.data[iid]["values"][6] == CHECK_MARK
+    assert tree.data[iid]["values"][7] == CHECK_MARK
 
     app.refresh_safety_case_table()
     iid = next(iter(tree.data))
-    assert tree.data[iid]["values"][6] == CHECK_MARK
+    assert tree.data[iid]["values"][7] == CHECK_MARK
 
 
 def test_safety_case_cancel_does_not_toggle(monkeypatch):
@@ -359,7 +364,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
     assert called.get("ok")
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][2] == "WP"
-    assert tree.data[iid]["values"][7] == "note"
+    assert tree.data[iid]["values"][8] == "note"
 
 
 def test_safety_case_undo_redo_toggle(monkeypatch):
