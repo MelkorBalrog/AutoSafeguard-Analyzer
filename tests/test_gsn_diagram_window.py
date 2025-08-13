@@ -66,3 +66,61 @@ def test_temp_connection_line_no_arrow_in_context_mode():
     win._on_drag(event)
     assert lines and lines[0].get("dash") == (2, 2)
     assert not lines[0].get("arrow")
+
+
+def test_drag_creates_solved_by_connection():
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    parent = GSNNode("p", "Goal", x=10, y=20)
+    child = GSNNode("c", "Goal", x=30, y=40)
+    diag = type("Diag", (), {})()  # simple stub
+    diag._traverse = lambda: [parent, child]
+    win.diagram = diag
+    win.zoom = 1.0
+    win.selected_node = parent
+    win.id_to_node = {n.unique_id: n for n in diag._traverse()}
+
+    class CanvasStub:
+        def create_line(self, *args, **kwargs):
+            pass
+
+        def delete(self, *args, **kwargs):
+            pass
+
+    win.canvas = CanvasStub()
+    win.refresh = lambda: None
+    win._node_at = lambda x, y: child
+
+    win.connect_solved_by()
+    event = type("Event", (), {"x": child.x, "y": child.y})
+    win._on_drag(event)
+    win._on_release(event)
+    assert child in parent.children
+
+
+def test_drag_creates_context_connection():
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    parent = GSNNode("p", "Goal", x=10, y=20)
+    ctx = GSNNode("c", "Context", x=30, y=40)
+    diag = type("Diag", (), {})()
+    diag._traverse = lambda: [parent, ctx]
+    win.diagram = diag
+    win.zoom = 1.0
+    win.selected_node = parent
+    win.id_to_node = {n.unique_id: n for n in diag._traverse()}
+
+    class CanvasStub:
+        def create_line(self, *args, **kwargs):
+            pass
+
+        def delete(self, *args, **kwargs):
+            pass
+
+    win.canvas = CanvasStub()
+    win.refresh = lambda: None
+    win._node_at = lambda x, y: ctx
+
+    win.connect_in_context()
+    event = type("Event", (), {"x": ctx.x, "y": ctx.y})
+    win._on_drag(event)
+    win._on_release(event)
+    assert ctx in parent.children
