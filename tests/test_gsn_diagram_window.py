@@ -33,6 +33,12 @@ def test_temp_connection_line_is_dotted():
     lines = []
 
     class CanvasStub:
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
         def create_line(self, *args, **kwargs):
             lines.append(kwargs)
 
@@ -56,6 +62,12 @@ def test_temp_connection_line_has_arrow_in_context_mode():
     lines = []
 
     class CanvasStub:
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
         def create_line(self, *args, **kwargs):
             lines.append(kwargs)
 
@@ -76,7 +88,17 @@ def test_on_release_creates_context_link():
     child = GSNNode("c", "Goal")
     win._connect_mode = "context"
     win._connect_parent = parent
-    win.canvas = type("CanvasStub", (), {"delete": lambda self, *a, **k: None})()
+    class CanvasStub:
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
+        def delete(self, *a, **k):
+            pass
+
+    win.canvas = CanvasStub()
     win._node_at = lambda x, y: child
     win.refresh = lambda: None
     event = type("Event", (), {"x": 0, "y": 0})
@@ -120,3 +142,57 @@ def test_refresh_updates_scrollregion():
     win.id_to_node = {}
     win.refresh()
     assert win.canvas.config.get("scrollregion") == (0, 0, 100, 100)
+
+
+def test_click_and_drag_uses_canvas_coordinates():
+    """Selection and dragging should honour canvas scrolling."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
+    win._connect_mode = None
+    win.refresh = lambda: None
+    node = GSNNode("n", "Goal", x=150, y=250)
+
+    class CanvasStub:
+        def __init__(self):
+            self.off_x = 100
+            self.off_y = 200
+
+        def canvasx(self, x):
+            return x + self.off_x
+
+        def canvasy(self, y):
+            return y + self.off_y
+
+        def find_overlapping(self, x1, y1, x2, y2):
+            if x1 <= 150 <= x2 and y1 <= 250 <= y2:
+                return [1]
+            return []
+
+        def gettags(self, item):
+            return ("node-id",) if item == 1 else ()
+
+        def delete(self, *args, **kwargs):
+            pass
+
+        def after(self, *args, **kwargs):
+            return None
+
+        def after_cancel(self, *args, **kwargs):
+            pass
+
+        def create_line(self, *args, **kwargs):
+            pass
+
+        def bbox(self, tag):
+            return (0, 0, 0, 0)
+
+    win.canvas = CanvasStub()
+    win.id_to_node = {"node-id": node}
+
+    event = type("Evt", (), {"x": 50, "y": 50})
+    win._on_click(event)
+    assert win.selected_node is node
+
+    drag = type("Evt", (), {"x": 60, "y": 60})
+    win._on_drag(drag)
+    assert node.x == 160 and node.y == 260
