@@ -575,6 +575,20 @@ class SafetyManagementToolbox:
 
         return levels
 
+    def _replace_name_in_modules(
+        self, old: str, new: str, mods: List[GovernanceModule]
+    ) -> None:
+        """Recursively replace diagram name ``old`` with ``new`` in modules."""
+        for mod in mods:
+            mod.diagrams = [new if d == old else d for d in mod.diagrams]
+            self._replace_name_in_modules(old, new, mod.modules)
+
+    def _prune_module_diagrams(self, existing: set[str], mods: List[GovernanceModule]) -> None:
+        """Remove diagram names from modules that are not in ``existing``."""
+        for mod in mods:
+            mod.diagrams = [d for d in mod.diagrams if d in existing]
+            self._prune_module_diagrams(existing, mod.modules)
+
     # ------------------------------------------------------------------
     def _sync_diagrams(self) -> None:
         """Synchronize ``self.diagrams`` with repository contents.
@@ -583,11 +597,27 @@ class SafetyManagementToolbox:
         and entries for diagrams that no longer exist are dropped.
         """
         repo = SysMLRepository.get_instance()
-        current = {
-            d.name: d.diag_id
+        # Map current repository diagrams by identifier so we can detect
+        # renamed diagrams. ``self.diagrams`` stores the reverse mapping of
+        # name -> id.
+        current: dict[str, str] = {
+            d.diag_id: d.name
             for d in repo.diagrams.values()
             if "safety-management" in getattr(d, "tags", [])
         }
+
+        # Remember the previous name for each diagram so folder references can
+        # be updated when a diagram is renamed outside the explorer.
+        previous: dict[str, str] = {v: k for k, v in self.diagrams.items()}
+
         self.diagrams.clear()
-        self.diagrams.update(current)
+        for diag_id, name in current.items():
+            old_name = previous.get(diag_id)
+            if old_name and old_name != name:
+                self._replace_name_in_modules(old_name, name, self.modules)
+            self.diagrams[name] = diag_id
+
+        # Remove stale diagram names from modules when diagrams were deleted
+        # or renamed.
+        self._prune_module_diagrams(set(self.diagrams.keys()), self.modules)
 

@@ -119,6 +119,24 @@ def test_toolbox_manages_diagram_lifecycle():
     assert not toolbox.diagrams
 
 
+def test_sync_diagrams_updates_module_references():
+    """Renamed diagrams should update module references and avoid duplicates."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    diag_id = toolbox.create_diagram("Orig")
+    toolbox.modules = [GovernanceModule("Mod1", diagrams=["Orig"])]
+
+    # Rename the diagram directly in the repository to simulate external change
+    repo.diagrams[diag_id].name = "Renamed"
+
+    # Trigger a sync and ensure the module reflects the new name
+    toolbox.list_diagrams()
+    assert toolbox.modules[0].diagrams == ["Renamed"]
+    assert "Orig" not in toolbox.diagrams
+
+
 def test_rename_module_updates_active():
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule("Phase1")]
