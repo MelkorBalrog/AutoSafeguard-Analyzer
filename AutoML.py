@@ -12637,6 +12637,7 @@ class FaultTreeApp:
                             node.evidence_link,
                             node.spi_target,
                             CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
+                            getattr(node, "manager_notes", ""),
                         ],
                         tags=(node.unique_id,),
                     )
@@ -12657,12 +12658,13 @@ class FaultTreeApp:
             "Evidence Link",
             "SPI Target",
             "Evidence OK",
+            "Notes",
         ]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
             tree.heading(c, text=c)
             width = 120
-            if c in ("Description", "Evidence Link"):
+            if c in ("Description", "Evidence Link", "Notes"):
                 width = 200
             tree.column(c, width=width, anchor="center")
         tree.pack(fill=tk.BOTH, expand=True)
@@ -12672,8 +12674,10 @@ class FaultTreeApp:
         def on_double_click(event):
             row = tree.identify_row(event.y)
             col = tree.identify_column(event.x)
-            if col != f"#{len(columns)}":
+            if not row or not col:
                 return
+            idx = int(col[1:]) - 1
+            col_name = columns[idx]
             tags = tree.item(row, "tags")
             if not tags:
                 return
@@ -12681,10 +12685,19 @@ class FaultTreeApp:
             node = self._solution_lookup.get(uid)
             if not node:
                 return
-            current = tree.set(row, "Evidence OK")
-            new_val = "" if current == CHECK_MARK else CHECK_MARK
-            tree.set(row, "Evidence OK", new_val)
-            node.evidence_sufficient = new_val == CHECK_MARK
+            if col_name == "Evidence OK":
+                current = tree.set(row, "Evidence OK")
+                new_val = "" if current == CHECK_MARK else CHECK_MARK
+                tree.set(row, "Evidence OK", new_val)
+                node.evidence_sufficient = new_val == CHECK_MARK
+            elif col_name == "Notes":
+                current = tree.set(row, "Notes")
+                new_val = simpledialog.askstring(
+                    "Manager Notes", "Enter comments/notes:", initialvalue=current
+                )
+                if new_val is not None:
+                    tree.set(row, "Notes", new_val)
+                    node.manager_notes = new_val
 
         tree.bind("<Double-1>", on_double_click)
         self.refresh_safety_case_table()
