@@ -1,7 +1,9 @@
 import tkinter as tk
 import types
+import csv
+import tempfile
+from unittest import mock
 
-import types
 import gui.gsn_diagram_window as gdw
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gsn import GSNNode, GSNDiagram, GSNModule
@@ -395,3 +397,21 @@ def test_refresh_sets_app_for_spi_lookup():
     GSNDiagramWindow.refresh(win)
     assert diag.app is app
     assert "SPI: 1e-5/h" in captured.get("text", "")
+
+
+def test_export_csv_writes_nodes(tmp_path, monkeypatch):
+    root = GSNNode("Root", "Goal")
+    child = GSNNode("Child", "Solution")
+    root.add_child(child)
+    diag = GSNDiagram(root)
+    diag.add_node(child)
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.diagram = diag
+    path = tmp_path / "out.csv"
+    monkeypatch.setattr(gdw.filedialog, "asksaveasfilename", lambda **k: str(path))
+    GSNDiagramWindow.export_csv(win)
+    with open(path, newline="") as f:
+        rows = list(csv.reader(f))
+    assert rows[0] == ["ID", "Name", "Type", "Description", "Children", "Context"]
+    assert [root.unique_id, "Root", "Goal", "", child.unique_id, ""] in rows
+    assert [child.unique_id, "Child", "Solution", "", "", ""] in rows

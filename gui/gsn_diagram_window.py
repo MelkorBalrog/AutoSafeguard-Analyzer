@@ -1,8 +1,9 @@
 """Simple canvas window with toolbox for editing GSN diagrams."""
 from __future__ import annotations
 
+import csv
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import ttk, simpledialog, filedialog
 import webbrowser
 from typing import Optional
 
@@ -51,6 +52,7 @@ class GSNDiagramWindow(tk.Frame):
         "In Context Of",
         "Zoom In",
         "Zoom Out",
+        "Export CSV",
     ]
 
     def __init__(self, master, app, diagram: GSNDiagram):
@@ -73,6 +75,7 @@ class GSNDiagramWindow(tk.Frame):
             ("In Context Of", self.connect_in_context),
             ("Zoom In", self.zoom_in),
             ("Zoom Out", self.zoom_out),
+            ("Export CSV", self.export_csv),
         ]
         for name, cmd in btn_cmds:
             ttk.Button(self.toolbox, text=name, command=cmd).pack(side=tk.LEFT)
@@ -573,3 +576,26 @@ class GSNDiagramWindow(tk.Frame):
     def zoom_out(self):  # pragma: no cover - GUI interaction stub
         self.zoom /= 1.2
         self.refresh()
+
+    def export_csv(self):  # pragma: no cover - GUI interaction stub
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+        )
+        if not path:
+            return
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ID", "Name", "Type", "Description", "Children", "Context"])
+            for node in self.diagram.nodes:
+                children = ";".join(c.unique_id for c in node.children)
+                context = ";".join(c.unique_id for c in node.context_children)
+                writer.writerow(
+                    [
+                        node.unique_id,
+                        node.user_name,
+                        node.node_type,
+                        node.description,
+                        children,
+                        context,
+                    ]
+                )
