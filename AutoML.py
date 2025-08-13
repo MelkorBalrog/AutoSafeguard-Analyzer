@@ -316,6 +316,7 @@ from analysis.models import (
     CybersecurityGoal,
     CyberRiskEntry,
 )
+from gui.safety_case_table import SafetyCaseTable
 from gui.architecture import (
     UseCaseDiagramWindow,
     ActivityDiagramWindow,
@@ -330,6 +331,10 @@ from sysml.sysml_repository import SysMLRepository
 from analysis.fmeda_utils import compute_fmeda_metrics
 import copy
 import tkinter.font as tkFont
+import builtins
+
+builtins.REQUIREMENT_WORK_PRODUCTS = REQUIREMENT_WORK_PRODUCTS
+builtins.SafetyCaseTable = SafetyCaseTable
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
@@ -8727,7 +8732,10 @@ class FaultTreeApp:
             self.joint_reviews[idx].name = new
             self.safety_mgmt_toolbox.rename_document("Joint Review", old, new)
         elif kind == "fta" and node:
+            old = node.name
             node.user_name = new
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FTA", old, node.name)
         elif kind == "pkg" and repo.elements.get(ident):
             repo.elements[ident].name = new
         self.update_views()
@@ -8788,7 +8796,13 @@ class FaultTreeApp:
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
                 analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
-                if analysis_names and not any(n in enabled for n in analysis_names):
+                if isinstance(analysis_names, str):
+                    analysis_names = {analysis_names}
+                if not analysis_names:
+                    in_enabled = tool_name in enabled
+                else:
+                    in_enabled = any(n in enabled for n in analysis_names)
+                if not in_enabled:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
@@ -8852,6 +8866,14 @@ class FaultTreeApp:
                 lb = self.tool_listboxes.get(area)
                 if lb:
                     lb.insert(tk.END, tool_name)
+        mapping = getattr(self, "tool_to_work_product", {})
+        existing = mapping.get(tool_name)
+        if isinstance(existing, set):
+            existing.add(name)
+        elif existing:
+            mapping[tool_name] = {existing, name}
+        else:
+            mapping.setdefault(tool_name, set()).add(name)
         # Enable corresponding menu entry if one was registered
         for menu, idx in self.work_product_menus.get(name, []):
             try:
@@ -10925,6 +10947,8 @@ class FaultTreeApp:
         new_event.malfunction = name
         self.top_events.append(new_event)
         self.root_node = new_event
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product("FTA", new_event.name)
         self.update_views()
 
     def delete_top_events_for_malfunction(self, name: str) -> None:
@@ -10934,6 +10958,8 @@ class FaultTreeApp:
         if not removed:
             return
         for te in removed:
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FTA", te.name)
             self.top_events.remove(te)
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
@@ -11615,6 +11641,8 @@ class FaultTreeApp:
                     "modified_by": CURRENT_USER_NAME,
                 }
                 self.fmeas.append(doc)
+                if hasattr(self, "safety_mgmt_toolbox"):
+                    self.safety_mgmt_toolbox.register_created_work_product("FMEA", doc["name"])
                 iid = tree.insert(
                     "",
                     "end",
@@ -11629,6 +11657,8 @@ class FaultTreeApp:
             if not doc:
                 return
             self.fmeas.remove(doc)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FMEA", doc["name"])
             tree.delete(iid)
             item_map.pop(iid, None)
             self.update_views()
@@ -11642,7 +11672,10 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
+            old = doc["name"]
             doc["name"] = name
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FMEA", old, name)
             self.touch_doc(doc)
             tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
@@ -11709,6 +11742,8 @@ class FaultTreeApp:
                     "modified_by": CURRENT_USER_NAME,
                 }
                 self.fmedas.append(doc)
+                if hasattr(self, "safety_mgmt_toolbox"):
+                    self.safety_mgmt_toolbox.register_created_work_product("FMEDA", doc["name"])
                 iid = tree.insert(
                     "",
                     "end",
@@ -11723,6 +11758,8 @@ class FaultTreeApp:
             if not d:
                 return
             self.fmedas.remove(d)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product("FMEDA", d["name"])
             tree.delete(iid)
             item_map.pop(iid, None)
             self.update_views()
@@ -11736,7 +11773,10 @@ class FaultTreeApp:
             name = simpledialog.askstring("Rename FMEDA", "Enter new name:", initialvalue=current)
             if not name:
                 return
+            old = d["name"]
             d["name"] = name
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.rename_document("FMEDA", old, name)
             self.touch_doc(d)
             tree.item(iid, values=(name, d["created"], d["author"], d["modified"], d["modified_by"]))
             self.update_views()
@@ -18251,6 +18291,26 @@ class FaultTreeApp:
                 "bom": doc.get("bom", ""),
             })
 
+        if getattr(self, "safety_mgmt_toolbox", None):
+            for doc in self.hazop_docs:
+                self._reregister_document("HAZOP", doc.name)
+            for doc in self.hara_docs:
+                self._reregister_document("Risk Assessment", doc.name)
+            for doc in self.stpa_docs:
+                self._reregister_document("STPA", doc.name)
+            for doc in self.threat_docs:
+                self._reregister_document("Threat Analysis", doc.name)
+            for doc in self.fi2tc_docs:
+                self._reregister_document("FI2TC", doc.name)
+            for doc in self.tc2fi_docs:
+                self._reregister_document("TC2FI", doc.name)
+            for doc in self.fmeas:
+                self._reregister_document("FMEA", doc["name"])
+            for doc in self.fmedas:
+                self._reregister_document("FMEDA", doc["name"])
+            for te in self.top_events:
+                self._reregister_document("FTA", te.name)
+
         # Fix clone references for each top event.
         for event in self.top_events:
             AutoML_Helper.fix_clone_references(self.top_events)
@@ -18354,7 +18414,16 @@ class FaultTreeApp:
             self.close_page_diagram()
         self.update_views()
         self.set_last_saved_state()
-        
+
+    def _reregister_document(self, analysis: str, name: str) -> None:
+        phase = self.safety_mgmt_toolbox.doc_phases.get(analysis, {}).get(name)
+        current = self.safety_mgmt_toolbox.active_module
+        try:
+            self.safety_mgmt_toolbox.active_module = phase
+            self.safety_mgmt_toolbox.register_created_work_product(analysis, name)
+        finally:
+            self.safety_mgmt_toolbox.active_module = current
+
     def update_global_requirements_from_nodes(self,node):
         if hasattr(node, "safety_requirements"):
             for req in node.safety_requirements:

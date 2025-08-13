@@ -208,6 +208,8 @@ class ThreatWindow(tk.Frame):
         self.app.threat_docs.append(doc)
         self.app.active_threat = doc
         self.app.threat_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("Threat Analysis", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -215,12 +217,15 @@ class ThreatWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_threat:
             return
+        old = self.app.active_threat.name
         name = simpledialog.askstring(
-            "Rename Threat Analysis", "Name:", initialvalue=self.app.active_threat.name
+            "Rename Threat Analysis", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_threat.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("Threat Analysis", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -246,6 +251,8 @@ class ThreatWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete Threat '{doc.name}'?"):
             return
         self.app.threat_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("Threat Analysis", doc.name)
         if self.app.threat_docs:
             self.app.active_threat = self.app.threat_docs[0]
             self.app.threat_entries = self.app.active_threat.entries
