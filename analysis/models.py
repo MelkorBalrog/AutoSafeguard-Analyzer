@@ -572,6 +572,8 @@ REQUIREMENT_TYPE_OPTIONS = [
     "cybersecurity",
     "production",
     "service",
+    "product",
+    "legal",
 ]
 
 # Work product names corresponding to each requirement category. These are used

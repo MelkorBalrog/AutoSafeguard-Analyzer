@@ -8209,6 +8209,12 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             self.selection = self.var.get()
 
     def add_work_product(self):  # pragma: no cover - requires tkinter
+        def _fmt(req: str) -> str:
+            return " ".join(
+                word.upper() if word.isupper() else word.capitalize()
+                for word in req.split()
+            )
+
         options = [
             "Architecture Diagram",
             "Safety & Security Concept",
@@ -8224,6 +8230,9 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "FMEA",
             "FMEDA",
         ]
+        options.extend(
+            f"{_fmt(rt)} Requirement Specification" for rt in REQUIREMENT_TYPE_OPTIONS
+        )
         dlg = self._SelectDialog(self, "Add Work Product", options)
         name = getattr(dlg, "selection", "")
         if not name:
@@ -8243,6 +8252,8 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
         }
+        for rt in REQUIREMENT_TYPE_OPTIONS:
+            area_map[f"{_fmt(rt)} Requirement Specification"] = "System Design (Item Definition)"
         required = area_map.get(name)
         if required and not any(
             o.obj_type == "System Boundary" and o.properties.get("name") == required
