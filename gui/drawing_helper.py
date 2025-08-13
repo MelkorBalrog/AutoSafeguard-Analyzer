@@ -1002,6 +1002,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
+                arrow=tk.LAST,
             )
             return
         canvas.create_line(
@@ -1017,6 +1018,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             fill=outline_color,
             width=line_width,
             dash=dash,
+            arrow=tk.LAST,
         )
 
     def draw_strategy_shape(
@@ -1121,15 +1123,13 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - h / 2
         right = x + w / 2
         bottom = y + h / 2
-        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
-        canvas.create_rectangle(
+        canvas.create_oval(
             left,
             top,
             right,
             bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
-            dash=(4, 2),
             width=line_width,
             tags=(obj_id,),
         )
@@ -1140,6 +1140,15 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        label_font = self._scaled_font(scale * 0.3)
+        canvas.create_text(
+            right - padding,
+            bottom - padding,
+            text="A",
+            font=label_font,
+            anchor="se",
             tags=(obj_id,),
         )
 
@@ -1166,25 +1175,15 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - h / 2
         right = x + w / 2
         bottom = y + h / 2
-        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
-        canvas.create_rectangle(
+        canvas.create_oval(
             left,
             top,
             right,
             bottom,
-            fill="",
+            fill=fill,
             outline=outline_color,
             width=line_width,
             tags=(obj_id,),
-        )
-        inset = 4
-        canvas.create_rectangle(
-            left + inset,
-            top + inset,
-            right - inset,
-            bottom - inset,
-            outline=outline_color,
-            width=line_width,
         )
         canvas.create_text(
             x,
@@ -1193,6 +1192,15 @@ class GSNDrawingHelper(FTADrawingHelper):
             font=font_obj,
             anchor="center",
             width=w - 2 * padding,
+            tags=(obj_id,),
+        )
+        label_font = self._scaled_font(scale * 0.3)
+        canvas.create_text(
+            right - padding,
+            bottom - padding,
+            text="J",
+            font=label_font,
+            anchor="se",
             tags=(obj_id,),
         )
 
@@ -1219,16 +1227,71 @@ class GSNDrawingHelper(FTADrawingHelper):
         top = y - h / 2
         right = x + w / 2
         bottom = y + h / 2
-        self._fill_gradient_rect(canvas, left, top, right, bottom, fill)
+        radius = h / 2
         canvas.create_rectangle(
+            left + radius,
+            top,
+            right - radius,
+            bottom,
+            fill=fill,
+            outline="",
+            width=0,
+        )
+        canvas.create_oval(
             left,
+            top,
+            left + h,
+            bottom,
+            fill=fill,
+            outline="",
+            width=0,
+        )
+        canvas.create_oval(
+            right - h,
             top,
             right,
             bottom,
-            fill="",
+            fill=fill,
+            outline="",
+            width=0,
+        )
+        canvas.create_line(
+            left + radius,
+            top,
+            right - radius,
+            top,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_line(
+            left + radius,
+            bottom,
+            right - radius,
+            bottom,
+            fill=outline_color,
+            width=line_width,
+        )
+        canvas.create_arc(
+            left,
+            top,
+            left + h,
+            bottom,
+            start=90,
+            extent=180,
+            style=tk.ARC,
             outline=outline_color,
             width=line_width,
-            tags=(obj_id,),
+        )
+        canvas.create_arc(
+            right - h,
+            top,
+            right,
+            bottom,
+            start=270,
+            extent=180,
+            style=tk.ARC,
+            outline=outline_color,
+            width=line_width,
         )
         canvas.create_text(
             x,
