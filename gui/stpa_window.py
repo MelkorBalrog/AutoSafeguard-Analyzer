@@ -197,8 +197,11 @@ class StpaWindow(tk.Frame):
         self.app.stpa_docs.append(doc)
         self.app.active_stpa = doc
         self.app.stpa_entries = doc.entries
+        # Record the lifecycle phase for the new document
         if hasattr(self.app, "safety_mgmt_toolbox"):
-            self.app.safety_mgmt_toolbox.register_created_work_product("STPA", doc.name)
+            self.app.safety_mgmt_toolbox.register_created_work_product(
+                "STPA", doc.name
+            )
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -241,7 +244,9 @@ class StpaWindow(tk.Frame):
             return
         self.app.stpa_docs.remove(doc)
         if hasattr(self.app, "safety_mgmt_toolbox"):
-            self.app.safety_mgmt_toolbox.register_deleted_work_product("STPA", doc.name)
+            self.app.safety_mgmt_toolbox.register_deleted_work_product(
+                "STPA", doc.name
+            )
         if self.app.stpa_docs:
             self.app.active_stpa = self.app.stpa_docs[0]
         else:

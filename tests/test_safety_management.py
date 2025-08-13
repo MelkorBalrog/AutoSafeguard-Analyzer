@@ -30,8 +30,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
-from analysis.models import HazopDoc
-
+from analysis.models import HazopDoc, StpaDoc
 
 def test_work_product_registration():
     toolbox = SafetyManagementToolbox()
@@ -789,7 +788,7 @@ def test_work_products_filtered_by_phase_in_tree():
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
     app.hazop_docs = [HazopDoc("HZ1", []), HazopDoc("HZ2", [])]
-    app.stpa_docs = []
+    app.stpa_docs = [StpaDoc("S1", "", []), StpaDoc("S2", "", [])]
     app.threat_docs = []
     app.fi2tc_docs = []
     app.tc2fi_docs = []
@@ -814,19 +813,23 @@ def test_work_products_filtered_by_phase_in_tree():
     app.lifecycle_var = DummyVar("P1")
     app.on_lifecycle_selected()
     toolbox.register_created_work_product("HAZOP", "HZ1")
+    toolbox.register_created_work_product("STPA", "S1")
     app.lifecycle_var.set("P2")
     app.on_lifecycle_selected()
     toolbox.register_created_work_product("HAZOP", "HZ2")
+    toolbox.register_created_work_product("STPA", "S2")
 
     app.lifecycle_var.set("P1")
     app.on_lifecycle_selected()
     names = [meta["text"] for meta in app.analysis_tree.items.values()]
     assert "HZ1" in names and "HZ2" not in names
+    assert "S1" in names and "S2" not in names
 
     app.lifecycle_var.set("P2")
     app.on_lifecycle_selected()
     names = [meta["text"] for meta in app.analysis_tree.items.values()]
     assert "HZ2" in names and "HZ1" not in names
+    assert "S2" in names and "S1" not in names
 
 
 def test_governance_enables_tools_per_phase():
@@ -939,6 +942,7 @@ def test_governance_enables_tools_per_phase():
     assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
     assert lb.items == ["AutoML Explorer"]
     assert lb.colors == ["black"]
+
 
 def test_governance_without_declarations_keeps_tools_enabled():
     """Tools remain enabled when no work products are declared."""

@@ -4053,6 +4053,11 @@ class FaultTreeApp:
         new_event.is_top_event = True
         self.top_events.append(new_event)
         self.root_node = new_event
+        # Track creation for lifecycle phase filtering
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product(
+                "FTA", new_event.user_name
+            )
         self.update_views()
 
     def edit_project_properties(self):
@@ -8712,6 +8717,12 @@ class FaultTreeApp:
             old = self.tc2fi_docs[idx].name
             self.tc2fi_docs[idx].name = new
             self.safety_mgmt_toolbox.rename_document("TC2FI", old, new)
+        elif kind == "fta":
+            node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
+            if node:
+                old = node.user_name
+                node.user_name = new
+                self.safety_mgmt_toolbox.rename_document("FTA", old, new)
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
         elif kind == "gov":
@@ -10961,6 +10972,10 @@ class FaultTreeApp:
             if hasattr(self, "safety_mgmt_toolbox"):
                 self.safety_mgmt_toolbox.register_deleted_work_product("FTA", te.name)
             self.top_events.remove(te)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product(
+                    "FTA", te.user_name
+                )
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
         self.update_views()
