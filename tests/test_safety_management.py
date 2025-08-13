@@ -19,17 +19,17 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 from analysis import SafetyManagementToolbox
-from gui.architecture import ActivityDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from sysml.sysml_repository import SysMLRepository
 
 
 def test_work_product_registration():
     toolbox = SafetyManagementToolbox()
-    toolbox.add_work_product("Activity Diagram", "HAZOP", "Link action to hazard")
+    toolbox.add_work_product("BPMN Diagram", "HAZOP", "Link action to hazard")
 
     products = toolbox.get_work_products()
     assert len(products) == 1
-    assert products[0].diagram == "Activity Diagram"
+    assert products[0].diagram == "BPMN Diagram"
     assert products[0].analysis == "HAZOP"
     assert products[0].rationale == "Link action to hazard"
 
@@ -64,8 +64,8 @@ class DummyCanvas:
 def test_activity_boundary_label_rotated_left():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("Activity Diagram")
-    win = ActivityDiagramWindow.__new__(ActivityDiagramWindow)
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.zoom = 1.0
@@ -249,7 +249,7 @@ def test_external_safety_diagrams_load_in_toolbox_list():
     """Diagrams tagged for governance appear even if created elsewhere."""
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("Activity Diagram", name="GovX")
+    diag = repo.create_diagram("BPMN Diagram", name="GovX")
     diag.tags.append("safety-management")
     toolbox = SafetyManagementToolbox()
     names = toolbox.list_diagrams()

@@ -2,13 +2,13 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from analysis import SafetyManagementToolbox
-from gui.architecture import ActivityDiagramWindow
+from gui.architecture import BPMNDiagramWindow
 
 
 class SafetyManagementWindow(tk.Frame):
     """Editor and browser for Safety Management diagrams.
 
-    Users can create, rename, and delete Activity Diagrams that model the
+    Users can create, rename, and delete BPMN Diagrams that model the
     project's safety governance. Only diagrams registered in the provided
     :class:`SafetyManagementToolbox` are listed.
     """
@@ -95,5 +95,5 @@ class SafetyManagementWindow(tk.Frame):
         diag_id = self.toolbox.diagrams.get(name)
         if diag_id is None:
             return
-        self.current_window = ActivityDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
+        self.current_window = BPMNDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
         self.current_window.pack(fill=tk.BOTH, expand=True)
