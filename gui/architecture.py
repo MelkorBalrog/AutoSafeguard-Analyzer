@@ -4789,6 +4789,8 @@ class SysMLDiagramWindow(tk.Frame):
                 lines.extend(wrapped)
             else:
                 lines.append(name)
+        elif obj.obj_type == "Work Product" and name:
+            lines.extend(name.split())
         else:
             lines.append(name)
 
@@ -5837,7 +5839,13 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
 
-        if obj.obj_type not in ("Block", "System Boundary", "Block Boundary", "Port"):
+        if obj.obj_type not in (
+            "Block",
+            "System Boundary",
+            "Block Boundary",
+            "Port",
+            "Work Product",
+        ):
             name = obj.properties.get("name", obj.obj_type)
             label = name
             if obj.obj_type == "Part":
