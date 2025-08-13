@@ -21,12 +21,7 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 from AutoML import FaultTreeApp
 import AutoML
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
-from gui.architecture import (
-    BPMNDiagramWindow,
-    SysMLObject,
-    DiagramConnection,
-    ArchitectureManagerDialog,
-)
+from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
@@ -1035,51 +1030,4 @@ def test_work_product_color_and_text_wrapping():
     win.draw_object(obj)
     _, rect_kwargs = win.canvas.rect_calls[0]
     assert rect_kwargs["fill"] == "lightgreen"
-
-
-def _make_toolbox_with_connection(conn_type: str):
-    SysMLRepository._instance = None
-    repo = SysMLRepository.get_instance()
-    toolbox = SafetyManagementToolbox()
-    diag_id = toolbox.create_diagram("Gov")
-    diag = repo.diagrams[diag_id]
-    a = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Risk Assessment"})
-    b = SysMLObject(2, "Work Product", 100.0, 0.0, properties={"name": "FTA"})
-    diag.objects = [a.__dict__, b.__dict__]
-    conn = DiagramConnection(a.obj_id, b.obj_id, conn_type, arrow="forward")
-    diag.connections = [conn.__dict__]
-    return toolbox
-
-
-def test_propagation_connection_validation():
-    SysMLRepository._instance = None
-    repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
-    win.repo = repo
-    win.diagram_id = diag.diag_id
-    win.connections = []
-    a = SysMLObject(1, "Work Product", 0, 0, properties={"name": "Risk Assessment"})
-    b = SysMLObject(2, "Work Product", 0, 0, properties={"name": "FTA"})
-    c = SysMLObject(3, "Work Product", 0, 0, properties={"name": "HAZOP"})
-    win.objects = [a, b, c]
-    valid, _ = win.validate_connection(a, b, "Propagate")
-    assert valid
-    valid, msg = win.validate_connection(c, b, "Propagate")
-    assert not valid
-
-
-def test_allow_propagation_requires_reviews():
-    toolbox = _make_toolbox_with_connection("Propagate by Review")
-    app = FaultTreeApp.__new__(FaultTreeApp)
-    app.safety_mgmt_toolbox = toolbox
-    app.reviews = []
-    assert not app._allow_propagation("Risk Assessment", "FTA")
-    app.reviews = [ReviewData(name="r", reviewed=True)]
-    assert app._allow_propagation("Risk Assessment", "FTA")
-
-    toolbox = _make_toolbox_with_connection("Propagate by Approval")
-    app.safety_mgmt_toolbox = toolbox
-    app.reviews = [ReviewData(name="j", mode="joint", approved=True)]
-    assert app._allow_propagation("Risk Assessment", "FTA")
 

@@ -184,33 +184,6 @@ class SafetyManagementToolbox:
         return self.workflows.get(name, [])
 
     # ------------------------------------------------------------------
-    def propagation_type(self, src: str, dst: str) -> str | None:
-        """Return the propagation relationship between two work products.
-
-        The method scans all governance diagrams for a connection between
-        work products named *src* and *dst*. If a connection with one of the
-        propagation types is found, its connection type string is returned.
-        Otherwise ``None`` is returned.
-        """
-        repo = SysMLRepository.get_instance()
-        for diag_id in self.diagrams.values():
-            diag = repo.diagrams.get(diag_id)
-            if not diag:
-                continue
-            objs = {o["obj_id"]: o for o in getattr(diag, "objects", [])}
-            for conn in getattr(diag, "connections", []):
-                ctype = conn.get("conn_type")
-                if ctype not in {"Propagate", "Propagate by Review", "Propagate by Approval"}:
-                    continue
-                src_obj = objs.get(conn.get("src"))
-                dst_obj = objs.get(conn.get("dst"))
-                if not src_obj or not dst_obj:
-                    continue
-                if src_obj.get("properties", {}).get("name") == src and dst_obj.get("properties", {}).get("name") == dst:
-                    return ctype
-        return None
-
-    # ------------------------------------------------------------------
     # Persistence helpers
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:

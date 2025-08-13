@@ -28,15 +28,6 @@ _next_obj_id = 1
 # Pixel distance used when detecting clicks on connection lines
 CONNECTION_SELECT_RADIUS = 15
 
-# Allowed propagation links between work products in governance diagrams
-ALLOWED_PROPAGATIONS = {
-    ("Risk Assessment", "FTA"),
-    ("Risk Assessment", "FMEA"),
-    ("Risk Assessment", "FMEDA"),
-    ("FMEA", "FTA"),
-    ("FTA", "Safety Goal"),
-}
-
 
 def _get_next_id() -> int:
     global _next_obj_id
@@ -2743,9 +2734,6 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
         ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
@@ -2837,14 +2825,6 @@ class SysMLDiagramWindow(tk.Frame):
                             ex = flow_dir(c, dst.obj_id)
                             if ex and ex != new_dir_b:
                                 return False, "Inconsistent data flow on port"
-
-        elif diag_type == "BPMN Diagram":
-            if conn_type in ("Propagate", "Propagate by Review", "Propagate by Approval"):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Propagation links require two work products"
-                pair = (src.properties.get("name"), dst.properties.get("name"))
-                if pair not in ALLOWED_PROPAGATIONS:
-                    return False, f"{pair[0]} cannot propagate to {pair[1]}"
 
         elif diag_type == "Control Flow Diagram":
             if conn_type in ("Control Action", "Feedback"):
@@ -3160,9 +3140,6 @@ class SysMLDiagramWindow(tk.Frame):
                             "Generalization",
                             "Include",
                             "Extend",
-                            "Propagate",
-                            "Propagate by Review",
-                            "Propagate by Approval",
                         ):
                             arrow_default = "forward"
                         else:
@@ -3646,9 +3623,6 @@ class SysMLDiagramWindow(tk.Frame):
                         "Generalization",
                         "Include",
                         "Extend",
-                        "Propagate",
-                        "Propagate by Review",
-                        "Propagate by Approval",
                     ):
                         arrow_default = "forward"
                     else:
@@ -8061,9 +8035,6 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Decision",
             "Merge",
             "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
             "System Boundary",
         ]
         super().__init__(master, "BPMN Diagram", tools, diagram_id, app=app, history=history)
