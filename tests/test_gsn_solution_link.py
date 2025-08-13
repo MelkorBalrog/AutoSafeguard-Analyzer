@@ -209,3 +209,35 @@ def test_double_click_prompts_link_choice(monkeypatch):
 
     assert opened == {"url": "http://example.com"}
 
+
+def test_double_click_falls_back_to_webbrowser(monkeypatch, tmp_path):
+    opened = {}
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    path = tmp_path / "wp.txt"
+    path.write_text("data")
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    node.work_product = str(path)
+    diag.add_node(node)
+
+    wnd = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    wnd.diagram = diag
+    wnd.refresh = lambda: None
+    wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
+
+    event = types.SimpleNamespace(x=0, y=0)
+    GSNDiagramWindow._on_double_click(wnd, event)
+
+    assert opened["url"] == path.resolve().as_uri()
+
