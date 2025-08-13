@@ -3535,6 +3535,7 @@ class SysMLDiagramWindow(tk.Frame):
                 "Actor",
                 "Decision",
                 "Merge",
+                "Work Product",
             ):
                 return
             min_w, min_h = (10.0, 10.0)
@@ -4194,6 +4195,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Actor",
             "Decision",
             "Merge",
+            "Work Product",
         ):
             return None
         margin = 5
