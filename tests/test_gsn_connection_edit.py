@@ -84,7 +84,7 @@ def test_move_connection_updates_links():
 
 def test_delete_connection_removes_links():
     p = GSNNode("p", "Goal")
-    c = GSNNode("c", "Goal")
+    c = GSNNode("c", "Context")
     p.add_child(c, relation="context")
     diag = GSNDiagram(p)
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
