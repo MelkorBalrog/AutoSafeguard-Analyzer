@@ -84,6 +84,11 @@ class GSNExplorer(tk.Frame):
             self._add_diagram_children(diag_id, diag)
 
     # ------------------------------------------------------------------
+    def refresh(self):
+        """Refresh the explorer view to reflect the current model state."""
+        self.populate()
+
+    # ------------------------------------------------------------------
     def _add_module_children(self, parent_id: str, module: GSNModule):
         for sub in module.modules:
             sub_id = self.tree.insert(parent_id, "end", text=sub.name, image=self.module_icon)
