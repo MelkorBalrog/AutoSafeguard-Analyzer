@@ -1236,7 +1236,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "text": req_text,
                 "custom_id": custom_id,
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
 
@@ -1258,7 +1265,14 @@ class EditNodeDialog(simpledialog.Dialog):
 
         def _toggle_fields(self, event=None):
             req_type = self.type_var.get()
-            hide = req_type in ("operational", "functional modification", "production", "service")
+            hide = req_type in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
                 for w in widgets:
@@ -1354,7 +1368,14 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             req["asil"] = asil
             req["cal"] = cal
         global_requirements[custom_id] = req
@@ -1539,7 +1560,14 @@ class EditNodeDialog(simpledialog.Dialog):
             req_type = dialog.result["req_type"]
             req["req_type"] = req_type
             req["text"] = dialog.result["text"]
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1560,7 +1588,14 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
-            if req_type not in ("operational", "functional modification", "production", "service"):
+            if req_type not in (
+                "operational",
+                "functional modification",
+                "production",
+                "service",
+                "product",
+                "legal",
+            ):
                 req["asil"] = (
                     asil_default
                     if self.node.node_type.upper() == "BASIC EVENT"
@@ -1609,7 +1644,14 @@ class EditNodeDialog(simpledialog.Dialog):
         current_req["req_type"] = req_type
         current_req["text"] = dialog.result["text"]
         current_req["status"] = "draft"
-        if req_type not in ("operational", "functional modification", "production", "service"):
+        if req_type not in (
+            "operational",
+            "functional modification",
+            "production",
+            "service",
+            "product",
+            "legal",
+        ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
                 # editing within a base event so the value set during
@@ -11321,7 +11363,14 @@ class FaultTreeApp:
                     "status": self.status_var.get().strip(),
                     "text": self.text_var.get().strip(),
                 }
-                if req_type not in ("operational", "functional modification", "production", "service"):
+                if req_type not in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
 
@@ -11334,7 +11383,14 @@ class FaultTreeApp:
 
             def _toggle_fields(self, event=None):
                 req_type = self.type_var.get()
-                hide = req_type in ("operational", "functional modification", "production", "service")
+                hide = req_type in (
+                    "operational",
+                    "functional modification",
+                    "production",
+                    "service",
+                    "product",
+                    "legal",
+                )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
                     for w in widgets:
