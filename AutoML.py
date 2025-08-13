@@ -3854,6 +3854,7 @@ class FaultTreeApp:
         """Propagate risk assessment values to top events, inheriting ASILs from assessment rows."""
         sg_data = {}
         sg_asil = {}
+        toolbox = getattr(self, "safety_toolbox", None)
         for doc in getattr(self, "hara_docs", []):
             approved = getattr(doc, "approved", False) or getattr(doc, "status", "") == "closed"
             for e in doc.entries:
@@ -3875,7 +3876,15 @@ class FaultTreeApp:
                     data["exp"] = e.exposure
                 if approved:
                     data["approved"] = True
-                if e.safety_goal:
+                if e.safety_goal and (
+                    not toolbox
+                    or toolbox.can_propagate(
+                        "Risk Assessment",
+                        "Product Goal Specification",
+                        reviewed=approved,
+                        joint_review=approved,
+                    )
+                ):
                     best = sg_asil.get(e.safety_goal, "QM")
                     if ASIL_ORDER.get(e.asil, 0) > ASIL_ORDER.get(best, 0):
                         sg_asil[e.safety_goal] = e.asil
@@ -3885,12 +3894,21 @@ class FaultTreeApp:
             data = sg_data.get(mal)
             if data:
                 propagate = False
-                if getattr(te, "status", "draft") != "closed":
-                    propagate = True
-                elif data.get("approved"):
-                    propagate = True
-                    te.status = "draft"
-                    self.invalidate_reviews_for_fta(te.unique_id)
+                if (
+                    not toolbox
+                    or toolbox.can_propagate(
+                        "Risk Assessment",
+                        "FTA",
+                        reviewed=data.get("approved", False),
+                        joint_review=data.get("approved", False),
+                    )
+                ):
+                    if getattr(te, "status", "draft") != "closed":
+                        propagate = True
+                    elif data.get("approved"):
+                        propagate = True
+                        te.status = "draft"
+                        self.invalidate_reviews_for_fta(te.unique_id)
                 if propagate:
                     te.safety_goal_description = data["sg"]
                     te.severity = data["severity"]
@@ -3899,6 +3917,11 @@ class FaultTreeApp:
                     te.update_validation_target()
             sg_name = te.safety_goal_description
             asil = sg_asil.get(sg_name)
+            flag = data.get("approved", False) if data else False
+            if toolbox and not toolbox.can_propagate(
+                "FTA", "Product Goal Specification", reviewed=flag, joint_review=flag
+            ):
+                asil = None
             if asil and ASIL_ORDER.get(asil, 0) > ASIL_ORDER.get(te.safety_goal_asil or "QM", 0):
                 te.safety_goal_asil = asil
 

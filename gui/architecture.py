@@ -15,6 +15,7 @@ from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import global_requirements, ASIL_ORDER, StpaDoc
+from analysis.safety_management import ALLOWED_PROPAGATIONS
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -2904,41 +2905,53 @@ class SysMLDiagramWindow(tk.Frame):
                     f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
                 )
         elif diag_type == "BPMN Diagram":
-            allowed = {
-                "Initial": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                },
-                "Action": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                    "Final",
-                },
-                "Decision": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                    "Final",
-                },
-                "Merge": {
-                    "Action",
-                    "Decision",
-                    "Merge",
-                },
-                "Final": set(),
-            }
-            if src.obj_type == "Final":
-                return False, "Flows cannot originate from Final nodes"
-            if dst.obj_type == "Initial":
-                return False, "Flows cannot terminate at an Initial node"
-            valid_targets = allowed.get(src.obj_type)
-            if valid_targets and dst.obj_type not in valid_targets:
-                return (
-                    False,
-                    f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
-                )
+            if conn_type in (
+                "Propagate",
+                "Propagate by Review",
+                "Propagate by Approval",
+            ):
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Propagation links must connect Work Products"
+                src_name = src.properties.get("name")
+                dst_name = dst.properties.get("name")
+                if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
+                    return False, f"Propagation from {src_name} to {dst_name} is not allowed"
+            else:
+                allowed = {
+                    "Initial": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                    },
+                    "Action": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                        "Final",
+                    },
+                    "Decision": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                        "Final",
+                    },
+                    "Merge": {
+                        "Action",
+                        "Decision",
+                        "Merge",
+                    },
+                    "Final": set(),
+                }
+                if src.obj_type == "Final":
+                    return False, "Flows cannot originate from Final nodes"
+                if dst.obj_type == "Initial":
+                    return False, "Flows cannot terminate at an Initial node"
+                valid_targets = allowed.get(src.obj_type)
+                if valid_targets and dst.obj_type not in valid_targets:
+                    return (
+                        False,
+                        f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
+                    )
 
         return True, ""
 
@@ -2992,6 +3005,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Include",
             "Extend",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3395,6 +3411,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Include",
             "Extend",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3623,6 +3642,9 @@ class SysMLDiagramWindow(tk.Frame):
                         "Generalization",
                         "Include",
                         "Extend",
+                        "Propagate",
+                        "Propagate by Review",
+                        "Propagate by Approval",
                     ):
                         arrow_default = "forward"
                     else:
@@ -5436,6 +5458,28 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
+            label = obj.properties.get("name", "")
+            diagram_products = {
+                "Architecture Diagram",
+                "Safety & Security Concept",
+                "Requirement Specification",
+                "Product Goal Specification",
+            }
+            analysis_products = {
+                "HAZOP",
+                "STPA",
+                "Threat Analysis",
+                "FI2TC",
+                "TC2FI",
+                "Risk Assessment",
+                "FTA",
+                "FMEA",
+                "FMEDA",
+            }
+            if label in diagram_products:
+                color = "lightblue"
+            elif label in analysis_products:
+                color = "lightgreen"
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
@@ -5459,6 +5503,37 @@ class SysMLDiagramWindow(tk.Frame):
                 y - h + fold,
                 fill=outline,
             )
+            if label:
+                self.canvas.create_text(
+                    x,
+                    y,
+                    text=label,
+                    anchor="center",
+                    font=self.font,
+                    width=obj.width * self.zoom,
+                )
+        elif obj.obj_type == "Lifecycle Phase":
+            color = "#F4D698"
+            tab_h = 10 * self.zoom
+            tab_w = min(obj.width * self.zoom / 2, 40 * self.zoom)
+            body_top = y - h + tab_h
+            self._draw_gradient_rect(x - w, body_top, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                body_top,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x - w + tab_w,
+                body_top,
+                outline=outline,
+                fill=color,
+            )
             label = obj.properties.get("name", "")
             if label:
                 self.canvas.create_text(
@@ -5467,6 +5542,7 @@ class SysMLDiagramWindow(tk.Frame):
                     text=label,
                     anchor="center",
                     font=self.font,
+                    width=obj.width * self.zoom,
                 )
         elif obj.obj_type == "Existing Element":
             element = self.repo.elements.get(obj.element_id)
@@ -8013,6 +8089,9 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Decision",
             "Merge",
             "Flow",
+            "Propagate",
+            "Propagate by Review",
+            "Propagate by Approval",
             "System Boundary",
         ]
         super().__init__(master, "BPMN Diagram", tools, diagram_id, app=app, history=history)
@@ -8024,12 +8103,17 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             self.toolbox,
             text="Add Work Product",
             command=self.add_work_product,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
         ttk.Button(
             self.toolbox,
             text="Add Process Area",
             command=self.add_process_area,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
+        ttk.Button(
+            self.toolbox,
+            text="Add Lifecycle Phase",
+            command=self.add_lifecycle_phase,
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
@@ -8102,7 +8186,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Work Product",
             100.0,
             100.0,
-            width=120.0,
+            width=60.0,
             height=80.0,
             properties={"name": name},
         )
@@ -8139,6 +8223,41 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         self.redraw()
         if getattr(self.app, "enable_process_area", None):
             self.app.enable_process_area(name)
+
+    def add_lifecycle_phase(self):  # pragma: no cover - requires tkinter
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        if not toolbox:
+            return
+
+        def _collect(mod, prefix=""):
+            path = f"{prefix}{mod.name}" if prefix else mod.name
+            names.append(path)
+            for sub in mod.modules:
+                _collect(sub, path + "/")
+
+        names: List[str] = []
+        for mod in getattr(toolbox, "modules", []):
+            _collect(mod)
+        if not names:
+            return
+
+        dlg = self._SelectDialog(self, "Add Lifecycle Phase", names)
+        name = getattr(dlg, "selection", "")
+        if not name:
+            return
+        obj = SysMLObject(
+            _get_next_id(),
+            "Lifecycle Phase",
+            100.0,
+            100.0,
+            width=120.0,
+            height=80.0,
+            properties={"name": name},
+        )
+        self.objects.append(obj)
+        self.sort_objects()
+        self._sync_to_repository()
+        self.redraw()
 
 
 class BlockDiagramWindow(SysMLDiagramWindow):

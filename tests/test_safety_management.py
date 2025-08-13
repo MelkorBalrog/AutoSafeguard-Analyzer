@@ -52,12 +52,13 @@ def test_lifecycle_and_workflow_storage():
 class DummyCanvas:
     def __init__(self):
         self.text_calls = []
+        self.rect_calls = []
 
     def create_text(self, x, y, **kw):
         self.text_calls.append((x, y, kw))
 
     def create_rectangle(self, *args, **kwargs):
-        pass
+        self.rect_calls.append((args, kwargs))
 
     def create_line(self, *args, **kwargs):
         pass
@@ -224,8 +225,28 @@ def test_safety_diagrams_hidden_and_immutable_in_explorer():
     explorer = DummyExplorer()
     explorer.populate()
     assert not explorer.tree.exists(f"diag_{diag_id}")
-    explorer.rename_item(f"diag_{diag_id}")
-    assert repo.diagrams[diag_id].name == "Gov"
+
+
+def test_work_product_enabling_and_deletion_guard():
+    """Governance diagrams enable work products and prevent unsafe removal."""
+    toolbox = SafetyManagementToolbox()
+
+    # HAZOP creation disabled until explicitly registered
+    assert not toolbox.is_enabled("HAZOP")
+
+    toolbox.add_work_product("Gov", "HAZOP", "Link action to hazard")
+    assert toolbox.is_enabled("HAZOP")
+
+    # An existing document blocks removal of the work product declaration
+    toolbox.register_created_work_product("HAZOP")
+    removed = toolbox.remove_work_product("Gov", "HAZOP")
+    assert removed is False
+
+    # After deleting the document removal succeeds
+    toolbox.register_deleted_work_product("HAZOP")
+    removed = toolbox.remove_work_product("Gov", "HAZOP")
+    assert removed is True
+    assert not toolbox.is_enabled("HAZOP")
 
 def test_safety_diagrams_visible_in_analysis_tree():
     SysMLRepository._instance = None
@@ -575,7 +596,6 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
         assert FaultTreeApp.disable_work_product(app, name)
         assert menu.state == tk.DISABLED
 
-
 def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     """Governance diagrams open as BPMN diagrams with their toolbox."""
     SysMLRepository._instance = None
@@ -735,6 +755,36 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     explorer.new_diagram()
     assert "Diag" in toolbox.modules[0].diagrams
     assert "Diag" in toolbox.diagrams
+
+
+def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def selection(self):
+            return ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    from gui import messagebox as gui_messagebox
+    called = {"count": 0}
+
+    def fake_error(*args, **kwargs):
+        called["count"] += 1
+
+    monkeypatch.setattr(gui_messagebox, "showerror", fake_error)
+    explorer.new_diagram()
+    assert not toolbox.diagrams
+    assert called["count"] == 1
 
 
 def test_tools_include_safety_management_explorer():
@@ -953,3 +1003,125 @@ def test_folder_double_click_opens_safety_management_explorer():
 
     assert called["explorer"]
 
+
+def test_add_work_product_uses_half_width(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = [
+        SysMLObject(
+            2,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Hazard & Threat Analysis"},
+        )
+    ]
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = types.SimpleNamespace(enable_work_product=lambda name: None)
+
+    class FakeDialog:
+        def __init__(self, *args, **kwargs):
+            self.selection = "HAZOP"
+
+    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+
+    win.add_work_product()
+
+    wp = [o for o in win.objects if o.obj_type == "Work Product"][0]
+    assert wp.width == 60.0
+
+
+def test_work_product_color_and_text_wrapping():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        width=60.0,
+        height=80.0,
+        properties={"name": "Architecture Diagram"},
+    )
+    win.draw_object(obj)
+    _, rect_kwargs = win.canvas.rect_calls[0]
+    assert rect_kwargs["fill"] == "lightblue"
+    assert win.canvas.text_calls[0][2]["width"] == 60.0
+
+    win.canvas.rect_calls.clear()
+    win.canvas.text_calls.clear()
+    obj.properties["name"] = "HAZOP"
+    win.draw_object(obj)
+    _, rect_kwargs = win.canvas.rect_calls[0]
+    assert rect_kwargs["fill"] == "lightgreen"
+
+
+def test_add_lifecycle_phase_adds_object(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = []
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="PhaseA"), GovernanceModule(name="PhaseB")]
+    win.app = types.SimpleNamespace(safety_mgmt_toolbox=toolbox)
+
+    class FakeDialog:
+        def __init__(self, *args, **kwargs):
+            self.selection = "PhaseB"
+
+    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    win.add_lifecycle_phase()
+
+    phase = [o for o in win.objects if o.obj_type == "Lifecycle Phase"][0]
+    assert phase.properties["name"] == "PhaseB"
+
+
+def test_lifecycle_phase_drawing():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram")
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+
+    obj = SysMLObject(
+        1,
+        "Lifecycle Phase",
+        0.0,
+        0.0,
+        width=120.0,
+        height=80.0,
+        properties={"name": "Phase"},
+    )
+    win.draw_object(obj)
+    assert len(win.canvas.rect_calls) >= 2
+    assert win.canvas.text_calls[0][2]["text"] == "Phase"

@@ -4,10 +4,41 @@ This module defines simple data classes used by the GUI and other modules to
 collect work products, lifecycle information and workflows related to safety
 governance."""
 
+"""Helpers for managing safety governance information.
+
+This module originally provided a thin container for safety governance
+artifacts.  The user request requires the toolbox to control which work
+products are available in the main application.  To support this the
+toolbox now tracks which analysis types have been declared in governance
+diagrams and how many actual documents of each type exist.  When a work
+product type is removed from governance but there are existing documents
+of that type, the removal is rejected to prevent orphaned analyses.
+
+The toolbox also notifies listeners (typically the GUI) whenever the set
+of enabled work products changes so menu items can be enabled/disabled.
+"""
+
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List
+from typing import Dict, List, Callable, Optional
 
 from sysml.sysml_repository import SysMLRepository
+
+# Relationships that allow propagation of results between work products. Each
+# entry is a directed edge from source to target analysis name.
+ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
+    ("HAZOP", "Risk Assessment"),
+    ("FI2TC", "Risk Assessment"),
+    ("TC2FI", "Risk Assessment"),
+    ("Threat Analysis", "Cyber Risk Assessment"),
+    ("Cyber Risk Assessment", "Risk Assessment"),
+    ("Risk Assessment", "FMEA"),
+    ("Risk Assessment", "FMEDA"),
+    ("Risk Assessment", "FTA"),
+    ("Risk Assessment", "Product Goal Specification"),
+    ("FMEA", "FTA"),
+    ("FMEDA", "FTA"),
+    ("FTA", "Product Goal Specification"),
+}
 
 @dataclass
 class SafetyWorkProduct:
@@ -88,10 +119,129 @@ class SafetyManagementToolbox:
     workflows: Dict[str, List[str]] = field(default_factory=dict)
     diagrams: Dict[str, str] = field(default_factory=dict)
     modules: List[GovernanceModule] = field(default_factory=list)
+    # Track how many documents of each analysis type exist.  This allows the
+    # toolbox to prevent removal of work product declarations when documents
+    # are present.
+    work_product_counts: Dict[str, int] = field(default_factory=dict)
+    # Optional callback invoked whenever the enabled work product set changes.
+    on_change: Optional[Callable[[], None]] = field(default=None, repr=False)
 
+    # ------------------------------------------------------------------
     def add_work_product(self, diagram: str, analysis: str, rationale: str) -> None:
         """Add a work product linking a diagram to an analysis with rationale."""
         self.work_products.append(SafetyWorkProduct(diagram, analysis, rationale))
+        if self.on_change:
+            self.on_change()
+
+    # ------------------------------------------------------------------
+    def remove_work_product(self, diagram: str, analysis: str) -> bool:
+        """Remove a work product declaration if no documents of that type exist.
+
+        Parameters
+        ----------
+        diagram: str
+            Name of the governance diagram containing the declaration.
+        analysis: str
+            The analysis/work product type to remove.
+
+        Returns
+        -------
+        bool
+            ``True`` when the declaration was removed, ``False`` if it could
+            not be removed because there are existing work products of this
+            type or the declaration was not found.
+        """
+
+        if self.work_product_counts.get(analysis, 0) > 0:
+            return False
+
+        for idx, wp in enumerate(list(self.work_products)):
+            if wp.diagram == diagram and wp.analysis == analysis:
+                del self.work_products[idx]
+                if self.on_change:
+                    self.on_change()
+                return True
+        return False
+
+    # ------------------------------------------------------------------
+    def register_created_work_product(self, analysis: str) -> None:
+        """Record creation of a work product document of type ``analysis``."""
+        self.work_product_counts[analysis] = self.work_product_counts.get(analysis, 0) + 1
+
+    # ------------------------------------------------------------------
+    def register_deleted_work_product(self, analysis: str) -> None:
+        """Record deletion of a work product document of type ``analysis``."""
+        if self.work_product_counts.get(analysis, 0) > 0:
+            self.work_product_counts[analysis] -= 1
+
+    # ------------------------------------------------------------------
+    def enabled_products(self) -> set[str]:
+        """Return the set of analysis names currently enabled by governance."""
+        return {wp.analysis for wp in self.work_products}
+
+    # ------------------------------------------------------------------
+    def is_enabled(self, analysis: str) -> bool:
+        """Check whether ``analysis`` has been enabled via governance."""
+        return analysis in self.enabled_products()
+
+    # ------------------------------------------------------------------
+    def propagation_type(self, source: str, target: str) -> Optional[str]:
+        """Return propagation relationship type from ``source`` to ``target``.
+
+        The method searches all governance diagrams for a connection linking
+        the two named work products using one of the propagation relationship
+        types. ``None`` is returned when no such link exists."""
+
+        repo = SysMLRepository.get_instance()
+        for diag_id in self.diagrams.values():
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            src_id = dst_id = None
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Work Product":
+                    continue
+                name = obj.get("properties", {}).get("name")
+                if name == source:
+                    src_id = obj.get("obj_id")
+                elif name == target:
+                    dst_id = obj.get("obj_id")
+            if src_id is None or dst_id is None:
+                continue
+            for c in getattr(diag, "connections", []):
+                if (
+                    c.get("src") == src_id
+                    and c.get("dst") == dst_id
+                    and c.get("conn_type")
+                    in {"Propagate", "Propagate by Review", "Propagate by Approval"}
+                ):
+                    return c.get("conn_type")
+        return None
+
+    # ------------------------------------------------------------------
+    def can_propagate(
+        self,
+        source: str,
+        target: str,
+        *,
+        reviewed: bool = False,
+        joint_review: bool = False,
+    ) -> bool:
+        """Return ``True`` if results may propagate from ``source`` to ``target``.
+
+        ``Propagate`` links always allow propagation. ``Propagate by Review``
+        requires that a peer review has been performed (``reviewed``). ``Propagate
+        by Approval`` requires a completed joint review (``joint_review``).
+        ``False`` is returned when no propagation relationship exists."""
+
+        rel = self.propagation_type(source, target)
+        if rel == "Propagate":
+            return True
+        if rel == "Propagate by Review":
+            return reviewed
+        if rel == "Propagate by Approval":
+            return joint_review
+        return False
 
     def build_lifecycle(self, stages: List[str]) -> None:
         """Define the project lifecycle stages."""
