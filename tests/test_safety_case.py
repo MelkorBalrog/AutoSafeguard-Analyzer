@@ -205,6 +205,35 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     expected_spi = math.log10(1e-5 / 5e-5)
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
+
+def test_edit_notes_updates_node(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.push_undo_state = lambda: None
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.simpledialog.askstring", lambda *a, **k: "new note")
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    row = next(iter(tree.data))
+    tree.next_column = "Notes"
+    event = types.SimpleNamespace(x=0, y=0)
+    tree.bindings["<Double-Button-1>"](event)
+
+    assert sol.manager_notes == "new note"
+    assert tree.data[row]["values"][7] == "new note"
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
@@ -282,6 +311,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
     def fake_config(master, node, diag):
         called["ok"] = True
         node.work_product = "WP"
+        node.manager_notes = "note"
 
     monkeypatch.setattr("AutoML.GSNElementConfig", fake_config)
 
@@ -293,6 +323,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
     assert called.get("ok")
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][2] == "WP"
+    assert tree.data[iid]["values"][7] == "note"
 
 
 def test_safety_case_undo_redo_toggle(monkeypatch):

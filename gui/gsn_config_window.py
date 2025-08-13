@@ -79,8 +79,10 @@ class GSNElementConfig(tk.Toplevel):
         self.node = node
         self.diagram = diagram
         self.title("Edit GSN Element")
-        self.geometry("400x280")
+        self.geometry("400x360")
         self.columnconfigure(1, weight=1)
+        # Allow both text fields to expand when the dialog is resized
+        self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
         tk.Label(self, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=node.user_name)
@@ -92,9 +94,14 @@ class GSNElementConfig(tk.Toplevel):
         self.desc_text.insert("1.0", getattr(node, "description", ""))
         self.desc_text.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
 
+        tk.Label(self, text="Notes:").grid(row=2, column=0, sticky="ne", padx=4, pady=4)
+        self.notes_text = tk.Text(self, width=40, height=5)
+        self.notes_text.insert("1.0", getattr(node, "manager_notes", ""))
+        self.notes_text.grid(row=2, column=1, padx=4, pady=4, sticky="nsew")
+
         self.work_var = tk.StringVar(value=getattr(node, "work_product", ""))
         self.link_var = tk.StringVar(value=getattr(node, "evidence_link", ""))
-        row = 2
+        row = 3
         self.spi_var = tk.StringVar(value=getattr(node, "spi_target", ""))
         if node.node_type == "Solution":
             tk.Label(self, text="Work Product:").grid(
@@ -151,6 +158,9 @@ class GSNElementConfig(tk.Toplevel):
     def _on_ok(self):
         self.node.user_name = self.name_var.get()
         self.node.description = self.desc_text.get("1.0", tk.END).strip()
+        notes_text = getattr(self, "notes_text", None)
+        if notes_text:
+            self.node.manager_notes = notes_text.get("1.0", tk.END).strip()
         if self.node.node_type == "Solution":
             # ``GSNElementConfig`` is sometimes instantiated in tests without
             # running ``__init__``.  Guard against missing StringVar

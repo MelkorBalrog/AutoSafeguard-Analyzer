@@ -12828,6 +12828,15 @@ class FaultTreeApp:
                         te.probability = float(new_val)
                         self.refresh_safety_case_table()
                         self.update_views()
+            elif col_name == "Notes":
+                current = tree.set(row, "Notes")
+                new_val = simpledialog.askstring(
+                    "Notes", "Enter notes:", initialvalue=current
+                )
+                if new_val is not None:
+                    self.push_undo_state()
+                    tree.set(row, "Notes", new_val)
+                    node.manager_notes = new_val
 
         for seq in ("<Double-Button-1>", "<Double-1>"):
             tree.bind(seq, on_double_click)

@@ -42,6 +42,28 @@ def test_solution_config_sets_evidence_link():
     assert node.evidence_link == "http://example.com"
 
 
+def test_solution_config_sets_manager_notes():
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    diag.add_node(node)
+
+    cfg = GSNElementConfig.__new__(GSNElementConfig)
+    cfg.node = node
+    cfg.diagram = diag
+    cfg.name_var = DummyVar(node.user_name)
+    cfg.desc_text = DummyText(node.description)
+    cfg.notes_text = DummyText("Review this later")
+    cfg.work_var = DummyVar("")
+    cfg.link_var = DummyVar("")
+    cfg.spi_var = DummyVar("")
+    cfg.destroy = lambda: None
+
+    cfg._on_ok()
+
+    assert node.manager_notes == "Review this later"
+
+
 def test_double_click_opens_evidence_link(monkeypatch):
     opened = {}
 
