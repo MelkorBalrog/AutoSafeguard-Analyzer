@@ -15541,7 +15541,16 @@ class FaultTreeApp:
             self.clipboard_node.is_primary_instance = True
             target.children.append(self.clipboard_node)
             self.clipboard_node.parents.append(target)
-            # NEW: Update its position so it is offset relative to the new parent.
+            # Ensure the moved GSN node is registered with the target's diagram
+            # (and removed from its previous one if necessary).
+            if isinstance(self.clipboard_node, GSNNode):
+                old_diag = self._find_gsn_diagram(self.clipboard_node)
+                new_diag = self._find_gsn_diagram(target)
+                if old_diag and old_diag is not new_diag and self.clipboard_node in old_diag.nodes:
+                    old_diag.nodes.remove(self.clipboard_node)
+                if new_diag and self.clipboard_node not in new_diag.nodes:
+                    new_diag.add_node(self.clipboard_node)
+            # Update its position so it is offset relative to the new parent.
             self.clipboard_node.x = target.x + 100
             self.clipboard_node.y = target.y + 100
             # (Optional: remove any clone marker from its label.)
@@ -15554,7 +15563,15 @@ class FaultTreeApp:
             cloned_node = self.clone_node_preserving_id(self.clipboard_node)
             target.children.append(cloned_node)
             cloned_node.parents.append(target)
-            # NEW: Also update the cloned node’s position relative to the target.
+            # Ensure the cloned node is registered with its GSN diagram so it
+            # will be drawn instead of just the connection.  Without this the
+            # relationship line appears but the pasted node itself is missing.
+            if isinstance(cloned_node, GSNNode):
+                diag = self._find_gsn_diagram(target)
+                if diag:
+                    diag.add_node(cloned_node)
+            # Offset the cloned node relative to the target so it does not
+            # overlap the original selection.
             cloned_node.x = target.x + 100
             cloned_node.y = target.y + 100
             messagebox.showinfo("Paste", "Node pasted successfully (copied).")
@@ -15606,6 +15623,32 @@ class FaultTreeApp:
         new_node.original = node if node.is_primary_instance else node.original
         new_node.children = []
         return new_node
+
+    def _find_gsn_diagram(self, node):
+        """Return the GSN diagram containing ``node`` if known.
+
+        The application keeps GSN diagrams either in ``gsn_diagrams`` or nested
+        inside modules.  When pasting a GSN node we must ensure the element is
+        registered with its diagram's ``nodes`` list so it is rendered
+        correctly.  This helper performs a recursive search through all known
+        diagrams and modules to locate the owning diagram of ``node``.
+        """
+
+        for diag in getattr(self, "gsn_diagrams", []):
+            if node in getattr(diag, "nodes", []):
+                return diag
+
+        def _search_modules(modules):
+            for mod in modules:
+                for diag in getattr(mod, "diagrams", []):
+                    if node in getattr(diag, "nodes", []):
+                        return diag
+                result = _search_modules(getattr(mod, "modules", []))
+                if result:
+                    return result
+            return None
+
+        return _search_modules(getattr(self, "gsn_modules", []))
 
     def sync_nodes_by_id(self, updated_node):
         # Always work with the primary instance.
