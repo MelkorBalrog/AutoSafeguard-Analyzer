@@ -399,7 +399,7 @@ def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     monkeypatch.setattr(AutoML, "BPMNDiagramWindow", fake_bpmn)
     monkeypatch.setattr(AutoML, "ActivityDiagramWindow", fake_activity)
 
-    app.open_management_window(0)
+    app.open_management_window(diag.diag_id)
 
     assert calls["bpmn"]
     assert not calls["activity"]
