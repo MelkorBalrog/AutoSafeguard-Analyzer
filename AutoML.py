@@ -12626,7 +12626,14 @@ class FaultTreeApp:
         self._spi_tab = self._new_tab("Safety Performance Indicators")
         win = self._spi_tab
 
-        columns = ["Product Goal", "Validation Target", "Target Description", "Acceptance Criteria"]
+        columns = [
+            "Product Goal",
+            "Validation Target",
+            "Achieved Probability",
+            "SPI",
+            "Target Description",
+            "Acceptance Criteria",
+        ]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
             tree.heading(c, text=c)
@@ -12637,12 +12644,22 @@ class FaultTreeApp:
         tree.pack(fill=tk.BOTH, expand=True)
 
         for sg in self.top_events:
+            prob = getattr(sg, "probability", "")
+            v_target = getattr(sg, "validation_target", "")
+            spi_val = ""
+            if prob not in ("", None) and v_target not in ("", None) and float(prob) != 0.0:
+                try:
+                    spi_val = float(v_target) / float(prob)
+                except Exception:
+                    spi_val = ""
             tree.insert(
                 "",
                 "end",
                 values=[
                     sg.user_name or f"SG {sg.unique_id}",
-                    getattr(sg, "validation_target", ""),
+                    v_target,
+                    prob,
+                    f"{spi_val:.2e}" if isinstance(spi_val, float) else "",
                     self._spi_label(sg),
                     getattr(sg, "acceptance_criteria", ""),
                 ],
@@ -12656,10 +12673,20 @@ class FaultTreeApp:
         for iid in list(tree.get_children("")):
             tree.delete(iid)
         self._solution_lookup = {}
+        spi_map = {self._spi_label(te): te for te in getattr(self, "top_events", [])}
         for diag in getattr(self, "all_gsn_diagrams", []):
             for node in getattr(diag, "nodes", []):
                 if getattr(node, "node_type", "").lower() == "solution":
-                    self._solution_lookup[node.unique_id] = (node, diag)
+                    te = spi_map.get(getattr(node, "spi_target", ""))
+                    achieved = getattr(te, "probability", "") if te else ""
+                    v_target = getattr(te, "validation_target", None) if te else None
+                    spi_val = ""
+                    if te and achieved not in ("", None) and v_target not in ("", None) and float(achieved) != 0.0:
+                        try:
+                            spi_val = float(v_target) / float(achieved)
+                        except Exception:
+                            spi_val = ""
+                    self._solution_lookup[node.unique_id] = (node, diag, te)
                     tree.insert(
                         "",
                         "end",
@@ -12669,6 +12696,8 @@ class FaultTreeApp:
                             node.work_product,
                             node.evidence_link,
                             node.spi_target,
+                            achieved,
+                            f"{spi_val:.2e}" if isinstance(spi_val, float) else "",
                             CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
                             getattr(node, "manager_notes", ""),
                         ],
@@ -12690,6 +12719,8 @@ class FaultTreeApp:
             "Work Product",
             "Evidence Link",
             "SPI Target",
+            "Achieved Probability",
+            "SPI",
             "Evidence OK",
             "Notes",
         ]
@@ -12718,13 +12749,32 @@ class FaultTreeApp:
             node_diag = self._solution_lookup.get(uid)
             if not node_diag:
                 return
-            node = node_diag[0]
-            current = tree.set(row, "Evidence OK")
-            new_val = "" if current == CHECK_MARK else CHECK_MARK
-            if messagebox.askokcancel("Evidence", "Are you sure?"):
-                self.push_undo_state()
-                tree.set(row, "Evidence OK", new_val)
-                node.evidence_sufficient = new_val == CHECK_MARK
+            node, diag, te = node_diag
+            if col_name == "Evidence OK":
+                current = tree.set(row, "Evidence OK")
+                new_val = "" if current == CHECK_MARK else CHECK_MARK
+                if messagebox.askokcancel("Evidence", "Are you sure?"):
+                    self.push_undo_state()
+                    tree.set(row, "Evidence OK", new_val)
+                    node.evidence_sufficient = new_val == CHECK_MARK
+            elif col_name == "Achieved Probability" and te:
+                val = simpledialog.askfloat(
+                    "Achieved Probability",
+                    "Enter achieved probability:",
+                    initialvalue=getattr(te, "probability", 0.0),
+                )
+                if val is not None:
+                    self.push_undo_state()
+                    te.probability = val
+                    tree.set(row, "Achieved Probability", val)
+                    v_target = getattr(te, "validation_target", None)
+                    spi_val = ""
+                    if v_target not in (None, "") and val:
+                        try:
+                            spi_val = float(v_target) / float(val)
+                        except Exception:
+                            spi_val = ""
+                    tree.set(row, "SPI", f"{spi_val:.2e}" if isinstance(spi_val, float) else "")
 
         for seq in ("<Double-Button-1>", "<Double-1>"):
             tree.bind(seq, on_double_click)
@@ -12742,7 +12792,7 @@ class FaultTreeApp:
             node_diag = self._solution_lookup.get(uid)
             if not node_diag:
                 return
-            node, diag = node_diag
+            node, diag, _ = node_diag
             self.push_undo_state()
             GSNElementConfig(win, node, diag)
             self.refresh_safety_case_table()
