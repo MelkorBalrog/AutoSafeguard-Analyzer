@@ -86,14 +86,21 @@ def test_solution_requires_matching_spi_for_clone():
     assert node2.original is original
 
 
-def test_format_text_shows_spi_target():
+def test_format_text_shows_spi_probability():
     root = GSNNode("Root", "Goal")
     sol = GSNNode("Sol", "Solution")
     sol.spi_target = "Brake Time"
     diag = GSNDiagram(root)
     diag.add_node(sol)
+
+    class TopEvent:
+        def __init__(self):
+            self.validation_desc = "Brake Time"
+            self.probability = 1e-5
+
+    diag.app = types.SimpleNamespace(top_events=[TopEvent()])
     text = diag._format_text(sol)
-    assert "SPI: Brake Time" in text
+    assert f"SPI: {1e-5:.2e}" in text
 
 
 def test_collect_work_products_returns_unique_sorted():

@@ -149,6 +149,23 @@ class GSNDiagram:
                     raise_(f"{rel_id}-arrow")
 
     # ------------------------------------------------------------------
+    def _lookup_spi_probability(self, target: str) -> float | None:
+        """Return probability for SPI target ``target`` if available."""
+        app = getattr(self, "app", None)
+        if not app:
+            return None
+        for te in getattr(app, "top_events", []):
+            name = (
+                getattr(te, "validation_desc", "")
+                or getattr(te, "safety_goal_description", "")
+                or getattr(te, "user_name", "")
+                or f"SG {getattr(te, 'unique_id', '')}"
+            )
+            if name == target:
+                return getattr(te, "probability", None)
+        return None
+
+    # ------------------------------------------------------------------
     def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
         x, y = node.x * zoom, node.y * zoom
         typ = node.node_type.lower()
@@ -259,7 +276,9 @@ class GSNDiagram:
         if node.node_type == "Solution":
             lines = [node.user_name]
             if getattr(node, "spi_target", ""):
-                lines.append(f"SPI: {node.spi_target}")
+                prob = self._lookup_spi_probability(node.spi_target)
+                label = f"SPI: {prob:.2e}" if prob is not None else f"SPI: {node.spi_target}"
+                lines.append(label)
             if getattr(node, "description", ""):
                 lines.append(node.description)
             return "\n".join(lines)
