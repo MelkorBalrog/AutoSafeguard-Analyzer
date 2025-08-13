@@ -2284,6 +2284,7 @@ class FaultTreeApp:
             "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
+            "Safety Case": self.show_safety_case,
             "GSN Explorer": self.manage_gsn,
         }
 
@@ -2339,6 +2340,7 @@ class FaultTreeApp:
             ],
             "Safety Management": [
                 "Safety Management",
+                "Safety Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",
             ],
@@ -8135,6 +8137,8 @@ class FaultTreeApp:
         elif kind == "gsn":
             if 0 <= idx < len(getattr(self, "all_gsn_diagrams", [])):
                 self.open_gsn_diagram(self.all_gsn_diagrams[idx])
+        elif kind == "safetycase":
+            self.show_safety_case()
         elif kind == "jrev":
             if 0 <= idx < len(getattr(self, "joint_reviews", [])):
                 review = self.joint_reviews[idx]
@@ -9134,6 +9138,8 @@ class FaultTreeApp:
                     text=diag.root.user_name or f"Diagram {idx + 1}",
                     tags=("gsn", str(idx)),
                 )
+
+            tree.insert(mgmt_root, "end", text="Safety Case", tags=("safetycase", "0"))
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -12608,6 +12614,80 @@ class FaultTreeApp:
                     getattr(sg, "acceptance_criteria", ""),
                 ],
             )
+
+    def refresh_safety_case_table(self):
+        """Populate the Safety Case table with solution nodes."""
+        tree = getattr(self, "_safety_case_tree", None)
+        if not tree or not getattr(tree, "winfo_exists", lambda: True)():
+            return
+        for iid in list(tree.get_children("")):
+            tree.delete(iid)
+        self._solution_lookup = {}
+        for diag in getattr(self, "all_gsn_diagrams", []):
+            for node in getattr(diag, "nodes", []):
+                if getattr(node, "node_type", "").lower() == "solution":
+                    self._solution_lookup[node.unique_id] = node
+                    tree.insert(
+                        "",
+                        "end",
+                        values=[
+                            node.user_name,
+                            node.description,
+                            node.work_product,
+                            node.evidence_link,
+                            node.spi_target,
+                            CHECK_MARK if getattr(node, "evidence_sufficient", False) else "",
+                        ],
+                        tags=(node.unique_id,),
+                    )
+
+    def show_safety_case(self):
+        """Display table of all solution nodes from GSN diagrams."""
+        if hasattr(self, "_safety_case_tab") and self._safety_case_tab.winfo_exists():
+            self.doc_nb.select(self._safety_case_tab)
+            self.refresh_safety_case_table()
+            return
+        self._safety_case_tab = self._new_tab("Safety Case")
+        win = self._safety_case_tab
+
+        columns = [
+            "Solution",
+            "Description",
+            "Work Product",
+            "Evidence Link",
+            "SPI Target",
+            "Evidence OK",
+        ]
+        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 120
+            if c in ("Description", "Evidence Link"):
+                width = 200
+            tree.column(c, width=width, anchor="center")
+        tree.pack(fill=tk.BOTH, expand=True)
+        self._safety_case_tree = tree
+        self._solution_lookup = {}
+
+        def on_double_click(event):
+            row = tree.identify_row(event.y)
+            col = tree.identify_column(event.x)
+            if col != f"#{len(columns)}":
+                return
+            tags = tree.item(row, "tags")
+            if not tags:
+                return
+            uid = tags[0]
+            node = self._solution_lookup.get(uid)
+            if not node:
+                return
+            current = tree.set(row, "Evidence OK")
+            new_val = "" if current == CHECK_MARK else CHECK_MARK
+            tree.set(row, "Evidence OK", new_val)
+            node.evidence_sufficient = new_val == CHECK_MARK
+
+        tree.bind("<Double-1>", on_double_click)
+        self.refresh_safety_case_table()
 
     def export_product_goal_requirements(self):
         """Export requirements traced to product goals including their ASIL."""

@@ -41,6 +41,7 @@ class GSNNode:
     work_product: str = ""
     evidence_link: str = ""
     spi_target: str = ""
+    evidence_sufficient: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - trivial
         # A freshly created node is considered its own original instance.
@@ -84,6 +85,7 @@ class GSNNode:
             original=self.original,
             work_product=self.work_product,
             evidence_link=self.evidence_link,
+            evidence_sufficient=self.evidence_sufficient,
         )
         clone.work_product = self.work_product
         clone.spi_target = self.spi_target
@@ -108,6 +110,7 @@ class GSNNode:
             "work_product": self.work_product,
             "evidence_link": self.evidence_link,
             "spi_target": self.spi_target,
+            "evidence_sufficient": self.evidence_sufficient,
         }
 
     # ------------------------------------------------------------------
@@ -130,6 +133,7 @@ class GSNNode:
             work_product=data.get("work_product", ""),
             evidence_link=data.get("evidence_link", ""),
             spi_target=data.get("spi_target", ""),
+            evidence_sufficient=data.get("evidence_sufficient", False),
         )
         nodes[node.unique_id] = node
         # Temporarily store child and original references for second pass.
