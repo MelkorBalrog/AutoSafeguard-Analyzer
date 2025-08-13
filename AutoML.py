@@ -8379,10 +8379,6 @@ class FaultTreeApp:
             self.show_safety_concept_editor()
         elif kind == "arch":
             self.open_arch_window(ident)
-        elif kind == "safetyexp":
-            self.manage_safety_management()
-        elif kind == "gsnexp":
-            self.manage_gsn()
         elif kind == "pkg":
             self.manage_architecture()
 
@@ -9583,8 +9579,6 @@ class FaultTreeApp:
             )
             tree.insert(sc_root, "end", text="Requirements Editor", tags=("reqs", "0"))
             tree.insert(sc_root, "end", text="Requirements Explorer", tags=("reqexp", "0"))
-            tree.insert(sc_root, "end", text="Safety & Security Management Explorer", tags=("safetyexp", "0"))
-            tree.insert(sc_root, "end", text="GSN Explorer", tags=("gsnexp", "0"))
 
             # --- Hazard & Threat Analysis Section ---
             haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)

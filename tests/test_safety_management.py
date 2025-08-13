@@ -299,6 +299,49 @@ def test_gsn_diagrams_visible_in_analysis_tree():
     assert "Goal1" in texts
 
 
+def test_explorers_removed_from_safety_concept_group():
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            pass
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", tags=(), **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text, "tags": tags}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.analysis_tree = DummyTree()
+
+    app.update_views()
+    texts = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "Safety & Security Management Explorer" not in texts
+    assert "GSN Explorer" not in texts
+
+
 def test_joint_reviews_visible_in_analysis_tree():
     SysMLRepository._instance = None
     SysMLRepository.get_instance()
