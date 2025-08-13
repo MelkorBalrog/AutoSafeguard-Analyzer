@@ -119,6 +119,9 @@ class SafetyManagementToolbox:
     workflows: Dict[str, List[str]] = field(default_factory=dict)
     diagrams: Dict[str, str] = field(default_factory=dict)
     modules: List[GovernanceModule] = field(default_factory=list)
+    # Currently selected lifecycle module. When set, only work products from
+    # diagrams contained within this module are considered enabled.
+    active_module: Optional[str] = None
     # Track how many documents of each analysis type exist.  This allows the
     # toolbox to prevent removal of work product declarations when documents
     # are present.
@@ -177,12 +180,62 @@ class SafetyManagementToolbox:
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
         """Return the set of analysis names currently enabled by governance."""
-        return {wp.analysis for wp in self.work_products}
+        if not self.active_module:
+            return {wp.analysis for wp in self.work_products}
+
+        diagrams = self.diagrams_for_module(self.active_module)
+        return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
     # ------------------------------------------------------------------
     def is_enabled(self, analysis: str) -> bool:
         """Check whether ``analysis`` has been enabled via governance."""
         return analysis in self.enabled_products()
+
+    # ------------------------------------------------------------------
+    def set_active_module(self, name: Optional[str]) -> None:
+        """Select the lifecycle module whose rules should be active."""
+        self.active_module = name
+        if self.on_change:
+            self.on_change()
+
+    # ------------------------------------------------------------------
+    def list_modules(self) -> List[str]:
+        """Return the names of all governance modules."""
+
+        names: List[str] = []
+
+        def collect(mods: List[GovernanceModule]) -> None:
+            for m in mods:
+                names.append(m.name)
+                collect(m.modules)
+
+        collect(self.modules)
+        return names
+
+    # ------------------------------------------------------------------
+    def diagrams_for_module(self, name: str) -> set[str]:
+        """Return all diagram names contained in the named module."""
+
+        def find(mods: List[GovernanceModule]) -> Optional[GovernanceModule]:
+            for m in mods:
+                if m.name == name:
+                    return m
+                sub = find(m.modules)
+                if sub:
+                    return sub
+            return None
+
+        module = find(self.modules)
+        diagrams: set[str] = set()
+
+        def collect(mod: GovernanceModule) -> None:
+            diagrams.update(mod.diagrams)
+            for sub in mod.modules:
+                collect(sub)
+
+        if module:
+            collect(module)
+        return diagrams
 
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
