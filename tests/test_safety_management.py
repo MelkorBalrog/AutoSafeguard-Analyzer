@@ -680,3 +680,76 @@ def test_governance_hierarchy_in_analysis_tree():
     assert items[diag_id]["image"] == "DIAG"
     assert items[loose_id]["parent"] == gov_id
 
+
+def test_folder_double_click_opens_safety_management_explorer():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.create_diagram("Gov1")
+    toolbox.modules = [GovernanceModule(name="Folder", diagrams=["Gov1"])]
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self._focus = None
+
+        def delete(self, *items):
+            pass
+
+        def insert(self, parent, index, text="", tags=(), image=None, **kwargs):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text, "tags": tags}
+            if parent in self.items:
+                self.items[parent].setdefault("children", []).append(iid)
+            return iid
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def item(self, iid, option=None):
+            meta = self.items[iid]
+            if option == "tags":
+                return meta.get("tags", ())
+            if option == "text":
+                return meta.get("text", "")
+            return meta
+
+        def parent(self, iid):
+            return self.items[iid]["parent"]
+
+        def focus(self, iid=None):
+            if iid is None:
+                return self._focus
+            self._focus = iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.analysis_tree = DummyTree()
+    app.safety_mgmt_toolbox = toolbox
+
+    called = {"explorer": False}
+    app.manage_safety_management = lambda: called.__setitem__("explorer", True)
+
+    app.update_views()
+
+    folder_id = next(
+        i for i, meta in app.analysis_tree.items.items() if meta["text"] == "Folder"
+    )
+    app.analysis_tree.focus(folder_id)
+    app.on_analysis_tree_double_click(None)
+
+    assert called["explorer"]
+

@@ -8288,6 +8288,15 @@ class FaultTreeApp:
         item = self.analysis_tree.focus()
         tags = self.analysis_tree.item(item, "tags")
         if len(tags) != 2:
+            parent = item
+            while parent:
+                if (
+                    self.analysis_tree.item(parent, "text")
+                    == "Safety & Security Governance Diagrams"
+                ):
+                    self.manage_safety_management()
+                    return
+                parent = self.analysis_tree.parent(parent)
             return
         kind, ident = tags[0], tags[1]
         if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
