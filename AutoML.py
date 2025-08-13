@@ -8766,14 +8766,14 @@ class FaultTreeApp:
             return
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
         if toolbox:
-            declared = {wp.analysis for wp in getattr(toolbox, "work_products", [])}
+            declared = toolbox.enabled_products()
             current = set(getattr(self, "enabled_work_products", set()))
             for name in declared - current:
                 try:
                     self.enable_work_product(name)
                 except Exception:
                     self.enabled_work_products.add(name)
-            if declared:
+            if getattr(toolbox, "work_products", None):
                 for name in current - declared:
                     try:
                         self.disable_work_product(name)

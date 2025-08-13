@@ -849,7 +849,9 @@ def test_governance_enables_tools_per_phase():
             self.items: list[str] = []
             self.colors: list[str] = []
 
-        def get(self, _start, _end):
+        def get(self, *args):
+            if len(args) == 1:
+                return self.items[args[0]]
             return list(self.items)
 
         def insert(self, _index, item):
@@ -918,17 +920,25 @@ def test_governance_enables_tools_per_phase():
     toolbox.on_change = app.refresh_tool_enablement
 
     toolbox.add_work_product("Gov1", "Architecture Diagram", "r")
-    toolbox.add_work_product("Gov1", "Requirement Specification", "r")
+    toolbox.add_work_product("Gov2", "Requirement Specification", "r")
 
     app.lifecycle_var = DummyVar("P1")
     app.on_lifecycle_selected()
-    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.NORMAL
-    assert lb.colors == ["black", "black"]
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
+    assert lb.items == ["AutoML Explorer"]
+    assert lb.colors == ["black"]
 
     app.lifecycle_var.set("P2")
     app.on_lifecycle_selected()
-    assert menu_arch.state == tk.DISABLED and menu_req.state == tk.DISABLED
-    assert lb.colors == ["gray", "gray"]
+    assert menu_arch.state == tk.DISABLED and menu_req.state == tk.NORMAL
+    assert lb.items == ["Requirements Editor"]
+    assert lb.colors == ["black"]
+
+    app.lifecycle_var.set("P1")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
+    assert lb.items == ["AutoML Explorer"]
+    assert lb.colors == ["black"]
 
 def test_governance_without_declarations_keeps_tools_enabled():
     """Tools remain enabled when no work products are declared."""
@@ -940,7 +950,9 @@ def test_governance_without_declarations_keeps_tools_enabled():
             self.items: list[str] = []
             self.colors: list[str] = []
 
-        def get(self, _start, _end):
+        def get(self, *args):
+            if len(args) == 1:
+                return self.items[args[0]]
             return list(self.items)
 
         def insert(self, _index, item):
@@ -994,6 +1006,7 @@ def test_governance_without_declarations_keeps_tools_enabled():
 
     assert menu_arch.state == tk.NORMAL and menu_req.state == tk.NORMAL
     assert lb.colors == ["black", "black"]
+
 
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     SysMLRepository._instance = None
