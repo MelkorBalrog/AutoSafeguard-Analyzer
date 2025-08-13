@@ -1933,6 +1933,74 @@ class DecompositionDialog(simpledialog.Dialog):
 # Main Application (Parent Diagram)
 ##########################################
 class FaultTreeApp:
+    WORK_PRODUCT_INFO = {
+        "Architecture Diagram": (
+            "System Design (Item Definition)",
+            "AutoML Explorer",
+            "manage_architecture",
+        ),
+        "Safety & Security Concept": (
+            "System Design (Item Definition)",
+            "Safety & Security Case",
+            "show_safety_case",
+        ),
+        "Requirement Specification": (
+            "System Design (Item Definition)",
+            "Requirements Editor",
+            "show_requirements_editor",
+        ),
+        "Product Goal Specification": (
+            "System Design (Item Definition)",
+            "Product Goals Editor",
+            "show_product_goals_editor",
+        ),
+        "HAZOP": (
+            "Hazard & Threat Analysis",
+            "HAZOP Analysis",
+            "open_hazop_window",
+        ),
+        "STPA": (
+            "Hazard & Threat Analysis",
+            "STPA Analysis",
+            "open_stpa_window",
+        ),
+        "Threat Analysis": (
+            "Hazard & Threat Analysis",
+            "Threat Analysis",
+            "open_threat_window",
+        ),
+        "FI2TC": (
+            "Hazard & Threat Analysis",
+            "FI2TC Analysis",
+            "open_fi2tc_window",
+        ),
+        "TC2FI": (
+            "Hazard & Threat Analysis",
+            "TC2FI Analysis",
+            "open_tc2fi_window",
+        ),
+        "Risk Assessment": (
+            "Risk Assessment",
+            "Risk Assessment",
+            "open_risk_assessment_window",
+        ),
+        "FMEA": (
+            "Safety Analysis",
+            "FMEA Manager",
+            "show_fmea_list",
+        ),
+        "FMEDA": (
+            "Safety Analysis",
+            "FMEDA Manager",
+            "show_fmeda_list",
+        ),
+        "FTA": (
+            "Safety Analysis",
+            "FTA Cut Sets",
+            "show_cut_sets",
+        ),
+    }
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
@@ -2261,120 +2329,19 @@ class FaultTreeApp:
         self.tools_nb.bind("<Leave>", lambda _e: self._tools_tip.hide())
 
         self.tool_actions = {
-            "Mission Profiles": self.manage_mission_profiles,
-            "Mechanism Libraries": self.manage_mechanism_libraries,
-            "Scenario Libraries": self.manage_scenario_libraries,
-            "ODD Libraries": self.manage_odd_libraries,
-            "Reliability Analysis": self.open_reliability_window,
-            "FMEDA Manager": self.show_fmeda_list,
-            "FMEA Manager": self.show_fmea_list,
-            "HAZOP Analysis": self.open_hazop_window,
-            "Risk Assessment": self.open_risk_assessment_window,
-            "STPA Analysis": self.open_stpa_window,
-            "Threat Analysis": self.open_threat_window,
-            "Hazards Editor": self.show_hazard_editor,
-            "Malfunctions Editor": self.show_malfunction_editor,
-            "Faults Editor": self.show_fault_editor,
-            "Failures Editor": self.show_failure_editor,
-            "Triggering Conditions": self.show_triggering_condition_list,
-            "Functional Insufficiencies": self.show_functional_insufficiency_list,
-            "FI2TC Analysis": self.open_fi2tc_window,
-            "TC2FI Analysis": self.open_tc2fi_window,
-            "AutoML Explorer": self.manage_architecture,
-            "Requirements Editor": self.show_requirements_editor,
-            "Requirements Explorer": self.show_requirements_explorer,
-            "Product Goals Editor": self.show_product_goals_editor,
-            "Start Peer Review": self.start_peer_review,
-            "Start Joint Review": self.start_joint_review,
-            "Open Review Toolbox": self.open_review_toolbox,
-            "Merge Review Comments": self.merge_review_comments,
-            "Compare Versions": self.compare_versions,
-            "Set Current User": self.set_current_user,
-            "Common Cause Toolbox": self.show_common_cause_view,
-            "Cause & Effect Chain": self.show_cause_effect_chain,
-            "Fault Prioritization": self.open_fault_prioritization_window,
-            "Product Goals Export": self.export_product_goal_requirements,
-            "FTA Cut Sets": self.show_cut_sets,
-            "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety & Security Management": self.open_safety_management_toolbox,
-            "Safety Performance Indicators": self.show_safety_performance_indicators,
-            "Safety & Security Case": self.show_safety_case,
             "Safety & Security Management Explorer": self.manage_safety_management,
-            "GSN Explorer": self.manage_gsn,
         }
 
-        self.tool_categories = {
-            "Hazard & Threat Analysis": [
-                "ODD Libraries",
-                "Scenario Libraries",
-                "HAZOP Analysis",
-                "STPA Analysis",
-                "Threat Analysis",
-                "FI2TC Analysis",
-                "TC2FI Analysis",
-            ],
-            "Risk Assessment": [
-                "Risk Assessment",
-                "Product Goals Export",
-                "Product Goals Editor",
-            ],
-            "System Engineering": [
-                "AutoML Explorer",
-                "Requirements Editor",
-                "Requirements Explorer",
-            ],
-            "Safety Analysis": [
-                "FMEA Manager",
-                "FTA Cut Sets",
-                "FTA-FMEA Traceability",
-                "Common Cause Toolbox",
-            ],
-            "Reliability": [
-                "Mission Profiles",
-                "Mechanism Libraries",
-                "Reliability Analysis",
-                "FMEDA Manager",
-            ],
-            "Review": [
-                "Start Peer Review",
-                "Start Joint Review",
-                "Open Review Toolbox",
-                "Merge Review Comments",
-                "Compare Versions",
-                "Set Current User",
-            ],
-            "Fault modeling Tools": [
-                "Triggering Conditions",
-                "Functional Insufficiencies",
-                "Hazards Editor",
-                "Malfunctions Editor",
-                "Failures Editor",
-                "Faults Editor",
-                "Cause & Effect Chain",
-                "Fault Prioritization",
-            ],
+        self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
                 "Safety & Security Management Explorer",
-                "Safety & Security Case",
-                "Safety Performance Indicators",
-                "GSN Explorer",
-            ],
+            ]
         }
-
-        self.tool_listboxes = {}
+        self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
-            frame = ttk.Frame(self.tools_nb)
-            self.tools_nb.add(frame, text=cat)
-            lb = tk.Listbox(frame, height=10)
-            vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
-            lb.configure(yscrollcommand=vsb.set)
-            lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            vsb.pack(side=tk.RIGHT, fill=tk.Y)
-            for n in names:
-                lb.insert(tk.END, n)
-            lb.bind("<Double-1>", self.on_tool_list_double_click)
-            self.tool_listboxes[lb] = None
+            self._add_tool_category(cat, names)
 
         self.pmhf_var = tk.StringVar(value="")
         self.pmhf_label = ttk.Label(self.analysis_tab, textvariable=self.pmhf_var, foreground="blue")
@@ -8500,6 +8467,38 @@ class FaultTreeApp:
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def _add_tool_category(self, cat: str, names: list[str]) -> None:
+        frame = ttk.Frame(self.tools_nb)
+        self.tools_nb.add(frame, text=cat)
+        lb = tk.Listbox(frame, height=10)
+        vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
+        lb.configure(yscrollcommand=vsb.set)
+        lb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        lb.bind("<Double-1>", self.on_tool_list_double_click)
+        self.tool_listboxes[cat] = lb
+        for n in names:
+            lb.insert(tk.END, n)
+
+    def enable_process_area(self, area: str) -> None:
+        if area not in self.tool_listboxes:
+            self.tool_categories[area] = []
+            self._add_tool_category(area, [])
+
+    def enable_work_product(self, name: str) -> None:
+        info = self.WORK_PRODUCT_INFO.get(name)
+        if not info:
+            return
+        area, tool_name, method_name = info
+        self.enable_process_area(area)
+        if tool_name not in self.tool_actions:
+            action = getattr(self, method_name, None)
+            if action:
+                self.tool_actions[tool_name] = action
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    lb.insert(tk.END, tool_name)
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""

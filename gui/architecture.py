@@ -5435,6 +5435,39 @@ class SysMLDiagramWindow(tk.Frame):
                     anchor="s",
                     font=self.font,
                 )
+        elif obj.obj_type == "Work Product":
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            fold = 10 * self.zoom
+            self.canvas.create_line(
+                x + w - fold,
+                y - h,
+                x + w,
+                y - h + fold,
+                fill=outline,
+            )
+            self.canvas.create_line(
+                x + w - fold,
+                y - h,
+                x + w - fold,
+                y - h + fold,
+                fill=outline,
+            )
+            label = obj.properties.get("name", "")
+            if label:
+                self.canvas.create_text(
+                    x,
+                    y,
+                    text=label,
+                    anchor="center",
+                    font=self.font,
+                )
         elif obj.obj_type == "Existing Element":
             element = self.repo.elements.get(obj.element_id)
             if element:
@@ -7976,6 +8009,126 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         for child in self.toolbox.winfo_children():
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
+
+        ttk.Button(
+            self.toolbox,
+            text="Add Work Product",
+            command=self.add_work_product,
+        ).pack(fill=tk.X, padx=2, pady=2)
+        ttk.Button(
+            self.toolbox,
+            text="Add Process Area",
+            command=self.add_process_area,
+        ).pack(fill=tk.X, padx=2, pady=2)
+
+    class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
+        def __init__(self, parent, title: str, options: list[str]):
+            self.options = options
+            self.selection = ""
+            super().__init__(parent, title)
+
+        def body(self, master):  # pragma: no cover - requires tkinter
+            ttk.Label(master, text="Select:").pack(padx=5, pady=5)
+            self.var = tk.StringVar(value=self.options[0] if self.options else "")
+            combo = ttk.Combobox(
+                master,
+                textvariable=self.var,
+                values=self.options,
+                state="readonly",
+            )
+            combo.pack(padx=5, pady=5)
+            return combo
+
+        def apply(self):  # pragma: no cover - requires tkinter
+            self.selection = self.var.get()
+
+    def add_work_product(self):  # pragma: no cover - requires tkinter
+        options = [
+            "Architecture Diagram",
+            "Safety & Security Concept",
+            "Requirement Specification",
+            "HAZOP",
+            "STPA",
+            "Threat Analysis",
+            "FI2TC",
+            "TC2FI",
+            "Risk Assessment",
+            "Product Goal Specification",
+            "FTA",
+            "FMEA",
+            "FMEDA",
+        ]
+        dlg = self._SelectDialog(self, "Add Work Product", options)
+        name = getattr(dlg, "selection", "")
+        if not name:
+            return
+        area_map = {
+            "Architecture Diagram": "System Design (Item Definition)",
+            "Safety & Security Concept": "System Design (Item Definition)",
+            "Requirement Specification": "System Design (Item Definition)",
+            "Product Goal Specification": "System Design (Item Definition)",
+            "HAZOP": "Hazard & Threat Analysis",
+            "STPA": "Hazard & Threat Analysis",
+            "Threat Analysis": "Hazard & Threat Analysis",
+            "FI2TC": "Hazard & Threat Analysis",
+            "TC2FI": "Hazard & Threat Analysis",
+            "Risk Assessment": "Risk Assessment",
+            "FTA": "Safety Analysis",
+            "FMEA": "Safety Analysis",
+            "FMEDA": "Safety Analysis",
+        }
+        required = area_map.get(name)
+        if required and not any(
+            o.obj_type == "System Boundary" and o.properties.get("name") == required
+            for o in self.objects
+        ):
+            messagebox.showerror(
+                "Missing Process Area",
+                f"Add process area '{required}' before adding this work product.",
+            )
+            return
+        obj = SysMLObject(
+            _get_next_id(),
+            "Work Product",
+            100.0,
+            100.0,
+            width=120.0,
+            height=80.0,
+            properties={"name": name},
+        )
+        self.objects.append(obj)
+        self.sort_objects()
+        self._sync_to_repository()
+        self.redraw()
+        if getattr(self.app, "enable_work_product", None):
+            self.app.enable_work_product(name)
+
+    def add_process_area(self):  # pragma: no cover - requires tkinter
+        options = [
+            "System Design (Item Definition)",
+            "Hazard & Threat Analysis",
+            "Risk Assessment",
+            "Safety Analysis",
+        ]
+        dlg = self._SelectDialog(self, "Add Process Area", options)
+        name = getattr(dlg, "selection", "")
+        if not name:
+            return
+        obj = SysMLObject(
+            _get_next_id(),
+            "System Boundary",
+            100.0,
+            100.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": name},
+        )
+        self.objects.insert(0, obj)
+        self.sort_objects()
+        self._sync_to_repository()
+        self.redraw()
+        if getattr(self.app, "enable_process_area", None):
+            self.app.enable_process_area(name)
 
 
 class BlockDiagramWindow(SysMLDiagramWindow):
