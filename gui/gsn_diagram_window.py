@@ -81,6 +81,8 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self._on_double_click)
         self.canvas.bind("<Delete>", self._on_delete)
         self.canvas.bind("<BackSpace>", self._on_delete)
+        # Provide a context menu for nodes and relationships via right-click.
+        self.canvas.bind("<Button-3>", self._on_right_click)
         self.refresh()
 
     # ------------------------------------------------------------------
@@ -271,12 +273,80 @@ class GSNDiagramWindow(tk.Frame):
                 return
             self.refresh()
             return
-        conn, _ = self._connection_at(cx, cy)
+        conn = self._connection_at(cx, cy)
         if conn:
             parent, child = conn
             GSNConnectionConfig(self, parent, child, self.diagram)
             self.refresh()
             return
+
+    # ------------------------------------------------------------------
+    def _on_right_click(self, event):  # pragma: no cover - requires tkinter
+        """Show a context menu for the element under the cursor."""
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        node = self._node_at(cx, cy)
+        conn = self._connection_at(cx, cy)
+        if not node and not conn:
+            return
+        menu = tk.Menu(self, tearoff=0)
+        if node:
+            menu.add_command(
+                label="Edit", command=lambda n=node: self._edit_node(n)
+            )
+            menu.add_command(
+                label="Delete", command=lambda n=node: self._delete_node(n)
+            )
+        elif conn:
+            parent, child = conn
+            menu.add_command(
+                label="Edit",
+                command=lambda p=parent, c=child: self._edit_connection(p, c),
+            )
+            menu.add_command(
+                label="Delete",
+                command=lambda p=parent, c=child: self._delete_connection(p, c),
+            )
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:  # pragma: no cover - no-op on simple stubs
+            # ``grab_release`` avoids blocking further events if available.
+            grab = getattr(menu, "grab_release", None)
+            if grab:
+                grab()
+
+    # ------------------------------------------------------------------
+    def _edit_node(self, node: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        GSNElementConfig(self, node, self.diagram)
+        self.refresh()
+
+    def _delete_node(self, node: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        if node in self.diagram.nodes:
+            self.diagram.nodes.remove(node)
+        for parent in list(getattr(node, "parents", [])):
+            if node in parent.children:
+                parent.children.remove(node)
+            if node in parent.context_children:
+                parent.context_children.remove(node)
+            if parent in node.parents:
+                node.parents.remove(parent)
+        for child in list(getattr(node, "children", [])):
+            if node in child.parents:
+                child.parents.remove(node)
+        self.refresh()
+
+    def _edit_connection(self, parent: GSNNode, child: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        GSNConnectionConfig(self, parent, child, self.diagram)
+        self.refresh()
+
+    def _delete_connection(self, parent: GSNNode, child: GSNNode) -> None:  # pragma: no cover - requires tkinter
+        if child in parent.children:
+            parent.children.remove(child)
+        if parent in child.parents:
+            child.parents.remove(parent)
+        if child in parent.context_children:
+            parent.context_children.remove(child)
+        self.refresh()
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
         items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
@@ -288,7 +358,8 @@ class GSNDiagramWindow(tk.Frame):
         return None
 
     def _rel_id(self, parent: GSNNode, child: GSNNode) -> str:
-        return f"rel:{parent.unique_id}:{child.unique_id}"
+        # Match the connection tag format used by :mod:`gsn.diagram`.
+        return f"{parent.unique_id}->{child.unique_id}"
 
     def _connection_at(self, x: float, y: float):
         items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
