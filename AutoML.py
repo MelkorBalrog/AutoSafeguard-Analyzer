@@ -12784,6 +12784,7 @@ class FaultTreeApp:
         columns = [
             "ID",
             "ASIL",
+            "Target PMHF",
             "Safe State",
             "FTTI",
             "Acc Rate",
@@ -12796,7 +12797,8 @@ class FaultTreeApp:
         ]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for c in columns:
-            tree.heading(c, text=c)
+            heading = "Target PMHF (1/h)" if c == "Target PMHF" else c
+            tree.heading(c, text=heading)
             tree.column(c, width=120 if c not in ("Description", "Val Desc", "Acceptance") else 300, anchor="center")
         tree.pack(fill=tk.BOTH, expand=True)
 
@@ -12805,6 +12807,7 @@ class FaultTreeApp:
             for sg in self.top_events:
                 name = sg.safety_goal_description or (sg.user_name or f"SG {sg.unique_id}")
                 sg.safety_goal_asil = self.get_hara_goal_asil(name)
+                pmhf_target = PMHF_TARGETS.get(sg.safety_goal_asil, 1.0)
                 tree.insert(
                     "",
                     "end",
@@ -12812,6 +12815,7 @@ class FaultTreeApp:
                     values=[
                         sg.user_name or f"SG {sg.unique_id}",
                         sg.safety_goal_asil,
+                        f"{pmhf_target:.2e}",
                         sg.safe_state,
                         getattr(sg, "ftti", ""),
                         str(getattr(sg, "acceptance_rate", "")),
@@ -12850,105 +12854,107 @@ class FaultTreeApp:
                 ttk.Label(fs_tab, text="ASIL:").grid(row=1, column=0, sticky="e")
                 name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
                 self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
-                ttk.Label(fs_tab, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+                ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(fs_tab, text="Safe State:").grid(row=2, column=0, sticky="e")
+                ttk.Label(master, text="Target PMHF (1/h):").grid(row=2, column=0, sticky="e")
+                pmhf = PMHF_TARGETS.get(self.asil_var.get(), 1.0)
+                self.pmhf_var = tk.StringVar(value=f"{pmhf:.2e}")
+                tk.Entry(master, textvariable=self.pmhf_var, state="readonly").grid(row=2, column=1, padx=5, pady=5, sticky="w")
+
+                ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e")
+                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
+                ttk.Label(master, textvariable=self.cal_var).grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+                ttk.Label(master, text="Safe State:").grid(row=4, column=0, sticky="e")
                 self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
-                tk.Entry(fs_tab, textvariable=self.state_var).grid(row=2, column=1, padx=5, pady=5)
+                tk.Entry(master, textvariable=self.state_var).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="FTTI:").grid(row=3, column=0, sticky="e")
+                ttk.Label(master, text="FTTI:").grid(row=5, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
                 tk.Entry(
                     fs_tab,
                     textvariable=self.ftti_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=3, column=1, padx=5, pady=5)
+                ).grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Acceptance Rate (1/h):").grid(row=4, column=0, sticky="e")
+                ttk.Label(master, text="Acceptance Rate (1/h):").grid(row=6, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
                     fs_tab,
                     textvariable=self.accept_rate_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=4, column=1, padx=5, pady=5)
+                ).grid(row=6, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="On Hours:").grid(row=5, column=0, sticky="e")
+                ttk.Label(master, text="On Hours:").grid(row=7, column=0, sticky="e")
                 self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
                 tk.Entry(
                     fs_tab,
                     textvariable=self.op_hours_var,
                     validate="key",
                     validatecommand=(master.register(self.app.validate_float), "%P"),
-                ).grid(row=5, column=1, padx=5, pady=5)
+                ).grid(row=7, column=1, padx=5, pady=5)
 
                 ttk.Label(fs_tab, text="Validation Target (1/h):").grid(row=6, column=0, sticky="e")
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
+
+                ttk.Label(master, text="P(E|HB):").grid(row=8, column=0, sticky="e")
+                self.pehb_var = tk.StringVar(value=str(exp))
+                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="P(C|E):").grid(row=9, column=0, sticky="e")
+                self.pce_var = tk.StringVar(value=str(ctrl))
+                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="P(S|C):").grid(row=10, column=0, sticky="e")
+                self.psc_var = tk.StringVar(value=str(sev))
+                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Validation Target (1/h):").grid(row=11, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
                     val = 1.0
                 self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(fs_tab, textvariable=self.val_var, state="readonly").grid(row=6, column=1, padx=5, pady=5)
-
-                ttk.Label(fs_tab, text="Mission Profile:").grid(row=7, column=0, sticky="e")
-                self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
-                ttk.Combobox(
-                    fs_tab,
-                    textvariable=self.profile_var,
-                    values=[mp.name for mp in self.app.mission_profiles],
-                    state="readonly",
-                ).grid(row=7, column=1, padx=5, pady=5)
-
-                ttk.Label(fs_tab, text="Val Target Desc:").grid(row=8, column=0, sticky="ne")
-                self.val_desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
-                self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
-                self.val_desc_text.grid(row=8, column=1, padx=5, pady=5)
-
-                ttk.Label(fs_tab, text="Acceptance Criteria:").grid(row=9, column=0, sticky="ne")
-                self.acc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
-                self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
-                self.acc_text.grid(row=9, column=1, padx=5, pady=5)
-
-                ttk.Label(fs_tab, text="Description:").grid(row=10, column=0, sticky="ne")
-                self.desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
-                self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
-                self.desc_text.grid(row=10, column=1, padx=5, pady=5)
-
-                # --- SOTIF fields ---
-                ttk.Label(sotif_tab, text="P(E|HB):").grid(row=0, column=0, sticky="e")
-                self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(sotif_tab, textvariable=self.pehb_var, state="readonly").grid(row=0, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="P(C|E):").grid(row=1, column=0, sticky="e")
-                self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(sotif_tab, textvariable=self.pce_var, state="readonly").grid(row=1, column=1, padx=5, pady=5)
-
-                ttk.Label(sotif_tab, text="P(S|C):").grid(row=2, column=0, sticky="e")
-                self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(sotif_tab, textvariable=self.psc_var, state="readonly").grid(row=2, column=1, padx=5, pady=5)
-
-                # --- Cybersecurity fields ---
-                ttk.Label(cyber_tab, text="CAL:").grid(row=0, column=0, sticky="e")
-                self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
-                ttk.Label(cyber_tab, textvariable=self.cal_var).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=11, column=1, padx=5, pady=5)
 
                 def _update_val(*_):
                     try:
                         acc = float(self.accept_rate_var.get())
-                        v = derive_validation_target(
-                            acc, float(self.pehb_var.get()), float(self.pce_var.get()), float(self.psc_var.get())
-                        )
+                        v = derive_validation_target(acc, float(self.pehb_var.get()), float(self.pce_var.get()), float(self.psc_var.get()))
                     except Exception:
                         v = 1.0
                     self.val_var.set(str(v))
 
                 self.accept_rate_var.trace_add("write", _update_val)
 
-                return self.id_entry
+                ttk.Label(master, text="Mission Profile:").grid(row=12, column=0, sticky="e")
+                self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
+                ttk.Combobox(
+                    fs_tab,
+                    textvariable=self.profile_var,
+                    values=[mp.name for mp in self.app.mission_profiles],
+                    state="readonly",
+                ).grid(row=12, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Val Target Desc:").grid(row=13, column=0, sticky="ne")
+                self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
+                self.val_desc_text.grid(row=13, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Acceptance Criteria:").grid(row=14, column=0, sticky="ne")
+                self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
+                self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
+                self.acc_text.grid(row=14, column=1, padx=5, pady=5)
+
+                ttk.Label(master, text="Description:").grid(row=15, column=0, sticky="ne")
+                self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
+                self.desc_text.grid(row=15, column=1, padx=5, pady=5)
+                return master
 
             def apply(self):
                 desc = self.desc_text.get("1.0", "end-1c").strip()
@@ -13109,32 +13115,60 @@ class FaultTreeApp:
         self._spi_lookup = {}
 
         for sg in getattr(self, "top_events", []):
-            v_target = getattr(sg, "validation_target", "")
             prob = getattr(sg, "probability", "")
-            v_str = f"{v_target:.2e}" if v_target not in ("", None) else ""
             p_str = f"{prob:.2e}" if prob not in ("", None) else ""
-            spi_val = ""
-            try:
-                if v_target not in ("", None) and prob not in ("", None):
-                    v_val = float(v_target)
-                    p_val = float(prob)
-                    if v_val > 0 and p_val > 0:
-                        spi_val = f"{math.log10(v_val / p_val):.2f}"
-            except Exception:
+
+            v_target = getattr(sg, "validation_target", "")
+            if v_target not in ("", None):
+                v_str = f"{v_target:.2e}"
                 spi_val = ""
-            iid = tree.insert(
-                "",
-                "end",
-                values=[
-                    sg.user_name or f"SG {sg.unique_id}",
-                    v_str,
-                    p_str,
-                    spi_val,
-                    self._spi_label(sg),
-                    getattr(sg, "acceptance_criteria", ""),
-                ],
-            )
-            self._spi_lookup[iid] = sg
+                try:
+                    if prob not in ("", None):
+                        v_val = float(v_target)
+                        p_val = float(prob)
+                        if v_val > 0 and p_val > 0:
+                            spi_val = f"{math.log10(v_val / p_val):.2f}"
+                except Exception:
+                    spi_val = ""
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=[
+                        sg.user_name or f"SG {sg.unique_id}",
+                        v_str,
+                        p_str,
+                        spi_val,
+                        self._spi_label(sg),
+                        getattr(sg, "acceptance_criteria", ""),
+                    ],
+                )
+                self._spi_lookup[iid] = sg
+
+            asil = getattr(sg, "safety_goal_asil", "")
+            if asil in PMHF_TARGETS:
+                target = PMHF_TARGETS[asil]
+                v_str = f"{target:.2e}"
+                spi_val = ""
+                try:
+                    if prob not in ("", None):
+                        p_val = float(prob)
+                        if target > 0 and p_val > 0:
+                            spi_val = f"{math.log10(target / p_val):.2f}"
+                except Exception:
+                    spi_val = ""
+                iid = tree.insert(
+                    "",
+                    "end",
+                    values=[
+                        sg.user_name or f"SG {sg.unique_id}",
+                        v_str,
+                        p_str,
+                        spi_val,
+                        "Target PMHF",
+                        getattr(sg, "acceptance_criteria", ""),
+                    ],
+                )
+                self._spi_lookup[iid] = sg
 
     def refresh_safety_case_table(self):
         """Populate the Safety Case table with solution nodes."""
