@@ -209,13 +209,19 @@ class SafetyManagementToolbox:
             if src_id is None or dst_id is None:
                 continue
             for c in getattr(diag, "connections", []):
+                stereo = (c.get("stereotype") or c.get("conn_type") or "").lower()
                 if (
                     c.get("src") == src_id
                     and c.get("dst") == dst_id
-                    and c.get("conn_type")
-                    in {"Propagate", "Propagate by Review", "Propagate by Approval"}
+                    and stereo
+                    in {"propagate", "propagate by review", "propagate by approval"}
                 ):
-                    return c.get("conn_type")
+                    mapping = {
+                        "propagate": "Propagate",
+                        "propagate by review": "Propagate by Review",
+                        "propagate by approval": "Propagate by Approval",
+                    }
+                    return c.get("conn_type") or mapping[stereo]
         return None
 
     # ------------------------------------------------------------------

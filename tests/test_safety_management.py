@@ -1112,3 +1112,17 @@ def test_can_propagate_respects_review_states():
     assert toolbox.can_propagate("Risk Assessment", "FTA", joint_review=True)
     diag.connections = [{"src": 1, "dst": 2, "conn_type": "Propagate"}]
     assert toolbox.can_propagate("Risk Assessment", "FTA", reviewed=False)
+
+
+def test_propagation_type_uses_stereotype_when_conn_type_missing():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "FTA"}},
+    ]
+    diag.connections = [{"src": 1, "dst": 2, "stereotype": "propagate by review"}]
+    assert toolbox.propagation_type("Risk Assessment", "FTA") == "Propagate by Review"

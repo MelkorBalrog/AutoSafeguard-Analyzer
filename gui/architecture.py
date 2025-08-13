@@ -2458,6 +2458,7 @@ class DiagramConnection:
     guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
     multiplicity: str = ""
+    stereotype: str = ""
 
 
 def format_control_flow_label(
@@ -2473,18 +2474,12 @@ def format_control_flow_label(
         elem = repo.elements.get(conn.element_id)
         if elem:
             label = elem.name or ""
-    stereotype = ""
-    if diag_type == "Control Flow Diagram":
-        if conn.conn_type == "Control Action":
-            stereotype = "<<control action>>"
-        elif conn.conn_type == "Feedback":
-            stereotype = "<<feedback>>"
-    if stereotype:
-        label = f"{stereotype} {label}".strip()
+    stereo = conn.stereotype or conn.conn_type.lower()
     if diag_type == "Control Flow Diagram" and conn.conn_type in (
         "Control Action",
         "Feedback",
     ):
+        base = f"<<{stereo}>> {label}".strip() if stereo else label
         if conn.guard:
             lines: List[str] = []
             for i, g in enumerate(conn.guard):
@@ -2494,7 +2489,10 @@ def format_control_flow_label(
                     op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
                     lines.append(f"{op} {g}")
             guard_text = "\n".join(lines)
-            return f"[{guard_text}] / {label}" if label else f"[{guard_text}]"
+            return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
+        return base
+    if stereo:
+        return f"<<{stereo}>> {label}".strip() if label else f"<<{stereo}>>"
     return label
 
 
@@ -3172,21 +3170,27 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow_default = "forward"
                         else:
                             arrow_default = "none"
+                        conn_stereo = (
+                            "control action"
+                            if t == "Control Action"
+                            else "feedback" if t == "Feedback" else t.lower()
+                        )
                         conn = DiagramConnection(
                             self.start.obj_id,
                             obj.obj_id,
                             t,
                             arrow=arrow_default,
+                            stereotype=conn_stereo,
                         )
                         self.connections.append(conn)
                         src_id = self.start.element_id
                         dst_id = obj.element_id
                         if src_id and dst_id:
-                            stereo = (
+                            rel_stereo = (
                                 "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
                             )
                             rel = self.repo.create_relationship(
-                                t, src_id, dst_id, stereotype=stereo
+                                t, src_id, dst_id, stereotype=rel_stereo
                             )
                             self.repo.add_relationship_to_diagram(
                                 self.diagram_id, rel.rel_id
@@ -3664,11 +3668,17 @@ class SysMLDiagramWindow(tk.Frame):
                         arrow_default = "forward"
                     else:
                         arrow_default = "none"
+                    conn_stereo = (
+                        "control action"
+                        if self.current_tool == "Control Action"
+                        else "feedback" if self.current_tool == "Feedback" else self.current_tool.lower()
+                    )
                     conn = DiagramConnection(
                         self.start.obj_id,
                         obj.obj_id,
                         self.current_tool,
                         arrow=arrow_default,
+                        stereotype=conn_stereo,
                     )
                     if self.current_tool == "Connector":
                         src_flow = self.start.properties.get("flow") if self.start.obj_type == "Port" else None
@@ -6022,8 +6032,8 @@ class SysMLDiagramWindow(tk.Frame):
             bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
-            incl_label = f"<<{conn.conn_type.lower()}>>"
-            label = f"{incl_label}\n{label}" if label else incl_label
+            if label and ">> " in label:
+                label = label.replace(">> ", ">>\n", 1)
         elif conn.conn_type in ("Generalize", "Generalization", "Communication Path"):
             dash = (2, 2)
         src_flow = a.properties.get("flow") if a.obj_type == "Port" else None
@@ -6095,6 +6105,7 @@ class SysMLDiagramWindow(tk.Frame):
                     mid_forward, mid_backward = False, True
                 else:
                     mid_forward, mid_backward = True, True
+            label = f"<<{conn.stereotype or conn.conn_type.lower()}>> {label}".strip()
         self.canvas.create_line(
             *flat,
             arrow=arrow_style,
@@ -6647,9 +6658,10 @@ class SysMLDiagramWindow(tk.Frame):
                     )
             self.objects.append(obj)
         self.sort_objects()
-        self.connections = [
-            DiagramConnection(**data) for data in getattr(diag, "connections", [])
-        ]
+        self.connections = []
+        for data in getattr(diag, "connections", []):
+            data.setdefault("stereotype", data.get("conn_type", "").lower())
+            self.connections.append(DiagramConnection(**data))
         if self.objects:
             global _next_obj_id
             _next_obj_id = max(o.obj_id for o in self.objects) + 1
