@@ -16008,6 +16008,47 @@ class FaultTreeApp:
         return _search_modules(getattr(self, "gsn_modules", []))
 
     def sync_nodes_by_id(self, updated_node):
+        # If a clone was edited, first copy its values back to the primary
+        # instance so the original reflects the change.  Afterwards, continue
+        # propagating from that primary node to all other clones.
+        if not getattr(updated_node, "is_primary_instance", True) and getattr(updated_node, "original", None):
+            original = updated_node.original
+            attrs = [
+                "node_type",
+                "user_name",
+                "description",
+                "rationale",
+                "quant_value",
+                "gate_type",
+                "severity",
+                "input_subtype",
+                "equation",
+                "detailed_equation",
+                "is_page",
+                "failure_prob",
+                "prob_formula",
+                "failure_mode_ref",
+                "fmea_effect",
+                "fmea_cause",
+                "fmea_severity",
+                "fmea_occurrence",
+                "fmea_detection",
+                "fmea_component",
+                "fmeda_malfunction",
+                "fmeda_safety_goal",
+                "fmeda_diag_cov",
+                "fmeda_fit",
+                "fmeda_spfm",
+                "fmeda_lpfm",
+                "fmeda_fault_type",
+                "fmeda_fault_fraction",
+            ]
+            for attr in attrs:
+                if hasattr(original, attr) and hasattr(updated_node, attr):
+                    setattr(original, attr, getattr(updated_node, attr))
+            if hasattr(original, "display_label") and hasattr(updated_node, "display_label"):
+                original.display_label = updated_node.display_label.replace(" (clone)", "")
+            updated_node = original
         # Always work with the primary instance.
         if not updated_node.is_primary_instance and updated_node.original:
             updated_node = updated_node.original
