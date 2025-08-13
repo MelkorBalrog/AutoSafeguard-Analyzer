@@ -33,6 +33,7 @@ class GSNNode:
     is_primary_instance: bool = True
     original: Optional["GSNNode"] = field(default=None, repr=False)
     unique_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    work_product: str = ""
 
     def __post_init__(self) -> None:  # pragma: no cover - trivial
         # A freshly created node is considered its own original instance.

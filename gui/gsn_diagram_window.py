@@ -171,7 +171,7 @@ class GSNDiagramWindow(tk.Frame):
         node = self._node_at(event.x, event.y)
         if not node:
             return
-        GSNElementConfig(self, node)
+        GSNElementConfig(self, node, self.diagram)
         self.refresh()
 
     def _node_at(self, x: float, y: float) -> Optional[GSNNode]:
