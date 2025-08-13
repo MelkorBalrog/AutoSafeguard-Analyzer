@@ -1482,5 +1482,5 @@ Steps to reproduce:
 | resistor | resistor | 20 | 297.505 |
 | capacitor | capacitor | 10 | 961.17 |
 
-This end-to-end flow links HAZOP findings to risk assessment ratings, fault trees and FMEDA metrics for a coherent safety case.
+This end-to-end flow links HAZOP findings to risk assessment ratings, fault trees and FMEDA metrics for a coherent safety & security case.
 

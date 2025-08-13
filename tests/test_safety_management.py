@@ -548,7 +548,7 @@ def test_tools_include_safety_management_explorer():
     app.tools = {
         "Safety & Security Management": app.open_safety_management_toolbox,
         "Safety Performance Indicators": app.show_safety_performance_indicators,
-        "Safety Case": app.show_safety_case,
+        "Safety & Security Case": app.show_safety_case,
         "Safety & Security Management Explorer": app.manage_safety_management,
         "GSN Explorer": app.manage_gsn,
     }
@@ -556,7 +556,7 @@ def test_tools_include_safety_management_explorer():
         "Safety & Security Management": [
             "Safety & Security Management",
             "Safety & Security Management Explorer",
-            "Safety Case",
+            "Safety & Security Case",
             "Safety Performance Indicators",
             "GSN Explorer",
         ]

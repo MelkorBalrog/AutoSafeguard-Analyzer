@@ -2298,7 +2298,7 @@ class FaultTreeApp:
             "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
-            "Safety Case": self.show_safety_case,
+            "Safety & Security Case": self.show_safety_case,
             "Safety & Security Management Explorer": self.manage_safety_management,
             "GSN Explorer": self.manage_gsn,
         }
@@ -2356,7 +2356,7 @@ class FaultTreeApp:
             "Safety & Security Management": [
                 "Safety & Security Management",
                 "Safety & Security Management Explorer",
-                "Safety Case",
+                "Safety & Security Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",
             ],
@@ -7421,7 +7421,7 @@ class FaultTreeApp:
                 Story.append(Spacer(1, 12))
             diagram_section_added = True
 
-        # --- Safety Case ---
+        # --- Safety & Security Case ---
         all_gsn_diagrams = list(getattr(self, "gsn_diagrams", [])) + [
             d for m in getattr(self, "gsn_modules", []) for d in _collect_gsn_diagrams(m)
         ]
@@ -7484,7 +7484,7 @@ class FaultTreeApp:
         if safety_rows:
             if diagram_section_added:
                 Story.append(PageBreak())
-            Story.append(Paragraph("Safety Case", pdf_styles["Heading2"]))
+            Story.append(Paragraph("Safety & Security Case", pdf_styles["Heading2"]))
             Story.append(Spacer(1, 12))
             data = [
                 [
@@ -9492,7 +9492,7 @@ class FaultTreeApp:
             ):
                 add_gsn_diagram(diag, gsn_root)
 
-            tree.insert(mgmt_root, "end", text="Safety Case", tags=("safetycase", "0"))
+            tree.insert(mgmt_root, "end", text="Safety & Security Case", tags=("safetycase", "0"))
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -13266,7 +13266,7 @@ class FaultTreeApp:
                 self._spi_lookup[iid] = sg
 
     def refresh_safety_case_table(self):
-        """Populate the Safety Case table with solution nodes."""
+        """Populate the Safety & Security Case table with solution nodes."""
         tree = getattr(self, "_safety_case_tree", None)
         if not tree or not getattr(tree, "winfo_exists", lambda: True)():
             return
@@ -13341,7 +13341,7 @@ class FaultTreeApp:
             self.doc_nb.select(self._safety_case_tab)
             self.refresh_safety_case_table()
             return
-        self._safety_case_tab = self._new_tab("Safety Case")
+        self._safety_case_tab = self._new_tab("Safety & Security Case")
         win = self._safety_case_tab
 
         columns = [
@@ -13472,7 +13472,7 @@ class FaultTreeApp:
                 writer.writerow(columns)
                 for iid in tree.get_children():
                     writer.writerow(tree.item(iid, "values"))
-            messagebox.showinfo("Export", "Safety case exported")
+            messagebox.showinfo("Export", "Safety & Security Case exported")
 
         self.export_safety_case_csv = export_csv
 
