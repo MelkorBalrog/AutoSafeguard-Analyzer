@@ -8129,6 +8129,9 @@ class FaultTreeApp:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
+        elif kind == "gsn":
+            if 0 <= idx < len(getattr(self, "all_gsn_diagrams", [])):
+                self.open_gsn_diagram(self.all_gsn_diagrams[idx])
         elif kind == "gov":
             self.open_management_window(idx)
         elif kind == "arch":
@@ -8167,6 +8170,8 @@ class FaultTreeApp:
             current = self.arch_diagrams[idx].name
         elif kind == "gov":
             current = self.management_diagrams[idx].name
+        elif kind == "gsn":
+            current = self.all_gsn_diagrams[idx].root.user_name
         elif kind == "fta":
             node = next((t for t in self.top_events if t.unique_id == idx), None)
             current = node.user_name if node else ""
@@ -8191,6 +8196,8 @@ class FaultTreeApp:
             self.arch_diagrams[idx].name = new
         elif kind == "gov":
             self.management_diagrams[idx].name = new
+        elif kind == "gsn":
+            self.all_gsn_diagrams[idx].root.user_name = new
         elif kind == "fta" and node:
             node.user_name = new
         self.update_views()
@@ -9083,6 +9090,31 @@ class FaultTreeApp:
                     text=name,
                     tags=("gov", str(idx)),
                     image=icon,
+                )
+
+            # --- GSN Diagrams Section ---
+            def _collect_gsn_diagrams(module):
+                diagrams = list(module.diagrams)
+                for sub in module.modules:
+                    diagrams.extend(_collect_gsn_diagrams(sub))
+                return diagrams
+
+            self.all_gsn_diagrams = sorted(
+                list(getattr(self, "gsn_diagrams", []))
+                + [
+                    d
+                    for m in getattr(self, "gsn_modules", [])
+                    for d in _collect_gsn_diagrams(m)
+                ],
+                key=lambda d: d.root.user_name or d.diag_id,
+            )
+            gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
+            for idx, diag in enumerate(self.all_gsn_diagrams):
+                tree.insert(
+                    gsn_root,
+                    "end",
+                    text=diag.root.user_name or f"Diagram {idx + 1}",
+                    tags=("gsn", str(idx)),
                 )
 
             # --- System Design (Item Definition) Section ---
