@@ -103,6 +103,23 @@ def test_format_text_shows_spi_probability():
     assert f"SPI: {1e-5:.2e}" in text
 
 
+def test_format_text_shows_validation_target_when_no_probability():
+    root = GSNNode("Root", "Goal")
+    sol = GSNNode("Sol", "Solution")
+    sol.spi_target = "Brake Time"
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    class TopEvent:
+        def __init__(self):
+            self.validation_desc = "Brake Time"
+            self.validation_target = "1e-5"
+
+    diag.app = types.SimpleNamespace(top_events=[TopEvent()])
+    text = diag._format_text(sol)
+    assert "SPI: 1e-5" in text
+
+
 def test_collect_work_products_returns_unique_sorted():
     root = GSNNode("Root", "Goal")
     diag = GSNDiagram(root)
