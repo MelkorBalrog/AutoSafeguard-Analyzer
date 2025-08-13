@@ -45,7 +45,9 @@ def test_solution_clones_existing_work_product():
     assert node.original is original
     assert not node.is_primary_instance
     assert node.user_name == original.user_name
-    assert node.unique_id == original.unique_id
+    # Clones should retain their own unique identifier so diagram
+    # connections can distinguish between primary and cloned instances.
+    assert node.unique_id != original.unique_id
 
 
 def test_solution_requires_matching_spi_for_clone():
