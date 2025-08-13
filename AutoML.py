@@ -2022,6 +2022,17 @@ class FaultTreeApp:
         ),
     }
 
+    WORK_PRODUCT_INFO.update(
+        {
+            f"{' '.join(word.upper() if word.isupper() else word.capitalize() for word in _req.split())} Requirement Specification": (
+                "System Design (Item Definition)",
+                "Requirements Editor",
+                "show_requirements_editor",
+            )
+            for _req in REQUIREMENT_TYPE_OPTIONS
+        }
+    )
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
