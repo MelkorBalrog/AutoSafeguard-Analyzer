@@ -687,7 +687,7 @@ class FTADrawingHelper:
     ):
         """Draw a circular event shape with optional text labels."""
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=10)
+            font_obj = self._scaled_font(radius * 2)
         left = x - radius
         top = y - radius
         right = x + radius
@@ -845,6 +845,11 @@ fta_drawing_helper = FTADrawingHelper()
 class GSNDrawingHelper(FTADrawingHelper):
     """Drawing helper providing shapes for GSN argumentation diagrams."""
 
+    def _scaled_font(self, scale: float) -> tkFont.Font:
+        """Return a font scaled proportionally to *scale*."""
+        size = max(1, int(scale / 4))
+        return tkFont.Font(family="Arial", size=size)
+
     def draw_goal_shape(
         self,
         canvas,
@@ -877,7 +882,14 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
-        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+        canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
 
     def draw_solved_by_connection(
         self,
@@ -960,7 +972,14 @@ class GSNDrawingHelper(FTADrawingHelper):
         ]
         self._fill_gradient_polygon(canvas, points, fill)
         canvas.create_polygon(points, outline=outline_color, width=line_width, fill="", tags=(obj_id,))
-        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+        canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
 
     def draw_solution_shape(
         self,
@@ -1025,7 +1044,14 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
-        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+        canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
 
     def draw_justification_shape(
         self,
@@ -1068,7 +1094,14 @@ class GSNDrawingHelper(FTADrawingHelper):
             outline=outline_color,
             width=line_width,
         )
-        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+        canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
 
     def draw_context_shape(
         self,
@@ -1102,7 +1135,14 @@ class GSNDrawingHelper(FTADrawingHelper):
             width=line_width,
             tags=(obj_id,),
         )
-        canvas.create_text(x, y, text=text, font=font_obj, anchor="center", width=w - 4)
+        canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=w - 2 * padding,
+        )
 
     def draw_away_solution_shape(self, canvas, x, y, scale=40.0, **kwargs):
         self.draw_solution_shape(canvas, x, y, scale=scale, **kwargs)
