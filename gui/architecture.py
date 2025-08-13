@@ -8120,35 +8120,21 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
-        bpmn_panel = ttk.LabelFrame(self.toolbox, text="BPMN")
-        bpmn_panel.pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
-
-        for name in (
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-        ):
-            ttk.Button(
-                bpmn_panel,
-                text=name,
-                command=lambda t=name: self.select_tool(t),
-            ).pack(fill=tk.X, padx=2, pady=2)
-
         ttk.Button(
-            bpmn_panel,
+            self.toolbox,
             text="Add Work Product",
             command=self.add_work_product,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
         ttk.Button(
-            bpmn_panel,
+            self.toolbox,
             text="Add Process Area",
             command=self.add_process_area,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
         ttk.Button(
-            bpmn_panel,
+            self.toolbox,
             text="Add Lifecycle Phase",
             command=self.add_lifecycle_phase,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        ).pack(fill=tk.X, padx=2, pady=2, before=self.prop_frame)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
