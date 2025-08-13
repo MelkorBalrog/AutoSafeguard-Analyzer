@@ -68,22 +68,73 @@ class GSNDiagram:
     # ------------------------------------------------------------------
     def draw(self, canvas, zoom: float = 1.0) -> None:  # pragma: no cover - requires tkinter
         """Render the diagram on a :class:`tkinter.Canvas` instance."""
-        # draw connectors first so they appear behind nodes
+        # draw nodes first and record their bounding shapes
+        shapes: dict[str, dict] = {}
+        for node in self._traverse():
+            self._draw_node(canvas, node, zoom)
+            bbox = canvas.bbox(node.unique_id)
+            if not bbox:
+                continue
+            left, top, right, bottom = bbox
+            cx, cy = (left + right) / 2, (top + bottom) / 2
+            w, h = right - left, bottom - top
+            typ = node.node_type.lower()
+            if typ == "solution":
+                shapes[node.unique_id] = {
+                    "type": "circle",
+                    "center": (cx, cy),
+                    "radius": w / 2,
+                }
+            elif typ in {"assumption", "justification", "context"}:
+                shapes[node.unique_id] = {
+                    "type": "ellipse",
+                    "center": (cx, cy),
+                    "width": w,
+                    "height": h,
+                }
+            elif typ == "strategy":
+                offset = w * 0.2
+                points = [
+                    (cx - w / 2 + offset, cy - h / 2),
+                    (cx + w / 2, cy - h / 2),
+                    (cx + w / 2 - offset, cy + h / 2),
+                    (cx - w / 2, cy + h / 2),
+                ]
+                shapes[node.unique_id] = {
+                    "type": "polygon",
+                    "center": (cx, cy),
+                    "points": points,
+                }
+            else:
+                shapes[node.unique_id] = {
+                    "type": "rect",
+                    "center": (cx, cy),
+                    "width": w,
+                    "height": h,
+                }
+
+        # draw connectors; place lines behind nodes but arrowheads on top
         for parent in self._traverse():
             for child in parent.children:
+                rel_id = f"rel:{parent.unique_id}:{child.unique_id}"
                 p_pt = (parent.x * zoom, parent.y * zoom)
                 c_pt = (child.x * zoom, child.y * zoom)
-                conn_id = f"{parent.unique_id}->{child.unique_id}"
+                p_shape = shapes.get(parent.unique_id)
+                c_shape = shapes.get(child.unique_id)
+                if p_shape:
+                    p_pt = self.drawing_helper.point_on_shape(p_shape, c_pt)
+                if c_shape:
+                    c_pt = self.drawing_helper.point_on_shape(c_shape, p_pt)
                 if child in parent.context_children:
                     self.drawing_helper.draw_in_context_connection(
-                        canvas, p_pt, c_pt, obj_id=conn_id
+                        canvas, p_pt, c_pt, obj_id=rel_id
                     )
                 else:
                     self.drawing_helper.draw_solved_by_connection(
-                        canvas, p_pt, c_pt, obj_id=conn_id
+                        canvas, p_pt, c_pt, obj_id=rel_id
                     )
-        for node in self._traverse():
-            self._draw_node(canvas, node, zoom)
+                canvas.tag_lower(rel_id)
+                canvas.tag_raise(f"{rel_id}-arrow")
 
     # ------------------------------------------------------------------
     def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter

@@ -231,6 +231,16 @@ class FTADrawingHelper:
                     cy -= h
                     cx += dx * (h / abs(dy)) if dy != 0 else 0
             return cx, cy
+        elif typ == "ellipse":
+            cx, cy = shape.get("center", (0, 0))
+            w = shape.get("width", 0) / 2
+            h = shape.get("height", 0) / 2
+            dx = target_pt[0] - cx
+            dy = target_pt[1] - cy
+            if w == 0 or h == 0:
+                return cx, cy
+            scale = math.hypot(dx / w, dy / h) or 1
+            return cx + dx / scale, cy + dy / scale
         elif typ == "polygon":
             cx, cy = shape.get("center", (0, 0))
             points = shape.get("points", [])
@@ -964,7 +974,12 @@ class GSNDrawingHelper(FTADrawingHelper):
                 base_y - (arrow_width / 2) * perp_y,
             ),
         ]
-        canvas.create_polygon(points, fill=fill, outline=outline, tags=(obj_id,))
+        canvas.create_polygon(
+            points,
+            fill=fill,
+            outline=outline,
+            tags=(obj_id, f"{obj_id}-arrow") if obj_id else None,
+        )
 
     def draw_solved_by_connection(
         self,
