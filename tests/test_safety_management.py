@@ -18,6 +18,7 @@ sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
+import AutoML
 from analysis import SafetyManagementToolbox
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from sysml.sysml_repository import SysMLRepository
@@ -254,4 +255,51 @@ def test_external_safety_diagrams_load_in_toolbox_list():
     toolbox = SafetyManagementToolbox()
     names = toolbox.list_diagrams()
     assert "GovX" in names
+
+
+def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
+    """Governance diagrams open as BPMN diagrams with their toolbox."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram", name="GovA")
+    diag.tags.append("safety-management")
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.management_diagrams = [diag]
+    app.diagram_tabs = {}
+
+    class DummyNotebook:
+        def __init__(self):
+            self._tabs = []
+        def tabs(self):
+            return self._tabs
+        def select(self, tab):
+            self.selected = tab
+
+    app.doc_nb = DummyNotebook()
+    app._format_diag_title = lambda d: d.name
+
+    def _new_tab(title):
+        app.doc_nb._tabs.append(title)
+        return title
+
+    app._new_tab = _new_tab
+    app.refresh_all = lambda: None
+
+    calls = {"bpmn": False, "activity": False}
+
+    def fake_bpmn(tab, _app, diagram_id):
+        calls["bpmn"] = True
+        assert diagram_id == diag.diag_id
+
+    def fake_activity(tab, _app, diagram_id):
+        calls["activity"] = True
+
+    monkeypatch.setattr(AutoML, "BPMNDiagramWindow", fake_bpmn)
+    monkeypatch.setattr(AutoML, "ActivityDiagramWindow", fake_activity)
+
+    app.open_management_window(0)
+
+    assert calls["bpmn"]
+    assert not calls["activity"]
 
