@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+import math
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -157,7 +158,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     spi_tree = CaptureTree.instances[-1]
     iid = next(iter(spi_tree.data))
     assert spi_tree.data[iid]["values"][2] == f"{2e-4:.2e}"
-    expected_spi = 1e-5 / 2e-4
+    expected_spi = math.log10(1e-5 / 2e-4)
     assert spi_tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
 
 
@@ -201,9 +202,8 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     iid = next(iter(tree.data))
     assert te.probability == 5e-5
     assert tree.data[iid]["values"][2] == f"{5e-5:.2e}"
-    expected_spi = 1e-5 / 5e-5
+    expected_spi = math.log10(1e-5 / 5e-5)
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
-
 
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")

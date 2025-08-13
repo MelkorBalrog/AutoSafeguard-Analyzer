@@ -12688,8 +12688,11 @@ class FaultTreeApp:
             p_str = f"{prob:.2e}" if prob not in ("", None) else ""
             spi_val = ""
             try:
-                if v_target not in ("", None) and prob not in ("", None) and prob != 0:
-                    spi_val = f"{float(v_target) / float(prob):.2f}"
+                if v_target not in ("", None) and prob not in ("", None):
+                    v_val = float(v_target)
+                    p_val = float(prob)
+                    if v_val > 0 and p_val > 0:
+                        spi_val = f"{math.log10(v_val / p_val):.2f}"
             except Exception:
                 spi_val = ""
             iid = tree.insert(
