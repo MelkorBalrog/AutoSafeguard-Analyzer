@@ -16504,6 +16504,9 @@ class FaultTreeApp:
             "sysml_repository": repo.to_dict(),
             "gsn_modules": [m.to_dict() for m in getattr(self, "gsn_modules", [])],
             "gsn_diagrams": [d.to_dict() for d in getattr(self, "gsn_diagrams", [])],
+            "safety_mgmt_toolbox": getattr(
+                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
+            ).to_dict(),
         }
         if include_versions:
             data["versions"] = self.versions
@@ -16536,6 +16539,10 @@ class FaultTreeApp:
         self.gsn_diagrams = [
             GSNDiagram.from_dict(d) for d in data.get("gsn_diagrams", [])
         ]
+
+        self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
+            data.get("safety_mgmt_toolbox", {})
+        )
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):

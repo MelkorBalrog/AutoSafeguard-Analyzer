@@ -4,7 +4,7 @@ This module defines simple data classes used by the GUI and other modules to
 collect work products, lifecycle information and workflows related to safety
 governance."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List
 
 from sysml.sysml_repository import SysMLRepository
@@ -16,6 +16,20 @@ class SafetyWorkProduct:
     diagram: str
     analysis: str
     rationale: str
+
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a serialisable representation of this work product."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SafetyWorkProduct":
+        """Create a work product from *data* mapping."""
+        return cls(
+            data.get("diagram", ""),
+            data.get("analysis", ""),
+            data.get("rationale", ""),
+        )
 
 
 @dataclass
@@ -40,6 +54,24 @@ class GovernanceModule:
     name: str
     modules: List["GovernanceModule"] = field(default_factory=list)
     diagrams: List[str] = field(default_factory=list)
+
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Serialise this module including submodules."""
+        return {
+            "name": self.name,
+            "modules": [m.to_dict() for m in self.modules],
+            "diagrams": list(self.diagrams),
+        }
+
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: dict) -> "GovernanceModule":
+        """Recreate a module hierarchy from *data*."""
+        mod = cls(data.get("name", ""))
+        mod.modules = [cls.from_dict(m) for m in data.get("modules", [])]
+        mod.diagrams = list(data.get("diagrams", []))
+        return mod
 
 
 @dataclass
@@ -76,6 +108,36 @@ class SafetyManagementToolbox:
     def get_workflow(self, name: str) -> List[str]:
         """Return the steps for the requested workflow."""
         return self.workflows.get(name, [])
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        """Return a serialisable representation of the toolbox."""
+        return {
+            "work_products": [wp.to_dict() for wp in self.work_products],
+            "lifecycle": list(self.lifecycle),
+            "workflows": {k: list(v) for k, v in self.workflows.items()},
+            "diagrams": dict(self.diagrams),
+            "modules": [m.to_dict() for m in self.modules],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SafetyManagementToolbox":
+        """Create a toolbox instance from *data* mapping."""
+        toolbox = cls()
+        toolbox.work_products = [
+            SafetyWorkProduct.from_dict(w) for w in data.get("work_products", [])
+        ]
+        toolbox.lifecycle = list(data.get("lifecycle", []))
+        toolbox.workflows = {
+            k: list(v) for k, v in data.get("workflows", {}).items()
+        }
+        toolbox.diagrams = dict(data.get("diagrams", {}))
+        toolbox.modules = [
+            GovernanceModule.from_dict(m) for m in data.get("modules", [])
+        ]
+        return toolbox
 
     # ------------------------------------------------------------------
     # Diagram management helpers
