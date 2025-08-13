@@ -65,15 +65,34 @@ class SafetyCaseExplorer(tk.Frame):
                 self.item_map[sid] = ("solution", sol)
 
     # ------------------------------------------------------------------
+    def _available_diagrams(self):
+        """Return a list of all GSN diagrams available in the application."""
+        if not self.app:
+            return []
+        diagrams = list(getattr(self.app, "gsn_diagrams", []))
+        for mod in getattr(self.app, "gsn_modules", []):
+            diagrams.extend(self._collect_module_diagrams(mod))
+        if not diagrams:
+            diagrams = list(getattr(self.app, "all_gsn_diagrams", []))
+        return diagrams
+
+    # ------------------------------------------------------------------
+    def _collect_module_diagrams(self, module):
+        diagrams = list(getattr(module, "diagrams", []))
+        for sub in getattr(module, "modules", []):
+            diagrams.extend(self._collect_module_diagrams(sub))
+        return diagrams
+
+    # ------------------------------------------------------------------
     def new_case(self):
         """Create a new safety case derived from a GSN diagram."""
-        if not self.app or not getattr(self.app, "gsn_diagrams", []):
+        diagrams = self._available_diagrams()
+        if not diagrams:
             messagebox.showerror("New Case", "No GSN diagrams available")
             return
         name = simpledialog.askstring("New Safety Case", "Name:", parent=self)
         if not name:
             return
-        diagrams = getattr(self.app, "gsn_diagrams", [])
         diag_names = [d.root.user_name for d in diagrams]
         prompt = "Diagram name:\n" + "\n".join(diag_names)
         diag_name = simpledialog.askstring("GSN Diagram", prompt, parent=self)
@@ -100,7 +119,7 @@ class SafetyCaseExplorer(tk.Frame):
         )
         if not new_name:
             return
-        diagrams = getattr(self.app, "gsn_diagrams", [])
+        diagrams = self._available_diagrams()
         diag_names = [d.root.user_name for d in diagrams]
         prompt = "Diagram name:\n" + "\n".join(diag_names)
         new_diag_name = simpledialog.askstring(

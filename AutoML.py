@@ -2572,6 +2572,9 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
         ]
         }
+        self.tool_to_work_product = {
+            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
+        }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
             self.tool_to_work_product.setdefault(info[1], set()).add(name)
