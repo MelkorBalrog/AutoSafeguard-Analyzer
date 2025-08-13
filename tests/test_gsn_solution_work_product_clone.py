@@ -144,7 +144,6 @@ def test_collect_work_products_includes_toolbox_entries():
     diag = GSNDiagram(root)
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Architecture Diagram", "Safety Analysis", "rationale")
-    toolbox.list_diagrams = lambda: []
 
     class App:
         def __init__(self):
@@ -157,29 +156,6 @@ def test_collect_work_products_includes_toolbox_entries():
         "Architecture Diagram - Safety Analysis",
         "Safety Analysis",
     ]
-
-
-def test_collect_work_products_includes_toolbox_diagrams():
-    root = GSNNode("Root", "Goal")
-    diag = GSNDiagram(root)
-
-    class Toolbox:
-        def __init__(self):
-            self.diagrams = {"D1": "id1", "D2": "id2"}
-
-        def list_diagrams(self):
-            return list(self.diagrams.keys())
-
-        def get_work_products(self):
-            return []
-
-    class App:
-        def __init__(self):
-            self.safety_mgmt_toolbox = Toolbox()
-
-    diag.app = App()
-
-    assert _collect_work_products(diag) == ["D1", "D2"]
 
 
 def test_config_dialog_populates_comboboxes(monkeypatch):
@@ -266,9 +242,9 @@ def test_config_dialog_populates_comboboxes(monkeypatch):
     assert spi_cb.init_values is None
     assert wp_cb.configured["values"] == ["WP1"]
     assert spi_cb.configured["values"] == ["SPI1"]
-    # work product should be preselected while SPI remains blank
+    # first existing entries should be preselected when the node has none
     assert cfg.work_var.get() == "WP1"
-    assert cfg.spi_var.get() == ""
+    assert cfg.spi_var.get() == "SPI1"
 
 
 def test_config_dialog_lists_project_spis(monkeypatch):
@@ -363,8 +339,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
     # work product combobox is first, spi combobox second
     _, spi_cb = combo_holder
     assert spi_cb.configured["values"] == ["SPI1"]
-    # SPI selection should remain empty by default
-    assert cfg.spi_var.get() == ""
+    assert cfg.spi_var.get() == "SPI1"
 
 
 def test_config_dialog_lists_toolbox_work_products(monkeypatch):
@@ -377,7 +352,6 @@ def test_config_dialog_lists_toolbox_work_products(monkeypatch):
 
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Architecture Diagram", "Safety Analysis", "")
-    toolbox.list_diagrams = lambda: []
 
     class App:
         def __init__(self):

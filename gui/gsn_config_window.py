@@ -26,13 +26,6 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
         app = getattr(diagram, "app", None)
     toolbox = getattr(app, "safety_mgmt_toolbox", None)
     if toolbox:
-        # Include any diagrams managed by the safety management toolbox so they
-        # appear in the work product dropdown even if they have not yet been
-        # paired with an analysis.
-        for name in getattr(toolbox, "list_diagrams", lambda: [])():
-            if name:
-                products.add(name)
-
         for wp in getattr(toolbox, "get_work_products", lambda: [])():
             parts = [getattr(wp, "diagram", ""), getattr(wp, "analysis", "")]
             parts = [p for p in parts if p]
@@ -144,9 +137,8 @@ class GSNElementConfig(tk.Toplevel):
             )
             spi_cb.grid(row=row, column=1, padx=4, pady=4, sticky="ew")
             spi_cb.configure(values=spi_targets)
-            # Leave the SPI target blank by default so users explicitly choose
-            # a target.  If the node already has a value it will be displayed
-            # via ``self.spi_var`` which was initialized above.
+            if not self.spi_var.get() and spi_targets:
+                self.spi_var.set(spi_targets[0])
             row += 1
         btns = ttk.Frame(self)
         btns.grid(row=row, column=0, columnspan=2, pady=4)
