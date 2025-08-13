@@ -590,6 +590,8 @@ REQUIREMENT_WORK_PRODUCTS = [
     "Cybersecurity Requirement Specification",
     "Production Requirement Specification",
     "Service Requirement Specification",
+    "Product Requirement Specification",
+    "Legal Requirement Specification",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [
