@@ -9363,16 +9363,58 @@ class FaultTreeApp:
                 text="Safety & Security Governance Diagrams",
                 open=True,
             )
-            for idx, diag in enumerate(self.management_diagrams):
-                name = diag.name or f"Diagram {idx + 1}"
-                icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                tree.insert(
-                    gov_root,
+            self.safety_mgmt_toolbox = getattr(
+                self, "safety_mgmt_toolbox", SafetyManagementToolbox()
+            )
+            toolbox = self.safety_mgmt_toolbox
+            toolbox.list_diagrams()
+
+            index_map = {
+                (d.name or d.diag_id): idx
+                for idx, d in enumerate(self.management_diagrams)
+            }
+
+            def _in_any_module(name, modules):
+                for mod in modules:
+                    if name in mod.diagrams or _in_any_module(name, mod.modules):
+                        return True
+                return False
+
+            def _add_module(mod, parent):
+                node = tree.insert(
+                    parent,
                     "end",
-                    text=name,
-                    tags=("gov", str(idx)),
-                    image=icon,
+                    text=mod.name,
+                    open=True,
+                    image=getattr(self, "pkg_icon", None),
                 )
+                for sub in sorted(mod.modules, key=lambda m: m.name):
+                    _add_module(sub, node)
+                for name in sorted(mod.diagrams):
+                    idx = index_map.get(name)
+                    if idx is not None:
+                        tree.insert(
+                            node,
+                            "end",
+                            text=name,
+                            tags=("gov", str(idx)),
+                            image=getattr(self, "gsn_diagram_icon", None),
+                        )
+
+            for mod in sorted(toolbox.modules, key=lambda m: m.name):
+                _add_module(mod, gov_root)
+
+            for name in sorted(toolbox.diagrams.keys()):
+                if not _in_any_module(name, toolbox.modules):
+                    idx = index_map.get(name)
+                    if idx is not None:
+                        tree.insert(
+                            gov_root,
+                            "end",
+                            text=name,
+                            tags=("gov", str(idx)),
+                            image=getattr(self, "gsn_diagram_icon", None),
+                        )
 
             # --- GSN Diagrams Section ---
             def _collect_gsn_diagrams(module):
