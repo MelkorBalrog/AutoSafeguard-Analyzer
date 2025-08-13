@@ -255,6 +255,29 @@ class SafetyManagementToolbox:
         _collect(mod)
         return names
 
+    def module_for_diagram(self, name: str) -> Optional[str]:
+        """Return the top-level module name containing diagram ``name``.
+
+        Diagrams may be organised inside nested :class:`GovernanceModule`
+        objects. This helper walks the module hierarchy and returns the name
+        of the outermost module that lists *name* among its diagrams. ``None``
+        is returned when the diagram is not registered in any module."""
+
+        def _search(mod: GovernanceModule, top: str) -> Optional[str]:
+            if name in mod.diagrams:
+                return top
+            for sub in mod.modules:
+                found = _search(sub, top)
+                if found:
+                    return found
+            return None
+
+        for mod in self.modules:
+            result = _search(mod, mod.name)
+            if result:
+                return result
+        return None
+
     def list_modules(self) -> List[str]:
         """Return names of all governance modules including submodules."""
         names: List[str] = []
