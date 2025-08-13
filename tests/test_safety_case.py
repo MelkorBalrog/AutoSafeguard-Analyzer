@@ -119,7 +119,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -145,7 +145,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     tree.next_column = "Achieved Probability"
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
-    assert te.probability == 2e-4
+    assert te.spi_probability == 2e-4
     row = next(iter(tree.data))
     assert tree.data[row]["values"][5] == f"{2e-4:.2e}"
     expected_spi = math.log10(1e-5 / 2e-4)
@@ -178,7 +178,7 @@ def test_safety_case_shows_validation_target(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -266,7 +266,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -293,7 +293,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     tree.selection_set(iid)
     app._edit_spi_item()
     iid = next(iter(tree.data))
-    assert te.probability == 5e-5
+    assert te.spi_probability == 5e-5
     assert tree.data[iid]["values"][2] == f"{5e-5:.2e}"
     expected_spi = math.log10(1e-5 / 5e-5)
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
@@ -304,6 +304,7 @@ def test_spi_shows_pmhf_and_validation(monkeypatch):
         user_name="SG1",
         validation_target=1e-5,
         probability=2e-6,
+        spi_probability=2e-6,
         safety_goal_asil="D",
         validation_desc="",
         safety_goal_description="",

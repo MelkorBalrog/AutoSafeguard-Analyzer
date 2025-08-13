@@ -10530,7 +10530,6 @@ class FaultTreeApp:
             prob = AutoML_Helper.calculate_probability_recursive(te)
             te.probability = prob
             asil = getattr(te, "safety_goal_asil", "") or "QM"
-            te.validation_target = PMHF_TARGETS.get(asil, 1.0)
             pmhf += prob
 
         self.update_views()
@@ -10538,7 +10537,7 @@ class FaultTreeApp:
         overall_ok = True
         for te in self.top_events:
             asil = getattr(te, "safety_goal_asil", "") or "QM"
-            target = getattr(te, "validation_target", PMHF_TARGETS.get(asil, 1.0))
+            target = PMHF_TARGETS.get(asil, 1.0)
             ok = te.probability <= target
             overall_ok = overall_ok and ok
             symbol = CHECK_MARK if ok else CROSS_MARK
@@ -13177,17 +13176,20 @@ class FaultTreeApp:
             if not sel:
                 return
             iid = sel[0]
-            sg = self._spi_lookup.get(iid)
-            if not sg:
+            sg_info = self._spi_lookup.get(iid)
+            if not sg_info:
+                return
+            sg, spi_type = sg_info
+            if spi_type != "SOTIF":
                 return
             new_val = simpledialog.askfloat(
                 "Achieved Probability",
                 "Enter achieved probability:",
-                initialvalue=getattr(sg, "probability", 0.0),
+                initialvalue=getattr(sg, "spi_probability", 0.0),
             )
             if new_val is not None:
                 self.push_undo_state()
-                sg.probability = float(new_val)
+                sg.spi_probability = float(new_val)
                 self.refresh_safety_case_table()
                 self.refresh_safety_performance_indicators()
                 self.update_views()
@@ -13208,17 +13210,17 @@ class FaultTreeApp:
         self._spi_lookup = {}
 
         for sg in getattr(self, "top_events", []):
-            prob = getattr(sg, "probability", "")
-            p_str = f"{prob:.2e}" if prob not in ("", None) else ""
-
+            # SOTIF SPI row
+            sotif_prob = getattr(sg, "spi_probability", "")
+            p_str = f"{sotif_prob:.2e}" if sotif_prob not in ("", None) else ""
             v_target = getattr(sg, "validation_target", "")
             if v_target not in ("", None):
                 v_str = f"{v_target:.2e}"
                 spi_val = ""
                 try:
-                    if prob not in ("", None):
+                    if sotif_prob not in ("", None):
                         v_val = float(v_target)
-                        p_val = float(prob)
+                        p_val = float(sotif_prob)
                         if v_val > 0 and p_val > 0:
                             spi_val = f"{math.log10(v_val / p_val):.2f}"
                 except Exception:
@@ -13235,16 +13237,19 @@ class FaultTreeApp:
                         getattr(sg, "acceptance_criteria", ""),
                     ],
                 )
-                self._spi_lookup[iid] = sg
+                self._spi_lookup[iid] = (sg, "SOTIF")
 
+            # FUSA SPI row
             asil = getattr(sg, "safety_goal_asil", "")
             if asil in PMHF_TARGETS:
                 target = PMHF_TARGETS[asil]
                 v_str = f"{target:.2e}"
+                fusa_prob = getattr(sg, "probability", "")
+                p_str = f"{fusa_prob:.2e}" if fusa_prob not in ("", None) else ""
                 spi_val = ""
                 try:
-                    if prob not in ("", None):
-                        p_val = float(prob)
+                    if fusa_prob not in ("", None):
+                        p_val = float(fusa_prob)
                         if target > 0 and p_val > 0:
                             spi_val = f"{math.log10(target / p_val):.2f}"
                 except Exception:
@@ -13261,7 +13266,7 @@ class FaultTreeApp:
                         getattr(sg, "acceptance_criteria", ""),
                     ],
                 )
-                self._spi_lookup[iid] = sg
+                self._spi_lookup[iid] = (sg, "FUSA")
 
     def refresh_safety_case_table(self):
         """Populate the Safety & Security Case table with solution nodes."""
@@ -13292,7 +13297,12 @@ class FaultTreeApp:
                                 te = candidate
                                 break
                         if te:
-                            p = getattr(te, "probability", "")
+                            if spi_type == "FUSA":
+                                p = getattr(te, "probability", "")
+                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
+                            else:
+                                p = getattr(te, "spi_probability", "")
+                                vt = getattr(te, "validation_target", "")
                             if p not in ("", None):
                                 try:
                                     p_val = float(p)
@@ -13300,10 +13310,6 @@ class FaultTreeApp:
                                 except Exception:
                                     prob = ""
                                     p_val = None
-                            if spi_type == "FUSA":
-                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
-                            else:
-                                vt = getattr(te, "validation_target", "")
                             if vt not in ("", None):
                                 try:
                                     vt_val = float(vt)
@@ -13409,22 +13415,24 @@ class FaultTreeApp:
                     node.evidence_sufficient = new_val == CHECK_MARK
             elif col_name == "Achieved Probability":
                 target = getattr(node, "spi_target", "")
-                pg_name, _spi_type = self._parse_spi_target(target)
+                pg_name, spi_type = self._parse_spi_target(target)
                 te = None
                 for sg in getattr(self, "top_events", []):
                     if self._product_goal_name(sg) == pg_name:
                         te = sg
                         break
                 if te:
+                    attr = "probability" if spi_type == "FUSA" else "spi_probability"
                     new_val = simpledialog.askfloat(
                         "Achieved Probability",
                         "Enter achieved probability:",
-                        initialvalue=getattr(te, "probability", 0.0),
+                        initialvalue=getattr(te, attr, 0.0),
                     )
                     if new_val is not None:
                         self.push_undo_state()
-                        te.probability = float(new_val)
+                        setattr(te, attr, float(new_val))
                         self.refresh_safety_case_table()
+                        self.refresh_safety_performance_indicators()
                         self.update_views()
             elif col_name == "Notes":
                 current = tree.set(row, "Notes")
