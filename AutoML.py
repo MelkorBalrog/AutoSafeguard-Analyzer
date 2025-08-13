@@ -1955,6 +1955,10 @@ class FaultTreeApp:
         self.style.configure(
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
+        # icons used across tree views
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        self.gsn_module_icon = self.pkg_icon
+        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
         # small icons for diagram types shown in the explorer
         # an icon for packages is also required when building the
         # architecture tree; previously this attribute was missing which
@@ -9362,7 +9366,7 @@ class FaultTreeApp:
             )
             for idx, diag in enumerate(self.management_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                icon = self.diagram_icons.get(diag.diag_type)
+                icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                 tree.insert(
                     gov_root,
                     "end",
@@ -9400,6 +9404,7 @@ class FaultTreeApp:
                     text=module.name,
                     open=True,
                     tags=("gsnmod", mid),
+                    image=getattr(self, "gsn_module_icon", None),
                 )
                 self.gsn_module_map[mid] = module
                 for sub in sorted(module.modules, key=lambda m: m.name):
@@ -9415,6 +9420,7 @@ class FaultTreeApp:
                     "end",
                     text=diag.root.user_name or diag.diag_id,
                     tags=("gsn", diag.diag_id),
+                    image=getattr(self, "gsn_diagram_icon", None),
                 )
 
             for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
@@ -9467,7 +9473,7 @@ class FaultTreeApp:
                         text=pkg.name or pkg_id,
                         open=True,
                         tags=("pkg", pkg_id),
-                        image=self.pkg_icon,
+                        image=getattr(self, "pkg_icon", None),
                     )
                 # add subpackages
                 sub_pkgs = sorted(
@@ -9482,7 +9488,7 @@ class FaultTreeApp:
                     key=lambda d: d.name or d.diag_id,
                 )
                 for diag in diags:
-                    icon = self.diagram_icons.get(diag.diag_type)
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                     tree.insert(
                         node,
                         "end",
@@ -9496,7 +9502,7 @@ class FaultTreeApp:
                 add_pkg(root_pkg.elem_id, arch_root)
             else:
                 for diag in self.arch_diagrams:
-                    icon = self.diagram_icons.get(diag.diag_type)
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                     tree.insert(
                         arch_root,
                         "end",
@@ -16021,9 +16027,55 @@ class FaultTreeApp:
         return _search_modules(getattr(self, "gsn_modules", []))
 
     def sync_nodes_by_id(self, updated_node):
-        # Always work with the primary instance.
+        """Synchronize all nodes (original and clones) sharing an ID.
+
+        If *updated_node* is a clone, its values are first copied back to the
+        original before propagating to all other clones.  If *updated_node* is
+        the original, the values are simply pushed to all clones.
+        """
+
+        # If a clone was edited, copy its changes to the original before
+        # propagating.
         if not updated_node.is_primary_instance and updated_node.original:
-            updated_node = updated_node.original
+            clone = updated_node
+            updated_node = clone.original
+
+            attrs = [
+                "node_type",
+                "user_name",
+                "description",
+                "rationale",
+                "quant_value",
+                "gate_type",
+                "severity",
+                "input_subtype",
+                "equation",
+                "detailed_equation",
+                "is_page",
+                "failure_prob",
+                "prob_formula",
+                "failure_mode_ref",
+                "fmea_effect",
+                "fmea_cause",
+                "fmea_severity",
+                "fmea_occurrence",
+                "fmea_detection",
+                "fmea_component",
+                "fmeda_malfunction",
+                "fmeda_safety_goal",
+                "fmeda_diag_cov",
+                "fmeda_fit",
+                "fmeda_spfm",
+                "fmeda_lpfm",
+                "fmeda_fault_type",
+                "fmeda_fault_fraction",
+            ]
+            for attr in attrs:
+                setattr(updated_node, attr, getattr(clone, attr))
+
+            # Remove the clone marker before storing the label on the original.
+            updated_node.display_label = clone.display_label.replace(" (clone)", "")
+
         updated_primary_id = updated_node.unique_id
 
         nodes_to_check = self.get_all_nodes(self.root_node)
@@ -16104,6 +16156,8 @@ class FaultTreeApp:
             new_name = simpledialog.askstring("Edit User Name", "Enter new user name:", initialvalue=self.selected_node.user_name)
             if new_name is not None:
                 self.selected_node.user_name = new_name.strip()
+                # Ensure all clones and the original stay in sync.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit User Name", "Select a node first.")
@@ -16113,6 +16167,8 @@ class FaultTreeApp:
             new_desc = simpledialog.askstring("Edit Description", "Enter new description:", initialvalue=self.selected_node.description)
             if new_desc is not None:
                 self.selected_node.description = new_desc
+                # Propagate the updated description across clones/original.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit Description", "Select a node first.")
@@ -16122,6 +16178,8 @@ class FaultTreeApp:
             new_rat = simpledialog.askstring("Edit Rationale", "Enter new rationale:", initialvalue=self.selected_node.rationale)
             if new_rat is not None:
                 self.selected_node.rationale = new_rat
+                # Synchronize rationale changes with related clones.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
         else:
             messagebox.showwarning("Edit Rationale", "Select a node first.")
@@ -16132,6 +16190,8 @@ class FaultTreeApp:
                 new_val = simpledialog.askfloat("Edit Value", "Enter new value (1-5):", initialvalue=self.selected_node.quant_value)
                 if new_val is not None and 1 <= new_val <= 5:
                     self.selected_node.quant_value = new_val
+                    # Keep all nodes sharing this ID up to date.
+                    self.sync_nodes_by_id(self.selected_node)
                     self.update_views()
                 else:
                     messagebox.showerror("Error", "Value must be between 1 and 5.")
@@ -16145,6 +16205,8 @@ class FaultTreeApp:
             new_gt = simpledialog.askstring("Edit Gate Type", "Enter new gate type (AND/OR):", initialvalue=self.selected_node.gate_type)
             if new_gt is not None and new_gt.upper() in ["AND", "OR"]:
                 self.selected_node.gate_type = new_gt.upper()
+                # Reflect gate type changes everywhere.
+                self.sync_nodes_by_id(self.selected_node)
                 self.update_views()
             else:
                 messagebox.showerror("Error", "Gate type must be AND or OR.")
