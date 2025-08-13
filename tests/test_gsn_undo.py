@@ -60,3 +60,87 @@ def test_gsn_diagram_undo_redo_rename(monkeypatch):
     app.redo()
     assert app.gsn_diagrams[0].root.user_name == "New"
 
+
+def test_gsn_explorer_refreshes_after_undo(monkeypatch):
+    root = GSNNode("G", "Goal")
+    diag = GSNDiagram(root)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.gsn_diagrams = [diag]
+    app.gsn_modules = []
+    app.update_views = lambda: None
+    app._undo_stack = []
+    app._redo_stack = []
+
+    def export_model_data(include_versions=False):
+        return {
+            "gsn_diagrams": [d.to_dict() for d in app.gsn_diagrams],
+            "gsn_modules": [m.to_dict() for m in app.gsn_modules],
+        }
+
+    def apply_model_data(data):
+        app.gsn_diagrams = [GSNDiagram.from_dict(d) for d in data.get("gsn_diagrams", [])]
+        app.gsn_modules = []
+
+    app.export_model_data = export_model_data
+    app.apply_model_data = apply_model_data
+    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
+    app.undo = FaultTreeApp.undo.__get__(app)
+
+    explorer = GSNExplorer.__new__(GSNExplorer)
+    app._gsn_window = explorer
+    explorer.app = app
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.item_map = {}
+    explorer.module_icon = None
+    explorer.diagram_icon = None
+    explorer.node_icons = {}
+    explorer.default_node_icon = None
+    explorer.populate()
+
+    # select the diagram for renaming
+    for iid, (typ, obj) in explorer.item_map.items():
+        if obj is diag:
+            explorer.tree.selection_item = iid
+            break
+
+    monkeypatch.setattr(
+        "gui.gsn_explorer.simpledialog.askstring", lambda *a, **k: "New"
+    )
+
+    explorer.rename_item()
+    assert diag.root.user_name == "New"
+    assert any(meta["text"] == "New" for meta in explorer.tree.items.values())
+
+    # ensure undo triggers explorer.refresh via refresh_all
+    app.refresh_all = lambda: getattr(app, "_gsn_window").refresh()
+    app.undo()
+
+    texts = [meta["text"] for meta in explorer.tree.items.values()]
+    assert "G" in texts and "New" not in texts
+

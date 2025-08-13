@@ -16320,7 +16320,7 @@ class FaultTreeApp:
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
-        self.update_views()
+        self.refresh_all()
 
     def redo(self):
         """Restore the next state from the redo stack."""
@@ -16337,7 +16337,7 @@ class FaultTreeApp:
             for child in tab.winfo_children():
                 if hasattr(child, "refresh_from_repository"):
                     child.refresh_from_repository()
-        self.update_views()
+        self.refresh_all()
 
     def confirm_close(self):
         """Prompt to save if there are unsaved changes before closing."""
