@@ -38,6 +38,7 @@ class GSNElementConfig(tk.Toplevel):
         self.work_var = tk.StringVar(value=getattr(node, "work_product", ""))
         self.link_var = tk.StringVar(value=getattr(node, "evidence_link", ""))
         row = 2
+        self.spi_var = tk.StringVar(value=getattr(node, "spi_target", ""))
         if node.node_type == "Solution":
             tk.Label(self, text="Work Product:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
@@ -71,17 +72,21 @@ class GSNElementConfig(tk.Toplevel):
             self.node.work_product = self.work_var.get()
             self.node.evidence_link = self.link_var.get()
             # search for existing solution with same work product
+            self.node.spi_target = self.spi_var.get()
+            # search for existing solution with same work product and SPI target
             for n in self.diagram.nodes:
                 if (
                     n is not self.node
                     and n.node_type == "Solution"
                     and getattr(n, "work_product", "") == self.node.work_product
+                    and getattr(n, "spi_target", "") == self.node.spi_target
                 ):
                     original = n if n.is_primary_instance else n.original
                     self.node.user_name = original.user_name
                     self.node.description = getattr(original, "description", "")
                     self.node.unique_id = original.unique_id
                     self.node.original = original
+                    self.node.spi_target = getattr(original, "spi_target", "")
                     self.node.is_primary_instance = False
                     break
             else:
