@@ -97,3 +97,115 @@ def test_double_click_opens_evidence_link(monkeypatch):
 
     assert opened["url"] == "http://example.com"
 
+
+def test_double_click_opens_work_product(monkeypatch):
+    opened = {}
+
+    def open_wp(name):
+        opened["name"] = name
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    node.work_product = "WP1"
+    diag.add_node(node)
+
+    wnd = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    wnd.diagram = diag
+    wnd.app = types.SimpleNamespace(open_work_product=open_wp)
+    wnd.refresh = lambda: None
+    wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
+
+    event = types.SimpleNamespace(x=0, y=0)
+    GSNDiagramWindow._on_double_click(wnd, event)
+
+    assert opened["name"] == "WP1"
+
+
+def test_double_click_prompts_when_both(monkeypatch):
+    opened = {}
+
+    monkeypatch.setattr(
+        "gui.gsn_diagram_window.messagebox.askyesnocancel",
+        lambda *a, **k: True,
+    )
+
+    def open_wp(name):
+        opened["wp"] = name
+
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    node.work_product = "WP1"
+    node.evidence_link = "http://example.com"
+    diag.add_node(node)
+
+    wnd = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    wnd.diagram = diag
+    wnd.app = types.SimpleNamespace(open_work_product=open_wp)
+    wnd.refresh = lambda: None
+    wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
+
+    event = types.SimpleNamespace(x=0, y=0)
+    GSNDiagramWindow._on_double_click(wnd, event)
+
+    assert opened == {"wp": "WP1"}
+
+
+def test_double_click_prompts_link_choice(monkeypatch):
+    opened = {}
+
+    monkeypatch.setattr(
+        "gui.gsn_diagram_window.messagebox.askyesnocancel",
+        lambda *a, **k: False,
+    )
+
+    def open_wp(name):
+        opened["wp"] = name
+
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.setdefault("url", url))
+
+    root = GSNNode("Root", "Goal")
+    diag = GSNDiagram(root)
+    node = GSNNode("Sol", "Solution")
+    node.work_product = "WP1"
+    node.evidence_link = "http://example.com"
+    diag.add_node(node)
+
+    wnd = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    wnd.diagram = diag
+    wnd.app = types.SimpleNamespace(open_work_product=open_wp)
+    wnd.refresh = lambda: None
+    wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
+
+    event = types.SimpleNamespace(x=0, y=0)
+    GSNDiagramWindow._on_double_click(wnd, event)
+
+    assert opened == {"url": "http://example.com"}
+
