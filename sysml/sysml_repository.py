@@ -352,7 +352,15 @@ class SysMLRepository:
         if self.root_package is None:
             self.root_package = self.create_element("Package", name="Root")
 
-    def create_relationship(self, rel_type: str, source: str, target: str, stereotype: Optional[str] = None, properties: Optional[Dict[str, str]] = None, record_undo: bool = True) -> SysMLRelationship:
+    def create_relationship(
+        self,
+        rel_type: str,
+        source: str,
+        target: str,
+        stereotype: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+        record_undo: bool = True,
+    ) -> SysMLRelationship:
         if record_undo:
             self.push_undo_state()
         rel_id = str(uuid.uuid4())
@@ -361,7 +369,7 @@ class SysMLRepository:
             rel_type,
             source,
             target,
-            stereotype,
+            stereotype or rel_type.lower(),
             properties or {},
             author=user_config.CURRENT_USER_NAME,
             author_email=user_config.CURRENT_USER_EMAIL,
