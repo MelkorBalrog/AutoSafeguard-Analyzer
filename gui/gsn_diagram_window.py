@@ -61,6 +61,8 @@ class GSNDiagramWindow(tk.Frame):
         self._connect_mode: Optional[str] = None
         self._connect_parent: Optional[GSNNode] = None
         self.zoom = 1.0
+        self._temp_conn_anim = None
+        self._temp_conn_offset = 0
         self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
@@ -133,11 +135,10 @@ class GSNDiagramWindow(tk.Frame):
                 self._connect_parent.x * self.zoom,
                 self._connect_parent.y * self.zoom,
             )
-            # Always show a dotted preview line similar to SysML diagrams.
-            # For solved-by connectors the preview line carries an arrow just
-            # like the final connection, while context relationships omit the
-            # arrow entirely.
-            arrow = tk.LAST if self._connect_mode == "solved" else None
+            # Show a dotted preview line with an arrow while establishing a
+            # connection.  The line is animated to provide visual feedback
+            # during the drag operation.
+            arrow = tk.LAST
             self.canvas.create_line(
                 px,
                 py,
@@ -149,6 +150,9 @@ class GSNDiagramWindow(tk.Frame):
                 arrow=arrow,
                 tags="_temp_conn",
             )
+            if getattr(self, "_temp_conn_anim", None) is None:
+                self._temp_conn_offset = 0
+                self._animate_temp_connection()
             return
         if not self._drag_node:
             return
@@ -161,6 +165,10 @@ class GSNDiagramWindow(tk.Frame):
     def _on_release(self, event):  # pragma: no cover - requires tkinter
         if self._connect_mode and self._connect_parent:
             self.canvas.delete("_temp_conn")
+            anim = getattr(self, "_temp_conn_anim", None)
+            if anim:
+                self.canvas.after_cancel(anim)
+                self._temp_conn_anim = None
             node = self._node_at(event.x, event.y)
             if node and node is not self._connect_parent:
                 # Use the current connect mode to decide whether this is a
@@ -172,6 +180,22 @@ class GSNDiagramWindow(tk.Frame):
             self.refresh()
             return
         self._drag_node = None
+
+    def _animate_temp_connection(self):  # pragma: no cover - requires tkinter
+        find = getattr(self.canvas, "find_withtag", None)
+        configure = getattr(self.canvas, "itemconfigure", None)
+        if not (find and configure):
+            self._temp_conn_anim = None
+            return
+        line = find("_temp_conn")
+        if line:
+            offset = getattr(self, "_temp_conn_offset", 0)
+            offset = (offset + 2) % 8
+            self._temp_conn_offset = offset
+            configure(line[0], dashoffset=offset)
+            self._temp_conn_anim = self.canvas.after(100, self._animate_temp_connection)
+        else:
+            self._temp_conn_anim = None
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
         node = self._node_at(event.x, event.y)

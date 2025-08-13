@@ -23,6 +23,18 @@ def _collect_work_products(diagram: GSNDiagram) -> list[str]:
     )
 
 
+def _collect_spi_targets(diagram: GSNDiagram) -> list[str]:
+    """Return sorted list of SPI targets referenced in *diagram*."""
+
+    return sorted(
+        {
+            getattr(n, "spi_target", "")
+            for n in getattr(diagram, "nodes", [])
+            if getattr(n, "spi_target", "")
+        }
+    )
+
+
 class GSNElementConfig(tk.Toplevel):
     """Simple dialog to edit a GSN element's properties."""
 
@@ -68,6 +80,19 @@ class GSNElementConfig(tk.Toplevel):
             tk.Entry(self, textvariable=self.link_var, width=40).grid(
                 row=row, column=1, padx=4, pady=4, sticky="ew"
             )
+            row += 1
+            tk.Label(self, text="SPI Target:").grid(
+                row=row, column=0, sticky="e", padx=4, pady=4
+            )
+            spi_targets = _collect_spi_targets(diagram)
+            if self.spi_var.get() and self.spi_var.get() not in spi_targets:
+                spi_targets.append(self.spi_var.get())
+            ttk.Combobox(
+                self,
+                textvariable=self.spi_var,
+                values=spi_targets,
+                state="readonly",
+            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
             row += 1
         btns = ttk.Frame(self)
         btns.grid(row=row, column=0, columnspan=2, pady=4)

@@ -2,6 +2,7 @@ import tkinter as tk
 
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gsn import GSNNode
+import tkinter as tk
 
 
 def test_gsn_diagram_window_button_labels():
@@ -45,8 +46,8 @@ def test_temp_connection_line_is_dotted():
     assert lines[0].get("arrow") == tk.LAST
 
 
-def test_temp_connection_line_no_arrow_in_context_mode():
-    """Context connections preview without an arrow."""
+def test_temp_connection_line_has_arrow_in_context_mode():
+    """Context connections preview with an arrow."""
     win = GSNDiagramWindow.__new__(GSNDiagramWindow)
     win.zoom = 1.0
     win._connect_mode = "context"
@@ -65,7 +66,7 @@ def test_temp_connection_line_no_arrow_in_context_mode():
     event = type("Event", (), {"x": 50, "y": 50})
     win._on_drag(event)
     assert lines and lines[0].get("dash") == (2, 2)
-    assert not lines[0].get("arrow")
+    assert lines[0].get("arrow") == tk.LAST
 
 
 def test_on_release_creates_context_link():
