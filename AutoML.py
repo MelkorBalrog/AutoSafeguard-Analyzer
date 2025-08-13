@@ -12795,14 +12795,35 @@ class FaultTreeApp:
             "Evidence OK",
             "Notes",
         ]
-        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
-        for c in columns:
-            tree.heading(c, text=c)
-            width = 120
-            if c in ("Description", "Evidence Link", "Notes"):
-                width = 200
-            tree.column(c, width=width, anchor="center")
-        tree.pack(fill=tk.BOTH, expand=True)
+        if hasattr(win, "tk"):
+            tree_frame = ttk.Frame(win)
+            tree_frame.pack(fill=tk.BOTH, expand=True)
+            tree = ttk.Treeview(
+                tree_frame, columns=columns, show="headings", selectmode="browse"
+            )
+            for c in columns:
+                tree.heading(c, text=c)
+                width = 120
+                if c in ("Description", "Evidence Link", "Notes"):
+                    width = 200
+                tree.column(c, width=width, anchor="center")
+            vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+            hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+            tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            tree.grid(row=0, column=0, sticky="nsew")
+            vsb.grid(row=0, column=1, sticky="ns")
+            hsb.grid(row=1, column=0, sticky="ew")
+            tree_frame.rowconfigure(0, weight=1)
+            tree_frame.columnconfigure(0, weight=1)
+        else:
+            tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+            for c in columns:
+                tree.heading(c, text=c)
+                width = 120
+                if c in ("Description", "Evidence Link", "Notes"):
+                    width = 200
+                tree.column(c, width=width, anchor="center")
+            tree.pack(fill=tk.BOTH, expand=True)
         self._safety_case_tree = tree
         self._solution_lookup = {}
 

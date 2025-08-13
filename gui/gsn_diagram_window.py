@@ -9,6 +9,7 @@ from typing import Optional
 from gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
+from . import messagebox
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -356,24 +357,63 @@ class GSNDiagramWindow(tk.Frame):
         else:
             self._temp_conn_anim = None
 
+    def _open_work_product(self, name: str) -> None:
+        """Attempt to open *name* as a work product using the application."""
+
+        app = getattr(self, "app", None)
+        if not app:
+            return
+
+        # Prefer a dedicated helper when available
+        opener = getattr(app, "open_work_product", None)
+        if callable(opener):
+            opener(name)
+            return
+
+        # Fallback to tool actions when the work product corresponds to a tool
+        actions = getattr(app, "tool_actions", {})
+        action = actions.get(name)
+        if callable(action):
+            action()
+
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
         node = self._node_at(cx, cy)
         if node:
-            if (
-                node.node_type == "Solution"
-                and getattr(node, "evidence_link", "")
-            ):
-                webbrowser.open(node.evidence_link)
-            else:
-                app = getattr(self, "app", None)
-                undo = getattr(app, "push_undo_state", None)
-                if undo:
-                    undo()
-                GSNElementConfig(self, node, self.diagram)
+            if node.node_type == "Solution":
+                link = getattr(node, "evidence_link", "")
+                work = getattr(node, "work_product", "")
+                if link and work:
+                    choice = messagebox.askyesnocancel(
+                        "Open Solution",
+                        "Open work product?\nYes: Work Product\nNo: Evidence Link",
+                    )
+                    if choice is None:
+                        return
+                    if choice:
+                        self._open_work_product(work)
+                    else:
+                        webbrowser.open(link)
+                elif work:
+                    self._open_work_product(work)
+                elif link:
+                    webbrowser.open(link)
+                else:
+                    app = getattr(self, "app", None)
+                    undo = getattr(app, "push_undo_state", None)
+                    if undo:
+                        undo()
+                    GSNElementConfig(self, node, self.diagram)
+                    self.refresh()
+                    return
                 self.refresh()
                 return
+            app = getattr(self, "app", None)
+            undo = getattr(app, "push_undo_state", None)
+            if undo:
+                undo()
+            GSNElementConfig(self, node, self.diagram)
             self.refresh()
             return
         conn = self._connection_at(cx, cy)
