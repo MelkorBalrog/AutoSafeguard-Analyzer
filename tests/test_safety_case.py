@@ -22,6 +22,7 @@ class DummyTree:
         self.data = {}
         self.counter = 0
         self.bindings = {}
+        self.next_column = "Evidence OK"
 
     def heading(self, column, text=""):
         pass
@@ -51,7 +52,8 @@ class DummyTree:
         return next(iter(self.data.keys()), "")
 
     def identify_column(self, x):
-        return f"#{len(self.columns)}"
+        idx = self.columns.index(self.next_column) + 1
+        return f"#{idx}"
 
     def item(self, iid, option):
         if option == "tags":
@@ -68,6 +70,13 @@ class DummyTree:
         return True
 
 
+class DummyTab:
+    def winfo_exists(self):
+        return True
+
+    def winfo_children(self):
+        return []
+
 def test_safety_case_lists_and_toggles(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
@@ -77,7 +86,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
 
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
-    app._new_tab = lambda title: types.SimpleNamespace(winfo_exists=lambda: True)
+    app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
