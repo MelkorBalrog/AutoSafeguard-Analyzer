@@ -73,7 +73,7 @@ class GSNDiagram:
             for child in parent.children:
                 p_pt = (parent.x * zoom, parent.y * zoom)
                 c_pt = (child.x * zoom, child.y * zoom)
-                if child.node_type in {"Context", "Assumption", "Justification"}:
+                if child in parent.context_children:
                     self.drawing_helper.draw_in_context_connection(
                         canvas, p_pt, c_pt
                     )

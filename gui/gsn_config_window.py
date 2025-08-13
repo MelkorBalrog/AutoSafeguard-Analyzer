@@ -69,10 +69,20 @@ class GSNElementConfig(tk.Toplevel):
         self.node.user_name = self.name_var.get()
         self.node.description = self.desc_text.get("1.0", tk.END).strip()
         if self.node.node_type == "Solution":
-            self.node.work_product = self.work_var.get()
-            self.node.evidence_link = self.link_var.get()
-            # search for existing solution with same work product
-            self.node.spi_target = self.spi_var.get()
+            # ``GSNElementConfig`` is sometimes instantiated in tests without
+            # running ``__init__``.  Guard against missing StringVar
+            # attributes so :meth:`_on_ok` can operate on these lightweight
+            # instances as well.
+            work_var = getattr(self, "work_var", None)
+            link_var = getattr(self, "link_var", None)
+            spi_var = getattr(self, "spi_var", None)
+
+            if work_var:
+                self.node.work_product = work_var.get()
+            if link_var:
+                self.node.evidence_link = link_var.get()
+            if spi_var:
+                self.node.spi_target = spi_var.get()
             # search for existing solution with same work product and SPI target
             for n in self.diagram.nodes:
                 if (
