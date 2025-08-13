@@ -243,3 +243,15 @@ def test_safety_diagrams_visible_in_analysis_tree():
     assert "Safety & Security Governance Diagrams" in texts
     assert "Gov" in texts
     assert "Arch" in texts
+
+
+def test_external_safety_diagrams_load_in_toolbox_list():
+    """Diagrams tagged for governance appear even if created elsewhere."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Activity Diagram", name="GovX")
+    diag.tags.append("safety-management")
+    toolbox = SafetyManagementToolbox()
+    names = toolbox.list_diagrams()
+    assert "GovX" in names
+

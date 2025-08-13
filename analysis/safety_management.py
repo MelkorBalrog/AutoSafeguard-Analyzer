@@ -129,6 +129,30 @@ class SafetyManagementToolbox:
         self.diagrams[new] = diag_id
 
     def list_diagrams(self) -> List[str]:
-        """Return the names of all managed diagrams."""
+        """Return the names of all managed diagrams.
+
+        Any Activity Diagram in the repository tagged with
+        ``"safety-management"`` should appear in the toolbox even if it
+        was created outside of :meth:`create_diagram`. To ensure the list is
+        complete we rescan the repository on each call and synchronize the
+        internal ``diagrams`` mapping.
+        """
+        self._sync_diagrams()
         return list(self.diagrams.keys())
+
+    # ------------------------------------------------------------------
+    def _sync_diagrams(self) -> None:
+        """Synchronize ``self.diagrams`` with repository contents.
+
+        Any diagram tagged ``"safety-management"`` is added to the mapping
+        and entries for diagrams that no longer exist are dropped.
+        """
+        repo = SysMLRepository.get_instance()
+        current = {
+            d.name: d.diag_id
+            for d in repo.diagrams.values()
+            if "safety-management" in getattr(d, "tags", [])
+        }
+        self.diagrams.clear()
+        self.diagrams.update(current)
 
