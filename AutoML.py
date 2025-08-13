@@ -7438,34 +7438,35 @@ class FaultTreeApp:
                     vt_val = None
                     target = getattr(node, "spi_target", "")
                     if target:
-                        for te in getattr(self, "top_events", []):
-                            label = (
-                                getattr(te, "validation_desc", "")
-                                or getattr(te, "safety_goal_description", "")
-                                or getattr(te, "user_name", "")
-                                or f"SG {getattr(te, 'unique_id', '')}"
-                            )
-                            if label == target:
-                                p = getattr(te, "probability", "")
-                                vt = getattr(te, "validation_target", "")
-                                if p not in ("", None):
-                                    try:
-                                        p_val = float(p)
-                                        prob = f"{p_val:.2e}"
-                                    except Exception:
-                                        prob = ""
-                                if vt not in ("", None):
-                                    try:
-                                        vt_val = float(vt)
-                                        v_target = f"{vt_val:.2e}"
-                                    except Exception:
-                                        v_target = ""
-                                try:
-                                    if vt_val not in (None, 0) and p_val not in (None, 0):
-                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                                except Exception:
-                                    spi_val = ""
+                        pg_name, spi_type = self._parse_spi_target(target)
+                        te = None
+                        for candidate in getattr(self, "top_events", []):
+                            if self._product_goal_name(candidate) == pg_name:
+                                te = candidate
                                 break
+                        if te:
+                            p = getattr(te, "probability", "")
+                            if p not in ("", None):
+                                try:
+                                    p_val = float(p)
+                                    prob = f"{p_val:.2e}"
+                                except Exception:
+                                    prob = ""
+                            if spi_type == "FUSA":
+                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
+                            else:
+                                vt = getattr(te, "validation_target", "")
+                            if vt not in ("", None):
+                                try:
+                                    vt_val = float(vt)
+                                    v_target = f"{vt_val:.2e}"
+                                except Exception:
+                                    v_target = ""
+                            try:
+                                if vt_val not in (None, 0) and p_val not in (None, 0):
+                                    spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                            except Exception:
+                                spi_val = ""
                     safety_rows.append(
                         [
                             node.user_name,
@@ -13047,9 +13048,28 @@ class FaultTreeApp:
             or f"SG {getattr(sg, 'unique_id', '')}"
         )
 
+    def _product_goal_name(self, sg) -> str:
+        """Return the display name for a product goal."""
+        return getattr(sg, "user_name", "") or f"SG {getattr(sg, 'unique_id', '')}"
+
+    def _parse_spi_target(self, target: str) -> tuple[str, str]:
+        """Split ``target`` into product goal name and SPI type."""
+        if target.endswith(")") and "(" in target:
+            name, typ = target.rsplit(" (", 1)
+            return name, typ[:-1]
+        return target, ""
+
     def get_spi_targets(self) -> list[str]:
-        """Return sorted unique SPI target descriptions for the project."""
-        return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+        """Return sorted list of SPI options formatted as 'Product Goal (Type)'."""
+        targets: set[str] = set()
+        for sg in getattr(self, "top_events", []):
+            pg_name = self._product_goal_name(sg)
+            if getattr(sg, "validation_target", "") not in ("", None):
+                targets.add(f"{pg_name} (SOTIF)")
+            asil = getattr(sg, "safety_goal_asil", "")
+            if asil in PMHF_TARGETS:
+                targets.add(f"{pg_name} (FUSA)")
+        return sorted(targets)
 
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""
@@ -13192,36 +13212,37 @@ class FaultTreeApp:
                     vt_val = None
                     target = getattr(node, "spi_target", "")
                     if target:
-                        for te in getattr(self, "top_events", []):
-                            label = (
-                                getattr(te, "validation_desc", "")
-                                or getattr(te, "safety_goal_description", "")
-                                or getattr(te, "user_name", "")
-                                or f"SG {getattr(te, 'unique_id', '')}"
-                            )
-                            if label == target:
-                                p = getattr(te, "probability", "")
-                                vt = getattr(te, "validation_target", "")
-                                if p not in ("", None):
-                                    try:
-                                        p_val = float(p)
-                                        prob = f"{p_val:.2e}"
-                                    except Exception:
-                                        prob = ""
-                                        p_val = None
-                                if vt not in ("", None):
-                                    try:
-                                        vt_val = float(vt)
-                                        v_target = f"{vt_val:.2e}"
-                                    except Exception:
-                                        v_target = ""
-                                        vt_val = None
-                                try:
-                                    if vt_val not in (None, 0) and p_val not in (None, 0):
-                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                                except Exception:
-                                    spi_val = ""
+                        pg_name, spi_type = self._parse_spi_target(target)
+                        te = None
+                        for candidate in getattr(self, "top_events", []):
+                            if self._product_goal_name(candidate) == pg_name:
+                                te = candidate
                                 break
+                        if te:
+                            p = getattr(te, "probability", "")
+                            if p not in ("", None):
+                                try:
+                                    p_val = float(p)
+                                    prob = f"{p_val:.2e}"
+                                except Exception:
+                                    prob = ""
+                                    p_val = None
+                            if spi_type == "FUSA":
+                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
+                            else:
+                                vt = getattr(te, "validation_target", "")
+                            if vt not in ("", None):
+                                try:
+                                    vt_val = float(vt)
+                                    v_target = f"{vt_val:.2e}"
+                                except Exception:
+                                    v_target = ""
+                                    vt_val = None
+                            try:
+                                if vt_val not in (None, 0) and p_val not in (None, 0):
+                                    spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                            except Exception:
+                                spi_val = ""
                     tree.insert(
                         "",
                         "end",
@@ -13315,15 +13336,10 @@ class FaultTreeApp:
                     node.evidence_sufficient = new_val == CHECK_MARK
             elif col_name == "Achieved Probability":
                 target = getattr(node, "spi_target", "")
+                pg_name, _spi_type = self._parse_spi_target(target)
                 te = None
                 for sg in getattr(self, "top_events", []):
-                    label = (
-                        getattr(sg, "validation_desc", "")
-                        or getattr(sg, "safety_goal_description", "")
-                        or getattr(sg, "user_name", "")
-                        or f"SG {getattr(sg, 'unique_id', '')}"
-                    )
-                    if label == target:
+                    if self._product_goal_name(sg) == pg_name:
                         te = sg
                         break
                 if te:

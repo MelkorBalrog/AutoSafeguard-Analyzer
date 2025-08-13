@@ -354,13 +354,14 @@ def test_right_click_connection_shows_menu(monkeypatch):
 def test_refresh_sets_app_for_spi_lookup():
     root = GSNNode("Root", "Goal")
     sol = GSNNode("Sol", "Solution")
-    sol.spi_target = "Brake Time"
+    sol.spi_target = "Brake Time (SOTIF)"
     root.add_child(sol)
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
     class TopEvent:
         def __init__(self):
+            self.user_name = "Brake Time"
             self.validation_desc = "Brake Time"
             self.validation_target = "1e-5"
 

@@ -166,19 +166,23 @@ class GSNDiagram:
                     raise_(f"{rel_id}-arrow")
 
     # ------------------------------------------------------------------
+    def _parse_spi_target(self, target: str) -> tuple[str, str]:
+        """Split ``target`` into product goal name and SPI type."""
+        if target.endswith(")") and "(" in target:
+            name, typ = target.rsplit(" (", 1)
+            return name, typ[:-1]
+        return target, ""
+
+    # ------------------------------------------------------------------
     def _lookup_spi_probability(self, target: str) -> float | None:
         """Return probability for SPI target ``target`` if available."""
         app = getattr(self, "app", None)
         if not app:
             return None
+        name, _typ = self._parse_spi_target(target)
         for te in getattr(app, "top_events", []):
-            name = (
-                getattr(te, "validation_desc", "")
-                or getattr(te, "safety_goal_description", "")
-                or getattr(te, "user_name", "")
-                or f"SG {getattr(te, 'unique_id', '')}"
-            )
-            if name == target:
+            te_name = getattr(te, "user_name", "") or f"SG {getattr(te, 'unique_id', '')}"
+            if te_name == name:
                 return getattr(te, "probability", None)
         return None
 
@@ -188,14 +192,14 @@ class GSNDiagram:
         app = getattr(self, "app", None)
         if not app:
             return None
+        name, spi_type = self._parse_spi_target(target)
         for te in getattr(app, "top_events", []):
-            name = (
-                getattr(te, "validation_desc", "")
-                or getattr(te, "safety_goal_description", "")
-                or getattr(te, "user_name", "")
-                or f"SG {getattr(te, 'unique_id', '')}"
-            )
-            if name == target:
+            te_name = getattr(te, "user_name", "") or f"SG {getattr(te, 'unique_id', '')}"
+            if te_name == name:
+                if spi_type == "FUSA":
+                    from AutoML import PMHF_TARGETS  # avoid circular import at module load
+                    asil = getattr(te, "safety_goal_asil", "")
+                    return PMHF_TARGETS.get(asil, None)
                 return getattr(te, "validation_target", None)
         return None
 
