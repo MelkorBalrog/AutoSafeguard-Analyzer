@@ -117,7 +117,9 @@ def test_safety_case_cancel_does_not_toggle(monkeypatch):
 
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
-    app._new_tab = lambda title: types.SimpleNamespace(winfo_exists=lambda: True)
+    app._new_tab = lambda title: types.SimpleNamespace(
+        winfo_exists=lambda: True, winfo_children=lambda: []
+    )
     app.all_gsn_diagrams = [diag]
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
