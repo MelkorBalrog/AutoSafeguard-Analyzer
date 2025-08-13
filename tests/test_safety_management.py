@@ -1641,3 +1641,84 @@ def test_disable_requirement_work_product_keeps_editor():
     assert "Requirements Editor" in app.tool_actions
     FaultTreeApp.disable_work_product(app, wp2)
     assert "Requirements Editor" not in app.tool_actions
+
+
+def test_focus_bpmn_diagram_sets_phase_and_hides_functions():
+    SysMLRepository._instance = None
+    toolbox = SafetyManagementToolbox()
+    d1 = toolbox.create_diagram("Gov1")
+    d2 = toolbox.create_diagram("Gov2")
+    toolbox.modules = [
+        GovernanceModule("Phase1", diagrams=["Gov1"]),
+        GovernanceModule("Phase2", diagrams=["Gov2"]),
+    ]
+
+    class DummyNotebook:
+        def __init__(self, app):
+            self.app = app
+            self._tabs = []
+            self._selected = None
+
+        def tabs(self):
+            return list(self._tabs)
+
+        def add(self, tab, text=""):
+            self._tabs.append(tab)
+
+        def select(self, tab=None):
+            if tab is None:
+                return self._selected
+            self._selected = tab
+            self.app._on_tab_change(types.SimpleNamespace(widget=self))
+
+        def nametowidget(self, widget):
+            return widget
+
+    class DummyTab:
+        def winfo_exists(self):
+            return True
+
+        def winfo_children(self):
+            return []
+
+    def _new_tab(self, _title):
+        tab = DummyTab()
+        self.doc_nb.add(tab, text=_title)
+        return tab
+
+    def _fmt(self, diag):
+        return diag.name or diag.diag_id
+
+    class DummyVar:
+        def __init__(self):
+            self.value = ""
+
+        def set(self, v):
+            self.value = v
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.diagram_tabs = {}
+    app.doc_nb = DummyNotebook(app)
+    app._new_tab = types.MethodType(_new_tab, app)
+    app._format_diag_title = types.MethodType(_fmt, app)
+    app.refresh_all = types.MethodType(lambda self: None, app)
+    app.lifecycle_var = DummyVar()
+    app.safety_mgmt_toolbox = toolbox
+    changes: list[str] = []
+    toolbox.on_change = lambda: changes.append("x")
+    AutoML.BPMNDiagramWindow = lambda *args, **kwargs: None
+
+    FaultTreeApp.open_arch_window(app, d1)
+    app.doc_nb.select(app.diagram_tabs[d1])
+    assert toolbox.active_module == "Phase1"
+    assert app.lifecycle_var.value == "Phase1"
+
+    FaultTreeApp.open_arch_window(app, d2)
+    app.doc_nb.select(app.diagram_tabs[d2])
+    assert toolbox.active_module == "Phase2"
+    assert app.lifecycle_var.value == "Phase2"
+
+    app.doc_nb.select(app.diagram_tabs[d1])
+    assert toolbox.active_module == "Phase1"
+    assert app.lifecycle_var.value == "Phase1"
+    assert len(changes) == 3

@@ -255,6 +255,40 @@ class SafetyManagementToolbox:
         _collect(mod)
         return names
 
+    # ------------------------------------------------------------------
+    def diagrams_for_module(self, name: str) -> set[str]:
+        """Return all diagram names contained within module *name*.
+
+        This is a compatibility wrapper around :meth:`diagrams_in_module` used
+        by some GUI components."""
+        return self.diagrams_in_module(name)
+
+    # ------------------------------------------------------------------
+    def module_for_diagram(self, diagram: str) -> Optional[str]:
+        """Return the module name directly containing ``diagram``.
+
+        Parameters
+        ----------
+        diagram:
+            Human readable name of the diagram to locate.
+
+        Returns
+        -------
+        Optional[str]
+            The name of the module containing the diagram or ``None`` when the
+            diagram is not assigned to any module."""
+
+        def _search(mods: List[GovernanceModule]) -> Optional[str]:
+            for mod in mods:
+                if diagram in mod.diagrams:
+                    return mod.name
+                found = _search(mod.modules)
+                if found:
+                    return found
+            return None
+
+        return _search(self.modules)
+
     def list_modules(self) -> List[str]:
         """Return names of all governance modules including submodules."""
         names: List[str] = []
