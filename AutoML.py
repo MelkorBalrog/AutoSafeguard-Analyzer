@@ -1955,6 +1955,12 @@ class FaultTreeApp:
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
         # small icons for diagram types shown in the explorer
+        # an icon for packages is also required when building the
+        # architecture tree; previously this attribute was missing which
+        # resulted in `AttributeError` when refreshing views.  Creating a
+        # dedicated package icon here keeps it available throughout the
+        # application lifecycle.
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
@@ -15602,6 +15608,16 @@ class FaultTreeApp:
             for y in range(5, size - 5):
                 img.put(c, (5, y))
                 img.put(c, (size - 6, y))
+        elif shape == "folder":
+            for x in range(1, size - 1):
+                img.put(c, (x, 4))
+                img.put(c, (x, size - 2))
+            for y in range(4, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+            img.put(c, to=(1, 3, size - 2, 4))
         else:
             img.put(c, to=(2, 2, size - 2, size - 2))
         return img
