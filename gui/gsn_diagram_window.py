@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import csv
+import os
+import subprocess
+import sys
 import tkinter as tk
 from tkinter import ttk, simpledialog, filedialog
 import webbrowser
@@ -389,8 +392,18 @@ class GSNDiagramWindow(tk.Frame):
 
         if name:
             path = Path(name)
-            url = path.resolve().as_uri() if path.exists() else name
-            webbrowser.open(url)
+            if path.exists():
+                try:
+                    if sys.platform.startswith("win"):
+                        os.startfile(path)  # type: ignore[attr-defined]
+                    elif sys.platform == "darwin":
+                        subprocess.run(["open", str(path)], check=False)
+                    else:
+                        subprocess.run(["xdg-open", str(path)], check=False)
+                except Exception:
+                    webbrowser.open(path.resolve().as_uri())
+            else:
+                webbrowser.open(name)
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
