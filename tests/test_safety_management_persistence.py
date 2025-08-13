@@ -11,7 +11,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import FaultTreeApp, HazopDoc
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
 
@@ -120,4 +120,22 @@ def test_apply_model_without_governance_disables_work_products(monkeypatch):
     app.apply_model_data({}, ensure_root=False)
     assert disabled == ["HAZOP"]
     assert app.enabled_work_products == set()
+
+
+def test_work_product_phase_roundtrip():
+    app = _minimal_app()
+    tb = app.safety_mgmt_toolbox
+    tb.set_active_module("Phase1")
+    doc = HazopDoc("HZ1", [])
+    app.hazop_docs = [doc]
+    tb.register_created_work_product("HAZOP", doc.name)
+    data = app.export_model_data(include_versions=False)
+    new_app = _minimal_app()
+    new_app.apply_model_data(data, ensure_root=False)
+    tb2 = new_app.safety_mgmt_toolbox
+    assert tb2.doc_phases.get("HAZOP", {}).get("HZ1") == "Phase1"
+    tb2.set_active_module("Phase1")
+    assert tb2.document_visible("HAZOP", "HZ1")
+    tb2.set_active_module("Phase2")
+    assert not tb2.document_visible("HAZOP", "HZ1")
 

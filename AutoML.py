@@ -17421,11 +17421,10 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
-        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
-        try:
-            self.refresh_tool_enablement()
-        except Exception:
-            pass
+        toolbox = self.safety_mgmt_toolbox
+        toolbox.on_change = self.refresh_tool_enablement
+        for te in self.top_events:
+            toolbox.register_loaded_work_product("FTA", te.user_name)
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
@@ -17530,17 +17529,18 @@ class FaultTreeApp:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
-            self.hazop_docs.append(
-                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
-            )
-        hazop_entries = data.get("hazop_entries")
-        if not self.hazop_docs and hazop_entries:
+            doc = HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
+            self.hazop_docs.append(doc)
+            toolbox.register_loaded_work_product("HAZOP", doc.name)
+        if not self.hazop_docs and data.get("hazop_entries"):
             entries = []
             for h in hazop_entries:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
-            self.hazop_docs.append(HazopDoc("Default", entries))
+            doc = HazopDoc("Default", entries)
+            self.hazop_docs.append(doc)
+            toolbox.register_loaded_work_product("HAZOP", doc.name)
         self.active_hazop = self.hazop_docs[0] if self.hazop_docs else None
         self.hazop_entries = self.active_hazop.entries if self.active_hazop else []
 
@@ -17583,18 +17583,18 @@ class FaultTreeApp:
             if not hazops:
                 hazop = d.get("hazop")
                 hazops = [hazop] if hazop else []
-            self.hara_docs.append(
-                HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
-                    stpa=d.get("stpa", ""),
-                    threat=d.get("threat", ""),
-                )
+            doc = HaraDoc(
+                d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
+                hazops,
+                entries,
+                d.get("approved", False),
+                d.get("status", "draft"),
+                stpa=d.get("stpa", ""),
+                threat=d.get("threat", ""),
             )
-        if not self.hara_docs and "hara_entries" in data:
+            self.hara_docs.append(doc)
+            toolbox.register_loaded_work_product("Risk Assessment", doc.name)
+        if not self.hara_docs and data.get("hara_entries"):
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             entries = []
             for e in data.get("hara_entries", []):
@@ -17629,17 +17629,17 @@ class FaultTreeApp:
                         cyber,
                     )
                 )
-            self.hara_docs.append(
-                HaraDoc(
-                    "Default",
-                    [hazop_name] if hazop_name else [],
-                    entries,
-                    False,
-                    "draft",
-                    stpa="",
-                    threat="",
-                )
+            doc = HaraDoc(
+                "Default",
+                [hazop_name] if hazop_name else [],
+                entries,
+                False,
+                "draft",
+                stpa="",
+                threat="",
             )
+            self.hara_docs.append(doc)
+            toolbox.register_loaded_work_product("Risk Assessment", doc.name)
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
         self.update_hazard_list()
@@ -17657,14 +17657,14 @@ class FaultTreeApp:
                 )
                 for e in d.get("entries", [])
             ]
-            self.stpa_docs.append(
-                StpaDoc(
-                    d.get("name", f"STPA {len(self.stpa_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
+            doc = StpaDoc(
+                d.get("name", f"STPA {len(self.stpa_docs)+1}"),
+                d.get("diagram", ""),
+                entries,
             )
-        if not self.stpa_docs and "stpa_entries" in data:
+            self.stpa_docs.append(doc)
+            toolbox.register_loaded_work_product("STPA", doc.name)
+        if not self.stpa_docs and data.get("stpa_entries"):
             entries = [
                 StpaEntry(
                     e.get("action", ""),
@@ -17676,7 +17676,9 @@ class FaultTreeApp:
                 )
                 for e in data.get("stpa_entries", [])
             ]
-            self.stpa_docs.append(StpaDoc("Default", "", entries))
+            doc = StpaDoc("Default", "", entries)
+            self.stpa_docs.append(doc)
+            toolbox.register_loaded_work_product("STPA", doc.name)
         self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
         self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
 
@@ -17729,35 +17731,43 @@ class FaultTreeApp:
                     for name in func_names:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
+            doc = ThreatDoc(
+                d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                d.get("diagram", ""),
+                entries,
             )
+            self.threat_docs.append(doc)
+            toolbox.register_loaded_work_product("Threat Analysis", doc.name)
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
-            self.fi2tc_docs.append(
-                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
+            doc = FI2TCDoc(
+                d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"),
+                d.get("entries", []),
             )
-        fi2tc_entries = data.get("fi2tc_entries")
-        if not self.fi2tc_docs and fi2tc_entries:
-            self.fi2tc_docs.append(FI2TCDoc("Default", fi2tc_entries))
+            self.fi2tc_docs.append(doc)
+            toolbox.register_loaded_work_product("FI2TC", doc.name)
+        if not self.fi2tc_docs and data.get("fi2tc_entries"):
+            doc = FI2TCDoc("Default", data.get("fi2tc_entries", []))
+            self.fi2tc_docs.append(doc)
+            toolbox.register_loaded_work_product("FI2TC", doc.name)
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
         self.tc2fi_docs = []
         for d in data.get("tc2fi_docs", []):
-            self.tc2fi_docs.append(
-                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
+            doc = TC2FIDoc(
+                d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"),
+                d.get("entries", []),
             )
-        tc2fi_entries = data.get("tc2fi_entries")
-        if not self.tc2fi_docs and tc2fi_entries:
-            self.tc2fi_docs.append(TC2FIDoc("Default", tc2fi_entries))
+            self.tc2fi_docs.append(doc)
+            toolbox.register_loaded_work_product("TC2FI", doc.name)
+        if not self.tc2fi_docs and data.get("tc2fi_entries"):
+            doc = TC2FIDoc("Default", data.get("tc2fi_entries", []))
+            self.tc2fi_docs.append(doc)
+            toolbox.register_loaded_work_product("TC2FI", doc.name)
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -17776,6 +17786,10 @@ class FaultTreeApp:
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
+        try:
+            self.refresh_tool_enablement()
+        except Exception:
+            pass
 
         self.fmedas = []
         for doc in data.get("fmedas", []):

@@ -176,6 +176,11 @@ class SafetyManagementToolbox:
             self.doc_phases.setdefault(analysis, {})[name] = self.active_module
 
     # ------------------------------------------------------------------
+    def register_loaded_work_product(self, analysis: str, name: str) -> None:
+        """Record a document loaded from disk without changing its phase."""
+        self.work_product_counts[analysis] = self.work_product_counts.get(analysis, 0) + 1
+
+    # ------------------------------------------------------------------
     def register_deleted_work_product(self, analysis: str, name: str) -> None:
         """Record deletion of a work product document of type ``analysis``."""
         if self.work_product_counts.get(analysis, 0) > 0:

@@ -32,6 +32,7 @@ from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
 from analysis.models import HazopDoc, StpaDoc
 
+
 def test_work_product_registration():
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("BPMN Diagram", "HAZOP", "Link action to hazard")
