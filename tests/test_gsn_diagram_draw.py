@@ -86,9 +86,9 @@ def test_draw_tags_and_zoom_scaling():
 
 
 def test_draw_respects_context_links():
-    """Connections use the stored relationship type, not node type."""
+    """Context links are rendered with the correct connector style."""
     root = GSNNode("Root", "Goal")
-    child = GSNNode("Child", "Goal")
+    child = GSNNode("Child", "Context")
     root.add_child(child, relation="context")
     diag = GSNDiagram(root, drawing_helper=DummyHelper())
     diag.add_node(child)
