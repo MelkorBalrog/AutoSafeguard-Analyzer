@@ -87,40 +87,29 @@ class GSNDiagram:
                 method(*args, **kwargs)
 
         if typ == "solution":
-            top_w, top_h = self.drawing_helper.get_text_size(node.user_name, font_obj)
-            bottom_w, bottom_h = self.drawing_helper.get_text_size(
-                getattr(node, "description", ""), font_obj
-            )
+            text = self._format_text(node)
+            t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
             radius = max(
                 base_scale / 2,
-                bottom_w / 2 + padding,
-                bottom_h + padding,
+                t_width / 2 + padding,
+                t_height / 2 + padding,
             )
             scale = radius * 2
-            if node.is_primary_instance:
-                _call(
-                    self.drawing_helper.draw_solution_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    top_text=node.user_name,
-                    bottom_text=node.description,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
-            else:
-                _call(
-                    self.drawing_helper.draw_away_solution_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    top_text=node.user_name,
-                    bottom_text=node.description,
-                    font_obj=font_obj,
-                    obj_id=node.unique_id,
-                )
+            draw_func = (
+                self.drawing_helper.draw_solution_shape
+                if node.is_primary_instance
+                else self.drawing_helper.draw_away_solution_shape
+            )
+            _call(
+                draw_func,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                font_obj=font_obj,
+                obj_id=node.unique_id,
+            )
         elif typ in {"goal", "module"}:
             ratio = 0.6
             scale = max(base_scale, width + padding, (height + padding) / ratio)

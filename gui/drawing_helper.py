@@ -989,8 +989,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         x,
         y,
         scale=40.0,
-        top_text="Solution",
-        bottom_text="",
+        text="Solution",
         fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
@@ -998,19 +997,30 @@ class GSNDrawingHelper(FTADrawingHelper):
         obj_id: str = "",
     ):
         radius = scale / 2
-        self.draw_circle_event_shape(
-            canvas,
+        if font_obj is None:
+            font_obj = self._scaled_font(scale)
+        left = x - radius
+        top = y - radius
+        right = x + radius
+        bottom = y + radius
+        self._fill_gradient_circle(canvas, x, y, radius, fill)
+        canvas.create_oval(
+            left,
+            top,
+            right,
+            bottom,
+            fill="",
+            outline=outline_color,
+            width=line_width,
+            tags=(obj_id,),
+        )
+        canvas.create_text(
             x,
             y,
-            radius,
-            top_text=top_text,
-            bottom_text=bottom_text,
-            fill=fill,
-            outline_color=outline_color,
-            line_width=line_width,
-            font_obj=font_obj,
-            base_event=True,
-            obj_id=obj_id,
+            text=text,
+            font=font_obj,
+            anchor="center",
+            width=scale - 8,
         )
 
     def draw_assumption_shape(
