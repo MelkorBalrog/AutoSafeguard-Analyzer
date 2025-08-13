@@ -11,6 +11,30 @@ from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
 
 
+class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
+    """Simple dialog presenting a read-only list of module names."""
+
+    def __init__(self, parent, title: str, options: list[str]):
+        self.options = options
+        self.selection = ""
+        super().__init__(parent, title)
+
+    def body(self, master):  # pragma: no cover - requires tkinter
+        ttk.Label(master, text="Module:").pack(padx=5, pady=5)
+        self.var = tk.StringVar(value=self.options[0] if self.options else "")
+        combo = ttk.Combobox(
+            master,
+            textvariable=self.var,
+            values=self.options,
+            state="readonly",
+        )
+        combo.pack(padx=5, pady=5)
+        return combo
+
+    def apply(self):  # pragma: no cover - requires tkinter
+        self.selection = self.var.get()
+
+
 class GSNDiagramWindow(tk.Frame):
     """Display a :class:`GSNDiagram` inside a notebook tab with basic tools."""
 
@@ -154,10 +178,9 @@ class GSNDiagramWindow(tk.Frame):
         if not modules:
             return
         names = [m.name for m in modules]
-        name = simpledialog.askstring(
-            "Add Existing Module", "Module:", initialvalue=names[0], parent=self
-        )
-        if not name or name not in names:
+        dialog = ModuleSelectDialog(self, "Add Existing Module", names)
+        name = dialog.selection
+        if not name:
             return
         undo = getattr(app, "push_undo_state", None)
         if undo:

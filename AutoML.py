@@ -10767,32 +10767,64 @@ class FaultTreeApp:
         tree.column("Severity", width=80)
         tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        class _HazardDialog(simpledialog.Dialog):
+            """Prompt for a hazard name and severity."""
+
+            def __init__(self, parent, title: str, name: str = "", severity: str = "1"):
+                self._name = name
+                self._severity = severity
+                super().__init__(parent, title=title)
+
+            def body(self, master):
+                self.resizable(False, False)
+                ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e")
+                self.name_var = tk.StringVar(value=self._name)
+                name_entry = ttk.Entry(master, textvariable=self.name_var)
+                name_entry.grid(row=0, column=1, padx=5, pady=5)
+                ttk.Label(master, text="Severity:").grid(row=1, column=0, sticky="e")
+                self.sev_var = tk.StringVar(value=self._severity)
+                ttk.Combobox(
+                    master,
+                    textvariable=self.sev_var,
+                    values=["1", "2", "3"],
+                    state="readonly",
+                ).grid(row=1, column=1, padx=5, pady=5)
+                return name_entry
+
+            def apply(self):
+                self.result = (
+                    self.name_var.get().strip(),
+                    self.sev_var.get().strip(),
+                )
+
         def refresh():
             tree.delete(*tree.get_children())
             for h in self.hazards:
                 tree.insert("", "end", values=(h, self.hazard_severity.get(h, "")))
 
         def add():
-            name = simpledialog.askstring("Add Hazard", "Name:")
-            if not name:
+            dlg = _HazardDialog(win, "Add Hazard")
+            if not dlg.result:
                 return
-            sev = simpledialog.askstring("Severity", "1-3:", initialvalue="1")
-            self.add_hazard(name, sev)
-            refresh()
+            name, sev = dlg.result
+            if name:
+                self.add_hazard(name, sev)
+                refresh()
 
         def rename():
             sel = tree.focus()
             if not sel:
                 return
             current, sev = tree.item(sel, "values")[:2]
-            name = simpledialog.askstring("Rename Hazard", "Name:", initialvalue=current)
-            if not name:
+            dlg = _HazardDialog(win, "Edit Hazard", current, str(sev))
+            if not dlg.result:
                 return
-            sev_val = simpledialog.askstring("Severity", "1-3:", initialvalue=str(sev))
-            if name != current:
-                self.rename_hazard(current, name)
-            self.update_hazard_severity(name, sev_val)
-            refresh()
+            name, sev_val = dlg.result
+            if name:
+                if name != current:
+                    self.rename_hazard(current, name)
+                self.update_hazard_severity(name, sev_val)
+                refresh()
 
         def delete():
             sel = tree.focus()

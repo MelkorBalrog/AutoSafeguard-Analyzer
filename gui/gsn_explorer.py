@@ -191,6 +191,8 @@ class GSNExplorer(tk.Frame):
                     undo()
                 obj.root.user_name = new
         elif typ == "node":
+            if getattr(obj, "node_type", "") == "Module":
+                return
             new = simpledialog.askstring(
                 "Rename Node", "Name:", initialvalue=obj.user_name, parent=self
             )
