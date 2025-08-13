@@ -124,6 +124,10 @@ class SafetyManagementToolbox:
     # toolbox to prevent removal of work product declarations when documents
     # are present.
     work_product_counts: Dict[str, int] = field(default_factory=dict)
+    # Map analysis names to document names and their creating module so work
+    # products can be filtered by lifecycle phase. Documents without an entry
+    # are visible in all phases for backwards compatibility.
+    doc_phases: Dict[str, Dict[str, str]] = field(default_factory=dict)
     # Optional callback invoked whenever the enabled work product set changes.
     on_change: Optional[Callable[[], None]] = field(default=None, repr=False)
 
@@ -165,22 +169,46 @@ class SafetyManagementToolbox:
         return False
 
     # ------------------------------------------------------------------
-    def register_created_work_product(self, analysis: str) -> None:
+    def register_created_work_product(self, analysis: str, name: str) -> None:
         """Record creation of a work product document of type ``analysis``."""
         self.work_product_counts[analysis] = self.work_product_counts.get(analysis, 0) + 1
+        if self.active_module:
+            self.doc_phases.setdefault(analysis, {})[name] = self.active_module
 
     # ------------------------------------------------------------------
-    def register_deleted_work_product(self, analysis: str) -> None:
+    def register_deleted_work_product(self, analysis: str, name: str) -> None:
         """Record deletion of a work product document of type ``analysis``."""
         if self.work_product_counts.get(analysis, 0) > 0:
             self.work_product_counts[analysis] -= 1
+        if name:
+            self.doc_phases.get(analysis, {}).pop(name, None)
+
+    # ------------------------------------------------------------------
+    def rename_document(self, analysis: str, old: str, new: str) -> None:
+        """Update phase mapping when a document is renamed."""
+        phase = self.doc_phases.get(analysis, {}).pop(old, None)
+        if phase:
+            self.doc_phases.setdefault(analysis, {})[new] = phase
+
+    # ------------------------------------------------------------------
+    def document_visible(self, analysis: str, name: str) -> bool:
+        """Return ``True`` if the document should be visible in the active phase."""
+        if not self.active_module:
+            return True
+        phase = self.doc_phases.get(analysis, {}).get(name)
+        if phase is None:
+            return True
+        return phase == self.active_module
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
         """Return the set of analysis names enabled for the active phase."""
+        all_products = {wp.analysis for wp in self.work_products}
         if not self.active_module:
-            return {wp.analysis for wp in self.work_products}
+            return all_products
         diagrams = self.diagrams_in_module(self.active_module)
+        if not diagrams:
+            return all_products
         return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
     # ------------------------------------------------------------------
@@ -320,38 +348,6 @@ class SafetyManagementToolbox:
         return self.workflows.get(name, [])
 
     # ------------------------------------------------------------------
-    # Persistence helpers
-    # ------------------------------------------------------------------
-    def to_dict(self) -> dict:
-        """Return a serialisable representation of the toolbox."""
-        return {
-            "work_products": [wp.to_dict() for wp in self.work_products],
-            "lifecycle": list(self.lifecycle),
-            "workflows": {k: list(v) for k, v in self.workflows.items()},
-            "diagrams": dict(self.diagrams),
-            "modules": [m.to_dict() for m in self.modules],
-            "active_module": self.active_module,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "SafetyManagementToolbox":
-        """Create a toolbox instance from *data* mapping."""
-        toolbox = cls()
-        toolbox.work_products = [
-            SafetyWorkProduct.from_dict(w) for w in data.get("work_products", [])
-        ]
-        toolbox.lifecycle = list(data.get("lifecycle", []))
-        toolbox.workflows = {
-            k: list(v) for k, v in data.get("workflows", {}).items()
-        }
-        toolbox.diagrams = dict(data.get("diagrams", {}))
-        toolbox.modules = [
-            GovernanceModule.from_dict(m) for m in data.get("modules", [])
-        ]
-        toolbox.active_module = data.get("active_module")
-        return toolbox
-
-    # ------------------------------------------------------------------
     # Diagram management helpers
     # ------------------------------------------------------------------
     def create_diagram(self, name: str) -> str:
@@ -440,6 +436,8 @@ class SafetyManagementToolbox:
             "workflows": {k: list(v) for k, v in self.workflows.items()},
             "diagrams": dict(self.diagrams),
             "modules": [m.to_dict() for m in self.modules],
+            "active_module": self.active_module,
+            "doc_phases": {k: dict(v) for k, v in self.doc_phases.items()},
         }
 
     # ------------------------------------------------------------------
@@ -463,6 +461,10 @@ class SafetyManagementToolbox:
         toolbox.modules = [
             GovernanceModule.from_dict(m) for m in data.get("modules", [])
         ]
+        toolbox.active_module = data.get("active_module")
+        toolbox.doc_phases = {
+            k: dict(v) for k, v in data.get("doc_phases", {}).items()
+        }
         return toolbox
 
     # ------------------------------------------------------------------
