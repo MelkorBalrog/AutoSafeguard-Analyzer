@@ -310,6 +310,7 @@ from analysis.models import (
     calc_asil,
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
     CybersecurityGoal,
     CyberRiskEntry,
@@ -2022,6 +2023,16 @@ class FaultTreeApp:
         ),
     }
 
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_INFO.setdefault(
+            _wp,
+            (
+                "System Design (Item Definition)",
+                "Requirements Editor",
+                "show_requirements_editor",
+            ),
+        )
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
@@ -2221,9 +2232,11 @@ class FaultTreeApp:
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Requirement Specification", []).append(
-            (requirements_menu, requirements_menu.index("end"))
-        )
+        req_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).append(
+                (requirements_menu, req_idx)
+            )
         requirements_menu.add_command(
             label="Requirements Explorer", command=self.show_requirements_explorer
         )
@@ -2511,9 +2524,9 @@ class FaultTreeApp:
                 "Safety & Security Management Explorer",
             ]
         }
-        self.tool_to_work_product = {
-            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
-        }
+        self.tool_to_work_product = {}
+        for name, info in self.WORK_PRODUCT_INFO.items():
+            self.tool_to_work_product.setdefault(info[1], set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -8676,11 +8689,14 @@ class FaultTreeApp:
         if not sel:
             return
         name = lb.get(sel[0])
-        analysis_name = self.tool_to_work_product.get(name)
+        analysis_names = self.tool_to_work_product.get(name, set())
         if (
-            analysis_name
+            analysis_names
             and self.safety_mgmt_toolbox
-            and analysis_name not in self.safety_mgmt_toolbox.enabled_products()
+            and not any(
+                n in self.safety_mgmt_toolbox.enabled_products()
+                for n in analysis_names
+            )
         ):
             return
         action = self.tool_actions.get(name)
@@ -8705,8 +8721,8 @@ class FaultTreeApp:
         self.enabled_work_products = set(enabled)
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
-                analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
-                if analysis_name and analysis_name not in enabled:
+                analysis_names = getattr(self, "tool_to_work_product", {}).get(tool_name, set())
+                if analysis_names and not any(n in enabled for n in analysis_names):
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
@@ -8836,20 +8852,33 @@ class FaultTreeApp:
             return False
         self.enabled_work_products.discard(name)
         for menu, idx in self.work_product_menus.get(name, []):
+            state = tk.DISABLED
+            for other, entries in self.work_product_menus.items():
+                if (
+                    other != name
+                    and other in self.enabled_work_products
+                    and (menu, idx) in entries
+                ):
+                    state = tk.NORMAL
+                    break
             try:
-                menu.entryconfig(idx, state=tk.DISABLED)
+                menu.entryconfig(idx, state=state)
             except tk.TclError:
                 pass
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            lb = self.tool_listboxes.get(area)
-            if lb:
-                for i in range(lb.size()):
-                    if lb.get(i) == tool_name:
-                        lb.delete(i)
-                        break
-            self.tool_actions.pop(tool_name, None)
+            if not any(
+                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
+                for wp in self.enabled_work_products
+            ):
+                lb = self.tool_listboxes.get(area)
+                if lb:
+                    for i in range(lb.size()):
+                        if lb.get(i) == tool_name:
+                            lb.delete(i)
+                            break
+                self.tool_actions.pop(tool_name, None)
         if hasattr(self, "update_views"):
             try:
                 self.update_views()
@@ -8859,11 +8888,12 @@ class FaultTreeApp:
 
     def open_work_product(self, name: str) -> None:
         """Open a diagram or analysis work product within the application."""
-        wp = next(
-            (wp for wp, info in self.WORK_PRODUCT_INFO.items() if info[1] == name or wp == name),
-            None,
-        )
-        if wp and wp not in self.enabled_work_products:
+        wps = [
+            wp
+            for wp, info in self.WORK_PRODUCT_INFO.items()
+            if info[1] == name or wp == name
+        ]
+        if wps and not any(wp in self.enabled_work_products for wp in wps):
             return
         action = self.tool_actions.get(name)
         if callable(action):
@@ -9957,7 +9987,7 @@ class FaultTreeApp:
                     text="Safety & Security Concept",
                     tags=("safetyconcept", "0"),
                 )
-            if "Requirement Specification" in enabled:
+            if any(wp in enabled for wp in REQUIREMENT_WORK_PRODUCTS):
                 tree.insert(sys_root, "end", text="Requirements Editor", tags=("reqs", "0"))
                 tree.insert(
                     sys_root,

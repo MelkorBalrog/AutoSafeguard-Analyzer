@@ -30,7 +30,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
-from analysis.models import HazopDoc, HaraDoc
+from analysis.models import HazopDoc, HaraDoc, REQUIREMENT_WORK_PRODUCTS
 
 
 def test_work_product_registration():
@@ -1443,3 +1443,28 @@ def test_active_module_filters_enabled_products():
     assert toolbox.enabled_products() == {"HAZOP"}
     toolbox.set_active_module(None)
     assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+
+
+def test_work_product_info_includes_requirement_types():
+    for wp in REQUIREMENT_WORK_PRODUCTS:
+        assert wp in FaultTreeApp.WORK_PRODUCT_INFO
+
+
+def test_disable_requirement_work_product_keeps_editor():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.update_views = lambda: None
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.work_product_menus = {}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+
+    wp1, wp2 = REQUIREMENT_WORK_PRODUCTS[:2]
+    FaultTreeApp.enable_work_product(app, wp1)
+    FaultTreeApp.enable_work_product(app, wp2)
+    assert "Requirements Editor" in app.tool_actions
+    FaultTreeApp.disable_work_product(app, wp1)
+    assert "Requirements Editor" in app.tool_actions
+    FaultTreeApp.disable_work_product(app, wp2)
+    assert "Requirements Editor" not in app.tool_actions

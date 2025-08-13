@@ -14,7 +14,12 @@ from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 
 from sysml.sysml_spec import SYSML_PROPERTIES
-from analysis.models import global_requirements, ASIL_ORDER, StpaDoc
+from analysis.models import (
+    global_requirements,
+    ASIL_ORDER,
+    StpaDoc,
+    REQUIREMENT_WORK_PRODUCTS,
+)
 from analysis.safety_management import ALLOWED_PROPAGATIONS
 
 # ---------------------------------------------------------------------------
@@ -5498,8 +5503,8 @@ class SysMLDiagramWindow(tk.Frame):
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
-                "Requirement Specification",
                 "Product Goal Specification",
+                *REQUIREMENT_WORK_PRODUCTS,
             }
             analysis_products = {
                 "HAZOP",
@@ -8207,7 +8212,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         options = [
             "Architecture Diagram",
             "Safety & Security Concept",
-            "Requirement Specification",
+            *REQUIREMENT_WORK_PRODUCTS,
             "HAZOP",
             "STPA",
             "Threat Analysis",
@@ -8226,8 +8231,8 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         area_map = {
             "Architecture Diagram": "System Design (Item Definition)",
             "Safety & Security Concept": "System Design (Item Definition)",
-            "Requirement Specification": "System Design (Item Definition)",
             "Product Goal Specification": "System Design (Item Definition)",
+            **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
             "HAZOP": "Hazard & Threat Analysis",
             "STPA": "Hazard & Threat Analysis",
             "Threat Analysis": "Hazard & Threat Analysis",
