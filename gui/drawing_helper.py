@@ -15,7 +15,6 @@ _NAMED_COLORS = {
     "lightgrey": "#d3d3d3",
     "lightblue": "#add8e6",
     "lightyellow": "#ffffe0",
-    "yellow": "#ffff00",
 }
 
 # Basic mapping of a few common color names to their hex equivalents. The
@@ -28,7 +27,6 @@ _NAMED_COLORS = {
     "lightgrey": "#d3d3d3",
     "lightblue": "#add8e6",
     "lightyellow": "#ffffe0",
-    "yellow": "#ffff00",
 }
 
 class FTADrawingHelper:
@@ -857,16 +855,18 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Goal",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=int(10))
-        w = scale
-        h = scale * 0.6
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.6, t_height + 2 * padding)
         left = x - w / 2
         top = y - h / 2
         right = x + w / 2
@@ -953,16 +953,18 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Strategy",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=int(10))
-        w = scale
-        h = scale * 0.5
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.5, t_height + 2 * padding)
         offset = w * 0.2
         points = [
             (x - w / 2 + offset, y - h / 2),
@@ -989,7 +991,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=40.0,
         top_text="Solution",
         bottom_text="",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
@@ -1018,16 +1020,18 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Assumption",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=int(10))
-        w = scale
-        h = scale * 0.5
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.5, t_height + 2 * padding)
         left = x - w / 2
         top = y - h / 2
         right = x + w / 2
@@ -1060,16 +1064,18 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Justification",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=int(10))
-        w = scale
-        h = scale * 0.5
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.5, t_height + 2 * padding)
         left = x - w / 2
         top = y - h / 2
         right = x + w / 2
@@ -1110,16 +1116,18 @@ class GSNDrawingHelper(FTADrawingHelper):
         y,
         scale=60.0,
         text="Context",
-        fill="yellow",
+        fill="lightyellow",
         outline_color="dimgray",
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         if font_obj is None:
-            font_obj = tkFont.Font(family="Arial", size=int(10))
-        w = scale
-        h = scale * 0.5
+            font_obj = self._scaled_font(scale)
+        padding = 4
+        t_width, t_height = self.get_text_size(text, font_obj)
+        w = max(scale, t_width + 2 * padding)
+        h = max(scale * 0.5, t_height + 2 * padding)
         left = x - w / 2
         top = y - h / 2
         right = x + w / 2
