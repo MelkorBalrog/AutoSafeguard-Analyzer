@@ -8283,7 +8283,7 @@ class FaultTreeApp:
         if len(tags) != 2:
             return
         kind, ident = tags[0], tags[1]
-        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "gsn", "jrev", "gov"}:
+        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
             idx = int(ident)
             if kind == "fmea":
                 self.show_fmea_table(self.fmeas[idx])
@@ -8325,9 +8325,6 @@ class FaultTreeApp:
                     doc = self.tc2fi_docs[idx]
                     self._tc2fi_window.doc_var.set(doc.name)
                     self._tc2fi_window.select_doc()
-            elif kind == "gsn":
-                if 0 <= idx < len(getattr(self, "all_gsn_diagrams", [])):
-                    self.open_gsn_diagram(self.all_gsn_diagrams[idx])
             elif kind == "jrev":
                 if 0 <= idx < len(getattr(self, "joint_reviews", [])):
                     review = self.joint_reviews[idx]
@@ -8336,6 +8333,12 @@ class FaultTreeApp:
                     self.open_review_toolbox()
             elif kind == "gov":
                 self.open_management_window(idx)
+        elif kind == "gsn":
+            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
+            if diag:
+                self.open_gsn_diagram(diag)
+        elif kind == "gsnmod":
+            self.manage_gsn()
         elif kind == "reqs":
             self.show_requirements_editor()
         elif kind == "sg":
@@ -8374,7 +8377,7 @@ class FaultTreeApp:
         repo = SysMLRepository.get_instance()
         current = ""
         node = None
-        if kind in {"fmea", "fmeda", "hazop", "hara", "fi2tc", "tc2fi", "gsn", "jrev"}:
+        if kind in {"fmea", "fmeda", "hazop", "hara", "fi2tc", "tc2fi", "jrev"}:
             idx = int(ident)
             if kind == "fmea":
                 current = self.fmeas[idx]["name"]
@@ -8388,10 +8391,18 @@ class FaultTreeApp:
                 current = self.fi2tc_docs[idx].name
             elif kind == "tc2fi":
                 current = self.tc2fi_docs[idx].name
-            elif kind == "gsn":
-                current = self.all_gsn_diagrams[idx].root.user_name
             elif kind == "jrev":
                 current = self.joint_reviews[idx].name
+        elif kind == "gsn":
+            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
+            if not diag:
+                return
+            current = diag.root.user_name
+        elif kind == "gsnmod":
+            module = getattr(self, "gsn_module_map", {}).get(ident)
+            if not module:
+                return
+            current = module.name
         elif kind == "arch":
             diag = repo.diagrams.get(ident)
             current = diag.name if diag else ""
@@ -8426,7 +8437,13 @@ class FaultTreeApp:
         elif kind == "gov":
             self.management_diagrams[idx].name = new
         elif kind == "gsn":
-            self.all_gsn_diagrams[idx].root.user_name = new
+            diag = self.gsn_diagram_map.get(ident)
+            if diag:
+                diag.root.user_name = new
+        elif kind == "gsnmod":
+            module = self.gsn_module_map.get(ident)
+            if module:
+                module.name = new
         elif kind == "jrev":
             if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
                 messagebox.showerror("Review", "Name already exists")
@@ -8465,6 +8482,11 @@ class FaultTreeApp:
         for idx, diag in enumerate(self.management_diagrams):
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
                 self.open_management_window(idx)
+                return
+
+        for diag in getattr(self, "all_gsn_diagrams", []):
+            if getattr(diag.root, "user_name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_gsn_diagram(diag)
                 return
 
     def _on_tool_tab_motion(self, event):
@@ -9361,14 +9383,42 @@ class FaultTreeApp:
                 ],
                 key=lambda d: d.root.user_name or d.diag_id,
             )
+            self.gsn_diagram_map = {d.diag_id: d for d in self.all_gsn_diagrams}
+            self.gsn_module_map = {}
+
             gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
-            for idx, diag in enumerate(self.all_gsn_diagrams):
-                tree.insert(
-                    gsn_root,
+
+            def add_gsn_module(module, parent):
+                mid = str(id(module))
+                node = tree.insert(
+                    parent,
                     "end",
-                    text=diag.root.user_name or f"Diagram {idx + 1}",
-                    tags=("gsn", str(idx)),
+                    text=module.name,
+                    open=True,
+                    tags=("gsnmod", mid),
                 )
+                self.gsn_module_map[mid] = module
+                for sub in sorted(module.modules, key=lambda m: m.name):
+                    add_gsn_module(sub, node)
+                for diag in sorted(
+                    module.diagrams, key=lambda d: d.root.user_name or d.diag_id
+                ):
+                    add_gsn_diagram(diag, node)
+
+            def add_gsn_diagram(diag, parent):
+                tree.insert(
+                    parent,
+                    "end",
+                    text=diag.root.user_name or diag.diag_id,
+                    tags=("gsn", diag.diag_id),
+                )
+
+            for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
+                add_gsn_module(mod, gsn_root)
+            for diag in sorted(
+                getattr(self, "gsn_diagrams", []), key=lambda d: d.root.user_name or d.diag_id
+            ):
+                add_gsn_diagram(diag, gsn_root)
 
             tree.insert(mgmt_root, "end", text="Safety Case", tags=("safetycase", "0"))
 
