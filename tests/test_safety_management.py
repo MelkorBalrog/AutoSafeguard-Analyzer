@@ -435,3 +435,32 @@ def test_diagram_hierarchy_orders_levels():
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["A"], ["B"], ["C"]]
 
+def test_diagram_hierarchy_from_object_properties():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    parent = repo.create_diagram("BPMN Diagram", name="Parent")
+    child = repo.create_diagram("BPMN Diagram", name="Child")
+    for d in (parent, child):
+        d.tags.append("safety-management")
+
+    toolbox.list_diagrams()
+
+    # Create an action object on the parent that references the child diagram
+    act = repo.create_element("Action", name="link", owner=parent.package)
+    repo.add_element_to_diagram(parent.diag_id, act.elem_id)
+    parent.objects.append(
+        SysMLObject(
+            3,
+            "Action",
+            0.0,
+            0.0,
+            element_id=act.elem_id,
+            properties={"view": child.diag_id},
+        )
+    )
+
+    hierarchy = toolbox.diagram_hierarchy()
+    assert hierarchy == [["Parent"], ["Child"]]
+

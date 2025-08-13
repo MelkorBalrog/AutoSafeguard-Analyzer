@@ -159,10 +159,28 @@ class SafetyManagementToolbox:
             if not diag:
                 continue
             for obj in getattr(diag, "objects", []):
-                elem_id = obj.get("element_id")
+                # ``objects`` may contain plain dictionaries from the repository
+                # or ``SysMLObject`` instances used by the GUI.  Support both.
+                elem_id = (
+                    obj.get("element_id") if isinstance(obj, dict) else getattr(obj, "element_id", None)
+                )
                 if not elem_id:
                     continue
+
                 target = repo.get_linked_diagram(elem_id)
+
+                if not target:
+                    # Some diagrams reference others through object properties
+                    # rather than explicit repository links. These appear as
+                    # ``view`` or ``diagram`` identifiers within the object's
+                    # property mapping. Support both dictionary and dataclass
+                    # representations.
+                    props = (
+                        obj.get("properties", {})
+                        if isinstance(obj, dict)
+                        else getattr(obj, "properties", {})
+                    )
+                    target = props.get("view") or props.get("diagram")
                 if target in edges:
                     edges[diag_id].add(target)
                     reverse[target].add(diag_id)
@@ -175,7 +193,7 @@ class SafetyManagementToolbox:
         visited: set[str] = set()
         current = roots
         while current:
-            levels.append([repo.diagrams[d].name for d in current])
+            levels.append(sorted(repo.diagrams[d].name for d in current))
             visited.update(current)
             next_level: set[str] = set()
             for d in current:
