@@ -3,8 +3,7 @@ from tkinter import simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
-from gui.safety_case_explorer import SafetyCaseExplorer
-from gui.safety_case_table import SafetyCaseTable
+import gui.safety_case_explorer as safety_case_explorer
 from gui import messagebox
 
 class DummyTree:
@@ -49,18 +48,22 @@ def test_create_edit_delete_case(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    explorer = SafetyCaseExplorer.__new__(SafetyCaseExplorer)
+    explorer = safety_case_explorer.SafetyCaseExplorer.__new__(safety_case_explorer.SafetyCaseExplorer)
     explorer.tree = DummyTree()
     explorer.app = types.SimpleNamespace(gsn_diagrams=[diag])
     explorer.library = SafetyCaseLibrary()
     explorer.item_map = {}
     explorer.case_icon = explorer.solution_icon = None
 
-    SafetyCaseExplorer.populate(explorer)
+    safety_case_explorer.SafetyCaseExplorer.populate(explorer)
 
-    inputs = iter(["Case1", root.user_name])
+    inputs = iter(["Case1"])
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: next(inputs))
-    SafetyCaseExplorer.new_case(explorer)
+    class DummyDialog:
+        def __init__(self, *a, **k):
+            self.selection = root.user_name
+    monkeypatch.setattr(safety_case_explorer, "DiagramSelectDialog", DummyDialog)
+    safety_case_explorer.SafetyCaseExplorer.new_case(explorer)
     assert len(explorer.library.cases) == 1
     texts = [meta["text"] for meta in explorer.tree.items.values()]
     assert "Case1" in texts
@@ -70,16 +73,20 @@ def test_create_edit_delete_case(monkeypatch):
         if typ == "case":
             explorer.tree.selection_item = iid
             break
-    inputs = iter(["Renamed", root.user_name])
+    inputs = iter(["Renamed"])
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: next(inputs))
-    SafetyCaseExplorer.edit_case(explorer)
+    class DummyDialog2:
+        def __init__(self, *a, **k):
+            self.selection = root.user_name
+    monkeypatch.setattr(safety_case_explorer, "DiagramSelectDialog", DummyDialog2)
+    safety_case_explorer.SafetyCaseExplorer.edit_case(explorer)
     assert explorer.library.cases[0].name == "Renamed"
     for iid, (typ, obj) in explorer.item_map.items():
         if typ == "case":
             explorer.tree.selection_item = iid
             break
     monkeypatch.setattr(messagebox, "askokcancel", lambda *a, **k: True)
-    SafetyCaseExplorer.delete_case(explorer)
+    safety_case_explorer.SafetyCaseExplorer.delete_case(explorer)
     assert explorer.library.cases == []
 
 
@@ -89,18 +96,22 @@ def test_create_case_from_module(monkeypatch):
     module = GSNModule("M")
     module.diagrams.append(diag)
 
-    explorer = SafetyCaseExplorer.__new__(SafetyCaseExplorer)
+    explorer = safety_case_explorer.SafetyCaseExplorer.__new__(safety_case_explorer.SafetyCaseExplorer)
     explorer.tree = DummyTree()
     explorer.app = types.SimpleNamespace(gsn_diagrams=[], gsn_modules=[module])
     explorer.library = SafetyCaseLibrary()
     explorer.item_map = {}
     explorer.case_icon = explorer.solution_icon = None
 
-    SafetyCaseExplorer.populate(explorer)
+    safety_case_explorer.SafetyCaseExplorer.populate(explorer)
 
-    inputs = iter(["Case2", root.user_name])
+    inputs = iter(["Case2"])
     monkeypatch.setattr(simpledialog, "askstring", lambda *a, **k: next(inputs))
-    SafetyCaseExplorer.new_case(explorer)
+    class DummyDialog3:
+        def __init__(self, *a, **k):
+            self.selection = root.user_name
+    monkeypatch.setattr(safety_case_explorer, "DiagramSelectDialog", DummyDialog3)
+    safety_case_explorer.SafetyCaseExplorer.new_case(explorer)
     assert explorer.library.cases and explorer.library.cases[0].diagram is diag
 
 

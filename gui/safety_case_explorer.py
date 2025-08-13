@@ -5,6 +5,33 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 from typing import Dict, Tuple
 
+
+class DiagramSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
+    """Dialog presenting a read-only list of diagram names."""
+
+    def __init__(self, parent, title: str, options: list[str], initial: str | None = None):
+        self.options = options
+        self.initial = initial
+        self.selection = ""
+        super().__init__(parent, title)
+
+    def body(self, master):  # pragma: no cover - requires tkinter
+        ttk.Label(master, text="Diagram:").pack(padx=5, pady=5)
+        self.var = tk.StringVar(
+            value=self.initial if self.initial is not None else (self.options[0] if self.options else "")
+        )
+        combo = ttk.Combobox(
+            master,
+            textvariable=self.var,
+            values=self.options,
+            state="readonly",
+        )
+        combo.pack(padx=5, pady=5)
+        return combo
+
+    def apply(self):  # pragma: no cover - requires tkinter
+        self.selection = self.var.get()
+
 from analysis.safety_case import SafetyCaseLibrary, SafetyCase
 from gui import messagebox
 from gui.safety_case_table import SafetyCaseTable
@@ -95,8 +122,8 @@ class SafetyCaseExplorer(tk.Frame):
         if not name:
             return
         diag_names = [d.root.user_name for d in diagrams]
-        prompt = "Diagram name:\n" + "\n".join(diag_names)
-        diag_name = simpledialog.askstring("GSN Diagram", prompt, parent=self)
+        dlg = DiagramSelectDialog(self, "GSN Diagram", diag_names)
+        diag_name = dlg.selection
         if not diag_name:
             return
         diag = next((d for d in diagrams if d.root.user_name == diag_name), None)
@@ -122,10 +149,10 @@ class SafetyCaseExplorer(tk.Frame):
             return
         diagrams = self._available_diagrams()
         diag_names = [d.root.user_name for d in diagrams]
-        prompt = "Diagram name:\n" + "\n".join(diag_names)
-        new_diag_name = simpledialog.askstring(
-            "GSN Diagram", prompt, initialvalue=obj.diagram.root.user_name, parent=self
+        dlg = DiagramSelectDialog(
+            self, "GSN Diagram", diag_names, obj.diagram.root.user_name
         )
+        new_diag_name = dlg.selection
         if not new_diag_name:
             return
         new_diag = next((d for d in diagrams if d.root.user_name == new_diag_name), None)
