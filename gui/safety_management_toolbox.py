@@ -19,6 +19,14 @@ class SafetyManagementWindow(tk.Frame):
         self.app = app
         self.toolbox = toolbox or SafetyManagementToolbox()
 
+        phase_bar = ttk.Frame(self)
+        phase_bar.pack(fill=tk.X)
+        ttk.Label(phase_bar, text="Lifecycle:").pack(side=tk.LEFT)
+        self.phase_var = tk.StringVar()
+        self.phase_cb = ttk.Combobox(phase_bar, textvariable=self.phase_var, state="readonly")
+        self.phase_cb.pack(side=tk.LEFT, padx=2)
+        self.phase_cb.bind("<<ComboboxSelected>>", self.select_phase)
+
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
 
@@ -36,7 +44,7 @@ class SafetyManagementWindow(tk.Frame):
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
         self.current_window = None
 
-        self.refresh_diagrams()
+        self.refresh_phases()
         if not isinstance(master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
 
@@ -44,7 +52,10 @@ class SafetyManagementWindow(tk.Frame):
     # Diagram operations
     # ------------------------------------------------------------------
     def refresh_diagrams(self):
-        names = self.toolbox.list_diagrams()
+        if self.toolbox.active_module:
+            names = sorted(self.toolbox.diagrams_for_module(self.toolbox.active_module))
+        else:
+            names = self.toolbox.list_diagrams()
         self.diag_cb.configure(values=names)
         if names:
             current = self.diag_var.get()
@@ -54,6 +65,22 @@ class SafetyManagementWindow(tk.Frame):
         else:
             self.diag_var.set("")
             self.open_diagram(None)
+
+    def refresh_phases(self):
+        phases = ["All"] + sorted(self.toolbox.list_modules())
+        self.phase_cb.configure(values=phases)
+        current = self.phase_var.get()
+        if current not in phases:
+            self.phase_var.set("All")
+        self.select_phase()
+
+    def select_phase(self, *_):
+        phase = self.phase_var.get()
+        if phase == "All" or not phase:
+            self.toolbox.set_active_module(None)
+        else:
+            self.toolbox.set_active_module(phase)
+        self.refresh_diagrams()
 
     def new_diagram(self):
         messagebox.showerror(

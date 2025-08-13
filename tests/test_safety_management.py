@@ -20,7 +20,11 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 import AutoML
-from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
+from analysis.safety_management import (
+    SafetyManagementToolbox,
+    GovernanceModule,
+    SafetyWorkProduct,
+)
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
@@ -1126,3 +1130,29 @@ def test_propagation_type_uses_stereotype_when_conn_type_missing():
     ]
     diag.connections = [{"src": 1, "dst": 2, "stereotype": "propagate by review"}]
     assert toolbox.propagation_type("Risk Assessment", "FTA") == "Propagate by Review"
+
+
+def test_list_modules_includes_submodules():
+    toolbox = SafetyManagementToolbox()
+    child = GovernanceModule("Child")
+    parent = GovernanceModule("Parent", modules=[child])
+    toolbox.modules = [parent]
+    assert set(toolbox.list_modules()) == {"Parent", "Child"}
+
+
+def test_active_module_filters_enabled_products():
+    toolbox = SafetyManagementToolbox()
+    toolbox.work_products = [
+        SafetyWorkProduct("D1", "HAZOP", ""),
+        SafetyWorkProduct("D2", "FMEA", ""),
+    ]
+    toolbox.modules = [
+        GovernanceModule("Phase1", diagrams=["D1"]),
+        GovernanceModule("Phase2", diagrams=["D2"]),
+    ]
+
+    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+    toolbox.set_active_module("Phase1")
+    assert toolbox.enabled_products() == {"HAZOP"}
+    toolbox.set_active_module(None)
+    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
