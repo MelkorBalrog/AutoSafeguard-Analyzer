@@ -1,6 +1,7 @@
-from gsn import GSNNode, GSNDiagram
+import types
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig, _collect_work_products
+from analysis import SafetyManagementToolbox
 
 
 class DummyVar:
@@ -293,4 +294,3 @@ def test_config_dialog_lists_project_spis(monkeypatch):
     _, spi_cb = combo_holder
     assert spi_cb.configured["values"] == ["SPI1"]
     assert cfg.spi_var.get() == "SPI1"
-
