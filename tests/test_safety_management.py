@@ -596,3 +596,71 @@ def test_diagram_drag_and_drop_between_modules():
     assert "Diag1" not in mod2.diagrams
     assert explorer.tree.parents["diag1"] == ""
 
+
+def test_governance_hierarchy_in_analysis_tree():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.create_diagram("Loose")
+    toolbox.create_diagram("Child Diagram")
+    child = GovernanceModule("Child", diagrams=["Child Diagram"])
+    parent = GovernanceModule("Parent", modules=[child])
+    toolbox.modules.append(parent)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            pass
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", image=None, tags=(), **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {
+                "parent": parent,
+                "text": text,
+                "image": image,
+                "tags": tags,
+            }
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = []
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.analysis_tree = DummyTree()
+    app.pkg_icon = "PKG"
+    app.gsn_diagram_icon = "DIAG"
+    app.safety_mgmt_toolbox = toolbox
+
+    app.update_views()
+    items = app.analysis_tree.items
+    gov_id = next(i for i, m in items.items() if m["text"] == "Safety & Security Governance Diagrams")
+    parent_id = next(i for i, m in items.items() if m["text"] == "Parent")
+    child_id = next(i for i, m in items.items() if m["text"] == "Child")
+    loose_id = next(i for i, m in items.items() if m["text"] == "Loose")
+    diag_id = next(i for i, m in items.items() if m["text"] == "Child Diagram")
+
+    assert items[parent_id]["parent"] == gov_id
+    assert items[parent_id]["image"] == "PKG"
+    assert items[child_id]["parent"] == parent_id
+    assert items[child_id]["image"] == "PKG"
+    assert items[diag_id]["parent"] == child_id
+    assert items[diag_id]["image"] == "DIAG"
+    assert items[loose_id]["parent"] == gov_id
+
