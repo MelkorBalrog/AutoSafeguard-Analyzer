@@ -138,7 +138,8 @@ class FTADrawingHelper:
         font_obj=None,
         obj_id: str = "",
     ):
-        # First, draw the main triangle using the existing triangle routine.
+        """Draw a page connector for a cloned node using GSN's shared-marker notation."""
+        # Draw the base triangle.
         self.draw_triangle_shape(
             canvas,
             x,
@@ -152,28 +153,10 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Determine a baseline for the bottom of the triangle.
-        # (You may need to adjust this value to match your triangle's dimensions.)
-        bottom_y = y + scale * 0.75  
-        # Draw two horizontal lines at the bottom
-        line_offset1 = scale * 0.05
-        line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
-        # Draw a small triangle on the right side as a clone indicator.
-        tri_side = scale * 0.5
-        tri_height = (math.sqrt(3) / 2) * tri_side
-        att_x = x + scale  # position to the right of the main triangle
-        att_y = y - tri_height / 2 - tri_height# adjust vertical position as needed
-        v1 = (att_x, att_y)
-        v2 = (att_x + tri_side, att_y)
-        v3 = (att_x + tri_side/2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue", outline=outline_color,
-                              width=line_width)
+        # Add a small shared marker in the upper-right corner to indicate a clone.
+        marker_x = x + scale / 2
+        marker_y = y - scale * 0.3
+        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
 
     def draw_shared_marker(self, canvas, x, y, zoom):
         """Draw a small shared marker at the given canvas coordinates."""
@@ -533,7 +516,7 @@ class FTADrawingHelper:
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw a rotated AND gate shape with additional clone details."""
+        """Draw a rotated AND gate shape and mark it as a clone using GSN notation."""
         self.draw_rotated_and_gate_shape(
             canvas,
             x,
@@ -547,28 +530,10 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        bottom_y = y + scale * 1.5
-        line_offset1 = scale * 0.05
-        line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
-        tri_side = scale * 0.5
-        tri_height = (math.sqrt(3) / 2) * tri_side
-        att_x = x + scale
-        att_y = y - tri_height / 2
-        v1 = (att_x, att_y)
-        v2 = (att_x + tri_side, att_y)
-        v3 = (att_x + tri_side / 2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue", outline=outline_color,
-                              width=line_width)
-        final_line_offset = scale * 0.15
-        canvas.create_line(x - scale/2, bottom_y + final_line_offset,
-                           x + scale/2, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
+        # Add shared marker at the upper-right corner of the gate.
+        marker_x = x + scale / 2
+        marker_y = y - scale * 0.3
+        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
 
     def draw_rotated_or_gate_clone_shape(
         self,
@@ -584,7 +549,7 @@ class FTADrawingHelper:
         font_obj=None,
         obj_id: str = "",
     ):
-        """Draw a rotated OR gate shape with additional clone details."""
+        """Draw a rotated OR gate shape and mark it as a clone using GSN notation."""
         self.draw_rotated_or_gate_shape(
             canvas,
             x,
@@ -598,28 +563,10 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        bottom_y = y + scale * 1.5
-        line_offset1 = scale * 0.05
-        line_offset2 = scale * 0.1
-        canvas.create_line(x - scale/2, bottom_y - line_offset1,
-                           x + scale/2, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - scale/2, bottom_y - line_offset2,
-                           x + scale/2, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
-        tri_side = scale * 0.5
-        tri_height = (math.sqrt(3) / 2) * tri_side
-        att_x = x + scale
-        att_y = y - tri_height / 2
-        v1 = (att_x, att_y)
-        v2 = (att_x + tri_side, att_y)
-        v3 = (att_x + tri_side / 2, att_y - tri_height)
-        canvas.create_polygon(v1, v2, v3, fill="lightblue",
-                              outline=outline_color, width=line_width)
-        final_line_offset = scale * 0.15
-        canvas.create_line(x - scale/2, bottom_y + final_line_offset,
-                           x + scale/2, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
+        # Add shared marker at the upper-right corner of the gate.
+        marker_x = x + scale / 2
+        marker_y = y - scale * 0.3
+        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
 
     def draw_triangle_shape(
         self,
@@ -816,15 +763,10 @@ class FTADrawingHelper:
         font_obj=None,
         obj_id: str = "",
     ):
-        """
-        Draws the same triangle as draw_triangle_shape but then adds two horizontal lines
-        at the bottom and a small triangle on the right side as clone indicators.
-        The small triangle is now positioned so that its top vertex aligns with the top of
-        the big triangle.
-        """
+        """Draw a triangle-shaped event and mark it as a clone using GSN notation."""
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
-        # Draw the base triangle.
+        # Draw the base triangle as usual.
         self.draw_triangle_shape(
             canvas,
             x,
@@ -838,50 +780,10 @@ class FTADrawingHelper:
             font_obj=font_obj,
             obj_id=obj_id,
         )
-        # Compute the vertices of the big triangle.
-        effective_scale = scale * 2  
-        h = effective_scale * math.sqrt(3) / 2
-        v1 = (0, -2 * h / 3)
-        v2 = (-effective_scale / 2, h / 3)
-        v3 = (effective_scale / 2, h / 3)
-        vertices = [(x + v1[0], y + v1[1]),
-                    (x + v2[0], y + v2[1]),
-                    (x + v3[0], y + v3[1])]
-        # Compute the bottom and top y-values of the big triangle.
-        bottom_y = max(v[1] for v in vertices) + scale * 0.2
-        top_y = min(v[1] for v in vertices)  # top edge of the big triangle
-        half_width = effective_scale / 2  # equals 'scale'
-        
-        # Draw two horizontal lines at the bottom (unchanged).
-        line_offset1 = scale * 0.05
-        line_offset2 = scale * 0.1
-        canvas.create_line(x - half_width, bottom_y - line_offset1,
-                           x + half_width, bottom_y - line_offset1,
-                           fill=outline_color, width=line_width)
-        canvas.create_line(x - half_width, bottom_y - line_offset2,
-                           x + half_width, bottom_y - line_offset2,
-                           fill=outline_color, width=line_width)
-        
-        # Draw the small clone indicator triangle.
-        tri_side = scale * 0.5
-        tri_height = (math.sqrt(3) / 2) * tri_side
-        att_x = x + half_width
-        # Instead of basing its vertical position on bottom_y, we now align it with top_y.
-        # We want the top vertex of the small triangle (which is at att_y - tri_height)
-        # to equal top_y. Thus, set att_y - tri_height = top_y, so:
-        att_y = top_y + tri_height
-        v1_small = (att_x, att_y)
-        v2_small = (att_x + tri_side, att_y)
-        v3_small = (att_x + tri_side/2, att_y - tri_height)
-        canvas.create_polygon(v1_small, v2_small, v3_small,
-                              fill="lightblue", outline=outline_color,
-                              width=line_width)
-        
-        # Draw the final horizontal line below the bottom.
-        final_line_offset = scale * 0.15
-        canvas.create_line(x - half_width, bottom_y + final_line_offset,
-                           x + half_width, bottom_y + final_line_offset,
-                           fill=outline_color, width=line_width)
+        # Add a shared marker to indicate the node is a clone.
+        marker_x = x + scale / 2
+        marker_y = y - scale * 0.3
+        self.draw_shared_marker(canvas, marker_x, marker_y, 1)
                            
 # Create a single FTADrawingHelper object that can be used by other classes
 fta_drawing_helper = FTADrawingHelper()
