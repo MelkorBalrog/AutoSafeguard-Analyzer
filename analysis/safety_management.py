@@ -71,7 +71,7 @@ class SafetyManagementToolbox:
     # Diagram management helpers
     # ------------------------------------------------------------------
     def create_diagram(self, name: str) -> str:
-        """Create a new Activity Diagram tracked by this toolbox.
+        """Create a new BPMN Diagram tracked by this toolbox.
 
         Parameters
         ----------
@@ -84,7 +84,7 @@ class SafetyManagementToolbox:
             The repository identifier of the created diagram.
         """
         repo = SysMLRepository.get_instance()
-        diag = repo.create_diagram("Activity Diagram", name=name)
+        diag = repo.create_diagram("BPMN Diagram", name=name)
         diag.tags.append("safety-management")
         self.diagrams[name] = diag.diag_id
         return diag.diag_id
@@ -131,7 +131,7 @@ class SafetyManagementToolbox:
     def list_diagrams(self) -> List[str]:
         """Return the names of all managed diagrams.
 
-        Any Activity Diagram in the repository tagged with
+        Any BPMN Diagram in the repository tagged with
         ``"safety-management"`` should appear in the toolbox even if it
         was created outside of :meth:`create_diagram`. To ensure the list is
         complete we rescan the repository on each call and synchronize the
