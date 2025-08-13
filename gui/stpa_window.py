@@ -97,19 +97,35 @@ class StpaWindow(tk.Frame):
     # Document management
     # ------------------------------------------------------------------
     def refresh_docs(self):
-        names = [d.name for d in self.app.stpa_docs]
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        names = [
+            d.name
+            for d in self.app.stpa_docs
+            if not toolbox or toolbox.document_visible("STPA", d.name)
+        ]
         self.doc_cb.configure(values=names)
         repo = SysMLRepository.get_instance()
-        if self.app.active_stpa:
+        if (
+            self.app.active_stpa
+            and self.app.active_stpa.name in names
+        ):
             self.doc_var.set(self.app.active_stpa.name)
             diag = repo.diagrams.get(self.app.active_stpa.diagram)
             self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
         elif names:
             self.doc_var.set(names[0])
-            self.app.active_stpa = self.app.stpa_docs[0]
-            self.app.stpa_entries = self.app.active_stpa.entries
-            diag = repo.diagrams.get(self.app.active_stpa.diagram)
-            self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+            for d in self.app.stpa_docs:
+                if d.name == names[0]:
+                    self.app.active_stpa = d
+                    self.app.stpa_entries = d.entries
+                    diag = repo.diagrams.get(d.diagram)
+                    self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+                    break
+        else:
+            self.doc_var.set("")
+            self.app.active_stpa = None
+            self.app.stpa_entries = []
+            self.diag_lbl.config(text="")
 
     def select_doc(self, *_):
         name = self.doc_var.get()
@@ -197,6 +213,11 @@ class StpaWindow(tk.Frame):
         self.app.stpa_docs.append(doc)
         self.app.active_stpa = doc
         self.app.stpa_entries = doc.entries
+        # Record the lifecycle phase for the new document
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product(
+                "STPA", doc.name
+            )
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -204,12 +225,15 @@ class StpaWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_stpa:
             return
+        old = self.app.active_stpa.name
         name = simpledialog.askstring(
-            "Rename STPA", "Name:", initialvalue=self.app.active_stpa.name
+            "Rename STPA", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_stpa.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("STPA", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -235,6 +259,10 @@ class StpaWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete STPA '{doc.name}'?"):
             return
         self.app.stpa_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product(
+                "STPA", doc.name
+            )
         if self.app.stpa_docs:
             self.app.active_stpa = self.app.stpa_docs[0]
         else:

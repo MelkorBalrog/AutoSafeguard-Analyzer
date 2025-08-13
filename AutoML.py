@@ -3984,6 +3984,11 @@ class FaultTreeApp:
         new_event.is_top_event = True
         self.top_events.append(new_event)
         self.root_node = new_event
+        # Track creation for lifecycle phase filtering
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product(
+                "FTA", new_event.user_name
+            )
         self.update_views()
 
     def edit_project_properties(self):
@@ -8620,17 +8625,35 @@ class FaultTreeApp:
         if not new:
             return
         if kind == "fmea":
+            old = self.fmeas[idx]["name"]
             self.fmeas[idx]["name"] = new
+            self.safety_mgmt_toolbox.rename_document("FMEA", old, new)
         elif kind == "fmeda":
+            old = self.fmedas[idx]["name"]
             self.fmedas[idx]["name"] = new
+            self.safety_mgmt_toolbox.rename_document("FMEDA", old, new)
         elif kind == "hazop":
+            old = self.hazop_docs[idx].name
             self.hazop_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("HAZOP", old, new)
         elif kind == "hara":
+            old = self.hara_docs[idx].name
             self.hara_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("Risk Assessment", old, new)
         elif kind == "fi2tc":
+            old = self.fi2tc_docs[idx].name
             self.fi2tc_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("FI2TC", old, new)
         elif kind == "tc2fi":
+            old = self.tc2fi_docs[idx].name
             self.tc2fi_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("TC2FI", old, new)
+        elif kind == "fta":
+            node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
+            if node:
+                old = node.user_name
+                node.user_name = new
+                self.safety_mgmt_toolbox.rename_document("FTA", old, new)
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
         elif kind == "gov":
@@ -8647,7 +8670,9 @@ class FaultTreeApp:
             if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
                 messagebox.showerror("Review", "Name already exists")
                 return
+            old = self.joint_reviews[idx].name
             self.joint_reviews[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("Joint Review", old, new)
         elif kind == "fta" and node:
             node.user_name = new
         elif kind == "pkg" and repo.elements.get(ident):
@@ -8676,11 +8701,27 @@ class FaultTreeApp:
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
-        enabled = (
-            self.safety_mgmt_toolbox.enabled_products()
-            if self.safety_mgmt_toolbox
-            else set()
-        )
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if toolbox:
+            declared = toolbox.enabled_products()
+            current = set(getattr(self, "enabled_work_products", set()))
+            for name in declared - current:
+                try:
+                    self.enable_work_product(name)
+                except Exception:
+                    self.enabled_work_products.add(name)
+            if getattr(toolbox, "work_products", None):
+                for name in current - declared:
+                    try:
+                        self.disable_work_product(name)
+                    except Exception:
+                        pass
+        global_enabled = getattr(self, "enabled_work_products", set())
+        if toolbox and getattr(toolbox, "work_products", None):
+            phase_enabled = toolbox.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        enabled = global_enabled & phase_enabled
         for lb in self.tool_listboxes.values():
             for i, tool_name in enumerate(lb.get(0, tk.END)):
                 analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
@@ -8688,6 +8729,13 @@ class FaultTreeApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        for wp, menus in getattr(self, "work_product_menus", {}).items():
+            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            for menu, idx in menus:
+                try:
+                    menu.entryconfig(idx, state=state)
+                except tk.TclError:
+                    pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -8695,7 +8743,18 @@ class FaultTreeApp:
             self.safety_mgmt_toolbox.set_active_module(None)
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
-        self.refresh_tool_enablement()
+        self.update_views()
+        for name in (
+            "_hazop_window",
+            "_risk_window",
+            "_stpa_window",
+            "_threat_window",
+            "_fi2tc_window",
+            "_tc2fi_window",
+        ):
+            win = getattr(self, name, None)
+            if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
+                win.refresh_docs()
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
@@ -8835,7 +8894,13 @@ class FaultTreeApp:
             (wp for wp, info in self.WORK_PRODUCT_INFO.items() if info[1] == name or wp == name),
             None,
         )
-        if wp and wp not in self.enabled_work_products:
+        global_enabled = getattr(self, "enabled_work_products", set())
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        if smt and getattr(smt, "work_products", None):
+            phase_enabled = smt.enabled_products()
+        else:
+            phase_enabled = global_enabled
+        if wp and wp not in (global_enabled & phase_enabled):
             return
         action = self.tool_actions.get(name)
         if callable(action):
@@ -9707,7 +9772,13 @@ class FaultTreeApp:
             tree.delete(*tree.get_children())
 
             repo = SysMLRepository.get_instance()
-            enabled = getattr(self, "enabled_work_products", set())
+            global_enabled = getattr(self, "enabled_work_products", set())
+            smt = getattr(self, "safety_mgmt_toolbox", None)
+            if smt and getattr(smt, "work_products", None):
+                phase_enabled = smt.enabled_products()
+            else:
+                phase_enabled = global_enabled
+            enabled = global_enabled & phase_enabled
 
             # --- Safety & Security Management Section ---
             self.management_diagrams = sorted(
@@ -9732,6 +9803,9 @@ class FaultTreeApp:
             toolbox.list_diagrams()
             self.update_lifecycle_cb()
             self.refresh_tool_enablement()
+
+            def _visible(analysis_name: str, doc_name: str) -> bool:
+                return toolbox.document_visible(analysis_name, doc_name)
 
             index_map = {
                 (d.name or d.diag_id): idx
@@ -9945,26 +10019,36 @@ class FaultTreeApp:
                 _ensure_haz_root()
                 hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
                 for idx, doc in enumerate(self.hazop_docs):
+                    if not _visible("HAZOP", doc.name):
+                        continue
                     tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
             if "STPA" in enabled or getattr(self, "stpa_docs", []):
                 _ensure_haz_root()
                 stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
                 for idx, doc in enumerate(self.stpa_docs):
+                    if not _visible("STPA", doc.name):
+                        continue
                     tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
             if "Threat Analysis" in enabled or getattr(self, "threat_docs", []):
                 _ensure_haz_root()
                 threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
                 for idx, doc in enumerate(self.threat_docs):
+                    if not _visible("Threat Analysis", doc.name):
+                        continue
                     tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
             if "FI2TC" in enabled or getattr(self, "fi2tc_docs", []):
                 _ensure_haz_root()
                 fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
                 for idx, doc in enumerate(self.fi2tc_docs):
+                    if not _visible("FI2TC", doc.name):
+                        continue
                     tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
             if "TC2FI" in enabled or getattr(self, "tc2fi_docs", []):
                 _ensure_haz_root()
                 tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
                 for idx, doc in enumerate(self.tc2fi_docs):
+                    if not _visible("TC2FI", doc.name):
+                        continue
                     tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
 
             # --- Risk Assessment Section ---
@@ -9977,6 +10061,8 @@ class FaultTreeApp:
                 _ensure_risk_root()
                 assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
                 for idx, doc in enumerate(self.hara_docs):
+                    if not _visible("Risk Assessment", doc.name):
+                        continue
                     tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
             if "Product Goal Specification" in enabled:
                 _ensure_risk_root()
@@ -9992,17 +10078,25 @@ class FaultTreeApp:
                 _ensure_safety_root()
                 fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
                 for idx, te in enumerate(self.top_events):
+                    if not _visible("FTA", te.name):
+                        continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
                 for idx, fmea in enumerate(self.fmeas):
-                    tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
+                    name = fmea['name']
+                    if not _visible("FMEA", name):
+                        continue
+                    tree.insert(fmea_root, "end", text=name, tags=("fmea", str(idx)))
             if "FMEDA" in enabled or getattr(self, "fmedas", []):
                 _ensure_safety_root()
                 fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
                 for idx, doc in enumerate(self.fmedas):
-                    tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
+                    name = doc['name']
+                    if not _visible("FMEDA", name):
+                        continue
+                    tree.insert(fmeda_root, "end", text=name, tags=("fmeda", str(idx)))
 
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             if self.page_diagram.canvas.winfo_exists():
@@ -10771,6 +10865,10 @@ class FaultTreeApp:
             return
         for te in removed:
             self.top_events.remove(te)
+            if hasattr(self, "safety_mgmt_toolbox"):
+                self.safety_mgmt_toolbox.register_deleted_work_product(
+                    "FTA", te.user_name
+                )
         if self.root_node in removed:
             self.root_node = self.top_events[0] if self.top_events else FaultTreeNode("", "TOP EVENT")
         self.update_views()
@@ -17089,9 +17187,6 @@ class FaultTreeApp:
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.tc2fi_docs
             ],
-            "hazop_entries": [asdict(e) for e in self.hazop_entries],
-            "fi2tc_entries": copy.deepcopy(self.fi2tc_entries),
-            "tc2fi_entries": copy.deepcopy(self.tc2fi_entries),
             "scenario_libraries": copy.deepcopy(self.scenario_libraries),
             "odd_libraries": copy.deepcopy(self.odd_libraries),
             "faults": self.faults.copy(),
@@ -17165,18 +17260,10 @@ class FaultTreeApp:
         self.safety_mgmt_toolbox = SafetyManagementToolbox.from_dict(
             data.get("safety_mgmt_toolbox", {})
         )
-
-        # Enable work products declared in governance.  When no governance is
-        # present the set is empty and all work products remain disabled.
-        for name in self.safety_mgmt_toolbox.enabled_products():
-            try:
-                self.enable_work_product(name)
-            except Exception:
-                self.enabled_work_products.add(name)
-        try:
-            self.refresh_tool_enablement()
-        except Exception:
-            pass
+        toolbox = self.safety_mgmt_toolbox
+        toolbox.on_change = self.refresh_tool_enablement
+        for te in self.top_events:
+            toolbox.register_loaded_work_product("FTA", te.user_name)
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
@@ -17281,16 +17368,18 @@ class FaultTreeApp:
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
-            self.hazop_docs.append(
-                HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
-            )
-        if not self.hazop_docs and "hazop_entries" in data:
+            doc = HazopDoc(d.get("name", f"HAZOP {len(self.hazop_docs)+1}"), entries)
+            self.hazop_docs.append(doc)
+            toolbox.register_loaded_work_product("HAZOP", doc.name)
+        if not self.hazop_docs and data.get("hazop_entries"):
             entries = []
             for h in data.get("hazop_entries", []):
                 h["safety"] = boolify(h.get("safety", False), False)
                 h["covered"] = boolify(h.get("covered", False), False)
                 entries.append(HazopEntry(**h))
-            self.hazop_docs.append(HazopDoc("Default", entries))
+            doc = HazopDoc("Default", entries)
+            self.hazop_docs.append(doc)
+            toolbox.register_loaded_work_product("HAZOP", doc.name)
         self.active_hazop = self.hazop_docs[0] if self.hazop_docs else None
         self.hazop_entries = self.active_hazop.entries if self.active_hazop else []
 
@@ -17333,18 +17422,18 @@ class FaultTreeApp:
             if not hazops:
                 hazop = d.get("hazop")
                 hazops = [hazop] if hazop else []
-            self.hara_docs.append(
-                HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
-                    stpa=d.get("stpa", ""),
-                    threat=d.get("threat", ""),
-                )
+            doc = HaraDoc(
+                d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
+                hazops,
+                entries,
+                d.get("approved", False),
+                d.get("status", "draft"),
+                stpa=d.get("stpa", ""),
+                threat=d.get("threat", ""),
             )
-        if not self.hara_docs and "hara_entries" in data:
+            self.hara_docs.append(doc)
+            toolbox.register_loaded_work_product("Risk Assessment", doc.name)
+        if not self.hara_docs and data.get("hara_entries"):
             hazop_name = self.hazop_docs[0].name if self.hazop_docs else ""
             entries = []
             for e in data.get("hara_entries", []):
@@ -17379,17 +17468,17 @@ class FaultTreeApp:
                         cyber,
                     )
                 )
-            self.hara_docs.append(
-                HaraDoc(
-                    "Default",
-                    [hazop_name] if hazop_name else [],
-                    entries,
-                    False,
-                    "draft",
-                    stpa="",
-                    threat="",
-                )
+            doc = HaraDoc(
+                "Default",
+                [hazop_name] if hazop_name else [],
+                entries,
+                False,
+                "draft",
+                stpa="",
+                threat="",
             )
+            self.hara_docs.append(doc)
+            toolbox.register_loaded_work_product("Risk Assessment", doc.name)
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
         self.hara_entries = self.active_hara.entries if self.active_hara else []
         self.update_hazard_list()
@@ -17407,14 +17496,14 @@ class FaultTreeApp:
                 )
                 for e in d.get("entries", [])
             ]
-            self.stpa_docs.append(
-                StpaDoc(
-                    d.get("name", f"STPA {len(self.stpa_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
+            doc = StpaDoc(
+                d.get("name", f"STPA {len(self.stpa_docs)+1}"),
+                d.get("diagram", ""),
+                entries,
             )
-        if not self.stpa_docs and "stpa_entries" in data:
+            self.stpa_docs.append(doc)
+            toolbox.register_loaded_work_product("STPA", doc.name)
+        if not self.stpa_docs and data.get("stpa_entries"):
             entries = [
                 StpaEntry(
                     e.get("action", ""),
@@ -17426,7 +17515,9 @@ class FaultTreeApp:
                 )
                 for e in data.get("stpa_entries", [])
             ]
-            self.stpa_docs.append(StpaDoc("Default", "", entries))
+            doc = StpaDoc("Default", "", entries)
+            self.stpa_docs.append(doc)
+            toolbox.register_loaded_work_product("STPA", doc.name)
         self.active_stpa = self.stpa_docs[0] if self.stpa_docs else None
         self.stpa_entries = self.active_stpa.entries if self.active_stpa else []
 
@@ -17479,33 +17570,43 @@ class FaultTreeApp:
                     for name in func_names:
                         funcs.append(FunctionThreat(name, dmg_list))
                 entries.append(ThreatEntry(e.get("asset", ""), funcs))
-            self.threat_docs.append(
-                ThreatDoc(
-                    d.get("name", f"Threat {len(self.threat_docs)+1}"),
-                    d.get("diagram", ""),
-                    entries,
-                )
+            doc = ThreatDoc(
+                d.get("name", f"Threat {len(self.threat_docs)+1}"),
+                d.get("diagram", ""),
+                entries,
             )
+            self.threat_docs.append(doc)
+            toolbox.register_loaded_work_product("Threat Analysis", doc.name)
         self.active_threat = self.threat_docs[0] if self.threat_docs else None
         self.threat_entries = self.active_threat.entries if self.active_threat else []
 
         self.fi2tc_docs = []
         for d in data.get("fi2tc_docs", []):
-            self.fi2tc_docs.append(
-                FI2TCDoc(d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"), d.get("entries", []))
+            doc = FI2TCDoc(
+                d.get("name", f"FI2TC {len(self.fi2tc_docs)+1}"),
+                d.get("entries", []),
             )
-        if not self.fi2tc_docs and "fi2tc_entries" in data:
-            self.fi2tc_docs.append(FI2TCDoc("Default", data.get("fi2tc_entries", [])))
+            self.fi2tc_docs.append(doc)
+            toolbox.register_loaded_work_product("FI2TC", doc.name)
+        if not self.fi2tc_docs and data.get("fi2tc_entries"):
+            doc = FI2TCDoc("Default", data.get("fi2tc_entries", []))
+            self.fi2tc_docs.append(doc)
+            toolbox.register_loaded_work_product("FI2TC", doc.name)
         self.active_fi2tc = self.fi2tc_docs[0] if self.fi2tc_docs else None
         self.fi2tc_entries = self.active_fi2tc.entries if self.active_fi2tc else []
 
         self.tc2fi_docs = []
         for d in data.get("tc2fi_docs", []):
-            self.tc2fi_docs.append(
-                TC2FIDoc(d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"), d.get("entries", []))
+            doc = TC2FIDoc(
+                d.get("name", f"TC2FI {len(self.tc2fi_docs)+1}"),
+                d.get("entries", []),
             )
-        if not self.tc2fi_docs and "tc2fi_entries" in data:
-            self.tc2fi_docs.append(TC2FIDoc("Default", data.get("tc2fi_entries", [])))
+            self.tc2fi_docs.append(doc)
+            toolbox.register_loaded_work_product("TC2FI", doc.name)
+        if not self.tc2fi_docs and data.get("tc2fi_entries"):
+            doc = TC2FIDoc("Default", data.get("tc2fi_entries", []))
+            self.tc2fi_docs.append(doc)
+            toolbox.register_loaded_work_product("TC2FI", doc.name)
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
         self.scenario_libraries = data.get("scenario_libraries", [])
@@ -17524,6 +17625,10 @@ class FaultTreeApp:
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
+        try:
+            self.refresh_tool_enablement()
+        except Exception:
+            pass
 
         self.fmedas = []
         for doc in data.get("fmedas", []):

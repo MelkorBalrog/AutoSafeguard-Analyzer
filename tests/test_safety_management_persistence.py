@@ -11,7 +11,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import FaultTreeApp, HazopDoc
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
 
@@ -61,6 +61,12 @@ def _minimal_app():
     app.close_page_diagram = lambda: None
     app.update_views = lambda: None
     app.safety_mgmt_toolbox = SafetyManagementToolbox()
+    app.tool_listboxes = {}
+    app.work_product_menus = {}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.refresh_tool_enablement = lambda: None
     return app
 
 
@@ -89,11 +95,11 @@ def test_safety_management_roundtrip_serialisation():
 
 def test_apply_model_enables_governed_work_products(monkeypatch):
     app = _minimal_app()
-    app.refresh_tool_enablement = lambda: None
     enabled = []
     monkeypatch.setattr(
         FaultTreeApp, "enable_work_product", lambda self, name: enabled.append(name)
     )
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Gov", "HAZOP", "Rationale")
     data = {"safety_mgmt_toolbox": toolbox.to_dict()}
@@ -103,7 +109,6 @@ def test_apply_model_enables_governed_work_products(monkeypatch):
 
 def test_apply_model_without_governance_disables_work_products(monkeypatch):
     app = _minimal_app()
-    app.refresh_tool_enablement = lambda: None
     app.enabled_work_products = {"HAZOP"}
     disabled = []
     monkeypatch.setattr(
@@ -111,7 +116,26 @@ def test_apply_model_without_governance_disables_work_products(monkeypatch):
         "disable_work_product",
         lambda self, name: disabled.append(name) or True,
     )
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
     app.apply_model_data({}, ensure_root=False)
     assert disabled == ["HAZOP"]
     assert app.enabled_work_products == set()
+
+
+def test_work_product_phase_roundtrip():
+    app = _minimal_app()
+    tb = app.safety_mgmt_toolbox
+    tb.set_active_module("Phase1")
+    doc = HazopDoc("HZ1", [])
+    app.hazop_docs = [doc]
+    tb.register_created_work_product("HAZOP", doc.name)
+    data = app.export_model_data(include_versions=False)
+    new_app = _minimal_app()
+    new_app.apply_model_data(data, ensure_root=False)
+    tb2 = new_app.safety_mgmt_toolbox
+    assert tb2.doc_phases.get("HAZOP", {}).get("HZ1") == "Phase1"
+    tb2.set_active_module("Phase1")
+    assert tb2.document_visible("HAZOP", "HZ1")
+    tb2.set_active_module("Phase2")
+    assert not tb2.document_visible("HAZOP", "HZ1")
 

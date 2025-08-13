@@ -30,6 +30,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
+from analysis.models import HazopDoc, StpaDoc
 
 
 def test_work_product_registration():
@@ -243,12 +244,12 @@ def test_work_product_enabling_and_deletion_guard():
     assert toolbox.is_enabled("HAZOP")
 
     # An existing document blocks removal of the work product declaration
-    toolbox.register_created_work_product("HAZOP")
+    toolbox.register_created_work_product("HAZOP", "Doc1")
     removed = toolbox.remove_work_product("Gov", "HAZOP")
     assert removed is False
 
     # After deleting the document removal succeeds
-    toolbox.register_deleted_work_product("HAZOP")
+    toolbox.register_deleted_work_product("HAZOP", "Doc1")
     removed = toolbox.remove_work_product("Gov", "HAZOP")
     assert removed is True
     assert not toolbox.is_enabled("HAZOP")
@@ -581,6 +582,14 @@ def test_open_work_product_requires_enablement():
     assert opened["count"] == 1
 
 
+def test_phase_without_diagrams_keeps_products_enabled():
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov1", "HAZOP", "link")
+    toolbox.modules = [GovernanceModule(name="P1")]
+    toolbox.set_active_module("P1")
+    assert toolbox.enabled_products() == {"HAZOP"}
+
+
 def test_menu_work_products_toggle_and_guard_existing_docs():
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.tool_listboxes = {}
@@ -729,6 +738,270 @@ def test_diagram_hierarchy_from_object_properties():
 
     hierarchy = toolbox.diagram_hierarchy()
     assert hierarchy == [["Parent"], ["Child"]]
+
+
+def test_work_products_filtered_by_phase_in_tree():
+    """Documents appear only when their creation phase is active."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+
+    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
+    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    for d in (d1, d2):
+        d.tags.append("safety-management")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.list_diagrams()
+    toolbox.modules = [
+        GovernanceModule(name="P1", diagrams=["Gov1"]),
+        GovernanceModule(name="P2", diagrams=["Gov2"]),
+    ]
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = [HazopDoc("HZ1", []), HazopDoc("HZ2", [])]
+    app.stpa_docs = [StpaDoc("S1", "", []), StpaDoc("S2", "", [])]
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.hara_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.tool_listboxes = {}
+    app.analysis_tree = DummyTree()
+    app.safety_mgmt_toolbox = toolbox
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app.lifecycle_var = DummyVar("P1")
+    app.on_lifecycle_selected()
+    toolbox.register_created_work_product("HAZOP", "HZ1")
+    toolbox.register_created_work_product("STPA", "S1")
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    toolbox.register_created_work_product("HAZOP", "HZ2")
+    toolbox.register_created_work_product("STPA", "S2")
+
+    app.lifecycle_var.set("P1")
+    app.on_lifecycle_selected()
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "HZ1" in names and "HZ2" not in names
+    assert "S1" in names and "S2" not in names
+
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "HZ2" in names and "HZ1" not in names
+    assert "S2" in names and "S1" not in names
+
+
+def test_governance_enables_tools_per_phase():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
+    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    for d in (d1, d2):
+        d.tags.append("safety-management")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.list_diagrams()
+    toolbox.modules = [
+        GovernanceModule(name="P1", diagrams=["Gov1"]),
+        GovernanceModule(name="P2", diagrams=["Gov2"]),
+    ]
+
+    class DummyListbox:
+        def __init__(self):
+            self.items: list[str] = []
+            self.colors: list[str] = []
+
+        def get(self, *args):
+            if len(args) == 1:
+                return self.items[args[0]]
+            return list(self.items)
+
+        def insert(self, _index, item):
+            self.items.append(item)
+            self.colors.append("black")
+
+        def itemconfig(self, index, foreground="black"):
+            self.colors[index] = foreground
+
+        def size(self):
+            return len(self.items)
+
+        def delete(self, index):
+            del self.items[index]
+            del self.colors[index]
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    lb = DummyListbox()
+    menu_arch = DummyMenu()
+    menu_req = DummyMenu()
+    app.tool_listboxes = {"System Design (Item Definition)": lb}
+    app.tool_categories = {"System Design (Item Definition)": []}
+    app.tool_actions = {}
+    app.work_product_menus = {
+        "Architecture Diagram": [(menu_arch, 0)],
+        "Requirement Specification": [(menu_req, 0)],
+    }
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.manage_architecture = lambda: None
+    app.show_requirements_editor = lambda: None
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        app, FaultTreeApp
+    )
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
+        app, FaultTreeApp
+    )
+    app.safety_mgmt_toolbox = toolbox
+    toolbox.on_change = app.refresh_tool_enablement
+
+    toolbox.add_work_product("Gov1", "Architecture Diagram", "r")
+    toolbox.add_work_product("Gov2", "Requirement Specification", "r")
+
+    app.lifecycle_var = DummyVar("P1")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
+    assert lb.items == ["AutoML Explorer"]
+    assert lb.colors == ["black"]
+
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.DISABLED and menu_req.state == tk.NORMAL
+    assert lb.items == ["Requirements Editor"]
+    assert lb.colors == ["black"]
+
+    app.lifecycle_var.set("P1")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
+    assert lb.items == ["AutoML Explorer"]
+    assert lb.colors == ["black"]
+
+
+def test_governance_without_declarations_keeps_tools_enabled():
+    """Tools remain enabled when no work products are declared."""
+
+    toolbox = SafetyManagementToolbox()
+
+    class DummyListbox:
+        def __init__(self):
+            self.items: list[str] = []
+            self.colors: list[str] = []
+
+        def get(self, *args):
+            if len(args) == 1:
+                return self.items[args[0]]
+            return list(self.items)
+
+        def insert(self, _index, item):
+            self.items.append(item)
+            self.colors.append("black")
+
+        def itemconfig(self, index, foreground="black"):
+            self.colors[index] = foreground
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    lb = DummyListbox()
+    menu_arch = DummyMenu()
+    menu_req = DummyMenu()
+    app.tool_listboxes = {"System Design (Item Definition)": lb}
+    app.tool_categories = {"System Design (Item Definition)": []}
+    app.tool_actions = {}
+    app.work_product_menus = {
+        "Architecture Diagram": [(menu_arch, 0)],
+        "Requirement Specification": [(menu_req, 0)],
+    }
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.manage_architecture = lambda: None
+    app.show_requirements_editor = lambda: None
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        app, FaultTreeApp
+    )
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.safety_mgmt_toolbox = toolbox
+
+    app.enable_work_product("Architecture Diagram")
+    app.enable_work_product("Requirement Specification")
+
+    app.refresh_tool_enablement()
+
+    assert menu_arch.state == tk.NORMAL and menu_req.state == tk.NORMAL
+    assert lb.colors == ["black", "black"]
 
 
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
