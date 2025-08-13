@@ -226,7 +226,7 @@ import re
 import math
 import sys
 import tkinter as tk
-from tkinter import ttk, filedialog, simpledialog
+from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger
 from gui.tooltip import ToolTip
 from gui.review_toolbox import (
@@ -7439,34 +7439,35 @@ class FaultTreeApp:
                     vt_val = None
                     target = getattr(node, "spi_target", "")
                     if target:
-                        for te in getattr(self, "top_events", []):
-                            label = (
-                                getattr(te, "validation_desc", "")
-                                or getattr(te, "safety_goal_description", "")
-                                or getattr(te, "user_name", "")
-                                or f"SG {getattr(te, 'unique_id', '')}"
-                            )
-                            if label == target:
-                                p = getattr(te, "probability", "")
-                                vt = getattr(te, "validation_target", "")
-                                if p not in ("", None):
-                                    try:
-                                        p_val = float(p)
-                                        prob = f"{p_val:.2e}"
-                                    except Exception:
-                                        prob = ""
-                                if vt not in ("", None):
-                                    try:
-                                        vt_val = float(vt)
-                                        v_target = f"{vt_val:.2e}"
-                                    except Exception:
-                                        v_target = ""
-                                try:
-                                    if vt_val not in (None, 0) and p_val not in (None, 0):
-                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                                except Exception:
-                                    spi_val = ""
+                        pg_name, spi_type = self._parse_spi_target(target)
+                        te = None
+                        for candidate in getattr(self, "top_events", []):
+                            if self._product_goal_name(candidate) == pg_name:
+                                te = candidate
                                 break
+                        if te:
+                            p = getattr(te, "probability", "")
+                            if p not in ("", None):
+                                try:
+                                    p_val = float(p)
+                                    prob = f"{p_val:.2e}"
+                                except Exception:
+                                    prob = ""
+                            if spi_type == "FUSA":
+                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
+                            else:
+                                vt = getattr(te, "validation_target", "")
+                            if vt not in ("", None):
+                                try:
+                                    vt_val = float(vt)
+                                    v_target = f"{vt_val:.2e}"
+                                except Exception:
+                                    v_target = ""
+                            try:
+                                if vt_val not in (None, 0) and p_val not in (None, 0):
+                                    spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                            except Exception:
+                                spi_val = ""
                     safety_rows.append(
                         [
                             node.user_name,
@@ -8374,6 +8375,8 @@ class FaultTreeApp:
             self.show_safety_concept_editor()
         elif kind == "itemdef":
             self.show_item_definition_editor()
+        elif kind == "safetyconcept":
+            self.show_safety_concept_editor()
         elif kind == "arch":
             self.open_arch_window(ident)
         elif kind == "safetyexp":
@@ -12928,22 +12931,22 @@ class FaultTreeApp:
                 ttk.Label(fs_tab, text="ASIL:").grid(row=1, column=0, sticky="e")
                 name = getattr(self.initial, "safety_goal_description", "") or getattr(self.initial, "user_name", "")
                 self.asil_var = tk.StringVar(value=self.app.get_hara_goal_asil(name))
-                ttk.Label(master, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
+                ttk.Label(fs_tab, textvariable=self.asil_var).grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(master, text="Target PMHF (1/h):").grid(row=2, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Target PMHF (1/h):").grid(row=2, column=0, sticky="e")
                 pmhf = PMHF_TARGETS.get(self.asil_var.get(), 1.0)
                 self.pmhf_var = tk.StringVar(value=f"{pmhf:.2e}")
-                tk.Entry(master, textvariable=self.pmhf_var, state="readonly").grid(row=2, column=1, padx=5, pady=5, sticky="w")
+                tk.Entry(fs_tab, textvariable=self.pmhf_var, state="readonly").grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(master, text="CAL:").grid(row=3, column=0, sticky="e")
+                ttk.Label(fs_tab, text="CAL:").grid(row=3, column=0, sticky="e")
                 self.cal_var = tk.StringVar(value=self.app.get_cyber_goal_cal(name))
-                ttk.Label(master, textvariable=self.cal_var).grid(row=3, column=1, padx=5, pady=5, sticky="w")
+                ttk.Label(fs_tab, textvariable=self.cal_var).grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
-                ttk.Label(master, text="Safe State:").grid(row=4, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Safe State:").grid(row=4, column=0, sticky="e")
                 self.state_var = tk.StringVar(value=getattr(self.initial, "safe_state", ""))
-                tk.Entry(master, textvariable=self.state_var).grid(row=4, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.state_var).grid(row=4, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="FTTI:").grid(row=5, column=0, sticky="e")
+                ttk.Label(fs_tab, text="FTTI:").grid(row=5, column=0, sticky="e")
                 self.ftti_var = tk.StringVar(value=getattr(self.initial, "ftti", ""))
                 tk.Entry(
                     fs_tab,
@@ -12952,7 +12955,7 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=5, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Rate (1/h):").grid(row=6, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Acceptance Rate (1/h):").grid(row=6, column=0, sticky="e")
                 self.accept_rate_var = tk.StringVar(value=str(getattr(self.initial, "acceptance_rate", 0.0)))
                 tk.Entry(
                     fs_tab,
@@ -12961,7 +12964,7 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=6, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="On Hours:").grid(row=7, column=0, sticky="e")
+                ttk.Label(fs_tab, text="On Hours:").grid(row=7, column=0, sticky="e")
                 self.op_hours_var = tk.StringVar(value=str(getattr(self.initial, "operational_hours_on", 0.0)))
                 tk.Entry(
                     fs_tab,
@@ -12970,30 +12973,29 @@ class FaultTreeApp:
                     validatecommand=(master.register(self.app.validate_float), "%P"),
                 ).grid(row=7, column=1, padx=5, pady=5)
 
-                ttk.Label(fs_tab, text="Validation Target (1/h):").grid(row=6, column=0, sticky="e")
                 exp = exposure_to_probability(getattr(self.initial, "exposure", 1))
                 ctrl = controllability_to_probability(getattr(self.initial, "controllability", 1))
                 sev = severity_to_probability(getattr(self.initial, "severity", 1))
 
-                ttk.Label(master, text="P(E|HB):").grid(row=8, column=0, sticky="e")
+                ttk.Label(fs_tab, text="P(E|HB):").grid(row=8, column=0, sticky="e")
                 self.pehb_var = tk.StringVar(value=str(exp))
-                tk.Entry(master, textvariable=self.pehb_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.pehb_var, state="readonly").grid(row=8, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(C|E):").grid(row=9, column=0, sticky="e")
+                ttk.Label(fs_tab, text="P(C|E):").grid(row=9, column=0, sticky="e")
                 self.pce_var = tk.StringVar(value=str(ctrl))
-                tk.Entry(master, textvariable=self.pce_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.pce_var, state="readonly").grid(row=9, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="P(S|C):").grid(row=10, column=0, sticky="e")
+                ttk.Label(fs_tab, text="P(S|C):").grid(row=10, column=0, sticky="e")
                 self.psc_var = tk.StringVar(value=str(sev))
-                tk.Entry(master, textvariable=self.psc_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.psc_var, state="readonly").grid(row=10, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Validation Target (1/h):").grid(row=11, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Validation Target (1/h):").grid(row=11, column=0, sticky="e")
                 try:
                     val = derive_validation_target(float(self.accept_rate_var.get() or 0.0), exp, ctrl, sev)
                 except Exception:
                     val = 1.0
                 self.val_var = tk.StringVar(value=str(val))
-                tk.Entry(master, textvariable=self.val_var, state="readonly").grid(row=11, column=1, padx=5, pady=5)
+                tk.Entry(fs_tab, textvariable=self.val_var, state="readonly").grid(row=11, column=1, padx=5, pady=5)
 
                 def _update_val(*_):
                     try:
@@ -13005,7 +13007,7 @@ class FaultTreeApp:
 
                 self.accept_rate_var.trace_add("write", _update_val)
 
-                ttk.Label(master, text="Mission Profile:").grid(row=12, column=0, sticky="e")
+                ttk.Label(fs_tab, text="Mission Profile:").grid(row=12, column=0, sticky="e")
                 self.profile_var = tk.StringVar(value=getattr(self.initial, "mission_profile", ""))
                 ttk.Combobox(
                     fs_tab,
@@ -13014,21 +13016,21 @@ class FaultTreeApp:
                     state="readonly",
                 ).grid(row=12, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Val Target Desc:").grid(row=13, column=0, sticky="ne")
-                self.val_desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                ttk.Label(fs_tab, text="Val Target Desc:").grid(row=13, column=0, sticky="ne")
+                self.val_desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
                 self.val_desc_text.insert("1.0", getattr(self.initial, "validation_desc", ""))
                 self.val_desc_text.grid(row=13, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Acceptance Criteria:").grid(row=14, column=0, sticky="ne")
-                self.acc_text = tk.Text(master, width=30, height=3, wrap="word")
+                ttk.Label(fs_tab, text="Acceptance Criteria:").grid(row=14, column=0, sticky="ne")
+                self.acc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
                 self.acc_text.insert("1.0", getattr(self.initial, "acceptance_criteria", ""))
                 self.acc_text.grid(row=14, column=1, padx=5, pady=5)
 
-                ttk.Label(master, text="Description:").grid(row=15, column=0, sticky="ne")
-                self.desc_text = tk.Text(master, width=30, height=3, wrap="word")
+                ttk.Label(fs_tab, text="Description:").grid(row=15, column=0, sticky="ne")
+                self.desc_text = tk.Text(fs_tab, width=30, height=3, wrap="word")
                 self.desc_text.insert("1.0", getattr(self.initial, "safety_goal_description", ""))
                 self.desc_text.grid(row=15, column=1, padx=5, pady=5)
-                return master
+                return self.id_entry
 
             def apply(self):
                 desc = self.desc_text.get("1.0", "end-1c").strip()
@@ -13121,9 +13123,28 @@ class FaultTreeApp:
             or f"SG {getattr(sg, 'unique_id', '')}"
         )
 
+    def _product_goal_name(self, sg) -> str:
+        """Return the display name for a product goal."""
+        return getattr(sg, "user_name", "") or f"SG {getattr(sg, 'unique_id', '')}"
+
+    def _parse_spi_target(self, target: str) -> tuple[str, str]:
+        """Split ``target`` into product goal name and SPI type."""
+        if target.endswith(")") and "(" in target:
+            name, typ = target.rsplit(" (", 1)
+            return name, typ[:-1]
+        return target, ""
+
     def get_spi_targets(self) -> list[str]:
-        """Return sorted unique SPI target descriptions for the project."""
-        return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+        """Return sorted list of SPI options formatted as 'Product Goal (Type)'."""
+        targets: set[str] = set()
+        for sg in getattr(self, "top_events", []):
+            pg_name = self._product_goal_name(sg)
+            if getattr(sg, "validation_target", "") not in ("", None):
+                targets.add(f"{pg_name} (SOTIF)")
+            asil = getattr(sg, "safety_goal_asil", "")
+            if asil in PMHF_TARGETS:
+                targets.add(f"{pg_name} (FUSA)")
+        return sorted(targets)
 
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""
@@ -13266,36 +13287,37 @@ class FaultTreeApp:
                     vt_val = None
                     target = getattr(node, "spi_target", "")
                     if target:
-                        for te in getattr(self, "top_events", []):
-                            label = (
-                                getattr(te, "validation_desc", "")
-                                or getattr(te, "safety_goal_description", "")
-                                or getattr(te, "user_name", "")
-                                or f"SG {getattr(te, 'unique_id', '')}"
-                            )
-                            if label == target:
-                                p = getattr(te, "probability", "")
-                                vt = getattr(te, "validation_target", "")
-                                if p not in ("", None):
-                                    try:
-                                        p_val = float(p)
-                                        prob = f"{p_val:.2e}"
-                                    except Exception:
-                                        prob = ""
-                                        p_val = None
-                                if vt not in ("", None):
-                                    try:
-                                        vt_val = float(vt)
-                                        v_target = f"{vt_val:.2e}"
-                                    except Exception:
-                                        v_target = ""
-                                        vt_val = None
-                                try:
-                                    if vt_val not in (None, 0) and p_val not in (None, 0):
-                                        spi_val = f"{math.log10(vt_val / p_val):.2f}"
-                                except Exception:
-                                    spi_val = ""
+                        pg_name, spi_type = self._parse_spi_target(target)
+                        te = None
+                        for candidate in getattr(self, "top_events", []):
+                            if self._product_goal_name(candidate) == pg_name:
+                                te = candidate
                                 break
+                        if te:
+                            p = getattr(te, "probability", "")
+                            if p not in ("", None):
+                                try:
+                                    p_val = float(p)
+                                    prob = f"{p_val:.2e}"
+                                except Exception:
+                                    prob = ""
+                                    p_val = None
+                            if spi_type == "FUSA":
+                                vt = PMHF_TARGETS.get(getattr(te, "safety_goal_asil", ""), "")
+                            else:
+                                vt = getattr(te, "validation_target", "")
+                            if vt not in ("", None):
+                                try:
+                                    vt_val = float(vt)
+                                    v_target = f"{vt_val:.2e}"
+                                except Exception:
+                                    v_target = ""
+                                    vt_val = None
+                            try:
+                                if vt_val not in (None, 0) and p_val not in (None, 0):
+                                    spi_val = f"{math.log10(vt_val / p_val):.2f}"
+                            except Exception:
+                                spi_val = ""
                     tree.insert(
                         "",
                         "end",
@@ -13389,15 +13411,10 @@ class FaultTreeApp:
                     node.evidence_sufficient = new_val == CHECK_MARK
             elif col_name == "Achieved Probability":
                 target = getattr(node, "spi_target", "")
+                pg_name, _spi_type = self._parse_spi_target(target)
                 te = None
                 for sg in getattr(self, "top_events", []):
-                    label = (
-                        getattr(sg, "validation_desc", "")
-                        or getattr(sg, "safety_goal_description", "")
-                        or getattr(sg, "user_name", "")
-                        or f"SG {getattr(sg, 'unique_id', '')}"
-                    )
-                    if label == target:
+                    if self._product_goal_name(sg) == pg_name:
                         te = sg
                         break
                 if te:

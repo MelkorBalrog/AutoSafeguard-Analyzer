@@ -111,7 +111,7 @@ class DummyMenu:
 def test_edit_probability_updates_spi(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
-    sol.spi_target = "SG1"
+    sol.spi_target = "SG1 (SOTIF)"
     root.add_child(sol)
     diag = GSNDiagram(root)
     diag.add_node(sol)
@@ -170,7 +170,7 @@ def test_edit_probability_updates_spi(monkeypatch):
 def test_safety_case_shows_validation_target(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
-    sol.spi_target = "SG1"
+    sol.spi_target = "SG1 (SOTIF)"
     root.add_child(sol)
     diag = GSNDiagram(root)
     diag.add_node(sol)
@@ -209,7 +209,7 @@ def test_safety_case_shows_validation_target(monkeypatch):
 def test_pmfh_autopopulates_validation_target_and_probability(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
-    sol.spi_target = "SG1"
+    sol.spi_target = "SG1 (FUSA)"
     root.add_child(sol)
     diag = GSNDiagram(root)
     diag.add_node(sol)
@@ -258,7 +258,7 @@ def test_pmfh_autopopulates_validation_target_and_probability(monkeypatch):
 def test_edit_probability_in_spi_explorer(monkeypatch):
     root = GSNNode("G", "Goal")
     sol = GSNNode("E", "Solution")
-    sol.spi_target = "SG1"
+    sol.spi_target = "SG1 (SOTIF)"
     root.add_child(sol)
     diag = GSNDiagram(root)
     diag.add_node(sol)
