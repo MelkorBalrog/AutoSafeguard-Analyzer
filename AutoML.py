@@ -374,6 +374,7 @@ from analysis.utils import (
     controllability_to_probability,
     severity_to_probability,
 )
+from analysis.safety_management import SafetyManagementToolbox
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -2114,6 +2115,8 @@ class FaultTreeApp:
         self.reviews = []
         self.review_data = None
         self.review_window = None
+        self.safety_mgmt_toolbox = SafetyManagementToolbox()
+        self.safety_mgmt_toolbox.on_change = self.refresh_tool_enablement
         self.current_user = ""
         self.comment_target = None
         self._undo_stack: list[dict] = []
@@ -2482,6 +2485,15 @@ class FaultTreeApp:
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         self.tools_nb = ttk.Notebook(self.tools_group)
+        top = ttk.Frame(self.tools_group)
+        top.pack(side=tk.TOP, fill=tk.X)
+        ttk.Label(top, text="Lifecycle Phase:").pack(side=tk.LEFT)
+        self.lifecycle_var = tk.StringVar(value="")
+        self.lifecycle_cb = ttk.Combobox(
+            top, textvariable=self.lifecycle_var, state="readonly"
+        )
+        self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
         self.tools_nb.pack(fill=tk.BOTH, expand=True)
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
@@ -2498,6 +2510,9 @@ class FaultTreeApp:
                 "Safety & Security Management",
                 "Safety & Security Management Explorer",
             ]
+        }
+        self.tool_to_work_product = {
+            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
         }
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
@@ -8647,9 +8662,53 @@ class FaultTreeApp:
         if not sel:
             return
         name = lb.get(sel[0])
+        analysis_name = self.tool_to_work_product.get(name)
+        if (
+            analysis_name
+            and self.safety_mgmt_toolbox
+            and analysis_name not in self.safety_mgmt_toolbox.enabled_products()
+        ):
+            return
         action = self.tool_actions.get(name)
         if action:
             action()
+
+    def refresh_tool_enablement(self) -> None:
+        if not hasattr(self, "tool_listboxes"):
+            return
+        enabled = (
+            self.safety_mgmt_toolbox.enabled_products()
+            if self.safety_mgmt_toolbox
+            else set()
+        )
+        for lb in self.tool_listboxes.values():
+            for i, tool_name in enumerate(lb.get(0, tk.END)):
+                analysis_name = getattr(self, "tool_to_work_product", {}).get(tool_name)
+                if analysis_name and analysis_name not in enabled:
+                    lb.itemconfig(i, foreground="gray")
+                else:
+                    lb.itemconfig(i, foreground="black")
+
+    def on_lifecycle_selected(self, _event=None) -> None:
+        phase = self.lifecycle_var.get()
+        if not phase:
+            self.safety_mgmt_toolbox.set_active_module(None)
+        else:
+            self.safety_mgmt_toolbox.set_active_module(phase)
+        self.refresh_tool_enablement()
+
+    def update_lifecycle_cb(self) -> None:
+        if not hasattr(self, "lifecycle_cb"):
+            return
+        names = [m.name for m in getattr(self.safety_mgmt_toolbox, "modules", [])]
+        self.lifecycle_cb.configure(values=names)
+        if (
+            self.safety_mgmt_toolbox.active_module
+            and self.safety_mgmt_toolbox.active_module in names
+        ):
+            self.lifecycle_var.set(self.safety_mgmt_toolbox.active_module)
+        else:
+            self.lifecycle_var.set("")
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
@@ -9671,6 +9730,8 @@ class FaultTreeApp:
             )
             toolbox = self.safety_mgmt_toolbox
             toolbox.list_diagrams()
+            self.update_lifecycle_cb()
+            self.refresh_tool_enablement()
 
             index_map = {
                 (d.name or d.diag_id): idx

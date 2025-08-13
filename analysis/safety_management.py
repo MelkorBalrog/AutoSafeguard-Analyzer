@@ -119,6 +119,7 @@ class SafetyManagementToolbox:
     workflows: Dict[str, List[str]] = field(default_factory=dict)
     diagrams: Dict[str, str] = field(default_factory=dict)
     modules: List[GovernanceModule] = field(default_factory=list)
+    active_module: Optional[str] = None
     # Track how many documents of each analysis type exist.  This allows the
     # toolbox to prevent removal of work product declarations when documents
     # are present.
@@ -176,13 +177,50 @@ class SafetyManagementToolbox:
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
-        """Return the set of analysis names currently enabled by governance."""
-        return {wp.analysis for wp in self.work_products}
+        """Return the set of analysis names enabled for the active phase."""
+        if not self.active_module:
+            return {wp.analysis for wp in self.work_products}
+        diagrams = self.diagrams_in_module(self.active_module)
+        return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
     # ------------------------------------------------------------------
     def is_enabled(self, analysis: str) -> bool:
         """Check whether ``analysis`` has been enabled via governance."""
         return analysis in self.enabled_products()
+
+    # ------------------------------------------------------------------
+    def set_active_module(self, name: Optional[str]) -> None:
+        """Select the active lifecycle phase by module *name*."""
+        self.active_module = name
+        if self.on_change:
+            self.on_change()
+
+    # ------------------------------------------------------------------
+    def _find_module(self, name: str, modules: List[GovernanceModule]) -> Optional[GovernanceModule]:
+        for mod in modules:
+            if mod.name == name:
+                return mod
+            found = self._find_module(name, mod.modules)
+            if found:
+                return found
+        return None
+
+    # ------------------------------------------------------------------
+    def diagrams_in_module(self, name: str) -> set[str]:
+        """Return all diagram names contained within module *name*."""
+        mod = self._find_module(name, self.modules)
+        if not mod:
+            return set()
+
+        names: set[str] = set()
+
+        def _collect(m: GovernanceModule) -> None:
+            names.update(m.diagrams)
+            for sub in m.modules:
+                _collect(sub)
+
+        _collect(mod)
+        return names
 
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
@@ -193,7 +231,11 @@ class SafetyManagementToolbox:
         types. ``None`` is returned when no such link exists."""
 
         repo = SysMLRepository.get_instance()
-        for diag_id in self.diagrams.values():
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        for diag_id in diag_ids:
             diag = repo.diagrams.get(diag_id)
             if not diag:
                 continue
@@ -276,6 +318,7 @@ class SafetyManagementToolbox:
             "workflows": {k: list(v) for k, v in self.workflows.items()},
             "diagrams": dict(self.diagrams),
             "modules": [m.to_dict() for m in self.modules],
+            "active_module": self.active_module,
         }
 
     @classmethod
@@ -293,6 +336,7 @@ class SafetyManagementToolbox:
         toolbox.modules = [
             GovernanceModule.from_dict(m) for m in data.get("modules", [])
         ]
+        toolbox.active_module = data.get("active_module")
         return toolbox
 
     # ------------------------------------------------------------------

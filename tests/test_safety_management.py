@@ -20,7 +20,11 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 import AutoML
-from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
+from analysis.safety_management import (
+    SafetyManagementToolbox,
+    GovernanceModule,
+    SafetyWorkProduct,
+)
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
@@ -465,6 +469,28 @@ def test_toolbox_serializes_modules():
     assert loaded.modules[0].modules[0].name == "Child"
     assert loaded.modules[0].modules[0].diagrams == ["D1"]
     assert loaded.modules[0].diagrams == ["D2"]
+
+
+def test_enabled_products_filter_by_module():
+    toolbox = SafetyManagementToolbox()
+    toolbox.diagrams = {"D1": "id1", "D2": "id2"}
+    toolbox.work_products = [
+        SafetyWorkProduct("D1", "HAZOP", ""),
+        SafetyWorkProduct("D2", "FTA", ""),
+    ]
+    toolbox.modules = [
+        GovernanceModule(name="Phase1", diagrams=["D1"]),
+        GovernanceModule(name="Phase2", diagrams=["D2"]),
+    ]
+
+    toolbox.set_active_module("Phase1")
+    assert toolbox.enabled_products() == {"HAZOP"}
+
+    toolbox.set_active_module("Phase2")
+    assert toolbox.enabled_products() == {"FTA"}
+
+    toolbox.set_active_module(None)
+    assert toolbox.enabled_products() == {"HAZOP", "FTA"}
 
 
 def test_disabled_work_products_absent_from_analysis_tree():
