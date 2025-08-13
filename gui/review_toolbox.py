@@ -73,6 +73,9 @@ class ReviewData:
     fmeda_names: List[str] = field(default_factory=list)
     hazop_names: List[str] = field(default_factory=list)
     hara_names: List[str] = field(default_factory=list)
+    stpa_names: List[str] = field(default_factory=list)
+    fi2tc_names: List[str] = field(default_factory=list)
+    tc2fi_names: List[str] = field(default_factory=list)
     due_date: str = ""
     closed: bool = False
     approved: bool = False
@@ -301,7 +304,38 @@ class ReviewScopeDialog(simpledialog.Dialog):
             cb = tk.Checkbutton(hara_frame, text=d.name, variable=var, anchor="w")
             cb.pack(fill=tk.X, anchor="w")
             self.hara_vars.append((var, d.name))
-        tk.Label(master, text="Check items to include in the review").grid(row=2, column=0, columnspan=5, pady=(2,5))
+
+        tk.Label(master, text="STPAs:").grid(row=0, column=5, padx=5, pady=5, sticky="w")
+        self.stpa_vars = []
+        stpa_frame = tk.Frame(master)
+        stpa_frame.grid(row=1, column=5, padx=5, pady=5, sticky="nsew")
+        for d in self.app.stpa_docs:
+            var = tk.BooleanVar()
+            cb = tk.Checkbutton(stpa_frame, text=d.name, variable=var, anchor="w")
+            cb.pack(fill=tk.X, anchor="w")
+            self.stpa_vars.append((var, d.name))
+
+        tk.Label(master, text="FI2TCs:").grid(row=0, column=6, padx=5, pady=5, sticky="w")
+        self.fi2tc_vars = []
+        fi2tc_frame = tk.Frame(master)
+        fi2tc_frame.grid(row=1, column=6, padx=5, pady=5, sticky="nsew")
+        for d in self.app.fi2tc_docs:
+            var = tk.BooleanVar()
+            cb = tk.Checkbutton(fi2tc_frame, text=d.name, variable=var, anchor="w")
+            cb.pack(fill=tk.X, anchor="w")
+            self.fi2tc_vars.append((var, d.name))
+
+        tk.Label(master, text="TC2FIs:").grid(row=0, column=7, padx=5, pady=5, sticky="w")
+        self.tc2fi_vars = []
+        tc2fi_frame = tk.Frame(master)
+        tc2fi_frame.grid(row=1, column=7, padx=5, pady=5, sticky="nsew")
+        for d in self.app.tc2fi_docs:
+            var = tk.BooleanVar()
+            cb = tk.Checkbutton(tc2fi_frame, text=d.name, variable=var, anchor="w")
+            cb.pack(fill=tk.X, anchor="w")
+            self.tc2fi_vars.append((var, d.name))
+
+        tk.Label(master, text="Check items to include in the review").grid(row=2, column=0, columnspan=8, pady=(2,5))
 
     def apply(self):
         fta_ids = [uid for var, uid in self.fta_vars if var.get()]
@@ -309,7 +343,19 @@ class ReviewScopeDialog(simpledialog.Dialog):
         fmeda_names = [name for var, name in self.fmeda_vars if var.get()]
         hazop_names = [name for var, name in self.hazop_vars if var.get()]
         hara_names = [name for var, name in self.hara_vars if var.get()]
-        self.result = (fta_ids, fmea_names, fmeda_names, hazop_names, hara_names)
+        stpa_names = [name for var, name in self.stpa_vars if var.get()]
+        fi2tc_names = [name for var, name in self.fi2tc_vars if var.get()]
+        tc2fi_names = [name for var, name in self.tc2fi_vars if var.get()]
+        self.result = (
+            fta_ids,
+            fmea_names,
+            fmeda_names,
+            hazop_names,
+            hara_names,
+            stpa_names,
+            fi2tc_names,
+            tc2fi_names,
+        )
 
 
 class UserSelectDialog(simpledialog.Dialog):
@@ -1168,6 +1214,21 @@ class ReviewDocumentDialog(tk.Frame):
                     for d in data.get("haras", [])
                     if d.get("name") in getattr(self.review, "hara_names", [])
                 ],
+                "stpas": [
+                    d
+                    for d in data.get("stpas", [])
+                    if d.get("name") in getattr(self.review, "stpa_names", [])
+                ],
+                "fi2tc_docs": [
+                    d
+                    for d in data.get("fi2tc_docs", [])
+                    if d.get("name") in getattr(self.review, "fi2tc_names", [])
+                ],
+                "tc2fi_docs": [
+                    d
+                    for d in data.get("tc2fi_docs", [])
+                    if d.get("name") in getattr(self.review, "tc2fi_names", [])
+                ],
             }
 
         data1 = filter_data(base_data)
@@ -1255,6 +1316,12 @@ class ReviewDocumentDialog(tk.Frame):
         new_hazop = {d["name"]: d.get("entries", []) for d in data2.get("hazops", [])}
         old_hara = {d["name"]: d.get("entries", []) for d in data1.get("haras", [])}
         new_hara = {d["name"]: d.get("entries", []) for d in data2.get("haras", [])}
+        old_stpa = {d["name"]: d.get("entries", []) for d in data1.get("stpas", [])}
+        new_stpa = {d["name"]: d.get("entries", []) for d in data2.get("stpas", [])}
+        old_fi2tc = {d["name"]: d.get("entries", []) for d in data1.get("fi2tc_docs", [])}
+        new_fi2tc = {d["name"]: d.get("entries", []) for d in data2.get("fi2tc_docs", [])}
+        old_tc2fi = {d["name"]: d.get("entries", []) for d in data1.get("tc2fi_docs", [])}
+        new_tc2fi = {d["name"]: d.get("entries", []) for d in data2.get("tc2fi_docs", [])}
 
         reqs1 = {}
         reqs2 = {}
@@ -1462,6 +1529,82 @@ class ReviewDocumentDialog(tk.Frame):
             frame.grid_rowconfigure(0, weight=1)
             for e in new_entries:
                 vals = [e.get("malfunction",""), e.get("hazard",""), e.get("severity",""), e.get("sev_rationale",""), e.get("controllability",""), e.get("cont_rationale",""), e.get("exposure",""), e.get("exp_rationale",""), e.get("asil",""), e.get("safety_goal","")]
+                tree.insert("", "end", values=vals)
+        for name in getattr(self.review, 'stpa_names', []):
+            old_entries = old_stpa.get(name, [])
+            new_entries = new_stpa.get(name, [])
+            if not old_entries and not new_entries:
+                continue
+            tk.Label(self.inner, text=f"STPA: {name}", font=heading_font).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+            row += 1
+            frame = tk.Frame(self.inner)
+            frame.grid(row=row, column=0, sticky='nsew', padx=5, pady=5)
+            columns = ("action","not_providing","providing","incorrect_timing","stopped_too_soon","safety_constraints")
+            tree = ttk.Treeview(frame, columns=columns, show='headings', height=8)
+            vsb = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
+            hsb = ttk.Scrollbar(frame, orient='horizontal', command=tree.xview)
+            tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            for col in columns:
+                head = "Control Action" if col == "action" else col.replace('_',' ').title()
+                tree.heading(col, text=head)
+                tree.column(col, width=150, anchor='center')
+            tree.grid(row=0, column=0, sticky='nsew')
+            vsb.grid(row=0, column=1, sticky='ns')
+            hsb.grid(row=1, column=0, sticky='ew')
+            frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(0, weight=1)
+            for e in new_entries:
+                vals = [e.get(k, "") if k != "safety_constraints" else "; ".join(e.get(k, [])) for k in columns]
+                tree.insert("", "end", values=vals)
+        for name in getattr(self.review, 'fi2tc_names', []):
+            old_entries = old_fi2tc.get(name, [])
+            new_entries = new_fi2tc.get(name, [])
+            if not old_entries and not new_entries:
+                continue
+            tk.Label(self.inner, text=f"FI2TC: {name}", font=heading_font).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+            row += 1
+            frame = tk.Frame(self.inner)
+            frame.grid(row=row, column=0, sticky='nsew', padx=5, pady=5)
+            columns = ("id","system_function","allocation","interfaces","functional_insufficiencies","scene","scenario","driver_behavior","occurrence","vehicle_effect","severity","design_measures","verification","measure_effectiveness","triggering_conditions","mitigation","acceptance")
+            tree = ttk.Treeview(frame, columns=columns, show='headings', height=8)
+            vsb = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
+            hsb = ttk.Scrollbar(frame, orient='horizontal', command=tree.xview)
+            tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            for col in columns:
+                tree.heading(col, text=col.replace('_',' ').title())
+                tree.column(col, width=120, anchor='center')
+            tree.grid(row=0, column=0, sticky='nsew')
+            vsb.grid(row=0, column=1, sticky='ns')
+            hsb.grid(row=1, column=0, sticky='ew')
+            frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(0, weight=1)
+            for e in new_entries:
+                vals = [e.get(k, "") for k in columns]
+                tree.insert("", "end", values=vals)
+        for name in getattr(self.review, 'tc2fi_names', []):
+            old_entries = old_tc2fi.get(name, [])
+            new_entries = new_tc2fi.get(name, [])
+            if not old_entries and not new_entries:
+                continue
+            tk.Label(self.inner, text=f"TC2FI: {name}", font=heading_font).grid(row=row, column=0, sticky='w', padx=5, pady=5)
+            row += 1
+            frame = tk.Frame(self.inner)
+            frame.grid(row=row, column=0, sticky='nsew', padx=5, pady=5)
+            columns = ("id","known_use_case","occurrence","impacted_function","arch_elements","interfaces","functional_insufficiencies","vehicle_effect","severity","design_measures","verification","measure_effectiveness","scene","scenario","driver_behavior","triggering_conditions","mitigation","acceptance")
+            tree = ttk.Treeview(frame, columns=columns, show='headings', height=8)
+            vsb = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
+            hsb = ttk.Scrollbar(frame, orient='horizontal', command=tree.xview)
+            tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+            for col in columns:
+                tree.heading(col, text=col.replace('_',' ').title())
+                tree.column(col, width=120, anchor='center')
+            tree.grid(row=0, column=0, sticky='nsew')
+            vsb.grid(row=0, column=1, sticky='ns')
+            hsb.grid(row=1, column=0, sticky='ew')
+            frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(0, weight=1)
+            for e in new_entries:
+                vals = [e.get(k, "") for k in columns]
                 tree.insert("", "end", values=vals)
 
         row += 1
@@ -1684,6 +1827,109 @@ class VersionCompareDialog(tk.Frame):
         self.hara_tree.tag_configure("added", background="#cce5ff")
         self.hara_tree.tag_configure("removed", background="#f8d7da")
         self.hara_tree.tag_configure("existing", background="#e2e3e5")
+
+        columns_stpa = [
+            "STPA",
+            "Action",
+            "Not Providing",
+            "Providing",
+            "Incorrect Timing",
+            "Stopped Too Soon",
+            "Safety Constraints",
+        ]
+        stpa_frame = tk.Frame(self)
+        stpa_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.stpa_tree = ttk.Treeview(stpa_frame, columns=columns_stpa, show="headings")
+        for col in columns_stpa:
+            self.stpa_tree.heading(col, text=col)
+            width = 150 if col == "Safety Constraints" else 120
+            self.stpa_tree.column(col, width=width, anchor="center")
+        vsb_stpa = ttk.Scrollbar(stpa_frame, orient="vertical", command=self.stpa_tree.yview)
+        hsb_stpa = ttk.Scrollbar(stpa_frame, orient="horizontal", command=self.stpa_tree.xview)
+        self.stpa_tree.configure(yscrollcommand=vsb_stpa.set, xscrollcommand=hsb_stpa.set)
+        self.stpa_tree.grid(row=0, column=0, sticky="nsew")
+        vsb_stpa.grid(row=0, column=1, sticky="ns")
+        hsb_stpa.grid(row=1, column=0, sticky="ew")
+        stpa_frame.rowconfigure(0, weight=1)
+        stpa_frame.columnconfigure(0, weight=1)
+        self.stpa_tree.tag_configure("added", background="#cce5ff")
+        self.stpa_tree.tag_configure("removed", background="#f8d7da")
+        self.stpa_tree.tag_configure("existing", background="#e2e3e5")
+
+        columns_fi2tc = [
+            "FI2TC",
+            "System Function",
+            "Allocation",
+            "Interfaces",
+            "Functional Insufficiencies",
+            "Scene",
+            "Scenario",
+            "Driver Behavior",
+            "Occurrence",
+            "Vehicle Effect",
+            "Severity",
+            "Design Measures",
+            "Verification",
+            "Measure Effectiveness",
+            "Triggering Conditions",
+            "Mitigation",
+            "Acceptance",
+        ]
+        fi2tc_frame = tk.Frame(self)
+        fi2tc_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.fi2tc_tree = ttk.Treeview(fi2tc_frame, columns=columns_fi2tc, show="headings")
+        for col in columns_fi2tc:
+            self.fi2tc_tree.heading(col, text=col)
+            self.fi2tc_tree.column(col, width=120, anchor="center")
+        vsb_fi2tc = ttk.Scrollbar(fi2tc_frame, orient="vertical", command=self.fi2tc_tree.yview)
+        hsb_fi2tc = ttk.Scrollbar(fi2tc_frame, orient="horizontal", command=self.fi2tc_tree.xview)
+        self.fi2tc_tree.configure(yscrollcommand=vsb_fi2tc.set, xscrollcommand=hsb_fi2tc.set)
+        self.fi2tc_tree.grid(row=0, column=0, sticky="nsew")
+        vsb_fi2tc.grid(row=0, column=1, sticky="ns")
+        hsb_fi2tc.grid(row=1, column=0, sticky="ew")
+        fi2tc_frame.rowconfigure(0, weight=1)
+        fi2tc_frame.columnconfigure(0, weight=1)
+        self.fi2tc_tree.tag_configure("added", background="#cce5ff")
+        self.fi2tc_tree.tag_configure("removed", background="#f8d7da")
+        self.fi2tc_tree.tag_configure("existing", background="#e2e3e5")
+
+        columns_tc2fi = [
+            "TC2FI",
+            "Known Use Case",
+            "Occurrence",
+            "Impacted Function",
+            "Arch Elements",
+            "Interfaces",
+            "Functional Insufficiencies",
+            "Vehicle Effect",
+            "Severity",
+            "Design Measures",
+            "Verification",
+            "Measure Effectiveness",
+            "Scene",
+            "Scenario",
+            "Driver Behavior",
+            "Triggering Conditions",
+            "Mitigation",
+            "Acceptance",
+        ]
+        tc2fi_frame = tk.Frame(self)
+        tc2fi_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.tc2fi_tree = ttk.Treeview(tc2fi_frame, columns=columns_tc2fi, show="headings")
+        for col in columns_tc2fi:
+            self.tc2fi_tree.heading(col, text=col)
+            self.tc2fi_tree.column(col, width=120, anchor="center")
+        vsb_tc2fi = ttk.Scrollbar(tc2fi_frame, orient="vertical", command=self.tc2fi_tree.yview)
+        hsb_tc2fi = ttk.Scrollbar(tc2fi_frame, orient="horizontal", command=self.tc2fi_tree.xview)
+        self.tc2fi_tree.configure(yscrollcommand=vsb_tc2fi.set, xscrollcommand=hsb_tc2fi.set)
+        self.tc2fi_tree.grid(row=0, column=0, sticky="nsew")
+        vsb_tc2fi.grid(row=0, column=1, sticky="ns")
+        hsb_tc2fi.grid(row=1, column=0, sticky="ew")
+        tc2fi_frame.rowconfigure(0, weight=1)
+        tc2fi_frame.columnconfigure(0, weight=1)
+        self.tc2fi_tree.tag_configure("added", background="#cce5ff")
+        self.tc2fi_tree.tag_configure("removed", background="#f8d7da")
+        self.tc2fi_tree.tag_configure("existing", background="#e2e3e5")
 
         # box for requirement changes similar to ReviewDocument
         req_frame = tk.Frame(self)
@@ -2475,6 +2721,84 @@ class VersionCompareDialog(tk.Frame):
                         e.get("safety_goal", ""),
                     ]
                     self.hara_tree.insert("", "end", values=row, tags=("removed",))
+
+        # ----- STPA diff -----
+        self.stpa_tree.delete(*self.stpa_tree.get_children())
+        st1 = {d["name"]: d for d in data1.get("stpas", [])}
+        st2 = {d["name"]: d for d in data2.get("stpas", [])}
+        for name in sorted(set(st1) | set(st2)):
+            e1 = st1.get(name, {}).get("entries", [])
+            e2 = st2.get(name, {}).get("entries", [])
+            seen = set()
+            for e in e2:
+                row = [
+                    name,
+                    e.get("action", ""),
+                    e.get("not_providing", ""),
+                    e.get("providing", ""),
+                    e.get("incorrect_timing", ""),
+                    e.get("stopped_too_soon", ""),
+                    "; ".join(e.get("safety_constraints", [])),
+                ]
+                tag = "existing" if e in e1 else "added"
+                self.stpa_tree.insert("", "end", values=row, tags=(tag,))
+                seen.add(json.dumps(e, sort_keys=True))
+            for e in e1:
+                if json.dumps(e, sort_keys=True) not in seen:
+                    row = [
+                        name,
+                        e.get("action", ""),
+                        e.get("not_providing", ""),
+                        e.get("providing", ""),
+                        e.get("incorrect_timing", ""),
+                        e.get("stopped_too_soon", ""),
+                        "; ".join(e.get("safety_constraints", [])),
+                    ]
+                    self.stpa_tree.insert("", "end", values=row, tags=("removed",))
+
+        # ----- FI2TC diff -----
+        self.fi2tc_tree.delete(*self.fi2tc_tree.get_children())
+        fi1 = {d["name"]: d for d in data1.get("fi2tc_docs", [])}
+        fi2 = {d["name"]: d for d in data2.get("fi2tc_docs", [])}
+        for name in sorted(set(fi1) | set(fi2)):
+            e1 = fi1.get(name, {}).get("entries", [])
+            e2 = fi2.get(name, {}).get("entries", [])
+            seen = set()
+            for e in e2:
+                row = [e.get(k, "") for k in [
+                    "id","system_function","allocation","interfaces","functional_insufficiencies","scene","scenario","driver_behavior","occurrence","vehicle_effect","severity","design_measures","verification","measure_effectiveness","triggering_conditions","mitigation","acceptance" ]]
+                row.insert(0, name)
+                tag = "existing" if e in e1 else "added"
+                self.fi2tc_tree.insert("", "end", values=row, tags=(tag,))
+                seen.add(json.dumps(e, sort_keys=True))
+            for e in e1:
+                if json.dumps(e, sort_keys=True) not in seen:
+                    row = [e.get(k, "") for k in [
+                        "id","system_function","allocation","interfaces","functional_insufficiencies","scene","scenario","driver_behavior","occurrence","vehicle_effect","severity","design_measures","verification","measure_effectiveness","triggering_conditions","mitigation","acceptance" ]]
+                    row.insert(0, name)
+                    self.fi2tc_tree.insert("", "end", values=row, tags=("removed",))
+
+        # ----- TC2FI diff -----
+        self.tc2fi_tree.delete(*self.tc2fi_tree.get_children())
+        tc1 = {d["name"]: d for d in data1.get("tc2fi_docs", [])}
+        tc2 = {d["name"]: d for d in data2.get("tc2fi_docs", [])}
+        for name in sorted(set(tc1) | set(tc2)):
+            e1 = tc1.get(name, {}).get("entries", [])
+            e2 = tc2.get(name, {}).get("entries", [])
+            seen = set()
+            for e in e2:
+                row = [e.get(k, "") for k in [
+                    "id","known_use_case","occurrence","impacted_function","arch_elements","interfaces","functional_insufficiencies","vehicle_effect","severity","design_measures","verification","measure_effectiveness","scene","scenario","driver_behavior","triggering_conditions","mitigation","acceptance" ]]
+                row.insert(0, name)
+                tag = "existing" if e in e1 else "added"
+                self.tc2fi_tree.insert("", "end", values=row, tags=(tag,))
+                seen.add(json.dumps(e, sort_keys=True))
+            for e in e1:
+                if json.dumps(e, sort_keys=True) not in seen:
+                    row = [e.get(k, "") for k in [
+                        "id","known_use_case","occurrence","impacted_function","arch_elements","interfaces","functional_insufficiencies","vehicle_effect","severity","design_measures","verification","measure_effectiveness","scene","scenario","driver_behavior","triggering_conditions","mitigation","acceptance" ]]
+                    row.insert(0, name)
+                    self.tc2fi_tree.insert("", "end", values=row, tags=("removed",))
 
 
 
