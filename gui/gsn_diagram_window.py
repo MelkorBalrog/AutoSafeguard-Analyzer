@@ -64,7 +64,9 @@ class GSNDiagramWindow(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
 
         self.id_to_node = {}
+        self.id_to_relation = {}
         self.selected_node: Optional[GSNNode] = None
+        self._selected_connection: Optional[tuple[GSNNode, GSNNode]] = None
         self._drag_node: Optional[GSNNode] = None
         self._drag_offset = (0, 0)
         self._connect_mode: Optional[str] = None
@@ -76,17 +78,33 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<B1-Motion>", self._on_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_release)
         self.canvas.bind("<Double-1>", self._on_double_click)
+        self.canvas.bind("<Delete>", self._on_delete)
+        self.canvas.bind("<BackSpace>", self._on_delete)
         self.refresh()
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
         self.canvas.delete("all")
         self.id_to_node = {n.unique_id: n for n in self.diagram._traverse()}
+        self.id_to_relation = {}
+        for parent in self.diagram._traverse():
+            for child in parent.children:
+                rel_id = self._rel_id(parent, child)
+                self.id_to_relation[rel_id] = (parent, child)
         self.diagram.draw(self.canvas, zoom=self.zoom)
         if self.selected_node:
             bbox = self.canvas.bbox(self.selected_node.unique_id)
             if bbox:
                 self.canvas.create_rectangle(*bbox, outline="red", width=2)
+        selected_conn = getattr(self, "_selected_connection", None)
+        if selected_conn:
+            tag = self._rel_id(*selected_conn)
+            for item in self.canvas.find_withtag(tag):
+                typ = self.canvas.type(item)
+                if typ == "line":
+                    self.canvas.itemconfigure(item, fill="red", width=2)
+                else:
+                    self.canvas.itemconfigure(item, outline="red")
         # update scroll region to encompass all drawn items
         bbox = self.canvas.bbox("all") or (0, 0, 0, 0)
         self.canvas.configure(scrollregion=bbox)
@@ -129,14 +147,31 @@ class GSNDiagramWindow(tk.Frame):
         cx = self.canvas.canvasx(event.x)
         cy = self.canvas.canvasy(event.y)
         node = self._node_at(cx, cy)
+        connection = self._connection_at(cx, cy)
         if self._connect_mode:
             self._connect_parent = node
             return
-        if not node:
+        selected_conn = getattr(self, "_selected_connection", None)
+        if selected_conn and node:
+            parent, child = selected_conn
+            if node not in (parent, child):
+                self._move_connection(parent, child, node)
+            self._selected_connection = None
+            self.selected_node = node
+            self.refresh()
+            return
+        if connection:
+            self._selected_connection = connection
             self.selected_node = None
             self.refresh()
             return
+        if not node:
+            self.selected_node = None
+            self._selected_connection = None
+            self.refresh()
+            return
         self.selected_node = node
+        self._selected_connection = None
         self._drag_node = node
         sx, sy = node.x * self.zoom, node.y * self.zoom
         self._drag_offset = (cx - sx, cy - sy)
@@ -240,6 +275,43 @@ class GSNDiagramWindow(tk.Frame):
                 if node:
                     return node
         return None
+
+    def _rel_id(self, parent: GSNNode, child: GSNNode) -> str:
+        return f"rel:{parent.unique_id}:{child.unique_id}"
+
+    def _connection_at(self, x: float, y: float):
+        items = self.canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
+        relations = getattr(self, "id_to_relation", {})
+        for item in items:
+            for tag in self.canvas.gettags(item):
+                rel = relations.get(tag)
+                if rel:
+                    return rel
+        return None
+
+    def _move_connection(
+        self, parent: GSNNode, old_child: GSNNode, new_child: GSNNode
+    ) -> None:
+        relation = "context" if old_child in parent.context_children else "solved"
+        if old_child in parent.children:
+            parent.children.remove(old_child)
+        if parent in old_child.parents:
+            old_child.parents.remove(parent)
+        if old_child in parent.context_children:
+            parent.context_children.remove(old_child)
+        parent.add_child(new_child, relation=relation)
+
+    def _on_delete(self, event):  # pragma: no cover - requires tkinter
+        if self._selected_connection:
+            parent, child = self._selected_connection
+            if child in parent.children:
+                parent.children.remove(child)
+            if parent in child.parents:
+                child.parents.remove(parent)
+            if child in parent.context_children:
+                parent.context_children.remove(child)
+            self._selected_connection = None
+            self.refresh()
 
     def zoom_in(self):  # pragma: no cover - GUI interaction stub
         self.zoom *= 1.2

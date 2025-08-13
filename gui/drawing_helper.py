@@ -231,6 +231,16 @@ class FTADrawingHelper:
                     cy -= h
                     cx += dx * (h / abs(dy)) if dy != 0 else 0
             return cx, cy
+        elif typ == "ellipse":
+            cx, cy = shape.get("center", (0, 0))
+            w = shape.get("width", 0) / 2
+            h = shape.get("height", 0) / 2
+            dx = target_pt[0] - cx
+            dy = target_pt[1] - cy
+            if w == 0 or h == 0:
+                return cx, cy
+            scale = math.hypot(dx / w, dy / h) or 1
+            return cx + dx / scale, cy + dy / scale
         elif typ == "polygon":
             cx, cy = shape.get("center", (0, 0))
             points = shape.get("points", [])
@@ -936,6 +946,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         *,
         fill="black",
         outline="black",
+        obj_id: str = "",
     ) -> None:
         """Draw a triangular arrow head from *start_pt* to *end_pt*."""
         x1, y1 = start_pt
@@ -963,7 +974,12 @@ class GSNDrawingHelper(FTADrawingHelper):
                 base_y - (arrow_width / 2) * perp_y,
             ),
         ]
-        canvas.create_polygon(points, fill=fill, outline=outline)
+        canvas.create_polygon(
+            points,
+            fill=fill,
+            outline=outline,
+            tags=(obj_id, f"{obj_id}-arrow") if obj_id else None,
+        )
 
     def draw_solved_by_connection(
         self,
@@ -972,6 +988,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a curved connector indicating a 'solved by' relationship."""
         px, py = parent_pt
@@ -990,7 +1007,9 @@ class GSNDrawingHelper(FTADrawingHelper):
                 px,
                 py,
             ]
-            canvas.create_line(*path, fill=outline_color, width=line_width)
+            canvas.create_line(
+                *path, fill=outline_color, width=line_width, tags=(obj_id,)
+            )
         else:
             offset = (cy - py) / 2
             path = [
@@ -1008,6 +1027,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 smooth=True,
                 fill=outline_color,
                 width=line_width,
+                tags=(obj_id,),
             )
         self._draw_arrow(
             canvas,
@@ -1015,6 +1035,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             (path[-2], path[-1]),
             fill="black",
             outline="black",
+            obj_id=obj_id,
         )
 
     def draw_in_context_connection(
@@ -1024,6 +1045,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         child_pt,
         outline_color="dimgray",
         line_width=1,
+        obj_id: str = "",
     ):
         """Draw a dashed curved connector for an 'in context of' relationship."""
         px, py = parent_pt
@@ -1049,6 +1071,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
+                tags=(obj_id,),
             )
         else:
             path = [
@@ -1067,6 +1090,7 @@ class GSNDrawingHelper(FTADrawingHelper):
                 fill=outline_color,
                 width=line_width,
                 dash=dash,
+                tags=(obj_id,),
             )
         self._draw_arrow(
             canvas,
@@ -1074,6 +1098,7 @@ class GSNDrawingHelper(FTADrawingHelper):
             (path[-2], path[-1]),
             fill="white",
             outline=outline_color,
+            obj_id=obj_id,
         )
 
     def draw_strategy_shape(

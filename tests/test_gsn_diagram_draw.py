@@ -15,6 +15,18 @@ class StubCanvas:
     def create_text(self, *args, **kwargs):
         pass
 
+    def bbox(self, tag):
+        for left, top, right, bottom, kw in self.items:
+            if kw.get("tags") == (tag,):
+                return left, top, right, bottom
+        return None
+
+    def tag_lower(self, *args, **kwargs):
+        pass
+
+    def tag_raise(self, *args, **kwargs):
+        pass
+
 
 class DummyHelper:
     def draw_goal_shape(self, canvas, x, y, scale, obj_id=""):
@@ -38,6 +50,9 @@ class DummyHelper:
 
     def draw_in_context_connection(self, *args, **kwargs):
         pass
+
+    def point_on_shape(self, shape, target_pt):
+        return target_pt
 
 
 def _rect_for(node_id, canvas):
