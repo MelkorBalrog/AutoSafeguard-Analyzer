@@ -8238,6 +8238,23 @@ class FaultTreeApp:
         if action:
             action()
 
+    def open_work_product(self, name: str) -> None:
+        """Open a diagram or analysis work product within the application."""
+        action = self.tool_actions.get(name)
+        if callable(action):
+            action()
+            return
+
+        for idx, diag in enumerate(self.arch_diagrams):
+            if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_arch_window(idx)
+                return
+
+        for idx, diag in enumerate(self.management_diagrams):
+            if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_management_window(idx)
+                return
+
     def _on_tool_tab_motion(self, event):
         """Show tooltip for notebook tabs when hovering over them."""
         try:
