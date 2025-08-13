@@ -1549,6 +1549,8 @@ class FI2TCWindow(tk.Frame):
         self.app.fi2tc_docs.append(doc)
         self.app.active_fi2tc = doc
         self.app.fi2tc_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("FI2TC", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -1556,12 +1558,15 @@ class FI2TCWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_fi2tc:
             return
+        old = self.app.active_fi2tc.name
         name = simpledialog.askstring(
-            "Rename FI2TC", "Name:", initialvalue=self.app.active_fi2tc.name
+            "Rename FI2TC", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_fi2tc.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("FI2TC", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -1572,6 +1577,8 @@ class FI2TCWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete FI2TC '{doc.name}'?"):
             return
         self.app.fi2tc_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("FI2TC", doc.name)
         if self.app.fi2tc_docs:
             self.app.active_fi2tc = self.app.fi2tc_docs[0]
         else:
@@ -3526,6 +3533,8 @@ class TC2FIWindow(tk.Frame):
         self.app.tc2fi_docs.append(doc)
         self.app.active_tc2fi = doc
         self.app.tc2fi_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("TC2FI", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -3533,12 +3542,15 @@ class TC2FIWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_tc2fi:
             return
+        old = self.app.active_tc2fi.name
         name = simpledialog.askstring(
-            "Rename TC2FI", "Name:", initialvalue=self.app.active_tc2fi.name
+            "Rename TC2FI", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_tc2fi.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("TC2FI", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -3549,6 +3561,8 @@ class TC2FIWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete TC2FI '{doc.name}'?"):
             return
         self.app.tc2fi_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("TC2FI", doc.name)
         if self.app.tc2fi_docs:
             self.app.active_tc2fi = self.app.tc2fi_docs[0]
         else:

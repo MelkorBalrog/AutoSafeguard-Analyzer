@@ -197,6 +197,8 @@ class StpaWindow(tk.Frame):
         self.app.stpa_docs.append(doc)
         self.app.active_stpa = doc
         self.app.stpa_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("STPA", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -204,12 +206,15 @@ class StpaWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_stpa:
             return
+        old = self.app.active_stpa.name
         name = simpledialog.askstring(
-            "Rename STPA", "Name:", initialvalue=self.app.active_stpa.name
+            "Rename STPA", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_stpa.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("STPA", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -235,6 +240,8 @@ class StpaWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete STPA '{doc.name}'?"):
             return
         self.app.stpa_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("STPA", doc.name)
         if self.app.stpa_docs:
             self.app.active_stpa = self.app.stpa_docs[0]
         else:
