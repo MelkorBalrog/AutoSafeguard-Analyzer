@@ -1954,6 +1954,10 @@ class FaultTreeApp:
         self.style.configure(
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
+        # icons used across tree views
+        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        self.gsn_module_icon = self.pkg_icon
+        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
         # small icons for diagram types shown in the explorer
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
@@ -8294,74 +8298,81 @@ class FaultTreeApp:
         tags = self.analysis_tree.item(item, "tags")
         if len(tags) != 2:
             return
-        kind, idx = tags[0], int(tags[1])
-        if kind == "fmea":
-            self.show_fmea_table(self.fmeas[idx])
-        elif kind == "fmeda":
-            self.show_fmea_table(self.fmedas[idx], fmeda=True)
-        elif kind == "hazop":
-            self.open_hazop_window()
-            if hasattr(self, "_hazop_window"):
-                doc = self.hazop_docs[idx]
-                self._hazop_window.doc_var.set(doc.name)
-                self._hazop_window.select_doc()
-        elif kind == "hara":
-            self.open_risk_assessment_window()
-            if hasattr(self, "_risk_window"):
-                doc = self.hara_docs[idx]
-                self._risk_window.doc_var.set(doc.name)
-                self._risk_window.select_doc()
-        elif kind == "stpa":
-            self.open_stpa_window()
-            if hasattr(self, "_stpa_window"):
-                doc = self.stpa_docs[idx]
-                self._stpa_window.doc_var.set(doc.name)
-                self._stpa_window.select_doc()
-        elif kind == "threat":
-            self.open_threat_window()
-            if hasattr(self, "_threat_window"):
-                doc = self.threat_docs[idx]
-                self._threat_window.doc_var.set(doc.name)
-                self._threat_window.select_doc()
-        elif kind == "fi2tc":
-            self.open_fi2tc_window()
-            if hasattr(self, "_fi2tc_window"):
-                doc = self.fi2tc_docs[idx]
-                self._fi2tc_window.doc_var.set(doc.name)
-                self._fi2tc_window.select_doc()
-        elif kind == "tc2fi":
-            self.open_tc2fi_window()
-            if hasattr(self, "_tc2fi_window"):
-                doc = self.tc2fi_docs[idx]
-                self._tc2fi_window.doc_var.set(doc.name)
-                self._tc2fi_window.select_doc()
+        kind, ident = tags[0], tags[1]
+        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
+            idx = int(ident)
+            if kind == "fmea":
+                self.show_fmea_table(self.fmeas[idx])
+            elif kind == "fmeda":
+                self.show_fmea_table(self.fmedas[idx], fmeda=True)
+            elif kind == "hazop":
+                self.open_hazop_window()
+                if hasattr(self, "_hazop_window"):
+                    doc = self.hazop_docs[idx]
+                    self._hazop_window.doc_var.set(doc.name)
+                    self._hazop_window.select_doc()
+            elif kind == "hara":
+                self.open_risk_assessment_window()
+                if hasattr(self, "_risk_window"):
+                    doc = self.hara_docs[idx]
+                    self._risk_window.doc_var.set(doc.name)
+                    self._risk_window.select_doc()
+            elif kind == "stpa":
+                self.open_stpa_window()
+                if hasattr(self, "_stpa_window"):
+                    doc = self.stpa_docs[idx]
+                    self._stpa_window.doc_var.set(doc.name)
+                    self._stpa_window.select_doc()
+            elif kind == "threat":
+                self.open_threat_window()
+                if hasattr(self, "_threat_window"):
+                    doc = self.threat_docs[idx]
+                    self._threat_window.doc_var.set(doc.name)
+                    self._threat_window.select_doc()
+            elif kind == "fi2tc":
+                self.open_fi2tc_window()
+                if hasattr(self, "_fi2tc_window"):
+                    doc = self.fi2tc_docs[idx]
+                    self._fi2tc_window.doc_var.set(doc.name)
+                    self._fi2tc_window.select_doc()
+            elif kind == "tc2fi":
+                self.open_tc2fi_window()
+                if hasattr(self, "_tc2fi_window"):
+                    doc = self.tc2fi_docs[idx]
+                    self._tc2fi_window.doc_var.set(doc.name)
+                    self._tc2fi_window.select_doc()
+            elif kind == "jrev":
+                if 0 <= idx < len(getattr(self, "joint_reviews", [])):
+                    review = self.joint_reviews[idx]
+                    self.review_data = review
+                    self.open_review_document(review)
+                    self.open_review_toolbox()
+            elif kind == "gov":
+                self.open_management_window(idx)
+        elif kind == "gsn":
+            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
+            if diag:
+                self.open_gsn_diagram(diag)
+        elif kind == "gsnmod":
+            self.manage_gsn()
         elif kind == "reqs":
             self.show_requirements_editor()
         elif kind == "sg":
             self.show_product_goals_editor()
         elif kind == "fta":
-            te = next((t for t in self.top_events if t.unique_id == idx), None)
+            te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             if te:
                 self.ensure_fta_tab()
                 self.doc_nb.select(self.canvas_tab)
                 self.open_page_diagram(te)
-        elif kind == "gsn":
-            if 0 <= idx < len(getattr(self, "all_gsn_diagrams", [])):
-                self.open_gsn_diagram(self.all_gsn_diagrams[idx])
         elif kind == "safetycase":
             self.show_safety_case()
-        elif kind == "jrev":
-            if 0 <= idx < len(getattr(self, "joint_reviews", [])):
-                review = self.joint_reviews[idx]
-                self.review_data = review
-                self.open_review_document(review)
-                self.open_review_toolbox()
-        elif kind == "gov":
-            self.open_management_window(idx)
         elif kind == "itemdef":
             self.show_item_definition_editor()
         elif kind == "arch":
-            self.open_arch_window(idx)
+            self.open_arch_window(ident)
+        elif kind == "pkg":
+            self.manage_architecture()
 
     def on_analysis_tree_right_click(self, event):
         iid = self.analysis_tree.identify_row(event.y)
@@ -8378,31 +8389,48 @@ class FaultTreeApp:
         tags = self.analysis_tree.item(item, "tags")
         if len(tags) != 2:
             return
-        kind, idx = tags[0], int(tags[1])
+        kind, ident = tags[0], tags[1]
+        repo = SysMLRepository.get_instance()
         current = ""
-        if kind == "fmea":
-            current = self.fmeas[idx]["name"]
-        elif kind == "fmeda":
-            current = self.fmedas[idx]["name"]
-        elif kind == "hazop":
-            current = self.hazop_docs[idx].name
-        elif kind == "hara":
-            current = self.hara_docs[idx].name
-        elif kind == "fi2tc":
-            current = self.fi2tc_docs[idx].name
-        elif kind == "tc2fi":
-            current = self.tc2fi_docs[idx].name
-        elif kind == "arch":
-            current = self.arch_diagrams[idx].name
-        elif kind == "gov":
-            current = self.management_diagrams[idx].name
+        node = None
+        if kind in {"fmea", "fmeda", "hazop", "hara", "fi2tc", "tc2fi", "jrev"}:
+            idx = int(ident)
+            if kind == "fmea":
+                current = self.fmeas[idx]["name"]
+            elif kind == "fmeda":
+                current = self.fmedas[idx]["name"]
+            elif kind == "hazop":
+                current = self.hazop_docs[idx].name
+            elif kind == "hara":
+                current = self.hara_docs[idx].name
+            elif kind == "fi2tc":
+                current = self.fi2tc_docs[idx].name
+            elif kind == "tc2fi":
+                current = self.tc2fi_docs[idx].name
+            elif kind == "jrev":
+                current = self.joint_reviews[idx].name
         elif kind == "gsn":
-            current = self.all_gsn_diagrams[idx].root.user_name
-        elif kind == "jrev":
-            current = self.joint_reviews[idx].name
+            diag = getattr(self, "gsn_diagram_map", {}).get(ident)
+            if not diag:
+                return
+            current = diag.root.user_name
+        elif kind == "gsnmod":
+            module = getattr(self, "gsn_module_map", {}).get(ident)
+            if not module:
+                return
+            current = module.name
+        elif kind == "arch":
+            diag = repo.diagrams.get(ident)
+            current = diag.name if diag else ""
+        elif kind == "gov":
+            idx = int(ident)
+            current = self.management_diagrams[idx].name
         elif kind == "fta":
-            node = next((t for t in self.top_events if t.unique_id == idx), None)
+            node = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             current = node.user_name if node else ""
+        elif kind == "pkg":
+            pkg = repo.elements.get(ident)
+            current = pkg.name if pkg else ""
         else:
             return
         new = simpledialog.askstring("Rename", "Enter new name:", initialvalue=current)
@@ -8420,12 +8448,18 @@ class FaultTreeApp:
             self.fi2tc_docs[idx].name = new
         elif kind == "tc2fi":
             self.tc2fi_docs[idx].name = new
-        elif kind == "arch":
-            self.arch_diagrams[idx].name = new
+        elif kind == "arch" and repo.diagrams.get(ident):
+            repo.diagrams[ident].name = new
         elif kind == "gov":
             self.management_diagrams[idx].name = new
         elif kind == "gsn":
-            self.all_gsn_diagrams[idx].root.user_name = new
+            diag = self.gsn_diagram_map.get(ident)
+            if diag:
+                diag.root.user_name = new
+        elif kind == "gsnmod":
+            module = self.gsn_module_map.get(ident)
+            if module:
+                module.name = new
         elif kind == "jrev":
             if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
                 messagebox.showerror("Review", "Name already exists")
@@ -8433,6 +8467,8 @@ class FaultTreeApp:
             self.joint_reviews[idx].name = new
         elif kind == "fta" and node:
             node.user_name = new
+        elif kind == "pkg" and repo.elements.get(ident):
+            repo.elements[ident].name = new
         self.update_views()
         if hasattr(self, "_arch_window") and self._arch_window.winfo_exists():
             self._arch_window.populate()
@@ -8454,14 +8490,19 @@ class FaultTreeApp:
             action()
             return
 
-        for idx, diag in enumerate(self.arch_diagrams):
+        for diag in self.arch_diagrams:
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
-                self.open_arch_window(idx)
+                self.open_arch_window(diag.diag_id)
                 return
 
         for idx, diag in enumerate(self.management_diagrams):
             if getattr(diag, "name", "") == name or getattr(diag, "diag_id", "") == name:
                 self.open_management_window(idx)
+                return
+
+        for diag in getattr(self, "all_gsn_diagrams", []):
+            if getattr(diag.root, "user_name", "") == name or getattr(diag, "diag_id", "") == name:
+                self.open_gsn_diagram(diag)
                 return
 
     def _on_tool_tab_motion(self, event):
@@ -9333,7 +9374,7 @@ class FaultTreeApp:
             )
             for idx, diag in enumerate(self.management_diagrams):
                 name = diag.name or f"Diagram {idx + 1}"
-                icon = self.diagram_icons.get(diag.diag_type)
+                icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
                 tree.insert(
                     gov_root,
                     "end",
@@ -9358,14 +9399,44 @@ class FaultTreeApp:
                 ],
                 key=lambda d: d.root.user_name or d.diag_id,
             )
+            self.gsn_diagram_map = {d.diag_id: d for d in self.all_gsn_diagrams}
+            self.gsn_module_map = {}
+
             gsn_root = tree.insert(mgmt_root, "end", text="GSN Diagrams", open=True)
-            for idx, diag in enumerate(self.all_gsn_diagrams):
-                tree.insert(
-                    gsn_root,
+
+            def add_gsn_module(module, parent):
+                mid = str(id(module))
+                node = tree.insert(
+                    parent,
                     "end",
-                    text=diag.root.user_name or f"Diagram {idx + 1}",
-                    tags=("gsn", str(idx)),
+                    text=module.name,
+                    open=True,
+                    tags=("gsnmod", mid),
+                    image=getattr(self, "gsn_module_icon", None),
                 )
+                self.gsn_module_map[mid] = module
+                for sub in sorted(module.modules, key=lambda m: m.name):
+                    add_gsn_module(sub, node)
+                for diag in sorted(
+                    module.diagrams, key=lambda d: d.root.user_name or d.diag_id
+                ):
+                    add_gsn_diagram(diag, node)
+
+            def add_gsn_diagram(diag, parent):
+                tree.insert(
+                    parent,
+                    "end",
+                    text=diag.root.user_name or diag.diag_id,
+                    tags=("gsn", diag.diag_id),
+                    image=getattr(self, "gsn_diagram_icon", None),
+                )
+
+            for mod in sorted(getattr(self, "gsn_modules", []), key=lambda m: m.name):
+                add_gsn_module(mod, gsn_root)
+            for diag in sorted(
+                getattr(self, "gsn_diagrams", []), key=lambda d: d.root.user_name or d.diag_id
+            ):
+                add_gsn_diagram(diag, gsn_root)
 
             tree.insert(mgmt_root, "end", text="Safety Case", tags=("safetycase", "0"))
 
@@ -9397,16 +9468,57 @@ class FaultTreeApp:
                 key=lambda d: d.name or d.diag_id,
             )
             arch_root = tree.insert(sys_root, "end", text="Architecture Diagrams", open=True)
-            for idx, diag in enumerate(self.arch_diagrams):
-                name = diag.name or f"Diagram {idx + 1}"
-                icon = self.diagram_icons.get(diag.diag_type)
-                tree.insert(
-                    arch_root,
-                    "end",
-                    text=name,
-                    tags=("arch", str(idx)),
-                    image=icon,
+
+            def add_pkg(pkg_id: str, parent: str) -> None:
+                pkg = repo.elements.get(pkg_id)
+                if not pkg or pkg.elem_type != "Package":
+                    return
+                node = parent
+                if pkg_id != repo.root_package.elem_id:
+                    node = tree.insert(
+                        parent,
+                        "end",
+                        text=pkg.name or pkg_id,
+                        open=True,
+                        tags=("pkg", pkg_id),
+                        image=getattr(self, "pkg_icon", None),
+                    )
+                # add subpackages
+                sub_pkgs = sorted(
+                    [e.elem_id for e in repo.elements.values() if e.elem_type == "Package" and e.owner == pkg_id],
+                    key=lambda i: repo.elements[i].name or i,
                 )
+                for child_id in sub_pkgs:
+                    add_pkg(child_id, node)
+                # add diagrams within this package
+                diags = sorted(
+                    [d for d in repo.diagrams.values() if d.package == pkg_id and "safety-management" not in getattr(d, "tags", [])],
+                    key=lambda d: d.name or d.diag_id,
+                )
+                for diag in diags:
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
+                    tree.insert(
+                        node,
+                        "end",
+                        text=diag.name or diag.diag_id,
+                        tags=("arch", diag.diag_id),
+                        image=icon,
+                    )
+
+            root_pkg = getattr(repo, "root_package", None)
+            if root_pkg is not None:
+                add_pkg(root_pkg.elem_id, arch_root)
+            else:
+                for diag in self.arch_diagrams:
+                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
+                    tree.insert(
+                        arch_root,
+                        "end",
+                        text=diag.name or diag.diag_id,
+                        tags=("arch", diag.diag_id),
+                        image=icon,
+                    )
+
             tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
 
             # --- Hazard & Threat Analysis Section ---
@@ -15546,6 +15658,16 @@ class FaultTreeApp:
             for y in range(5, size - 5):
                 img.put(c, (5, y))
                 img.put(c, (size - 6, y))
+        elif shape == "folder":
+            for x in range(1, size - 1):
+                img.put(c, (x, 4))
+                img.put(c, (x, size - 2))
+            for y in range(4, size - 1):
+                img.put(c, (1, y))
+                img.put(c, (size - 2, y))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+            img.put(c, to=(1, 3, size - 2, 4))
         else:
             img.put(c, to=(2, 2, size - 2, size - 2))
         return img
@@ -15642,11 +15764,12 @@ class FaultTreeApp:
         GSNDiagramWindow(tab, self, diagram)
         self.refresh_all()
 
-    def open_arch_window(self, idx: int) -> None:
+    def open_arch_window(self, diag_id: str) -> None:
         """Open an existing architecture diagram from the repository."""
-        if idx < 0 or idx >= len(self.arch_diagrams):
+        repo = SysMLRepository.get_instance()
+        diag = repo.diagrams.get(diag_id)
+        if not diag:
             return
-        diag = self.arch_diagrams[idx]
         existing = self.diagram_tabs.get(diag.diag_id)
         # Ensure the existing tab is still managed by the notebook
         if existing and str(existing) in self.doc_nb.tabs():
