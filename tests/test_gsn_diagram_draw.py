@@ -98,3 +98,35 @@ def test_draw_respects_context_links():
     diag.drawing_helper.draw_in_context_connection = ctx
     diag.draw(StubCanvas())
     assert calls == ["context"]
+
+
+def test_solution_draws_on_small_circle():
+    """Solution nodes should render on a fixed smaller circle."""
+    node = GSNNode("Sol", "Solution", x=10, y=10, description="long text " * 10)
+    diag = GSNDiagram(node, drawing_helper=DummyHelper())
+    canvas = StubCanvas()
+    diag.draw(canvas)
+    rect = _rect_for(node.unique_id, canvas)
+    assert rect[2] - rect[0] == 40
+
+
+class _StubFont:
+    def __init__(self, width=5, linespace=10):
+        self._width = width
+        self._linespace = linespace
+
+    def measure(self, text):
+        return len(text) * self._width
+
+    def metrics(self, key):  # pragma: no cover - simple helper
+        return self._linespace
+
+
+def test_wrap_text_limits_line_width():
+    diag = GSNDiagram(GSNNode("Root", "Goal"), drawing_helper=DummyHelper())
+    font = _StubFont()
+    long = "word " * 20
+    wrapped = diag._wrap_text(long.strip(), font, 50)
+    assert "\n" in wrapped
+    for line in wrapped.split("\n"):
+        assert font.measure(line) <= 50

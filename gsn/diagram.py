@@ -162,14 +162,33 @@ class GSNDiagram:
                 method(*args, **kwargs)
 
         if typ == "solution":
-            text = self._format_text(node)
-            t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
-            radius = max(
-                base_scale / 2,
-                t_width / 2 + padding,
-                t_height / 2 + padding,
-            )
-            scale = radius * 2
+            # Render solution nodes on a fixed, smaller circle.  Long text is
+            # wrapped and the font is reduced until it fits within this
+            # bounding box instead of growing the circle itself.
+            padding = 6 * zoom
+            base_scale = 40 * zoom
+            max_dim = base_scale - 2 * padding
+
+            try:
+                # Re-create the font so we can adjust it if required.  When
+                # running headless, ``tkFont.Font`` will raise an exception and
+                # we fall back to the default rendering behaviour below.
+                font_obj = tkFont.Font(family="Arial", size=max(int(10 * zoom), 1))
+
+                text = self._wrap_text(text, font_obj, max_dim)
+                t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
+                while t_width > max_dim or t_height > max_dim:
+                    size = font_obj.cget("size") - 1
+                    if size <= 1:
+                        break
+                    font_obj = tkFont.Font(family="Arial", size=size)
+                    text = self._wrap_text(self._format_text(node), font_obj, max_dim)
+                    t_width, t_height = self.drawing_helper.get_text_size(text, font_obj)
+            except Exception:  # pragma: no cover - headless fallback
+                text = self._format_text(node)
+                font_obj = None
+
+            scale = base_scale
             draw_func = (
                 self.drawing_helper.draw_solution_shape
                 if node.is_primary_instance
@@ -254,3 +273,29 @@ class GSNDiagram:
         if getattr(node, "description", ""):
             return f"{node.user_name}\n{node.description}"
         return node.user_name
+
+    # ------------------------------------------------------------------
+    def _wrap_text(self, text: str, font_obj, max_width: float) -> str:
+        """Wrap *text* so that each line fits within *max_width* pixels.
+
+        The wrapping honours existing newline characters and attempts to
+        break lines at whitespace.  A very small and self-contained helper is
+        used instead of :mod:`textwrap` so that we can operate on pixel
+        measurements provided by ``font_obj``.
+        """
+        lines = []
+        for line in text.split("\n"):
+            if not line:
+                lines.append("")
+                continue
+            current = ""
+            for word in line.split():
+                candidate = f"{current} {word}".strip()
+                if current and font_obj.measure(candidate) > max_width:
+                    lines.append(current)
+                    current = word
+                else:
+                    current = candidate
+            if current:
+                lines.append(current)
+        return "\n".join(lines)
