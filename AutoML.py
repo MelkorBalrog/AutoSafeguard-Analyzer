@@ -8620,17 +8620,29 @@ class FaultTreeApp:
         if not new:
             return
         if kind == "fmea":
+            old = self.fmeas[idx]["name"]
             self.fmeas[idx]["name"] = new
+            self.safety_mgmt_toolbox.rename_document("FMEA", old, new)
         elif kind == "fmeda":
+            old = self.fmedas[idx]["name"]
             self.fmedas[idx]["name"] = new
+            self.safety_mgmt_toolbox.rename_document("FMEDA", old, new)
         elif kind == "hazop":
+            old = self.hazop_docs[idx].name
             self.hazop_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("HAZOP", old, new)
         elif kind == "hara":
+            old = self.hara_docs[idx].name
             self.hara_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("Risk Assessment", old, new)
         elif kind == "fi2tc":
+            old = self.fi2tc_docs[idx].name
             self.fi2tc_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("FI2TC", old, new)
         elif kind == "tc2fi":
+            old = self.tc2fi_docs[idx].name
             self.tc2fi_docs[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("TC2FI", old, new)
         elif kind == "arch" and repo.diagrams.get(ident):
             repo.diagrams[ident].name = new
         elif kind == "gov":
@@ -8647,7 +8659,9 @@ class FaultTreeApp:
             if any(r.name == new for r in self.reviews if r is not self.joint_reviews[idx]):
                 messagebox.showerror("Review", "Name already exists")
                 return
+            old = self.joint_reviews[idx].name
             self.joint_reviews[idx].name = new
+            self.safety_mgmt_toolbox.rename_document("Joint Review", old, new)
         elif kind == "fta" and node:
             node.user_name = new
         elif kind == "pkg" and repo.elements.get(ident):
@@ -9733,6 +9747,9 @@ class FaultTreeApp:
             self.update_lifecycle_cb()
             self.refresh_tool_enablement()
 
+            def _visible(analysis_name: str, doc_name: str) -> bool:
+                return toolbox.document_visible(analysis_name, doc_name)
+
             index_map = {
                 (d.name or d.diag_id): idx
                 for idx, d in enumerate(self.management_diagrams)
@@ -9945,26 +9962,36 @@ class FaultTreeApp:
                 _ensure_haz_root()
                 hazop_root = tree.insert(haz_root, "end", text="HAZOPs", open=True)
                 for idx, doc in enumerate(self.hazop_docs):
+                    if not _visible("HAZOP", doc.name):
+                        continue
                     tree.insert(hazop_root, "end", text=doc.name, tags=("hazop", str(idx)))
             if "STPA" in enabled or getattr(self, "stpa_docs", []):
                 _ensure_haz_root()
                 stpa_root = tree.insert(haz_root, "end", text="STPA Analyses", open=True)
                 for idx, doc in enumerate(self.stpa_docs):
+                    if not _visible("STPA", doc.name):
+                        continue
                     tree.insert(stpa_root, "end", text=doc.name, tags=("stpa", str(idx)))
             if "Threat Analysis" in enabled or getattr(self, "threat_docs", []):
                 _ensure_haz_root()
                 threat_root = tree.insert(haz_root, "end", text="Threat Analyses", open=True)
                 for idx, doc in enumerate(self.threat_docs):
+                    if not _visible("Threat Analysis", doc.name):
+                        continue
                     tree.insert(threat_root, "end", text=doc.name, tags=("threat", str(idx)))
             if "FI2TC" in enabled or getattr(self, "fi2tc_docs", []):
                 _ensure_haz_root()
                 fi2tc_root = tree.insert(haz_root, "end", text="FI2TC Analyses", open=True)
                 for idx, doc in enumerate(self.fi2tc_docs):
+                    if not _visible("FI2TC", doc.name):
+                        continue
                     tree.insert(fi2tc_root, "end", text=doc.name, tags=("fi2tc", str(idx)))
             if "TC2FI" in enabled or getattr(self, "tc2fi_docs", []):
                 _ensure_haz_root()
                 tc2fi_root = tree.insert(haz_root, "end", text="TC2FI Analyses", open=True)
                 for idx, doc in enumerate(self.tc2fi_docs):
+                    if not _visible("TC2FI", doc.name):
+                        continue
                     tree.insert(tc2fi_root, "end", text=doc.name, tags=("tc2fi", str(idx)))
 
             # --- Risk Assessment Section ---
@@ -9977,6 +10004,8 @@ class FaultTreeApp:
                 _ensure_risk_root()
                 assessment_root = tree.insert(risk_root, "end", text="Risk Assessments", open=True)
                 for idx, doc in enumerate(self.hara_docs):
+                    if not _visible("Risk Assessment", doc.name):
+                        continue
                     tree.insert(assessment_root, "end", text=doc.name, tags=("hara", str(idx)))
             if "Product Goal Specification" in enabled:
                 _ensure_risk_root()
@@ -9992,17 +10021,25 @@ class FaultTreeApp:
                 _ensure_safety_root()
                 fta_root = tree.insert(safety_root, "end", text="FTAs", open=True)
                 for idx, te in enumerate(self.top_events):
+                    if not _visible("FTA", te.name):
+                        continue
                     tree.insert(fta_root, "end", text=te.name, tags=("fta", str(te.unique_id)))
             if "FMEA" in enabled or getattr(self, "fmeas", []):
                 _ensure_safety_root()
                 fmea_root = tree.insert(safety_root, "end", text="FMEAs", open=True)
                 for idx, fmea in enumerate(self.fmeas):
-                    tree.insert(fmea_root, "end", text=fmea['name'], tags=("fmea", str(idx)))
+                    name = fmea['name']
+                    if not _visible("FMEA", name):
+                        continue
+                    tree.insert(fmea_root, "end", text=name, tags=("fmea", str(idx)))
             if "FMEDA" in enabled or getattr(self, "fmedas", []):
                 _ensure_safety_root()
                 fmeda_root = tree.insert(safety_root, "end", text="FMEDAs", open=True)
                 for idx, doc in enumerate(self.fmedas):
-                    tree.insert(fmeda_root, "end", text=doc['name'], tags=("fmeda", str(idx)))
+                    name = doc['name']
+                    if not _visible("FMEDA", name):
+                        continue
+                    tree.insert(fmeda_root, "end", text=name, tags=("fmeda", str(idx)))
 
         if hasattr(self, "page_diagram") and self.page_diagram is not None:
             if self.page_diagram.canvas.winfo_exists():
