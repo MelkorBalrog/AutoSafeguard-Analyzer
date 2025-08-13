@@ -126,8 +126,6 @@ class GSNElementConfig(tk.Toplevel):
             # ``values`` to the constructor can result in an empty list on
             # some systems.
             wp_cb.configure(values=work_products)
-            if not self.work_var.get() and work_products:
-                self.work_var.set(work_products[0])
             row += 1
             tk.Label(self, text="Evidence Link:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
