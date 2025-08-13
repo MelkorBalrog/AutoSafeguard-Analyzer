@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from typing import Iterable, List
 import uuid
 
+import tkinter.font as tkFont
+
 from .nodes import GSNNode
 from gui.drawing_helper import GSNDrawingHelper
 
@@ -62,10 +64,18 @@ class GSNDiagram:
     # ------------------------------------------------------------------
     def _draw_node(self, canvas, node: GSNNode, zoom: float) -> None:  # pragma: no cover - requires tkinter
         x, y = node.x * zoom, node.y * zoom
-        scale = 40 * zoom
         typ = node.node_type.lower()
         text = self._format_text(node)
-        
+
+        try:
+            font_obj = tkFont.Font(family="Arial", size=max(int(10 * zoom), 1))
+            width, height = self.drawing_helper.get_text_size(text, font_obj)
+        except Exception:  # pragma: no cover - headless fallback
+            font_obj = None
+            width = height = 0
+        padding = 10 * zoom
+        base_scale = 60 * zoom
+
         def _call(method, *args, **kwargs):
             try:
                 method(*args, **kwargs)
@@ -73,8 +83,20 @@ class GSNDiagram:
                 kwargs.pop("text", None)
                 kwargs.pop("top_text", None)
                 kwargs.pop("bottom_text", None)
+                kwargs.pop("font_obj", None)
                 method(*args, **kwargs)
+
         if typ == "solution":
+            top_w, top_h = self.drawing_helper.get_text_size(node.user_name, font_obj)
+            bottom_w, bottom_h = self.drawing_helper.get_text_size(
+                getattr(node, "description", ""), font_obj
+            )
+            radius = max(
+                base_scale / 2,
+                bottom_w / 2 + padding,
+                bottom_h + padding,
+            )
+            scale = radius * 2
             if node.is_primary_instance:
                 _call(
                     self.drawing_helper.draw_solution_shape,
@@ -84,6 +106,7 @@ class GSNDiagram:
                     scale,
                     top_text=node.user_name,
                     bottom_text=node.description,
+                    font_obj=font_obj,
                     obj_id=node.unique_id,
                 )
             else:
@@ -95,30 +118,37 @@ class GSNDiagram:
                     scale,
                     top_text=node.user_name,
                     bottom_text=node.description,
+                    font_obj=font_obj,
                     obj_id=node.unique_id,
                 )
-        elif typ == "goal":
-            if node.is_primary_instance:
-                _call(
-                    self.drawing_helper.draw_goal_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    text=text,
-                    obj_id=node.unique_id,
+        elif typ in {"goal", "module"}:
+            ratio = 0.6
+            scale = max(base_scale, width + padding, (height + padding) / ratio)
+            if typ == "goal":
+                draw_func = (
+                    self.drawing_helper.draw_goal_shape
+                    if node.is_primary_instance
+                    else self.drawing_helper.draw_away_goal_shape
                 )
-            else:
-                _call(
-                    self.drawing_helper.draw_away_goal_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    text=text,
-                    obj_id=node.unique_id,
+            else:  # module
+                draw_func = (
+                    self.drawing_helper.draw_goal_shape
+                    if node.is_primary_instance
+                    else self.drawing_helper.draw_away_module_shape
                 )
+            _call(
+                draw_func,
+                canvas,
+                x,
+                y,
+                scale,
+                text=text,
+                font_obj=font_obj,
+                obj_id=node.unique_id,
+            )
         elif typ == "strategy":
+            ratio = 0.5
+            scale = max(base_scale, width + padding, (height + padding) / ratio)
             _call(
                 self.drawing_helper.draw_strategy_shape,
                 canvas,
@@ -126,59 +156,27 @@ class GSNDiagram:
                 y,
                 scale,
                 text=text,
+                font_obj=font_obj,
                 obj_id=node.unique_id,
             )
-        elif typ == "assumption":
+        elif typ in {"assumption", "justification", "context"}:
+            ratio = 0.5
+            scale = max(base_scale, width + padding, (height + padding) / ratio)
+            draw_map = {
+                "assumption": self.drawing_helper.draw_assumption_shape,
+                "justification": self.drawing_helper.draw_justification_shape,
+                "context": self.drawing_helper.draw_context_shape,
+            }
             _call(
-                self.drawing_helper.draw_assumption_shape,
+                draw_map[typ],
                 canvas,
                 x,
                 y,
                 scale,
                 text=text,
+                font_obj=font_obj,
                 obj_id=node.unique_id,
             )
-        elif typ == "justification":
-            _call(
-                self.drawing_helper.draw_justification_shape,
-                canvas,
-                x,
-                y,
-                scale,
-                text=text,
-                obj_id=node.unique_id,
-            )
-        elif typ == "context":
-            _call(
-                self.drawing_helper.draw_context_shape,
-                canvas,
-                x,
-                y,
-                scale,
-                text=text,
-                obj_id=node.unique_id,
-            )
-        elif typ == "module":
-            if node.is_primary_instance:
-                _call(
-                    self.drawing_helper.draw_goal_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    text=text,
-                    obj_id=node.unique_id,
-                )
-            else:
-                _call(
-                    self.drawing_helper.draw_away_module_shape,
-                    canvas,
-                    x,
-                    y,
-                    scale,
-                    text=text,
-                    obj_id=node.unique_id,
-                )
 
     def _format_text(self, node: GSNNode) -> str:
         """Return node label including description if present."""
