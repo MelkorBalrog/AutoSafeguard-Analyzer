@@ -23,16 +23,34 @@ def _collect_work_products(diagram: GSNDiagram) -> list[str]:
     )
 
 
-def _collect_spi_targets(diagram: GSNDiagram) -> list[str]:
-    """Return sorted list of SPI targets referenced in *diagram*."""
+def _collect_spi_targets(diagram: GSNDiagram, app=None) -> list[str]:
+    """Return sorted list of SPI targets available for *diagram*.
 
-    return sorted(
-        {
-            getattr(n, "spi_target", "")
-            for n in getattr(diagram, "nodes", [])
-            if getattr(n, "spi_target", "")
-        }
-    )
+    Besides existing solution nodes in the diagram, this also includes
+    validation targets defined on the application's top level product goals
+    when an ``app`` instance is provided.  Duplicates and empty entries are
+    removed.  If a product goal lacks a target description, fall back to the
+    safety goal description or the node's name so that at least one identifier
+    is presented to the user.
+    """
+
+    targets = {
+        getattr(n, "spi_target", "")
+        for n in getattr(diagram, "nodes", [])
+        if getattr(n, "spi_target", "")
+    }
+    if app is None:
+        app = getattr(diagram, "app", None)
+    top_events = getattr(app, "top_events", []) if app else []
+    for te in top_events:
+        name = (
+            getattr(te, "validation_desc", "")
+            or getattr(te, "safety_goal_description", "")
+            or getattr(te, "user_name", "")
+        )
+        if name:
+            targets.add(name)
+    return sorted(targets)
 
 
 class GSNElementConfig(tk.Toplevel):
@@ -91,7 +109,7 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="SPI Target:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
-            spi_targets = _collect_spi_targets(diagram)
+            spi_targets = _collect_spi_targets(diagram, getattr(master, "app", None))
             if self.spi_var.get() and self.spi_var.get() not in spi_targets:
                 spi_targets.append(self.spi_var.get())
             spi_cb = ttk.Combobox(
