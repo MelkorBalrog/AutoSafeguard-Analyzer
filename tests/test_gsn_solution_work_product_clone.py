@@ -1,4 +1,5 @@
 import types
+import math
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig, _collect_work_products
 from analysis import SafetyManagementToolbox
@@ -86,7 +87,7 @@ def test_solution_requires_matching_spi_for_clone():
     assert node2.original is original
 
 
-def test_format_text_shows_spi_probability():
+def test_format_text_shows_calculated_spi():
     root = GSNNode("Root", "Goal")
     sol = GSNNode("Sol", "Solution")
     sol.spi_target = "Brake Time"
@@ -96,11 +97,13 @@ def test_format_text_shows_spi_probability():
     class TopEvent:
         def __init__(self):
             self.validation_desc = "Brake Time"
+            self.validation_target = 1e-4
             self.probability = 1e-5
 
     diag.app = types.SimpleNamespace(top_events=[TopEvent()])
     text = diag._format_text(sol)
-    assert f"SPI: {1e-5:.2e}/h" in text
+    expected_spi = math.log10(1e-4 / 1e-5)
+    assert f"SPI: {expected_spi:.2f}" in text
 
 
 def test_format_text_shows_validation_target_when_no_probability():
