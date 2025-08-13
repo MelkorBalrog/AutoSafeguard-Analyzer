@@ -154,6 +154,18 @@ class GSNElementConfig(tk.Toplevel):
             # ``values`` to the constructor can result in an empty list on
             # some systems.
             wp_cb.configure(values=work_products)
+            # Pre-select the first available work product only when the
+            # diagram lacks existing work products.  This keeps the field
+            # blank if other solution nodes already define entries, forcing
+            # users to consciously pick a product while still presenting a
+            # sensible default for empty diagrams populated from the toolbox.
+            existing_products = [
+                getattr(n, "work_product", "")
+                for n in getattr(diagram, "nodes", [])
+                if n.node_type == "Solution" and getattr(n, "work_product", "")
+            ]
+            if not self.work_var.get() and not existing_products and work_products:
+                self.work_var.set(work_products[0])
             row += 1
             tk.Label(self, text="Evidence Link:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
@@ -216,7 +228,6 @@ class GSNElementConfig(tk.Toplevel):
                     original = n if n.is_primary_instance else n.original
                     self.node.user_name = original.user_name
                     self.node.description = getattr(original, "description", "")
-                    self.node.unique_id = original.unique_id
                     self.node.original = original
                     self.node.spi_target = getattr(original, "spi_target", "")
                     self.node.is_primary_instance = False
