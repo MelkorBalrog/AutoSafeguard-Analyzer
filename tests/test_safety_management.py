@@ -471,6 +471,28 @@ def test_toolbox_serializes_modules():
     assert loaded.modules[0].diagrams == ["D2"]
 
 
+def test_enabled_products_filter_by_module():
+    toolbox = SafetyManagementToolbox()
+    toolbox.diagrams = {"D1": "id1", "D2": "id2"}
+    toolbox.work_products = [
+        SafetyWorkProduct("D1", "HAZOP", ""),
+        SafetyWorkProduct("D2", "FTA", ""),
+    ]
+    toolbox.modules = [
+        GovernanceModule(name="Phase1", diagrams=["D1"]),
+        GovernanceModule(name="Phase2", diagrams=["D2"]),
+    ]
+
+    toolbox.set_active_module("Phase1")
+    assert toolbox.enabled_products() == {"HAZOP"}
+
+    toolbox.set_active_module("Phase2")
+    assert toolbox.enabled_products() == {"FTA"}
+
+    toolbox.set_active_module(None)
+    assert toolbox.enabled_products() == {"HAZOP", "FTA"}
+
+
 def test_disabled_work_products_absent_from_analysis_tree():
     SysMLRepository._instance = None
     SysMLRepository.get_instance()
