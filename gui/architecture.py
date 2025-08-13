@@ -19,6 +19,7 @@ from analysis.models import (
     ASIL_ORDER,
     StpaDoc,
     REQUIREMENT_WORK_PRODUCTS,
+    REQUIREMENT_TYPE_OPTIONS,
 )
 from analysis.safety_management import ALLOWED_PROPAGATIONS
 
