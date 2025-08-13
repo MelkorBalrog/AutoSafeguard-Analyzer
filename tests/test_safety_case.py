@@ -119,7 +119,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -145,7 +145,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     tree.next_column = "Achieved Probability"
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
-    assert te.probability == 2e-4
+    assert te.spi_probability == 2e-4
     row = next(iter(tree.data))
     assert tree.data[row]["values"][5] == f"{2e-4:.2e}"
     expected_spi = math.log10(1e-5 / 2e-4)
@@ -178,7 +178,7 @@ def test_safety_case_shows_validation_target(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -266,7 +266,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     te = types.SimpleNamespace(
         user_name="SG1",
         validation_target=1e-5,
-        probability=1e-4,
+        spi_probability=1e-4,
         validation_desc="",
         safety_goal_description="",
         acceptance_criteria="AC",
@@ -293,7 +293,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     tree.selection_set(iid)
     app._edit_spi_item()
     iid = next(iter(tree.data))
-    assert te.probability == 5e-5
+    assert te.spi_probability == 5e-5
     assert tree.data[iid]["values"][2] == f"{5e-5:.2e}"
     expected_spi = math.log10(1e-5 / 5e-5)
     assert tree.data[iid]["values"][3] == f"{expected_spi:.2f}"
@@ -304,6 +304,7 @@ def test_spi_shows_pmhf_and_validation(monkeypatch):
         user_name="SG1",
         validation_target=1e-5,
         probability=2e-6,
+        spi_probability=2e-6,
         safety_goal_asil="D",
         validation_desc="",
         safety_goal_description="",
@@ -330,6 +331,66 @@ def test_spi_shows_pmhf_and_validation(monkeypatch):
     pmhf_row = targets[f"{PMHF_TARGETS['D']:.2e}"]
     expected_spi = math.log10(PMHF_TARGETS['D'] / 2e-6)
     assert pmhf_row["values"][3] == f"{expected_spi:.2f}"
+
+
+def test_pmhf_skips_sotif_probabilities(monkeypatch):
+    sotif = types.SimpleNamespace(
+        user_name="SG1",
+        validation_target=1e-5,
+        spi_probability=1e-4,
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=1,
+    )
+    fusa = types.SimpleNamespace(
+        user_name="SG2",
+        safety_goal_asil="D",
+        validation_desc="",
+        safety_goal_description="",
+        acceptance_criteria="AC",
+        unique_id=2,
+    )
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.push_undo_state = lambda: None
+    app.top_events = [sotif, fusa]
+    app.pmhf_var = types.SimpleNamespace(set=lambda text: None)
+    app.pmhf_label = types.SimpleNamespace(config=lambda **k: None)
+    app.refresh_safety_case_table = lambda: None
+    app.update_views = lambda: None
+
+    calls = []
+
+    def fake_prob(te):
+        calls.append(te)
+        return 2e-6 if te is fusa else 3e-5
+
+    monkeypatch.setattr("AutoML.AutoML_Helper.calculate_probability_recursive", fake_prob)
+    monkeypatch.setattr("AutoML.FaultTreeApp.update_basic_event_probabilities", lambda self: None)
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_basic_events", lambda self: [])
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_failure_mode_node", lambda self, be: None)
+    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_fmea_entries", lambda self: [])
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+
+    FaultTreeApp.show_safety_performance_indicators(app)
+
+    FaultTreeApp.calculate_pmfh(app)
+
+    assert sotif.spi_probability == 1e-4
+    assert fusa.probability == 2e-6
+    assert sotif not in calls
+
+    tree = app._spi_tree
+    rows = {row["values"][1]: row for row in tree.data.values()}
+    sotif_row = rows[f"{1e-5:.2e}"]
+    fusa_row = rows[f"{PMHF_TARGETS['D']:.2e}"]
+    assert sotif_row["values"][2] == f"{1e-4:.2e}"
+    assert fusa_row["values"][2] == f"{2e-6:.2e}"
 
 
 def test_edit_notes_updates_node(monkeypatch):
