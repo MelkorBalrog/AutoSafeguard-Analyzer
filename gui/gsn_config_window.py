@@ -31,15 +31,21 @@ def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
         for name in getattr(toolbox, "list_diagrams", lambda: [])():
             if name:
                 products.add(name)
+
         for wp in getattr(toolbox, "get_work_products", lambda: [])():
-            diagram = getattr(wp, "diagram", "")
-            analysis = getattr(wp, "analysis", "")
-            if diagram:
-                products.add(diagram)
-            if analysis:
-                products.add(analysis)
-            if diagram and analysis:
-                products.add(f"{diagram} - {analysis}")
+            if isinstance(wp, dict):
+                diag_name = wp.get("diagram", "")
+                analysis_name = wp.get("analysis", "")
+            else:
+                diag_name = getattr(wp, "diagram", "")
+                analysis_name = getattr(wp, "analysis", "")
+
+            if diag_name:
+                products.add(diag_name)
+            if analysis_name:
+                products.add(analysis_name)
+            if diag_name and analysis_name:
+                products.add(f"{diag_name} - {analysis_name}")
 
     return sorted(products)
 
