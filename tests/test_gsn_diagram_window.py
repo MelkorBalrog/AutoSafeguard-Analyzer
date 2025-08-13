@@ -1,3 +1,5 @@
+import tkinter as tk
+
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gsn import GSNNode
 
@@ -31,7 +33,7 @@ def test_temp_connection_line_is_dotted():
 
     class CanvasStub:
         def create_line(self, *args, **kwargs):
-            lines.append(kwargs.get("dash"))
+            lines.append(kwargs)
 
         def delete(self, *args, **kwargs):
             pass
@@ -39,4 +41,28 @@ def test_temp_connection_line_is_dotted():
     win.canvas = CanvasStub()
     event = type("Event", (), {"x": 100, "y": 100})
     win._on_drag(event)
-    assert lines and lines[0] == (2, 2)
+    assert lines and lines[0].get("dash") == (2, 2)
+    assert lines[0].get("arrow") == tk.LAST
+
+
+def test_temp_connection_line_no_arrow_in_context_mode():
+    """Context connections preview without an arrow."""
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.zoom = 1.0
+    win._connect_mode = "context"
+    win._connect_parent = GSNNode("p", "Goal", x=10, y=20)
+    win._drag_node = None
+    lines = []
+
+    class CanvasStub:
+        def create_line(self, *args, **kwargs):
+            lines.append(kwargs)
+
+        def delete(self, *args, **kwargs):
+            pass
+
+    win.canvas = CanvasStub()
+    event = type("Event", (), {"x": 50, "y": 50})
+    win._on_drag(event)
+    assert lines and lines[0].get("dash") == (2, 2)
+    assert not lines[0].get("arrow")

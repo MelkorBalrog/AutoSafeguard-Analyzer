@@ -133,8 +133,10 @@ class GSNDiagramWindow(tk.Frame):
                 self._connect_parent.y * self.zoom,
             )
             # Always show a dotted preview line similar to SysML diagrams.
-            # The final connection style (solid or dashed) is handled during
-            # diagram rendering depending on the target node type.
+            # For solved-by connectors the preview line carries an arrow just
+            # like the final connection, while context relationships omit the
+            # arrow entirely.
+            arrow = tk.LAST if self._connect_mode == "solved" else None
             self.canvas.create_line(
                 px,
                 py,
@@ -143,7 +145,7 @@ class GSNDiagramWindow(tk.Frame):
                 fill="dimgray",
                 dash=(2, 2),
                 smooth=True,
-                arrow=tk.LAST,
+                arrow=arrow,
                 tags="_temp_conn",
             )
             return
