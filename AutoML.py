@@ -1968,6 +1968,7 @@ class FaultTreeApp:
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
         }
+        self.item_definition = {"description": "", "assumptions": ""}
         self.mission_profiles = []
         self.fmeda_components = []
         self.reliability_analyses = []
@@ -8136,6 +8137,8 @@ class FaultTreeApp:
                 self.open_gsn_diagram(self.all_gsn_diagrams[idx])
         elif kind == "gov":
             self.open_management_window(idx)
+        elif kind == "itemdef":
+            self.show_item_definition_editor()
         elif kind == "arch":
             self.open_arch_window(idx)
 
@@ -9125,6 +9128,7 @@ class FaultTreeApp:
                 "end",
                 text="System Design (Item Definition)",
                 open=True,
+                tags=("itemdef", "0"),
             )
             self.arch_diagrams = sorted(
                 [
@@ -10266,6 +10270,28 @@ class FaultTreeApp:
             text.insert(tk.END, "\n\n")
 
         tk.Button(win, text="Open Requirements Editor", command=self.show_requirements_editor).pack(pady=5)
+
+    def show_item_definition_editor(self):
+        """Open editor for item description and assumptions."""
+        if hasattr(self, "_item_def_tab") and self._item_def_tab.winfo_exists():
+            self.doc_nb.select(self._item_def_tab)
+            return
+        self._item_def_tab = self._new_tab("Item Definition")
+        win = self._item_def_tab
+        ttk.Label(win, text="Item Description:").pack(anchor="w")
+        self._item_desc_text = tk.Text(win, height=8, wrap="word")
+        self._item_desc_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        ttk.Label(win, text="Assumptions:").pack(anchor="w")
+        self._item_assum_text = tk.Text(win, height=8, wrap="word")
+        self._item_assum_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._item_desc_text.insert("1.0", self.item_definition.get("description", ""))
+        self._item_assum_text.insert("1.0", self.item_definition.get("assumptions", ""))
+
+        def save():
+            self.item_definition["description"] = self._item_desc_text.get("1.0", "end").strip()
+            self.item_definition["assumptions"] = self._item_assum_text.get("1.0", "end").strip()
+
+        ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
 
     def show_requirements_editor(self):
         """Open an editor to manage global requirements and traceability."""
@@ -15566,6 +15592,9 @@ class FaultTreeApp:
             "hazards": self.hazards.copy(),
             "failures": self.failures.copy(),
             "project_properties": self.project_properties.copy(),
+            "item_definition": getattr(
+                self, "item_definition", {"description": "", "assumptions": ""}
+            ).copy(),
             "global_requirements": global_requirements,
             "reviews": reviews,
             "current_review": current_name,
@@ -15970,6 +15999,10 @@ class FaultTreeApp:
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
         self.project_properties = data.get("project_properties", self.project_properties)
+        self.item_definition = data.get(
+            "item_definition",
+            getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
         self.reviews = []
         reviews_data = data.get("reviews")
         if reviews_data:
@@ -16491,6 +16524,10 @@ class FaultTreeApp:
         
         # Load project properties.
         self.project_properties = data.get("project_properties", self.project_properties)
+        self.item_definition = data.get(
+            "item_definition",
+            getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
         self.reviews = []
         reviews_data = data.get("reviews")
         if reviews_data:
