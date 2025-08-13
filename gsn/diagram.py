@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable, List
 import uuid
+import math
 
 import tkinter.font as tkFont
 
@@ -327,12 +328,23 @@ class GSNDiagram:
             if getattr(node, "spi_target", ""):
                 prob = self._lookup_spi_probability(node.spi_target)
                 v_target = self._lookup_validation_target(node.spi_target)
-                if prob is not None:
-                    label = f"SPI: {prob:.2e}/h"
-                elif v_target:
-                    label = f"SPI: {v_target}/h"
-                else:
-                    label = f"SPI: {node.spi_target}"
+                label = None
+                try:
+                    if v_target not in (None, "") and prob not in (None, ""):
+                        v_val = float(v_target)
+                        p_val = float(prob)
+                        if v_val > 0 and p_val > 0:
+                            spi = math.log10(v_val / p_val)
+                            label = f"SPI: {spi:.2f}"
+                except Exception:
+                    label = None
+                if not label:
+                    if v_target not in (None, ""):
+                        label = f"SPI: {v_target}/h"
+                    elif prob not in (None, ""):
+                        label = f"SPI: {prob:.2e}/h"
+                    else:
+                        label = f"SPI: {node.spi_target}"
                 lines.append(label)
             if getattr(node, "description", ""):
                 lines.append(node.description)
