@@ -1,8 +1,8 @@
 import tkinter as tk
+import types
 
 from gui.gsn_diagram_window import GSNDiagramWindow
-from gsn import GSNNode
-import tkinter as tk
+from gsn import GSNNode, GSNDiagram
 
 
 def test_gsn_diagram_window_button_labels():
@@ -278,3 +278,51 @@ def test_right_click_connection_shows_menu(monkeypatch):
     event = type("Evt", (), {"x": 0, "y": 0, "x_root": 0, "y_root": 0})
     GSNDiagramWindow._on_right_click(win, event)
     assert captured["menu"].items == ["Edit", "Delete"]
+
+
+def test_refresh_sets_app_for_spi_lookup():
+    root = GSNNode("Root", "Goal")
+    sol = GSNNode("Sol", "Solution")
+    sol.spi_target = "Brake Time"
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    class TopEvent:
+        def __init__(self):
+            self.validation_desc = "Brake Time"
+            self.validation_target = "1e-5"
+
+    app = types.SimpleNamespace(top_events=[TopEvent()])
+
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.app = app
+    win.diagram = diag
+    win.zoom = 1.0
+    win.selected_node = None
+    win.id_to_node = {}
+    win.id_to_relation = {}
+
+    captured = {}
+
+    def draw(canvas, zoom):
+        captured["text"] = diag._format_text(sol)
+
+    diag.draw = draw
+    diag._traverse = lambda: [root, sol]
+
+    class CanvasStub:
+        def delete(self, *a, **k):
+            pass
+
+        def bbox(self, tag):
+            return (0, 0, 0, 0)
+
+        def configure(self, **k):
+            pass
+
+    win.canvas = CanvasStub()
+
+    GSNDiagramWindow.refresh(win)
+    assert diag.app is app
+    assert "SPI: 1e-5" in captured.get("text", "")
