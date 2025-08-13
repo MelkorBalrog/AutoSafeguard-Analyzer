@@ -1535,6 +1535,8 @@ class FI2TCWindow(tk.Frame):
         self.app.fi2tc_docs.append(doc)
         self.app.active_fi2tc = doc
         self.app.fi2tc_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("FI2TC", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -1542,12 +1544,15 @@ class FI2TCWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_fi2tc:
             return
+        old = self.app.active_fi2tc.name
         name = simpledialog.askstring(
-            "Rename FI2TC", "Name:", initialvalue=self.app.active_fi2tc.name
+            "Rename FI2TC", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_fi2tc.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("FI2TC", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -1558,6 +1563,8 @@ class FI2TCWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete FI2TC '{doc.name}'?"):
             return
         self.app.fi2tc_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("FI2TC", doc.name)
         if self.app.fi2tc_docs:
             self.app.active_fi2tc = self.app.fi2tc_docs[0]
         else:
@@ -1675,6 +1682,8 @@ class HazopWindow(tk.Frame):
         self.app.hazop_docs.append(doc)
         self.app.active_hazop = doc
         self.app.hazop_entries = doc.entries
+        # Tie the document to the currently selected lifecycle phase
+        self.app.safety_mgmt_toolbox.register_created_work_product("HAZOP", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -1682,12 +1691,12 @@ class HazopWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_hazop:
             return
-        name = simpledialog.askstring(
-            "Rename HAZOP", "Name:", initialvalue=self.app.active_hazop.name
-        )
+        old = self.app.active_hazop.name
+        name = simpledialog.askstring("Rename HAZOP", "Name:", initialvalue=old)
         if not name:
             return
         self.app.active_hazop.name = name
+        self.app.safety_mgmt_toolbox.rename_document("HAZOP", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -1698,6 +1707,7 @@ class HazopWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete HAZOP '{doc.name}'?"):
             return
         self.app.hazop_docs.remove(doc)
+        self.app.safety_mgmt_toolbox.register_deleted_work_product("HAZOP", doc.name)
         if self.app.hazop_docs:
             self.app.active_hazop = self.app.hazop_docs[0]
         else:
@@ -2258,6 +2268,7 @@ class RiskAssessmentWindow(tk.Frame):
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
         self.status_lbl.config(text=f"Status: {doc.status}")
+        self.app.safety_mgmt_toolbox.register_created_work_product("Risk Assessment", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -2280,12 +2291,12 @@ class RiskAssessmentWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_hara:
             return
-        name = simpledialog.askstring(
-            "Rename Risk Assessment", "Name:", initialvalue=self.app.active_hara.name
-        )
+        old = self.app.active_hara.name
+        name = simpledialog.askstring("Rename Risk Assessment", "Name:", initialvalue=old)
         if not name:
             return
         self.app.active_hara.name = name
+        self.app.safety_mgmt_toolbox.rename_document("Risk Assessment", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -2296,6 +2307,7 @@ class RiskAssessmentWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete risk assessment '{doc.name}'?"):
             return
         self.app.hara_docs.remove(doc)
+        self.app.safety_mgmt_toolbox.register_deleted_work_product("Risk Assessment", doc.name)
         if self.app.hara_docs:
             self.app.active_hara = self.app.hara_docs[0]
         else:
@@ -3507,6 +3519,8 @@ class TC2FIWindow(tk.Frame):
         self.app.tc2fi_docs.append(doc)
         self.app.active_tc2fi = doc
         self.app.tc2fi_entries = doc.entries
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_created_work_product("TC2FI", doc.name)
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -3514,12 +3528,15 @@ class TC2FIWindow(tk.Frame):
     def rename_doc(self):
         if not self.app.active_tc2fi:
             return
+        old = self.app.active_tc2fi.name
         name = simpledialog.askstring(
-            "Rename TC2FI", "Name:", initialvalue=self.app.active_tc2fi.name
+            "Rename TC2FI", "Name:", initialvalue=old
         )
         if not name:
             return
         self.app.active_tc2fi.name = name
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.rename_document("TC2FI", old, name)
         self.refresh_docs()
         self.app.update_views()
 
@@ -3530,6 +3547,8 @@ class TC2FIWindow(tk.Frame):
         if not messagebox.askyesno("Delete", f"Delete TC2FI '{doc.name}'?"):
             return
         self.app.tc2fi_docs.remove(doc)
+        if hasattr(self.app, "safety_mgmt_toolbox"):
+            self.app.safety_mgmt_toolbox.register_deleted_work_product("TC2FI", doc.name)
         if self.app.tc2fi_docs:
             self.app.active_tc2fi = self.app.tc2fi_docs[0]
         else:
