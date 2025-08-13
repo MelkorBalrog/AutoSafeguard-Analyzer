@@ -73,13 +73,14 @@ class GSNDiagram:
             for child in parent.children:
                 p_pt = (parent.x * zoom, parent.y * zoom)
                 c_pt = (child.x * zoom, child.y * zoom)
+                conn_id = f"{parent.unique_id}->{child.unique_id}"
                 if child in parent.context_children:
                     self.drawing_helper.draw_in_context_connection(
-                        canvas, p_pt, c_pt
+                        canvas, p_pt, c_pt, obj_id=conn_id
                     )
                 else:
                     self.drawing_helper.draw_solved_by_connection(
-                        canvas, p_pt, c_pt
+                        canvas, p_pt, c_pt, obj_id=conn_id
                     )
         for node in self._traverse():
             self._draw_node(canvas, node, zoom)
