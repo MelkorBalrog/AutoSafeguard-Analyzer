@@ -30,7 +30,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
-from analysis.models import HazopDoc
+from analysis.models import HazopDoc, HaraDoc, REQUIREMENT_WORK_PRODUCTS
 
 
 def test_work_product_registration():
@@ -810,6 +810,78 @@ def test_work_products_filtered_by_phase_in_tree():
     assert "HZ2" in names and "HZ1" not in names
 
 
+def test_phase_change_updates_tree_and_rules():
+    """Changing phase updates visible docs and enabled work products."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+
+    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
+    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    for d in (d1, d2):
+        d.tags.append("safety-management")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov1", "HAZOP", ""),
+        SafetyWorkProduct("Gov2", "Risk Assessment", ""),
+    ]
+    toolbox.modules = [
+        GovernanceModule(name="P1", diagrams=["Gov1"]),
+        GovernanceModule(name="P2", diagrams=["Gov2"]),
+    ]
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, iid=None, text="", **kwargs):
+            if iid is None:
+                iid = f"i{self.counter}"
+                self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.refresh_model = lambda: None
+    app.compute_occurrence_counts = lambda: {}
+    app.diagram_icons = {}
+    app.hazop_docs = [HazopDoc("HZ1", [])]
+    app.hara_docs = [HaraDoc("RA1", [], [])]
+    app.stpa_docs = []
+    app.threat_docs = []
+    app.fi2tc_docs = []
+    app.tc2fi_docs = []
+    app.top_events = []
+    app.fmeas = []
+    app.fmedas = []
+    app.tool_listboxes = {}
+    app.work_product_menus = {}
+    app.analysis_tree = DummyTree()
+    app.safety_mgmt_toolbox = toolbox
+    toolbox.on_change = app._on_toolbox_change
+
+    toolbox.set_active_module("P1")
+    toolbox.register_created_work_product("HAZOP", "HZ1")
+    toolbox.set_active_module("P2")
+    toolbox.register_created_work_product("Risk Assessment", "RA1")
+
+    toolbox.set_active_module("P1")
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "HZ1" in names and "RA1" not in names
+    assert app.enabled_work_products == {"HAZOP"}
+
+    toolbox.set_active_module("P2")
+    names = [meta["text"] for meta in app.analysis_tree.items.values()]
+    assert "RA1" in names and "HZ1" not in names
+    assert app.enabled_work_products == {"Risk Assessment"}
+
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     SysMLRepository._instance = None
     SysMLRepository.get_instance()
@@ -1371,3 +1443,28 @@ def test_active_module_filters_enabled_products():
     assert toolbox.enabled_products() == {"HAZOP"}
     toolbox.set_active_module(None)
     assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+
+
+def test_work_product_info_includes_requirement_types():
+    for wp in REQUIREMENT_WORK_PRODUCTS:
+        assert wp in FaultTreeApp.WORK_PRODUCT_INFO
+
+
+def test_disable_requirement_work_product_keeps_editor():
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.update_views = lambda: None
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.work_product_menus = {}
+    app.tool_actions = {}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+
+    wp1, wp2 = REQUIREMENT_WORK_PRODUCTS[:2]
+    FaultTreeApp.enable_work_product(app, wp1)
+    FaultTreeApp.enable_work_product(app, wp2)
+    assert "Requirements Editor" in app.tool_actions
+    FaultTreeApp.disable_work_product(app, wp1)
+    assert "Requirements Editor" in app.tool_actions
+    FaultTreeApp.disable_work_product(app, wp2)
+    assert "Requirements Editor" not in app.tool_actions

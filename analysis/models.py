@@ -572,6 +572,26 @@ REQUIREMENT_TYPE_OPTIONS = [
     "cybersecurity",
     "production",
     "service",
+    "product",
+    "legal",
+]
+
+# Work product names corresponding to each requirement category. These are used
+# when declaring governance work products so each requirement type can be
+# managed individually.
+REQUIREMENT_WORK_PRODUCTS = [
+    "Requirement Specification",
+    "Vehicle Requirement Specification",
+    "Operational Requirement Specification",
+    "Functional Safety Requirement Specification",
+    "Technical Safety Requirement Specification",
+    "AI Safety Requirement Specification",
+    "Functional Modification Requirement Specification",
+    "Cybersecurity Requirement Specification",
+    "Production Requirement Specification",
+    "Service Requirement Specification",
+    "Product Requirement Specification",
+    "Legal Requirement Specification",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [

@@ -1,11 +1,9 @@
 import types
 from tkinter import simpledialog
-
 from gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui import messagebox
-
 
 class DummyTree:
     def __init__(self):
@@ -27,7 +25,6 @@ class DummyTree:
 
     def selection(self):
         return (self.selection_item,) if self.selection_item else ()
-
 
 def test_create_edit_delete_case(monkeypatch):
     root = GSNNode("G", "Goal")
