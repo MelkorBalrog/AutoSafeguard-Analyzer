@@ -177,12 +177,7 @@ class GSNExplorer(tk.Frame):
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
         if typ == "module":
-            new = simpledialog.askstring("Rename Module", "Name:", initialvalue=obj.name, parent=self)
-            if new:
-                undo = getattr(self.app, "push_undo_state", None)
-                if undo:
-                    undo()
-                obj.name = new
+            return
         elif typ == "diagram":
             new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=obj.root.user_name, parent=self)
             if new:

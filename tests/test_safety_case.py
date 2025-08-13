@@ -130,11 +130,11 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
     assert sol.evidence_sufficient
-    assert tree.data[iid]["values"][5] == CHECK_MARK
+    assert tree.data[iid]["values"][7] == CHECK_MARK
 
     app.refresh_safety_case_table()
     iid = next(iter(tree.data))
-    assert tree.data[iid]["values"][5] == CHECK_MARK
+    assert tree.data[iid]["values"][7] == CHECK_MARK
 
 
 def test_safety_case_cancel_does_not_toggle(monkeypatch):
@@ -191,6 +191,37 @@ def test_safety_case_edit_updates_table(monkeypatch):
     assert called.get("ok")
     iid = next(iter(tree.data))
     assert tree.data[iid]["values"][2] == "WP"
+
+
+def test_safety_case_edit_probability(monkeypatch):
+    root = GSNNode("G", "Goal")
+    sol = GSNNode("E", "Solution")
+    root.add_child(sol)
+    diag = GSNDiagram(root)
+    diag.add_node(sol)
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
+    app._new_tab = lambda title: DummyTab()
+    app.all_gsn_diagrams = [diag]
+    app.top_events = [types.SimpleNamespace(user_name="SG1", validation_target=1e-5, probability=0.0)]
+    sol.spi_target = "SG1"
+    app.push_undo_state = lambda: None
+
+    monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
+    monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
+    monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
+    monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 2e-5)
+
+    FaultTreeApp.show_safety_case(app)
+    tree = app._safety_case_tree
+    iid = next(iter(tree.data))
+    tree.next_column = "Achieved Probability"
+    event = types.SimpleNamespace(x=0, y=0)
+    tree.bindings["<Double-Button-1>"](event)
+    assert app.top_events[0].probability == 2e-5
+    assert tree.data[iid]["values"][5] == 2e-5
+    assert tree.data[iid]["values"][6] == "5.00e-01"
 
 
 def test_safety_case_undo_redo_toggle(monkeypatch):
