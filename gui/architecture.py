@@ -5528,7 +5528,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.create_text(
                     x,
                     y,
-                    text=label,
+                    text=label.replace(" ", "\n"),
                     anchor="center",
                     font=self.font,
                     width=obj.width * self.zoom,

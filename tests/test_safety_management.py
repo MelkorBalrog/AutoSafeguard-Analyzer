@@ -1065,6 +1065,7 @@ def test_work_product_color_and_text_wrapping():
     _, rect_kwargs = win.canvas.rect_calls[0]
     assert rect_kwargs["fill"] == "lightblue"
     assert win.canvas.text_calls[0][2]["width"] == 60.0
+    assert win.canvas.text_calls[0][2]["text"] == "Architecture\nDiagram"
 
     win.canvas.rect_calls.clear()
     win.canvas.text_calls.clear()
