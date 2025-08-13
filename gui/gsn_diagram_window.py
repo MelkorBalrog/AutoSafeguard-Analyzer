@@ -4,6 +4,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, simpledialog
 import webbrowser
+from pathlib import Path
 from typing import Optional
 
 from gsn import GSNNode, GSNDiagram
@@ -358,23 +359,35 @@ class GSNDiagramWindow(tk.Frame):
             self._temp_conn_anim = None
 
     def _open_work_product(self, name: str) -> None:
-        """Attempt to open *name* as a work product using the application."""
+        """Attempt to open *name* as a work product.
+
+        The method first defers to application helpers when available and
+        falls back to opening *name* as a local file or URL via the default
+        web browser.  This ensures double-clicking a solution node with a
+        work product still performs a sensible action even outside the full
+        application context.
+        """
 
         app = getattr(self, "app", None)
-        if not app:
-            return
 
-        # Prefer a dedicated helper when available
-        opener = getattr(app, "open_work_product", None)
-        if callable(opener):
-            opener(name)
-            return
+        if app:
+            # Prefer a dedicated helper when available
+            opener = getattr(app, "open_work_product", None)
+            if callable(opener):
+                opener(name)
+                return
 
-        # Fallback to tool actions when the work product corresponds to a tool
-        actions = getattr(app, "tool_actions", {})
-        action = actions.get(name)
-        if callable(action):
-            action()
+            # Fallback to tool actions when the work product corresponds to a tool
+            actions = getattr(app, "tool_actions", {})
+            action = actions.get(name)
+            if callable(action):
+                action()
+                return
+
+        if name:
+            path = Path(name)
+            url = path.resolve().as_uri() if path.exists() else name
+            webbrowser.open(url)
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
         cx = self.canvas.canvasx(event.x)
