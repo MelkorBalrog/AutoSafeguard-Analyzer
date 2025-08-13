@@ -2283,6 +2283,7 @@ class FaultTreeApp:
             "FTA Cut Sets": self.show_cut_sets,
             "FTA-FMEA Traceability": self.show_traceability_matrix,
             "Safety Management": self.open_safety_management_toolbox,
+            "Safety Case": self.open_safety_case,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "GSN Explorer": self.manage_gsn,
         }
@@ -2339,6 +2340,7 @@ class FaultTreeApp:
             ],
             "Safety Management": [
                 "Safety Management",
+                "Safety Case",
                 "Safety Performance Indicators",
                 "GSN Explorer",
             ],
@@ -8141,6 +8143,8 @@ class FaultTreeApp:
                 self.review_data = review
                 self.open_review_document(review)
                 self.open_review_toolbox()
+        elif kind == "sc":
+            self.open_safety_case()
         elif kind == "gov":
             self.open_management_window(idx)
         elif kind == "itemdef":
@@ -9134,6 +9138,9 @@ class FaultTreeApp:
                     text=diag.root.user_name or f"Diagram {idx + 1}",
                     tags=("gsn", str(idx)),
                 )
+
+            # --- Safety Case Section ---
+            tree.insert(mgmt_root, "end", text="Safety Case", tags=("sc", "0"))
 
             # --- Verification Reviews Section ---
             self.joint_reviews = [r for r in getattr(self, "reviews", []) if getattr(r, "mode", "") == "joint"]
@@ -12578,6 +12585,84 @@ class FaultTreeApp:
     def get_spi_targets(self) -> list[str]:
         """Return sorted unique SPI target descriptions for the project."""
         return sorted({self._spi_label(sg) for sg in getattr(self, "top_events", []) if self._spi_label(sg)})
+
+    def open_safety_case(self):
+        """Open a tab listing GSN solutions with evidence status."""
+        if hasattr(self, "_safety_case_tab") and self._safety_case_tab.winfo_exists():
+            self.doc_nb.select(self._safety_case_tab)
+            return
+
+        self._safety_case_tab = self._new_tab("Safety Case")
+        win = self._safety_case_tab
+
+        columns = [
+            "Diagram",
+            "Solution",
+            "Description",
+            "Work Product",
+            "Evidence Link",
+            "SPI Target",
+            "Supported",
+        ]
+        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        for c in columns:
+            tree.heading(c, text=c)
+            width = 120
+            if c in ("Description", "Evidence Link"):
+                width = 200
+            tree.column(c, width=width, anchor="w")
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        self._safety_case_tree = tree
+        self._safety_case_columns = columns
+        self._safety_case_items = {}
+
+        diagrams = getattr(self, "all_gsn_diagrams", [])
+        if not diagrams:
+            self.update_views()
+            diagrams = getattr(self, "all_gsn_diagrams", [])
+
+        for diag in diagrams:
+            diag_name = diag.root.user_name or f"Diagram {diag.diag_id}"
+            for node in diag.nodes:
+                if getattr(node, "node_type", "").lower() == "solution":
+                    item_id = tree.insert(
+                        "",
+                        "end",
+                        values=[
+                            diag_name,
+                            node.user_name,
+                            node.description,
+                            node.work_product,
+                            node.evidence_link,
+                            node.spi_target,
+                            "\u2713" if getattr(node, "evidence_sufficient", False) else "",
+                        ],
+                        tags=(node.unique_id,),
+                    )
+                    self._safety_case_items[node.unique_id] = node
+
+        tree.bind("<Double-1>", self._on_safety_case_toggle)
+
+    def _on_safety_case_toggle(self, event):
+        """Toggle the Supported checkmark when the last column is double-clicked."""
+        if not hasattr(self, "_safety_case_tree"):
+            return
+        item = self._safety_case_tree.identify_row(event.y)
+        if not item:
+            return
+        col = self._safety_case_tree.identify_column(event.x)
+        chk_col = self._safety_case_columns.index("Supported") + 1
+        if col != f"#{chk_col}":
+            return
+        node_id = self._safety_case_tree.item(item, "tags")[0]
+        node = self._safety_case_items.get(node_id)
+        if not node:
+            return
+        node.evidence_sufficient = not getattr(node, "evidence_sufficient", False)
+        self._safety_case_tree.set(
+            item, "Supported", "\u2713" if node.evidence_sufficient else ""
+        )
 
     def show_safety_performance_indicators(self):
         """Display Safety Performance Indicators."""

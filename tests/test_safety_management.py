@@ -245,6 +245,7 @@ def test_safety_diagrams_visible_in_analysis_tree():
     assert "Safety & Security Governance Diagrams" in texts
     assert "Gov" in texts
     assert "Arch" in texts
+    assert "Safety Case" in texts
 
 
 def test_gsn_diagrams_visible_in_analysis_tree():
