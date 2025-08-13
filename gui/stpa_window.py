@@ -300,7 +300,7 @@ class StpaWindow(tk.Frame):
             rel_stereo = (rel.stereotype or "").lower()
             if rel.rel_type != "Control Action" and rel_stereo != "control action":
                 continue
-            conn = DiagramConnection(0, 0, "Control Action")
+            conn = DiagramConnection(0, 0, "Control Action", stereotype=rel.stereotype or "")
             conn.name = rel.properties.get("name", "")
             elem_id = rel.properties.get("element_id")
             if elem_id:
