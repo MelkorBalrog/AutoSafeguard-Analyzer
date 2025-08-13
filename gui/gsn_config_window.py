@@ -7,20 +7,40 @@ from tkinter import ttk
 from gsn import GSNNode, GSNDiagram
 
 
-def _collect_work_products(diagram: GSNDiagram) -> list[str]:
-    """Return sorted unique work product names from *diagram*.
+def _collect_work_products(diagram: GSNDiagram, app=None) -> list[str]:
+    """Return sorted unique work product names.
 
-    Only non-empty ``work_product`` attributes of nodes are considered to
-    provide meaningful options in the configuration dialog.
+    Parameters
+    ----------
+    diagram:
+        Diagram whose nodes may reference work products.
+    app:
+        Optional application object that may provide a
+        ``safety_mgmt_toolbox`` attribute.  Work products registered in this
+        toolbox are included in the returned list so the combo box can present
+        existing diagrams and analyses even if they are not yet referenced in
+        the current diagram.
     """
 
-    return sorted(
-        {
-            getattr(n, "work_product", "")
-            for n in getattr(diagram, "nodes", [])
-            if getattr(n, "work_product", "")
-        }
-    )
+    names = {
+        getattr(n, "work_product", "")
+        for n in getattr(diagram, "nodes", [])
+        if getattr(n, "work_product", "")
+    }
+
+    toolbox = getattr(app, "safety_mgmt_toolbox", None)
+    if toolbox:
+        try:
+            for wp in toolbox.get_work_products():
+                label = wp.diagram
+                if getattr(wp, "analysis", ""):
+                    label = f"{wp.diagram} - {wp.analysis}"
+                if label:
+                    names.add(label)
+        except Exception:
+            pass
+
+    return sorted(names)
 
 
 def _collect_spi_targets(diagram: GSNDiagram) -> list[str]:
@@ -64,7 +84,7 @@ class GSNElementConfig(tk.Toplevel):
             tk.Label(self, text="Work Product:").grid(
                 row=row, column=0, sticky="e", padx=4, pady=4
             )
-            work_products = _collect_work_products(diagram)
+            work_products = _collect_work_products(diagram, getattr(master, "app", None))
             if self.work_var.get() and self.work_var.get() not in work_products:
                 work_products.append(self.work_var.get())
             wp_cb = ttk.Combobox(
