@@ -260,6 +260,39 @@ class SafetyManagementToolbox:
         return names
 
     # ------------------------------------------------------------------
+    def rename_module(self, old: str, new: str) -> None:
+        """Rename a governance module ensuring uniqueness.
+
+        If ``new`` conflicts with an existing module name the method appends
+        a numeric suffix to make it unique. The :attr:`active_module` is updated
+        when it references the renamed module.
+        """
+
+        if not new or old == new:
+            return
+
+        existing = set(self.list_modules())
+        existing.discard(old)
+        base = new
+        suffix = 1
+        while new in existing:
+            new = f"{base}_{suffix}"
+            suffix += 1
+
+        def _rename(mods: List[GovernanceModule]) -> bool:
+            for mod in mods:
+                if mod.name == old:
+                    mod.name = new
+                    if self.active_module == old:
+                        self.active_module = new
+                    return True
+                if _rename(mod.modules):
+                    return True
+            return False
+
+        _rename(self.modules)
+
+    # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
         """Return propagation relationship type from ``source`` to ``target``.
 

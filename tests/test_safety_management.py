@@ -113,6 +113,15 @@ def test_toolbox_manages_diagram_lifecycle():
     assert not toolbox.diagrams
 
 
+def test_rename_module_updates_active():
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule("Phase1")]
+    toolbox.set_active_module("Phase1")
+    toolbox.rename_module("Phase1", "PhaseX")
+    assert toolbox.modules[0].name == "PhaseX"
+    assert toolbox.active_module == "PhaseX"
+
+
 def test_disable_work_product_rejects_existing_docs():
     """Work product types with existing documents cannot be removed."""
     app = FaultTreeApp.__new__(FaultTreeApp)
@@ -873,7 +882,6 @@ def test_phase_change_updates_tree_and_rules():
     assert "RA1" in names and "HZ1" not in names
     assert app.enabled_work_products == {"Risk Assessment"}
 
-
 def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     SysMLRepository._instance = None
     SysMLRepository.get_instance()
@@ -925,6 +933,80 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     explorer.new_diagram()
     assert "Diag" in toolbox.modules[0].diagrams
     assert "Diag" in toolbox.diagrams
+
+
+def test_explorer_renames_folders_and_diagrams(monkeypatch):
+    SysMLRepository._instance = None
+    SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None, **_kwargs):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+    explorer.app = types.SimpleNamespace(open_arch_window=lambda _id: None)
+
+    SafetyManagementExplorer.populate(explorer)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
+    explorer.new_folder()
+
+    # Find folder iid
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Diag")
+    explorer.new_diagram()
+
+    # Locate folder iid again after repopulate
+    for fid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            iid = fid
+            break
+
+    # Rename folder
+    explorer.tree.selection_item = iid
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "PkgRen")
+    explorer.rename_item()
+    assert toolbox.modules[0].name == "PkgRen"
+
+    # Find diagram iid and rename
+    for di, (typ, obj) in explorer.item_map.items():
+        if typ == "diagram" and obj == "Diag":
+            explorer.tree.selection_item = di
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "DiagRen")
+    explorer.rename_item()
+    assert "DiagRen" in toolbox.modules[0].diagrams
+    assert "DiagRen" in toolbox.diagrams
 
 
 def test_explorer_prevents_diagrams_outside_folders(monkeypatch):
