@@ -22,7 +22,7 @@ class GSNElementConfig(tk.Toplevel):
         self.node = node
         self.diagram = diagram
         self.title("Edit GSN Element")
-        self.geometry("400x240")
+        self.geometry("400x280")
         self.columnconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
         tk.Label(self, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
@@ -36,38 +36,29 @@ class GSNElementConfig(tk.Toplevel):
         self.desc_text.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
 
         self.work_var = tk.StringVar(value=getattr(node, "work_product", ""))
+        self.link_var = tk.StringVar(value=getattr(node, "evidence_link", ""))
+        row = 2
         self.spi_var = tk.StringVar(value=getattr(node, "spi_target", ""))
         if node.node_type == "Solution":
             tk.Label(self, text="Work Product:").grid(
-                row=2, column=0, sticky="e", padx=4, pady=4
+                row=row, column=0, sticky="e", padx=4, pady=4
             )
             ttk.Combobox(
                 self,
                 textvariable=self.work_var,
                 values=WORK_PRODUCTS,
                 state="readonly",
-            ).grid(row=2, column=1, padx=4, pady=4, sticky="ew")
-
-            spi_names = [
-                te.user_name or f"SG {te.unique_id}"
-                for te in getattr(master.app, "top_events", [])
-            ]
-            tk.Label(self, text="SPI Target:").grid(
-                row=3, column=0, sticky="e", padx=4, pady=4
+            ).grid(row=row, column=1, padx=4, pady=4, sticky="ew")
+            row += 1
+            tk.Label(self, text="Evidence Link:").grid(
+                row=row, column=0, sticky="e", padx=4, pady=4
             )
-            ttk.Combobox(
-                self,
-                textvariable=self.spi_var,
-                values=spi_names,
-                state="readonly",
-            ).grid(row=3, column=1, padx=4, pady=4, sticky="ew")
-
-            btn_row = 4
-        else:
-            btn_row = 3
-
+            tk.Entry(self, textvariable=self.link_var, width=40).grid(
+                row=row, column=1, padx=4, pady=4, sticky="ew"
+            )
+            row += 1
         btns = ttk.Frame(self)
-        btns.grid(row=btn_row, column=0, columnspan=2, pady=4)
+        btns.grid(row=row, column=0, columnspan=2, pady=4)
         ttk.Button(btns, text="OK", command=self._on_ok).pack(side=tk.LEFT, padx=4)
         ttk.Button(btns, text="Cancel", command=self.destroy).pack(side=tk.LEFT, padx=4)
         self.transient(master)
@@ -79,6 +70,8 @@ class GSNElementConfig(tk.Toplevel):
         self.node.description = self.desc_text.get("1.0", tk.END).strip()
         if self.node.node_type == "Solution":
             self.node.work_product = self.work_var.get()
+            self.node.evidence_link = self.link_var.get()
+            # search for existing solution with same work product
             self.node.spi_target = self.spi_var.get()
             # search for existing solution with same work product and SPI target
             for n in self.diagram.nodes:

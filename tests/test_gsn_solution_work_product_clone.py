@@ -33,6 +33,7 @@ def test_solution_clones_existing_work_product():
     cfg.name_var = DummyVar(node.user_name)
     cfg.desc_text = DummyText(node.description)
     cfg.work_var = DummyVar(WORK_PRODUCTS[0])
+    cfg.link_var = DummyVar("")
     cfg.spi_var = DummyVar("")
     cfg.destroy = lambda: None
 
