@@ -415,3 +415,23 @@ def test_export_csv_writes_nodes(tmp_path, monkeypatch):
     assert rows[0] == ["ID", "Name", "Type", "Description", "Children", "Context"]
     assert [root.unique_id, "Root", "Goal", "", child.unique_id, ""] in rows
     assert [child.unique_id, "Child", "Solution", "", "", ""] in rows
+
+
+def test_gsn_diagram_window_binds_undo_redo():
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    bindings = {}
+
+    def fake_bind(seq, func):
+        bindings[seq] = func
+
+    win.bind = fake_bind
+    calls = []
+    win.app = types.SimpleNamespace(
+        undo=lambda: calls.append("undo"),
+        redo=lambda: calls.append("redo"),
+    )
+    GSNDiagramWindow._bind_shortcuts(win)
+    assert "<Control-z>" in bindings and "<Control-y>" in bindings
+    bindings["<Control-z>"](None)
+    bindings["<Control-y>"](None)
+    assert calls == ["undo", "redo"]

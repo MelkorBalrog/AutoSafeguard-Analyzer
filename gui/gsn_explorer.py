@@ -64,6 +64,7 @@ class GSNExplorer(tk.Frame):
         self.tree.bind("<ButtonPress-1>", self._on_drag_start)
         self.tree.bind("<ButtonRelease-1>", self._on_drag_end)
         self.populate()
+        self._bind_shortcuts()
 
     # ------------------------------------------------------------------
     def populate(self):
@@ -87,6 +88,13 @@ class GSNExplorer(tk.Frame):
     def refresh(self):
         """Refresh the explorer view to reflect the current model state."""
         self.populate()
+
+    # ------------------------------------------------------------------
+    def _bind_shortcuts(self):
+        """Bind keyboard shortcuts for undo and redo actions."""
+        if self.app:
+            self.bind("<Control-z>", lambda e: self.app.undo())
+            self.bind("<Control-y>", lambda e: self.app.redo())
 
     # ------------------------------------------------------------------
     def _add_module_children(self, parent_id: str, module: GSNModule):
