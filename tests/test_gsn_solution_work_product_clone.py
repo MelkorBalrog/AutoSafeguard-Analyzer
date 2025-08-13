@@ -319,6 +319,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
         def __init__(self, desc):
             self.validation_desc = ""
             self.safety_goal_description = desc
+            self.validation_target = 1e-5
 
     class App:
         def __init__(self):
