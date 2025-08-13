@@ -226,7 +226,7 @@ import re
 import math
 import sys
 import tkinter as tk
-from tkinter import ttk, filedialog, simpledialog
+from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger
 from gui.tooltip import ToolTip
 from gui.review_toolbox import (
@@ -1982,6 +1982,7 @@ class FaultTreeApp:
             "pdf_detailed_formulas": True,
         }
         self.item_definition = {"description": "", "assumptions": ""}
+        self.safety_concept = {"functional": "", "technical": ""}
         self.mission_profiles = []
         self.fmeda_components = []
         self.reliability_analyses = []
@@ -8357,6 +8358,8 @@ class FaultTreeApp:
             self.manage_gsn()
         elif kind == "reqs":
             self.show_requirements_editor()
+        elif kind == "reqexp":
+            self.show_requirements_explorer()
         elif kind == "sg":
             self.show_product_goals_editor()
         elif kind == "fta":
@@ -8369,6 +8372,8 @@ class FaultTreeApp:
             self.show_safety_case()
         elif kind == "itemdef":
             self.show_item_definition_editor()
+        elif kind == "safetyconcept":
+            self.show_safety_concept_editor()
         elif kind == "arch":
             self.open_arch_window(ident)
         elif kind == "pkg":
@@ -9561,7 +9566,16 @@ class FaultTreeApp:
                         image=icon,
                     )
 
-            tree.insert(sys_root, "end", text="Requirements", tags=("reqs", "0"))
+            # --- Safety Concept Section ---
+            sc_root = tree.insert(
+                "",
+                "end",
+                text="Safety Concept",
+                open=True,
+                tags=("safetyconcept", "0"),
+            )
+            tree.insert(sc_root, "end", text="Requirements Editor", tags=("reqs", "0"))
+            tree.insert(sc_root, "end", text="Requirements Explorer", tags=("reqexp", "0"))
 
             # --- Hazard & Threat Analysis Section ---
             haz_root = tree.insert("", "end", text="Hazard & Threat Analysis", open=True)
@@ -10713,6 +10727,34 @@ class FaultTreeApp:
         def save():
             self.item_definition["description"] = self._item_desc_text.get("1.0", "end").strip()
             self.item_definition["assumptions"] = self._item_assum_text.get("1.0", "end").strip()
+
+        ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
+
+    def show_safety_concept_editor(self):
+        """Open editor for functional and technical safety concepts."""
+        if hasattr(self, "_safety_concept_tab") and self._safety_concept_tab.winfo_exists():
+            self.doc_nb.select(self._safety_concept_tab)
+            return
+        self._safety_concept_tab = self._new_tab("Safety Concept")
+        win = self._safety_concept_tab
+        ttk.Label(
+            win,
+            text="Functional Safety Concept Description and Assumptions:",
+        ).pack(anchor="w")
+        self._fsc_text = scrolledtext.ScrolledText(win, height=8, wrap="word")
+        self._fsc_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        ttk.Label(
+            win,
+            text="Technical Safety Concept Description & Assumptions:",
+        ).pack(anchor="w")
+        self._tsc_text = scrolledtext.ScrolledText(win, height=8, wrap="word")
+        self._tsc_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._fsc_text.insert("1.0", self.safety_concept.get("functional", ""))
+        self._tsc_text.insert("1.0", self.safety_concept.get("technical", ""))
+
+        def save():
+            self.safety_concept["functional"] = self._fsc_text.get("1.0", "end").strip()
+            self.safety_concept["technical"] = self._tsc_text.get("1.0", "end").strip()
 
         ttk.Button(win, text="Save", command=save).pack(anchor="e", padx=5, pady=5)
 
@@ -16587,6 +16629,9 @@ class FaultTreeApp:
             "item_definition": getattr(
                 self, "item_definition", {"description": "", "assumptions": ""}
             ).copy(),
+            "safety_concept": getattr(
+                self, "safety_concept", {"functional": "", "technical": ""}
+            ).copy(),
             "global_requirements": global_requirements,
             "reviews": reviews,
             "current_review": current_name,
@@ -17001,6 +17046,10 @@ class FaultTreeApp:
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
+        self.safety_concept = data.get(
+            "safety_concept",
+            getattr(self, "safety_concept", {"functional": "", "technical": ""}),
         )
         self.reviews = []
         reviews_data = data.get("reviews")
@@ -17526,6 +17575,10 @@ class FaultTreeApp:
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
+        )
+        self.safety_concept = data.get(
+            "safety_concept",
+            getattr(self, "safety_concept", {"functional": "", "technical": ""}),
         )
         self.reviews = []
         reviews_data = data.get("reviews")
