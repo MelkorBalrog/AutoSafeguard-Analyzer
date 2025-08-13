@@ -2906,24 +2906,24 @@ class SysMLDiagramWindow(tk.Frame):
         elif diag_type == "BPMN Diagram":
             allowed = {
                 "Initial": {
-                    "CallBehaviorAction",
+                    "Action",
                     "Decision",
                     "Merge",
                 },
-                "CallBehaviorAction": {
-                    "CallBehaviorAction",
+                "Action": {
+                    "Action",
                     "Decision",
                     "Merge",
                     "Final",
                 },
                 "Decision": {
-                    "CallBehaviorAction",
+                    "Action",
                     "Decision",
                     "Merge",
                     "Final",
                 },
                 "Merge": {
-                    "CallBehaviorAction",
+                    "Action",
                     "Decision",
                     "Merge",
                 },
@@ -4009,7 +4009,7 @@ class SysMLDiagramWindow(tk.Frame):
                 diag_id = self.repo.get_linked_diagram(def_id)
         view_id = obj.properties.get("view")
         if (
-            obj.obj_type == "CallBehaviorAction"
+            obj.obj_type in ("CallBehaviorAction", "Action")
             and diag_id
             and view_id
             and view_id in self.repo.diagrams
@@ -6954,6 +6954,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     rel_row += 1
 
         repo = SysMLRepository.get_instance()
+        current_diagram = repo.diagrams.get(getattr(self.master, "diagram_id", ""))
         link_row = 0
         if self.obj.obj_type == "Block":
             diags = [d for d in repo.diagrams.values() if d.diag_type == "Internal Block Diagram"]
@@ -6983,9 +6984,14 @@ class SysMLObjectDialog(simpledialog.Dialog):
             ).grid(row=link_row, column=1, padx=4, pady=2)
             link_row += 1
         elif self.obj.obj_type in ("Action Usage", "Action"):
-            current = repo.diagrams.get(getattr(self.master, "diagram_id", ""))
-            if current and current.diag_type == "BPMN Diagram":
-                diagrams = [d for d in repo.diagrams.values() if d.diag_type == "BPMN Diagram"]
+            if (
+                self.obj.obj_type == "Action"
+                and current_diagram
+                and current_diagram.diag_type == "BPMN Diagram"
+            ):
+                diagrams = [
+                    d for d in repo.diagrams.values() if d.diag_type == "BPMN Diagram"
+                ]
             else:
                 diagrams = [
                     d
@@ -7958,7 +7964,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
 class BPMNDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
-            "CallBehaviorAction",
+            "Action",
             "Initial",
             "Final",
             "Decision",
@@ -7968,7 +7974,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         ]
         super().__init__(master, "BPMN Diagram", tools, diagram_id, app=app, history=history)
         for child in self.toolbox.winfo_children():
-            if isinstance(child, ttk.Button) and child.cget("text") == "CallBehaviorAction":
+            if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
 
@@ -9027,8 +9033,7 @@ class ArchitectureManagerDialog(tk.Frame):
         if elem_id.startswith("obj_"):
             messagebox.showerror("Drop Error", "Objects cannot be dropped on a diagram.")
             return
-        # Dropping a diagram onto an Activity Diagram creates a CallBehaviorAction.
-        # Dropping a BPMN Diagram onto a BPMN Diagram creates an Action linked to that diagram.
+        # Dropping a diagram onto an Activity or BPMN Diagram creates a behavior reference
         if elem_id.startswith("diag_"):
             src_diag = repo.diagrams.get(elem_id[5:])
             if src_diag and diagram.diag_type == "Activity Diagram" and src_diag.diag_type in (
@@ -9036,8 +9041,9 @@ class ArchitectureManagerDialog(tk.Frame):
                 "Internal Block Diagram",
                 "BPMN Diagram",
             ):
+                elem_type = "Action" if diagram.diag_type == "BPMN Diagram" else "CallBehaviorAction"
                 act = repo.create_element(
-                    "CallBehaviorAction", name=src_diag.name, owner=diagram.package
+                    elem_type, name=src_diag.name, owner=diagram.package
                 )
                 repo.add_element_to_diagram(diagram.diag_id, act.elem_id)
                 props = {"name": src_diag.name}
@@ -9048,7 +9054,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     repo.link_diagram(act.elem_id, src_diag.diag_id)
                 obj = SysMLObject(
                     _get_next_id(),
-                    "CallBehaviorAction",
+                    elem_type,
                     50.0,
                     50.0,
                     element_id=act.elem_id,
