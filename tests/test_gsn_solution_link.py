@@ -61,6 +61,14 @@ def test_double_click_opens_evidence_link(monkeypatch):
     wnd.diagram = diag
     wnd.refresh = lambda: None
     wnd._node_at = lambda x, y: node
+    wnd.canvas = type(
+        "CanvasStub",
+        (),
+        {
+            "canvasx": staticmethod(lambda x: x),
+            "canvasy": staticmethod(lambda y: y),
+        },
+    )()
 
     event = types.SimpleNamespace(x=0, y=0)
     GSNDiagramWindow._on_double_click(wnd, event)

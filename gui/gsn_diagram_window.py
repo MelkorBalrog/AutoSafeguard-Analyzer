@@ -126,7 +126,9 @@ class GSNDiagramWindow(tk.Frame):
         self._connect_parent = None
 
     def _on_click(self, event):  # pragma: no cover - requires tkinter
-        node = self._node_at(event.x, event.y)
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        node = self._node_at(cx, cy)
         if self._connect_mode:
             self._connect_parent = node
             return
@@ -137,10 +139,12 @@ class GSNDiagramWindow(tk.Frame):
         self.selected_node = node
         self._drag_node = node
         sx, sy = node.x * self.zoom, node.y * self.zoom
-        self._drag_offset = (event.x - sx, event.y - sy)
+        self._drag_offset = (cx - sx, cy - sy)
         self.refresh()
 
     def _on_drag(self, event):  # pragma: no cover - requires tkinter
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
         if self._connect_mode and self._connect_parent:
             self.canvas.delete("_temp_conn")
             px, py = (
@@ -154,8 +158,8 @@ class GSNDiagramWindow(tk.Frame):
             self.canvas.create_line(
                 px,
                 py,
-                event.x,
-                event.y,
+                cx,
+                cy,
                 fill="dimgray",
                 dash=(2, 2),
                 smooth=True,
@@ -168,20 +172,22 @@ class GSNDiagramWindow(tk.Frame):
             return
         if not self._drag_node:
             return
-        nx = (event.x - self._drag_offset[0]) / self.zoom
-        ny = (event.y - self._drag_offset[1]) / self.zoom
+        nx = (cx - self._drag_offset[0]) / self.zoom
+        ny = (cy - self._drag_offset[1]) / self.zoom
         self._drag_node.x = nx
         self._drag_node.y = ny
         self.refresh()
 
     def _on_release(self, event):  # pragma: no cover - requires tkinter
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
         if self._connect_mode and self._connect_parent:
             self.canvas.delete("_temp_conn")
             anim = getattr(self, "_temp_conn_anim", None)
             if anim:
                 self.canvas.after_cancel(anim)
                 self._temp_conn_anim = None
-            node = self._node_at(event.x, event.y)
+            node = self._node_at(cx, cy)
             if node and node is not self._connect_parent:
                 # Use the current connect mode to decide whether this is a
                 # solved-by or in-context-of relationship.
@@ -210,7 +216,9 @@ class GSNDiagramWindow(tk.Frame):
             self._temp_conn_anim = None
 
     def _on_double_click(self, event):  # pragma: no cover - requires tkinter
-        node = self._node_at(event.x, event.y)
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        node = self._node_at(cx, cy)
         if not node:
             return
         if (
