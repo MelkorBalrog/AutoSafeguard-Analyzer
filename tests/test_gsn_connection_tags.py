@@ -46,6 +46,6 @@ def test_connection_tags_present():
     diag._draw_node = lambda *a, **k: None  # avoid tkinter font
     canvas = StubCanvas()
     diag.draw(canvas)
-    tag = f"rel:{parent.unique_id}:{child.unique_id}"
+    tag = f"{parent.unique_id}->{child.unique_id}"
     assert canvas.lines[0] == (tag,)
     assert canvas.polys[0] == (tag,)
