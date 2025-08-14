@@ -196,6 +196,39 @@ class SafetyManagementToolbox:
             self.doc_phases.setdefault(analysis, {})[new] = phase
 
     # ------------------------------------------------------------------
+    def _reuse_map(self) -> Dict[str, Dict[str, set[str]]]:
+        """Return mapping of phase -> reused work products and phases."""
+        repo = SysMLRepository.get_instance()
+        mapping: Dict[str, Dict[str, set[str]]] = {}
+        for diag_id in self.diagrams.values():
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            obj_map = {
+                obj.get("obj_id"): (
+                    obj.get("obj_type"),
+                    obj.get("properties", {}).get("name"),
+                )
+                for obj in getattr(diag, "objects", [])
+            }
+            for conn in getattr(diag, "connections", []):
+                if conn.get("conn_type") != "Re-use":
+                    continue
+                src = obj_map.get(conn.get("src"))
+                dst = obj_map.get(conn.get("dst"))
+                if not src or not dst:
+                    continue
+                if dst[0] != "Lifecycle Phase":
+                    continue
+                dest = dst[1]
+                data = mapping.setdefault(dest, {"work_products": set(), "phases": set()})
+                if src[0] == "Work Product":
+                    data["work_products"].add(src[1])
+                elif src[0] == "Lifecycle Phase":
+                    data["phases"].add(src[1])
+        return mapping
+
+    # ------------------------------------------------------------------
     def document_visible(self, analysis: str, name: str) -> bool:
         """Return ``True`` if the document should be visible in the active phase."""
         if not self.active_module:
@@ -203,7 +236,36 @@ class SafetyManagementToolbox:
         phase = self.doc_phases.get(analysis, {}).get(name)
         if phase is None:
             return True
-        return phase == self.active_module
+        if phase == self.active_module:
+            return True
+        reuse = self._reuse_map().get(self.active_module, {})
+        if analysis in reuse.get("work_products", set()):
+            return True
+        if phase in reuse.get("phases", set()):
+            return True
+        return False
+
+    # ------------------------------------------------------------------
+    def document_read_only(self, analysis: str, name: str) -> bool:
+        """Return ``True`` when *analysis* document *name* is reused.
+
+        Documents originating from a different lifecycle phase but made
+        visible via a ``Re-use`` relationship should not be editable. This
+        helper mirrors :meth:`document_visible` but returns ``True`` only when
+        the document is visible in the active phase due to reuse rather than
+        because it was created there.
+        """
+        if not self.active_module:
+            return False
+        phase = self.doc_phases.get(analysis, {}).get(name)
+        if phase is None or phase == self.active_module:
+            return False
+        reuse = self._reuse_map().get(self.active_module, {})
+        if analysis in reuse.get("work_products", set()):
+            return True
+        if phase in reuse.get("phases", set()):
+            return True
+        return False
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:

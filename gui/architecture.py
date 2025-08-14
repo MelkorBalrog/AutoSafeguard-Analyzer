@@ -2709,6 +2709,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate",
                     "Propagate by Review",
                     "Propagate by Approval",
+                    "Re-use",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2741,6 +2742,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalize",
             "Generalization",
@@ -2930,6 +2932,9 @@ class SysMLDiagramWindow(tk.Frame):
                 dst_name = dst.properties.get("name")
                 if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
                     return False, f"Propagation from {src_name} to {dst_name} is not allowed"
+            elif conn_type == "Re-use":
+                if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
+                    return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
             else:
                 allowed = {
                     "Initial": {
@@ -3022,6 +3027,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3142,6 +3148,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3176,6 +3183,7 @@ class SysMLDiagramWindow(tk.Frame):
                             "Propagate",
                             "Propagate by Review",
                             "Propagate by Approval",
+                            "Re-use",
                         ):
                             arrow_default = "forward"
                         else:
@@ -3440,6 +3448,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3643,6 +3652,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3675,6 +3685,7 @@ class SysMLDiagramWindow(tk.Frame):
                         "Propagate",
                         "Propagate by Review",
                         "Propagate by Approval",
+                        "Re-use",
                     ):
                         arrow_default = "forward"
                     else:
@@ -3942,6 +3953,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3965,6 +3977,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
             "Connector",
             "Generalization",
             "Generalize",
@@ -8178,6 +8191,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Re-use",
         ):
             ttk.Button(
                 bpmn_panel,
