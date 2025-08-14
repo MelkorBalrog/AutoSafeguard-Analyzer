@@ -1,7 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
-from gui import messagebox
+from gui import messagebox, format_name_with_phase
 import csv
 import copy
 import textwrap
@@ -3672,14 +3672,21 @@ class HazardExplorerWindow(tk.Toplevel):
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
+        phase_map = getattr(
+            getattr(self.app, "safety_mgmt_toolbox", None),
+            "doc_phases",
+            {},
+        ).get("Risk Assessment", {})
         for doc in self.app.hara_docs:
+            phase = phase_map.get(doc.name)
             for e in doc.entries:
                 haz = getattr(e, "hazard", "")
                 sev = self.app.hazard_severity.get(haz, "")
+                label = format_name_with_phase(doc.name, phase)
                 self.tree.insert(
                     "",
                     "end",
-                    values=(doc.name, e.malfunction, haz, sev),
+                    values=(label, e.malfunction, haz, sev),
                 )
 
     def export_csv(self):

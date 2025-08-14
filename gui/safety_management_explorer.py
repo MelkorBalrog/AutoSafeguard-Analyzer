@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
-from gui import messagebox
+from gui import messagebox, format_name_with_phase
+from sysml.sysml_repository import SysMLRepository
 from dataclasses import dataclass, field
 from typing import List, Dict
 
@@ -63,6 +64,7 @@ class SafetyManagementExplorer(tk.Frame):
         self.item_map.clear()
         self.tree.delete(*self.tree.get_children(""))
         self.toolbox.list_diagrams()
+        repo = SysMLRepository.get_instance()
 
         self.root_iid = self.tree.insert(
             "", "end", text="Diagrams", image=self.folder_icon, open=True
@@ -75,7 +77,14 @@ class SafetyManagementExplorer(tk.Frame):
                 self.item_map[sub_id] = ("module", sub)
                 _add_module(sub_id, sub)
             for name in mod.diagrams:
-                diag_id = self.tree.insert(parent, "end", text=name, image=self.diagram_icon)
+                phase = None
+                diag_key = self.toolbox.diagrams.get(name)
+                if diag_key:
+                    diag = repo.diagrams.get(diag_key)
+                    if diag:
+                        phase = diag.phase
+                label = format_name_with_phase(name, phase)
+                diag_id = self.tree.insert(parent, "end", text=label, image=self.diagram_icon)
                 self.item_map[diag_id] = ("diagram", name)
 
         for mod in self.toolbox.modules:
@@ -87,8 +96,15 @@ class SafetyManagementExplorer(tk.Frame):
 
         for name in sorted(self.toolbox.diagrams.keys()):
             if not self._in_any_module(name, self.toolbox.modules):
+                phase = None
+                diag_key = self.toolbox.diagrams.get(name)
+                if diag_key:
+                    diag = repo.diagrams.get(diag_key)
+                    if diag:
+                        phase = diag.phase
+                label = format_name_with_phase(name, phase)
                 iid = self.tree.insert(
-                    self.root_iid, "end", text=name, image=self.diagram_icon
+                    self.root_iid, "end", text=label, image=self.diagram_icon
                 )
                 self.item_map[iid] = ("diagram", name)
 
