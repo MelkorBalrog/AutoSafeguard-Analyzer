@@ -319,8 +319,10 @@ class SafetyManagementToolbox:
         if name:
             reuse = self._reuse_map().get(name, {})
             repo.reuse_phases = set(reuse.get("phases", set()))
+            repo.reuse_products = set(reuse.get("work_products", set()))
         else:
             repo.reuse_phases = set()
+            repo.reuse_products = set()
         if self.on_change:
             self.on_change()
 
