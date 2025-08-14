@@ -2735,7 +2735,16 @@ def format_diagram_name(diagram: "SysMLDiagram | None") -> str:
 class SysMLDiagramWindow(tk.Frame):
     """Base frame for AutoML diagrams with zoom and pan support."""
 
-    def __init__(self, master, title, tools, diagram_id: str | None = None, app=None, history=None):
+    def __init__(
+        self,
+        master,
+        title,
+        tools,
+        diagram_id: str | None = None,
+        app=None,
+        history=None,
+        relation_tools: list[str] | None = None,
+    ):
         super().__init__(master)
         self.app = app
         self.diagram_history: list[str] = list(history) if history else []
@@ -2804,10 +2813,24 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Always provide a select tool
         tools = ["Select"] + tools
+        self.tools_frame = ttk.Frame(self.toolbox)
+        self.tools_frame.pack(fill=tk.X, padx=2, pady=2)
         for tool in tools:
-            ttk.Button(self.toolbox, text=tool, command=lambda t=tool: self.select_tool(t)).pack(
-                fill=tk.X, padx=2, pady=2
-            )
+            ttk.Button(
+                self.tools_frame,
+                text=tool,
+                command=lambda t=tool: self.select_tool(t),
+            ).pack(fill=tk.X, padx=2, pady=2)
+
+        if relation_tools:
+            self.rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
+            self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
+            for tool in relation_tools:
+                ttk.Button(
+                    self.rel_frame,
+                    text=tool,
+                    command=lambda t=tool: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
 
         self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
         self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
@@ -8654,17 +8677,35 @@ class ConnectionDialog(simpledialog.Dialog):
 
 class UseCaseDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Actor",
-            "Use Case",
-            "System Boundary",
+        tools = ["Actor", "Use Case", "System Boundary"]
+        rel_tools = [
             "Association",
             "Communication Path",
             "Generalize",
             "Include",
             "Extend",
         ]
-        super().__init__(master, "Use Case Diagram", tools, diagram_id, app=app, history=history)
+        try:
+            super().__init__(
+                master,
+                "Use Case Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Use Case Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
 
 
 class ActivityDiagramWindow(SysMLDiagramWindow):
@@ -8678,10 +8719,30 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
             "Merge",
             "Fork",
             "Join",
-            "Flow",
             "System Boundary",
         ]
-        super().__init__(master, "Activity Diagram", tools, diagram_id, app=app, history=history)
+        rel_tools = ["Flow"]
+        try:
+            super().__init__(
+                master,
+                "Activity Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Activity Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
         ttk.Button(
             self.toolbox,
             text="Add Block Operations",
@@ -8765,17 +8826,30 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
 
 class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Action",
-            "Initial",
-            "Final",
-            "Decision",
-            "Merge",
-            "Flow",
-            "System Boundary",
-        ]
-        super().__init__(master, "Governance Diagram", tools, diagram_id, app=app, history=history)
-        for child in self.toolbox.winfo_children():
+        tools = ["Action", "Initial", "Final", "Decision", "Merge", "System Boundary"]
+        rel_tools = ["Flow"]
+        try:
+            super().__init__(
+                master,
+                "Governance Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Governance Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
+        for child in self.tools_frame.winfo_children():
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
@@ -8785,7 +8859,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         governance_panel = ttk.LabelFrame(self, text="Governance")
         governance_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
 
-        for name in (
+        rel_names = [
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
@@ -8793,28 +8867,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
-        ):
+        ]
+        rel_frame = ttk.LabelFrame(governance_panel, text="Relationships")
+        rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        for name in rel_names:
             ttk.Button(
-                governance_panel,
+                rel_frame,
                 text=name,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
 
-        ttk.Button(
-            governance_panel,
-            text="Add Work Product",
-            command=self.add_work_product,
-        ).pack(fill=tk.X, padx=2, pady=2)
-        ttk.Button(
-            governance_panel,
-            text="Add Process Area",
-            command=self.add_process_area,
-        ).pack(fill=tk.X, padx=2, pady=2)
-        ttk.Button(
-            governance_panel,
-            text="Add Lifecycle Phase",
-            command=self.add_lifecycle_phase,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        node_cmds = [
+            ("Add Work Product", self.add_work_product),
+            ("Add Process Area", self.add_process_area),
+            ("Add Lifecycle Phase", self.add_lifecycle_phase),
+        ]
+        for name, cmd in node_cmds:
+            ttk.Button(governance_panel, text=name, command=cmd).pack(
+                fill=tk.X, padx=2, pady=2
+            )
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
@@ -9025,14 +9096,34 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
 class BlockDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Block",
+        tools = ["Block"]
+        rel_tools = [
             "Association",
             "Generalization",
             "Aggregation",
             "Composite Aggregation",
         ]
-        super().__init__(master, "Block Diagram", tools, diagram_id, app=app, history=history)
+        try:
+            super().__init__(
+                master,
+                "Block Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Block Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
         ttk.Button(
             self.toolbox,
             text="Add Blocks",
@@ -9146,12 +9237,29 @@ class BlockDiagramWindow(SysMLDiagramWindow):
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Part",
-            "Port",
-            "Connector",
-        ]
-        super().__init__(master, "Internal Block Diagram", tools, diagram_id, app=app, history=history)
+        tools = ["Part", "Port"]
+        rel_tools = ["Connector"]
+        try:
+            super().__init__(
+                master,
+                "Internal Block Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Internal Block Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
         ttk.Button(
             self.toolbox,
             text="Add Contained Parts",
@@ -9467,13 +9575,29 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
 class ControlFlowDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Existing Element",
-            "Control Action",
-            "Feedback",
-            "STPA Analysis",
-        ]
-        super().__init__(master, "Control Flow Diagram", tools, diagram_id, app=app, history=history)
+        tools = ["Existing Element", "STPA Analysis"]
+        rel_tools = ["Control Action", "Feedback"]
+        try:
+            super().__init__(
+                master,
+                "Control Flow Diagram",
+                tools,
+                diagram_id,
+                app=app,
+                history=history,
+                relation_tools=rel_tools,
+            )
+        except TypeError:
+            super().__init__(
+                master,
+                "Control Flow Diagram",
+                tools + rel_tools,
+                diagram_id,
+                app=app,
+                history=history,
+            )
+        if not hasattr(self, "tools_frame"):
+            self.tools_frame = self.toolbox
 
     def select_tool(self, tool):
         if tool == "STPA Analysis":
