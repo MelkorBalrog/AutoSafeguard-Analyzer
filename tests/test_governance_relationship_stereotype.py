@@ -276,7 +276,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 0,
                 0,
                 element_id=e1.elem_id,
-                properties={"name": "ODD"},
+                properties={"name": "Scenario Library"},
             )
             o2 = SysMLObject(
                 2,
@@ -284,10 +284,12 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 0,
                 100,
                 element_id=e2.elem_id,
-                properties={"name": "Scenario Library"},
+                properties={"name": "ODD"},
             )
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o2, o1, rel)
+            self.assertFalse(valid)
 
     def test_analysis_inputs_used_after_approval_visibility(self):
         repo = self.repo
