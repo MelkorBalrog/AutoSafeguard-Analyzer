@@ -46,29 +46,21 @@ def test_risk_assessment_dialog_hides_unrelated_inputs(monkeypatch):
     )
     dlg.app = app
     dlg.body(master=DummyWidget())
-    hazop_vals, stpa_vals, fi2tc_vals, tc2fi_vals, threat_vals = [
-        cb.configured["values"] for cb in combos
-    ]
+    hazop_vals, stpa_vals, threat_vals = [cb.configured["values"] for cb in combos]
     assert hazop_vals == ["HZ1"]
     assert stpa_vals == []
-    assert fi2tc_vals == []
-    assert tc2fi_vals == []
     assert threat_vals == []
 
     # Edit assessment dialog filtering
     combos.clear()
-    doc = types.SimpleNamespace(hazops=["HZ1"], stpa="", threat="", fi2tc="", tc2fi="")
+    doc = types.SimpleNamespace(hazops=["HZ1"], stpa="", threat="")
     dlg2 = RiskAssessmentWindow.EditAssessmentDialog.__new__(
         RiskAssessmentWindow.EditAssessmentDialog
     )
     dlg2.app = app
     dlg2.doc = doc
     dlg2.body(master=DummyWidget())
-    hazop_vals, stpa_vals, fi2tc_vals, tc2fi_vals, threat_vals = [
-        cb.configured["values"] for cb in combos
-    ]
+    hazop_vals, stpa_vals, threat_vals = [cb.configured["values"] for cb in combos]
     assert hazop_vals == ["HZ1"]
     assert stpa_vals == []
-    assert fi2tc_vals == []
-    assert tc2fi_vals == []
     assert threat_vals == []

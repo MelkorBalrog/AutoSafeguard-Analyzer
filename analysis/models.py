@@ -161,8 +161,6 @@ class HaraDoc:
     meta: Metadata = field(default_factory=Metadata)
     stpa: str = ""
     threat: str = ""
-    fi2tc: str = ""
-    tc2fi: str = ""
 
 @dataclass
 class StpaEntry:

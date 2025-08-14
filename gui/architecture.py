@@ -3214,26 +3214,27 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
                     )
-                # Prevent multiple 'Used' relationships between the same
-                # work products within the active lifecycle phase. Only one
-                # of "Used By", "Used after Review" or "Used after Approval"
-                # may exist for a given source/target pair.
+                # Ensure only one usage relationship exists between a pair of work
+                # products within the same lifecycle phase.  Mixing "Used By",
+                # "Used after Review" and "Used after Approval" for the same
+                # source/target would create conflicting rules for analysis
+                # inputs.  Check existing relationships in the repository and
+                # reject duplicates.
+                src_id = src.element_id
+                dst_id = dst.element_id
                 phase = self.repo.active_phase
-                used_stereos = {
-                    "used by",
-                    "used after review",
-                    "used after approval",
-                }
                 for rel in self.repo.relationships:
+                    stereo = (rel.stereotype or rel.rel_type or "").lower()
                     if (
-                        rel.source == src.element_id
-                        and rel.target == dst.element_id
-                        and rel.stereotype in used_stereos
+                        rel.source == src_id
+                        and rel.target == dst_id
                         and rel.phase == phase
+                        and stereo
+                        in {"used by", "used after review", "used after approval"}
                     ):
-                        return False, (
-                            "A 'Used' relationship between these work products "
-                            "already exists in this phase",
+                        return (
+                            False,
+                            "Usage relationship already defined for this work product pair",
                         )
             else:
                 allowed = {

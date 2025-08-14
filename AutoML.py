@@ -17905,17 +17905,15 @@ class FaultTreeApp:
             if not hazops:
                 hazop = d.get("hazop")
                 hazops = [hazop] if hazop else []
-                doc = HaraDoc(
-                    d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
-                    hazops,
-                    entries,
-                    d.get("approved", False),
-                    d.get("status", "draft"),
-                    stpa=d.get("stpa", ""),
-                    threat=d.get("threat", ""),
-                    fi2tc=d.get("fi2tc", ""),
-                    tc2fi=d.get("tc2fi", ""),
-                )
+            doc = HaraDoc(
+                d.get("name", f"Risk Assessment {len(self.hara_docs)+1}"),
+                hazops,
+                entries,
+                d.get("approved", False),
+                d.get("status", "draft"),
+                stpa=d.get("stpa", ""),
+                threat=d.get("threat", ""),
+            )
             self.hara_docs.append(doc)
             toolbox.register_loaded_work_product("Risk Assessment", doc.name)
         if not self.hara_docs and data.get("hara_entries"):
@@ -17961,8 +17959,6 @@ class FaultTreeApp:
                 "draft",
                 stpa="",
                 threat="",
-                fi2tc="",
-                tc2fi="",
             )
             self.hara_docs.append(doc)
             toolbox.register_loaded_work_product("Risk Assessment", doc.name)
@@ -18465,8 +18461,6 @@ class FaultTreeApp:
                     d.get("status", "draft"),
                     stpa=d.get("stpa", ""),
                     threat=d.get("threat", ""),
-                    fi2tc=d.get("fi2tc", ""),
-                    tc2fi=d.get("tc2fi", ""),
                 )
             )
         if not self.hara_docs and "hara_entries" in data:
@@ -18513,8 +18507,6 @@ class FaultTreeApp:
                     "draft",
                     stpa="",
                     threat="",
-                    fi2tc="",
-                    tc2fi="",
                 )
             )
         self.active_hara = self.hara_docs[0] if self.hara_docs else None
