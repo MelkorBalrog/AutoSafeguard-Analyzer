@@ -5511,6 +5511,16 @@ class SysMLDiagramWindow(tk.Frame):
                         wrap_width = max_chars
                         wrapped = textwrap.fill(label, width=wrap_width)
                         lines = wrapped.count("\n") + 1
+                # create a compartment on the left for the vertical title
+                label_w = lines * line_h + 16 * self.zoom
+                cx = x - w + label_w
+                self.canvas.create_line(
+                    cx,
+                    y - h + self.zoom,
+                    cx,
+                    y + h - self.zoom,
+                    fill=outline,
+                )
 
                 lx = x - w + 8 * self.zoom
                 self.canvas.create_text(
