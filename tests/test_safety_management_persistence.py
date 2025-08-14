@@ -150,7 +150,6 @@ def test_enabled_work_products_roundtrip():
     new_app.apply_model_data(data, ensure_root=False)
     assert "HAZOP" in new_app.enabled_work_products
 
-
 def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
     app = _minimal_app()
     tb = app.safety_mgmt_toolbox
@@ -187,4 +186,3 @@ def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
     new_app.safety_mgmt_toolbox.set_active_module("Phase2")
     new_app.refresh_tool_enablement()
     assert new_app.enabled_work_products == {"HAZOP"}
-

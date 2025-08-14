@@ -6625,8 +6625,12 @@ class SysMLDiagramWindow(tk.Frame):
         self.repo.push_undo_state()
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
-            diag.objects = [obj.__dict__ for obj in self.objects]
-            diag.connections = [conn.__dict__ for conn in self.connections]
+            existing_objs = getattr(diag, "objects", [])
+            hidden_objs = [o for o in existing_objs if not self.repo.object_visible(o)]
+            diag.objects = hidden_objs + [obj.__dict__ for obj in self.objects]
+            existing_conns = getattr(diag, "connections", [])
+            hidden_conns = [c for c in existing_conns if not self.repo.connection_visible(c)]
+            diag.connections = hidden_conns + [conn.__dict__ for conn in self.connections]
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             _sync_block_parts_from_ibd(self.repo, self.diagram_id)
