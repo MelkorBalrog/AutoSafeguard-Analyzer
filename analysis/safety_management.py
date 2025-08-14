@@ -221,6 +221,7 @@ class SafetyManagementToolbox:
         if self.active_module:
             self.doc_phases.setdefault(analysis, {})[name] = self.active_module
             self.freeze_active_phase()
+            self._freeze_active_phase()
 
     # ------------------------------------------------------------------
     def register_loaded_work_product(self, analysis: str, name: str) -> None:
@@ -470,11 +471,21 @@ class SafetyManagementToolbox:
         when it references the renamed module.
         """
 
-        if not new or old == new or old in self.frozen_modules:
+        if not new or old == new:
             return
+
+        repo = SysMLRepository.get_instance()
+        repo.rename_phase(old, new)
+
+        for docs in self.doc_phases.values():
+            for doc, phase in list(docs.items()):
+                if phase == old:
+                    docs[doc] = new
 
         mod = self._find_module(old, self.modules)
         if mod and getattr(mod, "frozen", False):
+            if self.active_module == old:
+                self.active_module = new
             return
 
         existing = set(self.list_modules())
@@ -497,14 +508,6 @@ class SafetyManagementToolbox:
             return False
 
         _rename(self.modules)
-
-        repo = SysMLRepository.get_instance()
-        repo.rename_phase(old, new)
-
-        for docs in self.doc_phases.values():
-            for doc, phase in list(docs.items()):
-                if phase == old:
-                    docs[doc] = new
 
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:

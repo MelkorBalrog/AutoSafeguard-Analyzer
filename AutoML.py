@@ -1994,6 +1994,16 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
             "manage_safety_cases",
         ),
+        "Safety & Security Case": (
+            "Safety Analysis",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
+        ),
+        "GSN Argumentation": (
+            "Safety Analysis",
+            "GSN Explorer",
+            "manage_gsn",
+        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2064,6 +2074,16 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
+        "Reliability Analysis": (
+            "Safety Analysis",
+            "Reliability Analysis",
+            "open_reliability_window",
+        ),
+        "Mission Profile": (
+            "Safety Analysis",
+            "Mission Profiles",
+            "manage_mission_profiles",
+        ),
         "Scenario": (
             "Scenario",
             "Scenario Libraries",
@@ -2093,6 +2113,10 @@ class FaultTreeApp:
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
+        "Reliability Analysis": "Quantitative Analysis",
+        "Mission Profile": "Reliability Analysis",
+        "Safety & Security Case": "Safety & Security Concept",
+        "GSN Argumentation": "Safety & Security Case",
     }
 
     def __init__(self, root):

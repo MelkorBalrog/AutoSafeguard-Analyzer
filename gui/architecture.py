@@ -19,7 +19,6 @@ from analysis.models import (
     ASIL_ORDER,
     StpaDoc,
     REQUIREMENT_WORK_PRODUCTS,
-    REQUIREMENT_TYPE_OPTIONS,
 )
 from analysis.safety_management import ALLOWED_PROPAGATIONS
 
@@ -8463,6 +8462,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         options = [
             "Architecture Diagram",
             "Safety & Security Concept",
+            "Safety & Security Case",
+            "GSN Argumentation",
             *REQUIREMENT_WORK_PRODUCTS,
             "HAZOP",
             "STPA",
@@ -8474,10 +8475,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
+            "Mission Profile",
+            "Reliability Analysis",
         ]
-        options.extend(
-            f"{_fmt(rt)} Requirement Specification" for rt in REQUIREMENT_TYPE_OPTIONS
-        )
+        options = list(dict.fromkeys(options))
         dlg = self._SelectDialog(self, "Add Work Product", options)
         name = getattr(dlg, "selection", "")
         if not name:
@@ -8485,6 +8486,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         area_map = {
             "Architecture Diagram": "System Design (Item Definition)",
             "Safety & Security Concept": "System Design (Item Definition)",
+            "Safety & Security Case": "Safety Analysis",
+            "GSN Argumentation": "Safety Analysis",
             "Product Goal Specification": "System Design (Item Definition)",
             **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
             "HAZOP": "Hazard & Threat Analysis",
@@ -8496,9 +8499,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
+            "Mission Profile": "Safety Analysis",
+            "Reliability Analysis": "Safety Analysis",
         }
-        for rt in REQUIREMENT_TYPE_OPTIONS:
-            area_map[f"{_fmt(rt)} Requirement Specification"] = "System Design (Item Definition)"
         required = area_map.get(name)
         if required and not any(
             o.obj_type == "System Boundary" and o.properties.get("name") == required
