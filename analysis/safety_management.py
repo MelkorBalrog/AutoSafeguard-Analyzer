@@ -536,10 +536,10 @@ class SafetyManagementToolbox:
         types. ``None`` is returned when no such link exists."""
 
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        # Consider traces across all governance diagrams regardless of the
+        # active module so relationships defined in earlier phases still
+        # propagate to later analyses.
+        diag_ids = list(self.diagrams.values())
         for diag_id in diag_ids:
             diag = repo.diagrams.get(diag_id)
             if not diag:
@@ -600,10 +600,10 @@ class SafetyManagementToolbox:
     def _trace_mapping(self) -> Dict[str, set[str]]:
         """Return mapping of work product name to traceable targets."""
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        # Use all known governance diagrams; restricting to the active module
+        # prevents cross-phase links (e.g. Prototype traces feeding Series
+        # Development analyses) from being honoured.
+        diag_ids = list(self.diagrams.values())
         mapping: Dict[str, set[str]] = {}
         for diag_id in diag_ids:
             if not repo.diagram_visible(diag_id):
@@ -631,10 +631,9 @@ class SafetyManagementToolbox:
     def _analysis_mapping(self) -> Dict[str, Dict[str, set[str]]]:
         """Return mapping of work product name to analysis targets by relation."""
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        # Analyse all governance diagrams; limiting to the active module would
+        # hide relationships defined in other lifecycle phases.
+        diag_ids = list(self.diagrams.values())
         mapping: Dict[str, Dict[str, set[str]]] = {}
         for diag_id in diag_ids:
             if not repo.diagram_visible(diag_id):
