@@ -1,4 +1,4 @@
-"""Basic BPMN diagram support for safety governance workflows."""
+"""Basic governance diagram support for safety workflows."""
 
 from dataclasses import dataclass, field
 from typing import List, Tuple
@@ -7,8 +7,8 @@ import networkx as nx
 
 
 @dataclass
-class BPMNDiagram:
-    """A very small BPMN-like diagram using a directed graph.
+class GovernanceDiagram:
+    """A very small governance diagram using a directed graph.
 
     Nodes in the graph represent tasks and edges represent sequence flows.
     The diagram is intentionally lightweight but can be tailored and extended
@@ -36,7 +36,7 @@ class BPMNDiagram:
         return list(self.graph.edges())
 
     @classmethod
-    def default_from_work_products(cls, names: List[str]) -> "BPMNDiagram":
+    def default_from_work_products(cls, names: List[str]) -> "GovernanceDiagram":
         """Create a default sequential diagram from the given work products."""
         diagram = cls()
         for name in names:

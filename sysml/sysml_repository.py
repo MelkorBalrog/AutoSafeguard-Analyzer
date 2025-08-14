@@ -466,6 +466,24 @@ class SysMLRepository:
             return True
         return diag.phase != self.active_phase and diag.diag_type in getattr(self, "reuse_products", set())
 
+    def element_read_only(self, elem_id: str) -> bool:
+        """Return ``True`` if ``elem_id`` originates from a reused phase."""
+        elem = self.elements.get(elem_id)
+        if not elem:
+            return False
+        if self.active_phase is None or elem.phase is None:
+            return False
+        return elem.phase != self.active_phase and elem.phase in getattr(self, "reuse_phases", set())
+
+    def diagram_read_only(self, diag_id: str) -> bool:
+        """Return ``True`` if ``diag_id`` originates from a reused phase."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return False
+        if self.active_phase is None or diag.phase is None:
+            return False
+        return diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set())
+
     def visible_elements(self) -> dict[str, SysMLElement]:
         """Return mapping of element IDs to elements visible in the active phase."""
         return {eid: e for eid, e in self.elements.items() if self.element_visible(eid)}
