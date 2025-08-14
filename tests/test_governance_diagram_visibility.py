@@ -15,7 +15,7 @@ def test_governance_elements_visible_all_phases():
     toolbox.modules = [GovernanceModule("P1"), GovernanceModule("P2")]
     toolbox.set_active_module("P1")
 
-    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
     diag.tags.append("safety-management")
 
     obj1 = SysMLObject(1, "Work Product", 0.0, 0.0)

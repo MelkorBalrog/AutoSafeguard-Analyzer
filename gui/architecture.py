@@ -1880,7 +1880,8 @@ def rename_port(
     repo: SysMLRepository, port: SysMLObject, objs: List[SysMLObject], new_name: str
 ) -> None:
     """Rename *port* and update its parent's port list."""
-
+    if port.element_id and repo.element_read_only(port.element_id):
+        return
     old_name = port.properties.get("name", "")
     if old_name == new_name:
         return
@@ -2922,7 +2923,7 @@ class SysMLDiagramWindow(tk.Frame):
                     False,
                     f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
                 )
-        elif diag_type == "BPMN Diagram":
+        elif diag_type == "Governance Diagram":
             if conn_type in (
                 "Propagate",
                 "Propagate by Review",
@@ -4119,8 +4120,8 @@ class SysMLDiagramWindow(tk.Frame):
             UseCaseDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
-        elif diag.diag_type == "BPMN Diagram":
-            BPMNDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(self.master, self.app, diagram_id=chosen, history=history)
         elif diag.diag_type == "Internal Block Diagram":
@@ -4156,8 +4157,8 @@ class SysMLDiagramWindow(tk.Frame):
             ActivityDiagramWindow(
                 self.master, self.app, diagram_id=prev_id, history=self.diagram_history
             )
-        elif diag.diag_type == "BPMN Diagram":
-            BPMNDiagramWindow(
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(
                 self.master, self.app, diagram_id=prev_id, history=self.diagram_history
             )
         elif diag.diag_type == "Block Diagram":
@@ -7214,7 +7215,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             )
             link_row += 1
         elif self.obj.obj_type == "Use Case":
-            diagrams = [d for d in repo.diagrams.values() if d.diag_type == "BPMN Diagram"]
+            diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Governance Diagram"]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
             ttk.Label(link_frame, text="Behavior Diagram:").grid(
                 row=link_row, column=0, sticky="e", padx=4, pady=2
@@ -7230,16 +7231,16 @@ class SysMLObjectDialog(simpledialog.Dialog):
             if (
                 self.obj.obj_type == "Action"
                 and current_diagram
-                and current_diagram.diag_type == "BPMN Diagram"
+                and current_diagram.diag_type == "Governance Diagram"
             ):
                 diagrams = [
-                    d for d in repo.diagrams.values() if d.diag_type == "BPMN Diagram"
+                    d for d in repo.diagrams.values() if d.diag_type == "Governance Diagram"
                 ]
             else:
                 diagrams = [
                     d
                     for d in repo.diagrams.values()
-                    if d.diag_type in ("Activity Diagram", "BPMN Diagram")
+                    if d.diag_type in ("Activity Diagram", "Governance Diagram")
                 ]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
             ttk.Label(link_frame, text="Behavior Diagram:").grid(
@@ -7256,7 +7257,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             bdiags = [
                 d
                 for d in repo.diagrams.values()
-                if d.diag_type in ("Activity Diagram", "BPMN Diagram")
+                if d.diag_type in ("Activity Diagram", "Governance Diagram")
             ]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in bdiags}
             ttk.Label(link_frame, text="Behavior Diagram:").grid(
@@ -7455,7 +7456,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         diagrams = [
             d
             for d in repo.diagrams.values()
-            if d.diag_type in ("Activity Diagram", "BPMN Diagram")
+            if d.diag_type in ("Activity Diagram", "Governance Diagram")
         ]
         diag_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
         ops = [op.name for op in self._operations]
@@ -7476,7 +7477,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         diagrams = [
             d
             for d in repo.diagrams.values()
-            if d.diag_type in ("Activity Diagram", "BPMN Diagram")
+            if d.diag_type in ("Activity Diagram", "Governance Diagram")
         ]
         diag_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
         ops = [op.name for op in self._operations]
@@ -8207,7 +8208,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
         self._sync_to_repository()
 
 
-class BPMNDiagramWindow(SysMLDiagramWindow):
+class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tools = [
             "Action",
@@ -8218,7 +8219,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Flow",
             "System Boundary",
         ]
-        super().__init__(master, "BPMN Diagram", tools, diagram_id, app=app, history=history)
+        super().__init__(master, "Governance Diagram", tools, diagram_id, app=app, history=history)
         for child in self.toolbox.winfo_children():
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
@@ -8226,8 +8227,8 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
 
-        bpmn_panel = ttk.LabelFrame(self, text="BPMN")
-        bpmn_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
+        governance_panel = ttk.LabelFrame(self, text="Governance")
+        governance_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
 
         for name in (
             "Propagate",
@@ -8236,23 +8237,23 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
             "Re-use",
         ):
             ttk.Button(
-                bpmn_panel,
+                governance_panel,
                 text=name,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
 
         ttk.Button(
-            bpmn_panel,
+            governance_panel,
             text="Add Work Product",
             command=self.add_work_product,
         ).pack(fill=tk.X, padx=2, pady=2)
         ttk.Button(
-            bpmn_panel,
+            governance_panel,
             text="Add Process Area",
             command=self.add_process_area,
         ).pack(fill=tk.X, padx=2, pady=2)
         ttk.Button(
-            bpmn_panel,
+            governance_panel,
             text="Add Lifecycle Phase",
             command=self.add_lifecycle_phase,
         ).pack(fill=tk.X, padx=2, pady=2)
@@ -8264,7 +8265,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
 
-        When a BPMN diagram window is opened, switch the application's active
+        When a Governance diagram window is opened, switch the application's active
         lifecycle phase to the module that owns the diagram. Any tooling not
         enabled for that phase is hidden via ``on_lifecycle_selected`` or
         ``refresh_tool_enablement``.
@@ -8953,7 +8954,7 @@ class NewDiagramDialog(simpledialog.Dialog):
                 values=[
                     "Use Case Diagram",
                     "Activity Diagram",
-                    "BPMN Diagram",
+                    "Governance Diagram",
                     "Block Diagram",
                     "Internal Block Diagram",
                     "Control Flow Diagram",
@@ -9097,7 +9098,7 @@ class ArchitectureManagerDialog(tk.Frame):
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
-            "BPMN Diagram": self._create_icon("arrow", "green"),
+            "Governance Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
@@ -9325,8 +9326,8 @@ class ArchitectureManagerDialog(tk.Frame):
             win = UseCaseDiagramWindow(master, self.app, diagram_id=diag_id)
         elif diag.diag_type == "Activity Diagram":
             win = ActivityDiagramWindow(master, self.app, diagram_id=diag_id)
-        elif diag.diag_type == "BPMN Diagram":
-            win = BPMNDiagramWindow(master, self.app, diagram_id=diag_id)
+        elif diag.diag_type == "Governance Diagram":
+            win = GovernanceDiagramWindow(master, self.app, diagram_id=diag_id)
         elif diag.diag_type == "Block Diagram":
             win = BlockDiagramWindow(master, self.app, diagram_id=diag_id)
         elif diag.diag_type == "Internal Block Diagram":
@@ -9516,15 +9517,15 @@ class ArchitectureManagerDialog(tk.Frame):
         if elem_id.startswith("obj_"):
             messagebox.showerror("Drop Error", "Objects cannot be dropped on a diagram.")
             return
-        # Dropping a diagram onto an Activity or BPMN Diagram creates a behavior reference
+        # Dropping a diagram onto an Activity or Governance Diagram creates a behavior reference
         if elem_id.startswith("diag_"):
             src_diag = repo.diagrams.get(elem_id[5:])
             if src_diag and diagram.diag_type == "Activity Diagram" and src_diag.diag_type in (
                 "Activity Diagram",
                 "Internal Block Diagram",
-                "BPMN Diagram",
+                "Governance Diagram",
             ):
-                elem_type = "Action" if diagram.diag_type == "BPMN Diagram" else "CallBehaviorAction"
+                elem_type = "Action" if diagram.diag_type == "Governance Diagram" else "CallBehaviorAction"
                 act = repo.create_element(
                     elem_type, name=src_diag.name, owner=diagram.package
                 )
@@ -9547,8 +9548,8 @@ class ArchitectureManagerDialog(tk.Frame):
                 return
             if (
                 src_diag
-                and diagram.diag_type == "BPMN Diagram"
-                and src_diag.diag_type == "BPMN Diagram"
+                and diagram.diag_type == "Governance Diagram"
+                and src_diag.diag_type == "Governance Diagram"
             ):
                 act = repo.create_element("Action", name=src_diag.name, owner=diagram.package)
                 repo.add_element_to_diagram(diagram.diag_id, act.elem_id)

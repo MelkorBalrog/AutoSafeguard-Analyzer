@@ -3,11 +3,11 @@ from gui.architecture import ArchitectureManagerDialog
 from sysml.sysml_repository import SysMLRepository
 
 
-def test_drop_bpmn_diagram_creates_action(monkeypatch):
+def test_drop_governance_diagram_creates_action(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    src = repo.create_diagram("BPMN Diagram", name="Src")
-    target = repo.create_diagram("BPMN Diagram", name="Target")
+    src = repo.create_diagram("Governance Diagram", name="Src")
+    target = repo.create_diagram("Governance Diagram", name="Target")
 
     mgr = ArchitectureManagerDialog.__new__(ArchitectureManagerDialog)
     mgr.repo = repo
@@ -24,11 +24,11 @@ def test_drop_bpmn_diagram_creates_action(monkeypatch):
     assert repo.get_linked_diagram(elem_id) == src.diag_id
 
 
-def test_drop_non_bpmn_diagram_on_bpmn_fails(monkeypatch):
+def test_drop_non_governance_diagram_on_governance_fails(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     src = repo.create_diagram("Activity Diagram", name="Act")
-    target = repo.create_diagram("BPMN Diagram", name="Target")
+    target = repo.create_diagram("Governance Diagram", name="Target")
 
     mgr = ArchitectureManagerDialog.__new__(ArchitectureManagerDialog)
     mgr.repo = repo

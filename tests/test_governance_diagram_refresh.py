@@ -3,14 +3,14 @@ from dataclasses import asdict
 
 from sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
-from gui.architecture import BPMNDiagramWindow, SysMLDiagramWindow, SysMLObject
+from gui.architecture import GovernanceDiagramWindow, SysMLDiagramWindow, SysMLObject
 import gui.architecture as arch
 
 
-def test_open_bpmn_diagram_refreshes_after_phase_activation(monkeypatch):
+def test_open_governance_diagram_refreshes_after_phase_activation(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov2")
+    diag = repo.create_diagram("Governance Diagram", name="Gov2")
     obj = SysMLObject(1, "Work Product", 0.0, 0.0)
     diag.objects.append(asdict(obj))
 
@@ -75,7 +75,7 @@ def test_open_bpmn_diagram_refreshes_after_phase_activation(monkeypatch):
     monkeypatch.setattr(arch.ttk, "LabelFrame", DummyWidget)
     monkeypatch.setattr(arch.ttk, "Button", DummyWidget)
 
-    win = BPMNDiagramWindow(None, app, diagram_id=diag.diag_id)
+    win = GovernanceDiagramWindow(None, app, diagram_id=diag.diag_id)
 
     assert toolbox.active_module == "Phase2"
     assert len(win.objects) == 1

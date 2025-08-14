@@ -7,7 +7,7 @@ from gui.architecture import (
     SysMLObject,
     DiagramConnection,
     SysMLDiagramWindow,
-    BPMNDiagramWindow,
+    GovernanceDiagramWindow,
 )
 
 PIL_stub = types.ModuleType("PIL")
@@ -106,21 +106,21 @@ def test_on_lifecycle_selected_refreshes_diagrams():
     assert refreshed["count"] == 1
 
 
-def test_bpmn_diagram_refreshes_on_phase_change():
+def test_governance_diagram_refreshes_on_phase_change():
     repo = SysMLRepository.reset_instance()
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule("P1"), GovernanceModule("P2")]
     toolbox.set_active_module("P1")
-    diag = repo.create_diagram("BPMN Diagram")
+    diag = repo.create_diagram("Governance Diagram")
     obj1 = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Spec1"})
     diag.objects.append(asdict(obj1))
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.sort_objects = lambda: None
     win.redraw = lambda: None
     win.update_property_view = lambda: None
-    BPMNDiagramWindow.refresh_from_repository(win)
+    GovernanceDiagramWindow.refresh_from_repository(win)
     assert len(win.objects) == 1
     toolbox.set_active_module("P2")
     obj2 = SysMLObject(2, "Work Product", 0.0, 0.0, properties={"name": "Spec2"})
@@ -132,7 +132,7 @@ def test_bpmn_diagram_refreshes_on_phase_change():
     app.refresh_tool_enablement = lambda: None
 
     inner = types.SimpleNamespace(
-        refresh_from_repository=lambda: BPMNDiagramWindow.refresh_from_repository(win),
+        refresh_from_repository=lambda: GovernanceDiagramWindow.refresh_from_repository(win),
         winfo_children=lambda: [],
     )
     container = types.SimpleNamespace(winfo_children=lambda: [inner])

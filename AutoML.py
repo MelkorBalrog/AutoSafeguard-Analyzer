@@ -323,7 +323,7 @@ from gui.architecture import (
     BlockDiagramWindow,
     InternalBlockDiagramWindow,
     ControlFlowDiagramWindow,
-    BPMNDiagramWindow,
+    GovernanceDiagramWindow,
     ArchitectureManagerDialog,
     parse_behaviors,
 )
@@ -2131,7 +2131,7 @@ class FaultTreeApp:
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
-            "BPMN Diagram": self._create_icon("arrow", "green"),
+            "Governance Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
             "Control Flow Diagram": self._create_icon("arrow", "red"),
@@ -4224,8 +4224,8 @@ class FaultTreeApp:
             win = InternalBlockDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         elif diagram.diag_type == "Control Flow Diagram":
             win = ControlFlowDiagramWindow(temp, self, diagram_id=diagram.diag_id)
-        elif diagram.diag_type == "BPMN Diagram":
-            win = BPMNDiagramWindow(temp, self, diagram_id=diagram.diag_id)
+        elif diagram.diag_type == "Governance Diagram":
+            win = GovernanceDiagramWindow(temp, self, diagram_id=diagram.diag_id)
         else:
             temp.destroy()
             return None
@@ -16558,7 +16558,7 @@ class FaultTreeApp:
                 if widget == tab:
                     repo = SysMLRepository.get_instance()
                     diag = repo.diagrams.get(diag_id)
-                    if diag and diag.diag_type == "BPMN Diagram":
+                    if diag and diag.diag_type == "Governance Diagram":
                         toolbox.list_diagrams()
                         name = next(
                             (n for n, did in toolbox.diagrams.items() if did == diag_id),
@@ -16810,8 +16810,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "BPMN Diagram":
-            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":
@@ -16839,8 +16839,8 @@ class FaultTreeApp:
             UseCaseDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Activity Diagram":
             ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
-        elif diag.diag_type == "BPMN Diagram":
-            BPMNDiagramWindow(tab, self, diagram_id=diag.diag_id)
+        elif diag.diag_type == "Governance Diagram":
+            GovernanceDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Block Diagram":
             BlockDiagramWindow(tab, self, diagram_id=diag.diag_id)
         elif diag.diag_type == "Internal Block Diagram":

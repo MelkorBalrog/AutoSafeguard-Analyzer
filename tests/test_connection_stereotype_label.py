@@ -20,7 +20,7 @@ class ConnectionStereotypeLabelTests(unittest.TestCase):
 
     def test_propagate_label_stereotype(self):
         conn = DiagramConnection(1, 2, "Propagate")
-        label = format_control_flow_label(conn, self.repo, "BPMN Diagram")
+        label = format_control_flow_label(conn, self.repo, "Governance Diagram")
         self.assertEqual(label, "<<propagate>>")
 
 

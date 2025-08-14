@@ -17,7 +17,7 @@ def _obj(obj_id: int, obj_type: str, name: str) -> dict:
 def test_work_product_reuse_visible():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="GovWP")
+    diag = repo.create_diagram("Governance Diagram", name="GovWP")
     diag.objects.extend([
         _obj(1, "Work Product", "HAZOP"),
         _obj(2, "Lifecycle Phase", "P2"),
@@ -37,7 +37,7 @@ def test_work_product_reuse_visible():
 def test_phase_reuse_shows_all_docs():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="GovPhase")
+    diag = repo.create_diagram("Governance Diagram", name="GovPhase")
     diag.objects.extend([
         _obj(1, "Lifecycle Phase", "P1"),
         _obj(2, "Lifecycle Phase", "P2"),
