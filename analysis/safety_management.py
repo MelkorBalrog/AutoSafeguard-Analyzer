@@ -213,7 +213,7 @@ class SafetyManagementToolbox:
             return all_products
         diagrams = self.diagrams_in_module(self.active_module)
         if not diagrams:
-            return all_products
+            return set()
         return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
     # ------------------------------------------------------------------
