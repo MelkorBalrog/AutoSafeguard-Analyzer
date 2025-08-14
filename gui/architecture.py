@@ -9138,10 +9138,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(app, "on_lifecycle_selected"):
             try:
                 app.on_lifecycle_selected()
-                return
             except Exception:
                 pass
-        toolbox.set_active_module(phase)
+        if toolbox.active_module != phase:
+            toolbox.set_active_module(phase)
         if hasattr(app, "refresh_tool_enablement"):
             try:
                 app.refresh_tool_enablement()

@@ -54,6 +54,51 @@ def test_open_governance_diagram_activates_phase():
     assert app.refresh_tool_enablement_called
 
 
+def test_open_governance_diagram_refreshes_tools():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="GovRefresh")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="Phase1", diagrams=["GovRefresh"])]
+    toolbox.diagrams = {"GovRefresh": diag.diag_id}
+
+    calls = {"refresh": 0}
+
+    class DummyVar:
+        def __init__(self):
+            self.val = ""
+
+        def set(self, val):
+            self.val = val
+
+        def get(self):
+            return self.val
+
+    def on_lifecycle_selected():
+        toolbox.set_active_module(app.lifecycle_var.get())
+
+    def refresh_tool_enablement():
+        calls["refresh"] += 1
+
+    app = types.SimpleNamespace(
+        safety_mgmt_toolbox=toolbox,
+        lifecycle_var=DummyVar(),
+        on_lifecycle_selected=on_lifecycle_selected,
+        refresh_tool_enablement=refresh_tool_enablement,
+    )
+
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.app = app
+
+    GovernanceDiagramWindow._activate_parent_phase(win)
+
+    assert toolbox.active_module == "Phase1"
+    assert calls["refresh"] == 1
+
+
 def test_added_work_product_respects_phase(monkeypatch):
     import sys
 
