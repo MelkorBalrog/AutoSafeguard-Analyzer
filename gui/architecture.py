@@ -9138,13 +9138,22 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(app, "on_lifecycle_selected"):
             try:
                 app.on_lifecycle_selected()
-                return
             except Exception:
                 pass
-        toolbox.set_active_module(phase)
-        if hasattr(app, "refresh_tool_enablement"):
+        else:
+            toolbox.set_active_module(phase)
+            if hasattr(app, "refresh_tool_enablement"):
+                try:
+                    app.refresh_tool_enablement()
+                except Exception:
+                    pass
+        smw = getattr(app, "safety_mgmt_window", None)
+        if smw and hasattr(smw, "phase_var"):
             try:
-                app.refresh_tool_enablement()
+                if smw.phase_var.get() != phase:
+                    smw.phase_var.set(phase)
+                    if hasattr(smw, "refresh_diagrams"):
+                        smw.refresh_diagrams()
             except Exception:
                 pass
 
