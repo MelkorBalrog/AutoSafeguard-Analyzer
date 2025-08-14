@@ -2024,7 +2024,6 @@ def link_trace_between_objects(src_obj, dst_obj, diagram_id: str):
 
 
 # ---------------------------------------------------------------------------
-
 def link_requirements(src_id: str, relation: str, dst_id: str) -> None:
     """Create a requirement relationship and mirror the inverse."""
 
@@ -3386,6 +3385,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
