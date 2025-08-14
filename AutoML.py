@@ -310,6 +310,7 @@ from analysis.models import (
     ASIL_DECOMP_SCHEMES,
     calc_asil,
     global_requirements,
+    ensure_requirement_defaults,
     REQUIREMENT_TYPE_OPTIONS,
     REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
@@ -1375,6 +1376,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
+        ensure_requirement_defaults(req)
         if req_type not in (
             "operational",
             "functional modification",
@@ -1595,6 +1597,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
+            ensure_requirement_defaults(req)
             if req_type not in (
                 "operational",
                 "functional modification",
@@ -12562,6 +12565,7 @@ class FaultTreeApp:
                                         "text": req_text,
                                         "asil": "",
                                     }
+                                    ensure_requirement_defaults(req)
                                     global_requirements[rid] = req
                                 if not hasattr(self.node, "safety_requirements"):
                                     self.node.safety_requirements = []
@@ -12789,6 +12793,7 @@ class FaultTreeApp:
                 custom_id = str(uuid.uuid4())
             if custom_id in global_requirements:
                 req = global_requirements[custom_id]
+                ensure_requirement_defaults(req)
                 req["req_type"] = dialog.result["req_type"]
                 req["text"] = dialog.result["text"]
                 req["asil"] = dialog.result.get("asil", "QM")
@@ -12801,6 +12806,7 @@ class FaultTreeApp:
                     "asil": dialog.result.get("asil", "QM"),
                     "validation_criteria": 0.0
                 }
+                ensure_requirement_defaults(req)
                 global_requirements[custom_id] = req
             self.app.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
@@ -17515,7 +17521,10 @@ class FaultTreeApp:
                 "safety_concept",
                 {"functional": "", "technical": "", "cybersecurity": ""},
             ).copy(),
-            "global_requirements": global_requirements,
+            "global_requirements": {
+                rid: ensure_requirement_defaults(req.copy())
+                for rid, req in global_requirements.items()
+            },
             "reviews": reviews,
             "current_review": current_name,
             "sysml_repository": repo.to_dict(),
@@ -17576,6 +17585,11 @@ class FaultTreeApp:
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
         self.root_node = self.top_events[0] if self.top_events else None
+
+        global global_requirements
+        global_requirements.clear()
+        for rid, req in data.get("global_requirements", {}).items():
+            global_requirements[rid] = ensure_requirement_defaults(req)
 
         self.gsn_modules = [
             GSNModule.from_dict(m) for m in data.get("gsn_modules", [])
@@ -18646,8 +18660,11 @@ class FaultTreeApp:
         if hasattr(node, "safety_requirements"):
             for req in node.safety_requirements:
                 # Use req["id"] as key; if already exists, you could update if needed.
+                ensure_requirement_defaults(req)
                 if req["id"] not in global_requirements:
                     global_requirements[req["id"]] = req
+                else:
+                    ensure_requirement_defaults(global_requirements[req["id"]])
         for child in node.children:
             self.update_global_requirements_from_nodes(child)
 
