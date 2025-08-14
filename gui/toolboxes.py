@@ -38,7 +38,26 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from sysml.sysml_repository import SysMLRepository
+
+
+def find_requirement_traces(req_id: str) -> list[str]:
+    """Return human readable diagram/object names allocated to ``req_id``."""
+    repo = SysMLRepository.get_instance()
+    results: list[str] = []
+    for diag_id, obj_id in repo.find_requirements(req_id):
+        diag = repo.diagrams.get(diag_id)
+        dname = diag.name if diag and diag.name else diag_id
+        obj = None
+        if diag:
+            obj = next(
+                (o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id),
+                None,
+            )
+        oname = obj.get("properties", {}).get("name") if obj else ""
+        if not oname and obj:
+            oname = obj.get("obj_type", "")
+        results.append(f"{dname}:{oname}")
+    return results
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
