@@ -148,7 +148,7 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("safety analysis", msg)
 
-    def test_used_by_between_safety_analyses_disallowed(self):
+    def test_used_between_dependent_analyses_allowed(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")
         e1 = repo.create_element("Block", name="E1")
@@ -159,7 +159,7 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
             0,
             0,
             element_id=e1.elem_id,
-            properties={"name": "FMEA"},
+            properties={"name": "Reliability Analysis"},
         )
         o2 = SysMLObject(
             2,
@@ -167,14 +167,114 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "FTA"},
+            properties={"name": "FMEA"},
         )
         win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
         win.repo = repo
         win.diagram_id = diag.diag_id
         valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Used By")
+        self.assertTrue(valid)
+
+    def test_used_between_safety_analyses_requires_dependency(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        e3 = repo.create_element("Block", name="E3")
+        fmea = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "FMEA"},
+        )
+        fta = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FTA"},
+        )
+        threat = SysMLObject(
+            3,
+            "Work Product",
+            0,
+            200,
+            element_id=e3.elem_id,
+            properties={"name": "Threat Analysis"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        valid, msg = GovernanceDiagramWindow.validate_connection(win, fmea, fta, "Used By")
         self.assertFalse(valid)
-        self.assertIn("safety analysis", msg)
+        self.assertIn("Propagate", msg)
+        valid, msg = GovernanceDiagramWindow.validate_connection(win, fmea, threat, "Used By")
+        self.assertFalse(valid)
+        self.assertIn("metamodel dependency", msg)
+
+    def test_used_allows_odd_to_scenario_library(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        odd = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "ODD"},
+        )
+        scenario_lib = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "Scenario Library"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            valid, _ = GovernanceDiagramWindow.validate_connection(
+                win, odd, scenario_lib, rel
+            )
+            self.assertTrue(valid)
+
+    def test_used_disallows_scenario_library_to_odd(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        scenario_lib = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Scenario Library"},
+        )
+        odd = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "ODD"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            valid, msg = GovernanceDiagramWindow.validate_connection(
+                win, scenario_lib, odd, rel
+            )
+            self.assertFalse(valid)
+            self.assertIn("safety analysis work product", msg)
 
 
 if __name__ == "__main__":
