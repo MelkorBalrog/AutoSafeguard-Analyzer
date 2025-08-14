@@ -235,6 +235,17 @@ class SafetyManagementToolbox:
             return True
         phase = self.doc_phases.get(analysis, {}).get(name)
         if phase is None:
+            repo = SysMLRepository.get_instance()
+            diag = next(
+                (
+                    d
+                    for d in repo.diagrams.values()
+                    if d.diag_type == analysis and d.name == name
+                ),
+                None,
+            )
+            phase = diag.phase if diag else None
+        if phase is None:
             return True
         if phase == self.active_module:
             return True
@@ -258,6 +269,17 @@ class SafetyManagementToolbox:
         if not self.active_module:
             return False
         phase = self.doc_phases.get(analysis, {}).get(name)
+        if phase is None:
+            repo = SysMLRepository.get_instance()
+            diag = next(
+                (
+                    d
+                    for d in repo.diagrams.values()
+                    if d.diag_type == analysis and d.name == name
+                ),
+                None,
+            )
+            phase = diag.phase if diag else None
         if phase is None or phase == self.active_module:
             return False
         reuse = self._reuse_map().get(self.active_module, {})
