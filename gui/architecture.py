@@ -3226,9 +3226,13 @@ class SysMLDiagramWindow(tk.Frame):
                 if (
                     sname in SAFETY_ANALYSIS_WORK_PRODUCTS
                     and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                    and (sname, dname) in ALLOWED_PROPAGATIONS
                 ):
-                    return False, "Use a Propagate relationship between safety analysis work products"
+                    if sname != "Mission Profile":
+                        if (sname, dname) in ALLOWED_PROPAGATIONS:
+                            return False, "Use a Propagate relationship between safety analysis work products"
+                        return False, (
+                            f"{conn_type} links cannot connect two safety analysis work products"
+                        )
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
