@@ -950,6 +950,11 @@ def test_governance_enables_tools_per_phase():
 
     toolbox.add_work_product("Gov1", "Architecture Diagram", "r")
     toolbox.add_work_product("Gov2", "Requirement Specification", "r")
+    toolbox.set_active_module("P1")
+    toolbox.register_created_work_product("Architecture Diagram", "Arch1")
+    toolbox.set_active_module("P2")
+    toolbox.register_created_work_product("Requirement Specification", "Req1")
+    toolbox.set_active_module(None)
 
     app.lifecycle_var = DummyVar("P1")
     app.on_lifecycle_selected()
