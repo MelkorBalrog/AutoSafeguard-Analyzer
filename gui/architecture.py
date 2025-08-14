@@ -6907,22 +6907,27 @@ class SysMLDiagramWindow(tk.Frame):
             if result is None:
                 return
             for obj in list(self.selected_objs):
+                if obj.obj_type == "Work Product":
+                    name = obj.properties.get("name", "")
+                    if getattr(self.app, "can_remove_work_product", None):
+                        if not self.app.can_remove_work_product(name):
+                            messagebox.showerror(
+                                "Delete",
+                                f"Cannot delete work product '{name}' with existing artifacts.",
+                            )
+                            continue
+                    getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                    toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                    if toolbox:
+                        diag = self.repo.diagrams.get(self.diagram_id)
+                        diagram_name = diag.name if diag else ""
+                        toolbox.remove_work_product(diagram_name, name)
                 if result:
                     if obj.obj_type == "Part":
                         self.remove_part_model(obj)
                     else:
                         self.remove_element_model(obj)
                 else:
-                    if obj.obj_type == "Work Product":
-                        name = obj.properties.get("name", "")
-                        if getattr(self.app, "can_remove_work_product", None):
-                            if not self.app.can_remove_work_product(name):
-                                messagebox.showerror(
-                                    "Delete",
-                                    f"Cannot delete work product '{name}' with existing artifacts.",
-                                )
-                                continue
-                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
                     self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
