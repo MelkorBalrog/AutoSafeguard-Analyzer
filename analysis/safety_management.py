@@ -628,14 +628,14 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
-    def _analysis_mapping(self) -> Dict[str, set[str]]:
-        """Return mapping of work product name to allowed analysis targets."""
+    def _analysis_mapping(self) -> Dict[str, Dict[str, set[str]]]:
+        """Return mapping of work product name to analysis targets by relation."""
         repo = SysMLRepository.get_instance()
         diag_ids = self.diagrams.values()
         if self.active_module:
             names = self.diagrams_in_module(self.active_module)
             diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
-        mapping: Dict[str, set[str]] = {}
+        mapping: Dict[str, Dict[str, set[str]]] = {}
         for diag_id in diag_ids:
             if not repo.diagram_visible(diag_id):
                 continue
@@ -650,11 +650,11 @@ class SafetyManagementToolbox:
                         id_to_name[obj.get("obj_id")] = name
             for conn in getattr(diag, "connections", []):
                 stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
-                if stereo == "analyze":
+                if stereo in {"used by", "used after review", "used after approval"}:
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
                     if sname and tname:
-                        mapping.setdefault(sname, set()).add(tname)
+                        mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
         return mapping
 
     # ------------------------------------------------------------------
@@ -765,10 +765,92 @@ class SafetyManagementToolbox:
         return set(traces.get(wp, set()))
 
     # ------------------------------------------------------------------
-    def analysis_targets(self, source: str) -> set[str]:
+    def analysis_targets(
+        self, source: str, *, reviewed: bool = False, approved: bool = False
+    ) -> set[str]:
         """Return allowed analysis targets for ``source`` work product."""
         analyses = self._analysis_mapping()
-        return set(analyses.get(source, set()))
+        rels = analyses.get(source, {})
+        targets = set(rels.get("used by", set()))
+        if reviewed or approved:
+            targets |= rels.get("used after review", set())
+        if approved:
+            targets |= rels.get("used after approval", set())
+        return targets
+
+    # ------------------------------------------------------------------
+    def analysis_inputs(
+        self, target: str, *, reviewed: bool = False, approved: bool = False
+    ) -> set[str]:
+        """Return work products that may serve as input to ``target`` analysis."""
+        analyses = self._analysis_mapping()
+        sources: set[str] = set()
+        for src, rels in analyses.items():
+            if target in rels.get("used by", set()):
+                sources.add(src)
+            if target in rels.get("used after review", set()) and (reviewed or approved):
+                sources.add(src)
+            if target in rels.get("used after approval", set()) and approved:
+                sources.add(src)
+        return sources
+
+    # ------------------------------------------------------------------
+    def analysis_usage_type(self, source: str, target: str) -> Optional[str]:
+        """Return the relationship type for using ``source`` as input to ``target``."""
+        repo = SysMLRepository.get_instance()
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        for diag_id in diag_ids:
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            src_id = dst_id = None
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") != "Work Product":
+                    continue
+                name = obj.get("properties", {}).get("name")
+                if name == source:
+                    src_id = obj.get("obj_id")
+                elif name == target:
+                    dst_id = obj.get("obj_id")
+            if src_id is None or dst_id is None:
+                continue
+            for c in getattr(diag, "connections", []):
+                stereo = (c.get("stereotype") or c.get("conn_type") or "").lower()
+                if (
+                    c.get("src") == src_id
+                    and c.get("dst") == dst_id
+                    and stereo
+                    in {"used by", "used after review", "used after approval"}
+                ):
+                    mapping = {
+                        "used by": "Used By",
+                        "used after review": "Used after Review",
+                        "used after approval": "Used after Approval",
+                    }
+                    return c.get("conn_type") or mapping[stereo]
+        return None
+
+    # ------------------------------------------------------------------
+    def can_use_as_input(
+        self,
+        source: str,
+        target: str,
+        *,
+        reviewed: bool = False,
+        approved: bool = False,
+    ) -> bool:
+        """Return ``True`` if ``source`` may be used as input to ``target``."""
+        rel = self.analysis_usage_type(source, target)
+        if rel == "Used By":
+            return True
+        if rel == "Used after Review":
+            return reviewed or approved
+        if rel == "Used after Approval":
+            return approved
+        return False
 
     # ------------------------------------------------------------------
     def requirement_diagram_targets(self, req_type: str) -> set[str]:
@@ -795,7 +877,11 @@ class SafetyManagementToolbox:
         products: List[SafetyWorkProduct] = []
         for wp in self.work_products:
             wp.traceable = sorted(traces.get(wp.analysis, set()))
-            wp.analyzable = sorted(analyses.get(wp.analysis, set()))
+            rels = analyses.get(wp.analysis, {})
+            combined: set[str] = set()
+            for vals in rels.values():
+                combined |= vals
+            wp.analyzable = sorted(combined)
             products.append(wp)
         return products
 
