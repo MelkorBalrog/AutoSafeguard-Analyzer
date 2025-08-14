@@ -7,6 +7,7 @@ from gui.toolboxes import ToolTip, configure_table_style
 from analysis.models import ThreatDoc, ThreatEntry
 from sysml.sysml_repository import SysMLRepository
 from gui.architecture import format_diagram_name
+from analysis.safety_management import SAFETY_ANALYSIS_WORK_PRODUCTS
 from .threat_dialog import ThreatDialog
 
 
@@ -142,13 +143,25 @@ class ThreatWindow(tk.Frame):
             )
             repo = SysMLRepository.get_instance()
             self.diag_map = {}
-            diags = []
-            for d in repo.diagrams.values():
-                if d.diag_type != "Internal Block Diagram":
-                    continue
-                disp = format_diagram_name(d)
-                self.diag_map[disp] = d.diag_id
-                diags.append(disp)
+            diags: list[str] = []
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            review = getattr(self.app, "current_review", None)
+            reviewed = getattr(review, "reviewed", False)
+            approved = getattr(review, "approved", False)
+            allowed = (
+                toolbox.analysis_inputs("Threat Analysis", reviewed=reviewed, approved=approved)
+                if toolbox
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
+            )
+            if "Architecture Diagram" in allowed:
+                for d in repo.diagrams.values():
+                    if d.diag_type != "Internal Block Diagram":
+                        continue
+                    if toolbox and not toolbox.document_visible("Architecture Diagram", d.name):
+                        continue
+                    disp = format_diagram_name(d)
+                    self.diag_map[disp] = d.diag_id
+                    diags.append(disp)
             self.diag_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.diag_var, values=diags, state="readonly"
@@ -172,13 +185,25 @@ class ThreatWindow(tk.Frame):
             )
             repo = SysMLRepository.get_instance()
             self.diag_map = {}
-            diags = []
-            for d in repo.diagrams.values():
-                if d.diag_type != "Internal Block Diagram":
-                    continue
-                disp = format_diagram_name(d)
-                self.diag_map[disp] = d.diag_id
-                diags.append(disp)
+            diags: list[str] = []
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            review = getattr(self.app, "current_review", None)
+            reviewed = getattr(review, "reviewed", False)
+            approved = getattr(review, "approved", False)
+            allowed = (
+                toolbox.analysis_inputs("Threat Analysis", reviewed=reviewed, approved=approved)
+                if toolbox
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
+            )
+            if "Architecture Diagram" in allowed:
+                for d in repo.diagrams.values():
+                    if d.diag_type != "Internal Block Diagram":
+                        continue
+                    if toolbox and not toolbox.document_visible("Architecture Diagram", d.name):
+                        continue
+                    disp = format_diagram_name(d)
+                    self.diag_map[disp] = d.diag_id
+                    diags.append(disp)
             self.diag_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.diag_var, values=diags, state="readonly"

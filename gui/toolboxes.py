@@ -2616,7 +2616,7 @@ class RiskAssessmentWindow(tk.Frame):
             inputs = (
                 toolbox.analysis_inputs("Risk Assessment", reviewed=reviewed, approved=approved)
                 if toolbox
-                else set()
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
             )
             if "HAZOP" not in inputs:
                 hazop_names = []
