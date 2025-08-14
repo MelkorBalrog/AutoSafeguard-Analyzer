@@ -164,7 +164,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "FTA"},
+            properties={"name": "Architecture Diagram"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
         win = self._create_window("Used after Approval", o1, o2, diag)
@@ -267,7 +267,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             0,
             element_id=e1.elem_id,
-            properties={"name": "Architecture Diagram"},
+            properties={"name": "Mission Profile"},
         )
         o2 = SysMLObject(
             2,
