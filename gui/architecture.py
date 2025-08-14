@@ -9177,6 +9177,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
+            "Scenario",
+            "ODD",
         ]
         options = list(dict.fromkeys(options))
         area_map = {
@@ -9197,6 +9199,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
+            "Scenario": "Scenario",
+            "ODD": "Scenario",
         }
         areas = {
             o.properties.get("name")
@@ -9232,6 +9236,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Hazard & Threat Analysis",
             "Risk Assessment",
             "Safety Analysis",
+            "Scenario",
         ]
         dlg = self._SelectDialog(self, "Add Process Area", options)
         name = getattr(dlg, "selection", "")

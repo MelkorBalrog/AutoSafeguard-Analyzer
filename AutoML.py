@@ -2023,6 +2023,11 @@ class FaultTreeApp:
             "GSN Explorer",
             "manage_gsn",
         ),
+        "GSN": (
+            "Safety Analysis",
+            "GSN Explorer",
+            "manage_gsn",
+        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2108,6 +2113,11 @@ class FaultTreeApp:
             "Scenario Libraries",
             "manage_scenario_libraries",
         ),
+        "ODD": (
+            "Scenario",
+            "ODD Libraries",
+            "manage_odd_libraries",
+        ),
     }
 
     for _wp in REQUIREMENT_WORK_PRODUCTS:
@@ -2136,6 +2146,7 @@ class FaultTreeApp:
         "Reliability Analysis": "Quantitative Analysis",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
+        "ODD": "Scenario",
     }
 
     def __init__(self, root):
@@ -2504,7 +2515,7 @@ class FaultTreeApp:
             command=self.manage_odd_libraries,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Scenario", []).append(
+        self.work_product_menus.setdefault("ODD", []).append(
             (libs_menu, libs_menu.index("end"))
         )
 
@@ -2532,6 +2543,7 @@ class FaultTreeApp:
         menubar.add_cascade(label="Scenario", menu=libs_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Scenario", []).append((menubar, idx))
+        self.work_product_menus.setdefault("ODD", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Qualitative Analysis", menu=qualitative_menu)
         idx = menubar.index("end")
@@ -9088,6 +9100,7 @@ class FaultTreeApp:
             "FTA": "top_events",
             "Architecture Diagram": "arch_diagrams",
             "Scenario": "scenario_libraries",
+            "ODD": "odd_libraries",
             "Qualitative Analysis": (
                 "hazop_docs",
                 "stpa_docs",
