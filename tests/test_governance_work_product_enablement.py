@@ -16,6 +16,8 @@ def test_governance_work_product_enablement(analysis, monkeypatch):
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
     diag.tags.append("safety-management")
 
+    from analysis import safety_management as _sm
+    prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
     # Required process area for FI2TC/TC2FI
@@ -55,3 +57,4 @@ def test_governance_work_product_enablement(analysis, monkeypatch):
     assert analysis in captured["options"]
     assert enable_calls == [analysis]
     assert any(wp.analysis == analysis for wp in toolbox.work_products)
+    _sm.ACTIVE_TOOLBOX = prev_tb
