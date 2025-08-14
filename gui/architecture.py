@@ -8221,6 +8221,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
+        self.refresh_from_repository()
 
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
