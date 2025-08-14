@@ -6,8 +6,16 @@ from tkinter import ttk, simpledialog
 from gui import messagebox
 from dataclasses import dataclass, field
 from typing import List, Dict
+import re
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
+
+
+def _strip_phase_suffix(name: str) -> str:
+    """Return *name* without any trailing ``" (...)"`` phase text."""
+    if not name:
+        return ""
+    return re.sub(r" \([^()]+\)$", "", name)
 
 
 class SafetyManagementExplorer(tk.Frame):
@@ -71,24 +79,28 @@ class SafetyManagementExplorer(tk.Frame):
 
         def _add_module(parent: str, mod: GovernanceModule) -> None:
             for sub in mod.modules:
-                sub_id = self.tree.insert(parent, "end", text=sub.name, image=self.folder_icon)
+                label = _strip_phase_suffix(sub.name)
+                sub_id = self.tree.insert(parent, "end", text=label, image=self.folder_icon)
                 self.item_map[sub_id] = ("module", sub)
                 _add_module(sub_id, sub)
             for name in mod.diagrams:
-                diag_id = self.tree.insert(parent, "end", text=name, image=self.diagram_icon)
+                label = _strip_phase_suffix(name)
+                diag_id = self.tree.insert(parent, "end", text=label, image=self.diagram_icon)
                 self.item_map[diag_id] = ("diagram", name)
 
         for mod in self.toolbox.modules:
+            label = _strip_phase_suffix(mod.name)
             mod_id = self.tree.insert(
-                self.root_iid, "end", text=mod.name, image=self.folder_icon
+                self.root_iid, "end", text=label, image=self.folder_icon
             )
             self.item_map[mod_id] = ("module", mod)
             _add_module(mod_id, mod)
 
         for name in sorted(self.toolbox.diagrams.keys()):
             if not self._in_any_module(name, self.toolbox.modules):
+                label = _strip_phase_suffix(name)
                 iid = self.tree.insert(
-                    self.root_iid, "end", text=name, image=self.diagram_icon
+                    self.root_iid, "end", text=label, image=self.diagram_icon
                 )
                 self.item_map[iid] = ("diagram", name)
 
