@@ -300,6 +300,8 @@ class SysMLRepository:
 
     def delete_element(self, elem_id: str) -> None:
         """Remove an element and any relationships referencing it."""
+        if self.element_read_only(elem_id):
+            return
         self.push_undo_state()
         if elem_id in self.elements:
             del self.elements[elem_id]
@@ -321,6 +323,8 @@ class SysMLRepository:
         self.delete_element(pkg_id)
 
     def delete_diagram(self, diag_id: str) -> None:
+        if self.diagram_read_only(diag_id):
+            return
         self.push_undo_state()
         if diag_id in self.diagrams:
             del self.diagrams[diag_id]
@@ -422,6 +426,24 @@ class SysMLRepository:
         if self.active_phase is None or diag.phase is None:
             return True
         return diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set())
+
+    def element_read_only(self, elem_id: str) -> bool:
+        """Return ``True`` if ``elem_id`` originates from a reused phase."""
+        elem = self.elements.get(elem_id)
+        if not elem:
+            return False
+        if self.active_phase is None or elem.phase is None:
+            return False
+        return elem.phase != self.active_phase and elem.phase in getattr(self, "reuse_phases", set())
+
+    def diagram_read_only(self, diag_id: str) -> bool:
+        """Return ``True`` if ``diag_id`` originates from a reused phase."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return False
+        if self.active_phase is None or diag.phase is None:
+            return False
+        return diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set())
 
     def visible_elements(self) -> dict[str, SysMLElement]:
         """Return mapping of element IDs to elements visible in the active phase."""

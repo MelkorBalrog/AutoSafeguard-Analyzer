@@ -449,6 +449,8 @@ def _shared_generalization_parent(
 
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
+    if repo.element_read_only(block_id):
+        return
     repo.push_undo_state()
     block = repo.elements.get(block_id)
     if not block or block.elem_type != "Block":

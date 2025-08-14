@@ -539,11 +539,14 @@ class SafetyManagementToolbox:
 
     def delete_diagram(self, name: str) -> None:
         """Remove a diagram from the toolbox and repository."""
-        diag_id = self.diagrams.pop(name, None)
+        diag_id = self.diagrams.get(name)
         if not diag_id:
             return
         repo = SysMLRepository.get_instance()
+        if repo.diagram_read_only(diag_id):
+            return
         repo.delete_diagram(diag_id)
+        del self.diagrams[name]
 
     def rename_diagram(self, old: str, new: str) -> None:
         """Rename a managed diagram ensuring the name remains unique.
@@ -559,6 +562,8 @@ class SafetyManagementToolbox:
         if not diag_id or not new:
             return
         repo = SysMLRepository.get_instance()
+        if repo.diagram_read_only(diag_id):
+            return
         diag = repo.diagrams.get(diag_id)
         if not diag:
             return
