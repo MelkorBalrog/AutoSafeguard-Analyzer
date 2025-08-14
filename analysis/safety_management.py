@@ -23,6 +23,8 @@ from typing import Dict, List, Callable, Optional
 
 from sysml.sysml_repository import SysMLRepository
 
+ACTIVE_TOOLBOX: Optional["SafetyManagementToolbox"] = None
+
 # Relationships that allow propagation of results between work products. Each
 # entry is a directed edge from source to target analysis name.
 ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
@@ -88,6 +90,7 @@ class GovernanceModule:
     name: str
     modules: List["GovernanceModule"] = field(default_factory=list)
     diagrams: List[str] = field(default_factory=list)
+    frozen: bool = False
 
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:
@@ -96,6 +99,7 @@ class GovernanceModule:
             "name": self.name,
             "modules": [m.to_dict() for m in self.modules],
             "diagrams": list(self.diagrams),
+            "frozen": self.frozen,
         }
 
     # ------------------------------------------------------------------
@@ -105,6 +109,7 @@ class GovernanceModule:
         mod = cls(data.get("name", ""))
         mod.modules = [cls.from_dict(m) for m in data.get("modules", [])]
         mod.diagrams = list(data.get("diagrams", []))
+        mod.frozen = data.get("frozen", False)
         return mod
 
 
@@ -137,9 +142,41 @@ class SafetyManagementToolbox:
     frozen_modules: set[str] = field(default_factory=set)
     frozen_diagrams: set[str] = field(default_factory=set)
 
+    def __post_init__(self) -> None:
+        global ACTIVE_TOOLBOX
+        ACTIVE_TOOLBOX = self
+
+    # ------------------------------------------------------------------
+    def module_frozen(self, name: Optional[str]) -> bool:
+        if not name:
+            return False
+        mod = self._find_module(name, self.modules)
+        return bool(mod and getattr(mod, "frozen", False))
+
+    # ------------------------------------------------------------------
+    def freeze_active_phase(self) -> None:
+        """Mark the currently active module as frozen and lock its diagrams."""
+        if not self.active_module or self.module_frozen(self.active_module):
+            return
+        mod = self._find_module(self.active_module, self.modules)
+        if not mod:
+            return
+        mod.frozen = True
+        repo = SysMLRepository.get_instance()
+        for name in self.diagrams_in_module(self.active_module):
+            diag_id = self.diagrams.get(name)
+            if not diag_id:
+                continue
+            diag = repo.diagrams.get(diag_id)
+            if diag:
+                diag.locked = True
+
     # ------------------------------------------------------------------
     def add_work_product(self, diagram: str, analysis: str, rationale: str) -> None:
         """Add a work product linking a diagram to an analysis with rationale."""
+        mod = self.module_for_diagram(diagram)
+        if self.module_frozen(mod):
+            return
         self.work_products.append(SafetyWorkProduct(diagram, analysis, rationale))
         if self.on_change:
             self.on_change()
@@ -163,6 +200,9 @@ class SafetyManagementToolbox:
             type or the declaration was not found.
         """
 
+        mod = self.module_for_diagram(diagram)
+        if self.module_frozen(mod):
+            return False
         if self.work_product_counts.get(analysis, 0) > 0:
             return False
 
@@ -180,7 +220,7 @@ class SafetyManagementToolbox:
         self.work_product_counts[analysis] = self.work_product_counts.get(analysis, 0) + 1
         if self.active_module:
             self.doc_phases.setdefault(analysis, {})[name] = self.active_module
-            self._freeze_active_phase()
+            self.freeze_active_phase()
 
     # ------------------------------------------------------------------
     def register_loaded_work_product(self, analysis: str, name: str) -> None:
@@ -431,6 +471,10 @@ class SafetyManagementToolbox:
         """
 
         if not new or old == new or old in self.frozen_modules:
+            return
+
+        mod = self._find_module(old, self.modules)
+        if mod and getattr(mod, "frozen", False):
             return
 
         existing = set(self.list_modules())

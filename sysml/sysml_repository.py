@@ -66,6 +66,7 @@ class SysMLDiagram:
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     phase: Optional[str] = None
+    locked: bool = False
 
     # ------------------------------------------------------------
     def display_name(self) -> str:
@@ -215,6 +216,13 @@ class SysMLRepository:
             phase=self.active_phase,
         )
         self.elements[elem_id] = elem
+        try:
+            from analysis import safety_management as sm
+            toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
+            if toolbox:
+                toolbox.freeze_active_phase()
+        except Exception:
+            pass
         return elem
 
     # ------------------------------------------------------------------
@@ -299,17 +307,28 @@ class SysMLRepository:
             phase=self.active_phase,
         )
         self.diagrams[diag_id] = diagram
+        try:
+            from analysis import safety_management as sm
+            toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
+            if toolbox:
+                toolbox.freeze_active_phase()
+        except Exception:
+            pass
         return diagram
 
     def add_element_to_diagram(self, diag_id: str, elem_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and elem_id not in diag.elements:
+            if self.diagram_read_only(diag_id):
+                return
             self.push_undo_state()
             diag.elements.append(elem_id)
 
     def add_relationship_to_diagram(self, diag_id: str, rel_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and rel_id not in diag.relationships:
+            if self.diagram_read_only(diag_id):
+                return
             self.push_undo_state()
             diag.relationships.append(rel_id)
 
@@ -500,12 +519,12 @@ class SysMLRepository:
         return False
 
     def diagram_read_only(self, diag_id: str) -> bool:
-        """Return ``True`` if ``diag_id`` is frozen or originates from reuse."""
-        if diag_id in self.frozen_diagrams:
-            return True
+        """Return ``True`` if ``diag_id`` is locked or originates from a reused phase/work product."""
         diag = self.diagrams.get(diag_id)
         if not diag:
             return False
+        if getattr(diag, "locked", False):
+            return True
         if self.active_phase is None or diag.phase is None:
             return False
         if diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set()):
