@@ -1830,6 +1830,7 @@ class SysMLObject:
     locked: bool = False
     hidden: bool = False
     collapsed: Dict[str, bool] = field(default_factory=dict)
+    phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
 
 
 @dataclass
@@ -2466,6 +2467,7 @@ class DiagramConnection:
     stereotype: str = ""
     multiplicity: str = ""
     stereotype: str = ""
+    phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
 
 
 def format_control_flow_label(
