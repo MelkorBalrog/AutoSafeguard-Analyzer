@@ -776,7 +776,8 @@ class SafetyManagementToolbox:
         product which in turn is "Used By" an analysis then that analysis is
         considered a valid target for ``source`` as well.  "Used after Review"
         and "Used after Approval" relations only become visible when the
-        corresponding state flag is provided.
+        corresponding state flag is provided. Only analysis types listed in
+        :data:`SAFETY_ANALYSIS_WORK_PRODUCTS` are returned.
         """
         analyses = self._analysis_mapping()
         traces = self._trace_mapping()
@@ -801,7 +802,7 @@ class SafetyManagementToolbox:
                 targets |= rels.get("used after review", set())
             if approved:
                 targets |= rels.get("used after approval", set())
-        return targets
+        return {t for t in targets if t in SAFETY_ANALYSIS_WORK_PRODUCTS}
 
     # ------------------------------------------------------------------
     def analysis_inputs(
@@ -809,13 +810,16 @@ class SafetyManagementToolbox:
     ) -> set[str]:
         """Return work products that may serve as input to ``target`` analysis.
 
-        Any work product that traces to another work product with a direct
-        relationship to ``target`` is also considered an input.  Visibility of
-        "Used after Review" and "Used after Approval" relations depends on the
+        Only analyses defined in :data:`SAFETY_ANALYSIS_WORK_PRODUCTS` are
+        considered. Any work product that traces to another work product with a
+        direct relationship to ``target`` is also considered an input.  Visibility
+        of "Used after Review" and "Used after Approval" relations depends on the
         provided state flags.
         """
         analyses = self._analysis_mapping()
         traces = self._trace_mapping()
+        if target not in SAFETY_ANALYSIS_WORK_PRODUCTS:
+            return set()
 
         direct: set[str] = set()
         for src, rels in analyses.items():
