@@ -22,7 +22,6 @@ class SysMLElement:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    phase: Optional[str] = None
 
 @dataclass
 class SysMLRelationship:
@@ -38,7 +37,6 @@ class SysMLRelationship:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    phase: Optional[str] = None
 
 @dataclass
 class SysMLDiagram:
@@ -60,7 +58,6 @@ class SysMLDiagram:
     modified: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
-    phase: Optional[str] = None
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
@@ -75,7 +72,6 @@ class SysMLRepository:
         # maintain undo and redo history of repository snapshots
         self._undo_stack: list[dict] = []
         self._redo_stack: list[dict] = []
-        self.active_phase: Optional[str] = None
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -193,7 +189,6 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
         )
         self.elements[elem_id] = elem
         return elem
@@ -277,7 +272,6 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
         )
         self.diagrams[diag_id] = diagram
         return diagram
@@ -391,39 +385,9 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
         )
         self.relationships.append(rel)
         return rel
-
-    # ------------------------------------------------------------
-    # Phase visibility helpers
-    # ------------------------------------------------------------
-    def element_visible(self, elem_id: str) -> bool:
-        """Return True if ``elem_id`` should be visible in the active phase."""
-        elem = self.elements.get(elem_id)
-        if not elem:
-            return False
-        if self.active_phase is None or elem.phase is None:
-            return True
-        return elem.phase == self.active_phase
-
-    def diagram_visible(self, diag_id: str) -> bool:
-        """Return True if ``diag_id`` should be visible in the active phase."""
-        diag = self.diagrams.get(diag_id)
-        if not diag:
-            return False
-        if self.active_phase is None or diag.phase is None:
-            return True
-        return diag.phase == self.active_phase
-
-    def visible_elements(self) -> dict[str, SysMLElement]:
-        """Return mapping of element IDs to elements visible in the active phase."""
-        return {eid: e for eid, e in self.elements.items() if self.element_visible(eid)}
-
-    def visible_diagrams(self) -> dict[str, SysMLDiagram]:
-        """Return mapping of diagram IDs to diagrams visible in the active phase."""
-        return {did: d for did, d in self.diagrams.items() if self.diagram_visible(did)}
 
     # ------------------------------------------------------------
     # Diagram linkage helpers
