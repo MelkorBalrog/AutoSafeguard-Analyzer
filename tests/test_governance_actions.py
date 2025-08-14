@@ -3,17 +3,17 @@ import unittest
 from unittest import mock
 
 from sysml.sysml_repository import SysMLRepository
-from gui.architecture import ArchitectureManagerDialog, BPMNDiagramWindow
+from gui.architecture import ArchitectureManagerDialog, GovernanceDiagramWindow
 
 
-class BPMNActionsTests(unittest.TestCase):
+class GovernanceActionsTests(unittest.TestCase):
     def setUp(self):
         SysMLRepository._instance = None
         self.repo = SysMLRepository.get_instance()
 
     def test_drop_creates_action(self):
-        src = self.repo.create_diagram("BPMN Diagram", name="Src")
-        target = self.repo.create_diagram("BPMN Diagram", name="Tgt")
+        src = self.repo.create_diagram("Governance Diagram", name="Src")
+        target = self.repo.create_diagram("Governance Diagram", name="Tgt")
         explorer = ArchitectureManagerDialog.__new__(ArchitectureManagerDialog)
         explorer.repo = self.repo
         with mock.patch("gui.messagebox.showerror"):
@@ -25,8 +25,8 @@ class BPMNActionsTests(unittest.TestCase):
         self.assertEqual(self.repo.get_linked_diagram(elem.elem_id), src.diag_id)
 
     def test_toolbox_creates_action(self):
-        diag = self.repo.create_diagram("BPMN Diagram")
-        win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+        diag = self.repo.create_diagram("Governance Diagram")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
         win.repo = self.repo
         win.diagram_id = diag.diag_id
         win.zoom = 1.0
@@ -50,7 +50,7 @@ class BPMNActionsTests(unittest.TestCase):
             canvasx=lambda v: v, canvasy=lambda v: v, configure=lambda **kw: None
         )
         event = types.SimpleNamespace(x=10, y=10)
-        BPMNDiagramWindow.on_left_press(win, event)
+        GovernanceDiagramWindow.on_left_press(win, event)
         obj = win.objects[0]
         elem = self.repo.elements[obj.element_id]
         self.assertEqual(obj.obj_type, "Action")

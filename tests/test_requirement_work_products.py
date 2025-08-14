@@ -1,7 +1,7 @@
 import types
 
 from analysis.models import REQUIREMENT_TYPE_OPTIONS
-from gui.architecture import BPMNDiagramWindow, SysMLObject
+from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
 from AutoML import FaultTreeApp
 
@@ -22,7 +22,7 @@ def test_add_requirement_work_product(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Gov")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.objects = [
@@ -48,7 +48,7 @@ def test_add_requirement_work_product(monkeypatch):
         def __init__(self, *args, **kwargs):
             self.selection = name
 
-    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
 
     win.add_work_product()
 

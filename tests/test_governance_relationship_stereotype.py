@@ -1,7 +1,7 @@
 import types
 import unittest
 
-from gui.architecture import BPMNDiagramWindow, SysMLObject
+from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
 
 
@@ -28,14 +28,14 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         architecture.ConnectionDialog = self._orig_conn_dialog
 
     def _create_window(self, tool, src, dst, diag):
-        win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
         win.repo = self.repo
         win.diagram_id = diag.diag_id
         win.zoom = 1
         win.canvas = DummyCanvas()
         win.find_object = lambda x, y, prefer_port=False: src if win.start is None else dst
-        win.validate_connection = BPMNDiagramWindow.validate_connection.__get__(
-            win, BPMNDiagramWindow
+        win.validate_connection = GovernanceDiagramWindow.validate_connection.__get__(
+            win, GovernanceDiagramWindow
         )
         win.update_property_view = lambda: None
         win.redraw = lambda: None
@@ -53,7 +53,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         repo = self.repo
         e1 = repo.create_element("Block", name="E1")
         e2 = repo.create_element("Block", name="E2")
-        diag = repo.create_diagram("BPMN Diagram", name="Gov")
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
         repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
         repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
         o1 = SysMLObject(
@@ -75,9 +75,9 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         diag.objects = [o1.__dict__, o2.__dict__]
         win = self._create_window("Propagate", o1, o2, diag)
         event1 = types.SimpleNamespace(x=0, y=0, state=0)
-        BPMNDiagramWindow.on_left_press(win, event1)
+        GovernanceDiagramWindow.on_left_press(win, event1)
         event2 = types.SimpleNamespace(x=0, y=100, state=0)
-        BPMNDiagramWindow.on_left_press(win, event2)
+        GovernanceDiagramWindow.on_left_press(win, event2)
         self.assertEqual(repo.relationships[0].stereotype, "propagate")
 
 

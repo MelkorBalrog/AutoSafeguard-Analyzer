@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
-from gui.architecture import BPMNDiagramWindow, SysMLObject
+from gui.architecture import GovernanceDiagramWindow, SysMLObject
 
 
 class DummyVar:
@@ -21,10 +21,10 @@ class DummyVar:
         return self.value
 
 
-def test_open_bpmn_diagram_activates_phase():
+def test_open_governance_diagram_activates_phase():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+    diag = repo.create_diagram("Governance Diagram", name="Gov1")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="Phase1", diagrams=["Gov1"])]
@@ -42,12 +42,12 @@ def test_open_bpmn_diagram_activates_phase():
 
     app.on_lifecycle_selected = on_lifecycle_selected
 
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.app = app
 
-    BPMNDiagramWindow._activate_parent_phase(win)
+    GovernanceDiagramWindow._activate_parent_phase(win)
 
     assert toolbox.active_module == "Phase1"
     assert app.lifecycle_var.get() == "Phase1"
@@ -70,7 +70,7 @@ def test_added_work_product_respects_phase(monkeypatch):
     from AutoML import FaultTreeApp
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov2")
+    diag = repo.create_diagram("Governance Diagram", name="Gov2")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [
@@ -139,7 +139,7 @@ def test_added_work_product_respects_phase(monkeypatch):
 
     app.on_lifecycle_selected()
 
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.objects = [
@@ -162,7 +162,7 @@ def test_added_work_product_respects_phase(monkeypatch):
         def __init__(self, *args, **kwargs):
             self.selection = "HAZOP"
 
-    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
 
     win.add_work_product()
     assert menu.state == tk.DISABLED
@@ -188,7 +188,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
     from AutoML import FaultTreeApp
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov3")
+    diag = repo.create_diagram("Governance Diagram", name="Gov3")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [
@@ -257,7 +257,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
 
     app.on_lifecycle_selected()
 
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.objects = [
@@ -280,7 +280,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
         def __init__(self, *args, **kwargs):
             self.selection = "HAZOP"
 
-    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
 
     win.add_work_product()
     assert menu.state == tk.NORMAL

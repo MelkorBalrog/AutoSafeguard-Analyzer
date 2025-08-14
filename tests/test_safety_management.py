@@ -25,7 +25,7 @@ from analysis.safety_management import (
     GovernanceModule,
     SafetyWorkProduct,
 )
-from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.architecture import GovernanceDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
@@ -36,11 +36,11 @@ from analysis.models import HazopDoc, StpaDoc
 
 def test_work_product_registration():
     toolbox = SafetyManagementToolbox()
-    toolbox.add_work_product("BPMN Diagram", "HAZOP", "Link action to hazard")
+    toolbox.add_work_product("Governance Diagram", "HAZOP", "Link action to hazard")
 
     products = toolbox.get_work_products()
     assert len(products) == 1
-    assert products[0].diagram == "BPMN Diagram"
+    assert products[0].diagram == "Governance Diagram"
     assert products[0].analysis == "HAZOP"
     assert products[0].rationale == "Link action to hazard"
 
@@ -83,8 +83,8 @@ class DummyCanvas:
 def test_activity_boundary_label_rotated_left_inside():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.zoom = 1.0
@@ -493,7 +493,7 @@ def test_external_safety_diagrams_load_in_toolbox_list():
     """Diagrams tagged for governance appear even if created elsewhere."""
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="GovX")
+    diag = repo.create_diagram("Governance Diagram", name="GovX")
     diag.tags.append("safety-management")
     toolbox = SafetyManagementToolbox()
     names = toolbox.list_diagrams()
@@ -676,11 +676,11 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
         assert FaultTreeApp.disable_work_product(app, name)
         assert menu.state == tk.DISABLED
 
-def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
-    """Governance diagrams open as BPMN diagrams with their toolbox."""
+def test_governance_diagram_opens_with_governance_toolbox(monkeypatch):
+    """Governance diagrams open as Governance diagrams with their toolbox."""
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="GovA")
+    diag = repo.create_diagram("Governance Diagram", name="GovA")
     diag.tags.append("safety-management")
 
     app = FaultTreeApp.__new__(FaultTreeApp)
@@ -705,21 +705,21 @@ def test_governance_diagram_opens_with_bpmn_toolbox(monkeypatch):
     app._new_tab = _new_tab
     app.refresh_all = lambda: None
 
-    calls = {"bpmn": False, "activity": False}
+    calls = {"governance": False, "activity": False}
 
-    def fake_bpmn(tab, _app, diagram_id):
-        calls["bpmn"] = True
+    def fake_governance(tab, _app, diagram_id):
+        calls["governance"] = True
         assert diagram_id == diag.diag_id
 
     def fake_activity(tab, _app, diagram_id):
         calls["activity"] = True
 
-    monkeypatch.setattr(AutoML, "BPMNDiagramWindow", fake_bpmn)
+    monkeypatch.setattr(AutoML, "GovernanceDiagramWindow", fake_governance)
     monkeypatch.setattr(AutoML, "ActivityDiagramWindow", fake_activity)
 
     app.open_management_window(0)
 
-    assert calls["bpmn"]
+    assert calls["governance"]
     assert not calls["activity"]
 
 
@@ -728,9 +728,9 @@ def test_diagram_hierarchy_orders_levels():
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
 
-    a = repo.create_diagram("BPMN Diagram", name="A")
-    b = repo.create_diagram("BPMN Diagram", name="B")
-    c = repo.create_diagram("BPMN Diagram", name="C")
+    a = repo.create_diagram("Governance Diagram", name="A")
+    b = repo.create_diagram("Governance Diagram", name="B")
+    c = repo.create_diagram("Governance Diagram", name="C")
     for diag in (a, b, c):
         diag.tags.append("safety-management")
 
@@ -759,8 +759,8 @@ def test_diagram_hierarchy_from_object_properties():
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
 
-    parent = repo.create_diagram("BPMN Diagram", name="Parent")
-    child = repo.create_diagram("BPMN Diagram", name="Child")
+    parent = repo.create_diagram("Governance Diagram", name="Parent")
+    child = repo.create_diagram("Governance Diagram", name="Child")
     for d in (parent, child):
         d.tags.append("safety-management")
 
@@ -789,8 +789,8 @@ def test_work_products_filtered_by_phase_in_tree():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
 
-    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
-    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    d1 = repo.create_diagram("Governance Diagram", name="Gov1")
+    d2 = repo.create_diagram("Governance Diagram", name="Gov2")
     for d in (d1, d2):
         d.tags.append("safety-management")
 
@@ -871,8 +871,8 @@ def test_work_products_filtered_by_phase_in_tree():
 def test_governance_enables_tools_per_phase():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
-    d2 = repo.create_diagram("BPMN Diagram", name="Gov2")
+    d1 = repo.create_diagram("Governance Diagram", name="Gov1")
+    d2 = repo.create_diagram("Governance Diagram", name="Gov2")
     for d in (d1, d2):
         d.tags.append("safety-management")
 
@@ -988,7 +988,7 @@ def test_governance_enables_tools_per_phase():
 def test_phase_selection_updates_app(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+    diag = repo.create_diagram("Governance Diagram", name="Gov1")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"])]
@@ -1027,7 +1027,7 @@ def test_phase_selection_updates_app(monkeypatch):
 def test_phase_selection_refreshes_menus():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+    diag = repo.create_diagram("Governance Diagram", name="Gov1")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"])]
@@ -1160,7 +1160,7 @@ def test_refresh_tool_enablement_enables_parent_menus():
 def test_phase_without_diagrams_disables_tools():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    d1 = repo.create_diagram("BPMN Diagram", name="Gov1")
+    d1 = repo.create_diagram("Governance Diagram", name="Gov1")
     d1.tags.append("safety-management")
 
     toolbox = SafetyManagementToolbox()
@@ -1741,8 +1741,8 @@ def test_folder_double_click_opens_safety_management_explorer():
 def test_add_work_product_uses_half_width(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.objects = [
@@ -1765,7 +1765,7 @@ def test_add_work_product_uses_half_width(monkeypatch):
         def __init__(self, *args, **kwargs):
             self.selection = "HAZOP"
 
-    monkeypatch.setattr(BPMNDiagramWindow, "_SelectDialog", FakeDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
 
     win.add_work_product()
 
@@ -1776,8 +1776,8 @@ def test_add_work_product_uses_half_width(monkeypatch):
 def test_work_product_color_and_text_wrapping():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.zoom = 1.0
@@ -1812,8 +1812,8 @@ def test_work_product_color_and_text_wrapping():
 def test_work_product_shapes_fixed_size():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     win.zoom = 1.0
@@ -1848,18 +1848,18 @@ def test_work_product_shapes_fixed_size():
 def test_propagation_connection_validation():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
     wp1 = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Risk Assessment"})
     wp2 = SysMLObject(2, "Work Product", 0.0, 0.0, properties={"name": "FTA"})
     win.objects = [wp1, wp2]
-    valid, _ = BPMNDiagramWindow.validate_connection(win, wp1, wp2, "Propagate")
+    valid, _ = GovernanceDiagramWindow.validate_connection(win, wp1, wp2, "Propagate")
     assert valid
     wp3 = SysMLObject(3, "Work Product", 0.0, 0.0, properties={"name": "STPA"})
     win.objects.append(wp3)
-    valid, _ = BPMNDiagramWindow.validate_connection(win, wp1, wp3, "Propagate")
+    valid, _ = GovernanceDiagramWindow.validate_connection(win, wp1, wp3, "Propagate")
     assert not valid
 
 
@@ -1867,7 +1867,7 @@ def test_can_propagate_respects_review_states():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
     toolbox.diagrams["Gov"] = diag.diag_id
     diag.objects = [
         {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
@@ -1887,7 +1887,7 @@ def test_propagation_type_uses_stereotype_when_conn_type_missing():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     toolbox = SafetyManagementToolbox()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
     toolbox.diagrams["Gov"] = diag.diag_id
     diag.objects = [
         {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
@@ -1948,7 +1948,7 @@ def test_disable_requirement_work_product_keeps_editor():
     assert "Requirements Editor" not in app.tool_actions
 
 
-def test_focus_bpmn_diagram_sets_phase_and_hides_functions():
+def test_focus_governance_diagram_sets_phase_and_hides_functions():
     SysMLRepository._instance = None
     toolbox = SafetyManagementToolbox()
     d1 = toolbox.create_diagram("Gov1")
@@ -2011,7 +2011,7 @@ def test_focus_bpmn_diagram_sets_phase_and_hides_functions():
     app.safety_mgmt_toolbox = toolbox
     changes: list[str] = []
     toolbox.on_change = lambda: changes.append("x")
-    AutoML.BPMNDiagramWindow = lambda *args, **kwargs: None
+    AutoML.GovernanceDiagramWindow = lambda *args, **kwargs: None
 
     FaultTreeApp.open_arch_window(app, d1)
     app.doc_nb.select(app.diagram_tabs[d1])
