@@ -29,10 +29,14 @@ def test_governance_elements_visible_all_phases():
     diag.connections.append(asdict(conn))
 
     toolbox.set_active_module("P1")
+    assert repo.diagram_visible(diag.diag_id)
+    assert diag.diag_id in repo.visible_diagrams()
     assert len(repo.visible_objects(diag.diag_id)) == 2
     assert len(repo.visible_connections(diag.diag_id)) == 1
 
     toolbox.set_active_module("P2")
+    assert repo.diagram_visible(diag.diag_id)
+    assert diag.diag_id in repo.visible_diagrams()
     assert len(repo.visible_objects(diag.diag_id)) == 2
     assert len(repo.visible_connections(diag.diag_id)) == 1
 

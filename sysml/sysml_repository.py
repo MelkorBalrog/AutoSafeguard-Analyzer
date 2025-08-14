@@ -413,6 +413,8 @@ class SysMLRepository:
         diag = self.diagrams.get(diag_id)
         if not diag:
             return False
+        if "safety-management" in getattr(diag, "tags", []):
+            return True
         if self.active_phase is None or diag.phase is None:
             return True
         return diag.phase == self.active_phase
