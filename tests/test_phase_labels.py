@@ -64,12 +64,15 @@ class PhaseLabelTests(unittest.TestCase):
 
     def test_safety_management_explorer_omits_phase(self):
         from gui.safety_management_explorer import SafetyManagementExplorer
-        from analysis.safety_management import SafetyManagementToolbox
+        from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 
         repo = SysMLRepository.get_instance()
         toolbox = SafetyManagementToolbox()
         diag_id = toolbox.create_diagram("GovDiag")
         repo.diagrams[diag_id].phase = "Phase1"
+        mod = GovernanceModule("Folder")
+        mod.diagrams.append("GovDiag (Phase1)")
+        toolbox.modules.append(mod)
 
         explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
 
@@ -101,6 +104,7 @@ class PhaseLabelTests(unittest.TestCase):
         texts = [meta["text"] for meta in explorer.tree.items.values()]
         self.assertIn("GovDiag", texts)
         self.assertTrue(all("Phase1" not in t for t in texts))
+
 
 if __name__ == "__main__":
     unittest.main()
