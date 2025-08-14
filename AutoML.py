@@ -9033,25 +9033,25 @@ class FaultTreeApp:
 
     def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
         info = self.WORK_PRODUCT_INFO.get(name)
-        if not info:
-            return
-        area, tool_name, method_name = info
-        self.enable_process_area(area)
-        if tool_name not in self.tool_actions:
-            action = getattr(self, method_name, None)
-            if action:
-                self.tool_actions[tool_name] = action
-                lb = self.tool_listboxes.get(area)
-                if lb:
-                    lb.insert(tk.END, tool_name)
-        mapping = getattr(self, "tool_to_work_product", {})
-        existing = mapping.get(tool_name)
-        if isinstance(existing, set):
-            existing.add(name)
-        elif existing:
-            mapping[tool_name] = {existing, name}
-        else:
-            mapping.setdefault(tool_name, set()).add(name)
+        area = tool_name = method_name = None
+        if info:
+            area, tool_name, method_name = info
+            self.enable_process_area(area)
+            if tool_name not in self.tool_actions:
+                action = getattr(self, method_name, None)
+                if action:
+                    self.tool_actions[tool_name] = action
+                    lb = self.tool_listboxes.get(area)
+                    if lb:
+                        lb.insert(tk.END, tool_name)
+            mapping = getattr(self, "tool_to_work_product", {})
+            existing = mapping.get(tool_name)
+            if isinstance(existing, set):
+                existing.add(name)
+            elif existing:
+                mapping[tool_name] = {existing, name}
+            else:
+                mapping.setdefault(tool_name, set()).add(name)
         # Enable corresponding menu entry if one was registered
         for menu, idx in self.work_product_menus.get(name, []):
             try:
