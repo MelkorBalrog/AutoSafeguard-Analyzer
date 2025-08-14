@@ -9172,10 +9172,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FMEDA",
         ]
         options = list(dict.fromkeys(options))
-        dlg = self._SelectDialog(self, "Add Work Product", options)
-        name = getattr(dlg, "selection", "")
-        if not name:
-            return
         area_map = {
             "Architecture Diagram": "System Design (Item Definition)",
             "Safety & Security Concept": "System Design (Item Definition)",
@@ -9195,11 +9191,20 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
         }
-        required = area_map.get(name)
-        if required and not any(
-            o.obj_type == "System Boundary" and o.properties.get("name") == required
+        areas = {
+            o.properties.get("name")
             for o in self.objects
-        ):
+            if o.obj_type == "System Boundary"
+        }
+        options = [
+            opt for opt in options if not area_map.get(opt) or area_map[opt] in areas
+        ]
+        dlg = self._SelectDialog(self, "Add Work Product", options)
+        name = getattr(dlg, "selection", "")
+        if not name:
+            return
+        required = area_map.get(name)
+        if required and required not in areas:
             messagebox.showerror(
                 "Missing Process Area",
                 f"Add process area '{required}' before adding this work product.",
