@@ -3214,6 +3214,27 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
                     )
+                # Prevent multiple 'Used' relationships between the same
+                # work products within the active lifecycle phase. Only one
+                # of "Used By", "Used after Review" or "Used after Approval"
+                # may exist for a given source/target pair.
+                phase = self.repo.active_phase
+                used_stereos = {
+                    "used by",
+                    "used after review",
+                    "used after approval",
+                }
+                for rel in self.repo.relationships:
+                    if (
+                        rel.source == src.element_id
+                        and rel.target == dst.element_id
+                        and rel.stereotype in used_stereos
+                        and rel.phase == phase
+                    ):
+                        return False, (
+                            "A 'Used' relationship between these work products "
+                            "already exists in this phase",
+                        )
             else:
                 allowed = {
                     "Initial": {

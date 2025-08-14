@@ -568,11 +568,19 @@ class ReliabilityWindow(tk.Frame):
         mp_lbl.pack(anchor="w")
         ToolTip(mp_lbl, "Select operating conditions that influence FIT values.")
         self.profile_var = tk.StringVar()
+        toolbox = getattr(app, "safety_mgmt_toolbox", None)
+        allowed = (
+            toolbox.analysis_inputs("Reliability Analysis")
+            if toolbox
+            else SAFETY_ANALYSIS_WORK_PRODUCTS
+        )
+        mp_names = [mp.name for mp in app.mission_profiles] if "Mission Profile" in allowed else []
+        state = "readonly" if mp_names else "disabled"
         self.profile_combo = ttk.Combobox(
             self,
             textvariable=self.profile_var,
-            values=[mp.name for mp in app.mission_profiles],
-            state="readonly",
+            values=mp_names,
+            state=state,
         )
         self.profile_combo.pack(anchor="w", fill="x")
         ToolTip(
@@ -1258,7 +1266,7 @@ class FI2TCWindow(tk.Frame):
                 n.user_name or f"TC {n.unique_id}"
                 for n in self.app.get_all_triggering_conditions()
             ]
-            func_names = self.app.get_all_function_names()
+            func_names = allowed_action_labels(self.app, "FI2TC")
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
@@ -1318,6 +1326,8 @@ class FI2TCWindow(tk.Frame):
                             if not comp.get() or e.component == comp.get()
                         }
                     )
+                    if not func_opts:
+                        func_opts = func_names
                 else:
                     func_opts = func_names
                 if "system_function" in self.widgets:
@@ -2446,12 +2456,24 @@ class RiskAssessmentWindow(tk.Frame):
             ttk.Combobox(
                 master, textvariable=self.stpa_var, values=stpas, state="readonly"
             ).grid(row=2, column=1)
-            ttk.Label(master, text="Threat Analysis").grid(row=3, column=0, sticky="e")
+            ttk.Label(master, text="FI2TC").grid(row=3, column=0, sticky="e")
+            fi2tcs = [d.name for d in self.app.fi2tc_docs] if "FI2TC" in allowed else []
+            self.fi2tc_var = tk.StringVar()
+            ttk.Combobox(
+                master, textvariable=self.fi2tc_var, values=fi2tcs, state="readonly"
+            ).grid(row=3, column=1)
+            ttk.Label(master, text="TC2FI").grid(row=4, column=0, sticky="e")
+            tc2fis = [d.name for d in self.app.tc2fi_docs] if "TC2FI" in allowed else []
+            self.tc2fi_var = tk.StringVar()
+            ttk.Combobox(
+                master, textvariable=self.tc2fi_var, values=tc2fis, state="readonly"
+            ).grid(row=4, column=1)
+            ttk.Label(master, text="Threat Analysis").grid(row=5, column=0, sticky="e")
             threats = [d.name for d in self.app.threat_docs] if "Threat Analysis" in allowed else []
             self.threat_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.threat_var, values=threats, state="readonly"
-            ).grid(row=3, column=1)
+            ).grid(row=5, column=1)
 
         def apply(self):
             hazop = self.hazop_var.get()
@@ -2461,6 +2483,8 @@ class RiskAssessmentWindow(tk.Frame):
                 sel,
                 self.stpa_var.get(),
                 self.threat_var.get(),
+                self.fi2tc_var.get(),
+                self.tc2fi_var.get(),
             )
 
     class EditAssessmentDialog(simpledialog.Dialog):
@@ -2489,26 +2513,50 @@ class RiskAssessmentWindow(tk.Frame):
             ttk.Combobox(
                 master, textvariable=self.stpa_var, values=stpas, state="readonly"
             ).grid(row=1, column=1)
-            ttk.Label(master, text="Threat Analysis").grid(row=2, column=0, sticky="e")
+            ttk.Label(master, text="FI2TC").grid(row=2, column=0, sticky="e")
+            fi2tcs = [d.name for d in self.app.fi2tc_docs] if "FI2TC" in allowed else []
+            self.fi2tc_var = tk.StringVar(value=getattr(self.doc, "fi2tc", ""))
+            ttk.Combobox(
+                master, textvariable=self.fi2tc_var, values=fi2tcs, state="readonly"
+            ).grid(row=2, column=1)
+            ttk.Label(master, text="TC2FI").grid(row=3, column=0, sticky="e")
+            tc2fis = [d.name for d in self.app.tc2fi_docs] if "TC2FI" in allowed else []
+            self.tc2fi_var = tk.StringVar(value=getattr(self.doc, "tc2fi", ""))
+            ttk.Combobox(
+                master, textvariable=self.tc2fi_var, values=tc2fis, state="readonly"
+            ).grid(row=3, column=1)
+            ttk.Label(master, text="Threat Analysis").grid(row=4, column=0, sticky="e")
             threats = [d.name for d in self.app.threat_docs] if "Threat Analysis" in allowed else []
             self.threat_var = tk.StringVar(value=getattr(self.doc, "threat", ""))
             ttk.Combobox(
                 master, textvariable=self.threat_var, values=threats, state="readonly"
-            ).grid(row=2, column=1)
+            ).grid(row=4, column=1)
 
         def apply(self):
             self.result = (
                 self.hazop_var.get(),
                 self.stpa_var.get(),
                 self.threat_var.get(),
+                self.fi2tc_var.get(),
+                self.tc2fi_var.get(),
             )
 
     def new_doc(self):
         dlg = self.NewAssessmentDialog(self, self.app)
         if not getattr(dlg, "result", None):
             return
-        name, hazops, stpa, threat = dlg.result
-        doc = HaraDoc(name, hazops, [], False, "draft", stpa=stpa, threat=threat)
+        name, hazops, stpa, threat, fi2tc, tc2fi = dlg.result
+        doc = HaraDoc(
+            name,
+            hazops,
+            [],
+            False,
+            "draft",
+            stpa=stpa,
+            threat=threat,
+            fi2tc=fi2tc,
+            tc2fi=tc2fi,
+        )
         self.app.hara_docs.append(doc)
         self.app.active_hara = doc
         self.app.hara_entries = doc.entries
@@ -2525,10 +2573,12 @@ class RiskAssessmentWindow(tk.Frame):
         dlg = self.EditAssessmentDialog(self, self.app, doc)
         if not getattr(dlg, "result", None):
             return
-        hazop, stpa, threat = dlg.result
+        hazop, stpa, threat, fi2tc, tc2fi = dlg.result
         doc.hazops = [hazop] if hazop else []
         doc.stpa = stpa
         doc.threat = threat
+        doc.fi2tc = fi2tc
+        doc.tc2fi = tc2fi
         self.refresh_docs()
         self.refresh()
         self.app.update_views()
@@ -3279,7 +3329,7 @@ class TC2FIWindow(tk.Frame):
                 n.user_name or f"FI {n.unique_id}"
                 for n in self.app.get_all_functional_insufficiencies()
             ]
-            func_names = self.app.get_all_function_names()
+            func_names = allowed_action_labels(self.app, "TC2FI")
             comp_names = self.app.get_all_component_names()
             scen_names = self.app.get_all_scenario_names()
             scene_names = self.app.get_all_scenery_names()
@@ -3341,6 +3391,8 @@ class TC2FIWindow(tk.Frame):
                             if not comp.get() or e.component == comp.get()
                         }
                     )
+                    if not opts:
+                        opts = func_names
                 else:
                     opts = func_names
                 self.func_options = opts
