@@ -218,14 +218,14 @@ class SafetyManagementToolbox:
                 dst = obj_map.get(conn.get("dst"))
                 if not src or not dst:
                     continue
-                if dst[0] != "Lifecycle Phase":
+                if src[0] != "Lifecycle Phase":
                     continue
-                dest = dst[1]
-                data = mapping.setdefault(dest, {"work_products": set(), "phases": set()})
-                if src[0] == "Work Product":
-                    data["work_products"].add(src[1])
-                elif src[0] == "Lifecycle Phase":
-                    data["phases"].add(src[1])
+                phase = src[1]
+                data = mapping.setdefault(phase, {"work_products": set(), "phases": set()})
+                if dst[0] == "Work Product":
+                    data["work_products"].add(dst[1])
+                elif dst[0] == "Lifecycle Phase":
+                    data["phases"].add(dst[1])
         return mapping
 
     # ------------------------------------------------------------------
@@ -276,9 +276,12 @@ class SafetyManagementToolbox:
         if not self.active_module:
             return set()
         diagrams = self.diagrams_in_module(self.active_module)
-        if not diagrams:
-            return set()
-        return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
+        reuse = self._reuse_map().get(self.active_module, {})
+        for phase in reuse.get("phases", set()):
+            diagrams.update(self.diagrams_in_module(phase))
+        enabled = {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
+        enabled.update(reuse.get("work_products", set()))
+        return enabled
 
     # ------------------------------------------------------------------
     def is_enabled(self, analysis: str) -> bool:
