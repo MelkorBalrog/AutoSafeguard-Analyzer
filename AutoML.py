@@ -247,6 +247,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
+from gui.toolboxes import DiagramElementDialog, _RequirementRelationDialog
 from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
@@ -11697,36 +11698,6 @@ class FaultTreeApp:
                     self.cal_label.grid(row=3, column=0, sticky="e")
                     self.cal_combo.grid(row=3, column=1, padx=5, pady=5)
 
-        class TraceDialog(simpledialog.Dialog):
-            def __init__(self, parent, app, requirement):
-                self.requirement = requirement
-                self.app = app
-                super().__init__(parent, title="Edit Traceability")
-
-            def body(self, master):
-                self.vars = {}
-                canvas = tk.Canvas(master)
-                frame = tk.Frame(canvas)
-                vsb = tk.Scrollbar(master, orient="vertical", command=canvas.yview)
-                canvas.configure(yscrollcommand=vsb.set)
-                canvas.pack(side="left", fill="both", expand=True)
-                vsb.pack(side="right", fill="y")
-                canvas.create_window((0, 0), window=frame, anchor="nw")
-
-                def on_config(event):
-                    canvas.configure(scrollregion=canvas.bbox("all"))
-
-                frame.bind("<Configure>", on_config)
-
-                for n in [n for n in self.app.get_all_nodes_in_model() if n.node_type.upper() == "BASIC EVENT"]:
-                    var = tk.BooleanVar(value=any(r.get("id") == self.requirement.get("id") for r in getattr(n, "safety_requirements", [])))
-                    self.vars[n] = var
-                    ttk.Checkbutton(frame, text=n.user_name or f"BE {n.unique_id}", variable=var).pack(anchor="w")
-                return frame
-
-            def apply(self):
-                self.result = {n: v.get() for n, v in self.vars.items()}
-
         def add_req():
             dlg = ReqDialog(win, "Add Requirement")
             if dlg.result:
@@ -11759,30 +11730,70 @@ class FaultTreeApp:
                         e["safety_requirements"] = [r for r in reqs if r.get("id") != rid]
                 refresh_tree()
 
-        def edit_trace():
+        def link_to_diagram():
             sel = tree.selection()
             if not sel:
                 return
             rid = sel[0]
             req = global_requirements.get(rid)
-            dlg = TraceDialog(win, self, req)
-            if dlg.result is not None:
-                for node, val in dlg.result.items():
-                    reqs = getattr(node, "safety_requirements", [])
-                    present = any(r.get("id") == rid for r in reqs)
-                    if val and not present:
-                        reqs.append(req)
-                    if not val and present:
-                        node.safety_requirements = [r for r in reqs if r.get("id") != rid]
-                # ASIL updates will occur after joint review
-                refresh_tree()
+            if not req:
+                return
+            repo = SysMLRepository.get_instance()
+            toolbox = getattr(self, "safety_mgmt_toolbox", None)
+            can_trace = toolbox.can_trace if toolbox else (lambda a, b: True)
+            req_wp = toolbox.requirement_work_product(req.get("req_type", "")) if toolbox else ""
+            dlg = DiagramElementDialog(win, repo, req_wp, can_trace)
+            targets = getattr(dlg, "selection", [])
+            if not targets:
+                return
+            from gui.architecture import link_requirement_to_object
+            for diag_id, obj_id in targets:
+                diag = repo.diagrams.get(diag_id)
+                if not diag:
+                    continue
+                obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+                if not obj:
+                    continue
+                link_requirement_to_object(obj, rid, diag_id)
+                repo.touch_diagram(diag_id)
+                elem_id = obj.get("element_id")
+                if elem_id:
+                    repo.touch_element(elem_id)
+            refresh_tree()
+
+        def link_requirement():
+            sel = tree.selection()
+            if not sel:
+                return
+            rid = sel[0]
+            req = global_requirements.get(rid)
+            if not req:
+                return
+            toolbox = getattr(self, "safety_mgmt_toolbox", None)
+            dlg = _RequirementRelationDialog(win, req, toolbox)
+            if not dlg.result:
+                return
+            relation, targets = dlg.result
+            from gui.architecture import link_requirements, unlink_requirements
+            selected = set(targets)
+            existing = {
+                r.get("id")
+                for r in req.get("relations", [])
+                if r.get("type") == relation
+            }
+            for tid in selected - existing:
+                link_requirements(rid, relation, tid)
+            for tid in existing - selected:
+                unlink_requirements(rid, relation, tid)
+            refresh_tree()
 
         btn = tk.Frame(win)
         btn.pack(fill=tk.X)
         tk.Button(btn, text="Add", command=add_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Edit", command=edit_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Delete", command=del_req).pack(side=tk.LEFT)
-        tk.Button(btn, text="Traceability", command=edit_trace).pack(side=tk.LEFT)
+        tk.Button(btn, text="Link to Diagram...", command=link_to_diagram).pack(side=tk.LEFT)
+        tk.Button(btn, text="Link Requirement...", command=link_requirement).pack(side=tk.LEFT)
 
         refresh_tree()
 
