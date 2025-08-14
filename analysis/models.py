@@ -556,6 +556,31 @@ RELIABILITY_MODELS = {
 
 global_requirements = {}
 
+
+def ensure_requirement_defaults(req: dict) -> dict:
+    """Ensure a requirement dictionary has mandatory default fields.
+
+    Parameters
+    ----------
+    req:
+        Requirement dictionary to normalise.
+
+    Returns
+    -------
+    dict
+        The updated requirement dictionary with default fields present.
+
+    Notes
+    -----
+    Each requirement now carries a ``traces`` list capturing diagram or
+    element identifiers that reference the requirement.  When older
+    models are loaded the field may be missing; this helper guarantees the
+    key exists so callers can rely on it.
+    """
+
+    req.setdefault("traces", [])
+    return req
+
 # Requirement type options used throughout the GUI when creating or
 # editing safety requirements.  The list retains the original "vehicle"
 # and "operational" categories and adds new ones for functional,

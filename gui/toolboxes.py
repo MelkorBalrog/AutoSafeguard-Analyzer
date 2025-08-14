@@ -35,6 +35,25 @@ from analysis.models import (
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from sysml.sysml_repository import SysMLRepository
+
+
+def find_requirement_traces(req_id: str) -> list[str]:
+    """Return names of diagram objects referencing the requirement ``req_id``."""
+    repo = SysMLRepository.get_instance()
+    traces: list[str] = []
+    for diag in repo.diagrams.values():
+        for obj in diag.objects:
+            reqs = []
+            reqs.extend(obj.get("requirements", []))
+            reqs.extend(obj.get("safety_requirements", []))
+            if any(r.get("id") == req_id for r in reqs):
+                name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                if diag.name:
+                    traces.append(f"{diag.name}:{name}")
+                else:
+                    traces.append(name)
+    return sorted(set(traces))
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
@@ -3818,6 +3837,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("status", ""),
                     trace,
                     req.get("parent_id", ""),
+                    traces,
                     req.get("text", ""),
                 ),
             )
