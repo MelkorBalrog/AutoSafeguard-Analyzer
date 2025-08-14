@@ -67,7 +67,8 @@ class GSNDiagramWindow(tk.Frame):
         # toolbox with buttons to add nodes and connectors
         self.toolbox = ttk.Frame(self)
         self.toolbox.pack(side=tk.TOP, fill=tk.X)
-        btn_cmds = [
+
+        node_cmds = [
             ("Goal", self.add_goal),
             ("Strategy", self.add_strategy),
             ("Solution", self.add_solution),
@@ -75,14 +76,30 @@ class GSNDiagramWindow(tk.Frame):
             ("Justification", self.add_justification),
             ("Context", self.add_context),
             ("Module", self.add_module),
+        ]
+        node_frame = ttk.Frame(self.toolbox)
+        node_frame.pack(side=tk.TOP, fill=tk.X)
+        for name, cmd in node_cmds:
+            ttk.Button(node_frame, text=name, command=cmd).pack(side=tk.LEFT)
+
+        rel_cmds = [
             ("Solved By", self.connect_solved_by),
             ("In Context Of", self.connect_in_context),
+        ]
+        rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
+        rel_frame.pack(side=tk.TOP, fill=tk.X)
+        for name, cmd in rel_cmds:
+            ttk.Button(rel_frame, text=name, command=cmd).pack(side=tk.LEFT)
+
+        util_cmds = [
             ("Zoom In", self.zoom_in),
             ("Zoom Out", self.zoom_out),
             ("Export CSV", self.export_csv),
         ]
-        for name, cmd in btn_cmds:
-            ttk.Button(self.toolbox, text=name, command=cmd).pack(side=tk.LEFT)
+        util_frame = ttk.Frame(self.toolbox)
+        util_frame.pack(side=tk.TOP, fill=tk.X)
+        for name, cmd in util_cmds:
+            ttk.Button(util_frame, text=name, command=cmd).pack(side=tk.LEFT)
 
         # drawing canvas with scrollbars so large diagrams remain accessible
         canvas_frame = ttk.Frame(self)
