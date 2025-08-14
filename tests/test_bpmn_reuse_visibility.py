@@ -84,4 +84,3 @@ def test_activity_diagram_reuse_read_only():
     toolbox.set_active_module("P2")
     assert toolbox.document_visible("Activity Diagram", "Act1")
     assert toolbox.document_read_only("Activity Diagram", "Act1")
-
