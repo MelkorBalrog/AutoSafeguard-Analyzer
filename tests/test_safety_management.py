@@ -1014,6 +1014,97 @@ def test_phase_selection_updates_app(monkeypatch):
     assert app.called
 
 
+def test_phase_selection_refreshes_menus():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"])]
+    toolbox.diagrams = {"Gov1": diag.diag_id}
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = tk.DISABLED
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    menu = DummyMenu()
+    app = types.SimpleNamespace(
+        lifecycle_var=DummyVar(),
+        work_product_menus={"HAZOP": [(menu, 0)]},
+        enabled_work_products=set(),
+        tool_listboxes={},
+        safety_mgmt_toolbox=toolbox,
+    )
+
+    def refresh_tool_enablement():
+        for m, idx in app.work_product_menus["HAZOP"]:
+            m.entryconfig(idx, state=tk.NORMAL)
+
+    app.refresh_tool_enablement = refresh_tool_enablement
+
+    def on_lifecycle_selected(_event=None):
+        pass
+
+    app.on_lifecycle_selected = on_lifecycle_selected
+
+    win = SafetyManagementWindow.__new__(SafetyManagementWindow)
+    win.toolbox = toolbox
+    win.app = app
+    win.phase_var = DummyVar("P1")
+    win.refresh_diagrams = lambda: None
+
+    SafetyManagementWindow.select_phase(win)
+
+    assert menu.state == tk.NORMAL
+
+
+def test_child_work_product_enables_parent_menu():
+    """Enabling a work product should also activate its parent menu."""
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = tk.DISABLED
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    parent_menu = DummyMenu()
+    child_menu = DummyMenu()
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.tool_listboxes = {}
+    app.tool_actions = {}
+    app.tool_categories = {}
+    app._add_tool_category = lambda area, names: None
+    app.work_product_menus = {
+        "HAZOP": [(child_menu, 0)],
+        "Qualitative Analysis": [(parent_menu, 0)],
+    }
+    app.enabled_work_products = set()
+    app.update_views = lambda: None
+
+    FaultTreeApp.enable_work_product(app, "HAZOP")
+
+    assert child_menu.state == tk.NORMAL
+    assert parent_menu.state == tk.NORMAL
+
+    FaultTreeApp.disable_work_product(app, "HAZOP", force=True)
+    assert parent_menu.state == tk.DISABLED
+
+
 def test_phase_without_diagrams_disables_tools():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
@@ -1616,7 +1707,7 @@ def test_add_work_product_uses_half_width(monkeypatch):
     win.sort_objects = lambda: None
     win._sync_to_repository = lambda: None
     win.redraw = lambda: None
-    win.app = types.SimpleNamespace(enable_work_product=lambda name: None)
+    win.app = types.SimpleNamespace(enable_work_product=lambda name, *, refresh=True: None)
 
     class FakeDialog:
         def __init__(self, *args, **kwargs):

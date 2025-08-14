@@ -2081,6 +2081,20 @@ class FaultTreeApp:
             ),
         )
 
+    # Mapping of work products to their parent menu categories.  When a
+    # child work product is enabled its parent menu must also become
+    # active so the submenu is reachable.
+    WORK_PRODUCT_PARENTS = {
+        "HAZOP": "Qualitative Analysis",
+        "Risk Assessment": "Qualitative Analysis",
+        "STPA": "Qualitative Analysis",
+        "Threat Analysis": "Qualitative Analysis",
+        "FI2TC": "Qualitative Analysis",
+        "TC2FI": "Qualitative Analysis",
+        "FMEA": "Qualitative Analysis",
+        "FMEDA": "Quantitative Analysis",
+    }
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
@@ -8784,7 +8798,16 @@ class FaultTreeApp:
             return
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
         if toolbox:
-            declared = toolbox.enabled_products()
+            declared = set(toolbox.enabled_products())
+            # Parent menu categories must also be considered declared when
+            # any of their children are enabled so the cascade can be
+            # activated.
+            for name in list(declared):
+                parent = self.WORK_PRODUCT_PARENTS.get(name)
+                while parent:
+                    declared.add(parent)
+                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
+
             current = set(getattr(self, "enabled_work_products", set()))
             for name in declared - current:
                 try:
@@ -8893,7 +8916,7 @@ class FaultTreeApp:
             self.tool_categories[area] = []
             self._add_tool_category(area, [])
 
-    def enable_work_product(self, name: str) -> None:
+    def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
         info = self.WORK_PRODUCT_INFO.get(name)
         if not info:
             return
@@ -8921,7 +8944,10 @@ class FaultTreeApp:
             except tk.TclError:
                 pass
         self.enabled_work_products.add(name)
-        if hasattr(self, "update_views"):
+        parent = self.WORK_PRODUCT_PARENTS.get(name)
+        if parent and parent not in self.enabled_work_products:
+            self.enable_work_product(parent, refresh=False)
+        if refresh and hasattr(self, "update_views"):
             try:
                 self.update_views()
             except Exception:
@@ -8969,7 +8995,7 @@ class FaultTreeApp:
         return not getattr(self, attr, [])
 
     # ------------------------------------------------------------------
-    def disable_work_product(self, name: str, *, force: bool = False) -> bool:
+    def disable_work_product(self, name: str, *, force: bool = False, refresh: bool = True) -> bool:
         """Disable menu and toolbox entries for the given work product.
 
         Parameters
@@ -9019,7 +9045,14 @@ class FaultTreeApp:
                             lb.delete(i)
                             break
                 self.tool_actions.pop(tool_name, None)
-        if hasattr(self, "update_views"):
+        parent = self.WORK_PRODUCT_PARENTS.get(name)
+        if parent and parent in self.enabled_work_products:
+            if not any(
+                self.WORK_PRODUCT_PARENTS.get(wp) == parent
+                for wp in self.enabled_work_products
+            ):
+                self.disable_work_product(parent, force=True, refresh=False)
+        if refresh and hasattr(self, "update_views"):
             try:
                 self.update_views()
             except Exception:
