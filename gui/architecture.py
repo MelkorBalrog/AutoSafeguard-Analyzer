@@ -6451,6 +6451,26 @@ class SysMLDiagramWindow(tk.Frame):
                         fill="white",
                     )
 
+    def _label_offset(self, conn: DiagramConnection, diag_type: str | None) -> float:
+        """Return a vertical offset for a connection label.
+
+        When multiple connections exist between the same two objects, their
+        stereotype labels are offset so they do not overlap. The offset is
+        determined by the index of ``conn`` among all labeled connections
+        between the object pair.
+        """
+        pair = {conn.src, conn.dst}
+        labeled: list[DiagramConnection] = []
+        connections = getattr(self, "connections", [])
+        for c in connections:
+            if {c.src, c.dst} == pair:
+                if format_control_flow_label(c, self.repo, diag_type):
+                    labeled.append(c)
+        if len(labeled) <= 1:
+            return 0.0
+        idx = next((i for i, c in enumerate(labeled) if c is conn), 0)
+        return (idx - (len(labeled) - 1) / 2) * 15 * self.zoom
+
     def draw_connection(
         self, a: SysMLObject, b: SysMLObject, conn: DiagramConnection, selected: bool = False
     ):
@@ -6458,9 +6478,8 @@ class SysMLDiagramWindow(tk.Frame):
         bxc, byc = b.x * self.zoom, b.y * self.zoom
         dash = ()
         diag = self.repo.diagrams.get(self.diagram_id)
-        label = format_control_flow_label(
-            conn, self.repo, diag.diag_type if diag else None
-        )
+        diag_type = diag.diag_type if diag else None
+        label = format_control_flow_label(conn, self.repo, diag_type)
         if diag and diag.diag_type == "Control Flow Diagram" and conn.conn_type in ("Control Action", "Feedback"):
             a_left = a.x - a.width / 2
             a_right = a.x + a.width / 2
@@ -6497,9 +6516,14 @@ class SysMLDiagramWindow(tk.Frame):
                 tags="connection",
             )
             if label:
+                offset = (
+                    self._label_offset(conn, diag_type)
+                    if hasattr(self, "_label_offset")
+                    else 0
+                )
                 self.canvas.create_text(
                     x,
-                    (y1 + y2) / 2 - 10 * self.zoom,
+                    (y1 + y2) / 2 - 10 * self.zoom - offset,
                     text=label,
                     font=self.font,
                     tags="connection",
@@ -6773,9 +6797,14 @@ class SysMLDiagramWindow(tk.Frame):
             )
         if label:
             mx, my = (ax + bx) / 2, (ay + by) / 2
+            offset = (
+                self._label_offset(conn, diag_type)
+                if hasattr(self, "_label_offset")
+                else 0
+            )
             self.canvas.create_text(
                 mx,
-                my - 10 * self.zoom,
+                my - 10 * self.zoom - offset,
                 text=label,
                 font=self.font,
                 tags="connection",
@@ -6878,25 +6907,32 @@ class SysMLDiagramWindow(tk.Frame):
             if result is None:
                 return
             for obj in list(self.selected_objs):
+                if obj.obj_type == "Work Product":
+                    name = obj.properties.get("name", "")
+                    if getattr(self.app, "can_remove_work_product", None):
+                        if not self.app.can_remove_work_product(name):
+                            messagebox.showerror(
+                                "Delete",
+                                f"Cannot delete work product '{name}' with existing artifacts.",
+                            )
+                            continue
+                    getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                    toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                    if toolbox:
+                        diag = self.repo.diagrams.get(self.diagram_id)
+                        diagram_name = diag.name if diag else ""
+                        toolbox.remove_work_product(diagram_name, name)
                 if result:
                     if obj.obj_type == "Part":
                         self.remove_part_model(obj)
                     else:
                         self.remove_element_model(obj)
                 else:
-                    if obj.obj_type == "Work Product":
-                        name = obj.properties.get("name", "")
-                        if getattr(self.app, "can_remove_work_product", None):
-                            if not self.app.can_remove_work_product(name):
-                                messagebox.showerror(
-                                    "Delete",
-                                    f"Cannot delete work product '{name}' with existing artifacts.",
-                                )
-                                continue
-                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
                     self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
+            if getattr(self.app, "refresh_tool_enablement", None):
+                self.app.refresh_tool_enablement()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -9182,13 +9218,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.sort_objects()
         self._sync_to_repository()
         self.redraw()
-        if getattr(self.app, "enable_work_product", None):
-            self.app.enable_work_product(name)
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
         if toolbox:
             diag = self.repo.diagrams.get(self.diagram_id)
             diagram_name = diag.name if diag else ""
             toolbox.add_work_product(diagram_name, name, "")
+        if getattr(self.app, "enable_work_product", None):
+            self.app.enable_work_product(name)
+        if getattr(self.app, "refresh_tool_enablement", None):
+            self.app.refresh_tool_enablement()
 
     def add_process_area(self):  # pragma: no cover - requires tkinter
         options = [

@@ -28,6 +28,7 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         from gui import architecture
 
         architecture.ConnectionDialog = self._orig_conn_dialog
+        SysMLRepository.reset_instance()
 
     def _create_window(self, src, dst, diag):
         win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
@@ -118,6 +119,62 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Trace")
         self.assertFalse(valid)
         self.assertIn("Requirement work products", msg)
+
+    def test_trace_between_safety_analyses_disallowed(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "FMEA"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FTA"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Trace")
+        self.assertFalse(valid)
+        self.assertIn("safety analysis", msg)
+
+    def test_used_by_between_safety_analyses_disallowed(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "FMEA"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FTA"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Used By")
+        self.assertFalse(valid)
+        self.assertIn("safety analysis", msg)
 
 
 if __name__ == "__main__":

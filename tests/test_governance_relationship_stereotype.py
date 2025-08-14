@@ -35,6 +35,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
     def tearDown(self):
         from gui import architecture
         architecture.ConnectionDialog = self._orig_conn_dialog
+        SysMLRepository.reset_instance()
 
     def _create_window(self, tool, src, dst, diag):
         win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
@@ -203,7 +204,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "Requirement Specification"},
+            properties={"name": "FTA"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
         for rel in ["Used By", "Used after Review", "Used after Approval"]:
@@ -254,7 +255,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
 
-    def test_analysis_targets_mapping(self):
+    def test_analysis_inputs_used_after_approval_visibility(self):
         repo = self.repo
         toolbox = SafetyManagementToolbox()
         diag = repo.create_diagram("Governance Diagram", name="Gov")
@@ -290,8 +291,9 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             SafetyWorkProduct("Gov", "Architecture Diagram", ""),
             SafetyWorkProduct("Gov", "FTA", ""),
         ]
-        targets = toolbox.analysis_targets("Architecture Diagram")
-        self.assertEqual(targets, {"FTA"})
+        self.assertEqual(toolbox.analysis_inputs("FTA"), set())
+        self.assertEqual(toolbox.analysis_inputs("FTA", reviewed=True), set())
+        self.assertEqual(toolbox.analysis_inputs("FTA", approved=True), {"Architecture Diagram"})
 
     def test_analysis_targets_used_after_review_visibility(self):
         repo = self.repo
