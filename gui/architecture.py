@@ -3,7 +3,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
-from gui import messagebox
+from gui import messagebox, format_name_with_phase
 import json
 import math
 import re
@@ -1833,6 +1833,12 @@ class SysMLObject:
     hidden: bool = False
     collapsed: Dict[str, bool] = field(default_factory=dict)
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
+
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return the object's name annotated with its creation phase."""
+        name = self.properties.get("name", "")
+        return f"{name} ({self.phase})" if name and self.phase else name
 
 
 @dataclass
@@ -4695,7 +4701,8 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _min_block_size(self, obj: SysMLObject) -> tuple[float, float]:
         """Return minimum width and height to display all Block text."""
-        header = f"<<block>> {obj.properties.get('name', '')}".strip()
+        name = format_name_with_phase(obj.properties.get('name', ''), obj.phase)
+        header = f"<<block>> {name}".strip()
         width_px = self.font.measure(header) + 8 * self.zoom
         compartments = self._block_compartments(obj)
         total_lines = 1
@@ -4784,7 +4791,7 @@ class SysMLDiagramWindow(tk.Frame):
     def _object_label_lines(self, obj: SysMLObject) -> list[str]:
         """Return the lines of text displayed inside *obj*."""
         if obj.obj_type == "System Boundary" or obj.obj_type == "Block Boundary":
-            name = obj.properties.get("name", "")
+            name = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
             return [name] if name else []
 
         if obj.obj_type in ("Block", "Port"):
@@ -4870,11 +4877,12 @@ class SysMLDiagramWindow(tk.Frame):
                 elif not name:
                     name = f" : {def_part}"
 
+        name = format_name_with_phase(name, obj.phase)
         lines: list[str] = []
         diag_id = self.repo.get_linked_diagram(obj.element_id)
         if diag_id and diag_id in self.repo.diagrams:
             diag = self.repo.diagrams[diag_id]
-            diag_name = diag.name or diag_id
+            diag_name = format_name_with_phase(diag.name or diag_id, diag.phase)
             lines.append(diag_name)
 
         if obj.obj_type in ("Action", "CallBehaviorAction") and name:
@@ -5529,7 +5537,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = obj.properties.get("name", "")
+            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
             if label:
                 # Wrap and scale the label so it always fits within the boundary box
                 avail_w = max(obj.width * self.zoom - 16 * self.zoom, 1)
@@ -5582,12 +5590,13 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=outline,
                 )
 
-                lx = x - w + 8 * self.zoom
+                lx = x - w + label_w / 2
+                ly = y + 4 * self.zoom
                 self.canvas.create_text(
                     lx,
-                    y,
+                    ly,
                     text=wrapped,
-                    anchor="w",
+                    anchor="center",
                     angle=90,
                     font=font or self.font,
                     justify="center",
@@ -5603,7 +5612,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = obj.properties.get("name", "")
+            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
             if label:
                 lx = x
                 ly = y - h - 4 * self.zoom
@@ -5615,7 +5624,7 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
-            label = obj.properties.get("name", "")
+            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
@@ -5698,7 +5707,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill=color,
             )
-            label = obj.properties.get("name", "")
+            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
             if label:
                 self.canvas.create_text(
                     x,
@@ -5726,7 +5735,7 @@ class SysMLDiagramWindow(tk.Frame):
             )
             diag = self.repo.diagrams.get(self.diagram_id)
             if not diag or diag.diag_type != "Control Flow Diagram":
-                label = obj.properties.get("name", "")
+                label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
                 if label:
                     lx = x
                     ly = y - h - 4 * self.zoom
@@ -5836,10 +5845,13 @@ class SysMLDiagramWindow(tk.Frame):
                 ly_off = _parse_float(obj.properties.get("labelY"), -8.0)
                 lx = x + lx_off * self.zoom
                 ly = y + ly_off * self.zoom
+                port_label = format_name_with_phase(
+                    obj.properties.get("name", ""), obj.phase
+                )
                 self.canvas.create_text(
                     lx,
                     ly,
-                    text=obj.properties.get("name", ""),
+                    text=port_label,
                     anchor="center",
                     font=self.font,
                 )
@@ -5880,7 +5892,8 @@ class SysMLDiagramWindow(tk.Frame):
                 fill="",
                 outline=outline,
             )
-            header = f"<<block>> {obj.properties.get('name', '')}".strip()
+            name = format_name_with_phase(obj.properties.get('name', ''), obj.phase)
+            header = f"<<block>> {name}".strip()
             self.canvas.create_line(left, top + 20 * self.zoom, right, top + 20 * self.zoom)
             self.canvas.create_text(
                 left + 4 * self.zoom,
@@ -5980,50 +5993,10 @@ class SysMLDiagramWindow(tk.Frame):
             "Port",
             "Work Product",
         ):
-            name = obj.properties.get("name", obj.obj_type)
-            label = name
-            if obj.obj_type == "Part":
-                def_id = obj.properties.get("definition")
-                if def_id and def_id in self.repo.elements:
-                    def_name = self.repo.elements[def_id].name or def_id
-                    label = f"{name} : {def_name}" if name else def_name
-            diag_id = self.repo.get_linked_diagram(obj.element_id)
-            label_lines = []
-            if diag_id and diag_id in self.repo.diagrams:
-                diag = self.repo.diagrams[diag_id]
-                diag_name = diag.name or diag_id
-                label_lines.append(diag_name)
-            label_lines.append(label)
-            key = obj.obj_type.replace(" ", "")
-            if not key.endswith("Usage"):
-                key += "Usage"
-            for prop in SYSML_PROPERTIES.get(key, []):
-                if obj.obj_type == "Part" and prop in (
-                    "fit",
-                    "qualification",
-                    "failureModes",
-                    "asil",
-                ):
-                    continue
-                val = obj.properties.get(prop)
-                if val:
-                    label_lines.append(f"{prop}: {val}")
-            if obj.obj_type == "Part":
-                rel_items = []
-                for lbl, key in (
-                    ("ASIL", "asil"),
-                    ("FIT", "fit"),
-                    ("Qual", "qualification"),
-                    ("FM", "failureModes"),
-                ):
-                    val = obj.properties.get(key)
-                    if val:
-                        rel_items.append(f"{lbl}: {val}")
-                if rel_items:
-                    label_lines.extend(rel_items)
-                reqs = "; ".join(r.get("id") for r in obj.requirements)
-                if reqs:
-                    label_lines.append(f"Reqs: {reqs}")
+            if hasattr(self, "_object_label_lines"):
+                label_lines = self._object_label_lines(obj)
+            else:
+                label_lines = SysMLDiagramWindow._object_label_lines(self, obj)
             if obj.obj_type == "Actor":
                 sy = obj.height / 40.0 * self.zoom
                 label_x = x
@@ -9319,7 +9292,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     parent,
                     "end",
                     iid=elem_id,
-                    text=elem.name or elem_id,
+                    text=format_name_with_phase(elem.name or elem_id, elem.phase),
                     values=(elem.elem_type,),
                     image=icon,
                 )
@@ -9350,7 +9323,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     parent,
                     "end",
                     iid=pkg_id,
-                    text=pkg.name or pkg_id,
+                    text=format_name_with_phase(pkg.name or pkg_id, pkg.phase),
                     open=True,
                     image=self.pkg_icon,
                 )
@@ -9367,7 +9340,7 @@ class ArchitectureManagerDialog(tk.Frame):
                     add_elem(e.elem_id, node)
             for d in self.repo.diagrams.values():
                 if d.package == pkg_id and "safety-management" not in getattr(d, "tags", []):
-                    label = d.name or d.diag_id
+                    label = format_name_with_phase(d.name or d.diag_id, d.phase)
                     icon = self.diagram_icons.get(d.diag_type, self.default_diag_icon)
                     diag_iid = f"diag_{d.diag_id}"
                     if self.tree.exists(diag_iid):
@@ -9389,7 +9362,10 @@ class ArchitectureManagerDialog(tk.Frame):
                     )
                     for obj in objs:
                         props = getattr(obj, "properties", obj.get("properties", {}))
-                        name = props.get("name", getattr(obj, "obj_type", obj.get("obj_type")))
+                        name = format_name_with_phase(
+                            props.get("name", getattr(obj, "obj_type", obj.get("obj_type"))),
+                            getattr(obj, "phase", obj.get("phase")),
+                        )
                         oid = getattr(obj, "obj_id", obj.get("obj_id"))
                         otype = getattr(obj, "obj_type", obj.get("obj_type"))
                         icon = self.elem_icons.get(otype, self.default_elem_icon)
