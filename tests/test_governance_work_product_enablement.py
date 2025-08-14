@@ -9,8 +9,17 @@ from sysml.sysml_repository import SysMLRepository
 import pytest
 
 
-@pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
-def test_governance_work_product_enablement(analysis, monkeypatch):
+@pytest.mark.parametrize(
+    "analysis, area_name",
+    [
+        ("FI2TC", "Hazard & Threat Analysis"),
+        ("TC2FI", "Hazard & Threat Analysis"),
+        ("Mission Profile", "Safety Analysis"),
+        ("Reliability Analysis", "Safety Analysis"),
+        ("Risk Assessment", "Risk Assessment"),
+    ],
+)
+def test_governance_work_product_enablement(analysis, area_name, monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
@@ -20,8 +29,8 @@ def test_governance_work_product_enablement(analysis, monkeypatch):
     prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
-    # Required process area for FI2TC/TC2FI
-    area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": "Hazard & Threat Analysis"})
+    # Required process area for the selected analysis
+    area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": area_name})
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
