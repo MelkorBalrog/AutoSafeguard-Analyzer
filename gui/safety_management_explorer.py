@@ -6,8 +6,16 @@ from tkinter import ttk, simpledialog
 from gui import messagebox
 from dataclasses import dataclass, field
 from typing import List, Dict
+import re
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
+
+
+def _strip_phase_suffix(name: str) -> str:
+    """Return *name* without any trailing ``" (...)"`` phase text."""
+    if not name:
+        return ""
+    return re.sub(r" \([^()]+\)$", "", name)
 
 
 class SafetyManagementExplorer(tk.Frame):
@@ -71,26 +79,30 @@ class SafetyManagementExplorer(tk.Frame):
 
         def _add_module(parent: str, mod: GovernanceModule) -> None:
             for sub in mod.modules:
-                sub_id = self.tree.insert(parent, "end", text=sub.name, image=self.folder_icon)
+                label = _strip_phase_suffix(sub.name)
+                sub_id = self.tree.insert(parent, "end", text=label, image=self.folder_icon)
                 self.item_map[sub_id] = ("module", sub)
                 _add_module(sub_id, sub)
             for name in mod.diagrams:
-                diag_id = self.tree.insert(parent, "end", text=name, image=self.diagram_icon)
-                self.item_map[diag_id] = ("diagram", name)
+                plain = _strip_phase_suffix(name)
+                diag_id = self.tree.insert(parent, "end", text=plain, image=self.diagram_icon)
+                self.item_map[diag_id] = ("diagram", plain)
 
         for mod in self.toolbox.modules:
+            label = _strip_phase_suffix(mod.name)
             mod_id = self.tree.insert(
-                self.root_iid, "end", text=mod.name, image=self.folder_icon
+                self.root_iid, "end", text=label, image=self.folder_icon
             )
             self.item_map[mod_id] = ("module", mod)
             _add_module(mod_id, mod)
 
         for name in sorted(self.toolbox.diagrams.keys()):
             if not self._in_any_module(name, self.toolbox.modules):
+                label = _strip_phase_suffix(name)
                 iid = self.tree.insert(
-                    self.root_iid, "end", text=name, image=self.diagram_icon
+                    self.root_iid, "end", text=label, image=self.diagram_icon
                 )
-                self.item_map[iid] = ("diagram", name)
+                self.item_map[iid] = ("diagram", label)
 
     # ------------------------------------------------------------------
     def new_folder(self):
@@ -240,20 +252,23 @@ class SafetyManagementExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _in_any_module(self, name: str, mods: List[GovernanceModule]) -> bool:
+        target = _strip_phase_suffix(name)
         for mod in mods:
-            if name in mod.diagrams or self._in_any_module(name, mod.modules):
+            if any(_strip_phase_suffix(d) == target for d in mod.diagrams) or self._in_any_module(name, mod.modules):
                 return True
         return False
 
     def _replace_name_in_modules(self, old: str, new: str, mods: List[GovernanceModule]) -> None:
+        old_plain = _strip_phase_suffix(old)
+        new_plain = _strip_phase_suffix(new)
         for mod in mods:
-            mod.diagrams = [new if d == old else d for d in mod.diagrams]
-            self._replace_name_in_modules(old, new, mod.modules)
+            mod.diagrams = [new_plain if _strip_phase_suffix(d) == old_plain else d for d in mod.diagrams]
+            self._replace_name_in_modules(old_plain, new_plain, mod.modules)
 
     def _remove_name(self, name: str, mods: List[GovernanceModule]) -> None:
+        target = _strip_phase_suffix(name)
         for mod in mods:
-            if name in mod.diagrams:
-                mod.diagrams.remove(name)
+            mod.diagrams = [d for d in mod.diagrams if _strip_phase_suffix(d) != target]
             self._remove_name(name, mod.modules)
 
     def _remove_module(self, target: GovernanceModule, mods: List[GovernanceModule]) -> bool:

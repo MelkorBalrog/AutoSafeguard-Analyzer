@@ -33,7 +33,7 @@ class DiagramSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires t
         self.selection = self.var.get()
 
 from analysis.safety_case import SafetyCaseLibrary, SafetyCase
-from gui import messagebox
+from gui import messagebox, format_name_with_phase
 from gui.safety_case_table import SafetyCaseTable
 
 
@@ -86,10 +86,21 @@ class SafetyCaseExplorer(tk.Frame):
         self.item_map.clear()
         self.tree.delete(*self.tree.get_children(""))
         for case in self.library.list_cases():
-            iid = self.tree.insert("", "end", text=case.name, image=self.case_icon)
+            phase = getattr(case, "phase", None)
+            iid = self.tree.insert(
+                "",
+                "end",
+                text=format_name_with_phase(case.name, phase),
+                image=self.case_icon,
+            )
             self.item_map[iid] = ("case", case)
             for sol in case.solutions:
-                sid = self.tree.insert(iid, "end", text=sol.user_name, image=self.solution_icon)
+                sid = self.tree.insert(
+                    iid,
+                    "end",
+                    text=format_name_with_phase(sol.user_name, getattr(sol, "phase", None)),
+                    image=self.solution_icon,
+                )
                 self.item_map[sid] = ("solution", sol)
 
     # ------------------------------------------------------------------
