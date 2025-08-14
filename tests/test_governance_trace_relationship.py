@@ -148,7 +148,7 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("safety analysis", msg)
 
-    def test_used_by_between_safety_analyses_disallowed(self):
+    def test_used_relations_between_safety_analyses_disallowed(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")
         e1 = repo.create_element("Block", name="E1")
@@ -172,9 +172,10 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
         win.repo = repo
         win.diagram_id = diag.diag_id
-        valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Used By")
-        self.assertFalse(valid)
-        self.assertIn("safety analysis", msg)
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertFalse(valid)
+            self.assertIn("safety analysis", msg)
 
 
 if __name__ == "__main__":

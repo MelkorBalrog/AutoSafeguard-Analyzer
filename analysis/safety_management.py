@@ -760,6 +760,14 @@ class SafetyManagementToolbox:
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
                     if sname and tname:
+                        if (
+                            sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                            and tname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                            and sname != "Mission Profile"
+                        ):
+                            # Ignore 'Used' links between safety analyses (except
+                            # Mission Profile which serves as a governed input).
+                            continue
                         mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
         return mapping
 

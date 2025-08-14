@@ -3202,6 +3202,11 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
+                if (
+                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                ):
+                    return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in (
                 "Used By",
                 "Used after Review",
@@ -3209,11 +3214,22 @@ class SysMLDiagramWindow(tk.Frame):
             ):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, f"{conn_type} links must connect Work Products"
+                sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
                     )
+                if (
+                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                ):
+                    if sname != "Mission Profile":
+                        if (sname, dname) in ALLOWED_PROPAGATIONS:
+                            return False, "Use a Propagate relationship between safety analysis work products"
+                        return False, (
+                            f"{conn_type} links cannot connect two safety analysis work products"
+                        )
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
@@ -9177,6 +9193,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
+            "Scenario Library",
+            "ODD",
         ]
         options = list(dict.fromkeys(options))
         area_map = {
@@ -9197,6 +9215,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
+            "Scenario Library": "Scenario",
+            "ODD": "Scenario",
         }
         areas = {
             o.properties.get("name")
@@ -9232,6 +9252,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Hazard & Threat Analysis",
             "Risk Assessment",
             "Safety Analysis",
+            "Scenario",
         ]
         dlg = self._SelectDialog(self, "Add Process Area", options)
         name = getattr(dlg, "selection", "")
