@@ -25,7 +25,12 @@ from analysis.safety_management import (
     GovernanceModule,
     SafetyWorkProduct,
 )
-from gui.architecture import GovernanceDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.architecture import (
+    GovernanceDiagramWindow,
+    SysMLObject,
+    ArchitectureManagerDialog,
+    SysMLObjectDialog,
+)
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
@@ -108,18 +113,21 @@ def test_activity_boundary_label_rotated_left_inside():
     assert win.canvas.text_calls, "label not drawn"
     x, y, kwargs = win.canvas.text_calls[0]
     assert kwargs.get("angle") == 90
-    assert kwargs.get("anchor") == "w"
+    assert kwargs.get("anchor") == "center"
     assert "\n" in kwargs.get("text", ""), "label not wrapped inside boundary"
-    assert x == obj.x - obj.width / 2 + 8
-    assert y == obj.y
     # compartment line drawn to separate title
     assert win.canvas.line_calls, "compartment not drawn"
     (line_args, _line_kwargs) = win.canvas.line_calls[0]
     x1, y1, x2, y2 = line_args
     assert x1 == x2
     lines = kwargs.get("text", "").count("\n") + 1
-    expected_x = x + lines * 16 + 8
-    assert x1 == expected_x
+    x_left = obj.x - obj.width / 2
+    expected_line_x = x_left + lines * 16 + 16
+    assert x1 == expected_line_x
+    expected_x = x_left + (x1 - x_left) / 2
+    assert x == expected_x
+    expected_y = obj.y + 4
+    assert y == expected_y
 
 
 def test_process_area_boundary_title_clipped_inside():
@@ -202,6 +210,32 @@ def test_rename_module_updates_active():
     toolbox.rename_module("Phase1", "PhaseX")
     assert toolbox.modules[0].name == "PhaseX"
     assert toolbox.active_module == "PhaseX"
+
+
+def test_rename_module_updates_phase_references():
+    """Renaming a module should update repository phases and document metadata."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule("Phase1")]
+    toolbox.set_active_module("Phase1")
+
+    elem = repo.create_element("Block", name="E1")
+    diag = repo.create_diagram("Block Diagram", name="D1")
+    toolbox.register_created_work_product("FMEA", "Doc1")
+
+    assert elem.phase == "Phase1"
+    assert diag.phase == "Phase1"
+    assert toolbox.doc_phases["FMEA"]["Doc1"] == "Phase1"
+    assert repo.active_phase == "Phase1"
+
+    toolbox.rename_module("Phase1", "PhaseX")
+
+    assert elem.phase == "PhaseX"
+    assert diag.phase == "PhaseX"
+    assert toolbox.doc_phases["FMEA"]["Doc1"] == "PhaseX"
+    assert repo.active_phase == "PhaseX"
 
 
 def test_disable_work_product_rejects_existing_docs():
@@ -1978,6 +2012,75 @@ def test_can_trace_filters_by_phase():
     assert toolbox.can_trace("Risk Assessment", "FTA")
     assert not toolbox.can_trace("Risk Assessment", "STPA")
 
+
+def test_object_dialog_creates_trace_relationship():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {
+            "obj_id": 1,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Architecture Diagram"},
+        },
+        {
+            "obj_id": 2,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Safety & Security Concept"},
+        },
+    ]
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Trace"}]
+
+    toolbox.add_work_product("Gov", "Architecture Diagram", "")
+    toolbox.add_work_product("Gov", "Safety & Security Concept", "")
+
+    src_elem = repo.create_element("Block", name="Architecture Diagram")
+    dst_elem = repo.create_element("Block", name="Safety & Security Concept")
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        element_id=src_elem.elem_id,
+        properties={"name": "Architecture Diagram"},
+    )
+
+    dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
+    dlg.obj = obj
+    dlg.entries = {}
+    dlg.listboxes = {}
+    dlg._operations = []
+    dlg._behaviors = []
+    dlg.master = types.SimpleNamespace()
+    dlg.name_var = types.SimpleNamespace(get=lambda: "Architecture Diagram")
+    dlg.width_var = types.SimpleNamespace(get=lambda: "60")
+    dlg.height_var = types.SimpleNamespace(get=lambda: "80")
+
+    class DummyList:
+        def __init__(self, items):
+            self.items = items
+
+        def get(self, i):
+            return self.items[i]
+
+        def curselection(self):
+            return (0,)
+
+    dlg.trace_list = DummyList(["Safety & Security Concept"])
+
+    SysMLObjectDialog.apply(dlg)
+
+    assert obj.properties.get("trace_to") == "Safety & Security Concept"
+    rels = {(r.source, r.target, r.rel_type) for r in repo.relationships}
+    assert (src_elem.elem_id, dst_elem.elem_id, "Trace") in rels
+    assert (dst_elem.elem_id, src_elem.elem_id, "Trace") in rels
 
 def test_list_modules_includes_submodules():
     toolbox = SafetyManagementToolbox()
