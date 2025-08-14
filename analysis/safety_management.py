@@ -435,6 +435,14 @@ class SafetyManagementToolbox:
 
         _rename(self.modules)
 
+        repo = SysMLRepository.get_instance()
+        repo.rename_phase(old, new)
+
+        for docs in self.doc_phases.values():
+            for doc, phase in list(docs.items()):
+                if phase == old:
+                    docs[doc] = new
+
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
         """Return propagation relationship type from ``source`` to ``target``.

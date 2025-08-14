@@ -336,6 +336,38 @@ class SysMLRepository:
             if v == diag_id:
                 del self.element_diagrams[k]
 
+    def rename_phase(self, old: str, new: str) -> None:
+        """Replace references to lifecycle phase ``old`` with ``new``.
+
+        Elements, relationships, diagrams and their contained objects or
+        connections referencing ``old`` will be updated. The active phase is
+        also adjusted when it matches ``old``.
+        """
+
+        if not old or not new or old == new:
+            return
+
+        for elem in self.elements.values():
+            if elem.phase == old:
+                elem.phase = new
+
+        for rel in self.relationships:
+            if rel.phase == old:
+                rel.phase = new
+
+        for diag in self.diagrams.values():
+            if diag.phase == old:
+                diag.phase = new
+            for obj in getattr(diag, "objects", []):
+                if obj.get("phase") == old:
+                    obj["phase"] = new
+            for conn in getattr(diag, "connections", []):
+                if conn.get("phase") == old:
+                    conn["phase"] = new
+
+        if self.active_phase == old:
+            self.active_phase = new
+
     def get_element(self, elem_id: str) -> Optional[SysMLElement]:
         return self.elements.get(elem_id)
 
