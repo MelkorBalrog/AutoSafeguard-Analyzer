@@ -524,11 +524,11 @@ class SafetyManagementToolbox:
                 pass
         else:
             self.set_active_module(phase)
-            if app and hasattr(app, "refresh_tool_enablement"):
-                try:
-                    app.refresh_tool_enablement()
-                except Exception:
-                    pass
+        if app and hasattr(app, "refresh_tool_enablement"):
+            try:
+                app.refresh_tool_enablement()
+            except Exception:
+                pass
         smw = getattr(app, "safety_mgmt_window", None)
         if smw and hasattr(smw, "phase_var"):
             try:
@@ -559,6 +559,44 @@ class SafetyManagementToolbox:
         return names
 
     # ------------------------------------------------------------------
+    def _unique_module_name(self, name: str, exclude: Optional[str] = None) -> str:
+        """Return a module name unique within the toolbox.
+
+        Parameters
+        ----------
+        name: str
+            Desired module name.
+        exclude: Optional[str]
+            Optional module name to exclude from uniqueness checks. This is
+            useful when renaming an existing module.
+        """
+        existing = set(self.list_modules())
+        if exclude:
+            existing.discard(exclude)
+        base = name
+        suffix = 1
+        while name in existing:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        return name
+
+    # ------------------------------------------------------------------
+    def add_module(self, name: str, parent: Optional[GovernanceModule] = None) -> GovernanceModule:
+        """Create a new governance module with a unique name.
+
+        The new module is added either to the top-level module list or as a
+        submodule of ``parent`` when provided. The final module name is returned
+        in the created :class:`GovernanceModule` instance.
+        """
+        unique = self._unique_module_name(name)
+        mod = GovernanceModule(unique)
+        if parent:
+            parent.modules.append(mod)
+        else:
+            self.modules.append(mod)
+        return mod
+
+    # ------------------------------------------------------------------
     def rename_module(self, old: str, new: str) -> None:
         """Rename a governance module ensuring uniqueness.
 
@@ -570,15 +608,10 @@ class SafetyManagementToolbox:
         if not new or old == new or old in self.frozen_modules:
             return
 
-        mod = self._find_module(old, self.modules)
+        if not self._find_module(old, self.modules):
+            return
 
-        existing = set(self.list_modules())
-        existing.discard(old)
-        base = new
-        suffix = 1
-        while new in existing:
-            new = f"{base}_{suffix}"
-            suffix += 1
+        new = self._unique_module_name(new, exclude=old)
 
         def _rename(mods: List[GovernanceModule]) -> bool:
             for mod in mods:
