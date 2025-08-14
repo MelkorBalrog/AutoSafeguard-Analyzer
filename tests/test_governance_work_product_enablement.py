@@ -16,6 +16,9 @@ import pytest
         ("TC2FI", "Hazard & Threat Analysis"),
         ("Scenario Library", "Scenario"),
         ("ODD Library", "Scenario"),
+        ("Mission Profile", "Safety Analysis"),
+        ("Reliability Analysis", "Safety Analysis"),
+        ("Risk Assessment", "Risk Assessment"),
     ],
 )
 def test_governance_work_product_enablement(analysis, area_name, monkeypatch):

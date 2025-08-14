@@ -921,8 +921,31 @@ class SafetyManagementToolbox:
         analyses = self._analysis_mapping()
         traces = self._trace_mapping()
 
+        # When a lifecycle phase is active only analyses declared in that phase
+        # (or pulled in via re-use links) should expose their governed inputs.
+        if self.active_module and target not in self.enabled_products():
+            return set()
+
+        enabled_sources: set[str] | None = None
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            reuse = self._reuse_map().get(self.active_module, {})
+            reused_wps = reuse.get("work_products", set())
+            reused_phases = reuse.get("phases", set())
+            enabled_sources = set()
+            for wp in self.work_products:
+                mod = self.module_for_diagram(wp.diagram)
+                if (
+                    wp.diagram in names
+                    or wp.analysis in reused_wps
+                    or mod in reused_phases
+                ):
+                    enabled_sources.add(wp.analysis)
+
         direct: set[str] = set()
         for src, rels in analyses.items():
+            if enabled_sources is not None and src not in enabled_sources:
+                continue
             if target in rels.get("used by", set()):
                 direct.add(src)
             if target in rels.get("used after review", set()) and (reviewed or approved):
@@ -936,8 +959,12 @@ class SafetyManagementToolbox:
             cur = queue.pop(0)
             for neigh in traces.get(cur, set()):
                 if neigh not in sources:
+                    if enabled_sources is not None and neigh not in enabled_sources:
+                        continue
                     sources.add(neigh)
                     queue.append(neigh)
+        if enabled_sources is not None:
+            sources &= enabled_sources
         return sources
 
     # ------------------------------------------------------------------
