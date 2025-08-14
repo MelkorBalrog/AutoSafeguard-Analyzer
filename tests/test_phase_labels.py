@@ -62,6 +62,46 @@ class PhaseLabelTests(unittest.TestCase):
         self.assertIn("Check", " ".join(lines))
         self.assertNotIn("PhaseZ", " ".join(lines))
 
+    def test_safety_management_explorer_omits_phase(self):
+        from gui.safety_management_explorer import SafetyManagementExplorer
+        from analysis.safety_management import SafetyManagementToolbox
+
+        repo = SysMLRepository.get_instance()
+        toolbox = SafetyManagementToolbox()
+        diag_id = toolbox.create_diagram("GovDiag")
+        repo.diagrams[diag_id].phase = "Phase1"
+
+        explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+        class DummyTree:
+            def __init__(self):
+                self.items = {}
+                self.counter = 0
+
+            def delete(self, *items):
+                self.items = {}
+
+            def get_children(self, item=""):
+                return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+            def insert(self, parent, index, text="", image=None, **_kwargs):
+                iid = f"i{self.counter}"
+                self.counter += 1
+                self.items[iid] = {"parent": parent, "text": text}
+                return iid
+
+        explorer.tree = DummyTree()
+        explorer.toolbox = toolbox
+        explorer.item_map = {}
+        explorer.folder_icon = None
+        explorer.diagram_icon = None
+
+        SafetyManagementExplorer.populate(explorer)
+
+        texts = [meta["text"] for meta in explorer.tree.items.values()]
+        self.assertIn("GovDiag", texts)
+        self.assertTrue(all("Phase1" not in t for t in texts))
+
 if __name__ == "__main__":
     unittest.main()
 
