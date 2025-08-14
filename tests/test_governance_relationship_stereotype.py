@@ -200,7 +200,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "FTA"},
+            properties={"name": "Requirement Specification"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
         for rel in ["Used By", "Used after Review", "Used after Approval"]:
@@ -557,6 +557,31 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             toolbox.analysis_inputs("HAZOP"),
             {"Architecture Diagram", "Requirement Specification"},
         )
+
+    def test_analysis_inputs_hidden_without_relationship(self):
+        repo = self.repo
+        toolbox = SafetyManagementToolbox()
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+
+        ea = repo.create_element("Block", name="EA")
+        repo.add_element_to_diagram(diag.diag_id, ea.elem_id)
+        oa = SysMLObject(1, "Work Product", 0, 0, element_id=ea.elem_id, properties={"name": "Architecture Diagram"})
+        objects = [oa.__dict__]
+        for idx, analysis in enumerate(SAFETY_ANALYSIS_WORK_PRODUCTS, start=2):
+            e = repo.create_element("Block", name=f"E{idx}")
+            repo.add_element_to_diagram(diag.diag_id, e.elem_id)
+            o = SysMLObject(idx, "Work Product", 0, idx * 100, element_id=e.elem_id, properties={"name": analysis})
+            objects.append(o.__dict__)
+        diag.objects = objects
+
+        toolbox.work_products = [SafetyWorkProduct("Gov", "Architecture Diagram", "")]
+        toolbox.work_products.extend(
+            SafetyWorkProduct("Gov", a, "") for a in SAFETY_ANALYSIS_WORK_PRODUCTS
+        )
+
+        for analysis in SAFETY_ANALYSIS_WORK_PRODUCTS:
+            self.assertEqual(toolbox.analysis_inputs(analysis), set())
 
     def test_analysis_inputs_all_safety_analyses(self):
         repo = self.repo
