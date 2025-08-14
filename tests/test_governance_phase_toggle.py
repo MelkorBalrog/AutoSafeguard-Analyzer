@@ -351,7 +351,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
 @pytest.mark.parametrize(
     "analysis,parent",
     [
-        ("FTA", "Process"),
+        ("FTA", None),
         ("Threat Analysis", "Qualitative Analysis"),
         ("FI2TC", "Qualitative Analysis"),
         ("TC2FI", "Qualitative Analysis"),

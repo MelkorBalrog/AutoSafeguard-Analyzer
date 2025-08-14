@@ -3204,6 +3204,11 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
+                if (
+                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                ):
+                    return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in (
                 "Used By",
                 "Used after Review",
@@ -3211,6 +3216,7 @@ class SysMLDiagramWindow(tk.Frame):
             ):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, f"{conn_type} links must connect Work Products"
+                sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 sname = src.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
@@ -3218,10 +3224,11 @@ class SysMLDiagramWindow(tk.Frame):
                         f"{conn_type} links must target a safety analysis work product",
                     )
                 if (
-                    sname not in UNRESTRICTED_USAGE_SOURCES
-                    and (sname, dname) not in ALLOWED_USAGE
+                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    and (sname, dname) in ALLOWED_PROPAGATIONS
                 ):
-                    return False, f"{dname} has no dependency on {sname}"
+                    return False, "Use a Propagate relationship between safety analysis work products"
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
