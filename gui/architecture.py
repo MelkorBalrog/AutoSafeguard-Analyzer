@@ -3219,11 +3219,10 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
-                sname = src.properties.get("name")
-                if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
-                    return False, (
-                        f"{conn_type} links must target a safety analysis work product",
-                    )
+                if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
+                    sname == "ODD" and dname == "Scenario Library"
+                ):
+                    return False, f"{conn_type} links must target a safety analysis work product"
                 if (
                     sname in SAFETY_ANALYSIS_WORK_PRODUCTS
                     and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
