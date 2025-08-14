@@ -35,7 +35,7 @@ from analysis.models import (
     CAL_TABLE,
     REQUIREMENT_WORK_PRODUCTS,
 )
-from analysis.safety_management import ACTIVE_TOOLBOX
+from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from gui.architecture import (
@@ -2424,19 +2424,25 @@ class RiskAssessmentWindow(tk.Frame):
             self.name_var = tk.StringVar()
             ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1)
             ttk.Label(master, text="HAZOPs").grid(row=1, column=0, sticky="e")
-            names = [d.name for d in self.app.hazop_docs]
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            allowed = (
+                toolbox.analysis_inputs("Risk Assessment")
+                if toolbox
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
+            )
+            names = [d.name for d in self.app.hazop_docs] if "HAZOP" in allowed else []
             self.hazop_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.hazop_var, values=names, state="readonly"
             ).grid(row=1, column=1)
             ttk.Label(master, text="STPA").grid(row=2, column=0, sticky="e")
-            stpas = [d.name for d in self.app.stpa_docs]
+            stpas = [d.name for d in self.app.stpa_docs] if "STPA" in allowed else []
             self.stpa_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.stpa_var, values=stpas, state="readonly"
             ).grid(row=2, column=1)
             ttk.Label(master, text="Threat Analysis").grid(row=3, column=0, sticky="e")
-            threats = [d.name for d in self.app.threat_docs]
+            threats = [d.name for d in self.app.threat_docs] if "Threat Analysis" in allowed else []
             self.threat_var = tk.StringVar()
             ttk.Combobox(
                 master, textvariable=self.threat_var, values=threats, state="readonly"
@@ -2460,20 +2466,26 @@ class RiskAssessmentWindow(tk.Frame):
 
         def body(self, master):
             ttk.Label(master, text="HAZOPs").grid(row=0, column=0, sticky="e")
-            names = [d.name for d in self.app.hazop_docs]
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            allowed = (
+                toolbox.analysis_inputs("Risk Assessment")
+                if toolbox
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
+            )
+            names = [d.name for d in self.app.hazop_docs] if "HAZOP" in allowed else []
             current = self.doc.hazops[0] if self.doc.hazops else ""
             self.hazop_var = tk.StringVar(value=current)
             ttk.Combobox(
                 master, textvariable=self.hazop_var, values=names, state="readonly"
             ).grid(row=0, column=1)
             ttk.Label(master, text="STPA").grid(row=1, column=0, sticky="e")
-            stpas = [d.name for d in self.app.stpa_docs]
+            stpas = [d.name for d in self.app.stpa_docs] if "STPA" in allowed else []
             self.stpa_var = tk.StringVar(value=getattr(self.doc, "stpa", ""))
             ttk.Combobox(
                 master, textvariable=self.stpa_var, values=stpas, state="readonly"
             ).grid(row=1, column=1)
             ttk.Label(master, text="Threat Analysis").grid(row=2, column=0, sticky="e")
-            threats = [d.name for d in self.app.threat_docs]
+            threats = [d.name for d in self.app.threat_docs] if "Threat Analysis" in allowed else []
             self.threat_var = tk.StringVar(value=getattr(self.doc, "threat", ""))
             ttk.Combobox(
                 master, textvariable=self.threat_var, values=threats, state="readonly"

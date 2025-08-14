@@ -192,7 +192,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             0,
             element_id=e1.elem_id,
-            properties={"name": "Architecture Diagram"},
+            properties={"name": "Risk Assessment"},
         )
         o2 = SysMLObject(
             2,
@@ -200,7 +200,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "FTA"},
+            properties={"name": "Architecture Diagram"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
         for rel in ["Used By", "Used after Review", "Used after Approval"]:
