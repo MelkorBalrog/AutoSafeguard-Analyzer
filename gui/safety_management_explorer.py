@@ -238,6 +238,9 @@ class SafetyManagementExplorer(tk.Frame):
         else:
             parent_mod = None
             new_parent = self.root_iid
+        if SafetyManagementExplorer._is_descendant(self, new_parent, self._drag_item):
+            self._drag_item = None
+            return
 
         self.tree.move(self._drag_item, new_parent, "end")
 
@@ -253,6 +256,15 @@ class SafetyManagementExplorer(tk.Frame):
                 self.toolbox.modules.append(item_obj)
 
         self._drag_item = None
+
+    # ------------------------------------------------------------------
+    def _is_descendant(self, item: str, ancestor: str) -> bool:
+        """Return ``True`` if *item* is a descendant of *ancestor*."""
+        while item:
+            if item == ancestor:
+                return True
+            item = self.tree.parent(item)
+        return False
 
     # ------------------------------------------------------------------
     def _in_any_module(self, name: str, mods: List[GovernanceModule]) -> bool:

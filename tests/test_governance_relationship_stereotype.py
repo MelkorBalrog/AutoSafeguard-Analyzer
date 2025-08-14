@@ -1,5 +1,11 @@
 import types
 import unittest
+import sys
+
+# Provide dummy PIL modules so tests can run without the Pillow dependency.
+sys.modules.setdefault("PIL", types.ModuleType("PIL"))
+sys.modules.setdefault("PIL.Image", types.ModuleType("PIL.Image"))
+sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from gui.toolboxes import allowed_action_labels

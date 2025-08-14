@@ -58,7 +58,9 @@ AutoML:
 3. **Create a diagram** that lays out the lifecycle states as nodes. Connect
    them with transitions that reflect progression or feedback. Use
    stereotypes or color coding to highlight which standard drives each state
-   and to show shared activities across standards.
+   and to show shared activities across standards. Select process areas or
+   work products from the governance panel and click in the diagram to place
+   them where they belong.
 4. **Tailor the flow** by adding optional branches or conditional steps when
    a standard allows alternative approaches. Document rationale for each
    tailoring so audits can trace the decision.

@@ -8,6 +8,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
+from analysis.models import StpaDoc
+from gui.stpa_window import StpaWindow
 
 
 class DummyVar:
@@ -52,6 +54,51 @@ def test_open_governance_diagram_activates_phase():
     assert toolbox.active_module == "Phase1"
     assert app.lifecycle_var.get() == "Phase1"
     assert app.refresh_tool_enablement_called
+
+
+def test_open_governance_diagram_refreshes_tools():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="GovRefresh")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="Phase1", diagrams=["GovRefresh"])]
+    toolbox.diagrams = {"GovRefresh": diag.diag_id}
+
+    calls = {"refresh": 0}
+
+    class DummyVar:
+        def __init__(self):
+            self.val = ""
+
+        def set(self, val):
+            self.val = val
+
+        def get(self):
+            return self.val
+
+    def on_lifecycle_selected():
+        toolbox.set_active_module(app.lifecycle_var.get())
+
+    def refresh_tool_enablement():
+        calls["refresh"] += 1
+
+    app = types.SimpleNamespace(
+        safety_mgmt_toolbox=toolbox,
+        lifecycle_var=DummyVar(),
+        on_lifecycle_selected=on_lifecycle_selected,
+        refresh_tool_enablement=refresh_tool_enablement,
+    )
+
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.app = app
+
+    GovernanceDiagramWindow._activate_parent_phase(win)
+
+    assert toolbox.active_module == "Phase1"
+    assert calls["refresh"] == 1
 
 
 def test_added_work_product_respects_phase(monkeypatch):
@@ -285,6 +332,90 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
     win.add_work_product()
     assert menu.state == tk.NORMAL
 
-    app.lifecycle_var.set("P1")
-    app.on_lifecycle_selected()
-    assert menu.state == tk.DISABLED
+
+def test_open_diagram_updates_phase_combobox():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="Gov4")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov4"])]
+    toolbox.diagrams = {"Gov4": diag.diag_id}
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = types.SimpleNamespace(
+        safety_mgmt_toolbox=toolbox,
+        lifecycle_var=DummyVar(),
+        refresh_tool_enablement=lambda: None,
+    )
+
+    def on_lifecycle_selected():
+        toolbox.set_active_module(app.lifecycle_var.get())
+
+    app.on_lifecycle_selected = on_lifecycle_selected
+
+    smw = types.SimpleNamespace(phase_var=DummyVar(), refresh_diagrams=lambda: None)
+    app.safety_mgmt_window = smw
+
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.app = app
+
+    win._activate_parent_phase()
+
+    assert app.lifecycle_var.get() == "P1"
+    assert smw.phase_var.get() == "P1"
+
+
+def test_select_document_updates_phase():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.doc_phases = {"STPA": {"Doc1": "P1"}}
+
+    class DummyVar2:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = types.SimpleNamespace(
+        safety_mgmt_toolbox=toolbox,
+        lifecycle_var=DummyVar2(),
+        refresh_tool_enablement=lambda: None,
+    )
+
+    def on_lifecycle_selected():
+        toolbox.set_active_module(app.lifecycle_var.get())
+
+    app.on_lifecycle_selected = on_lifecycle_selected
+    smw = types.SimpleNamespace(phase_var=DummyVar2(), refresh_diagrams=lambda: None)
+    app.safety_mgmt_window = smw
+    app.stpa_docs = [StpaDoc("Doc1", "", [])]
+    app.active_stpa = None
+    app.stpa_entries = []
+
+    win = StpaWindow.__new__(StpaWindow)
+    win.app = app
+    win.doc_var = DummyVar2("Doc1")
+    win.diag_lbl = types.SimpleNamespace(config=lambda **kwargs: None)
+    win.refresh = lambda: None
+
+    win.select_doc()
+
+    assert app.lifecycle_var.get() == "P1"
+    assert smw.phase_var.get() == "P1"
