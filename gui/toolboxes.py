@@ -34,6 +34,25 @@ from analysis.models import (
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from sysml.sysml_repository import SysMLRepository
+
+
+def find_requirement_traces(req_id: str) -> list[str]:
+    """Return names of diagram objects referencing the requirement ``req_id``."""
+    repo = SysMLRepository.get_instance()
+    traces: list[str] = []
+    for diag in repo.diagrams.values():
+        for obj in diag.objects:
+            reqs = []
+            reqs.extend(obj.get("requirements", []))
+            reqs.extend(obj.get("safety_requirements", []))
+            if any(r.get("id") == req_id for r in reqs):
+                name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                if diag.name:
+                    traces.append(f"{diag.name}:{name}")
+                else:
+                    traces.append(name)
+    return sorted(set(traces))
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
@@ -3758,7 +3777,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
-        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
+        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Traces", "Text")
         configure_table_style("ReqExp.Treeview")
         self.tree = EditableTreeview(
             self,
@@ -3770,7 +3789,11 @@ class RequirementsExplorerWindow(tk.Toplevel):
         )
         for c in columns:
             self.tree.heading(c, text=c)
-            width = 100 if c != "Text" else 300
+            width = 100
+            if c == "Text":
+                width = 300
+            elif c == "Traces":
+                width = 200
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
         ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
@@ -3791,6 +3814,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             if status and req.get("status", "") != status:
                 continue
+            traces = ", ".join(find_requirement_traces(req.get("id", "")))
             self.tree.insert(
                 "",
                 "end",
@@ -3800,6 +3824,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("req_type", ""),
                     req.get("status", ""),
                     req.get("parent_id", ""),
+                    traces,
                     req.get("text", ""),
                 ),
             )
@@ -3810,14 +3835,22 @@ class RequirementsExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Text"])
+            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Traces", "Text"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":5}
+        idx_map = {
+            "ID": 0,
+            "ASIL": 1,
+            "Type": 2,
+            "Status": 3,
+            "Parent": 4,
+            "Traces": 5,
+            "Text": 6,
+        }
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
