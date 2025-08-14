@@ -180,6 +180,27 @@ class RepositoryTests(unittest.TestCase):
         obj = new_repo.diagrams[diag.diag_id].objects[0]
         self.assertEqual(obj.get("requirements")[0]["id"], "REQ1")
 
+    def test_find_requirements(self):
+        diag = self.repo.create_diagram("Use Case Diagram", name="UC")
+        actor = self.repo.create_element("Actor", name="User")
+        self.repo.add_element_to_diagram(diag.diag_id, actor.elem_id)
+        diag.objects = [
+            {
+                "obj_id": 1,
+                "obj_type": "Actor",
+                "x": 0,
+                "y": 0,
+                "element_id": actor.elem_id,
+                "width": 80.0,
+                "height": 40.0,
+                "properties": {"name": "User"},
+                "requirements": [{"id": "R1"}],
+            }
+        ]
+        matches = self.repo.find_requirements("R1")
+        self.assertEqual(matches, [(diag.diag_id, 1)])
+        self.assertEqual(self.repo.find_requirements("R2"), [])
+
     def test_connection_persistence(self):
         diag = self.repo.create_diagram("Block Diagram", name="BD")
         a = self.repo.create_element("Block", name="A")

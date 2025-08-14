@@ -8,6 +8,7 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
+from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,
@@ -25,6 +26,7 @@ from analysis.models import (
     calc_asil,
     global_requirements,
     REQUIREMENT_TYPE_OPTIONS,
+    REQUIREMENT_WORK_PRODUCTS,
     ASIL_LEVEL_OPTIONS,
     CAL_LEVEL_OPTIONS,
     CyberRiskEntry,
@@ -33,6 +35,7 @@ from analysis.models import (
     CAL_TABLE,
     REQUIREMENT_WORK_PRODUCTS,
 )
+from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from sysml.sysml_repository import SysMLRepository
@@ -95,11 +98,21 @@ class EditableTreeview(ttk.Treeview):
         Mapping of column name to requirement type. When editing these columns
         a requirement selection dialog allowing multiple selections is shown.
     """
-    def __init__(self, master=None, *, column_options=None, edit_callback=None, requirement_columns=None, **kwargs):
+    def __init__(
+        self,
+        master=None,
+        *,
+        column_options=None,
+        edit_callback=None,
+        requirement_columns=None,
+        requirement_target=None,
+        **kwargs,
+    ):
         super().__init__(master, **kwargs)
         self._col_options = column_options or {}
         self._edit_cb = edit_callback
         self._req_cols = requirement_columns or {}
+        self._req_target = requirement_target
         self._edit_widget = None
         self.bind("<Double-1>", self._begin_edit, add="+")
 
@@ -119,7 +132,9 @@ class EditableTreeview(ttk.Treeview):
         req_type = self._req_cols.get(col_name)
         if req_type is not None:
             current = [v for v in map(str.strip, value.split(";")) if v]
-            dlg = _SelectRequirementsDialog(self, req_type=req_type, initial=current)
+            dlg = _SelectRequirementsDialog(
+                self, req_type=req_type, initial=current, target=self._req_target
+            )
             if getattr(dlg, "result", None):
                 ids = [s.split("]",1)[0][1:] for s in dlg.result]
                 new_val = ";".join(ids)
@@ -295,9 +310,10 @@ class _RequirementDialog(simpledialog.Dialog):
 class _SelectRequirementsDialog(simpledialog.Dialog):
     """Dialog to choose one or more existing requirements of a given type."""
 
-    def __init__(self, parent, req_type=None, initial=None):
+    def __init__(self, parent, req_type=None, initial=None, target=None):
         self.selected = initial or []
         self.req_type = req_type
+        self.target = target
         super().__init__(parent, title="Select Requirements")
 
     def body(self, master):
@@ -314,7 +330,18 @@ class _SelectRequirementsDialog(simpledialog.Dialog):
         return self.lb
 
     def apply(self):
-        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+        raw = [self.lb.get(i) for i in self.lb.curselection()]
+        if not ACTIVE_TOOLBOX or not self.target:
+            self.result = raw
+            return
+        allowed = []
+        for item in raw:
+            rid = item.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {})
+            wp = ACTIVE_TOOLBOX.requirement_work_product(req.get("req_type", ""))
+            if not wp or ACTIVE_TOOLBOX.can_trace(wp, self.target):
+                allowed.append(item)
+        self.result = allowed
 
 
 class _TraceLinkDialog(simpledialog.Dialog):
@@ -3760,8 +3787,8 @@ class HazardExplorerWindow(tk.Toplevel):
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["Assessment", "Malfunction", "Hazard", "Severity"])
-            for iid in self.tree.get_children():
-                w.writerow(self.tree.item(iid, "values"))
+        for iid in self.tree.get_children():
+            w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Hazards exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
@@ -3769,6 +3796,58 @@ class HazardExplorerWindow(tk.Toplevel):
         idx = ("Assessment", "Malfunction", "Hazard", "Severity").index(column)
         values[idx] = value
         self.tree.item(self.tree.get_children()[row], values=values)
+
+
+class _RequirementTraceDialog(simpledialog.Dialog):
+    """Dialog presenting diagrams and elements for requirement tracing."""
+
+    def __init__(self, master, app, requirement, *, link=True):
+        self.app = app
+        self.requirement = requirement
+        self.link = link
+        super().__init__(master, title="Link Requirement" if link else "Unlink Requirement")
+
+    def body(self, master):
+        self.tree = ttk.Treeview(master, show="tree", selectmode="extended")
+        self.tree.pack(fill=tk.BOTH, expand=True)
+        repo = SysMLRepository.get_instance()
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        req_type = self.requirement.get("req_type", "")
+        try:
+            idx = REQUIREMENT_TYPE_OPTIONS.index(req_type) + 1
+            req_wp = REQUIREMENT_WORK_PRODUCTS[idx]
+        except ValueError:
+            req_wp = REQUIREMENT_WORK_PRODUCTS[0]
+        diag_wp: dict[str, str] = {}
+        if toolbox:
+            for wp in toolbox.get_work_products():
+                diag_id = toolbox.diagrams.get(wp.diagram)
+                if diag_id:
+                    diag_wp[diag_id] = wp.analysis
+        self.items: dict[str, tuple[str, int]] = {}
+        req_id = self.requirement.get("id")
+        for diag_id, diag in repo.diagrams.items():
+            target_wp = diag_wp.get(diag_id, diag.diag_type)
+            if toolbox and not toolbox.can_trace(req_wp, target_wp):
+                continue
+            d_iid = diag_id
+            self.tree.insert("", "end", iid=d_iid, text=diag.display_name(), open=True)
+            for obj in getattr(diag, "objects", []):
+                reqs = obj.get("requirements", [])
+                has_req = any(r.get("id") == req_id for r in reqs)
+                if self.link and has_req:
+                    continue
+                if not self.link and not has_req:
+                    continue
+                name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                oid = obj.get("obj_id")
+                iid = f"{diag_id}:{oid}"
+                self.tree.insert(d_iid, "end", iid=iid, text=name)
+                self.items[iid] = (diag_id, oid)
+        return self.tree
+
+    def apply(self):
+        self.result = [self.items[iid] for iid in self.tree.selection() if iid in self.items]
 
 
 class RequirementsExplorerWindow(tk.Toplevel):
@@ -3820,7 +3899,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
-        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Traces", "Text")
+        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text", "Trace")
         configure_table_style("ReqExp.Treeview")
         self.tree = EditableTreeview(
             self,
@@ -3832,11 +3911,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         )
         for c in columns:
             self.tree.heading(c, text=c)
-            width = 100
-            if c == "Text":
-                width = 300
-            elif c == "Traces":
-                width = 200
+            width = 100 if c not in ("Text", "Trace") else 300
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
         self.menu = tk.Menu(self, tearoff=0)
@@ -3859,6 +3934,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         rtype = self.type_var.get().strip()
         asil = self.asil_var.get().strip()
         status = self.status_var.get().strip()
+        repo = SysMLRepository.get_instance()
         for req in global_requirements.values():
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue
@@ -3868,18 +3944,32 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             if status and req.get("status", "") != status:
                 continue
-            traces = ", ".join(find_requirement_traces(req.get("id", "")))
+            rid = req.get("id", "")
+            alloc = ", ".join(self.app.get_requirement_allocation_names(rid))
+            locations = []
+            for diag_id, obj_id in repo.find_requirements(req.get("id", "")):
+                diag = repo.diagrams.get(diag_id)
+                obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+                dname = diag.name if diag else ""
+                oname = obj.get("properties", {}).get("name", "") if obj else ""
+                if dname and oname:
+                    locations.append(f"{dname}:{oname}")
+                elif dname or oname:
+                    locations.append(dname or oname)
+            trace = ", ".join(locations)
             self.tree.insert(
                 "",
                 "end",
                 values=(
-                    req.get("id", ""),
+                    rid,
                     req.get("asil", ""),
                     req.get("req_type", ""),
                     req.get("status", ""),
+                    trace,
                     req.get("parent_id", ""),
                     traces,
                     req.get("text", ""),
+                    alloc,
                 ),
             )
 
@@ -3889,7 +3979,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Traces", "Text"])
+            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Text", "Trace"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
@@ -3939,15 +4029,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {
-            "ID": 0,
-            "ASIL": 1,
-            "Type": 2,
-            "Status": 3,
-            "Parent": 4,
-            "Traces": 5,
-            "Text": 6,
-        }
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Trace":4, "Parent":5, "Text":6}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
