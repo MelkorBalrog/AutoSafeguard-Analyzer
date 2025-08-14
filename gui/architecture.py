@@ -5588,12 +5588,13 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=outline,
                 )
 
-                lx = x - w + 8 * self.zoom
+                lx = x - w + label_w / 2
+                ly = y + 4 * self.zoom
                 self.canvas.create_text(
                     lx,
-                    y,
+                    ly,
                     text=wrapped,
-                    anchor="w",
+                    anchor="center",
                     angle=90,
                     font=font or self.font,
                     justify="center",
