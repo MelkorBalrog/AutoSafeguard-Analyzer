@@ -51,7 +51,6 @@ def test_diagram_objects_and_connections_follow_phase_visibility():
     assert repo.visible_objects(diag.diag_id)
     assert repo.visible_connections(diag.diag_id)
 
-
 def test_diagram_window_respects_phase():
     repo = SysMLRepository.reset_instance()
     toolbox = SafetyManagementToolbox()
