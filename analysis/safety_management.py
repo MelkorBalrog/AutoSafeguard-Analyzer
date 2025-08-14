@@ -46,7 +46,9 @@ class SafetyWorkProduct:
 
     diagram: str
     analysis: str
-    rationale: str
+    rationale: str = ""
+    # Names of work products this item may trace to according to governance.
+    traceable: List[str] = field(default_factory=list)
 
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:
@@ -60,6 +62,7 @@ class SafetyWorkProduct:
             data.get("diagram", ""),
             data.get("analysis", ""),
             data.get("rationale", ""),
+            list(data.get("traceable", [])),
         )
 
 
@@ -501,6 +504,43 @@ class SafetyManagementToolbox:
             return joint_review
         return False
 
+    # ------------------------------------------------------------------
+    def _trace_mapping(self) -> Dict[str, set[str]]:
+        """Return mapping of work product name to traceable targets."""
+        repo = SysMLRepository.get_instance()
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        mapping: Dict[str, set[str]] = {}
+        for diag_id in diag_ids:
+            if not repo.diagram_visible(diag_id):
+                continue
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            id_to_name: Dict[int, str] = {}
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") == "Work Product":
+                    name = obj.get("properties", {}).get("name")
+                    if name:
+                        id_to_name[obj.get("obj_id")] = name
+            for conn in getattr(diag, "connections", []):
+                stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
+                if stereo == "trace":
+                    sname = id_to_name.get(conn.get("src"))
+                    tname = id_to_name.get(conn.get("dst"))
+                    if sname and tname:
+                        mapping.setdefault(sname, set()).add(tname)
+                        mapping.setdefault(tname, set()).add(sname)
+        return mapping
+
+    # ------------------------------------------------------------------
+    def can_trace(self, source: str, target: str) -> bool:
+        """Return ``True`` if ``source`` may trace to ``target``."""
+        traces = self._trace_mapping()
+        return target in traces.get(source, set())
+
     def build_lifecycle(self, stages: List[str]) -> None:
         """Define the project lifecycle stages."""
         self.lifecycle = stages
@@ -510,8 +550,13 @@ class SafetyManagementToolbox:
         self.workflows[name] = steps
 
     def get_work_products(self) -> List[SafetyWorkProduct]:
-        """Return all registered work products."""
-        return list(self.work_products)
+        """Return all registered work products including traceability info."""
+        traces = self._trace_mapping()
+        products: List[SafetyWorkProduct] = []
+        for wp in self.work_products:
+            wp.traceable = sorted(traces.get(wp.analysis, set()))
+            products.append(wp)
+        return products
 
     def get_workflow(self, name: str) -> List[str]:
         """Return the steps for the requested workflow."""
