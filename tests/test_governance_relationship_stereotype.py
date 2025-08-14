@@ -260,6 +260,64 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
 
+    def test_odd_scenario_library_used_relationships(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        rels = ["Used By", "Used after Review", "Used after Approval"]
+        for rel in rels:
+            o1 = SysMLObject(
+                1,
+                "Work Product",
+                0,
+                0,
+                element_id=e1.elem_id,
+                properties={"name": "ODD"},
+            )
+            o2 = SysMLObject(
+                2,
+                "Work Product",
+                0,
+                100,
+                element_id=e2.elem_id,
+                properties={"name": "Scenario Library"},
+            )
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertTrue(valid)
+
+    def test_used_relationship_requires_dependency(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        rels = ["Used By", "Used after Review", "Used after Approval"]
+        for rel in rels:
+            o1 = SysMLObject(
+                1,
+                "Work Product",
+                0,
+                0,
+                element_id=e1.elem_id,
+                properties={"name": "Mission Profile"},
+            )
+            o2 = SysMLObject(
+                2,
+                "Work Product",
+                0,
+                100,
+                element_id=e2.elem_id,
+                properties={"name": "STPA"},
+            )
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertFalse(valid)
+
     def test_analysis_inputs_used_after_approval_visibility(self):
         repo = self.repo
         toolbox = SafetyManagementToolbox()

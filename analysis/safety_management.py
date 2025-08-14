@@ -69,7 +69,27 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "Reliability Analysis",
     "Safety & Security Case",
     "GSN Argumentation",
+    "Scenario Library",
+    "ODD",
 }
+
+# Work products that may be used as inputs for any analysis without
+# additional dependency checks
+UNRESTRICTED_USAGE_SOURCES: set[str] = {"Architecture Diagram"}
+
+# Explicit work product dependencies allowed for "Used" style relationships.
+# Each tuple maps a source work product to a target analysis that genuinely
+# depends on it.  Relationships outside this set are rejected to prevent
+# meaningless connections between unrelated work products.
+ALLOWED_USAGE: set[tuple[str, str]] = set(ALLOWED_PROPAGATIONS)
+ALLOWED_USAGE.update(
+    {
+        ("Mission Profile", "Reliability Analysis"),
+        ("Mission Profile", "FTA"),
+        ("Requirement Specification", "HAZOP"),
+        ("ODD", "Scenario Library"),
+    }
+)
 
 @dataclass
 class SafetyWorkProduct:
@@ -940,8 +960,31 @@ class SafetyManagementToolbox:
         analyses = self._analysis_mapping()
         traces = self._trace_mapping()
 
+        # When a lifecycle phase is active only analyses declared in that phase
+        # (or pulled in via re-use links) should expose their governed inputs.
+        if self.active_module and target not in self.enabled_products():
+            return set()
+
+        enabled_sources: set[str] | None = None
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            reuse = self._reuse_map().get(self.active_module, {})
+            reused_wps = reuse.get("work_products", set())
+            reused_phases = reuse.get("phases", set())
+            enabled_sources = set()
+            for wp in self.work_products:
+                mod = self.module_for_diagram(wp.diagram)
+                if (
+                    wp.diagram in names
+                    or wp.analysis in reused_wps
+                    or mod in reused_phases
+                ):
+                    enabled_sources.add(wp.analysis)
+
         direct: set[str] = set()
         for src, rels in analyses.items():
+            if enabled_sources is not None and src not in enabled_sources:
+                continue
             if target in rels.get("used by", set()):
                 direct.add(src)
             if target in rels.get("used after review", set()) and (reviewed or approved):
@@ -955,8 +998,12 @@ class SafetyManagementToolbox:
             cur = queue.pop(0)
             for neigh in traces.get(cur, set()):
                 if neigh not in sources:
+                    if enabled_sources is not None and neigh not in enabled_sources:
+                        continue
                     sources.add(neigh)
                     queue.append(neigh)
+        if enabled_sources is not None:
+            sources &= enabled_sources
         return sources
 
     # ------------------------------------------------------------------
