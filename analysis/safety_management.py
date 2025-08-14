@@ -622,10 +622,20 @@ class SafetyManagementToolbox:
     # ------------------------------------------------------------------
     def can_trace(self, source: str, target: str) -> bool:
         """Return ``True`` if ``source`` may trace to ``target``."""
+        from analysis.models import REQUIREMENT_WORK_PRODUCTS
+
         source = self._normalize_work_product(source)
         target = self._normalize_work_product(target)
         traces = self._trace_mapping()
-        return target in traces.get(source, set())
+        if target in traces.get(source, set()):
+            return True
+        general = REQUIREMENT_WORK_PRODUCTS[0]
+        specific_wps = set(REQUIREMENT_WORK_PRODUCTS[1:])
+        if source in specific_wps and target in traces.get(general, set()):
+            return True
+        if target in specific_wps and source in traces.get(general, set()):
+            return True
+        return False
 
     # ------------------------------------------------------------------
     def requirement_work_product(self, req_type: str) -> str:
