@@ -92,7 +92,15 @@ def test_activity_boundary_label_rotated_left_inside():
     win.font = None
     win._draw_gradient_rect = lambda *args, **kwargs: None
     win.selected_objs = []
-    obj = SysMLObject(1, "System Boundary", 0.0, 0.0, width=100.0, height=80.0, properties={"name": "Lane"})
+    obj = SysMLObject(
+        1,
+        "System Boundary",
+        0.0,
+        0.0,
+        width=100.0,
+        height=80.0,
+        properties={"name": "Lane"},
+    )
     win.draw_object(obj)
 
     assert win.canvas.text_calls, "label not drawn"

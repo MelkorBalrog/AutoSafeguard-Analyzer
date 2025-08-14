@@ -1880,7 +1880,8 @@ def rename_port(
     repo: SysMLRepository, port: SysMLObject, objs: List[SysMLObject], new_name: str
 ) -> None:
     """Rename *port* and update its parent's port list."""
-
+    if port.element_id and repo.element_read_only(port.element_id):
+        return
     old_name = port.properties.get("name", "")
     if old_name == new_name:
         return
