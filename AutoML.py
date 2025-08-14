@@ -16115,13 +16115,10 @@ class FaultTreeApp:
             for el in lib.get("elements", []):
                 name = el.get("name") or el.get("element") or el.get("id")
                 attrs = ", ".join(f"{k}={v}" for k, v in el.items() if k != "name")
-                elem_tree.insert(
-                    "",
-                    tk.END,
-                    values=(attrs,),
-                    text=name,
-                    image=self.odd_elem_icon,
-                )
+                opts = {"values": (attrs,), "text": name}
+                if self.odd_elem_icon:
+                    opts["image"] = self.odd_elem_icon
+                elem_tree.insert("", tk.END, **opts)
 
         class ElementDialog(simpledialog.Dialog):
             def __init__(self, parent, app, data=None):
@@ -16312,7 +16309,7 @@ class FaultTreeApp:
                 for row in self.attr_rows:
                     key = row["k_var"].get().strip()
                     if key:
-                        new_data[key] = v_var.get()
+                        new_data[key] = row["v_var"].get()
                 tp = float(self.tp_var.get())
                 fp = float(self.fp_var.get())
                 tn = float(self.tn_var.get())
