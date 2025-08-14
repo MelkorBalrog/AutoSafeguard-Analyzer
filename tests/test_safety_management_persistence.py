@@ -96,7 +96,7 @@ def test_safety_management_roundtrip_serialisation():
 def test_apply_model_enables_governed_work_products(monkeypatch):
     app = _minimal_app()
     enabled = []
-    def record_enable(self, name):
+    def record_enable(self, name, *, refresh: bool = True):
         enabled.append(name)
         self.enabled_work_products.add(name)
 
@@ -106,7 +106,7 @@ def test_apply_model_enables_governed_work_products(monkeypatch):
     toolbox.add_work_product("Gov", "HAZOP", "Rationale")
     data = {"safety_mgmt_toolbox": toolbox.to_dict()}
     app.apply_model_data(data, ensure_root=False)
-    assert enabled == ["HAZOP"]
+    assert set(enabled) == {"HAZOP", "Qualitative Analysis"}
 
 
 def test_apply_model_without_governance_disables_work_products(monkeypatch):
@@ -170,10 +170,10 @@ def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
         new_app, FaultTreeApp
     )
 
-    def enable_wp(self, name):
+    def enable_wp(self, name, *, refresh: bool = True):
         self.enabled_work_products.add(name)
 
-    def disable_wp(self, name, *, force: bool = False):
+    def disable_wp(self, name, *, force: bool = False, refresh: bool = True):
         self.enabled_work_products.discard(name)
         return True
 
@@ -185,4 +185,4 @@ def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
 
     new_app.safety_mgmt_toolbox.set_active_module("Phase2")
     new_app.refresh_tool_enablement()
-    assert new_app.enabled_work_products == {"HAZOP"}
+    assert new_app.enabled_work_products == {"HAZOP", "Qualitative Analysis"}

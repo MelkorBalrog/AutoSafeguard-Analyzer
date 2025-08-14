@@ -95,7 +95,7 @@ class SafetyManagementWindow(tk.Frame):
                     app.on_lifecycle_selected()
                 except Exception:
                     pass
-            elif hasattr(app, "refresh_tool_enablement"):
+            if hasattr(app, "refresh_tool_enablement"):
                 try:
                     app.refresh_tool_enablement()
                 except Exception:
