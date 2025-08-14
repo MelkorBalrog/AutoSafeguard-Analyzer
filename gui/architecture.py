@@ -9177,6 +9177,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
+            "Scenario Library",
+            "ODD Library",
         ]
         options = list(dict.fromkeys(options))
         area_map = {
@@ -9197,6 +9199,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
+            "Scenario Library": "Scenario",
+            "ODD Library": "Scenario",
         }
         areas = {
             o.properties.get("name")
