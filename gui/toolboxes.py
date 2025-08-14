@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from gui.architecture import _work_product_name
 
 
 def find_requirement_traces(req_id: str) -> list[str]:
@@ -358,17 +359,11 @@ class _TraceLinkDialog(simpledialog.Dialog):
         self.items = []
         self.lb = tk.Listbox(master, selectmode="extended", height=10, exportselection=False)
         req_type = self.requirement.get("req_type", "")
-        req_wp = ""
-        if req_type in REQUIREMENT_TYPE_OPTIONS:
-            idx = REQUIREMENT_TYPE_OPTIONS.index(req_type)
-            req_wp = REQUIREMENT_WORK_PRODUCTS[idx]
+        req_wp = self.toolbox.requirement_work_product(req_type) if self.toolbox else ""
         for diag in repo.diagrams.values():
-            if self.toolbox and req_wp:
-                try:
-                    if not self.toolbox.can_trace(req_wp, diag.diag_type):
-                        continue
-                except Exception:
-                    continue
+            diag_wp = _work_product_name(diag.diag_type)
+            if self.toolbox and req_wp and not self.toolbox.can_trace(req_wp, diag_wp):
+                continue
             for obj in diag.objects:
                 name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
                 label = f"{diag.name}:{name}" if diag.name else name
@@ -3802,9 +3797,9 @@ class HazardExplorerWindow(tk.Toplevel):
 class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
     """Dialog presenting diagram objects for selection."""
 
-    def __init__(self, parent, repo: SysMLRepository, req_type: str, can_trace):
+    def __init__(self, parent, repo: SysMLRepository, req_wp: str, can_trace):
         self.repo = repo
-        self.req_type = req_type
+        self.req_wp = req_wp
         self.can_trace = can_trace
         self.selection: list[tuple[str, int]] = []
         super().__init__(parent, "Select Targets")
@@ -3814,16 +3809,12 @@ class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires 
         self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, width=40)
         self._options: list[tuple[str, int]] = []
         for diag in self.repo.diagrams.values():
+            diag_wp = _work_product_name(diag.diag_type)
+            if self.req_wp and self.can_trace and not self.can_trace(self.req_wp, diag_wp):
+                continue
             dname = diag.name or diag.diag_id
             for obj in getattr(diag, "objects", []):
                 name = obj.get("properties", {}).get("name", "")
-                if (
-                    self.req_type
-                    and name
-                    and self.can_trace
-                    and not self.can_trace(self.req_type, name)
-                ):
-                    continue
                 label = f"{dname}:{name or obj.get('obj_type')}"
                 self._options.append((diag.diag_id, obj.get("obj_id")))
                 self.listbox.insert(tk.END, label)
@@ -4028,7 +4019,8 @@ class RequirementsExplorerWindow(tk.Toplevel):
         repo = SysMLRepository.get_instance()
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
         can_trace = toolbox.can_trace if toolbox else (lambda a, b: True)
-        dlg = DiagramElementDialog(self, repo, req.get("req_type", ""), can_trace)
+        req_wp = toolbox.requirement_work_product(req.get("req_type", "")) if toolbox else ""
+        dlg = DiagramElementDialog(self, repo, req_wp, can_trace)
         targets = getattr(dlg, "selection", [])
         if not targets:
             return

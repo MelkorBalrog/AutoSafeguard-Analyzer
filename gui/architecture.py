@@ -4,14 +4,10 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
-try:  # pragma: no cover - GUI helper may be absent in headless tests
+try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
-except Exception:  # pragma: no cover
-    class ToolTip:  # type: ignore
-        """Fallback no-op tooltip used when GUI toolkit is unavailable."""
-
-        def __init__(self, *args, **kwargs):
-            pass
+except Exception:  # pragma: no cover - fallback for minimal installs
+    ToolTip = None  # type: ignore
 import json
 import math
 import re
@@ -7592,10 +7588,11 @@ class SysMLObjectDialog(simpledialog.Dialog):
             ttk.Button(btnf, text="Add", command=self.add_requirement).pack(side=tk.TOP)
             ttk.Button(btnf, text="Remove", command=self.remove_requirement).pack(side=tk.TOP)
         else:
-            ToolTip(
-                self.req_list,
-                "Requirement allocation is disabled for this diagram due to governance restrictions.",
-            )
+            if ToolTip:
+                ToolTip(
+                    self.req_list,
+                    "Requirement allocation is disabled for this diagram due to governance restrictions.",
+                )
         for r in self.obj.requirements:
             self.req_list.insert(tk.END, f"[{r.get('id')}] {r.get('text','')}")
         req_row += 1
