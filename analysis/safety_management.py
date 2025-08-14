@@ -42,6 +42,20 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("FTA", "Product Goal Specification"),
 }
 
+# Work products representing safety analyses that may consume Architecture Diagrams.
+SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
+    "HAZOP",
+    "FI2TC",
+    "TC2FI",
+    "Threat Analysis",
+    "Cyber Risk Assessment",
+    "Risk Assessment",
+    "FMEA",
+    "FMEDA",
+    "FTA",
+    "Product Goal Specification",
+}
+
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -609,6 +623,36 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
+    def _analyze_mapping(self) -> Dict[str, set[str]]:
+        """Return mapping of work products to analyses that may consume them."""
+        repo = SysMLRepository.get_instance()
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        mapping: Dict[str, set[str]] = {}
+        for diag_id in diag_ids:
+            if not repo.diagram_visible(diag_id):
+                continue
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            id_to_name: Dict[int, str] = {}
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") == "Work Product":
+                    name = obj.get("properties", {}).get("name")
+                    if name:
+                        id_to_name[obj.get("obj_id")] = name
+            for conn in getattr(diag, "connections", []):
+                stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
+                if stereo == "analyze":
+                    sname = id_to_name.get(conn.get("src"))
+                    tname = id_to_name.get(conn.get("dst"))
+                    if sname and tname:
+                        mapping.setdefault(sname, set()).add(tname)
+        return mapping
+
+    # ------------------------------------------------------------------
     def _req_relation_mapping(self) -> Dict[str, Dict[str, set[str]]]:
         """Return mapping of requirement work products to relation targets.
 
@@ -658,6 +702,18 @@ class SafetyManagementToolbox:
             return REQUIREMENT_WORK_PRODUCTS[idx + 1]
         except ValueError:
             return name
+
+    # ------------------------------------------------------------------
+    def analysis_inputs(self, analysis: str) -> set[str]:
+        """Return work products that may be analyzed by ``analysis``."""
+        mapping = self._analyze_mapping()
+        return {src for src, targets in mapping.items() if analysis in targets}
+
+    # ------------------------------------------------------------------
+    def can_analyze(self, source: str, analysis: str) -> bool:
+        """Return ``True`` if ``analysis`` may consume ``source`` work product."""
+        mapping = self._analyze_mapping()
+        return analysis in mapping.get(source, set())
 
     # ------------------------------------------------------------------
     def can_trace(self, source: str, target: str) -> bool:

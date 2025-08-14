@@ -25,7 +25,11 @@ from analysis.models import (
     REQUIREMENT_WORK_PRODUCTS,
     REQUIREMENT_TYPE_OPTIONS,
 )
-from analysis.safety_management import ALLOWED_PROPAGATIONS, ACTIVE_TOOLBOX
+from analysis.safety_management import (
+    ALLOWED_PROPAGATIONS,
+    ACTIVE_TOOLBOX,
+    SAFETY_ANALYSIS_WORK_PRODUCTS,
+)
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -2920,6 +2924,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Trace",
                     "Satisfied by",
                     "Derived from",
+                    "Analyze",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2956,6 +2961,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Analyze",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3168,6 +3174,14 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
+            elif conn_type == "Analyze":
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Analyze links must connect Work Products"
+                if src.properties.get("name") != "Architecture Diagram":
+                    return False, "Analyze links must originate from Architecture Diagram"
+                dname = dst.properties.get("name")
+                if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
+                    return False, f"{dname} is not a safety analysis work product"
             else:
                 allowed = {
                     "Initial": {
@@ -3386,6 +3400,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Analyze",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3425,6 +3440,7 @@ class SysMLDiagramWindow(tk.Frame):
                           "Re-use",
                           "Satisfied by",
                           "Derived from",
+                          "Analyze",
                           ):
                               arrow_default = "forward"
                         else:
@@ -3711,6 +3727,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Analyze",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3918,6 +3935,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Analyze",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3955,6 +3973,7 @@ class SysMLDiagramWindow(tk.Frame):
                         "Re-use",
                         "Satisfied by",
                         "Derived from",
+                        "Analyze",
                     ):
                         arrow_default = "forward"
                     else:
@@ -4246,6 +4265,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Analyze",
             "Connector",
             "Generalization",
             "Generalize",
@@ -4271,6 +4291,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Analyze",
             "Connector",
             "Generalization",
             "Generalize",
@@ -8792,6 +8813,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Analyze",
         ):
             ttk.Button(
                 governance_panel,
