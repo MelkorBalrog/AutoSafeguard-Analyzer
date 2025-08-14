@@ -310,6 +310,7 @@ from analysis.models import (
     ASIL_DECOMP_SCHEMES,
     calc_asil,
     global_requirements,
+    ensure_requirement_defaults,
     REQUIREMENT_TYPE_OPTIONS,
     REQUIREMENT_WORK_PRODUCTS,
     CAL_LEVEL_OPTIONS,
@@ -1375,6 +1376,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "status": "draft",
             "parent_id": "",
         }
+        ensure_requirement_defaults(req)
         if req_type not in (
             "operational",
             "functional modification",
@@ -1400,6 +1402,16 @@ class EditNodeDialog(simpledialog.Dialog):
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.app.get_all_nodes(self.app.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -1595,6 +1607,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "status": "draft",
                 "parent_id": "",
             }
+            ensure_requirement_defaults(req)
             if req_type not in (
                 "operational",
                 "functional modification",
@@ -1994,6 +2007,16 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
             "manage_safety_cases",
         ),
+        "Safety & Security Case": (
+            "Safety Analysis",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
+        ),
+        "GSN Argumentation": (
+            "Safety Analysis",
+            "GSN Explorer",
+            "manage_gsn",
+        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2064,6 +2087,16 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
+        "Mission Profile": (
+            "Safety Analysis",
+            "Mission Profiles",
+            "manage_mission_profiles",
+        ),
+        "Reliability Analysis": (
+            "Safety Analysis",
+            "Reliability Analysis",
+            "open_reliability_window",
+        ),
         "Scenario": (
             "Scenario",
             "Scenario Libraries",
@@ -2093,6 +2126,10 @@ class FaultTreeApp:
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
+        "Mission Profile": "Quantitative Analysis",
+        "Reliability Analysis": "Quantitative Analysis",
+        "Safety & Security Case": "GSN",
+        "GSN Argumentation": "GSN",
     }
 
     def __init__(self, root):
@@ -2421,11 +2458,17 @@ class FaultTreeApp:
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        self.work_product_menus.setdefault("Mission Profile", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
+        )
         quantitative_menu.add_command(
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
             label="Reliability Analysis", command=self.open_reliability_window
+        )
+        self.work_product_menus.setdefault("Reliability Analysis", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
         )
         quantitative_menu.add_command(
             label="FMEDA Analysis",
@@ -2461,8 +2504,14 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        self.work_product_menus.setdefault("GSN Argumentation", []).append(
+            (gsn_menu, gsn_menu.index("end"))
+        )
         gsn_menu.add_command(
             label="Safety & Security Case Explorer", command=self.manage_safety_cases
+        )
+        self.work_product_menus.setdefault("Safety & Security Case", []).append(
+            (gsn_menu, gsn_menu.index("end"))
         )
 
         # Add menus to the bar in the desired order
@@ -2491,6 +2540,9 @@ class FaultTreeApp:
         self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="GSN", menu=gsn_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("GSN", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Process", menu=process_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Process", []).append((menubar, idx))
@@ -2657,8 +2709,18 @@ class FaultTreeApp:
 
     # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
-        """Return a list of node or FMEA entry names where the requirement appears."""
+        """Return names of model elements linked to the requirement."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -2672,6 +2734,13 @@ class FaultTreeApp:
                     else:
                         name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
                     names.append(f"{fmea['name']}:{name}")
+        repo = SysMLRepository.get_instance()
+        for diag in repo.diagrams.values():
+            for obj in getattr(diag, "objects", []):
+                reqs = obj.get("requirements", [])
+                if any(r.get("id") == req_id for r in reqs):
+                    name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                    names.append(name)
         return names
 
     def _collect_goal_names(self, node, acc):
@@ -2892,6 +2961,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -3041,6 +3120,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -3223,6 +3312,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -8991,11 +9090,8 @@ class FaultTreeApp:
                 "tc2fi_docs",
                 "hara_docs",
             ),
-            "Quantitative Analysis": (
-                "fmeas",
-                "fmedas",
-                "top_events",
-            ),
+            "Mission Profile": "mission_profiles",
+            "Reliability Analysis": "reliability_analyses",
         }
         attr = attr_map.get(name)
         if not attr:
@@ -12526,6 +12622,7 @@ class FaultTreeApp:
                                         "text": req_text,
                                         "asil": "",
                                     }
+                                    ensure_requirement_defaults(req)
                                     global_requirements[rid] = req
                                 if not hasattr(self.node, "safety_requirements"):
                                     self.node.safety_requirements = []
@@ -12753,6 +12850,7 @@ class FaultTreeApp:
                 custom_id = str(uuid.uuid4())
             if custom_id in global_requirements:
                 req = global_requirements[custom_id]
+                ensure_requirement_defaults(req)
                 req["req_type"] = dialog.result["req_type"]
                 req["text"] = dialog.result["text"]
                 req["asil"] = dialog.result.get("asil", "QM")
@@ -12765,6 +12863,7 @@ class FaultTreeApp:
                     "asil": dialog.result.get("asil", "QM"),
                     "validation_criteria": 0.0
                 }
+                ensure_requirement_defaults(req)
                 global_requirements[custom_id] = req
             self.app.update_validation_criteria(custom_id)
             if not hasattr(self.node, "safety_requirements"):
@@ -17479,7 +17578,10 @@ class FaultTreeApp:
                 "safety_concept",
                 {"functional": "", "technical": "", "cybersecurity": ""},
             ).copy(),
-            "global_requirements": global_requirements,
+            "global_requirements": {
+                rid: ensure_requirement_defaults(req.copy())
+                for rid, req in global_requirements.items()
+            },
             "reviews": reviews,
             "current_review": current_name,
             "sysml_repository": repo.to_dict(),
@@ -17540,6 +17642,11 @@ class FaultTreeApp:
             new_root.x, new_root.y = 300, 200
             self.top_events.append(new_root)
         self.root_node = self.top_events[0] if self.top_events else None
+
+        global global_requirements
+        global_requirements.clear()
+        for rid, req in data.get("global_requirements", {}).items():
+            global_requirements[rid] = ensure_requirement_defaults(req)
 
         self.gsn_modules = [
             GSNModule.from_dict(m) for m in data.get("gsn_modules", [])
@@ -18610,8 +18717,11 @@ class FaultTreeApp:
         if hasattr(node, "safety_requirements"):
             for req in node.safety_requirements:
                 # Use req["id"] as key; if already exists, you could update if needed.
+                ensure_requirement_defaults(req)
                 if req["id"] not in global_requirements:
                     global_requirements[req["id"]] = req
+                else:
+                    ensure_requirement_defaults(global_requirements[req["id"]])
         for child in node.children:
             self.update_global_requirements_from_nodes(child)
 

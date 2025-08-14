@@ -2,7 +2,7 @@
 import json
 import uuid
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import os
 import datetime
 import analysis.user_config as user_config
@@ -23,6 +23,11 @@ class SysMLElement:
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     phase: Optional[str] = None
+
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return element name annotated with its creation phase."""
+        return f"{self.name} ({self.phase})" if self.phase else self.name
 
 @dataclass
 class SysMLRelationship:
@@ -61,6 +66,12 @@ class SysMLDiagram:
     modified_by: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     phase: Optional[str] = None
+    locked: bool = False
+
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return diagram name annotated with its creation phase."""
+        return f"{self.name} ({self.phase})" if self.phase else self.name
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
@@ -83,6 +94,8 @@ class SysMLRepository:
         # Work product types reused by the active phase. Any diagrams of these
         # types originating from other phases are visible but read-only.
         self.reuse_products: set[str] = set()
+        # Diagrams made immutable after phase freeze
+        self.frozen_diagrams: set[str] = set()
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -203,6 +216,13 @@ class SysMLRepository:
             phase=self.active_phase,
         )
         self.elements[elem_id] = elem
+        try:
+            from analysis import safety_management as sm
+            toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
+            if toolbox and getattr(toolbox, "work_products", []):
+                toolbox.freeze_active_phase()
+        except Exception:
+            pass
         return elem
 
     # ------------------------------------------------------------------
@@ -287,17 +307,28 @@ class SysMLRepository:
             phase=self.active_phase,
         )
         self.diagrams[diag_id] = diagram
+        try:
+            from analysis import safety_management as sm
+            toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
+            if toolbox and getattr(toolbox, "work_products", []):
+                toolbox.freeze_active_phase()
+        except Exception:
+            pass
         return diagram
 
     def add_element_to_diagram(self, diag_id: str, elem_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and elem_id not in diag.elements:
+            if self.diagram_read_only(diag_id):
+                return
             self.push_undo_state()
             diag.elements.append(elem_id)
 
     def add_relationship_to_diagram(self, diag_id: str, rel_id: str) -> None:
         diag = self.diagrams.get(diag_id)
         if diag and rel_id not in diag.relationships:
+            if self.diagram_read_only(diag_id):
+                return
             self.push_undo_state()
             diag.relationships.append(rel_id)
 
@@ -335,6 +366,38 @@ class SysMLRepository:
         for k, v in list(self.element_diagrams.items()):
             if v == diag_id:
                 del self.element_diagrams[k]
+
+    def rename_phase(self, old: str, new: str) -> None:
+        """Replace references to lifecycle phase ``old`` with ``new``.
+
+        Elements, relationships, diagrams and their contained objects or
+        connections referencing ``old`` will be updated. The active phase is
+        also adjusted when it matches ``old``.
+        """
+
+        if not old or not new or old == new:
+            return
+
+        for elem in self.elements.values():
+            if elem.phase == old:
+                elem.phase = new
+
+        for rel in self.relationships:
+            if rel.phase == old:
+                rel.phase = new
+
+        for diag in self.diagrams.values():
+            if diag.phase == old:
+                diag.phase = new
+            for obj in getattr(diag, "objects", []):
+                if obj.get("phase") == old:
+                    obj["phase"] = new
+            for conn in getattr(diag, "connections", []):
+                if conn.get("phase") == old:
+                    conn["phase"] = new
+
+        if self.active_phase == old:
+            self.active_phase = new
 
     def get_element(self, elem_id: str) -> Optional[SysMLElement]:
         return self.elements.get(elem_id)
@@ -456,15 +519,48 @@ class SysMLRepository:
         return False
 
     def diagram_read_only(self, diag_id: str) -> bool:
-        """Return ``True`` if ``diag_id`` originates from a reused phase or work product."""
+        """Return ``True`` if ``diag_id`` is locked or originates from a reused phase/work product."""
         diag = self.diagrams.get(diag_id)
         if not diag:
             return False
+        if getattr(diag, "locked", False):
+            return True
         if self.active_phase is None or diag.phase is None:
             return False
         if diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set()):
             return True
         return diag.phase != self.active_phase and diag.diag_type in getattr(self, "reuse_products", set())
+
+    # ------------------------------------------------------------
+    def freeze_diagram(self, diag_id: str) -> None:
+        """Mark a diagram as immutable."""
+        self.frozen_diagrams.add(diag_id)
+
+    # ------------------------------------------------------------
+    def rename_phase(self, old: str, new: str) -> None:
+        """Rename lifecycle phase ``old`` to ``new`` across repository data."""
+        if old == new:
+            return
+        if self.active_phase == old:
+            self.active_phase = new
+        if old in self.reuse_phases:
+            self.reuse_phases.remove(old)
+            self.reuse_phases.add(new)
+        for elem in self.elements.values():
+            if elem.phase == old:
+                elem.phase = new
+        for rel in self.relationships:
+            if rel.phase == old:
+                rel.phase = new
+        for diag in self.diagrams.values():
+            if diag.phase == old:
+                diag.phase = new
+            for obj in diag.objects:
+                if obj.get("phase") == old:
+                    obj["phase"] = new
+            for conn in diag.connections:
+                if conn.get("phase") == old:
+                    conn["phase"] = new
 
     def element_read_only(self, elem_id: str) -> bool:
         """Return ``True`` if ``elem_id`` originates from a reused phase or work product."""
@@ -599,6 +695,18 @@ class SysMLRepository:
                     mapped = name_map.get(def_val)
                     if mapped:
                         obj.setdefault("properties", {})["definition"] = mapped
+
+    def find_requirements(self, req_id: str) -> List[Tuple[str, int]]:
+        """Return list of (diagram_id, obj_id) where ``req_id`` is allocated."""
+        matches: List[Tuple[str, int]] = []
+        for diag_id, diag in self.diagrams.items():
+            for obj in getattr(diag, "objects", []):
+                for req in obj.get("requirements", []):
+                    rid = req.get("id") if isinstance(req, dict) else req
+                    if rid == req_id:
+                        matches.append((diag_id, obj.get("obj_id")))
+                        break
+        return matches
 
     def get_activity_actions(self) -> list[str]:
         """Return all action names and activity diagram names."""
