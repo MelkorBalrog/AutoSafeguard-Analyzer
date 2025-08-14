@@ -43,6 +43,19 @@ from gui.architecture import (
 )
 
 
+def allowed_action_labels(app, analysis: str) -> list[str]:
+    """Return action labels permitted for ``analysis`` according to governance."""
+    toolbox = getattr(app, "safety_mgmt_toolbox", None) or ACTIVE_TOOLBOX
+    review = getattr(app, "current_review", None)
+    reviewed = getattr(review, "reviewed", False)
+    approved = getattr(review, "approved", False)
+    if toolbox and "Architecture Diagram" not in toolbox.analysis_inputs(
+        analysis, reviewed=reviewed, approved=approved
+    ):
+        return []
+    return app.get_all_action_labels()
+
+
 def find_requirement_traces(req_id: str) -> list[str]:
     """Return human readable diagram/object names allocated to ``req_id``."""
     repo = SysMLRepository.get_instance()
@@ -1963,7 +1976,7 @@ class HazopWindow(tk.Frame):
             func_lbl = ttk.Label(master, text="Function")
             func_lbl.grid(row=0, column=0, sticky="e", padx=5, pady=5)
             ToolTip(func_lbl, "Select the vehicle function under analysis.")
-            funcs = self.app.get_all_action_labels()
+            funcs = allowed_action_labels(self.app, "HAZOP")
             cur = next((f for f in funcs if f.split(":")[0].strip() == self.row.function), self.row.function)
             self.func = tk.StringVar(value=cur)
             func_cb = ttk.Combobox(
@@ -2573,14 +2586,28 @@ class RiskAssessmentWindow(tk.Frame):
             hazop_names = []
             if self.app.active_hara:
                 hazop_names = getattr(self.app.active_hara, "hazops", []) or []
+            if not hazop_names:
+                hazop_names = [d.name for d in self.app.hazop_docs]
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            review = getattr(self.app, "current_review", None)
+            reviewed = getattr(review, "reviewed", False)
+            approved = getattr(review, "approved", False)
+            inputs = (
+                toolbox.analysis_inputs("Risk Assessment", reviewed=reviewed, approved=approved)
+                if toolbox
+                else set()
+            )
+            if "HAZOP" not in inputs:
+                hazop_names = []
+            stpa_docs = self.app.stpa_docs if "STPA" in inputs else []
+            threat_docs = self.app.threat_docs if "Threat Analysis" in inputs else []
+
             malfs = set()
             hazards_map = {}
             scenarios_map = {}
             self.threat_map = {}
             threats = set()
 
-            if not hazop_names:
-                hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
                 hz = self.app.get_hazop_by_name(hz_name)
                 if hz:
@@ -2612,7 +2639,7 @@ class RiskAssessmentWindow(tk.Frame):
             stpa_name = getattr(getattr(self.app, "active_hara", None), "stpa", "")
             if stpa_name:
                 stpa_doc = next(
-                    (d for d in getattr(self.app, "stpa_docs", []) if d.name == stpa_name),
+                    (d for d in stpa_docs if d.name == stpa_name),
                     None,
                 )
                 if stpa_doc:
@@ -2629,7 +2656,7 @@ class RiskAssessmentWindow(tk.Frame):
             threat_name = getattr(getattr(self.app, "active_hara", None), "threat", "")
             if threat_name:
                 threat_doc = next(
-                    (d for d in getattr(self.app, "threat_docs", []) if d.name == threat_name),
+                    (d for d in threat_docs if d.name == threat_name),
                     None,
                 )
                 if threat_doc:
