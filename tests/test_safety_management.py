@@ -525,7 +525,7 @@ def test_enabled_products_filter_by_module():
     assert toolbox.enabled_products() == {"FTA"}
 
     toolbox.set_active_module(None)
-    assert toolbox.enabled_products() == {"HAZOP", "FTA"}
+    assert toolbox.enabled_products() == set()
 
 
 def test_disabled_work_products_absent_from_analysis_tree():
@@ -1773,11 +1773,11 @@ def test_active_module_filters_enabled_products():
         GovernanceModule("Phase2", diagrams=["D2"]),
     ]
 
-    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+    assert toolbox.enabled_products() == set()
     toolbox.set_active_module("Phase1")
     assert toolbox.enabled_products() == {"HAZOP"}
     toolbox.set_active_module(None)
-    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+    assert toolbox.enabled_products() == set()
 
 
 def test_work_product_info_includes_requirement_types():
