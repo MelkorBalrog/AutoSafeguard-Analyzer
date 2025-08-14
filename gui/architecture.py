@@ -8882,7 +8882,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         governance_panel = ttk.LabelFrame(self, text="Governance")
         governance_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
 
-        for name in (
+        rel_names = [
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
@@ -8891,28 +8891,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
-        ):
+        ]
+        rel_frame = ttk.LabelFrame(governance_panel, text="Relationships")
+        rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        for name in rel_names:
             ttk.Button(
-                governance_panel,
+                rel_frame,
                 text=name,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
 
-        ttk.Button(
-            governance_panel,
-            text="Add Work Product",
-            command=self.add_work_product,
-        ).pack(fill=tk.X, padx=2, pady=2)
-        ttk.Button(
-            governance_panel,
-            text="Add Process Area",
-            command=self.add_process_area,
-        ).pack(fill=tk.X, padx=2, pady=2)
-        ttk.Button(
-            governance_panel,
-            text="Add Lifecycle Phase",
-            command=self.add_lifecycle_phase,
-        ).pack(fill=tk.X, padx=2, pady=2)
+        node_cmds = [
+            ("Add Work Product", self.add_work_product),
+            ("Add Process Area", self.add_process_area),
+            ("Add Lifecycle Phase", self.add_lifecycle_phase),
+        ]
+        for name, cmd in node_cmds:
+            ttk.Button(governance_panel, text=name, command=cmd).pack(
+                fill=tk.X, padx=2, pady=2
+            )
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
