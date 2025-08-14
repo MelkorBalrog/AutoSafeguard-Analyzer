@@ -76,6 +76,10 @@ class SysMLRepository:
         self._undo_stack: list[dict] = []
         self._redo_stack: list[dict] = []
         self.active_phase: Optional[str] = None
+        # Phases reused by the currently active lifecycle phase. Elements or
+        # diagrams belonging to any of these phases should remain visible even
+        # though they were not created in ``active_phase``.
+        self.reuse_phases: set[str] = set()
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -406,7 +410,7 @@ class SysMLRepository:
             return False
         if self.active_phase is None or elem.phase is None:
             return True
-        return elem.phase == self.active_phase
+        return elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set())
 
     def diagram_visible(self, diag_id: str) -> bool:
         """Return True if ``diag_id`` should be visible in the active phase."""
@@ -417,7 +421,7 @@ class SysMLRepository:
             return True
         if self.active_phase is None or diag.phase is None:
             return True
-        return diag.phase == self.active_phase
+        return diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set())
 
     def visible_elements(self) -> dict[str, SysMLElement]:
         """Return mapping of element IDs to elements visible in the active phase."""
@@ -434,7 +438,7 @@ class SysMLRepository:
             return True
         if self.active_phase is None or obj.get("phase") is None:
             return True
-        return obj.get("phase") == self.active_phase
+        return obj.get("phase") == self.active_phase or obj.get("phase") in getattr(self, "reuse_phases", set())
 
     def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram connection should be visible in the active phase."""
@@ -443,7 +447,7 @@ class SysMLRepository:
             return True
         if self.active_phase is None or conn.get("phase") is None:
             return True
-        return conn.get("phase") == self.active_phase
+        return conn.get("phase") == self.active_phase or conn.get("phase") in getattr(self, "reuse_phases", set())
 
     def visible_objects(self, diag_id: str) -> list[dict]:
         """Return list of objects in diagram ``diag_id`` visible in the active phase."""
