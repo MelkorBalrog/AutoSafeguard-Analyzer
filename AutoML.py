@@ -8792,9 +8792,15 @@ class FaultTreeApp:
                 except Exception:
                     self.enabled_work_products.add(name)
             if getattr(toolbox, "work_products", None):
+                declared_all = {wp.analysis for wp in toolbox.work_products}
                 for name in current - declared:
                     try:
-                        self.disable_work_product(name)
+                        if name in declared_all:
+                            # Temporarily hide work products not declared in
+                            # the active phase even if documents exist.
+                            self.disable_work_product(name, force=True)
+                        else:
+                            self.disable_work_product(name)
                     except Exception:
                         pass
         global_enabled = getattr(self, "enabled_work_products", set())
@@ -8951,15 +8957,26 @@ class FaultTreeApp:
         return not getattr(self, attr, [])
 
     # ------------------------------------------------------------------
-    def disable_work_product(self, name: str) -> bool:
+    def disable_work_product(self, name: str, *, force: bool = False) -> bool:
         """Disable menu and toolbox entries for the given work product.
 
-        Returns ``True`` if the work product was disabled. If existing
-        documents of that type are present the work product remains enabled
-        and ``False`` is returned.
+        Parameters
+        ----------
+        name:
+            Work product type to disable.
+        force:
+            When ``True`` the work product is hidden even when existing
+            documents of that type remain.
+
+        Returns
+        -------
+        bool
+            ``True`` if the work product was disabled. If ``force`` is
+            ``False`` and existing documents of that type are present the
+            work product remains enabled and ``False`` is returned.
         """
 
-        if not self.can_remove_work_product(name):
+        if not force and not self.can_remove_work_product(name):
             return False
         self.enabled_work_products.discard(name)
         for menu, idx in self.work_product_menus.get(name, []):
