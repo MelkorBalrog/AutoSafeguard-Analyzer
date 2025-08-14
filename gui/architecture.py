@@ -3207,7 +3207,7 @@ class SysMLDiagramWindow(tk.Frame):
                     and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
                 ):
                     return False, (
-                        "Safety analysis work products cannot trace to other safety analyses"
+                        "Trace links cannot connect two safety analysis work products"
                     )
             elif conn_type in (
                 "Used By",
@@ -3224,7 +3224,7 @@ class SysMLDiagramWindow(tk.Frame):
                     )
                 if sname in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
-                        f"{conn_type} links cannot originate from a safety analysis work product",
+                        f"{conn_type} links cannot connect two safety analysis work products"
                     )
             else:
                 allowed = {
