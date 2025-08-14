@@ -18,6 +18,10 @@ class SafetyManagementWindow(tk.Frame):
         super().__init__(master)
         self.app = app
         self.toolbox = toolbox or SafetyManagementToolbox()
+        try:
+            self.app.safety_mgmt_window = self
+        except Exception:
+            pass
 
         phase_bar = ttk.Frame(self)
         phase_bar.pack(fill=tk.X)

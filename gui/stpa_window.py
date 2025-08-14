@@ -136,6 +136,9 @@ class StpaWindow(tk.Frame):
                 self.app.stpa_entries = d.entries
                 diag = repo.diagrams.get(d.diagram)
                 self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("STPA", name, self.app)
                 break
         self.refresh()
 

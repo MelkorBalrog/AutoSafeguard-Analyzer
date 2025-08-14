@@ -9130,23 +9130,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         phase = toolbox.module_for_diagram(name)
         if not phase:
             return
-        if hasattr(app, "lifecycle_var"):
-            try:
-                app.lifecycle_var.set(phase)
-            except Exception:
-                pass
-        if hasattr(app, "on_lifecycle_selected"):
-            try:
-                app.on_lifecycle_selected()
-                return
-            except Exception:
-                pass
-        toolbox.set_active_module(phase)
-        if hasattr(app, "refresh_tool_enablement"):
-            try:
-                app.refresh_tool_enablement()
-            except Exception:
-                pass
+        toolbox.activate_phase(phase, app)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
