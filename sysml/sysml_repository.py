@@ -54,6 +54,7 @@ class SysMLDiagram:
     relationships: List[str] = field(default_factory=list)
     objects: List[dict] = field(default_factory=list)
     connections: List[dict] = field(default_factory=list)
+    traceable: List[str] = field(default_factory=list)
     created: str = field(default_factory=lambda: datetime.datetime.now().isoformat())
     author: str = field(default_factory=lambda: user_config.CURRENT_USER_NAME)
     author_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
