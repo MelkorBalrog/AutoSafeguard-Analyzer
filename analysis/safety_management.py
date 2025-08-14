@@ -779,6 +779,22 @@ class SafetyManagementToolbox:
         return targets
 
     # ------------------------------------------------------------------
+    def analysis_inputs(
+        self, target: str, *, reviewed: bool = False, approved: bool = False
+    ) -> set[str]:
+        """Return work products that may serve as input to ``target`` analysis."""
+        analyses = self._analysis_mapping()
+        sources: set[str] = set()
+        for src, rels in analyses.items():
+            if target in rels.get("used by", set()):
+                sources.add(src)
+            if target in rels.get("used after review", set()) and (reviewed or approved):
+                sources.add(src)
+            if target in rels.get("used after approval", set()) and approved:
+                sources.add(src)
+        return sources
+
+    # ------------------------------------------------------------------
     def analysis_usage_type(self, source: str, target: str) -> Optional[str]:
         """Return the relationship type for using ``source`` as input to ``target``."""
         repo = SysMLRepository.get_instance()
