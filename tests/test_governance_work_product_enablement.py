@@ -5,7 +5,6 @@ import pytest
 
 
 @pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
-def test_add_work_product_enables_toolbox(monkeypatch, analysis):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
