@@ -3898,15 +3898,20 @@ class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires 
         self.selection = [self._options[i] for i in sels]
 
 
-class RequirementsExplorerWindow(tk.Toplevel):
+class RequirementsExplorerWindow(tk.Frame):
     """Read-only list of global requirements with filter options."""
 
     STATUSES = ["", "draft", "in review", "peer reviewed", "pending approval", "approved"]
 
-    def __init__(self, app):
-        super().__init__(app.root)
+    def __init__(self, master, app=None):
+        if app is None and hasattr(master, "root"):
+            app = master
+            master = tk.Toplevel(app.root)
+        super().__init__(master)
         self.app = app
-        self.title("Requirements Explorer")
+        if isinstance(master, tk.Toplevel):
+            master.title("Requirements Explorer")
+            self.pack(fill=tk.BOTH, expand=True)
 
         filter_frame = ttk.Frame(self)
         filter_frame.pack(fill=tk.X, padx=5, pady=2)
