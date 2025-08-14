@@ -38,7 +38,32 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from sysml.sysml_repository import SysMLRepository
+from gui.architecture import (
+    _work_product_name,
+    link_requirements,
+    unlink_requirements,
+    link_requirement_to_object,
+)
+
+
+def find_requirement_traces(req_id: str) -> list[str]:
+    """Return human readable diagram/object names allocated to ``req_id``."""
+    repo = SysMLRepository.get_instance()
+    results: list[str] = []
+    for diag_id, obj_id in repo.find_requirements(req_id):
+        diag = repo.diagrams.get(diag_id)
+        dname = diag.name if diag and diag.name else diag_id
+        obj = None
+        if diag:
+            obj = next(
+                (o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id),
+                None,
+            )
+        oname = obj.get("properties", {}).get("name") if obj else ""
+        if not oname and obj:
+            oname = obj.get("obj_type", "")
+        results.append(f"{dname}:{oname}")
+    return results
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
@@ -339,17 +364,11 @@ class _TraceLinkDialog(simpledialog.Dialog):
         self.items = []
         self.lb = tk.Listbox(master, selectmode="extended", height=10, exportselection=False)
         req_type = self.requirement.get("req_type", "")
-        req_wp = ""
-        if req_type in REQUIREMENT_TYPE_OPTIONS:
-            idx = REQUIREMENT_TYPE_OPTIONS.index(req_type)
-            req_wp = REQUIREMENT_WORK_PRODUCTS[idx]
+        req_wp = self.toolbox.requirement_work_product(req_type) if self.toolbox else ""
         for diag in repo.diagrams.values():
-            if self.toolbox and req_wp:
-                try:
-                    if not self.toolbox.can_trace(req_wp, diag.diag_type):
-                        continue
-                except Exception:
-                    continue
+            diag_wp = _work_product_name(diag.diag_type)
+            if self.toolbox and req_wp and not self.toolbox.can_trace(req_wp, diag_wp):
+                continue
             for obj in diag.objects:
                 name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
                 label = f"{diag.name}:{name}" if diag.name else name
@@ -366,6 +385,73 @@ class _TraceLinkDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = {self.lb.get(i) for i in self.lb.curselection()}
+
+
+class _RequirementRelationDialog(simpledialog.Dialog):
+    """Dialog to create requirement-to-requirement links."""
+
+    def __init__(self, parent, requirement, toolbox):
+        self.req = requirement
+        self.toolbox = toolbox
+        super().__init__(parent, title="Link Requirement")
+
+    def body(self, master):
+        tk.Label(master, text="Relation:").grid(row=0, column=0, sticky="e")
+        options = []
+        self.rel_var = tk.StringVar()
+        for rel in ("satisfied by", "derived from"):
+            has_candidate = False
+            for r in global_requirements.values():
+                if r.get("id") == self.req.get("id"):
+                    continue
+                if self.toolbox and not self.toolbox.can_link_requirements(
+                    self.req.get("req_type", ""), r.get("req_type", ""), rel
+                ):
+                    continue
+                has_candidate = True
+                break
+            if has_candidate or any(
+                rr.get("type") == rel for rr in self.req.get("relations", [])
+            ):
+                options.append(rel)
+        if not options:
+            options = ["satisfied by", "derived from"]
+        ttk.Combobox(
+            master, textvariable=self.rel_var, values=options, state="readonly"
+        ).grid(row=0, column=1, padx=5, pady=5)
+        if options:
+            self.rel_var.set(options[0])
+        tk.Label(master, text="Target:").grid(row=1, column=0, sticky="ne")
+        self.lb = tk.Listbox(master, selectmode="extended", height=10, exportselection=False)
+        self.lb.grid(row=1, column=1, padx=5, pady=5)
+        self.rel_var.trace_add("write", lambda *_: self._populate())
+        self._populate()
+        return self.lb
+
+    def _populate(self):
+        self.lb.delete(0, tk.END)
+        rel = self.rel_var.get()
+        existing = {
+            r.get("id")
+            for r in self.req.get("relations", [])
+            if r.get("type") == rel
+        }
+        for rid, req in global_requirements.items():
+            if rid == self.req.get("id"):
+                continue
+            if self.toolbox and rel and not self.toolbox.can_link_requirements(
+                self.req.get("req_type", ""), req.get("req_type", ""), rel
+            ):
+                continue
+            idx = self.lb.size()
+            self.lb.insert(tk.END, rid)
+            if rid in existing:
+                self.lb.selection_set(idx)
+
+    def apply(self):
+        rel = self.rel_var.get()
+        targets = [self.lb.get(i) for i in self.lb.curselection()]
+        self.result = (rel, targets)
 
 
 class _SelectTriggeringConditionsDialog(simpledialog.Dialog):
@@ -3783,9 +3869,9 @@ class HazardExplorerWindow(tk.Toplevel):
 class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
     """Dialog presenting diagram objects for selection."""
 
-    def __init__(self, parent, repo: SysMLRepository, req_type: str, can_trace):
+    def __init__(self, parent, repo: SysMLRepository, req_wp: str, can_trace):
         self.repo = repo
-        self.req_type = req_type
+        self.req_wp = req_wp
         self.can_trace = can_trace
         self.selection: list[tuple[str, int]] = []
         super().__init__(parent, "Select Targets")
@@ -3795,16 +3881,12 @@ class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires 
         self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, width=40)
         self._options: list[tuple[str, int]] = []
         for diag in self.repo.diagrams.values():
+            diag_wp = _work_product_name(diag.diag_type)
+            if self.req_wp and self.can_trace and not self.can_trace(self.req_wp, diag_wp):
+                continue
             dname = diag.name or diag.diag_id
             for obj in getattr(diag, "objects", []):
                 name = obj.get("properties", {}).get("name", "")
-                if (
-                    self.req_type
-                    and name
-                    and self.can_trace
-                    and not self.can_trace(self.req_type, name)
-                ):
-                    continue
                 label = f"{dname}:{name or obj.get('obj_type')}"
                 self._options.append((diag.diag_id, obj.get("obj_id")))
                 self.listbox.insert(tk.END, label)
@@ -3865,7 +3947,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
-        self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Text")
+        self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text")
         configure_table_style("ReqExp.Treeview")
         self.tree = EditableTreeview(
             self,
@@ -3879,7 +3961,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
             self.tree.heading(c, text=c)
             if c == "Text":
                 width = 300
-            elif c == "Trace":
+            elif c in ("Trace", "Links"):
                 width = 200
             else:
                 width = 100
@@ -3888,6 +3970,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
         ttk.Button(btnf, text="Link to Diagram...", command=self.link_to_diagram).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btnf, text="Link Requirement...", command=self.link_requirement).pack(side=tk.LEFT, padx=5)
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
 
@@ -3897,8 +3980,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         rtype = self.type_var.get().strip()
         asil = self.asil_var.get().strip()
         status = self.status_var.get().strip()
-        repo = SysMLRepository.get_instance()
-        for req in global_requirements.values():
+        for rid, req in global_requirements.items():
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue
             if rtype and req.get("req_type") != rtype:
@@ -3907,8 +3989,10 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             if status and req.get("status", "") != status:
                 continue
-            trace = ", ".join(self._get_requirement_allocations(req.get("id", "")))
-            req["trace"] = trace
+            trace = ", ".join(self._get_requirement_allocations(rid))
+            links = ", ".join(
+                f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
+            )
             self.tree.insert(
                 "",
                 "end",
@@ -3917,11 +4001,10 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("asil", ""),
                     req.get("req_type", ""),
                     req.get("status", ""),
-                    trace,
                     req.get("parent_id", ""),
                     trace,
+                    links,
                     req.get("text", ""),
-                    alloc,
                 ),
             )
 
@@ -4009,10 +4092,12 @@ class RequirementsExplorerWindow(tk.Toplevel):
         repo = SysMLRepository.get_instance()
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
         can_trace = toolbox.can_trace if toolbox else (lambda a, b: True)
-        dlg = DiagramElementDialog(self, repo, req.get("req_type", ""), can_trace)
+        req_wp = toolbox.requirement_work_product(req.get("req_type", "")) if toolbox else ""
+        dlg = DiagramElementDialog(self, repo, req_wp, can_trace)
         targets = getattr(dlg, "selection", [])
         if not targets:
             return
+        from gui.architecture import link_requirement_to_object
         for diag_id, obj_id in targets:
             diag = repo.diagrams.get(diag_id)
             if not diag:
@@ -4020,11 +4105,34 @@ class RequirementsExplorerWindow(tk.Toplevel):
             obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
             if not obj:
                 continue
-            obj.setdefault("requirements", [])
-            if not any(r.get("id") == rid for r in obj["requirements"]):
-                obj["requirements"].append(req)
+            link_requirement_to_object(obj, rid, diag_id)
             repo.touch_diagram(diag_id)
             elem_id = obj.get("element_id")
             if elem_id:
                 repo.touch_element(elem_id)
+        self.refresh()
+
+    def link_requirement(self):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        rid = self.tree.item(sel[0], "values")[0]
+        req = global_requirements.get(rid)
+        if not req:
+            return
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        dlg = _RequirementRelationDialog(self, req, toolbox)
+        if not dlg.result:
+            return
+        relation, targets = dlg.result
+        selected = set(targets)
+        existing = {
+            r.get("id")
+            for r in req.get("relations", [])
+            if r.get("type") == relation
+        }
+        for tid in selected - existing:
+            link_requirements(rid, relation, tid)
+        for tid in existing - selected:
+            unlink_requirements(rid, relation, tid)
         self.refresh()
