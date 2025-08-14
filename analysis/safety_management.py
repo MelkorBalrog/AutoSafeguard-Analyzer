@@ -536,10 +536,10 @@ class SafetyManagementToolbox:
         types. ``None`` is returned when no such link exists."""
 
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        # Consider traces across all governance diagrams regardless of the
+        # active module so relationships defined in earlier phases still
+        # propagate to later analyses.
+        diag_ids = list(self.diagrams.values())
         for diag_id in diag_ids:
             diag = repo.diagrams.get(diag_id)
             if not diag:
@@ -600,10 +600,10 @@ class SafetyManagementToolbox:
     def _trace_mapping(self) -> Dict[str, set[str]]:
         """Return mapping of work product name to traceable targets."""
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        # Use all known governance diagrams; restricting to the active module
+        # prevents cross-phase links (e.g. Prototype traces feeding Series
+        # Development analyses) from being honoured.
+        diag_ids = list(self.diagrams.values())
         mapping: Dict[str, set[str]] = {}
         for diag_id in diag_ids:
             if not repo.diagram_visible(diag_id):
@@ -628,14 +628,13 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
-    def _analysis_mapping(self) -> Dict[str, set[str]]:
-        """Return mapping of work product name to allowed analysis targets."""
+    def _analysis_mapping(self) -> Dict[str, Dict[str, set[str]]]:
+        """Return mapping of work product name to analysis targets by relation."""
         repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
-        mapping: Dict[str, set[str]] = {}
+        # Analyse all governance diagrams; limiting to the active module would
+        # hide relationships defined in other lifecycle phases.
+        diag_ids = list(self.diagrams.values())
+        mapping: Dict[str, Dict[str, set[str]]] = {}
         for diag_id in diag_ids:
             if not repo.diagram_visible(diag_id):
                 continue
@@ -650,11 +649,11 @@ class SafetyManagementToolbox:
                         id_to_name[obj.get("obj_id")] = name
             for conn in getattr(diag, "connections", []):
                 stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
-                if stereo == "analyze":
+                if stereo in {"used by", "used after review", "used after approval"}:
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
                     if sname and tname:
-                        mapping.setdefault(sname, set()).add(tname)
+                        mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
         return mapping
 
     # ------------------------------------------------------------------
@@ -765,10 +764,123 @@ class SafetyManagementToolbox:
         return set(traces.get(wp, set()))
 
     # ------------------------------------------------------------------
-    def analysis_targets(self, source: str) -> set[str]:
-        """Return allowed analysis targets for ``source`` work product."""
+    def analysis_targets(
+        self, source: str, *, reviewed: bool = False, approved: bool = False
+    ) -> set[str]:
+        """Return allowed analysis targets for ``source`` work product.
+
+        Traces are followed transitively so if ``source`` traces to another work
+        product which in turn is "Used By" an analysis then that analysis is
+        considered a valid target for ``source`` as well.  "Used after Review"
+        and "Used after Approval" relations only become visible when the
+        corresponding state flag is provided.
+        """
         analyses = self._analysis_mapping()
-        return set(analyses.get(source, set()))
+        traces = self._trace_mapping()
+
+        # Discover all work products reachable from ``source`` via trace links
+        seen: set[str] = set()
+        queue = [source]
+        reachable: set[str] = set()
+        while queue:
+            cur = queue.pop(0)
+            if cur in seen:
+                continue
+            seen.add(cur)
+            reachable.add(cur)
+            queue.extend(traces.get(cur, set()) - seen)
+
+        targets: set[str] = set()
+        for src in reachable:
+            rels = analyses.get(src, {})
+            targets |= rels.get("used by", set())
+            if reviewed or approved:
+                targets |= rels.get("used after review", set())
+            if approved:
+                targets |= rels.get("used after approval", set())
+        return targets
+
+    # ------------------------------------------------------------------
+    def analysis_inputs(
+        self, target: str, *, reviewed: bool = False, approved: bool = False
+    ) -> set[str]:
+        """Return work products that may serve as input to ``target`` analysis.
+
+        Any work product that traces to another work product with a direct
+        relationship to ``target`` is also considered an input.  Visibility of
+        "Used after Review" and "Used after Approval" relations depends on the
+        provided state flags.
+        """
+        analyses = self._analysis_mapping()
+        traces = self._trace_mapping()
+
+        direct: set[str] = set()
+        for src, rels in analyses.items():
+            if target in rels.get("used by", set()):
+                direct.add(src)
+            if target in rels.get("used after review", set()) and (reviewed or approved):
+                direct.add(src)
+            if target in rels.get("used after approval", set()) and approved:
+                direct.add(src)
+
+        sources = set(direct)
+        queue = list(direct)
+        while queue:
+            cur = queue.pop(0)
+            for neigh in traces.get(cur, set()):
+                if neigh not in sources:
+                    sources.add(neigh)
+                    queue.append(neigh)
+        return sources
+
+    # ------------------------------------------------------------------
+    def analysis_usage_type(self, source: str, target: str) -> Optional[str]:
+        """Return the relationship type for using ``source`` as input to ``target``.
+
+        Direct connections are checked first. If none are found, trace links are
+        followed transitively to locate an intermediate work product connected to
+        ``target``.
+        """
+        analyses = self._analysis_mapping()
+        traces = self._trace_mapping()
+
+        visited: set[str] = set()
+        queue = [source]
+        mapping = {
+            "used by": "Used By",
+            "used after review": "Used after Review",
+            "used after approval": "Used after Approval",
+        }
+        while queue:
+            cur = queue.pop(0)
+            if cur in visited:
+                continue
+            visited.add(cur)
+            rels = analyses.get(cur, {})
+            for key, human in mapping.items():
+                if target in rels.get(key, set()):
+                    return human
+            queue.extend(traces.get(cur, set()) - visited)
+        return None
+
+    # ------------------------------------------------------------------
+    def can_use_as_input(
+        self,
+        source: str,
+        target: str,
+        *,
+        reviewed: bool = False,
+        approved: bool = False,
+    ) -> bool:
+        """Return ``True`` if ``source`` may be used as input to ``target``."""
+        rel = self.analysis_usage_type(source, target)
+        if rel == "Used By":
+            return True
+        if rel == "Used after Review":
+            return reviewed or approved
+        if rel == "Used after Approval":
+            return approved
+        return False
 
     # ------------------------------------------------------------------
     def requirement_diagram_targets(self, req_type: str) -> set[str]:
@@ -795,7 +907,11 @@ class SafetyManagementToolbox:
         products: List[SafetyWorkProduct] = []
         for wp in self.work_products:
             wp.traceable = sorted(traces.get(wp.analysis, set()))
-            wp.analyzable = sorted(analyses.get(wp.analysis, set()))
+            rels = analyses.get(wp.analysis, {})
+            combined: set[str] = set()
+            for vals in rels.values():
+                combined |= vals
+            wp.analyzable = sorted(combined)
             products.append(wp)
         return products
 
