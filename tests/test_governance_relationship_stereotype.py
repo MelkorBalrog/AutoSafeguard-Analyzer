@@ -262,6 +262,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         e2 = repo.create_element("Block", name="E2")
         repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
         repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+
         o1 = SysMLObject(
             1,
             "Work Product",
@@ -483,7 +484,6 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         self.assertEqual(toolbox.analysis_inputs("FTA"), set())
         self.assertEqual(toolbox.analysis_inputs("FTA", reviewed=True), set())
         self.assertEqual(toolbox.analysis_inputs("FTA", approved=True), {"Architecture Diagram"})
-
 
 if __name__ == "__main__":
     unittest.main()
