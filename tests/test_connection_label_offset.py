@@ -1,4 +1,9 @@
 import unittest
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram
 from gui.architecture import SysMLDiagramWindow, DiagramConnection, SysMLObject
 
@@ -57,6 +62,21 @@ class ConnectionLabelOffsetTests(unittest.TestCase):
         y1 = win.canvas.texts[1][0][1]
         self.assertNotEqual(y0, y1)
         self.assertEqual(abs(y0 - y1), 15)
+
+    def test_offset_vertical_labels(self):
+        win = DummyWindow()
+        a = SysMLObject(1, "Existing Element", 0, 0)
+        b = SysMLObject(2, "Existing Element", 0, 100)
+        conn1 = DiagramConnection(1, 2, "Association")
+        conn2 = DiagramConnection(1, 2, "Association")
+        win.connections = [conn1, conn2]
+        SysMLDiagramWindow.draw_connection(win, a, b, conn1)
+        SysMLDiagramWindow.draw_connection(win, a, b, conn2)
+        self.assertEqual(len(win.canvas.texts), 2)
+        x0 = win.canvas.texts[0][0][0]
+        x1 = win.canvas.texts[1][0][0]
+        self.assertNotEqual(x0, x1)
+        self.assertEqual(abs(x0 - x1), 15)
 
 
 if __name__ == "__main__":

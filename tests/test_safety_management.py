@@ -734,7 +734,8 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
         ("Reliability Analysis", "reliability_analyses"),
         ("Qualitative Analysis", "hazop_docs"),
         ("Architecture Diagram", "arch_diagrams"),
-        ("Scenario", "scenario_libraries"),
+        ("Scenario Library", "scenario_libraries"),
+        ("ODD Library", "odd_libraries"),
         ("FTA", "top_events"),
     ]
 
