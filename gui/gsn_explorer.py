@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
+from gui import format_name_with_phase
 
 
 class GSNExplorer(tk.Frame):
@@ -77,16 +78,31 @@ class GSNExplorer(tk.Frame):
         # common parent.  This mirrors the behaviour of other explorer
         # widgets and allows dropping items onto the "GSN" root to move
         # them to the top level.
-        root_id = self.tree.insert("", "end", text="GSN", image=self.module_icon)
+        root_id = self.tree.insert(
+            "",
+            "end",
+            text=format_name_with_phase("GSN", None),
+            image=self.module_icon,
+        )
         self.item_map[root_id] = ("root", None)
         # modules at root
         for mod in getattr(self.app, "gsn_modules", []):
-            mod_id = self.tree.insert(root_id, "end", text=mod.name, image=self.module_icon)
+            mod_id = self.tree.insert(
+                root_id,
+                "end",
+                text=format_name_with_phase(mod.name, getattr(mod, "phase", None)),
+                image=self.module_icon,
+            )
             self.item_map[mod_id] = ("module", mod)
             self._add_module_children(mod_id, mod)
         # diagrams not in any module
         for diag in getattr(self.app, "gsn_diagrams", []):
-            diag_id = self.tree.insert(root_id, "end", text=diag.root.user_name, image=self.diagram_icon)
+            diag_id = self.tree.insert(
+                root_id,
+                "end",
+                text=format_name_with_phase(diag.root.user_name, getattr(diag, "phase", None)),
+                image=self.diagram_icon,
+            )
             self.item_map[diag_id] = ("diagram", diag)
             self._add_diagram_children(diag_id, diag)
 
@@ -105,11 +121,21 @@ class GSNExplorer(tk.Frame):
     # ------------------------------------------------------------------
     def _add_module_children(self, parent_id: str, module: GSNModule):
         for sub in module.modules:
-            sub_id = self.tree.insert(parent_id, "end", text=sub.name, image=self.module_icon)
+            sub_id = self.tree.insert(
+                parent_id,
+                "end",
+                text=format_name_with_phase(sub.name, getattr(sub, "phase", None)),
+                image=self.module_icon,
+            )
             self.item_map[sub_id] = ("module", sub)
             self._add_module_children(sub_id, sub)
         for diag in module.diagrams:
-            diag_id = self.tree.insert(parent_id, "end", text=diag.root.user_name, image=self.diagram_icon)
+            diag_id = self.tree.insert(
+                parent_id,
+                "end",
+                text=format_name_with_phase(diag.root.user_name, getattr(diag, "phase", None)),
+                image=self.diagram_icon,
+            )
             self.item_map[diag_id] = ("diagram", diag)
             self._add_diagram_children(diag_id, diag)
 
@@ -129,7 +155,12 @@ class GSNExplorer(tk.Frame):
             visited_ids.add(id(node))
             for child in node.children:
                 icon = self.node_icons.get(child.node_type, self.default_node_icon)
-                child_id = self.tree.insert(parent_id, "end", text=child.user_name, image=icon)
+                child_id = self.tree.insert(
+                    parent_id,
+                    "end",
+                    text=format_name_with_phase(child.user_name, getattr(child, "phase", None)),
+                    image=icon,
+                )
                 self.item_map[child_id] = ("node", child)
                 _add_node(child_id, child)
 
@@ -138,7 +169,12 @@ class GSNExplorer(tk.Frame):
         for node in diagram.nodes:
             if id(node) not in visited_ids:
                 icon = self.node_icons.get(node.node_type, self.default_node_icon)
-                node_id = self.tree.insert(diag_id, "end", text=node.user_name, image=icon)
+                node_id = self.tree.insert(
+                    diag_id,
+                    "end",
+                    text=format_name_with_phase(node.user_name, getattr(node, "phase", None)),
+                    image=icon,
+                )
                 self.item_map[node_id] = ("node", node)
                 _add_node(node_id, node)
 
