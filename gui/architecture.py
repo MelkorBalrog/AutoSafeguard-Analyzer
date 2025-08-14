@@ -1874,6 +1874,91 @@ def calculate_allocated_asil(requirements: List[dict]) -> str:
     return asil
 
 
+def link_requirement_to_object(obj, req_id: str, diagram_id: str | None = None) -> None:
+    """Link requirement *req_id* to *obj* and update global traces.
+
+    ``obj`` may be a :class:`SysMLObject` instance or a plain dictionary
+    representing a diagram object.  If ``obj`` is a Work Product the
+    requirement ID is stored in its ``trace_to`` property instead of the
+    ``requirements`` list.
+    """
+
+    req = global_requirements.get(req_id)
+    if not req or obj is None:
+        return
+
+    # Determine identifier used for trace bookkeeping
+    elem_id = getattr(obj, "element_id", None) or obj.get("element_id") if isinstance(obj, dict) else None
+    trace = elem_id or diagram_id
+    traces = req.setdefault("traces", [])
+    if trace and trace not in traces:
+        traces.append(trace)
+
+    obj_type = getattr(obj, "obj_type", None) or obj.get("obj_type") if isinstance(obj, dict) else None
+
+    if obj_type == "Work Product":
+        # Work products use the ``trace_to`` property
+        if isinstance(obj, dict):
+            current = [s.strip() for s in obj.get("trace_to", "").split(",") if s.strip()]
+            if req_id not in current:
+                current.append(req_id)
+                obj["trace_to"] = ", ".join(current)
+        else:
+            val = obj.properties.get("trace_to", "")
+            current = [s.strip() for s in val.split(",") if s.strip()]
+            if req_id not in current:
+                current.append(req_id)
+                obj.properties["trace_to"] = ", ".join(current)
+    else:
+        if isinstance(obj, dict):
+            reqs = obj.setdefault("requirements", [])
+            if not any(r.get("id") == req_id for r in reqs):
+                reqs.append(req)
+        else:
+            if not any(r.get("id") == req_id for r in obj.requirements):
+                obj.requirements.append(req)
+
+
+def unlink_requirement_from_object(obj, req_id: str, diagram_id: str | None = None) -> None:
+    """Remove requirement *req_id* from *obj* and global traces."""
+
+    if obj is None:
+        return
+
+    elem_id = getattr(obj, "element_id", None) or obj.get("element_id") if isinstance(obj, dict) else None
+    trace = elem_id or diagram_id
+    req = global_requirements.get(req_id)
+    if req and trace:
+        traces = req.get("traces", [])
+        if trace in traces:
+            traces.remove(trace)
+
+    obj_type = getattr(obj, "obj_type", None) or obj.get("obj_type") if isinstance(obj, dict) else None
+
+    if obj_type == "Work Product":
+        if isinstance(obj, dict):
+            vals = [s.strip() for s in obj.get("trace_to", "").split(",") if s.strip()]
+            if req_id in vals:
+                vals.remove(req_id)
+                if vals:
+                    obj["trace_to"] = ", ".join(vals)
+                else:
+                    obj.pop("trace_to", None)
+        else:
+            vals = [s.strip() for s in obj.properties.get("trace_to", "").split(",") if s.strip()]
+            if req_id in vals:
+                vals.remove(req_id)
+                if vals:
+                    obj.properties["trace_to"] = ", ".join(vals)
+                else:
+                    obj.properties.pop("trace_to", None)
+    else:
+        if isinstance(obj, dict):
+            obj["requirements"] = [r for r in obj.get("requirements", []) if r.get("id") != req_id]
+        else:
+            obj.requirements = [r for r in obj.requirements if r.get("id") != req_id]
+
+
 def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     """Delete ports that don't reference an existing parent part."""
     part_ids = {o.obj_id for o in objs if o.obj_type in ("Part", "Block Boundary")}
@@ -7624,6 +7709,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
             return
         dialog = self.SelectRequirementsDialog(self)
         if dialog.result:
+            diag_id = getattr(self.master, "diagram_id", None)
             for rid in dialog.result:
                 req = global_requirements.get(rid)
                 if not req:
@@ -7641,12 +7727,29 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 if not any(r.get("id") == rid for r in self.obj.requirements):
                     self.obj.requirements.append(req)
                     self.req_list.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+                before = [r.get("id") for r in getattr(self.obj, "requirements", [])]
+                link_requirement_to_object(self.obj, rid, diag_id)
+                if rid not in before and self.obj.obj_type != "Work Product":
+                    req = global_requirements.get(rid)
+                    if req:
+                        self.req_list.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
+                elif self.obj.obj_type == "Work Product":
+                    # Always reflect selection for work products
+                    req = global_requirements.get(rid)
+                    if req and rid not in [self.req_list.get(i).split("]", 1)[0][1:] for i in range(self.req_list.size())]:
+                        self.req_list.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
         self._update_asil()
 
     def remove_requirement(self):
         sel = list(self.req_list.curselection())
+        diag_id = getattr(self.master, "diagram_id", None)
         for idx in reversed(sel):
-            del self.obj.requirements[idx]
+            if self.obj.obj_type == "Work Product":
+                item = self.req_list.get(idx)
+                rid = item.split("]", 1)[0][1:]
+            else:
+                rid = self.obj.requirements[idx].get("id")
+            unlink_requirement_from_object(self.obj, rid, diag_id)
             self.req_list.delete(idx)
         self._update_asil()
 
