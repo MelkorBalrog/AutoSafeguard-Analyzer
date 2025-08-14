@@ -111,16 +111,15 @@ class SafetyManagementExplorer(tk.Frame):
         name = simpledialog.askstring("New Folder", "Name:", parent=self)
         if not name:
             return
-        folder = GovernanceModule(name)
         sel = self.tree.selection()
         if sel:
             typ, obj = self.item_map.get(sel[0], (None, None))
-            if typ == "module":
-                obj.modules.append(folder)
+            if typ == "module" and obj is not None:
+                self.toolbox.add_module(name, obj)
             else:  # root or other selections add to top level
-                self.toolbox.modules.append(folder)
+                self.toolbox.add_module(name)
         else:
-            self.toolbox.modules.append(folder)
+            self.toolbox.add_module(name)
         self.populate()
 
     # ------------------------------------------------------------------
