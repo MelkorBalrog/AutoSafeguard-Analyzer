@@ -92,6 +92,7 @@ def test_activity_boundary_label_rotated_left_inside():
     win.font = None
     win._draw_gradient_rect = lambda *args, **kwargs: None
     win.selected_objs = []
+    long_name = "Very Long Process Area Name"
     obj = SysMLObject(
         1,
         "System Boundary",
@@ -99,7 +100,7 @@ def test_activity_boundary_label_rotated_left_inside():
         0.0,
         width=100.0,
         height=80.0,
-        properties={"name": "Lane"},
+        properties={"name": long_name},
     )
     win.draw_object(obj)
 
@@ -107,6 +108,7 @@ def test_activity_boundary_label_rotated_left_inside():
     x, y, kwargs = win.canvas.text_calls[0]
     assert kwargs.get("angle") == 90
     assert kwargs.get("anchor") == "w"
+    assert "\n" in kwargs.get("text", ""), "label not wrapped inside boundary"
     assert x == obj.x - obj.width / 2 + 8
     assert y == obj.y
 

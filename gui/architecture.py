@@ -5480,16 +5480,46 @@ class SysMLDiagramWindow(tk.Frame):
             )
             label = obj.properties.get("name", "")
             if label:
-                text_height = max(obj.height * self.zoom - 8 * self.zoom, 1)
+                # Wrap and scale the label so it always fits within the boundary box
+                avail_w = max(obj.width * self.zoom - 16 * self.zoom, 1)
+                avail_h = max(obj.height * self.zoom - 16 * self.zoom, 1)
+
+                try:
+                    font = tkFont.Font(font=self.font)
+                    char_w = max(font.measure("M"), 1)
+                    line_h = max(font.metrics("linespace"), 1)
+                except Exception:
+                    font = None
+                    char_w = 8
+                    line_h = 16
+
+                max_chars = max(int(avail_h / char_w), 1)
+                max_lines = max(int(avail_w / line_h), 1)
+
+                wrap_width = max_chars
+                wrapped = textwrap.fill(label, width=wrap_width)
+                lines = wrapped.count("\n") + 1
+
+                # Reduce font size until the wrapped text fits horizontally
+                if font is not None:
+                    while lines > max_lines and font.cget("size") > 6:
+                        font.configure(size=font.cget("size") - 1)
+                        char_w = max(font.measure("M"), 1)
+                        line_h = max(font.metrics("linespace"), 1)
+                        max_chars = max(int(avail_h / char_w), 1)
+                        max_lines = max(int(avail_w / line_h), 1)
+                        wrap_width = max_chars
+                        wrapped = textwrap.fill(label, width=wrap_width)
+                        lines = wrapped.count("\n") + 1
+
                 lx = x - w + 8 * self.zoom
                 self.canvas.create_text(
                     lx,
                     y,
-                    text=label,
+                    text=wrapped,
                     anchor="w",
                     angle=90,
-                    font=self.font,
-                    width=text_height,
+                    font=font or self.font,
                     justify="center",
                 )
         elif obj.obj_type == "Block Boundary":
