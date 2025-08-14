@@ -2474,7 +2474,11 @@ class FaultTreeApp:
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
-        quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        quantitative_menu.add_command(
+            label="Mission Profiles",
+            command=self.manage_mission_profiles,
+            state=tk.DISABLED,
+        )
         self.work_product_menus.setdefault("Mission Profile", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
@@ -2482,7 +2486,9 @@ class FaultTreeApp:
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
-            label="Reliability Analysis", command=self.open_reliability_window
+            label="Reliability Analysis",
+            command=self.open_reliability_window,
+            state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Reliability Analysis", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
@@ -2661,12 +2667,11 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
         ]
         }
-        self.tool_to_work_product = {
-            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
-        }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
-            self.tool_to_work_product.setdefault(info[1], set()).add(name)
+            tool_name = info[1]
+            if tool_name:
+                self.tool_to_work_product.setdefault(tool_name, set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -9045,25 +9050,25 @@ class FaultTreeApp:
 
     def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
         info = self.WORK_PRODUCT_INFO.get(name)
-        if not info:
-            return
-        area, tool_name, method_name = info
-        self.enable_process_area(area)
-        if tool_name not in self.tool_actions:
-            action = getattr(self, method_name, None)
-            if action:
-                self.tool_actions[tool_name] = action
-                lb = self.tool_listboxes.get(area)
-                if lb:
-                    lb.insert(tk.END, tool_name)
-        mapping = getattr(self, "tool_to_work_product", {})
-        existing = mapping.get(tool_name)
-        if isinstance(existing, set):
-            existing.add(name)
-        elif existing:
-            mapping[tool_name] = {existing, name}
-        else:
-            mapping.setdefault(tool_name, set()).add(name)
+        area = tool_name = method_name = None
+        if info:
+            area, tool_name, method_name = info
+            self.enable_process_area(area)
+            if tool_name not in self.tool_actions:
+                action = getattr(self, method_name, None)
+                if action:
+                    self.tool_actions[tool_name] = action
+                    lb = self.tool_listboxes.get(area)
+                    if lb:
+                        lb.insert(tk.END, tool_name)
+            mapping = getattr(self, "tool_to_work_product", {})
+            existing = mapping.get(tool_name)
+            if isinstance(existing, set):
+                existing.add(name)
+            elif existing:
+                mapping[tool_name] = {existing, name}
+            else:
+                mapping.setdefault(tool_name, set()).add(name)
         # Enable corresponding menu entry if one was registered
         for menu, idx in self.work_product_menus.get(name, []):
             try:
@@ -9159,7 +9164,7 @@ class FaultTreeApp:
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            if not any(
+            if tool_name and not any(
                 self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
                 for wp in self.enabled_work_products
             ):
