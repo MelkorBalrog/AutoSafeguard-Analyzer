@@ -138,6 +138,9 @@ class SafetyManagementToolbox:
     doc_phases: Dict[str, Dict[str, str]] = field(default_factory=dict)
     # Optional callback invoked whenever the enabled work product set changes.
     on_change: Optional[Callable[[], None]] = field(default=None, repr=False)
+    # Phases and diagrams that have been frozen due to created work products
+    frozen_modules: set[str] = field(default_factory=set)
+    frozen_diagrams: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         global ACTIVE_TOOLBOX
@@ -231,6 +234,21 @@ class SafetyManagementToolbox:
             self.work_product_counts[analysis] -= 1
         if name:
             self.doc_phases.get(analysis, {}).pop(name, None)
+
+    # ------------------------------------------------------------------
+    def _freeze_active_phase(self) -> None:
+        """Freeze the currently active phase and its governance diagrams."""
+        if not self.active_module:
+            return
+        if self.active_module in self.frozen_modules:
+            return
+        repo = SysMLRepository.get_instance()
+        self.frozen_modules.add(self.active_module)
+        for diag_name in self.diagrams_in_module(self.active_module):
+            self.frozen_diagrams.add(diag_name)
+            diag_id = self.diagrams.get(diag_name)
+            if diag_id:
+                repo.freeze_diagram(diag_id)
 
     # ------------------------------------------------------------------
     def rename_document(self, analysis: str, old: str, new: str) -> None:
@@ -452,7 +470,7 @@ class SafetyManagementToolbox:
         when it references the renamed module.
         """
 
-        if not new or old == new:
+        if not new or old == new or old in self.frozen_modules:
             return
 
         mod = self._find_module(old, self.modules)
@@ -479,6 +497,14 @@ class SafetyManagementToolbox:
             return False
 
         _rename(self.modules)
+
+        repo = SysMLRepository.get_instance()
+        repo.rename_phase(old, new)
+
+        for docs in self.doc_phases.values():
+            for doc, phase in list(docs.items()):
+                if phase == old:
+                    docs[doc] = new
 
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:
@@ -631,6 +657,8 @@ class SafetyManagementToolbox:
 
     def delete_diagram(self, name: str) -> None:
         """Remove a diagram from the toolbox and repository."""
+        if name in self.frozen_diagrams:
+            return
         diag_id = self.diagrams.get(name)
         if not diag_id:
             return
@@ -650,6 +678,8 @@ class SafetyManagementToolbox:
         new: str
             Desired new name for the diagram.
         """
+        if old in self.frozen_diagrams:
+            return
         diag_id = self.diagrams.get(old)
         if not diag_id or not new:
             return
@@ -703,6 +733,8 @@ class SafetyManagementToolbox:
             "modules": [m.to_dict() for m in self.modules],
             "active_module": self.active_module,
             "doc_phases": {k: dict(v) for k, v in self.doc_phases.items()},
+            "frozen_modules": list(self.frozen_modules),
+            "frozen_diagrams": list(self.frozen_diagrams),
         }
 
     # ------------------------------------------------------------------
@@ -730,6 +762,13 @@ class SafetyManagementToolbox:
         toolbox.doc_phases = {
             k: dict(v) for k, v in data.get("doc_phases", {}).items()
         }
+        toolbox.frozen_modules = set(data.get("frozen_modules", []))
+        toolbox.frozen_diagrams = set(data.get("frozen_diagrams", []))
+        repo = SysMLRepository.get_instance()
+        for name in toolbox.frozen_diagrams:
+            diag_id = toolbox.diagrams.get(name)
+            if diag_id:
+                repo.freeze_diagram(diag_id)
         return toolbox
 
     # ------------------------------------------------------------------

@@ -1834,6 +1834,12 @@ class SysMLObject:
     collapsed: Dict[str, bool] = field(default_factory=dict)
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
 
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return the object's name annotated with its creation phase."""
+        name = self.properties.get("name", "")
+        return f"{name} ({self.phase})" if name and self.phase else name
+
 
 @dataclass
 class OperationParameter:
