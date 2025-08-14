@@ -139,3 +139,12 @@ def test_work_product_phase_roundtrip():
     tb2.set_active_module("Phase2")
     assert not tb2.document_visible("HAZOP", "HZ1")
 
+
+def test_enabled_work_products_roundtrip():
+    app = _minimal_app()
+    app.enable_work_product("HAZOP")
+    data = app.export_model_data(include_versions=False)
+    new_app = _minimal_app()
+    new_app.apply_model_data(data, ensure_root=False)
+    assert "HAZOP" in new_app.enabled_work_products
+
