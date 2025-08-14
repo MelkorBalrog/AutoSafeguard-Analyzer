@@ -29,6 +29,8 @@ from analysis.safety_management import (
     ALLOWED_PROPAGATIONS,
     ACTIVE_TOOLBOX,
     SAFETY_ANALYSIS_WORK_PRODUCTS,
+    ALLOWED_USAGE,
+    UNRESTRICTED_USAGE_SOURCES,
 )
 
 # ---------------------------------------------------------------------------
@@ -3210,10 +3212,16 @@ class SysMLDiagramWindow(tk.Frame):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, f"{conn_type} links must connect Work Products"
                 dname = dst.properties.get("name")
+                sname = src.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
                     )
+                if (
+                    sname not in UNRESTRICTED_USAGE_SOURCES
+                    and (sname, dname) not in ALLOWED_USAGE
+                ):
+                    return False, f"{dname} has no dependency on {sname}"
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"

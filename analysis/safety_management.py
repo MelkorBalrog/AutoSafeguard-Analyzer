@@ -63,6 +63,24 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "ODD",
 }
 
+# Work products that may be used as inputs for any analysis without
+# additional dependency checks
+UNRESTRICTED_USAGE_SOURCES: set[str] = {"Architecture Diagram"}
+
+# Explicit work product dependencies allowed for "Used" style relationships.
+# Each tuple maps a source work product to a target analysis that genuinely
+# depends on it.  Relationships outside this set are rejected to prevent
+# meaningless connections between unrelated work products.
+ALLOWED_USAGE: set[tuple[str, str]] = set(ALLOWED_PROPAGATIONS)
+ALLOWED_USAGE.update(
+    {
+        ("Mission Profile", "Reliability Analysis"),
+        ("Mission Profile", "FTA"),
+        ("Requirement Specification", "HAZOP"),
+        ("ODD", "Scenario Library"),
+    }
+)
+
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
