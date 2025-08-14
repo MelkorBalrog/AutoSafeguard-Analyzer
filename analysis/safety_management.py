@@ -454,14 +454,13 @@ class SafetyManagementToolbox:
 
         _rename(self.modules)
 
-        # Update document phase mappings
-        for mapping in self.doc_phases.values():
-            for doc, phase in list(mapping.items()):
-                if phase == old:
-                    mapping[doc] = new
+        repo = SysMLRepository.get_instance()
+        repo.rename_phase(old, new)
 
-        # Propagate to repository objects
-        SysMLRepository.get_instance().rename_phase(old, new)
+        for docs in self.doc_phases.values():
+            for doc, phase in list(docs.items()):
+                if phase == old:
+                    docs[doc] = new
 
     # ------------------------------------------------------------------
     def propagation_type(self, source: str, target: str) -> Optional[str]:

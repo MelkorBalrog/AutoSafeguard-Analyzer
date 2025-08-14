@@ -204,6 +204,32 @@ def test_rename_module_updates_active():
     assert toolbox.active_module == "PhaseX"
 
 
+def test_rename_module_updates_phase_references():
+    """Renaming a module should update repository phases and document metadata."""
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule("Phase1")]
+    toolbox.set_active_module("Phase1")
+
+    elem = repo.create_element("Block", name="E1")
+    diag = repo.create_diagram("Block Diagram", name="D1")
+    toolbox.register_created_work_product("FMEA", "Doc1")
+
+    assert elem.phase == "Phase1"
+    assert diag.phase == "Phase1"
+    assert toolbox.doc_phases["FMEA"]["Doc1"] == "Phase1"
+    assert repo.active_phase == "Phase1"
+
+    toolbox.rename_module("Phase1", "PhaseX")
+
+    assert elem.phase == "PhaseX"
+    assert diag.phase == "PhaseX"
+    assert toolbox.doc_phases["FMEA"]["Doc1"] == "PhaseX"
+    assert repo.active_phase == "PhaseX"
+
+
 def test_disable_work_product_rejects_existing_docs():
     """Work product types with existing documents cannot be removed."""
     app = FaultTreeApp.__new__(FaultTreeApp)
