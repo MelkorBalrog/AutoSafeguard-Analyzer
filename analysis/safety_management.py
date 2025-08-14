@@ -609,6 +609,41 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
+    def _req_relation_mapping(self) -> Dict[str, Dict[str, set[str]]]:
+        """Return mapping of requirement work products to relation targets.
+
+        The returned dictionary is structured as ``source -> relation ->
+        {targets}`` where *relation* is the connection stereotype used between
+        work products such as ``"satisfied by"`` or ``"derived from"``.
+        """
+        repo = SysMLRepository.get_instance()
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        mapping: Dict[str, Dict[str, set[str]]] = {}
+        for diag_id in diag_ids:
+            if not repo.diagram_visible(diag_id):
+                continue
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            id_to_name: Dict[int, str] = {}
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") == "Work Product":
+                    name = obj.get("properties", {}).get("name")
+                    if name:
+                        id_to_name[obj.get("obj_id")] = name
+            for conn in getattr(diag, "connections", []):
+                stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
+                if stereo in {"satisfied by", "derived from"}:
+                    sname = id_to_name.get(conn.get("src"))
+                    tname = id_to_name.get(conn.get("dst"))
+                    if sname and tname:
+                        mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
+        return mapping
+
+    # ------------------------------------------------------------------
     def _normalize_work_product(self, name: str) -> str:
         """Translate requirement types to their work product names."""
         from analysis.models import REQUIREMENT_TYPE_OPTIONS, REQUIREMENT_WORK_PRODUCTS
@@ -626,6 +661,8 @@ class SafetyManagementToolbox:
 
         source = self._normalize_work_product(source)
         target = self._normalize_work_product(target)
+        if source in REQUIREMENT_WORK_PRODUCTS and target in REQUIREMENT_WORK_PRODUCTS:
+            return False
         traces = self._trace_mapping()
         if target in traces.get(source, set()):
             return True
@@ -634,6 +671,28 @@ class SafetyManagementToolbox:
         if source in specific_wps and target in traces.get(general, set()):
             return True
         if target in specific_wps and source in traces.get(general, set()):
+            return True
+        return False
+
+    # ------------------------------------------------------------------
+    def can_link_requirements(self, src_type: str, dst_type: str, relation: str) -> bool:
+        """Return ``True`` if requirements of ``src_type`` may relate to
+        ``dst_type`` using ``relation`` (e.g., ``"satisfied by"``)."""
+
+        from analysis.models import REQUIREMENT_WORK_PRODUCTS
+
+        src_wp = self._normalize_work_product(src_type)
+        dst_wp = self._normalize_work_product(dst_type)
+        rels = self._req_relation_mapping()
+        rel = relation.lower()
+        if dst_wp in rels.get(src_wp, {}).get(rel, set()):
+            return True
+        general = REQUIREMENT_WORK_PRODUCTS[0]
+        specific = set(REQUIREMENT_WORK_PRODUCTS[1:])
+        gen_targets = rels.get(general, {}).get(rel, set())
+        if src_wp in specific and (dst_wp in gen_targets or general in gen_targets):
+            return True
+        if dst_wp in specific and (src_wp in gen_targets or general in gen_targets):
             return True
         return False
 

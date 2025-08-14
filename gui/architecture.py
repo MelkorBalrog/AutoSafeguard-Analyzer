@@ -1983,6 +1983,49 @@ def unlink_requirement_from_object(obj, req_id: str, diagram_id: str | None = No
             obj.requirements = [r for r in obj.requirements if r.get("id") != req_id]
 
 
+# ---------------------------------------------------------------------------
+def link_requirements(src_id: str, relation: str, dst_id: str) -> None:
+    """Create a requirement relationship and mirror the inverse."""
+
+    src = global_requirements.get(src_id)
+    dst = global_requirements.get(dst_id)
+    if not src or not dst:
+        return
+    rel = {"type": relation, "id": dst_id}
+    rels = src.setdefault("relations", [])
+    if rel not in rels:
+        rels.append(rel)
+    inverse = None
+    if relation == "satisfied by":
+        inverse = "satisfies"
+    elif relation == "derived from":
+        inverse = "derives"
+    if inverse:
+        inv = {"type": inverse, "id": src_id}
+        dlist = dst.setdefault("relations", [])
+        if inv not in dlist:
+            dlist.append(inv)
+
+
+def unlink_requirements(src_id: str, relation: str, dst_id: str) -> None:
+    """Remove a requirement relationship."""
+
+    src = global_requirements.get(src_id)
+    dst = global_requirements.get(dst_id)
+    if not src or not dst:
+        return
+    src_rels = src.get("relations", [])
+    src["relations"] = [r for r in src_rels if not (r.get("type") == relation and r.get("id") == dst_id)]
+    inverse = None
+    if relation == "satisfied by":
+        inverse = "satisfies"
+    elif relation == "derived from":
+        inverse = "derives"
+    if inverse:
+        dst_rels = dst.get("relations", [])
+        dst["relations"] = [r for r in dst_rels if not (r.get("type") == inverse and r.get("id") == src_id)]
+
+
 def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     """Delete ports that don't reference an existing parent part."""
     part_ids = {o.obj_id for o in objs if o.obj_type in ("Part", "Block Boundary")}
