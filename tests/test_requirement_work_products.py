@@ -40,7 +40,7 @@ def test_add_requirement_work_product(monkeypatch):
     win._sync_to_repository = lambda: None
     win.redraw = lambda: None
     added = []
-    win.app = types.SimpleNamespace(enable_work_product=lambda name: added.append(name))
+    win.app = types.SimpleNamespace(enable_work_product=lambda name, *, refresh=True: added.append(name))
 
     name = f"{_fmt(REQUIREMENT_TYPE_OPTIONS[2])} Requirement Specification"
 

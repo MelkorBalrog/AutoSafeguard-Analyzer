@@ -3193,30 +3193,16 @@ class SysMLDiagramWindow(tk.Frame):
                             if t == "Control Action"
                             else "feedback" if t == "Feedback" else t.lower()
                         )
-                        conn = DiagramConnection(
-                            self.start.obj_id,
-                            obj.obj_id,
-                            t,
-                            arrow=arrow_default,
-                            stereotype=conn_stereo,
+                        rel = self.repo.create_relationship(
+                            t, src_id, dst_id, stereotype=rel_stereo
                         )
-                        self.connections.append(conn)
-                        src_id = self.start.element_id
-                        dst_id = obj.element_id
-                        if src_id and dst_id:
-                            rel_stereo = (
-                                "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
-                            )
-                            rel = self.repo.create_relationship(
-                                t, src_id, dst_id, stereotype=rel_stereo
-                            )
-                            self.repo.add_relationship_to_diagram(
-                                self.diagram_id, rel.rel_id
-                            )
-                        self._sync_to_repository()
-                        ConnectionDialog(self, conn)
-                    else:
-                        messagebox.showwarning("Invalid Connection", msg)
+                        self.repo.add_relationship_to_diagram(
+                            self.diagram_id, rel.rel_id
+                        )
+                    self._sync_to_repository()
+                    ConnectionDialog(self, conn)
+                else:
+                    messagebox.showwarning("Invalid Connection", msg)
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None
@@ -6639,10 +6625,16 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
             existing_objs = getattr(diag, "objects", [])
-            hidden_objs = [o for o in existing_objs if not self.repo.object_visible(o)]
+            hidden_objs = [
+                o for o in existing_objs if not self.repo.object_visible(o, self.diagram_id)
+            ]
             diag.objects = hidden_objs + [obj.__dict__ for obj in self.objects]
             existing_conns = getattr(diag, "connections", [])
-            hidden_conns = [c for c in existing_conns if not self.repo.connection_visible(c)]
+            hidden_conns = [
+                c
+                for c in existing_conns
+                if not self.repo.connection_visible(c, self.diagram_id)
+            ]
             diag.connections = hidden_conns + [conn.__dict__ for conn in self.connections]
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
@@ -8217,6 +8209,7 @@ class BPMNDiagramWindow(SysMLDiagramWindow):
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
+        self.refresh_from_repository()
 
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
