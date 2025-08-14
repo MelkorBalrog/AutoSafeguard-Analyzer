@@ -2709,7 +2709,7 @@ class FaultTreeApp:
 
     # --- Requirement Traceability Helpers used by reviews and matrix view ---
     def get_requirement_allocation_names(self, req_id):
-        """Return a list of node or FMEA entry names where the requirement appears."""
+        """Return names of model elements linked to the requirement."""
         names = []
         repo = SysMLRepository.get_instance()
         for diag_id, obj_id in repo.find_requirements(req_id):
@@ -2734,6 +2734,13 @@ class FaultTreeApp:
                     else:
                         name = getattr(e, "description", "") or getattr(e, "user_name", f"BE {getattr(e, 'unique_id', '')}")
                     names.append(f"{fmea['name']}:{name}")
+        repo = SysMLRepository.get_instance()
+        for diag in repo.diagrams.values():
+            for obj in getattr(diag, "objects", []):
+                reqs = obj.get("requirements", [])
+                if any(r.get("id") == req_id for r in reqs):
+                    name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                    names.append(name)
         return names
 
     def _collect_goal_names(self, node, acc):
