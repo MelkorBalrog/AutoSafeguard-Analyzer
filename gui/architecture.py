@@ -4,6 +4,7 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
+from gui.tooltip import ToolTip
 import json
 import math
 import re
@@ -7421,12 +7422,25 @@ class SysMLObjectDialog(simpledialog.Dialog):
         ttk.Label(req_frame, text="Requirements:").grid(
             row=req_row, column=0, sticky="ne", padx=4, pady=2
         )
-        self.req_list = tk.Listbox(req_frame, height=4)
+        can_trace_reqs = True
+        if toolbox:
+            diag_name = getattr(diagram_wp, "analysis", None)
+            req_wp = next(iter(REQUIREMENT_WORK_PRODUCTS), None)
+            if diag_name and req_wp:
+                can_trace_reqs = toolbox.can_trace(diag_name, req_wp)
+        state = "normal" if can_trace_reqs else "disabled"
+        self.req_list = tk.Listbox(req_frame, height=4, state=state)
         self.req_list.grid(row=req_row, column=1, padx=4, pady=2, sticky="we")
-        btnf = ttk.Frame(req_frame)
-        btnf.grid(row=req_row, column=2, padx=2)
-        ttk.Button(btnf, text="Add", command=self.add_requirement).pack(side=tk.TOP)
-        ttk.Button(btnf, text="Remove", command=self.remove_requirement).pack(side=tk.TOP)
+        if can_trace_reqs:
+            btnf = ttk.Frame(req_frame)
+            btnf.grid(row=req_row, column=2, padx=2)
+            ttk.Button(btnf, text="Add", command=self.add_requirement).pack(side=tk.TOP)
+            ttk.Button(btnf, text="Remove", command=self.remove_requirement).pack(side=tk.TOP)
+        else:
+            ToolTip(
+                self.req_list,
+                "Requirement allocation is disabled for this diagram due to governance restrictions.",
+            )
         for r in self.obj.requirements:
             self.req_list.insert(tk.END, f"[{r.get('id')}] {r.get('text','')}")
         req_row += 1
