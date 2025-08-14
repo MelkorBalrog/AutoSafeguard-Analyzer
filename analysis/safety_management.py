@@ -650,7 +650,7 @@ class SafetyManagementToolbox:
                         id_to_name[obj.get("obj_id")] = name
             for conn in getattr(diag, "connections", []):
                 stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
-                if stereo == "analyze":
+                if stereo == "used by":
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
                     if sname and tname:
