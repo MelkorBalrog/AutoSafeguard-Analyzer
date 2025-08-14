@@ -9144,7 +9144,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             toolbox.set_active_module(phase)
         if hasattr(app, "refresh_tool_enablement"):
             try:
-                app.refresh_tool_enablement()
+                if smw.phase_var.get() != phase:
+                    smw.phase_var.set(phase)
+                    if hasattr(smw, "refresh_diagrams"):
+                        smw.refresh_diagrams()
             except Exception:
                 pass
 
