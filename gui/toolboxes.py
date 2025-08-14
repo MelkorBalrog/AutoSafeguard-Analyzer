@@ -46,7 +46,12 @@ from gui.architecture import (
 def allowed_action_labels(app, analysis: str) -> list[str]:
     """Return action labels permitted for ``analysis`` according to governance."""
     toolbox = getattr(app, "safety_mgmt_toolbox", None) or ACTIVE_TOOLBOX
-    if toolbox and "Architecture Diagram" not in toolbox.analysis_inputs(analysis):
+    review = getattr(app, "current_review", None)
+    reviewed = getattr(review, "reviewed", False)
+    approved = getattr(review, "approved", False)
+    if toolbox and "Architecture Diagram" not in toolbox.analysis_inputs(
+        analysis, reviewed=reviewed, approved=approved
+    ):
         return []
     return app.get_all_action_labels()
 
@@ -2593,14 +2598,28 @@ class RiskAssessmentWindow(tk.Frame):
             hazop_names = []
             if self.app.active_hara:
                 hazop_names = getattr(self.app.active_hara, "hazops", []) or []
+            if not hazop_names:
+                hazop_names = [d.name for d in self.app.hazop_docs]
+            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+            review = getattr(self.app, "current_review", None)
+            reviewed = getattr(review, "reviewed", False)
+            approved = getattr(review, "approved", False)
+            inputs = (
+                toolbox.analysis_inputs("Risk Assessment", reviewed=reviewed, approved=approved)
+                if toolbox
+                else set()
+            )
+            if "HAZOP" not in inputs:
+                hazop_names = []
+            stpa_docs = self.app.stpa_docs if "STPA" in inputs else []
+            threat_docs = self.app.threat_docs if "Threat Analysis" in inputs else []
+
             malfs = set()
             hazards_map = {}
             scenarios_map = {}
             self.threat_map = {}
             threats = set()
 
-            if not hazop_names:
-                hazop_names = [d.name for d in self.app.hazop_docs]
             for hz_name in hazop_names:
                 hz = self.app.get_hazop_by_name(hz_name)
                 if hz:
@@ -2632,7 +2651,7 @@ class RiskAssessmentWindow(tk.Frame):
             stpa_name = getattr(getattr(self.app, "active_hara", None), "stpa", "")
             if stpa_name:
                 stpa_doc = next(
-                    (d for d in getattr(self.app, "stpa_docs", []) if d.name == stpa_name),
+                    (d for d in stpa_docs if d.name == stpa_name),
                     None,
                 )
                 if stpa_doc:
@@ -2649,7 +2668,7 @@ class RiskAssessmentWindow(tk.Frame):
             threat_name = getattr(getattr(self.app, "active_hara", None), "threat", "")
             if threat_name:
                 threat_doc = next(
-                    (d for d in getattr(self.app, "threat_docs", []) if d.name == threat_name),
+                    (d for d in threat_docs if d.name == threat_name),
                     None,
                 )
                 if threat_doc:

@@ -6943,6 +6943,8 @@ class SysMLDiagramWindow(tk.Frame):
                     self.remove_object(obj)
             self.selected_objs = []
             self.selected_obj = None
+            if getattr(self.app, "refresh_tool_enablement", None):
+                self.app.refresh_tool_enablement()
             return
         if self.selected_conn:
             if self.selected_conn in self.connections:
@@ -9228,13 +9230,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.sort_objects()
         self._sync_to_repository()
         self.redraw()
-        if getattr(self.app, "enable_work_product", None):
-            self.app.enable_work_product(name)
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
         if toolbox:
             diag = self.repo.diagrams.get(self.diagram_id)
             diagram_name = diag.name if diag else ""
             toolbox.add_work_product(diagram_name, name, "")
+        if getattr(self.app, "enable_work_product", None):
+            self.app.enable_work_product(name)
+        if getattr(self.app, "refresh_tool_enablement", None):
+            self.app.refresh_tool_enablement()
 
     def add_process_area(self):  # pragma: no cover - requires tkinter
         options = [

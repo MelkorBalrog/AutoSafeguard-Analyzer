@@ -2,16 +2,18 @@ from gui import messagebox
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
+import pytest
 
 
-def test_delete_work_product_updates_toolbox(monkeypatch):
+@pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
+def test_delete_work_product_updates_toolbox(monkeypatch, analysis):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
     diag.tags.append("safety-management")
 
     toolbox = SafetyManagementToolbox()
-    toolbox.add_work_product("Gov1", "FI2TC", "")
+    toolbox.add_work_product("Gov1", analysis, "")
 
     disabled: list[str] = []
 
@@ -38,7 +40,7 @@ def test_delete_work_product_updates_toolbox(monkeypatch):
     win.remove_part_model = GovernanceDiagramWindow.remove_part_model.__get__(win, GovernanceDiagramWindow)
     win.remove_element_model = GovernanceDiagramWindow.remove_element_model.__get__(win, GovernanceDiagramWindow)
 
-    wp = SysMLObject(1, "Work Product", 0, 0, properties={"name": "FI2TC"})
+    wp = SysMLObject(1, "Work Product", 0, 0, properties={"name": analysis})
     win.objects.append(wp)
     win.selected_objs = [wp]
     win.selected_obj = wp
@@ -49,5 +51,5 @@ def test_delete_work_product_updates_toolbox(monkeypatch):
 
     win.delete_selected()
 
-    assert disabled == ["FI2TC"]
+    assert disabled == [analysis]
     assert toolbox.work_products == []
