@@ -2103,10 +2103,18 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
-        "Scenario": (
+        # Parent work product for scenario-related libraries; enables the
+        # "Scenario" menu without exposing a direct tool.
+        "Scenario": ("Scenario", None, None),
+        "Scenario Library": (
             "Scenario",
             "Scenario Libraries",
             "manage_scenario_libraries",
+        ),
+        "ODD Library": (
+            "Scenario",
+            "ODD Libraries",
+            "manage_odd_libraries",
         ),
     }
 
@@ -2136,6 +2144,8 @@ class FaultTreeApp:
         "Reliability Analysis": "Quantitative Analysis",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
+        "Scenario Library": "Scenario",
+        "ODD Library": "Scenario",
     }
 
     def __init__(self, root):
@@ -2463,7 +2473,11 @@ class FaultTreeApp:
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
-        quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        quantitative_menu.add_command(
+            label="Mission Profiles",
+            command=self.manage_mission_profiles,
+            state=tk.DISABLED,
+        )
         self.work_product_menus.setdefault("Mission Profile", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
@@ -2471,7 +2485,9 @@ class FaultTreeApp:
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
-            label="Reliability Analysis", command=self.open_reliability_window
+            label="Reliability Analysis",
+            command=self.open_reliability_window,
+            state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Reliability Analysis", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
@@ -2496,7 +2512,7 @@ class FaultTreeApp:
             command=self.manage_scenario_libraries,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Scenario", []).append(
+        self.work_product_menus.setdefault("Scenario Library", []).append(
             (libs_menu, libs_menu.index("end"))
         )
         libs_menu.add_command(
@@ -2504,7 +2520,7 @@ class FaultTreeApp:
             command=self.manage_odd_libraries,
             state=tk.DISABLED,
         )
-        self.work_product_menus.setdefault("Scenario", []).append(
+        self.work_product_menus.setdefault("ODD Library", []).append(
             (libs_menu, libs_menu.index("end"))
         )
 
@@ -2649,12 +2665,11 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
         ]
         }
-        self.tool_to_work_product = {
-            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
-        }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
-            self.tool_to_work_product.setdefault(info[1], set()).add(name)
+            tool_name = info[1]
+            if tool_name:
+                self.tool_to_work_product.setdefault(tool_name, set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -9087,7 +9102,8 @@ class FaultTreeApp:
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
             "Architecture Diagram": "arch_diagrams",
-            "Scenario": "scenario_libraries",
+            "Scenario Library": "scenario_libraries",
+            "ODD Library": "odd_libraries",
             "Qualitative Analysis": (
                 "hazop_docs",
                 "stpa_docs",
@@ -9146,7 +9162,7 @@ class FaultTreeApp:
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            if not any(
+            if tool_name and not any(
                 self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
                 for wp in self.enabled_work_products
             ):
