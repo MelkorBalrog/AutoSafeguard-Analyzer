@@ -2933,12 +2933,8 @@ class SysMLDiagramWindow(tk.Frame):
                 if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
                     return False, f"Propagation from {src_name} to {dst_name} is not allowed"
             elif conn_type == "Re-use":
-                if dst.obj_type != "Lifecycle Phase":
-                    return False, "Re-use links must target a Lifecycle Phase"
-                if src.obj_type not in {"Work Product", "Lifecycle Phase"}:
-                    return False, (
-                        "Re-use links must originate from a Work Product or Lifecycle Phase"
-                    )
+                if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
+                    return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
             else:
                 allowed = {
                     "Initial": {
@@ -3173,43 +3169,29 @@ class SysMLDiagramWindow(tk.Frame):
             else:
                 if obj and obj != self.start:
                     valid, msg = self.validate_connection(self.start, obj, t)
-                if valid:
-                    if t == "Control Action":
-                        arrow_default = "forward"
-                    elif t == "Feedback":
-                        arrow_default = "backward"
-                    elif t in (
-                        "Flow",
-                        "Generalize",
-                        "Generalization",
-                        "Include",
-                        "Extend",
-                        "Propagate",
-                        "Propagate by Review",
-                        "Propagate by Approval",
-                        "Re-use",
-                    ):
-                        arrow_default = "forward"
-                    else:
-                        arrow_default = "none"
-                    conn_stereo = (
-                        "control action"
-                        if t == "Control Action"
-                        else "feedback" if t == "Feedback" else t.lower()
-                    )
-                    conn = DiagramConnection(
-                        self.start.obj_id,
-                        obj.obj_id,
-                        t,
-                        arrow=arrow_default,
-                        stereotype=conn_stereo,
-                    )
-                    self.connections.append(conn)
-                    src_id = self.start.element_id
-                    dst_id = obj.element_id
-                    if src_id and dst_id:
-                        rel_stereo = (
-                            "control action" if t == "Control Action" else "feedback" if t == "Feedback" else None
+                    if valid:
+                        if t == "Control Action":
+                            arrow_default = "forward"
+                        elif t == "Feedback":
+                            arrow_default = "backward"
+                        elif t in (
+                            "Flow",
+                            "Generalize",
+                            "Generalization",
+                            "Include",
+                            "Extend",
+                            "Propagate",
+                            "Propagate by Review",
+                            "Propagate by Approval",
+                            "Re-use",
+                        ):
+                            arrow_default = "forward"
+                        else:
+                            arrow_default = "none"
+                        conn_stereo = (
+                            "control action"
+                            if t == "Control Action"
+                            else "feedback" if t == "Feedback" else t.lower()
                         )
                         rel = self.repo.create_relationship(
                             t, src_id, dst_id, stereotype=rel_stereo

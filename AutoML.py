@@ -11706,12 +11706,16 @@ class FaultTreeApp:
         tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         item_map = {}
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
         for fmea in self.fmeas:
+            name = fmea.get("name", "")
+            if toolbox and not toolbox.document_visible("FMEA", name):
+                continue
             iid = tree.insert(
                 "",
                 "end",
                 values=(
-                    fmea.get("name", ""),
+                    name,
                     fmea.get("created", ""),
                     fmea.get("author", ""),
                     fmea.get("modified", ""),
@@ -11759,9 +11763,12 @@ class FaultTreeApp:
             doc = item_map.get(iid)
             if not doc:
                 return
+            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
+                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be deleted")
+                return
             self.fmeas.remove(doc)
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.register_deleted_work_product("FMEA", doc["name"])
+            if toolbox:
+                toolbox.register_deleted_work_product("FMEA", doc["name"])
             tree.delete(iid)
             item_map.pop(iid, None)
             self.update_views()
@@ -11771,14 +11778,17 @@ class FaultTreeApp:
             doc = item_map.get(iid)
             if not doc:
                 return
+            if toolbox and toolbox.document_read_only("FMEA", doc["name"]):
+                messagebox.showinfo("Read-only", "Re-used FMEAs cannot be renamed")
+                return
             current = doc.get("name", "")
             name = simpledialog.askstring("Rename FMEA", "Enter new name:", initialvalue=current)
             if not name:
                 return
             old = doc["name"]
             doc["name"] = name
-            if hasattr(self, "safety_mgmt_toolbox"):
-                self.safety_mgmt_toolbox.rename_document("FMEA", old, name)
+            if toolbox:
+                toolbox.rename_document("FMEA", old, name)
             self.touch_doc(doc)
             tree.item(iid, values=(name, doc["created"], doc["author"], doc["modified"], doc["modified_by"]))
             self.update_views()
@@ -12951,6 +12961,10 @@ class FaultTreeApp:
         del_btn.pack(side=tk.LEFT, padx=2)
         comment_btn = ttk.Button(btn_frame, text="Comment")
         comment_btn.pack(side=tk.LEFT, padx=2)
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if fmea and toolbox and toolbox.document_read_only("FMEA", fmea["name"]):
+            for b in (add_btn, remove_btn, del_btn, comment_btn):
+                b.state(["disabled"])
         if fmeda:
             def calculate_fmeda():
                 if bom_var.get():

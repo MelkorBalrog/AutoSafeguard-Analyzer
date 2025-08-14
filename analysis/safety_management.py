@@ -196,6 +196,39 @@ class SafetyManagementToolbox:
             self.doc_phases.setdefault(analysis, {})[new] = phase
 
     # ------------------------------------------------------------------
+    def _reuse_map(self) -> Dict[str, Dict[str, set[str]]]:
+        """Return mapping of phase -> reused work products and phases."""
+        repo = SysMLRepository.get_instance()
+        mapping: Dict[str, Dict[str, set[str]]] = {}
+        for diag_id in self.diagrams.values():
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            obj_map = {
+                obj.get("obj_id"): (
+                    obj.get("obj_type"),
+                    obj.get("properties", {}).get("name"),
+                )
+                for obj in getattr(diag, "objects", [])
+            }
+            for conn in getattr(diag, "connections", []):
+                if conn.get("conn_type") != "Re-use":
+                    continue
+                src = obj_map.get(conn.get("src"))
+                dst = obj_map.get(conn.get("dst"))
+                if not src or not dst:
+                    continue
+                if dst[0] != "Lifecycle Phase":
+                    continue
+                dest = dst[1]
+                data = mapping.setdefault(dest, {"work_products": set(), "phases": set()})
+                if src[0] == "Work Product":
+                    data["work_products"].add(src[1])
+                elif src[0] == "Lifecycle Phase":
+                    data["phases"].add(src[1])
+        return mapping
+
+    # ------------------------------------------------------------------
     def document_visible(self, analysis: str, name: str) -> bool:
         """Return ``True`` if the document should be visible in the active phase."""
         if not self.active_module:
@@ -205,66 +238,34 @@ class SafetyManagementToolbox:
             return True
         if phase == self.active_module:
             return True
-        # allow visibility when the active phase reuses this work product
-        return analysis in self.reused_products_for_phase(self.active_module)
+        reuse = self._reuse_map().get(self.active_module, {})
+        if analysis in reuse.get("work_products", set()):
+            return True
+        if phase in reuse.get("phases", set()):
+            return True
+        return False
 
     # ------------------------------------------------------------------
-    def _reuse_maps(self) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
-        """Return mapping of reused phases and work products.
+    def document_read_only(self, analysis: str, name: str) -> bool:
+        """Return ``True`` when *analysis* document *name* is reused.
 
-        The first mapping is target phase -> set of source phases that are
-        reused.  The second mapping is target phase -> set of individual work
-        product names reused directly.
+        Documents originating from a different lifecycle phase but made
+        visible via a ``Re-use`` relationship should not be editable. This
+        helper mirrors :meth:`document_visible` but returns ``True`` only when
+        the document is visible in the active phase due to reuse rather than
+        because it was created there.
         """
-
-        repo = SysMLRepository.get_instance()
-        phase_map: dict[str, set[str]] = {}
-        wp_map: dict[str, set[str]] = {}
-        for diag_name, diag_id in self.diagrams.items():
-            diag = repo.diagrams.get(diag_id)
-            if not diag or diag.diag_type != "BPMN Diagram":
-                continue
-            objects = {o.get("obj_id"): o for o in getattr(diag, "objects", [])}
-            for conn in getattr(diag, "connections", []):
-                ctype = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
-                if ctype != "re-use" and ctype != "reuse":
-                    continue
-                src = objects.get(conn.get("src"))
-                dst = objects.get(conn.get("dst"))
-                if not src or not dst:
-                    continue
-                dst_name = dst.get("properties", {}).get("name")
-                if not dst_name:
-                    continue
-                if src.get("obj_type") == "Lifecycle Phase":
-                    src_name = src.get("properties", {}).get("name")
-                    if src_name:
-                        phase_map.setdefault(dst_name, set()).add(src_name)
-                elif src.get("obj_type") == "Work Product":
-                    wp_name = src.get("properties", {}).get("name")
-                    if wp_name:
-                        wp_map.setdefault(dst_name, set()).add(wp_name)
-        return phase_map, wp_map
-
-    # ------------------------------------------------------------------
-    def reused_products_for_phase(self, phase: str) -> set[str]:
-        """Return work product names reused into ``phase``."""
-
-        phase_map, wp_map = self._reuse_maps()
-        reused: set[str] = set(wp_map.get(phase, set()))
-        visited: set[str] = set()
-        stack = list(phase_map.get(phase, set()))
-        while stack:
-            src_phase = stack.pop()
-            if src_phase in visited:
-                continue
-            visited.add(src_phase)
-            diags = self.diagrams_in_module(src_phase)
-            reused.update(
-                {wp.analysis for wp in self.work_products if wp.diagram in diags}
-            )
-            stack.extend(phase_map.get(src_phase, set()))
-        return reused
+        if not self.active_module:
+            return False
+        phase = self.doc_phases.get(analysis, {}).get(name)
+        if phase is None or phase == self.active_module:
+            return False
+        reuse = self._reuse_map().get(self.active_module, {})
+        if analysis in reuse.get("work_products", set()):
+            return True
+        if phase in reuse.get("phases", set()):
+            return True
+        return False
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
