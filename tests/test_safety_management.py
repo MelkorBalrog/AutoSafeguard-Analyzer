@@ -80,7 +80,7 @@ class DummyCanvas:
         return y
 
 
-def test_activity_boundary_label_rotated_left():
+def test_activity_boundary_label_rotated_left_inside():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("BPMN Diagram")
@@ -96,9 +96,11 @@ def test_activity_boundary_label_rotated_left():
     win.draw_object(obj)
 
     assert win.canvas.text_calls, "label not drawn"
-    x, _, kwargs = win.canvas.text_calls[0]
+    x, y, kwargs = win.canvas.text_calls[0]
     assert kwargs.get("angle") == 90
-    assert x < obj.x - obj.width / 2
+    assert kwargs.get("anchor") == "w"
+    assert x == obj.x - obj.width / 2 + 8
+    assert y == obj.y
 
 
 def test_toolbox_manages_diagram_lifecycle():
