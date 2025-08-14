@@ -96,9 +96,11 @@ def test_safety_management_roundtrip_serialisation():
 def test_apply_model_enables_governed_work_products(monkeypatch):
     app = _minimal_app()
     enabled = []
-    monkeypatch.setattr(
-        FaultTreeApp, "enable_work_product", lambda self, name: enabled.append(name)
-    )
+    def record_enable(self, name):
+        enabled.append(name)
+        self.enabled_work_products.add(name)
+
+    monkeypatch.setattr(FaultTreeApp, "enable_work_product", record_enable)
     app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Gov", "HAZOP", "Rationale")
@@ -148,3 +150,39 @@ def test_enabled_work_products_roundtrip():
     new_app.apply_model_data(data, ensure_root=False)
     assert "HAZOP" in new_app.enabled_work_products
 
+def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
+    app = _minimal_app()
+    tb = app.safety_mgmt_toolbox
+    tb.add_work_product("GovArch", "Architecture Diagram", "")
+    tb.add_work_product("GovHazop", "HAZOP", "")
+    tb.modules = [
+        GovernanceModule("Phase1", diagrams=["GovArch"]),
+        GovernanceModule("Phase2", diagrams=["GovHazop"]),
+    ]
+    tb.set_active_module("Phase1")
+    # Simulate a saved model where work products from multiple phases were
+    # enabled before saving.
+    app.enabled_work_products = {"Architecture Diagram", "HAZOP"}
+    data = app.export_model_data(include_versions=False)
+
+    new_app = _minimal_app()
+    new_app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        new_app, FaultTreeApp
+    )
+
+    def enable_wp(self, name):
+        self.enabled_work_products.add(name)
+
+    def disable_wp(self, name, *, force: bool = False):
+        self.enabled_work_products.discard(name)
+        return True
+
+    monkeypatch.setattr(FaultTreeApp, "enable_work_product", enable_wp, raising=False)
+    monkeypatch.setattr(FaultTreeApp, "disable_work_product", disable_wp, raising=False)
+
+    new_app.apply_model_data(data, ensure_root=False)
+    assert new_app.enabled_work_products == {"Architecture Diagram"}
+
+    new_app.safety_mgmt_toolbox.set_active_module("Phase2")
+    new_app.refresh_tool_enablement()
+    assert new_app.enabled_work_products == {"HAZOP"}

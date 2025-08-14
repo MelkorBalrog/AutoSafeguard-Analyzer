@@ -17494,6 +17494,9 @@ class FaultTreeApp:
         )
         toolbox = self.safety_mgmt_toolbox
         toolbox.on_change = self.refresh_tool_enablement
+        # Ensure the SysML repository knows about the active phase from the
+        # loaded toolbox so diagrams and work products filter correctly.
+        toolbox.set_active_module(toolbox.active_module)
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
 
