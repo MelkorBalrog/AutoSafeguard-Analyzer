@@ -81,7 +81,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         GovernanceDiagramWindow.on_left_press(win, event2)
         self.assertEqual(repo.relationships[0].stereotype, "propagate")
 
-    def test_analyze_relationship_stereotype(self):
+    def test_used_by_relationship_stereotype(self):
         repo = self.repo
         e1 = repo.create_element("Block", name="E1")
         e2 = repo.create_element("Block", name="E2")
@@ -105,25 +105,46 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             properties={"name": "FTA"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
-        win = self._create_window("Analyze", o1, o2, diag)
+        win = self._create_window("Used By", o1, o2, diag)
         event1 = types.SimpleNamespace(x=0, y=0, state=0)
         GovernanceDiagramWindow.on_left_press(win, event1)
         event2 = types.SimpleNamespace(x=0, y=100, state=0)
         GovernanceDiagramWindow.on_left_press(win, event2)
-        self.assertEqual(repo.relationships[0].stereotype, "analyze")
+        self.assertEqual(repo.relationships[0].stereotype, "used by")
 
-    def test_analyze_relationship_validation(self):
+    def test_used_by_relationship_validation(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")
         e1 = repo.create_element("Block", name="E1")
         e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
         o1 = SysMLObject(
             1,
             "Work Product",
             0,
             0,
             element_id=e1.elem_id,
-            properties={"name": "HAZOP"},
+            properties={"name": "Mission Profile"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "Architecture Diagram"},
+        )
+        valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Used By")
+        self.assertFalse(valid)
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Mission Profile"},
         )
         o2 = SysMLObject(
             2,
@@ -133,29 +154,8 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             element_id=e2.elem_id,
             properties={"name": "FTA"},
         )
-        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
-        win.repo = repo
-        win.diagram_id = diag.diag_id
-        valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Analyze")
-        self.assertFalse(valid)
-        o1 = SysMLObject(
-            1,
-            "Work Product",
-            0,
-            0,
-            element_id=e1.elem_id,
-            properties={"name": "Architecture Diagram"},
-        )
-        o2 = SysMLObject(
-            2,
-            "Work Product",
-            0,
-            100,
-            element_id=e2.elem_id,
-            properties={"name": "Requirement Specification"},
-        )
-        valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Analyze")
-        self.assertFalse(valid)
+        valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Used By")
+        self.assertTrue(valid)
 
     def test_analysis_targets_mapping(self):
         repo = self.repo
@@ -183,7 +183,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             properties={"name": "FTA"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
-        win = self._create_window("Analyze", o1, o2, diag)
+        win = self._create_window("Used By", o1, o2, diag)
         event1 = types.SimpleNamespace(x=0, y=0, state=0)
         GovernanceDiagramWindow.on_left_press(win, event1)
         event2 = types.SimpleNamespace(x=0, y=100, state=0)
