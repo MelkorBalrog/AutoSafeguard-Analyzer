@@ -3,6 +3,7 @@ import math
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_config_window import GSNElementConfig, _collect_work_products
 from analysis import SafetyManagementToolbox
+from sysml.sysml_repository import SysMLRepository
 
 
 class DummyVar:
@@ -144,6 +145,7 @@ def test_collect_work_products_returns_unique_sorted():
 
 
 def test_collect_work_products_includes_toolbox_entries():
+    SysMLRepository.reset_instance()
     root = GSNNode("Root", "Goal")
     diag = GSNDiagram(root)
     toolbox = SafetyManagementToolbox()
@@ -406,7 +408,7 @@ def test_config_dialog_lists_project_spis(monkeypatch):
 
 def test_config_dialog_lists_toolbox_work_products(monkeypatch):
     """Work product combo should list toolbox entries."""
-
+    SysMLRepository.reset_instance()
     root = GSNNode("Root", "Goal")
     diag = GSNDiagram(root)
     node = GSNNode("New", "Solution")

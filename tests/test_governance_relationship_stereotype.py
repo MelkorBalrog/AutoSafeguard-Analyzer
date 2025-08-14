@@ -32,6 +32,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
     def tearDown(self):
         from gui import architecture
         architecture.ConnectionDialog = self._orig_conn_dialog
+        SysMLRepository.reset_instance()
 
     def _create_window(self, tool, src, dst, diag):
         win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
@@ -248,8 +249,9 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 element_id=e2.elem_id,
                 properties={"name": "FTA"},
             )
-            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
-            self.assertTrue(valid)
+            valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertFalse(valid)
+            self.assertIn("safety analysis", msg)
 
     def test_analysis_targets_used_after_review_visibility(self):
         repo = self.repo
