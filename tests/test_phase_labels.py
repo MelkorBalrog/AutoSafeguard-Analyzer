@@ -102,7 +102,6 @@ class PhaseLabelTests(unittest.TestCase):
         self.assertIn("GovDiag", texts)
         self.assertTrue(all("Phase1" not in t for t in texts))
 
-
 if __name__ == "__main__":
     unittest.main()
 

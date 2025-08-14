@@ -123,10 +123,10 @@ class SafetyManagementWindow(tk.Frame):
         new = simpledialog.askstring("Rename Diagram", "Name:", initialvalue=old, parent=self)
         if not new or new == old:
             return
-        self.toolbox.rename_diagram(old, new)
+        actual = self.toolbox.rename_diagram(old, new)
         self.refresh_diagrams()
-        self.diag_var.set(new)
-        self.open_diagram(new)
+        self.diag_var.set(actual)
+        self.open_diagram(actual)
 
     def select_diagram(self, *_):
         name = self.diag_var.get()

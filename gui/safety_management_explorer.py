@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
-from gui import messagebox
+from gui import messagebox, format_name_with_phase
+from sysml.sysml_repository import SysMLRepository
 from dataclasses import dataclass, field
 from typing import List, Dict
 import re
@@ -71,6 +72,7 @@ class SafetyManagementExplorer(tk.Frame):
         self.item_map.clear()
         self.tree.delete(*self.tree.get_children(""))
         self.toolbox.list_diagrams()
+        repo = SysMLRepository.get_instance()
 
         self.root_iid = self.tree.insert(
             "", "end", text="Diagrams", image=self.folder_icon, open=True
@@ -138,9 +140,11 @@ class SafetyManagementExplorer(tk.Frame):
         name = simpledialog.askstring("New Diagram", "Name:", parent=self)
         if not name:
             return
-        self.toolbox.create_diagram(name)
+        diag_id = self.toolbox.create_diagram(name)
+        repo = SysMLRepository.get_instance()
+        actual = repo.diagrams.get(diag_id).name
         if typ == "module" and obj is not None:
-            obj.diagrams.append(name)
+            obj.diagrams.append(actual)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -155,8 +159,8 @@ class SafetyManagementExplorer(tk.Frame):
             )
             if not new or new == obj:
                 return
-            self.toolbox.rename_diagram(obj, new)
-            self._replace_name_in_modules(obj, new, self.toolbox.modules)
+            actual = self.toolbox.rename_diagram(obj, new)
+            self._replace_name_in_modules(obj, actual, self.toolbox.modules)
         elif typ == "module":
             new = simpledialog.askstring(
                 "Rename Folder", "Name:", initialvalue=obj.name, parent=self
