@@ -25,7 +25,12 @@ from analysis.safety_management import (
     GovernanceModule,
     SafetyWorkProduct,
 )
-from gui.architecture import GovernanceDiagramWindow, SysMLObject, ArchitectureManagerDialog
+from gui.architecture import (
+    GovernanceDiagramWindow,
+    SysMLObject,
+    ArchitectureManagerDialog,
+    SysMLObjectDialog,
+)
 from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
@@ -2007,6 +2012,75 @@ def test_can_trace_filters_by_phase():
     assert toolbox.can_trace("Risk Assessment", "FTA")
     assert not toolbox.can_trace("Risk Assessment", "STPA")
 
+
+def test_object_dialog_creates_trace_relationship():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {
+            "obj_id": 1,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Architecture Diagram"},
+        },
+        {
+            "obj_id": 2,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Safety & Security Concept"},
+        },
+    ]
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Trace"}]
+
+    toolbox.add_work_product("Gov", "Architecture Diagram", "")
+    toolbox.add_work_product("Gov", "Safety & Security Concept", "")
+
+    src_elem = repo.create_element("Block", name="Architecture Diagram")
+    dst_elem = repo.create_element("Block", name="Safety & Security Concept")
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        element_id=src_elem.elem_id,
+        properties={"name": "Architecture Diagram"},
+    )
+
+    dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
+    dlg.obj = obj
+    dlg.entries = {}
+    dlg.listboxes = {}
+    dlg._operations = []
+    dlg._behaviors = []
+    dlg.master = types.SimpleNamespace()
+    dlg.name_var = types.SimpleNamespace(get=lambda: "Architecture Diagram")
+    dlg.width_var = types.SimpleNamespace(get=lambda: "60")
+    dlg.height_var = types.SimpleNamespace(get=lambda: "80")
+
+    class DummyList:
+        def __init__(self, items):
+            self.items = items
+
+        def get(self, i):
+            return self.items[i]
+
+        def curselection(self):
+            return (0,)
+
+    dlg.trace_list = DummyList(["Safety & Security Concept"])
+
+    SysMLObjectDialog.apply(dlg)
+
+    assert obj.properties.get("trace_to") == "Safety & Security Concept"
+    rels = {(r.source, r.target, r.rel_type) for r in repo.relationships}
+    assert (src_elem.elem_id, dst_elem.elem_id, "Trace") in rels
+    assert (dst_elem.elem_id, src_elem.elem_id, "Trace") in rels
 
 def test_list_modules_includes_submodules():
     toolbox = SafetyManagementToolbox()
