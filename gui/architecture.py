@@ -27,6 +27,7 @@ from analysis.models import (
 )
 from analysis.safety_management import (
     ALLOWED_PROPAGATIONS,
+    ALLOWED_ANALYSIS_USAGE,
     ACTIVE_TOOLBOX,
     SAFETY_ANALYSIS_WORK_PRODUCTS,
     ALLOWED_USAGE,
@@ -3230,9 +3231,8 @@ class SysMLDiagramWindow(tk.Frame):
                     if sname != "Mission Profile":
                         if (sname, dname) in ALLOWED_PROPAGATIONS:
                             return False, "Use a Propagate relationship between safety analysis work products"
-                        return False, (
-                            f"{conn_type} links cannot connect two safety analysis work products"
-                        )
+                        if (sname, dname) not in ALLOWED_ANALYSIS_USAGE:
+                            return False, "No metamodel dependency between these safety analyses"
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"

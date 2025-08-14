@@ -42,6 +42,16 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("FTA", "Product Goal Specification"),
 }
 
+# Valid "Used" relationships between safety analysis work products. These
+# represent genuine dependencies in the metamodel that do not result in
+# automatic result propagation.
+ALLOWED_ANALYSIS_USAGE: set[tuple[str, str]] = {
+    # Mission profile may feed many analyses, but it is handled separately
+    # in connection validation so it is omitted here.
+    ("Reliability Analysis", "FMEA"),
+    ("Reliability Analysis", "FMEDA"),
+}
+
 # Work products that support governed inputs from other work products
 SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "HAZOP",
@@ -784,9 +794,10 @@ class SafetyManagementToolbox:
                             sname in SAFETY_ANALYSIS_WORK_PRODUCTS
                             and tname in SAFETY_ANALYSIS_WORK_PRODUCTS
                             and sname != "Mission Profile"
+                            and (sname, tname) not in ALLOWED_ANALYSIS_USAGE
                         ):
-                            # Ignore 'Used' links between safety analyses (except
-                            # Mission Profile which serves as a governed input).
+                            # Skip invalid safety analysis links that lack a
+                            # dependency in the metamodel.
                             continue
                         mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
         return mapping
