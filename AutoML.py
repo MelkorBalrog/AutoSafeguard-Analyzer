@@ -7600,7 +7600,7 @@ class FaultTreeApp:
         arch_diagrams = sorted(
             [
                 d
-                for d in repo.diagrams.values()
+                for d in repo.visible_diagrams().values()
                 if "safety-management" not in getattr(d, "tags", [])
             ],
             key=lambda d: d.name or d.diag_id,
@@ -7608,7 +7608,7 @@ class FaultTreeApp:
         gov_diagrams = sorted(
             [
                 d
-                for d in repo.diagrams.values()
+                for d in repo.visible_diagrams().values()
                 if "safety-management" in getattr(d, "tags", [])
             ],
             key=lambda d: d.name or d.diag_id,
@@ -8852,6 +8852,15 @@ class FaultTreeApp:
             if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
                 win.refresh_docs()
 
+        def _refresh_children(widget):
+            if hasattr(widget, "refresh_from_repository"):
+                widget.refresh_from_repository()
+            for ch in getattr(widget, "winfo_children", lambda: [])():
+                _refresh_children(ch)
+
+        for tab in getattr(self, "diagram_tabs", {}).values():
+            _refresh_children(tab)
+
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
@@ -9509,7 +9518,7 @@ class FaultTreeApp:
         diag_block: dict[str, str] = {}
 
         # Internal block diagrams are linked directly to their father block
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Internal Block Diagram":
                 continue
             blk_id = getattr(diag, "father", None) or next(
@@ -9524,12 +9533,12 @@ class FaultTreeApp:
             if elem.elem_type != "Block":
                 continue
             for beh in parse_behaviors(elem.properties.get("behaviors", "")):
-                if beh.diagram in repo.diagrams and beh.diagram not in diag_block:
+                if repo.diagram_visible(beh.diagram) and beh.diagram not in diag_block:
                     diag_block[beh.diagram] = elem.name or elem.elem_id
 
         labels: set[str] = set()
 
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Activity Diagram":
                 continue
             blk = diag_block.get(diag.diag_id, "")
@@ -9561,7 +9570,7 @@ class FaultTreeApp:
     def get_use_case_for_function(self, func: str) -> str:
         """Return the use case (activity diagram name) implementing a function."""
         repo = SysMLRepository.get_instance()
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Activity Diagram":
                 continue
             if diag.name == func:
@@ -9611,7 +9620,7 @@ class FaultTreeApp:
         """Return component names from all internal block diagrams."""
         repo = SysMLRepository.get_instance()
         names = set()
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Internal Block Diagram":
                 continue
             for obj in getattr(diag, "objects", []):
@@ -9913,7 +9922,7 @@ class FaultTreeApp:
             self.management_diagrams = sorted(
                 [
                     d
-                    for d in repo.diagrams.values()
+                    for d in repo.visible_diagrams().values()
                     if "safety-management" in getattr(d, "tags", [])
                 ],
                 key=lambda d: d.name or d.diag_id,
@@ -10067,7 +10076,7 @@ class FaultTreeApp:
             self.arch_diagrams = sorted(
                 [
                     d
-                    for d in repo.diagrams.values()
+                    for d in repo.visible_diagrams().values()
                     if "safety-management" not in getattr(d, "tags", [])
                 ],
                 key=lambda d: d.name or d.diag_id,
@@ -10099,7 +10108,12 @@ class FaultTreeApp:
                     add_pkg(child_id, node)
                 # add diagrams within this package
                 diags = sorted(
-                    [d for d in repo.diagrams.values() if d.package == pkg_id and "safety-management" not in getattr(d, "tags", [])],
+                    [
+                        d
+                        for d in repo.visible_diagrams().values()
+                        if d.package == pkg_id
+                        and "safety-management" not in getattr(d, "tags", [])
+                    ],
                     key=lambda d: d.name or d.diag_id,
                 )
                 for diag in diags:
@@ -17415,6 +17429,9 @@ class FaultTreeApp:
             "safety_mgmt_toolbox": getattr(
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             ).to_dict(),
+            "enabled_work_products": sorted(
+                getattr(self, "enabled_work_products", set())
+            ),
         }
         if self.hazop_docs:
             data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
@@ -17477,8 +17494,17 @@ class FaultTreeApp:
         )
         toolbox = self.safety_mgmt_toolbox
         toolbox.on_change = self.refresh_tool_enablement
+        # Ensure the SysML repository knows about the active phase from the
+        # loaded toolbox so diagrams and work products filter correctly.
+        toolbox.set_active_module(toolbox.active_module)
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
+
+        for name in data.get("enabled_work_products", []):
+            try:
+                self.enable_work_product(name)
+            except Exception:
+                self.enabled_work_products.add(name)
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
