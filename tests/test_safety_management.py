@@ -27,6 +27,7 @@ from analysis.safety_management import (
 )
 from gui.architecture import BPMNDiagramWindow, SysMLObject, ArchitectureManagerDialog
 from gui.safety_management_explorer import SafetyManagementExplorer
+from gui.safety_management_toolbox import SafetyManagementWindow
 from gui.review_toolbox import ReviewData
 from sysml.sysml_repository import SysMLRepository
 from tkinter import simpledialog
@@ -967,6 +968,45 @@ def test_governance_enables_tools_per_phase():
     assert menu_arch.state == tk.NORMAL and menu_req.state == tk.DISABLED
     assert lb.items == ["AutoML Explorer"]
     assert lb.colors == ["black"]
+
+
+def test_phase_selection_updates_app(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"])]
+    toolbox.diagrams = {"Gov1": diag.diag_id}
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = types.SimpleNamespace(lifecycle_var=DummyVar(), called=False)
+
+    def on_lifecycle_selected(_event=None):
+        app.called = True
+
+    app.on_lifecycle_selected = on_lifecycle_selected
+
+    win = SafetyManagementWindow.__new__(SafetyManagementWindow)
+    win.toolbox = toolbox
+    win.app = app
+    win.phase_var = DummyVar("P1")
+    win.refresh_diagrams = lambda: None
+
+    SafetyManagementWindow.select_phase(win)
+
+    assert toolbox.active_module == "P1"
+    assert app.lifecycle_var.get() == "P1"
+    assert app.called
 
 
 def test_governance_without_declarations_keeps_tools_enabled():
