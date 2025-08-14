@@ -42,6 +42,22 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("FTA", "Product Goal Specification"),
 }
 
+# Work products considered safety analyses which may consume Architecture Diagrams
+SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
+    "HAZOP",
+    "STPA",
+    "Threat Analysis",
+    "FI2TC",
+    "TC2FI",
+    "Risk Assessment",
+    "FMEA",
+    "FMEDA",
+    "FTA",
+    "Reliability Analysis",
+    "Safety & Security Case",
+    "GSN Argumentation",
+}
+
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
@@ -51,6 +67,8 @@ class SafetyWorkProduct:
     rationale: str = ""
     # Names of work products this item may trace to according to governance.
     traceable: List[str] = field(default_factory=list)
+    # Analysis types this work product may serve as input for
+    analyzable: List[str] = field(default_factory=list)
 
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:
@@ -65,6 +83,7 @@ class SafetyWorkProduct:
             data.get("analysis", ""),
             data.get("rationale", ""),
             list(data.get("traceable", [])),
+            list(data.get("analyzable", [])),
         )
 
 
@@ -609,6 +628,36 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
+    def _analysis_mapping(self) -> Dict[str, set[str]]:
+        """Return mapping of work product name to allowed analysis targets."""
+        repo = SysMLRepository.get_instance()
+        diag_ids = self.diagrams.values()
+        if self.active_module:
+            names = self.diagrams_in_module(self.active_module)
+            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
+        mapping: Dict[str, set[str]] = {}
+        for diag_id in diag_ids:
+            if not repo.diagram_visible(diag_id):
+                continue
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            id_to_name: Dict[int, str] = {}
+            for obj in getattr(diag, "objects", []):
+                if obj.get("obj_type") == "Work Product":
+                    name = obj.get("properties", {}).get("name")
+                    if name:
+                        id_to_name[obj.get("obj_id")] = name
+            for conn in getattr(diag, "connections", []):
+                stereo = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
+                if stereo == "analyze":
+                    sname = id_to_name.get(conn.get("src"))
+                    tname = id_to_name.get(conn.get("dst"))
+                    if sname and tname:
+                        mapping.setdefault(sname, set()).add(tname)
+        return mapping
+
+    # ------------------------------------------------------------------
     def _req_relation_mapping(self) -> Dict[str, Dict[str, set[str]]]:
         """Return mapping of requirement work products to relation targets.
 
@@ -716,6 +765,12 @@ class SafetyManagementToolbox:
         return set(traces.get(wp, set()))
 
     # ------------------------------------------------------------------
+    def analysis_targets(self, source: str) -> set[str]:
+        """Return allowed analysis targets for ``source`` work product."""
+        analyses = self._analysis_mapping()
+        return set(analyses.get(source, set()))
+
+    # ------------------------------------------------------------------
     def requirement_diagram_targets(self, req_type: str) -> set[str]:
         """Return diagrams containing allowed targets for ``req_type``."""
         targets = self.requirement_targets(req_type)
@@ -736,9 +791,11 @@ class SafetyManagementToolbox:
     def get_work_products(self) -> List[SafetyWorkProduct]:
         """Return all registered work products including traceability info."""
         traces = self._trace_mapping()
+        analyses = self._analysis_mapping()
         products: List[SafetyWorkProduct] = []
         for wp in self.work_products:
             wp.traceable = sorted(traces.get(wp.analysis, set()))
+            wp.analyzable = sorted(analyses.get(wp.analysis, set()))
             products.append(wp)
         return products
 

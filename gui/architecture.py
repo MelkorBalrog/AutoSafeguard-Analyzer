@@ -25,7 +25,11 @@ from analysis.models import (
     REQUIREMENT_WORK_PRODUCTS,
     REQUIREMENT_TYPE_OPTIONS,
 )
-from analysis.safety_management import ALLOWED_PROPAGATIONS, ACTIVE_TOOLBOX
+from analysis.safety_management import (
+    ALLOWED_PROPAGATIONS,
+    ACTIVE_TOOLBOX,
+    SAFETY_ANALYSIS_WORK_PRODUCTS,
+)
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -2916,6 +2920,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate",
                     "Propagate by Review",
                     "Propagate by Approval",
+                    "Analyze",
                     "Re-use",
                     "Trace",
                     "Satisfied by",
@@ -2952,6 +2957,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3168,6 +3174,15 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
+            elif conn_type == "Analyze":
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Analyze links must connect Work Products"
+                sname = src.properties.get("name")
+                dname = dst.properties.get("name")
+                if sname != "Architecture Diagram" or dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
+                    return False, (
+                        "Analyze links must connect an Architecture Diagram to a safety analysis work product"
+                    )
             else:
                 allowed = {
                     "Initial": {
@@ -3260,6 +3275,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3384,6 +3400,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Connector",
@@ -3418,15 +3435,16 @@ class SysMLDiagramWindow(tk.Frame):
                             "Generalize",
                             "Generalization",
                             "Include",
-                          "Extend",
-                          "Propagate",
-                          "Propagate by Review",
-                          "Propagate by Approval",
-                          "Re-use",
-                          "Satisfied by",
-                          "Derived from",
-                          ):
-                              arrow_default = "forward"
+                            "Extend",
+                            "Propagate",
+                            "Propagate by Review",
+                            "Propagate by Approval",
+                            "Analyze",
+                            "Re-use",
+                            "Satisfied by",
+                            "Derived from",
+                        ):
+                            arrow_default = "forward"
                         else:
                             arrow_default = "none"
                         conn_stereo = (
@@ -3707,6 +3725,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3914,6 +3933,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3952,6 +3972,7 @@ class SysMLDiagramWindow(tk.Frame):
                         "Propagate",
                         "Propagate by Review",
                         "Propagate by Approval",
+                        "Analyze",
                         "Re-use",
                         "Satisfied by",
                         "Derived from",
@@ -4244,6 +4265,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Connector",
@@ -4269,6 +4291,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Connector",
@@ -8788,6 +8811,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
+            "Analyze",
             "Re-use",
             "Trace",
             "Satisfied by",
