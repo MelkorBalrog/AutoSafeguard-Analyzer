@@ -227,6 +227,7 @@ class SafetyManagementToolbox:
     def set_active_module(self, name: Optional[str]) -> None:
         """Select the active lifecycle phase by module *name*."""
         self.active_module = name
+        SysMLRepository.get_instance().active_phase = name
         if self.on_change:
             self.on_change()
 
