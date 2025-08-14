@@ -215,9 +215,6 @@ class SafetyManagementToolbox:
             return set()
         diagrams = self.diagrams_in_module(self.active_module)
         if not diagrams:
-            # No governance diagrams in the selected phase means nothing is
-            # explicitly allowed, so all tools should be disabled until a
-            # work product is declared.
             return set()
         return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
