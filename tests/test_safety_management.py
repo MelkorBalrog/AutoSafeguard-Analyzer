@@ -597,7 +597,7 @@ def test_toolbox_serializes_modules():
     assert loaded.modules[0].diagrams == ["D2"]
 
 
-def test_enabled_products_filter_by_module():
+def test_enabled_products_respect_active_module_and_reuse():
     toolbox = SafetyManagementToolbox()
     toolbox.diagrams = {"D1": "id1", "D2": "id2"}
     toolbox.work_products = [
@@ -616,7 +616,7 @@ def test_enabled_products_filter_by_module():
     assert toolbox.enabled_products() == {"FTA"}
 
     toolbox.set_active_module(None)
-    assert toolbox.enabled_products() == set()
+    assert toolbox.enabled_products() == {"HAZOP", "FTA"}
 
 
 def test_disabled_work_products_absent_from_analysis_tree():
@@ -2023,6 +2023,44 @@ def test_can_propagate_respects_review_states():
     assert toolbox.can_propagate("Risk Assessment", "FTA", reviewed=False)
 
 
+def test_can_use_as_input_respects_review_states():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Architecture Diagram"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "FTA"}},
+    ]
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Used after Review"}]
+    assert not toolbox.can_use_as_input("Architecture Diagram", "FTA", reviewed=False)
+    assert toolbox.can_use_as_input("Architecture Diagram", "FTA", reviewed=True)
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Used after Approval"}]
+    assert not toolbox.can_use_as_input("Architecture Diagram", "FTA", approved=False)
+    assert toolbox.can_use_as_input("Architecture Diagram", "FTA", approved=True)
+    diag.connections = [{"src": 1, "dst": 2, "conn_type": "Used By"}]
+    assert toolbox.can_use_as_input("Architecture Diagram", "FTA", reviewed=False)
+
+
+def test_can_use_as_input_via_traces():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Architecture Diagram"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Requirement Specification"}},
+        {"obj_id": 3, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "HAZOP"}},
+    ]
+    diag.connections = [
+        {"src": 1, "dst": 2, "conn_type": "Trace"},
+        {"src": 2, "dst": 3, "conn_type": "Used By"},
+    ]
+    assert toolbox.can_use_as_input("Architecture Diagram", "HAZOP")
+
+
 def test_propagation_type_uses_stereotype_when_conn_type_missing():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
@@ -2221,7 +2259,7 @@ def test_list_modules_includes_submodules():
     assert set(toolbox.list_modules()) == {"Parent", "Child"}
 
 
-def test_active_module_filters_enabled_products():
+def test_enabled_products_only_active_module():
     toolbox = SafetyManagementToolbox()
     toolbox.work_products = [
         SafetyWorkProduct("D1", "HAZOP", ""),
@@ -2232,11 +2270,44 @@ def test_active_module_filters_enabled_products():
         GovernanceModule("Phase2", diagrams=["D2"]),
     ]
 
-    assert toolbox.enabled_products() == set()
+    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
     toolbox.set_active_module("Phase1")
     assert toolbox.enabled_products() == {"HAZOP"}
     toolbox.set_active_module(None)
-    assert toolbox.enabled_products() == set()
+    assert toolbox.enabled_products() == {"HAZOP", "FMEA"}
+
+
+def test_fi2tc_not_enabled_in_other_modules():
+    toolbox = SafetyManagementToolbox()
+    toolbox.work_products = [SafetyWorkProduct("D1", "FI2TC", "")]
+    toolbox.diagrams = {"D1": "id1"}
+    toolbox.modules = [
+        GovernanceModule("Phase1", diagrams=["D1"]),
+        GovernanceModule("Phase2", diagrams=[]),
+    ]
+    toolbox.set_active_module("Phase2")
+    assert "FI2TC" not in toolbox.enabled_products()
+
+
+def test_each_analysis_enabled_only_in_own_phase():
+    toolbox = SafetyManagementToolbox()
+    toolbox.work_products = [
+        SafetyWorkProduct("D1", "STPA", ""),
+        SafetyWorkProduct("D2", "FI2TC", ""),
+        SafetyWorkProduct("D3", "TC2FI", ""),
+    ]
+    toolbox.modules = [
+        GovernanceModule("Phase1", diagrams=["D1"]),
+        GovernanceModule("Phase2", diagrams=["D2"]),
+        GovernanceModule("Phase3", diagrams=["D3"]),
+    ]
+
+    toolbox.set_active_module("Phase1")
+    assert toolbox.enabled_products() == {"STPA"}
+    toolbox.set_active_module("Phase2")
+    assert toolbox.enabled_products() == {"FI2TC"}
+    toolbox.set_active_module("Phase3")
+    assert toolbox.enabled_products() == {"TC2FI"}
 
 
 def test_work_product_info_includes_requirement_types():
