@@ -59,6 +59,8 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "Reliability Analysis",
     "Safety & Security Case",
     "GSN Argumentation",
+    "Scenario Library",
+    "ODD",
 }
 
 @dataclass

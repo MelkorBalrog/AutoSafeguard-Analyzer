@@ -15,7 +15,7 @@ import pytest
         ("FI2TC", "Hazard & Threat Analysis"),
         ("TC2FI", "Hazard & Threat Analysis"),
         ("Scenario Library", "Scenario"),
-        ("ODD Library", "Scenario"),
+        ("ODD", "Scenario"),
         ("Mission Profile", "Safety Analysis"),
         ("Reliability Analysis", "Safety Analysis"),
         ("Risk Assessment", "Risk Assessment"),

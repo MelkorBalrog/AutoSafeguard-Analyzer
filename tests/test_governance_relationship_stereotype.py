@@ -209,7 +209,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             0,
             100,
             element_id=e2.elem_id,
-            properties={"name": "FTA"},
+            properties={"name": "Requirement Specification"},
         )
         diag.objects = [o1.__dict__, o2.__dict__]
         for rel in ["Used By", "Used after Review", "Used after Approval"]:
@@ -256,6 +256,35 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 100,
                 element_id=e2.elem_id,
                 properties={"name": "FTA"},
+            )
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertTrue(valid)
+
+    def test_odd_scenario_library_used_relationships(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        rels = ["Used By", "Used after Review", "Used after Approval"]
+        for rel in rels:
+            o1 = SysMLObject(
+                1,
+                "Work Product",
+                0,
+                0,
+                element_id=e1.elem_id,
+                properties={"name": "ODD"},
+            )
+            o2 = SysMLObject(
+                2,
+                "Work Product",
+                0,
+                100,
+                element_id=e2.elem_id,
+                properties={"name": "Scenario Library"},
             )
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
