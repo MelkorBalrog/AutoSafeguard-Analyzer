@@ -29,6 +29,8 @@ from analysis.safety_management import (
     ALLOWED_PROPAGATIONS,
     ACTIVE_TOOLBOX,
     SAFETY_ANALYSIS_WORK_PRODUCTS,
+    ALLOWED_USAGE,
+    UNRESTRICTED_USAGE_SOURCES,
 )
 
 # ---------------------------------------------------------------------------
@@ -3216,6 +3218,7 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
+                sname = src.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
@@ -6555,8 +6558,8 @@ class SysMLDiagramWindow(tk.Frame):
                     else 0
                 )
                 self.canvas.create_text(
-                    x,
-                    (y1 + y2) / 2 - 10 * self.zoom - offset,
+                    x + offset,
+                    (y1 + y2) / 2 - 10 * self.zoom,
                     text=label,
                     font=self.font,
                     tags="connection",
@@ -6835,13 +6838,22 @@ class SysMLDiagramWindow(tk.Frame):
                 if hasattr(self, "_label_offset")
                 else 0
             )
-            self.canvas.create_text(
-                mx,
-                my - 10 * self.zoom - offset,
-                text=label,
-                font=self.font,
-                tags="connection",
-            )
+            if math.isclose(ax, bx):
+                self.canvas.create_text(
+                    mx + offset,
+                    my - 10 * self.zoom,
+                    text=label,
+                    font=self.font,
+                    tags="connection",
+                )
+            else:
+                self.canvas.create_text(
+                    mx,
+                    my - 10 * self.zoom - offset,
+                    text=label,
+                    font=self.font,
+                    tags="connection",
+                )
 
     def get_object(self, oid: int) -> SysMLObject | None:
         for o in self.objects:
