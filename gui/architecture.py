@@ -29,8 +29,6 @@ from analysis.safety_management import (
     ALLOWED_PROPAGATIONS,
     ACTIVE_TOOLBOX,
     SAFETY_ANALYSIS_WORK_PRODUCTS,
-    ALLOWED_ANALYSIS_USED_RELATIONS,
-    UNRESTRICTED_ANALYSIS_INPUTS,
 )
 
 # ---------------------------------------------------------------------------
@@ -3204,11 +3202,6 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
-                if (
-                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                ):
-                    return False, "Trace links between safety analysis work products are not allowed"
             elif conn_type in (
                 "Used By",
                 "Used after Review",
@@ -3216,16 +3209,11 @@ class SysMLDiagramWindow(tk.Frame):
             ):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, f"{conn_type} links must connect Work Products"
-                sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
-                    return False, f"{conn_type} links must target a safety analysis work product"
-                if (
-                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                    and sname not in UNRESTRICTED_ANALYSIS_INPUTS
-                    and (sname, dname) not in ALLOWED_ANALYSIS_USED_RELATIONS
-                ):
-                    return False, f"{conn_type} links between safety analysis work products are not allowed"
+                    return False, (
+                        f"{conn_type} links must target a safety analysis work product",
+                    )
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
@@ -3245,7 +3233,7 @@ class SysMLDiagramWindow(tk.Frame):
                     ):
                         return False, (
                             "A 'Used' relationship between these work products "
-                            "already exists in this phase"
+                            "already exists in this phase",
                         )
             else:
                 allowed = {

@@ -63,17 +63,6 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "ODD",
 }
 
-# Pairs of safety analysis work products where "Used" relationships are permitted.
-# These are directed edges from the source work product to the analysis that uses
-# it. Any other combination of safety analyses is considered invalid.
-ALLOWED_ANALYSIS_USED_RELATIONS: set[tuple[str, str]] = {
-    ("Scenario Library", "ODD"),
-}
-
-# Safety analysis work products that may serve as inputs to other analyses
-# without additional restrictions.
-UNRESTRICTED_ANALYSIS_INPUTS: set[str] = {"Mission Profile"}
-
 @dataclass
 class SafetyWorkProduct:
     """Describe a work product generated from a diagram or analysis."""
