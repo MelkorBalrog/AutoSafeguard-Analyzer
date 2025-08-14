@@ -14,6 +14,8 @@ import pytest
     [
         ("FI2TC", "Hazard & Threat Analysis"),
         ("TC2FI", "Hazard & Threat Analysis"),
+        ("Scenario Library", "Scenario"),
+        ("ODD Library", "Scenario"),
         ("Mission Profile", "Safety Analysis"),
         ("Reliability Analysis", "Safety Analysis"),
         ("Risk Assessment", "Risk Assessment"),
@@ -29,7 +31,7 @@ def test_governance_work_product_enablement(analysis, area_name, monkeypatch):
     prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
-    # Required process area for the selected analysis
+    # Required process area for the selected work product
     area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": area_name})
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
