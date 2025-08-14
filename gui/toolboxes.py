@@ -3864,12 +3864,24 @@ class HazardExplorerWindow(tk.Toplevel):
 
 
 class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
-    """Dialog presenting diagram objects for selection."""
+    """Dialog presenting diagram objects for selection.
 
-    def __init__(self, parent, repo: SysMLRepository, req_wp: str, can_trace):
+    Optionally pre-selects *selected* items so the dialog can be used to both
+    add and remove links. The selected items are returned via the ``selection``
+    attribute when the dialog is closed."""
+
+    def __init__(
+        self,
+        parent,
+        repo: SysMLRepository,
+        req_wp: str,
+        can_trace,
+        selected: list[tuple[str, int]] | None = None,
+    ):
         self.repo = repo
         self.req_wp = req_wp
         self.can_trace = can_trace
+        self._selected = set(selected or [])
         self.selection: list[tuple[str, int]] = []
         super().__init__(parent, "Select Targets")
 
@@ -3885,8 +3897,12 @@ class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires 
             for obj in getattr(diag, "objects", []):
                 name = obj.get("properties", {}).get("name", "")
                 label = f"{dname}:{name or obj.get('obj_type')}"
-                self._options.append((diag.diag_id, obj.get("obj_id")))
+                pair = (diag.diag_id, obj.get("obj_id"))
+                self._options.append(pair)
+                idx = self.listbox.size()
                 self.listbox.insert(tk.END, label)
+                if pair in self._selected:
+                    self.listbox.selection_set(idx)
         self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         return self.listbox
 

@@ -328,6 +328,7 @@ from gui.architecture import (
     ArchitectureManagerDialog,
     parse_behaviors,
     link_requirement_to_object,
+    unlink_requirement_from_object,
     link_requirements,
     unlink_requirements,
 )
@@ -11579,27 +11580,52 @@ class FaultTreeApp:
         self._req_tab = self._new_tab("Requirements")
         win = self._req_tab
 
-        columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Text"]
+        columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
         for col in columns:
             tree.heading(col, text=col)
-            tree.column(col, width=120 if col != "Text" else 300, anchor="center")
+            if col == "Text":
+                width = 300
+            elif col in ("Trace", "Links"):
+                width = 200
+            else:
+                width = 120
+            tree.column(col, width=width, anchor="center")
         tree.pack(fill=tk.BOTH, expand=True)
+
+        def _get_requirement_allocations(rid: str) -> list[str]:
+            repo = SysMLRepository.get_instance()
+            names: list[str] = []
+            for diag in repo.diagrams.values():
+                dname = diag.name or diag.diag_id
+                for obj in getattr(diag, "objects", []):
+                    for r in obj.get("requirements", []):
+                        if r.get("id") == rid:
+                            oname = obj.get("properties", {}).get("name", obj.get("obj_type"))
+                            names.append(f"{dname}:{oname}")
+            return sorted(set(names))
 
         def refresh_tree():
             tree.delete(*tree.get_children())
             for req in global_requirements.values():
+                rid = req.get("id", "")
+                trace = ", ".join(_get_requirement_allocations(rid))
+                links = ", ".join(
+                    f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
+                )
                 tree.insert(
                     "",
                     "end",
-                    iid=req.get("id"),
+                    iid=rid,
                     values=[
-                        req.get("id", ""),
+                        rid,
                         req.get("asil", ""),
                         req.get("cal", ""),
                         req.get("req_type", ""),
                         req.get("status", "draft"),
                         req.get("parent_id", ""),
+                        trace,
+                        links,
                         req.get("text", ""),
                     ],
                 )
@@ -11750,11 +11776,21 @@ class FaultTreeApp:
                 if toolbox
                 else ""
             )
-            dlg = DiagramElementDialog(win, repo, req_wp, can_trace)
-            targets = getattr(dlg, "selection", [])
-            if not targets:
+
+            # Determine currently allocated diagram objects
+            existing: set[tuple[str, int]] = set()
+            for diag in repo.diagrams.values():
+                for obj in getattr(diag, "objects", []):
+                    if any(r.get("id") == rid for r in obj.get("requirements", [])):
+                        existing.add((diag.diag_id, obj.get("obj_id")))
+
+            dlg = DiagramElementDialog(win, repo, req_wp, can_trace, selected=list(existing))
+            targets = set(getattr(dlg, "selection", []))
+            if not targets and not existing:
                 return
-            for diag_id, obj_id in targets:
+
+            # Add newly selected links
+            for diag_id, obj_id in targets - existing:
                 diag = repo.diagrams.get(diag_id)
                 if not diag:
                     continue
@@ -11769,6 +11805,24 @@ class FaultTreeApp:
                 elem_id = obj.get("element_id")
                 if elem_id:
                     repo.touch_element(elem_id)
+
+            # Remove deselected links
+            for diag_id, obj_id in existing - targets:
+                diag = repo.diagrams.get(diag_id)
+                if not diag:
+                    continue
+                obj = next(
+                    (o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id),
+                    None,
+                )
+                if not obj:
+                    continue
+                unlink_requirement_from_object(obj, rid, diag_id)
+                repo.touch_diagram(diag_id)
+                elem_id = obj.get("element_id")
+                if elem_id:
+                    repo.touch_element(elem_id)
+
             refresh_tree()
 
         def link_requirement():
