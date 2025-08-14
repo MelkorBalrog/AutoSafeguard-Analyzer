@@ -2945,6 +2945,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate by Review",
                     "Propagate by Approval",
                     "Used By",
+                    "Used after Review",
+                    "Used after Approval",
                     "Re-use",
                     "Trace",
                     "Satisfied by",
@@ -2982,6 +2984,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3198,13 +3202,17 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
-            elif conn_type == "Used By":
+            elif conn_type in (
+                "Used By",
+                "Used after Review",
+                "Used after Approval",
+            ):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Used By links must connect Work Products"
+                    return False, f"{conn_type} links must connect Work Products"
                 dname = dst.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
-                        "Used By links must target a safety analysis work product"
+                        f"{conn_type} links must target a safety analysis work product",
                     )
             else:
                 allowed = {
@@ -3299,6 +3307,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3452,6 +3462,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -3493,6 +3505,8 @@ class SysMLDiagramWindow(tk.Frame):
                             "Propagate by Review",
                             "Propagate by Approval",
                             "Used By",
+                            "Used after Review",
+                            "Used after Approval",
                             "Re-use",
                             "Satisfied by",
                             "Derived from",
@@ -3779,6 +3793,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -4009,6 +4025,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
@@ -4048,6 +4066,8 @@ class SysMLDiagramWindow(tk.Frame):
                         "Propagate by Review",
                         "Propagate by Approval",
                         "Used By",
+                        "Used after Review",
+                        "Used after Approval",
                         "Re-use",
                         "Satisfied by",
                         "Derived from",
@@ -4345,6 +4365,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Connector",
@@ -4371,6 +4393,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Connector",
@@ -9025,6 +9049,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate by Review",
             "Propagate by Approval",
             "Used By",
+            "Used after Review",
+            "Used after Approval",
             "Re-use",
             "Trace",
             "Satisfied by",
