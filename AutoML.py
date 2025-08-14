@@ -16574,10 +16574,12 @@ class FaultTreeApp:
         self._haz_exp_window = HazardExplorerWindow(self)
 
     def show_requirements_explorer(self):
-        if hasattr(self, "_req_exp_window") and self._req_exp_window.winfo_exists():
-            self._req_exp_window.lift()
-            return
-        self._req_exp_window = RequirementsExplorerWindow(self)
+        if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
+            self.doc_nb.select(self._req_exp_tab)
+        else:
+            self._req_exp_tab = self._new_tab("Requirements Explorer")
+            self._req_exp_window = RequirementsExplorerWindow(self._req_exp_tab, self)
+            self._req_exp_window.pack(fill=tk.BOTH, expand=True)
 
     def _register_close(self, win, collection):
         def _close():
