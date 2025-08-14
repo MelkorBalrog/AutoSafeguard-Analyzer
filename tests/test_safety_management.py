@@ -2043,6 +2043,24 @@ def test_can_use_as_input_respects_review_states():
     assert toolbox.can_use_as_input("Architecture Diagram", "FTA", reviewed=False)
 
 
+def test_can_use_as_input_via_traces():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = diag.diag_id
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Architecture Diagram"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Requirement Specification"}},
+        {"obj_id": 3, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "HAZOP"}},
+    ]
+    diag.connections = [
+        {"src": 1, "dst": 2, "conn_type": "Trace"},
+        {"src": 2, "dst": 3, "conn_type": "Used By"},
+    ]
+    assert toolbox.can_use_as_input("Architecture Diagram", "HAZOP")
+
+
 def test_propagation_type_uses_stereotype_when_conn_type_missing():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()

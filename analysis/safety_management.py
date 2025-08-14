@@ -768,69 +768,100 @@ class SafetyManagementToolbox:
     def analysis_targets(
         self, source: str, *, reviewed: bool = False, approved: bool = False
     ) -> set[str]:
-        """Return allowed analysis targets for ``source`` work product."""
+        """Return allowed analysis targets for ``source`` work product.
+
+        Traces are followed transitively so if ``source`` traces to another work
+        product which in turn is "Used By" an analysis then that analysis is
+        considered a valid target for ``source`` as well.  "Used after Review"
+        and "Used after Approval" relations only become visible when the
+        corresponding state flag is provided.
+        """
         analyses = self._analysis_mapping()
-        rels = analyses.get(source, {})
-        targets = set(rels.get("used by", set()))
-        if reviewed or approved:
-            targets |= rels.get("used after review", set())
-        if approved:
-            targets |= rels.get("used after approval", set())
+        traces = self._trace_mapping()
+
+        # Discover all work products reachable from ``source`` via trace links
+        seen: set[str] = set()
+        queue = [source]
+        reachable: set[str] = set()
+        while queue:
+            cur = queue.pop(0)
+            if cur in seen:
+                continue
+            seen.add(cur)
+            reachable.add(cur)
+            queue.extend(traces.get(cur, set()) - seen)
+
+        targets: set[str] = set()
+        for src in reachable:
+            rels = analyses.get(src, {})
+            targets |= rels.get("used by", set())
+            if reviewed or approved:
+                targets |= rels.get("used after review", set())
+            if approved:
+                targets |= rels.get("used after approval", set())
         return targets
 
     # ------------------------------------------------------------------
     def analysis_inputs(
         self, target: str, *, reviewed: bool = False, approved: bool = False
     ) -> set[str]:
-        """Return work products that may serve as input to ``target`` analysis."""
+        """Return work products that may serve as input to ``target`` analysis.
+
+        Any work product that traces to another work product with a direct
+        relationship to ``target`` is also considered an input.  Visibility of
+        "Used after Review" and "Used after Approval" relations depends on the
+        provided state flags.
+        """
         analyses = self._analysis_mapping()
-        sources: set[str] = set()
+        traces = self._trace_mapping()
+
+        direct: set[str] = set()
         for src, rels in analyses.items():
             if target in rels.get("used by", set()):
-                sources.add(src)
+                direct.add(src)
             if target in rels.get("used after review", set()) and (reviewed or approved):
-                sources.add(src)
+                direct.add(src)
             if target in rels.get("used after approval", set()) and approved:
-                sources.add(src)
+                direct.add(src)
+
+        sources = set(direct)
+        queue = list(direct)
+        while queue:
+            cur = queue.pop(0)
+            for neigh in traces.get(cur, set()):
+                if neigh not in sources:
+                    sources.add(neigh)
+                    queue.append(neigh)
         return sources
 
     # ------------------------------------------------------------------
     def analysis_usage_type(self, source: str, target: str) -> Optional[str]:
-        """Return the relationship type for using ``source`` as input to ``target``."""
-        repo = SysMLRepository.get_instance()
-        diag_ids = self.diagrams.values()
-        if self.active_module:
-            names = self.diagrams_in_module(self.active_module)
-            diag_ids = [self.diagrams.get(n) for n in names if self.diagrams.get(n)]
-        for diag_id in diag_ids:
-            diag = repo.diagrams.get(diag_id)
-            if not diag:
+        """Return the relationship type for using ``source`` as input to ``target``.
+
+        Direct connections are checked first. If none are found, trace links are
+        followed transitively to locate an intermediate work product connected to
+        ``target``.
+        """
+        analyses = self._analysis_mapping()
+        traces = self._trace_mapping()
+
+        visited: set[str] = set()
+        queue = [source]
+        mapping = {
+            "used by": "Used By",
+            "used after review": "Used after Review",
+            "used after approval": "Used after Approval",
+        }
+        while queue:
+            cur = queue.pop(0)
+            if cur in visited:
                 continue
-            src_id = dst_id = None
-            for obj in getattr(diag, "objects", []):
-                if obj.get("obj_type") != "Work Product":
-                    continue
-                name = obj.get("properties", {}).get("name")
-                if name == source:
-                    src_id = obj.get("obj_id")
-                elif name == target:
-                    dst_id = obj.get("obj_id")
-            if src_id is None or dst_id is None:
-                continue
-            for c in getattr(diag, "connections", []):
-                stereo = (c.get("stereotype") or c.get("conn_type") or "").lower()
-                if (
-                    c.get("src") == src_id
-                    and c.get("dst") == dst_id
-                    and stereo
-                    in {"used by", "used after review", "used after approval"}
-                ):
-                    mapping = {
-                        "used by": "Used By",
-                        "used after review": "Used after Review",
-                        "used after approval": "Used after Approval",
-                    }
-                    return c.get("conn_type") or mapping[stereo]
+            visited.add(cur)
+            rels = analyses.get(cur, {})
+            for key, human in mapping.items():
+                if target in rels.get(key, set()):
+                    return human
+            queue.extend(traces.get(cur, set()) - visited)
         return None
 
     # ------------------------------------------------------------------
