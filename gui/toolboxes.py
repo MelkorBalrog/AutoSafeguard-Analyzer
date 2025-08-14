@@ -8,6 +8,7 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
+from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,
@@ -3758,7 +3759,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
-        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
+        columns = ("ID", "ASIL", "Type", "Status", "Trace", "Parent", "Text")
         configure_table_style("ReqExp.Treeview")
         self.tree = EditableTreeview(
             self,
@@ -3770,7 +3771,11 @@ class RequirementsExplorerWindow(tk.Toplevel):
         )
         for c in columns:
             self.tree.heading(c, text=c)
-            width = 100 if c != "Text" else 300
+            width = 100
+            if c == "Text":
+                width = 300
+            elif c == "Trace":
+                width = 200
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
         ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
@@ -3782,6 +3787,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         rtype = self.type_var.get().strip()
         asil = self.asil_var.get().strip()
         status = self.status_var.get().strip()
+        repo = SysMLRepository.get_instance()
         for req in global_requirements.values():
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue
@@ -3791,6 +3797,17 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             if status and req.get("status", "") != status:
                 continue
+            locations = []
+            for diag_id, obj_id in repo.find_requirements(req.get("id", "")):
+                diag = repo.diagrams.get(diag_id)
+                obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+                dname = diag.name if diag else ""
+                oname = obj.get("properties", {}).get("name", "") if obj else ""
+                if dname and oname:
+                    locations.append(f"{dname}:{oname}")
+                elif dname or oname:
+                    locations.append(dname or oname)
+            trace = ", ".join(locations)
             self.tree.insert(
                 "",
                 "end",
@@ -3799,6 +3816,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("asil", ""),
                     req.get("req_type", ""),
                     req.get("status", ""),
+                    trace,
                     req.get("parent_id", ""),
                     req.get("text", ""),
                 ),
@@ -3810,14 +3828,14 @@ class RequirementsExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Text"])
+            w.writerow(["ID", "ASIL", "Type", "Status", "Trace", "Parent", "Text"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":5}
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Trace":4, "Parent":5, "Text":6}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
