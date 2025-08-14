@@ -34,6 +34,7 @@ from analysis.models import (
 )
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from sysml.sysml_repository import SysMLRepository
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
@@ -3709,6 +3710,42 @@ class HazardExplorerWindow(tk.Toplevel):
         self.tree.item(self.tree.get_children()[row], values=values)
 
 
+class DiagramElementDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
+    """Dialog presenting diagram objects for selection."""
+
+    def __init__(self, parent, repo: SysMLRepository, req_type: str, can_trace):
+        self.repo = repo
+        self.req_type = req_type
+        self.can_trace = can_trace
+        self.selection: list[tuple[str, int]] = []
+        super().__init__(parent, "Select Targets")
+
+    def body(self, master):  # pragma: no cover - requires tkinter
+        ttk.Label(master, text="Select targets:").pack(anchor="w", padx=5, pady=5)
+        self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, width=40)
+        self._options: list[tuple[str, int]] = []
+        for diag in self.repo.diagrams.values():
+            dname = diag.name or diag.diag_id
+            for obj in getattr(diag, "objects", []):
+                name = obj.get("properties", {}).get("name", "")
+                if (
+                    self.req_type
+                    and name
+                    and self.can_trace
+                    and not self.can_trace(self.req_type, name)
+                ):
+                    continue
+                label = f"{dname}:{name or obj.get('obj_type')}"
+                self._options.append((diag.diag_id, obj.get("obj_id")))
+                self.listbox.insert(tk.END, label)
+        self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.listbox
+
+    def apply(self):  # pragma: no cover - requires tkinter
+        sels = self.listbox.curselection()
+        self.selection = [self._options[i] for i in sels]
+
+
 class RequirementsExplorerWindow(tk.Toplevel):
     """Read-only list of global requirements with filter options."""
 
@@ -3758,22 +3795,30 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
-        columns = ("ID", "ASIL", "Type", "Status", "Parent", "Text")
+        self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Text")
         configure_table_style("ReqExp.Treeview")
         self.tree = EditableTreeview(
             self,
-            columns=columns,
+            columns=self.columns,
             show="headings",
             style="ReqExp.Treeview",
             edit_callback=self.on_cell_edit,
             height=10,
         )
-        for c in columns:
+        for c in self.columns:
             self.tree.heading(c, text=c)
-            width = 100 if c != "Text" else 300
+            if c == "Text":
+                width = 300
+            elif c == "Trace":
+                width = 200
+            else:
+                width = 100
             self.tree.column(c, width=width)
         self.tree.pack(fill=tk.BOTH, expand=True)
-        ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
+        btnf = ttk.Frame(self)
+        btnf.pack(pady=5)
+        ttk.Button(btnf, text="Link to Diagram...", command=self.link_to_diagram).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
 
     def refresh(self):
@@ -3791,6 +3836,8 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             if status and req.get("status", "") != status:
                 continue
+            trace = ", ".join(self._get_requirement_allocations(req.get("id", "")))
+            req["trace"] = trace
             self.tree.insert(
                 "",
                 "end",
@@ -3800,6 +3847,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("req_type", ""),
                     req.get("status", ""),
                     req.get("parent_id", ""),
+                    trace,
                     req.get("text", ""),
                 ),
             )
@@ -3810,14 +3858,57 @@ class RequirementsExplorerWindow(tk.Toplevel):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Text"])
+            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Trace", "Text"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":5}
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":6}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
+
+    def _get_requirement_allocations(self, rid: str) -> list[str]:
+        repo = SysMLRepository.get_instance()
+        names: list[str] = []
+        for diag in repo.diagrams.values():
+            dname = diag.name or diag.diag_id
+            for obj in getattr(diag, "objects", []):
+                for r in obj.get("requirements", []):
+                    if r.get("id") == rid:
+                        oname = obj.get("properties", {}).get("name", obj.get("obj_type"))
+                        names.append(f"{dname}:{oname}")
+        return sorted(set(names))
+
+    def link_to_diagram(self):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        rid = self.tree.item(sel[0], "values")[0]
+        req = global_requirements.get(rid)
+        if not req:
+            return
+        repo = SysMLRepository.get_instance()
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        can_trace = toolbox.can_trace if toolbox else (lambda a, b: True)
+        dlg = DiagramElementDialog(self, repo, req.get("req_type", ""), can_trace)
+        targets = getattr(dlg, "selection", [])
+        if not targets:
+            return
+        for diag_id, obj_id in targets:
+            diag = repo.diagrams.get(diag_id)
+            if not diag:
+                continue
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            if not obj:
+                continue
+            obj.setdefault("requirements", [])
+            if not any(r.get("id") == rid for r in obj["requirements"]):
+                obj["requirements"].append(req)
+            repo.touch_diagram(diag_id)
+            elem_id = obj.get("element_id")
+            if elem_id:
+                repo.touch_element(elem_id)
+        self.refresh()
