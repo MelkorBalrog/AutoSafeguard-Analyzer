@@ -14,7 +14,7 @@ class DummyVar:
 def test_work_product_name_read_only():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("BPMN Diagram")
+    diag = repo.create_diagram("Governance Diagram")
     obj = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Risk Assessment"})
     dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
     dlg.obj = obj

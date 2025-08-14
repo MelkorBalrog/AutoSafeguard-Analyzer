@@ -16,7 +16,7 @@ def _setup_repo():
 
 def _prepare():
     repo = _setup_repo()
-    gov = repo.create_diagram("BPMN Diagram", name="Gov")
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov"]), GovernanceModule(name="P2")]
     toolbox.diagrams = {"Gov": gov.diag_id}
@@ -69,7 +69,7 @@ def test_reused_diagram_read_only_blocks_modification():
 
 def _prepare_product_reuse():
     repo = _setup_repo()
-    gov = repo.create_diagram("BPMN Diagram", name="Gov")
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov"]), GovernanceModule(name="P2")]
     toolbox.diagrams = {"Gov": gov.diag_id}

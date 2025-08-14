@@ -17,7 +17,7 @@ def _setup_repo():
 
 def test_work_product_reuse_visibility():
     repo = _setup_repo()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov")
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov"]), GovernanceModule(name="P2")]
@@ -41,7 +41,7 @@ def test_work_product_reuse_visibility():
 
 def test_phase_reuse_visibility():
     repo = _setup_repo()
-    diag = repo.create_diagram("BPMN Diagram", name="Gov1")
+    diag = repo.create_diagram("Governance Diagram", name="Gov1")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"]), GovernanceModule(name="P2")]
@@ -65,7 +65,7 @@ def test_phase_reuse_visibility():
 
 def test_activity_diagram_reuse_read_only():
     repo = _setup_repo()
-    gov = repo.create_diagram("BPMN Diagram", name="Gov")
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov"]), GovernanceModule(name="P2")]
@@ -88,7 +88,7 @@ def test_activity_diagram_reuse_read_only():
 
 def test_phase_reuse_shows_diagrams_and_elements():
     repo = _setup_repo()
-    gov = repo.create_diagram("BPMN Diagram", name="Gov")
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [
@@ -120,7 +120,7 @@ def test_phase_reuse_shows_diagrams_and_elements():
 
 def test_activity_diagram_reuse_read_only():
     repo = _setup_repo()
-    gov = repo.create_diagram("BPMN Diagram", name="Gov")
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
 
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov"]), GovernanceModule(name="P2")]
