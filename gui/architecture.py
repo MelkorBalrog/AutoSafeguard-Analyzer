@@ -7248,7 +7248,12 @@ class SysMLObjectDialog(simpledialog.Dialog):
         current_diagram = repo.diagrams.get(getattr(self.master, "diagram_id", ""))
         toolbox = getattr(app, "safety_mgmt_toolbox", None)
         wp_map = {wp.analysis: wp for wp in toolbox.get_work_products()} if toolbox else {}
+        diagram_wp = wp_map.get(getattr(current_diagram, "diag_type", ""))
+        diag_trace_opts = (
+            sorted(getattr(diagram_wp, "traceable", [])) if diagram_wp else []
+        )
         link_row = 0
+        trace_shown = False
         if self.obj.obj_type == "Block":
             diags = [d for d in repo.diagrams.values() if d.diag_type == "Internal Block Diagram"]
             ids = {d.name or d.diag_id: d.diag_id for d in diags}
@@ -7285,6 +7290,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
                 self.trace_list = lb
                 link_row += 1
+                trace_shown = True
         elif self.obj.obj_type == "Use Case":
             diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Governance Diagram"]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
@@ -7298,27 +7304,25 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 link_frame, textvariable=self.behavior_var, values=list(self.behavior_map.keys())
             ).grid(row=link_row, column=1, padx=4, pady=2)
             link_row += 1
-            name = self.obj.properties.get("name", "")
-            targets = wp_map.get(name)
-            trace_opts = sorted(getattr(targets, "traceable", [])) if targets else []
-            if trace_opts:
+            if diag_trace_opts:
                 ttk.Label(link_frame, text="Trace To:").grid(
                     row=link_row, column=0, sticky="e", padx=4, pady=2
                 )
                 lb = tk.Listbox(link_frame, height=4, selectmode=tk.MULTIPLE)
-                for opt in trace_opts:
+                for opt in diag_trace_opts:
                     lb.insert(tk.END, opt)
                 current = [
                     s.strip()
                     for s in self.obj.properties.get("trace_to", "").split(",")
                     if s.strip()
                 ]
-                for idx, opt in enumerate(trace_opts):
+                for idx, opt in enumerate(diag_trace_opts):
                     if opt in current:
                         lb.selection_set(idx)
                 lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
                 self.trace_list = lb
                 link_row += 1
+                trace_shown = True
         elif self.obj.obj_type in ("Action Usage", "Action"):
             if (
                 self.obj.obj_type == "Action"
@@ -7391,6 +7395,26 @@ class SysMLObjectDialog(simpledialog.Dialog):
             self.def_cb.bind("<<ComboboxSelected>>", self._on_def_selected)
             self._current_def_id = cur_id
             link_row += 1
+
+        if diag_trace_opts and not trace_shown:
+            ttk.Label(link_frame, text="Trace To:").grid(
+                row=link_row, column=0, sticky="e", padx=4, pady=2
+            )
+            lb = tk.Listbox(link_frame, height=4, selectmode=tk.MULTIPLE)
+            for opt in diag_trace_opts:
+                lb.insert(tk.END, opt)
+            current = [
+                s.strip()
+                for s in self.obj.properties.get("trace_to", "").split(",")
+                if s.strip()
+            ]
+            for idx, opt in enumerate(diag_trace_opts):
+                if opt in current:
+                    lb.selection_set(idx)
+            lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
+            self.trace_list = lb
+            link_row += 1
+            trace_shown = True
 
         # Requirement allocation section
         req_row = 0

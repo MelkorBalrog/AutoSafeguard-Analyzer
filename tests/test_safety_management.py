@@ -2141,6 +2141,78 @@ def test_object_dialog_creates_trace_relationship():
     assert (src_elem.elem_id, dst_elem.elem_id, "Trace") in rels
     assert (dst_elem.elem_id, src_elem.elem_id, "Trace") in rels
 
+def test_use_case_dialog_creates_trace_relationship():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    gov = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams["Gov"] = gov.diag_id
+    gov.objects = [
+        {
+            "obj_id": 1,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Use Case"},
+        },
+        {
+            "obj_id": 2,
+            "obj_type": "Work Product",
+            "x": 0.0,
+            "y": 0.0,
+            "properties": {"name": "Safety & Security Concept"},
+        },
+    ]
+    gov.connections = [{"src": 1, "dst": 2, "conn_type": "Trace"}]
+
+    toolbox.add_work_product("Gov", "Use Case", "")
+    toolbox.add_work_product("Gov", "Safety & Security Concept", "")
+
+    assert toolbox.can_trace("Use Case", "Safety & Security Concept")
+
+    uc_diag = repo.create_diagram("Use Case Diagram", name="UC")
+    uc_elem = repo.create_element("Use Case", name="Scenario")
+    target_elem = repo.create_element("Block", name="Safety & Security Concept")
+    obj = SysMLObject(
+        1,
+        "Use Case",
+        0.0,
+        0.0,
+        element_id=uc_elem.elem_id,
+        properties={"name": "Scenario"},
+    )
+
+    dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
+    dlg.obj = obj
+    dlg.entries = {}
+    dlg.listboxes = {}
+    dlg._operations = []
+    dlg._behaviors = []
+    dlg.master = types.SimpleNamespace()
+    dlg.name_var = types.SimpleNamespace(get=lambda: "Scenario")
+    dlg.width_var = types.SimpleNamespace(get=lambda: "60")
+    dlg.height_var = types.SimpleNamespace(get=lambda: "40")
+
+    class DummyList:
+        def __init__(self, items):
+            self.items = items
+
+        def get(self, i):
+            return self.items[i]
+
+        def curselection(self):
+            return (0,)
+
+    dlg.trace_list = DummyList(["Safety & Security Concept"])
+
+    SysMLObjectDialog.apply(dlg)
+
+    assert obj.properties.get("trace_to") == "Safety & Security Concept"
+    rels = {(r.source, r.target, r.rel_type) for r in repo.relationships}
+    assert (uc_elem.elem_id, target_elem.elem_id, "Trace") in rels
+    assert (target_elem.elem_id, uc_elem.elem_id, "Trace") in rels
+
 def test_list_modules_includes_submodules():
     toolbox = SafetyManagementToolbox()
     child = GovernanceModule("Child")
