@@ -4,6 +4,14 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
+try:  # pragma: no cover - GUI helper may be absent in headless tests
+    from gui.tooltip import ToolTip
+except Exception:  # pragma: no cover
+    class ToolTip:  # type: ignore
+        """Fallback no-op tooltip used when GUI toolkit is unavailable."""
+
+        def __init__(self, *args, **kwargs):
+            pass
 import json
 import math
 import re
