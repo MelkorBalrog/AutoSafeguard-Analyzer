@@ -121,6 +121,9 @@ class ThreatWindow(tk.Frame):
                 self.app.threat_entries = d.entries
                 diag = repo.diagrams.get(d.diagram)
                 self.diag_lbl.config(text=f"Diagram: {format_diagram_name(diag)}")
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("Threat Analysis", name, self.app)
                 break
         self.refresh()
 

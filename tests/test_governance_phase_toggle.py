@@ -8,6 +8,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
+from analysis.models import StpaDoc
+from gui.stpa_window import StpaWindow
 
 
 class DummyVar:
@@ -370,6 +372,50 @@ def test_open_diagram_updates_phase_combobox():
     win.app = app
 
     win._activate_parent_phase()
+
+    assert app.lifecycle_var.get() == "P1"
+    assert smw.phase_var.get() == "P1"
+
+
+def test_select_document_updates_phase():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.doc_phases = {"STPA": {"Doc1": "P1"}}
+
+    class DummyVar2:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = types.SimpleNamespace(
+        safety_mgmt_toolbox=toolbox,
+        lifecycle_var=DummyVar2(),
+        refresh_tool_enablement=lambda: None,
+    )
+
+    def on_lifecycle_selected():
+        toolbox.set_active_module(app.lifecycle_var.get())
+
+    app.on_lifecycle_selected = on_lifecycle_selected
+    smw = types.SimpleNamespace(phase_var=DummyVar2(), refresh_diagrams=lambda: None)
+    app.safety_mgmt_window = smw
+    app.stpa_docs = [StpaDoc("Doc1", "", [])]
+    app.active_stpa = None
+    app.stpa_entries = []
+
+    win = StpaWindow.__new__(StpaWindow)
+    win.app = app
+    win.doc_var = DummyVar2("Doc1")
+    win.diag_lbl = types.SimpleNamespace(config=lambda **kwargs: None)
+    win.refresh = lambda: None
+
+    win.select_doc()
 
     assert app.lifecycle_var.get() == "P1"
     assert smw.phase_var.get() == "P1"
