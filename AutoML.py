@@ -7600,7 +7600,7 @@ class FaultTreeApp:
         arch_diagrams = sorted(
             [
                 d
-                for d in repo.diagrams.values()
+                for d in repo.visible_diagrams().values()
                 if "safety-management" not in getattr(d, "tags", [])
             ],
             key=lambda d: d.name or d.diag_id,
@@ -7608,7 +7608,7 @@ class FaultTreeApp:
         gov_diagrams = sorted(
             [
                 d
-                for d in repo.diagrams.values()
+                for d in repo.visible_diagrams().values()
                 if "safety-management" in getattr(d, "tags", [])
             ],
             key=lambda d: d.name or d.diag_id,
@@ -8852,6 +8852,11 @@ class FaultTreeApp:
             if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
                 win.refresh_docs()
 
+        for tab in getattr(self, "diagram_tabs", {}).values():
+            for child in tab.winfo_children():
+                if hasattr(child, "refresh_from_repository"):
+                    child.refresh_from_repository()
+
 
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
@@ -9509,7 +9514,7 @@ class FaultTreeApp:
         diag_block: dict[str, str] = {}
 
         # Internal block diagrams are linked directly to their father block
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Internal Block Diagram":
                 continue
             blk_id = getattr(diag, "father", None) or next(
@@ -9524,12 +9529,12 @@ class FaultTreeApp:
             if elem.elem_type != "Block":
                 continue
             for beh in parse_behaviors(elem.properties.get("behaviors", "")):
-                if beh.diagram in repo.diagrams and beh.diagram not in diag_block:
+                if repo.diagram_visible(beh.diagram) and beh.diagram not in diag_block:
                     diag_block[beh.diagram] = elem.name or elem.elem_id
 
         labels: set[str] = set()
 
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Activity Diagram":
                 continue
             blk = diag_block.get(diag.diag_id, "")
@@ -9561,7 +9566,7 @@ class FaultTreeApp:
     def get_use_case_for_function(self, func: str) -> str:
         """Return the use case (activity diagram name) implementing a function."""
         repo = SysMLRepository.get_instance()
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Activity Diagram":
                 continue
             if diag.name == func:
@@ -9611,7 +9616,7 @@ class FaultTreeApp:
         """Return component names from all internal block diagrams."""
         repo = SysMLRepository.get_instance()
         names = set()
-        for diag in repo.diagrams.values():
+        for diag in repo.visible_diagrams().values():
             if diag.diag_type != "Internal Block Diagram":
                 continue
             for obj in getattr(diag, "objects", []):
@@ -9913,7 +9918,7 @@ class FaultTreeApp:
             self.management_diagrams = sorted(
                 [
                     d
-                    for d in repo.diagrams.values()
+                    for d in repo.visible_diagrams().values()
                     if "safety-management" in getattr(d, "tags", [])
                 ],
                 key=lambda d: d.name or d.diag_id,
@@ -10067,7 +10072,7 @@ class FaultTreeApp:
             self.arch_diagrams = sorted(
                 [
                     d
-                    for d in repo.diagrams.values()
+                    for d in repo.visible_diagrams().values()
                     if "safety-management" not in getattr(d, "tags", [])
                 ],
                 key=lambda d: d.name or d.diag_id,
@@ -10099,7 +10104,12 @@ class FaultTreeApp:
                     add_pkg(child_id, node)
                 # add diagrams within this package
                 diags = sorted(
-                    [d for d in repo.diagrams.values() if d.package == pkg_id and "safety-management" not in getattr(d, "tags", [])],
+                    [
+                        d
+                        for d in repo.visible_diagrams().values()
+                        if d.package == pkg_id
+                        and "safety-management" not in getattr(d, "tags", [])
+                    ],
                     key=lambda d: d.name or d.diag_id,
                 )
                 for diag in diags:

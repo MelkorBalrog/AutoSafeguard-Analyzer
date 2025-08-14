@@ -2548,7 +2548,7 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Load any saved objects and connections for this diagram
         self.objects: List[SysMLObject] = []
-        for data in getattr(diagram, "objects", []):
+        for data in self.repo.visible_objects(diagram.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
             obj = SysMLObject(**data)
@@ -2562,7 +2562,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(obj)
         self.sort_objects()
         self.connections: List[DiagramConnection] = [
-            DiagramConnection(**data) for data in getattr(diagram, "connections", [])
+            DiagramConnection(**data)
+            for data in self.repo.visible_connections(diagram.diag_id)
         ]
         if self.objects:
             global _next_obj_id
@@ -6658,7 +6659,7 @@ class SysMLDiagramWindow(tk.Frame):
         if not diag:
             return
         self.objects = []
-        for data in getattr(diag, "objects", []):
+        for data in self.repo.visible_objects(diag.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
             obj = SysMLObject(**data)
@@ -6672,7 +6673,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(obj)
         self.sort_objects()
         self.connections = []
-        for data in getattr(diag, "connections", []):
+        for data in self.repo.visible_connections(diag.diag_id):
             data.setdefault("stereotype", data.get("conn_type", "").lower())
             self.connections.append(DiagramConnection(**data))
         if self.objects:
