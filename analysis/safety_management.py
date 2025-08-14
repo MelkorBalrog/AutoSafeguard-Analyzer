@@ -609,10 +609,47 @@ class SafetyManagementToolbox:
         return mapping
 
     # ------------------------------------------------------------------
+    def _normalize_work_product(self, name: str) -> str:
+        """Translate requirement types to their work product names."""
+        from analysis.models import REQUIREMENT_TYPE_OPTIONS, REQUIREMENT_WORK_PRODUCTS
+
+        try:
+            idx = REQUIREMENT_TYPE_OPTIONS.index(name)
+            return REQUIREMENT_WORK_PRODUCTS[idx + 1]
+        except ValueError:
+            return name
+
+    # ------------------------------------------------------------------
     def can_trace(self, source: str, target: str) -> bool:
         """Return ``True`` if ``source`` may trace to ``target``."""
+        source = self._normalize_work_product(source)
+        target = self._normalize_work_product(target)
         traces = self._trace_mapping()
         return target in traces.get(source, set())
+
+    # ------------------------------------------------------------------
+    def requirement_work_product(self, req_type: str) -> str:
+        """Return the work product name for ``req_type`` if known."""
+        return self._normalize_work_product(req_type)
+
+    # ------------------------------------------------------------------
+    def requirement_targets(self, req_type: str) -> set[str]:
+        """Return allowed work product targets for ``req_type``."""
+        wp = self.requirement_work_product(req_type)
+        if not wp:
+            return set()
+        traces = self._trace_mapping()
+        return set(traces.get(wp, set()))
+
+    # ------------------------------------------------------------------
+    def requirement_diagram_targets(self, req_type: str) -> set[str]:
+        """Return diagrams containing allowed targets for ``req_type``."""
+        targets = self.requirement_targets(req_type)
+        return {
+            wp.diagram
+            for wp in self.work_products
+            if wp.analysis in targets
+        }
 
     def build_lifecycle(self, stages: List[str]) -> None:
         """Define the project lifecycle stages."""

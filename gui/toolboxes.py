@@ -34,6 +34,7 @@ from analysis.models import (
     RISK_LEVEL_TABLE,
     CAL_TABLE,
 )
+from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from sysml.sysml_repository import SysMLRepository
@@ -96,11 +97,21 @@ class EditableTreeview(ttk.Treeview):
         Mapping of column name to requirement type. When editing these columns
         a requirement selection dialog allowing multiple selections is shown.
     """
-    def __init__(self, master=None, *, column_options=None, edit_callback=None, requirement_columns=None, **kwargs):
+    def __init__(
+        self,
+        master=None,
+        *,
+        column_options=None,
+        edit_callback=None,
+        requirement_columns=None,
+        requirement_target=None,
+        **kwargs,
+    ):
         super().__init__(master, **kwargs)
         self._col_options = column_options or {}
         self._edit_cb = edit_callback
         self._req_cols = requirement_columns or {}
+        self._req_target = requirement_target
         self._edit_widget = None
         self.bind("<Double-1>", self._begin_edit, add="+")
 
@@ -120,7 +131,9 @@ class EditableTreeview(ttk.Treeview):
         req_type = self._req_cols.get(col_name)
         if req_type is not None:
             current = [v for v in map(str.strip, value.split(";")) if v]
-            dlg = _SelectRequirementsDialog(self, req_type=req_type, initial=current)
+            dlg = _SelectRequirementsDialog(
+                self, req_type=req_type, initial=current, target=self._req_target
+            )
             if getattr(dlg, "result", None):
                 ids = [s.split("]",1)[0][1:] for s in dlg.result]
                 new_val = ";".join(ids)
@@ -296,9 +309,10 @@ class _RequirementDialog(simpledialog.Dialog):
 class _SelectRequirementsDialog(simpledialog.Dialog):
     """Dialog to choose one or more existing requirements of a given type."""
 
-    def __init__(self, parent, req_type=None, initial=None):
+    def __init__(self, parent, req_type=None, initial=None, target=None):
         self.selected = initial or []
         self.req_type = req_type
+        self.target = target
         super().__init__(parent, title="Select Requirements")
 
     def body(self, master):
@@ -315,7 +329,18 @@ class _SelectRequirementsDialog(simpledialog.Dialog):
         return self.lb
 
     def apply(self):
-        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+        raw = [self.lb.get(i) for i in self.lb.curselection()]
+        if not ACTIVE_TOOLBOX or not self.target:
+            self.result = raw
+            return
+        allowed = []
+        for item in raw:
+            rid = item.split("]", 1)[0][1:]
+            req = global_requirements.get(rid, {})
+            wp = ACTIVE_TOOLBOX.requirement_work_product(req.get("req_type", ""))
+            if not wp or ACTIVE_TOOLBOX.can_trace(wp, self.target):
+                allowed.append(item)
+        self.result = allowed
 
 
 class _SelectTriggeringConditionsDialog(simpledialog.Dialog):
