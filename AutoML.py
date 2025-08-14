@@ -2463,7 +2463,11 @@ class FaultTreeApp:
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
-        quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        quantitative_menu.add_command(
+            label="Mission Profiles",
+            command=self.manage_mission_profiles,
+            state=tk.DISABLED,
+        )
         self.work_product_menus.setdefault("Mission Profile", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
@@ -2471,7 +2475,9 @@ class FaultTreeApp:
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
-            label="Reliability Analysis", command=self.open_reliability_window
+            label="Reliability Analysis",
+            command=self.open_reliability_window,
+            state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Reliability Analysis", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
