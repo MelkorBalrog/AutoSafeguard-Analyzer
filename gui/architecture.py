@@ -2713,6 +2713,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate by Review",
                     "Propagate by Approval",
                     "Re-use",
+                    "Trace",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2746,6 +2747,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -2935,6 +2937,9 @@ class SysMLDiagramWindow(tk.Frame):
                 dst_name = dst.properties.get("name")
                 if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
                     return False, f"Propagation from {src_name} to {dst_name} is not allowed"
+            elif conn_type == "Trace":
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Trace links must connect Work Products"
             elif conn_type == "Re-use":
                 if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
                     return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
@@ -3031,6 +3036,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3152,6 +3158,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3177,6 +3184,8 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow_default = "forward"
                         elif t == "Feedback":
                             arrow_default = "backward"
+                        elif t == "Trace":
+                            arrow_default = "both"
                         elif t in (
                             "Flow",
                             "Generalize",
@@ -3456,6 +3465,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3660,6 +3670,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3683,6 +3694,8 @@ class SysMLDiagramWindow(tk.Frame):
                         arrow_default = "forward"
                     elif self.current_tool == "Feedback":
                         arrow_default = "backward"
+                    elif self.current_tool == "Trace":
+                        arrow_default = "both"
                     elif self.current_tool in (
                         "Flow",
                         "Generalize",
@@ -3961,6 +3974,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3985,6 +3999,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -8225,6 +8240,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
         ):
             ttk.Button(
                 governance_panel,
