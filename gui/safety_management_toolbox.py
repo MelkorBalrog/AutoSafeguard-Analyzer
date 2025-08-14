@@ -78,8 +78,29 @@ class SafetyManagementWindow(tk.Frame):
         phase = self.phase_var.get()
         if phase == "All" or not phase:
             self.toolbox.set_active_module(None)
+            phase_name = ""
         else:
             self.toolbox.set_active_module(phase)
+            phase_name = phase
+
+        app = getattr(self, "app", None)
+        if app:
+            if hasattr(app, "lifecycle_var"):
+                try:
+                    app.lifecycle_var.set(phase_name)
+                except Exception:
+                    pass
+            if hasattr(app, "on_lifecycle_selected"):
+                try:
+                    app.on_lifecycle_selected()
+                except Exception:
+                    pass
+            elif hasattr(app, "refresh_tool_enablement"):
+                try:
+                    app.refresh_tool_enablement()
+                except Exception:
+                    pass
+
         self.refresh_diagrams()
 
     def new_diagram(self):
