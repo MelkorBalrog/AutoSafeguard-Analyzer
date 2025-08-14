@@ -2799,6 +2799,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.dragging_point_index: int | None = None
         self.dragging_endpoint: str | None = None  # "src" or "dst"
         self.conn_drag_offset: tuple[float, float] | None = None
+        self.dragging_conn_mid: tuple[float, float] | None = None
+        self.dragging_conn_vec: tuple[float, float] | None = None
         self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
@@ -3324,6 +3326,8 @@ class SysMLDiagramWindow(tk.Frame):
                 self.selected_objs = []
                 self.dragging_point_index = None
                 self.dragging_endpoint = None
+                self.dragging_conn_mid = None
+                self.dragging_conn_vec = None
                 self.update_property_view()
                 if conn.style == "Custom":
                     for idx, (px, py) in enumerate(conn.points):
@@ -3377,6 +3381,32 @@ class SysMLDiagramWindow(tk.Frame):
                         if abs(mx - x) <= 4 and abs(my - y) <= 4:
                             self.dragging_point_index = 0
                             self.conn_drag_offset = (x - mx, 0)
+                elif (
+                    self.repo.diagrams.get(self.diagram_id).diag_type
+                    == "Governance Diagram"
+                    and conn.style == "Straight"
+                ):
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        sx, sy = self.edge_point(
+                            src_obj,
+                            dst_obj.x * self.zoom,
+                            dst_obj.y * self.zoom,
+                            conn.src_pos,
+                        )
+                        ex, ey = self.edge_point(
+                            dst_obj,
+                            src_obj.x * self.zoom,
+                            src_obj.y * self.zoom,
+                            conn.dst_pos,
+                        )
+                        mx = (sx + ex) / 2
+                        my = (sy + ey) / 2
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            self.dragging_conn_mid = (mx, my)
+                            self.conn_drag_offset = (x - mx, y - my)
+                            self.dragging_conn_vec = (ex - sx, ey - sy)
                 # check for dragging endpoints
                 src_obj = self.get_object(conn.src)
                 dst_obj = self.get_object(conn.dst)
@@ -3781,6 +3811,28 @@ class SysMLDiagramWindow(tk.Frame):
             self._update_drag_selection(x, y)
             return
         if (
+            getattr(self, "dragging_conn_mid", None)
+            and self.selected_conn
+            and self.current_tool == "Select"
+        ):
+            x = self.canvas.canvasx(event.x) - self.conn_drag_offset[0]
+            y = self.canvas.canvasy(event.y) - self.conn_drag_offset[1]
+            src_obj = self.get_object(self.selected_conn.src)
+            dst_obj = self.get_object(self.selected_conn.dst)
+            vec = getattr(self, "dragging_conn_vec", None)
+            if src_obj and dst_obj and vec:
+                dx, dy = vec
+                sx, sy = self._line_rect_intersection(x, y, -dx, -dy, src_obj)
+                ex, ey = self._line_rect_intersection(x, y, dx, dy, dst_obj)
+                rx = (sx / self.zoom - src_obj.x) / (src_obj.width / 2)
+                ry = (sy / self.zoom - src_obj.y) / (src_obj.height / 2)
+                self.selected_conn.src_pos = (rx, ry)
+                rx = (ex / self.zoom - dst_obj.x) / (dst_obj.width / 2)
+                ry = (ey / self.zoom - dst_obj.y) / (dst_obj.height / 2)
+                self.selected_conn.dst_pos = (rx, ry)
+            self.redraw()
+            return
+        if (
             self.dragging_endpoint is not None
             and self.selected_conn
             and self.current_tool == "Select"
@@ -4121,6 +4173,10 @@ class SysMLDiagramWindow(tk.Frame):
         if self.dragging_point_index is not None and self.selected_conn:
             self._sync_to_repository()
         self.dragging_point_index = None
+        if getattr(self, "dragging_conn_mid", None) and self.selected_conn:
+            self._sync_to_repository()
+        self.dragging_conn_mid = None
+        self.dragging_conn_vec = None
         if self.dragging_endpoint is not None and self.selected_conn:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -4845,6 +4901,48 @@ class SysMLDiagramWindow(tk.Frame):
 
         ix, iy = _intersect(dx, dy, w, h, radius)
         return cx + ix, cy + iy
+
+    def _line_rect_intersection(
+        self,
+        px: float,
+        py: float,
+        dx: float,
+        dy: float,
+        obj: SysMLObject,
+    ) -> Tuple[float, float]:
+        cx = obj.x * self.zoom
+        cy = obj.y * self.zoom
+        hw = obj.width * self.zoom / 2
+        hh = obj.height * self.zoom / 2
+        left, right = cx - hw, cx + hw
+        top, bottom = cy - hh, cy + hh
+        candidates: list[tuple[float, float, float]] = []
+        if dx != 0:
+            t = (left - px) / dx
+            if t >= 0:
+                y = py + t * dy
+                if top <= y <= bottom:
+                    candidates.append((t, left, y))
+            t = (right - px) / dx
+            if t >= 0:
+                y = py + t * dy
+                if top <= y <= bottom:
+                    candidates.append((t, right, y))
+        if dy != 0:
+            t = (top - py) / dy
+            if t >= 0:
+                x = px + t * dx
+                if left <= x <= right:
+                    candidates.append((t, x, top))
+            t = (bottom - py) / dy
+            if t >= 0:
+                x = px + t * dx
+                if left <= x <= right:
+                    candidates.append((t, x, bottom))
+        if not candidates:
+            return px, py
+        t, ix, iy = min(candidates, key=lambda c: c[0])
+        return ix, iy
 
     def sync_ports(self, part: SysMLObject) -> None:
         names: List[str] = []
@@ -6603,6 +6701,18 @@ class SysMLDiagramWindow(tk.Frame):
                     hy - s,
                     mx + s,
                     hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
+                )
+            elif diag and diag.diag_type == "Governance Diagram" and conn.style == "Straight":
+                mx, my = (ax + bx) / 2, (ay + by) / 2
+                s = 3
+                self.canvas.create_rectangle(
+                    mx - s,
+                    my - s,
+                    mx + s,
+                    my + s,
                     outline="red",
                     fill="white",
                     tags="connection",
