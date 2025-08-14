@@ -425,6 +425,32 @@ class SysMLRepository:
         """Return mapping of diagram IDs to diagrams visible in the active phase."""
         return {did: d for did, d in self.diagrams.items() if self.diagram_visible(did)}
 
+    def object_visible(self, obj: dict) -> bool:
+        """Return True if a diagram object should be visible in the active phase."""
+        if self.active_phase is None or obj.get("phase") is None:
+            return True
+        return obj.get("phase") == self.active_phase
+
+    def connection_visible(self, conn: dict) -> bool:
+        """Return True if a diagram connection should be visible in the active phase."""
+        if self.active_phase is None or conn.get("phase") is None:
+            return True
+        return conn.get("phase") == self.active_phase
+
+    def visible_objects(self, diag_id: str) -> list[dict]:
+        """Return list of objects in diagram ``diag_id`` visible in the active phase."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return []
+        return [o for o in getattr(diag, "objects", []) if self.object_visible(o)]
+
+    def visible_connections(self, diag_id: str) -> list[dict]:
+        """Return list of connections in diagram ``diag_id`` visible in the active phase."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return []
+        return [c for c in getattr(diag, "connections", []) if self.connection_visible(c)]
+
     # ------------------------------------------------------------
     # Diagram linkage helpers
     # ------------------------------------------------------------
