@@ -1601,6 +1601,65 @@ def test_explorer_allows_diagram_at_root(monkeypatch):
     assert all("Diag" not in m.diagrams for m in toolbox.modules)
 
 
+def test_explorer_handles_duplicate_names(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {}
+            self.counter = 0
+            self.selection_item = None
+
+        def delete(self, *items):
+            self.items = {}
+
+        def get_children(self, item=""):
+            return [iid for iid, meta in self.items.items() if meta["parent"] == item]
+
+        def insert(self, parent, index, text="", image=None, **_kwargs):
+            iid = f"i{self.counter}"
+            self.counter += 1
+            self.items[iid] = {"parent": parent, "text": text}
+            return iid
+
+        def parent(self, item):
+            return self.items[item]["parent"]
+
+        def selection(self):
+            return (self.selection_item,) if self.selection_item else ()
+
+    explorer.tree = DummyTree()
+    explorer.toolbox = toolbox
+    explorer.item_map = {}
+    explorer.folder_icon = None
+    explorer.diagram_icon = None
+
+    # Create folder and two diagrams with the same requested name
+    SafetyManagementExplorer.populate(explorer)
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Pkg")
+    explorer.new_folder()
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Gov")
+    explorer.new_diagram()
+    for iid, (typ, obj) in explorer.item_map.items():
+        if typ == "module" and obj.name == "Pkg":
+            explorer.tree.selection_item = iid
+            break
+    monkeypatch.setattr(simpledialog, "askstring", lambda *args, **kwargs: "Gov")
+    explorer.new_diagram()
+
+    names = sorted(d.name for d in repo.diagrams.values())
+    assert names == ["Gov", "Gov_1"]
+    assert toolbox.modules[0].diagrams == ["Gov", "Gov_1"]
+    assert set(toolbox.diagrams.keys()) == {"Gov", "Gov_1"}
+
+
 def test_tools_include_safety_management_explorer():
     app = FaultTreeApp.__new__(FaultTreeApp)
     app.manage_safety_management = lambda: None

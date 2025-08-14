@@ -142,9 +142,11 @@ class SafetyManagementExplorer(tk.Frame):
         name = simpledialog.askstring("New Diagram", "Name:", parent=self)
         if not name:
             return
-        self.toolbox.create_diagram(name)
+        diag_id = self.toolbox.create_diagram(name)
+        repo = SysMLRepository.get_instance()
+        actual = repo.diagrams.get(diag_id).name
         if typ == "module" and obj is not None:
-            obj.diagrams.append(name)
+            obj.diagrams.append(actual)
         self.populate()
 
     # ------------------------------------------------------------------
@@ -159,8 +161,8 @@ class SafetyManagementExplorer(tk.Frame):
             )
             if not new or new == obj:
                 return
-            self.toolbox.rename_diagram(obj, new)
-            self._replace_name_in_modules(obj, new, self.toolbox.modules)
+            actual = self.toolbox.rename_diagram(obj, new)
+            self._replace_name_in_modules(obj, actual, self.toolbox.modules)
         elif typ == "module":
             new = simpledialog.askstring(
                 "Rename Folder", "Name:", initialvalue=obj.name, parent=self
