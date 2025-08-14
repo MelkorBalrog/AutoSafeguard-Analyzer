@@ -79,6 +79,7 @@ def test_diagram_window_respects_phase():
     assert len(win.objects) == 0
 
 
+
 def test_on_lifecycle_selected_refreshes_diagrams():
     repo = SysMLRepository.reset_instance()
     toolbox = SafetyManagementToolbox()
