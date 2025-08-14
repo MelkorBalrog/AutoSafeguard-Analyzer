@@ -2144,6 +2144,7 @@ class FaultTreeApp:
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
+        "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
         "ODD": "Scenario Library",
@@ -2470,11 +2471,14 @@ class FaultTreeApp:
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
-            state=tk.DISABLED,
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
-        quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        quantitative_menu.add_command(
+            label="Mission Profiles",
+            command=self.manage_mission_profiles,
+            state=tk.DISABLED,
+        )
         self.work_product_menus.setdefault("Mission Profile", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
@@ -2482,7 +2486,9 @@ class FaultTreeApp:
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
-            label="Reliability Analysis", command=self.open_reliability_window
+            label="Reliability Analysis",
+            command=self.open_reliability_window,
+            state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Reliability Analysis", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
@@ -2652,21 +2658,26 @@ class FaultTreeApp:
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety & Security Management Explorer": self.manage_safety_management,
             "Safety & Security Case Explorer": self.manage_safety_cases,
+            "Safety Performance Indicators": self.show_safety_performance_indicators,
+            "Fault Prioritization": self.open_fault_prioritization_window,
         }
 
         self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
-            "Safety & Security Management Explorer",
-            "Safety & Security Case Explorer",
-        ]
-        }
-        self.tool_to_work_product = {
-            info[1]: name for name, info in self.WORK_PRODUCT_INFO.items()
+                "Safety & Security Management Explorer",
+                "Safety & Security Case Explorer",
+                "Safety Performance Indicators",
+            ],
+            "Safety Analysis": [
+                "Fault Prioritization",
+            ],
         }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
-            self.tool_to_work_product.setdefault(info[1], set()).add(name)
+            tool_name = info[1]
+            if tool_name:
+                self.tool_to_work_product.setdefault(tool_name, set()).add(name)
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -9045,25 +9056,25 @@ class FaultTreeApp:
 
     def enable_work_product(self, name: str, *, refresh: bool = True) -> None:
         info = self.WORK_PRODUCT_INFO.get(name)
-        if not info:
-            return
-        area, tool_name, method_name = info
-        self.enable_process_area(area)
-        if tool_name not in self.tool_actions:
-            action = getattr(self, method_name, None)
-            if action:
-                self.tool_actions[tool_name] = action
-                lb = self.tool_listboxes.get(area)
-                if lb:
-                    lb.insert(tk.END, tool_name)
-        mapping = getattr(self, "tool_to_work_product", {})
-        existing = mapping.get(tool_name)
-        if isinstance(existing, set):
-            existing.add(name)
-        elif existing:
-            mapping[tool_name] = {existing, name}
-        else:
-            mapping.setdefault(tool_name, set()).add(name)
+        area = tool_name = method_name = None
+        if info:
+            area, tool_name, method_name = info
+            self.enable_process_area(area)
+            if tool_name not in self.tool_actions:
+                action = getattr(self, method_name, None)
+                if action:
+                    self.tool_actions[tool_name] = action
+                    lb = self.tool_listboxes.get(area)
+                    if lb:
+                        lb.insert(tk.END, tool_name)
+            mapping = getattr(self, "tool_to_work_product", {})
+            existing = mapping.get(tool_name)
+            if isinstance(existing, set):
+                existing.add(name)
+            elif existing:
+                mapping[tool_name] = {existing, name}
+            else:
+                mapping.setdefault(tool_name, set()).add(name)
         # Enable corresponding menu entry if one was registered
         for menu, idx in self.work_product_menus.get(name, []):
             try:
@@ -9159,7 +9170,7 @@ class FaultTreeApp:
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            if not any(
+            if tool_name and not any(
                 self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
                 for wp in self.enabled_work_products
             ):
@@ -16104,13 +16115,10 @@ class FaultTreeApp:
             for el in lib.get("elements", []):
                 name = el.get("name") or el.get("element") or el.get("id")
                 attrs = ", ".join(f"{k}={v}" for k, v in el.items() if k != "name")
-                elem_tree.insert(
-                    "",
-                    tk.END,
-                    values=(attrs,),
-                    text=name,
-                    image=self.odd_elem_icon,
-                )
+                opts = {"values": (attrs,), "text": name}
+                if self.odd_elem_icon:
+                    opts["image"] = self.odd_elem_icon
+                elem_tree.insert("", tk.END, **opts)
 
         class ElementDialog(simpledialog.Dialog):
             def __init__(self, parent, app, data=None):
@@ -16301,7 +16309,7 @@ class FaultTreeApp:
                 for row in self.attr_rows:
                     key = row["k_var"].get().strip()
                     if key:
-                        new_data[key] = v_var.get()
+                        new_data[key] = row["v_var"].get()
                 tp = float(self.tp_var.get())
                 fp = float(self.fp_var.get())
                 tn = float(self.tn_var.get())

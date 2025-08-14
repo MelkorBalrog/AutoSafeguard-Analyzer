@@ -3,7 +3,11 @@ import pytest
 
 from sysml.sysml_repository import SysMLRepository
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
-from analysis.safety_management import SafetyManagementToolbox, SafetyWorkProduct
+from analysis.safety_management import (
+    SafetyManagementToolbox,
+    SafetyWorkProduct,
+    GovernanceModule,
+)
 
 ANALYSES = [
     "FI2TC",
@@ -128,3 +132,32 @@ def test_used_after_approval_input_visibility(analysis):
     assert toolbox.analysis_inputs(analysis) == set()
     assert toolbox.analysis_inputs(analysis, reviewed=True) == set()
     assert toolbox.analysis_inputs(analysis, approved=True) == {"Architecture Diagram"}
+
+
+@pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
+def test_analysis_inputs_respect_phase(analysis):
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    toolbox.modules = [GovernanceModule("P1", diagrams=["Gov"]), GovernanceModule("P2")]
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "Architecture Diagram"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": analysis})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used By", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "Architecture Diagram", ""),
+        SafetyWorkProduct("Gov", analysis, ""),
+    ]
+    toolbox.set_active_module("P2")
+    assert toolbox.analysis_inputs(analysis) == set()
+    toolbox.set_active_module("P1")
+    assert toolbox.analysis_inputs(analysis) == {"Architecture Diagram"}
