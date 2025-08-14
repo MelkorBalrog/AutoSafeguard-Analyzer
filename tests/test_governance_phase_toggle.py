@@ -102,6 +102,20 @@ def test_open_governance_diagram_refreshes_tools():
     assert calls["refresh"] == 1
 
 
+def test_add_process_area_lists_scenario(monkeypatch):
+    captured = {}
+
+    def capture_dialog(self, parent, title, options):
+        captured["options"] = options
+        return types.SimpleNamespace(selection="")
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", capture_dialog)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.add_process_area()
+
+    assert "Scenario" in captured["options"]
+
+
 def test_added_work_product_respects_phase(monkeypatch):
     import sys
 

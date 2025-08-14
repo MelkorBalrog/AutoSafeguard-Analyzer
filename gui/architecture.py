@@ -9245,6 +9245,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Hazard & Threat Analysis",
             "Risk Assessment",
             "Safety Analysis",
+            "Scenario",
         ]
         dlg = self._SelectDialog(self, "Add Process Area", options)
         name = getattr(dlg, "selection", "")
