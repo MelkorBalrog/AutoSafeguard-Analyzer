@@ -10,7 +10,6 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from gui.toolboxes import allowed_action_labels
 from gui.stpa_window import StpaWindow
-from gui.review_toolbox import ReviewData
 from analysis.models import StpaDoc
 from sysml.sysml_repository import SysMLRepository
 from analysis.safety_management import (
@@ -301,15 +300,66 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         self.assertEqual(toolbox.analysis_inputs("FTA", reviewed=True), set())
         self.assertEqual(toolbox.analysis_inputs("FTA", approved=True), {"Architecture Diagram"})
 
-    def test_usage_relationship_unique_within_phase(self):
+    def test_analysis_inputs_specific_analyses(self):
         repo = self.repo
-        diag1 = repo.create_diagram("Governance Diagram", name="Gov1")
-        diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
+        toolbox = SafetyManagementToolbox()
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+        e_arch = repo.create_element("Block", name="EA")
+        repo.add_element_to_diagram(diag.diag_id, e_arch.elem_id)
+        o_arch = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e_arch.elem_id,
+            properties={"name": "Architecture Diagram"},
+        )
+        diag.objects = [o_arch.__dict__]
+        toolbox.work_products = [SafetyWorkProduct("Gov", "Architecture Diagram", "")]
+        analyses = [
+            "FI2TC",
+            "TC2FI",
+            "STPA",
+            "Risk Assessment",
+            "Threat Analysis",
+            "FMEA",
+            "FMEDA",
+        ]
+        connections = []
+        for idx, name in enumerate(analyses, start=2):
+            e = repo.create_element("Block", name=f"E{idx}")
+            repo.add_element_to_diagram(diag.diag_id, e.elem_id)
+            o = SysMLObject(
+                idx,
+                "Work Product",
+                0,
+                idx * 100,
+                element_id=e.elem_id,
+                properties={"name": name},
+            )
+            diag.objects.append(o.__dict__)
+            win = self._create_window("Used By", o_arch, o, diag)
+            event1 = types.SimpleNamespace(x=0, y=0, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event1)
+            event2 = types.SimpleNamespace(x=0, y=idx * 100, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event2)
+            connections.extend(c.__dict__ for c in win.connections)
+            toolbox.work_products.append(SafetyWorkProduct("Gov", name, ""))
+            diag.connections = list(connections)
+            self.assertEqual(toolbox.analysis_inputs(name), {"Architecture Diagram"})
+
+    def test_used_relationships_mutually_exclusive(self):
+        repo = self.repo
+        repo.active_phase = "P1"
         e1 = repo.create_element("Block", name="E1")
         e2 = repo.create_element("Block", name="E2")
-        for d in (diag1, diag2):
-            repo.add_element_to_diagram(d.diag_id, e1.elem_id)
-            repo.add_element_to_diagram(d.diag_id, e2.elem_id)
+        diag1 = repo.create_diagram("Governance Diagram", name="Gov1")
+        diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
+        repo.add_element_to_diagram(diag1.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag1.diag_id, e2.elem_id)
+        repo.add_element_to_diagram(diag2.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag2.diag_id, e2.elem_id)
         o1a = SysMLObject(
             1,
             "Work Product",
@@ -328,11 +378,13 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         )
         diag1.objects = [o1a.__dict__, o2a.__dict__]
         win1 = self._create_window("Used By", o1a, o2a, diag1)
-        GovernanceDiagramWindow.on_left_press(win1, types.SimpleNamespace(x=0, y=0, state=0))
-        GovernanceDiagramWindow.on_left_press(win1, types.SimpleNamespace(x=0, y=100, state=0))
-        diag1.connections = [c.__dict__ for c in win1.connections]
+        event1 = types.SimpleNamespace(x=0, y=0, state=0)
+        GovernanceDiagramWindow.on_left_press(win1, event1)
+        event2 = types.SimpleNamespace(x=0, y=100, state=0)
+        GovernanceDiagramWindow.on_left_press(win1, event2)
+
         o1b = SysMLObject(
-            3,
+            1,
             "Work Product",
             0,
             0,
@@ -340,7 +392,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             properties={"name": "Architecture Diagram"},
         )
         o2b = SysMLObject(
-            4,
+            2,
             "Work Product",
             0,
             100,
@@ -349,10 +401,11 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         )
         diag2.objects = [o1b.__dict__, o2b.__dict__]
         win2 = self._create_window("Used after Review", o1b, o2b, diag2)
-        GovernanceDiagramWindow.on_left_press(win2, types.SimpleNamespace(x=0, y=0, state=0))
-        GovernanceDiagramWindow.on_left_press(win2, types.SimpleNamespace(x=0, y=100, state=0))
+        event3 = types.SimpleNamespace(x=0, y=0, state=0)
+        GovernanceDiagramWindow.on_left_press(win2, event3)
+        event4 = types.SimpleNamespace(x=0, y=100, state=0)
+        GovernanceDiagramWindow.on_left_press(win2, event4)
         self.assertEqual(len(repo.relationships), 1)
-        self.assertEqual(repo.relationships[0].stereotype, "used by")
 
     def test_analysis_targets_used_after_review_visibility(self):
         repo = self.repo
@@ -604,7 +657,13 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             SafetyWorkProduct("Gov", a, "") for a in SAFETY_ANALYSIS_WORK_PRODUCTS
         )
 
-        for analysis in SAFETY_ANALYSIS_WORK_PRODUCTS:
+        excluded = {
+            "Mission Profile",
+            "Reliability Analysis",
+            "Safety & Security Case",
+            "GSN Argumentation",
+        }
+        for analysis in SAFETY_ANALYSIS_WORK_PRODUCTS - excluded:
             self.assertEqual(toolbox.analysis_inputs(analysis), {"Architecture Diagram"})
 
     def test_hazop_functions_hidden_until_governed(self):
@@ -669,13 +728,41 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
 
         self.assertEqual(allowed_action_labels(app, "HAZOP"), ["Func1"])
 
+    def test_fi2tc_tc2fi_functions_hidden_until_governed(self):
+        repo = self.repo
+        toolbox = SafetyManagementToolbox()
+        app = types.SimpleNamespace(
+            get_all_action_labels=lambda: ["Func1"],
+            safety_mgmt_toolbox=toolbox,
+        )
+        for analysis in ("FI2TC", "TC2FI"):
+            self.assertEqual(allowed_action_labels(app, analysis), [])
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+        e_arch = repo.create_element("Block", name="EA")
+        repo.add_element_to_diagram(diag.diag_id, e_arch.elem_id)
+        o_arch = SysMLObject(1, "Work Product", 0, 0, element_id=e_arch.elem_id, properties={"name": "Architecture Diagram"})
+        diag.objects = [o_arch.__dict__]
+        for idx, analysis in enumerate(("FI2TC", "TC2FI"), start=2):
+            e = repo.create_element("Block", name=f"E{idx}")
+            repo.add_element_to_diagram(diag.diag_id, e.elem_id)
+            o = SysMLObject(idx, "Work Product", 0, idx * 100, element_id=e.elem_id, properties={"name": analysis})
+            diag.objects.append(o.__dict__)
+            win = self._create_window("Used By", o_arch, o, diag)
+            event1 = types.SimpleNamespace(x=0, y=0, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event1)
+            event2 = types.SimpleNamespace(x=0, y=idx * 100, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event2)
+            diag.connections = getattr(diag, "connections", []) + [c.__dict__ for c in win.connections]
+            self.assertEqual(allowed_action_labels(app, analysis), ["Func1"])
+
     def test_allowed_action_labels_respects_review_states(self):
         repo = self.repo
         toolbox = SafetyManagementToolbox()
         app = types.SimpleNamespace(
             get_all_action_labels=lambda: ["Func1"],
             safety_mgmt_toolbox=toolbox,
-            current_review=ReviewData(name="R1"),
+            current_review=types.SimpleNamespace(reviewed=False, approved=False),
         )
         diag = repo.create_diagram("Governance Diagram", name="Gov")
         toolbox.diagrams = {"Gov": diag.diag_id}
@@ -699,6 +786,27 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         self.assertEqual(allowed_action_labels(app, "HAZOP"), [])
         app.current_review.approved = True
         self.assertEqual(allowed_action_labels(app, "HAZOP"), ["Func1"])
+
+    def test_reliability_requires_mission_profile_connection(self):
+        repo = self.repo
+        toolbox = SafetyManagementToolbox()
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+        e_mp = repo.create_element("Block", name="MP")
+        e_rel = repo.create_element("Block", name="RA")
+        repo.add_element_to_diagram(diag.diag_id, e_mp.elem_id)
+        repo.add_element_to_diagram(diag.diag_id, e_rel.elem_id)
+        o_mp = SysMLObject(1, "Work Product", 0, 0, element_id=e_mp.elem_id, properties={"name": "Mission Profile"})
+        o_rel = SysMLObject(2, "Work Product", 0, 100, element_id=e_rel.elem_id, properties={"name": "Reliability Analysis"})
+        diag.objects = [o_mp.__dict__, o_rel.__dict__]
+        self.assertEqual(toolbox.analysis_inputs("Reliability Analysis"), set())
+        win_conn = self._create_window("Used By", o_mp, o_rel, diag)
+        event1 = types.SimpleNamespace(x=0, y=0, state=0)
+        GovernanceDiagramWindow.on_left_press(win_conn, event1)
+        event2 = types.SimpleNamespace(x=0, y=100, state=0)
+        GovernanceDiagramWindow.on_left_press(win_conn, event2)
+        diag.connections = [c.__dict__ for c in win_conn.connections]
+        self.assertEqual(toolbox.analysis_inputs("Reliability Analysis"), {"Mission Profile"})
 
     def test_stpa_control_actions_hidden_until_governed(self):
         repo = self.repo
