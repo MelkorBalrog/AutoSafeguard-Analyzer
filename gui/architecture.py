@@ -5480,13 +5480,17 @@ class SysMLDiagramWindow(tk.Frame):
             )
             label = obj.properties.get("name", "")
             if label:
+                text_height = max(obj.height * self.zoom - 8 * self.zoom, 1)
+                lx = x - w + 8 * self.zoom
                 self.canvas.create_text(
-                    x,
+                    lx,
                     y,
                     text=label,
-                    anchor="center",
+                    anchor="w",
+                    angle=90,
                     font=self.font,
-                    width=obj.width * self.zoom,
+                    width=text_height,
+                    justify="center",
                 )
         elif obj.obj_type == "Block Boundary":
             self._create_round_rect(
