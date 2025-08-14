@@ -2548,7 +2548,7 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Load any saved objects and connections for this diagram
         self.objects: List[SysMLObject] = []
-        for data in getattr(diagram, "objects", []):
+        for data in self.repo.visible_objects(diagram.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
             obj = SysMLObject(**data)
@@ -2562,7 +2562,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(obj)
         self.sort_objects()
         self.connections: List[DiagramConnection] = [
-            DiagramConnection(**data) for data in getattr(diagram, "connections", [])
+            DiagramConnection(**data)
+            for data in self.repo.visible_connections(diagram.diag_id)
         ]
         if self.objects:
             global _next_obj_id
@@ -6624,8 +6625,12 @@ class SysMLDiagramWindow(tk.Frame):
         self.repo.push_undo_state()
         diag = self.repo.diagrams.get(self.diagram_id)
         if diag:
-            diag.objects = [obj.__dict__ for obj in self.objects]
-            diag.connections = [conn.__dict__ for conn in self.connections]
+            existing_objs = getattr(diag, "objects", [])
+            hidden_objs = [o for o in existing_objs if not self.repo.object_visible(o)]
+            diag.objects = hidden_objs + [obj.__dict__ for obj in self.objects]
+            existing_conns = getattr(diag, "connections", [])
+            hidden_conns = [c for c in existing_conns if not self.repo.connection_visible(c)]
+            diag.connections = hidden_conns + [conn.__dict__ for conn in self.connections]
             update_block_parts_from_ibd(self.repo, diag)
             self.repo.touch_diagram(self.diagram_id)
             _sync_block_parts_from_ibd(self.repo, self.diagram_id)
@@ -6658,7 +6663,7 @@ class SysMLDiagramWindow(tk.Frame):
         if not diag:
             return
         self.objects = []
-        for data in getattr(diag, "objects", []):
+        for data in self.repo.visible_objects(diag.diag_id):
             if "requirements" not in data:
                 data["requirements"] = []
             obj = SysMLObject(**data)
@@ -6672,7 +6677,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.objects.append(obj)
         self.sort_objects()
         self.connections = []
-        for data in getattr(diag, "connections", []):
+        for data in self.repo.visible_connections(diag.diag_id):
             data.setdefault("stereotype", data.get("conn_type", "").lower())
             self.connections.append(DiagramConnection(**data))
         if self.objects:
