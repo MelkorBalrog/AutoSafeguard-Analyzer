@@ -1944,6 +1944,41 @@ def test_propagation_type_uses_stereotype_when_conn_type_missing():
     assert toolbox.propagation_type("Risk Assessment", "FTA") == "Propagate by Review"
 
 
+def test_can_trace_filters_by_phase():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+
+    diag1 = repo.create_diagram("Governance Diagram", name="Gov1")
+    diag1.phase = "Phase1"
+    toolbox.diagrams["Gov1"] = diag1.diag_id
+    diag1.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "FTA"}},
+    ]
+    diag1.connections = [{"src": 1, "dst": 2, "conn_type": "Trace"}]
+
+    diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
+    diag2.phase = "Phase2"
+    toolbox.diagrams["Gov2"] = diag2.diag_id
+    diag2.objects = [
+        {"obj_id": 1, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "Risk Assessment"}},
+        {"obj_id": 2, "obj_type": "Work Product", "x": 0.0, "y": 0.0, "properties": {"name": "STPA"}},
+    ]
+    diag2.connections = [{"src": 1, "dst": 2, "conn_type": "Trace"}]
+
+    repo.active_phase = "Phase1"
+    toolbox.add_work_product("Gov1", "Risk Assessment", "")
+    toolbox.add_work_product("Gov1", "FTA", "")
+    toolbox.add_work_product("Gov2", "STPA", "")
+
+    wps = {wp.analysis: wp for wp in toolbox.get_work_products()}
+    assert "FTA" in wps["Risk Assessment"].traceable
+    assert "STPA" not in wps["Risk Assessment"].traceable
+    assert toolbox.can_trace("Risk Assessment", "FTA")
+    assert not toolbox.can_trace("Risk Assessment", "STPA")
+
+
 def test_list_modules_includes_submodules():
     toolbox = SafetyManagementToolbox()
     child = GovernanceModule("Child")
