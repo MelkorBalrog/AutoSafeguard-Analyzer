@@ -4,7 +4,6 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
-from gui.tooltip import ToolTip
 import json
 import math
 import re
