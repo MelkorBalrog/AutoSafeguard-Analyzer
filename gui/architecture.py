@@ -1839,6 +1839,12 @@ class SysMLObject:
     collapsed: Dict[str, bool] = field(default_factory=dict)
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
 
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return the object's name annotated with its creation phase."""
+        name = self.properties.get("name", "")
+        return f"{name} ({self.phase})" if name and self.phase else name
+
 
 @dataclass
 class OperationParameter:
@@ -5588,12 +5594,13 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=outline,
                 )
 
-                lx = x - w + 8 * self.zoom
+                lx = x - w + label_w / 2
+                ly = y + 4 * self.zoom
                 self.canvas.create_text(
                     lx,
-                    y,
+                    ly,
                     text=wrapped,
-                    anchor="w",
+                    anchor="center",
                     angle=90,
                     font=font or self.font,
                     justify="center",
@@ -6760,6 +6767,16 @@ class SysMLDiagramWindow(tk.Frame):
                     self.repo.elements[obj.element_id].properties.setdefault(
                         "asil", asil
                     )
+            if obj.element_id:
+                targets = [
+                    self.repo.elements[r.target].name
+                    for r in self.repo.relationships
+                    if r.rel_type == "Trace"
+                    and r.source == obj.element_id
+                    and r.target in self.repo.elements
+                ]
+                if targets:
+                    obj.properties["trace_to"] = ", ".join(sorted(targets))
             self.objects.append(obj)
         self.sort_objects()
         self.connections = []
@@ -7229,6 +7246,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         repo = SysMLRepository.get_instance()
         current_diagram = repo.diagrams.get(getattr(self.master, "diagram_id", ""))
+        toolbox = getattr(app, "safety_mgmt_toolbox", None)
+        wp_map = {wp.analysis: wp for wp in toolbox.get_work_products()} if toolbox else {}
         link_row = 0
         if self.obj.obj_type == "Block":
             diags = [d for d in repo.diagrams.values() if d.diag_type == "Internal Block Diagram"]
@@ -7244,6 +7263,28 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 row=link_row, column=1, padx=4, pady=2
             )
             link_row += 1
+        elif self.obj.obj_type == "Work Product":
+            name = self.obj.properties.get("name", "")
+            targets = wp_map.get(name)
+            trace_opts = sorted(getattr(targets, "traceable", [])) if targets else []
+            if trace_opts:
+                ttk.Label(link_frame, text="Trace To:").grid(
+                    row=link_row, column=0, sticky="e", padx=4, pady=2
+                )
+                lb = tk.Listbox(link_frame, height=4, selectmode=tk.MULTIPLE)
+                for opt in trace_opts:
+                    lb.insert(tk.END, opt)
+                current = [
+                    s.strip()
+                    for s in self.obj.properties.get("trace_to", "").split(",")
+                    if s.strip()
+                ]
+                for idx, opt in enumerate(trace_opts):
+                    if opt in current:
+                        lb.selection_set(idx)
+                lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
+                self.trace_list = lb
+                link_row += 1
         elif self.obj.obj_type == "Use Case":
             diagrams = [d for d in repo.diagrams.values() if d.diag_type == "Governance Diagram"]
             self.behavior_map = {d.name or d.diag_id: d.diag_id for d in diagrams}
@@ -7257,6 +7298,27 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 link_frame, textvariable=self.behavior_var, values=list(self.behavior_map.keys())
             ).grid(row=link_row, column=1, padx=4, pady=2)
             link_row += 1
+            name = self.obj.properties.get("name", "")
+            targets = wp_map.get(name)
+            trace_opts = sorted(getattr(targets, "traceable", [])) if targets else []
+            if trace_opts:
+                ttk.Label(link_frame, text="Trace To:").grid(
+                    row=link_row, column=0, sticky="e", padx=4, pady=2
+                )
+                lb = tk.Listbox(link_frame, height=4, selectmode=tk.MULTIPLE)
+                for opt in trace_opts:
+                    lb.insert(tk.END, opt)
+                current = [
+                    s.strip()
+                    for s in self.obj.properties.get("trace_to", "").split(",")
+                    if s.strip()
+                ]
+                for idx, opt in enumerate(trace_opts):
+                    if opt in current:
+                        lb.selection_set(idx)
+                lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
+                self.trace_list = lb
+                link_row += 1
         elif self.obj.obj_type in ("Action Usage", "Action"):
             if (
                 self.obj.obj_type == "Action"
@@ -7679,6 +7741,39 @@ class SysMLObjectDialog(simpledialog.Dialog):
                     prev_keys = {_part_prop_key(p) for p in prev_parts}
                     new_keys = {_part_prop_key(i) for i in items}
                     removed_parts = [p for p in prev_parts if _part_prop_key(p) not in new_keys]
+
+        trace_lb = getattr(self, "trace_list", None)
+        if trace_lb:
+            selected = [trace_lb.get(i) for i in trace_lb.curselection()]
+            joined = ", ".join(selected)
+            if joined:
+                self.obj.properties["trace_to"] = joined
+            else:
+                self.obj.properties.pop("trace_to", None)
+            if self.obj.element_id and self.obj.element_id in repo.elements:
+                elem_props = repo.elements[self.obj.element_id].properties
+                if joined:
+                    elem_props["trace_to"] = joined
+                else:
+                    elem_props.pop("trace_to", None)
+            removed = {
+                r.rel_id
+                for r in repo.relationships
+                if r.rel_type == "Trace"
+                and (r.source == self.obj.element_id or r.target == self.obj.element_id)
+            }
+            if removed:
+                repo.relationships = [r for r in repo.relationships if r.rel_id not in removed]
+                for diag in repo.diagrams.values():
+                    diag.relationships = [rid for rid in diag.relationships if rid not in removed]
+            for name in selected:
+                target_elem = next(
+                    (e for e in repo.elements.values() if e.name == name),
+                    None,
+                )
+                if target_elem and self.obj.element_id:
+                    repo.create_relationship("Trace", self.obj.element_id, target_elem.elem_id)
+                    repo.create_relationship("Trace", target_elem.elem_id, self.obj.element_id)
 
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem_type = repo.elements[self.obj.element_id].elem_type

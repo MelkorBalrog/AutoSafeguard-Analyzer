@@ -62,7 +62,6 @@ class PhaseLabelTests(unittest.TestCase):
         self.assertIn("Check", " ".join(lines))
         self.assertNotIn("PhaseZ", " ".join(lines))
 
-
 if __name__ == "__main__":
     unittest.main()
 
