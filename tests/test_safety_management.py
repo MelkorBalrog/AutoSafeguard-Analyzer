@@ -1105,6 +1105,48 @@ def test_child_work_product_enables_parent_menu():
     assert parent_menu.state == tk.DISABLED
 
 
+def test_refresh_tool_enablement_enables_parent_menus():
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov1", "HAZOP", "")
+    toolbox.add_work_product("Gov1", "FMEDA", "")
+    toolbox.modules = [GovernanceModule(name="P1", diagrams=["Gov1"])]
+    toolbox.diagrams = {"Gov1": "id"}
+    toolbox.set_active_module("P1")
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = tk.DISABLED
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    hazop_menu = DummyMenu()
+    qual_menu = DummyMenu()
+    fmeda_menu = DummyMenu()
+    quant_menu = DummyMenu()
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.tool_listboxes = {}
+    app.tool_categories = {}
+    app.tool_actions = {}
+    app.enable_process_area = lambda area: None
+    app.update_views = lambda: None
+    app.work_product_menus = {
+        "HAZOP": [(hazop_menu, 0)],
+        "Qualitative Analysis": [(qual_menu, 0)],
+        "FMEDA": [(fmeda_menu, 0)],
+        "Quantitative Analysis": [(quant_menu, 0)],
+    }
+    app.enabled_work_products = set()
+    app.safety_mgmt_toolbox = toolbox
+
+    FaultTreeApp.refresh_tool_enablement(app)
+
+    assert hazop_menu.state == tk.NORMAL
+    assert qual_menu.state == tk.NORMAL
+    assert fmeda_menu.state == tk.NORMAL
+    assert quant_menu.state == tk.NORMAL
+
 def test_phase_without_diagrams_disables_tools():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
