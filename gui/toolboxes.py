@@ -38,7 +38,12 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from gui.architecture import _work_product_name, link_requirements, link_requirement_to_object
+from gui.architecture import (
+    _work_product_name,
+    link_requirements,
+    unlink_requirements,
+    link_requirement_to_object,
+)
 
 
 def find_requirement_traces(req_id: str) -> list[str]:
@@ -392,9 +397,10 @@ class _RequirementRelationDialog(simpledialog.Dialog):
 
     def body(self, master):
         tk.Label(master, text="Relation:").grid(row=0, column=0, sticky="e")
-        self.rel_var = tk.StringVar()
         options = []
+        self.rel_var = tk.StringVar()
         for rel in ("satisfied by", "derived from"):
+            has_candidate = False
             for r in global_requirements.values():
                 if r.get("id") == self.req.get("id"):
                     continue
@@ -402,13 +408,19 @@ class _RequirementRelationDialog(simpledialog.Dialog):
                     self.req.get("req_type", ""), r.get("req_type", ""), rel
                 ):
                     continue
-                options.append(rel)
+                has_candidate = True
                 break
+            if has_candidate or any(
+                rr.get("type") == rel for rr in self.req.get("relations", [])
+            ):
+                options.append(rel)
         if not options:
             options = ["satisfied by", "derived from"]
         ttk.Combobox(
             master, textvariable=self.rel_var, values=options, state="readonly"
         ).grid(row=0, column=1, padx=5, pady=5)
+        if options:
+            self.rel_var.set(options[0])
         tk.Label(master, text="Target:").grid(row=1, column=0, sticky="ne")
         self.lb = tk.Listbox(master, selectmode="extended", height=10, exportselection=False)
         self.lb.grid(row=1, column=1, padx=5, pady=5)
@@ -419,6 +431,11 @@ class _RequirementRelationDialog(simpledialog.Dialog):
     def _populate(self):
         self.lb.delete(0, tk.END)
         rel = self.rel_var.get()
+        existing = {
+            r.get("id")
+            for r in self.req.get("relations", [])
+            if r.get("type") == rel
+        }
         for rid, req in global_requirements.items():
             if rid == self.req.get("id"):
                 continue
@@ -426,7 +443,10 @@ class _RequirementRelationDialog(simpledialog.Dialog):
                 self.req.get("req_type", ""), req.get("req_type", ""), rel
             ):
                 continue
+            idx = self.lb.size()
             self.lb.insert(tk.END, rid)
+            if rid in existing:
+                self.lb.selection_set(idx)
 
     def apply(self):
         rel = self.rel_var.get()
@@ -4105,6 +4125,14 @@ class RequirementsExplorerWindow(tk.Toplevel):
         if not dlg.result:
             return
         relation, targets = dlg.result
-        for tid in targets:
+        selected = set(targets)
+        existing = {
+            r.get("id")
+            for r in req.get("relations", [])
+            if r.get("type") == relation
+        }
+        for tid in selected - existing:
             link_requirements(rid, relation, tid)
+        for tid in existing - selected:
+            unlink_requirements(rid, relation, tid)
         self.refresh()

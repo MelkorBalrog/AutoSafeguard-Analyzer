@@ -2877,6 +2877,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate by Approval",
                     "Re-use",
                     "Trace",
+                    "Satisfied by",
+                    "Derived from",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2911,6 +2913,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3103,6 +3107,15 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Re-use":
                 if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
                     return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
+            elif conn_type in ("Satisfied by", "Derived from"):
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Requirement relations must connect Work Products"
+                from analysis.models import REQUIREMENT_WORK_PRODUCTS
+                req_wps = set(REQUIREMENT_WORK_PRODUCTS)
+                sname = src.properties.get("name")
+                dname = dst.properties.get("name")
+                if sname not in req_wps or dname not in req_wps:
+                    return False, "Requirement relations must connect requirement work products"
             elif conn_type == "Trace":
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, "Trace links must connect Work Products"
@@ -3200,6 +3213,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3354,13 +3369,15 @@ class SysMLDiagramWindow(tk.Frame):
                             "Generalize",
                             "Generalization",
                             "Include",
-                            "Extend",
-                            "Propagate",
-                            "Propagate by Review",
-                            "Propagate by Approval",
-                            "Re-use",
-                            ):
-                            arrow_default = "forward"
+                          "Extend",
+                          "Propagate",
+                          "Propagate by Review",
+                          "Propagate by Approval",
+                          "Re-use",
+                          "Satisfied by",
+                          "Derived from",
+                          ):
+                              arrow_default = "forward"
                         else:
                             arrow_default = "none"
                         conn_stereo = (
@@ -3643,6 +3660,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3848,6 +3867,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3883,6 +3904,8 @@ class SysMLDiagramWindow(tk.Frame):
                         "Propagate by Review",
                         "Propagate by Approval",
                         "Re-use",
+                        "Satisfied by",
+                        "Derived from",
                     ):
                         arrow_default = "forward"
                     else:
@@ -8684,6 +8707,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
         ):
             ttk.Button(
                 governance_panel,

@@ -639,7 +639,12 @@ class SafetyManagementToolbox:
                 if stereo in {"satisfied by", "derived from"}:
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
-                    if sname and tname:
+                    from analysis.models import REQUIREMENT_WORK_PRODUCTS
+                    req_wps = set(REQUIREMENT_WORK_PRODUCTS)
+                    if (
+                        sname in req_wps
+                        and tname in req_wps
+                    ):
                         mapping.setdefault(sname, {}).setdefault(stereo, set()).add(tname)
         return mapping
 
