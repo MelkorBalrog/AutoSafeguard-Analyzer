@@ -24,6 +24,11 @@ class SysMLElement:
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     phase: Optional[str] = None
 
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return element name annotated with its creation phase."""
+        return f"{self.name} ({self.phase})" if self.phase else self.name
+
 @dataclass
 class SysMLRelationship:
     rel_id: str
@@ -62,6 +67,11 @@ class SysMLDiagram:
     modified_by_email: str = field(default_factory=lambda: user_config.CURRENT_USER_EMAIL)
     phase: Optional[str] = None
 
+    # ------------------------------------------------------------
+    def display_name(self) -> str:
+        """Return diagram name annotated with its creation phase."""
+        return f"{self.name} ({self.phase})" if self.phase else self.name
+
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""
     _instance = None
@@ -83,6 +93,8 @@ class SysMLRepository:
         # Work product types reused by the active phase. Any diagrams of these
         # types originating from other phases are visible but read-only.
         self.reuse_products: set[str] = set()
+        # Diagrams made immutable after phase freeze
+        self.frozen_diagrams: set[str] = set()
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -488,7 +500,9 @@ class SysMLRepository:
         return False
 
     def diagram_read_only(self, diag_id: str) -> bool:
-        """Return ``True`` if ``diag_id`` originates from a reused phase or work product."""
+        """Return ``True`` if ``diag_id`` is frozen or originates from reuse."""
+        if diag_id in self.frozen_diagrams:
+            return True
         diag = self.diagrams.get(diag_id)
         if not diag:
             return False
@@ -497,6 +511,37 @@ class SysMLRepository:
         if diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set()):
             return True
         return diag.phase != self.active_phase and diag.diag_type in getattr(self, "reuse_products", set())
+
+    # ------------------------------------------------------------
+    def freeze_diagram(self, diag_id: str) -> None:
+        """Mark a diagram as immutable."""
+        self.frozen_diagrams.add(diag_id)
+
+    # ------------------------------------------------------------
+    def rename_phase(self, old: str, new: str) -> None:
+        """Rename lifecycle phase ``old`` to ``new`` across repository data."""
+        if old == new:
+            return
+        if self.active_phase == old:
+            self.active_phase = new
+        if old in self.reuse_phases:
+            self.reuse_phases.remove(old)
+            self.reuse_phases.add(new)
+        for elem in self.elements.values():
+            if elem.phase == old:
+                elem.phase = new
+        for rel in self.relationships:
+            if rel.phase == old:
+                rel.phase = new
+        for diag in self.diagrams.values():
+            if diag.phase == old:
+                diag.phase = new
+            for obj in diag.objects:
+                if obj.get("phase") == old:
+                    obj["phase"] = new
+            for conn in diag.connections:
+                if conn.get("phase") == old:
+                    conn["phase"] = new
 
     def element_read_only(self, elem_id: str) -> bool:
         """Return ``True`` if ``elem_id`` originates from a reused phase or work product."""
