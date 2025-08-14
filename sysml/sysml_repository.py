@@ -219,7 +219,7 @@ class SysMLRepository:
         try:
             from analysis import safety_management as sm
             toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
-            if toolbox:
+            if toolbox and getattr(toolbox, "work_products", []):
                 toolbox.freeze_active_phase()
         except Exception:
             pass
@@ -310,7 +310,7 @@ class SysMLRepository:
         try:
             from analysis import safety_management as sm
             toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
-            if toolbox:
+            if toolbox and getattr(toolbox, "work_products", []):
                 toolbox.freeze_active_phase()
         except Exception:
             pass

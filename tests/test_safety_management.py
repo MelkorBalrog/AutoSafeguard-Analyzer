@@ -731,7 +731,7 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
 
     cases = [
         ("Process", None),
-        ("Quantitative Analysis", "fmeas"),
+        ("Reliability Analysis", "reliability_analyses"),
         ("Qualitative Analysis", "hazop_docs"),
         ("Architecture Diagram", "arch_diagrams"),
         ("Scenario", "scenario_libraries"),
