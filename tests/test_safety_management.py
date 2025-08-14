@@ -2343,3 +2343,15 @@ def test_focus_governance_diagram_sets_phase_and_hides_functions():
     assert toolbox.active_module == "Phase1"
     assert app.lifecycle_var.value == "Phase1"
     assert len(changes) == 3
+
+
+def test_requirement_trace_lookup():
+    toolbox = SafetyManagementToolbox()
+
+    def fake_map():
+        return {"Functional Safety Requirement Specification": {"FMEA", "FTA"}}
+
+    toolbox._trace_mapping = fake_map  # type: ignore[attr-defined]
+    assert toolbox.can_trace("functional safety", "FMEA")
+    assert not toolbox.can_trace("functional safety", "HAZOP")
+    assert toolbox.requirement_targets("functional safety") == {"FMEA", "FTA"}
