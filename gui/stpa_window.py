@@ -299,6 +299,14 @@ class StpaWindow(tk.Frame):
         """Return labels of control action connections for the selected diagram."""
 
         repo = SysMLRepository.get_instance()
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        review = getattr(self.app, "current_review", None)
+        reviewed = getattr(review, "reviewed", False)
+        approved = getattr(review, "approved", False)
+        if toolbox and "Architecture Diagram" not in toolbox.analysis_inputs(
+            "STPA", reviewed=reviewed, approved=approved
+        ):
+            return []
         diag_id = getattr(getattr(self.app, "active_stpa", None), "diagram", "")
         diagram = repo.diagrams.get(diag_id)
         if not diagram or diagram.diag_type != "Control Flow Diagram":
