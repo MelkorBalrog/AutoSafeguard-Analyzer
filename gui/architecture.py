@@ -2713,6 +2713,7 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate by Review",
                     "Propagate by Approval",
                     "Re-use",
+                    "Trace",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2746,6 +2747,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -2938,6 +2940,9 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Re-use":
                 if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
                     return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
+            elif conn_type == "Trace":
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Trace links must connect Work Products"
             else:
                 allowed = {
                     "Initial": {
@@ -3031,6 +3036,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3152,6 +3158,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3177,6 +3184,8 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow_default = "forward"
                         elif t == "Feedback":
                             arrow_default = "backward"
+                        elif t == "Trace":
+                            arrow_default = "both"
                         elif t in (
                             "Flow",
                             "Generalize",
@@ -3187,7 +3196,7 @@ class SysMLDiagramWindow(tk.Frame):
                             "Propagate by Review",
                             "Propagate by Approval",
                             "Re-use",
-                        ):
+                            ):
                             arrow_default = "forward"
                         else:
                             arrow_default = "none"
@@ -3212,14 +3221,28 @@ class SysMLDiagramWindow(tk.Frame):
                                 if t == "Control Action"
                                 else "feedback" if t == "Feedback" else None
                             )
-                            rel = self.repo.create_relationship(
-                                t, src_id, dst_id, stereotype=rel_stereo
-                            )
-                            self.repo.add_relationship_to_diagram(
-                                self.diagram_id, rel.rel_id
-                            )
-                            if t == "Generalization":
-                                inherit_block_properties(self.repo, src_id)
+                            if t == "Trace":
+                                rel1 = self.repo.create_relationship(
+                                    t, src_id, dst_id, stereotype=rel_stereo
+                                )
+                                rel2 = self.repo.create_relationship(
+                                    t, dst_id, src_id, stereotype=rel_stereo
+                                )
+                                self.repo.add_relationship_to_diagram(
+                                    self.diagram_id, rel1.rel_id
+                                )
+                                self.repo.add_relationship_to_diagram(
+                                    self.diagram_id, rel2.rel_id
+                                )
+                            else:
+                                rel = self.repo.create_relationship(
+                                    t, src_id, dst_id, stereotype=rel_stereo
+                                )
+                                self.repo.add_relationship_to_diagram(
+                                    self.diagram_id, rel.rel_id
+                                )
+                                if t == "Generalization":
+                                    inherit_block_properties(self.repo, src_id)
                         self._sync_to_repository()
                         ConnectionDialog(self, conn)
                     else:
@@ -3456,6 +3479,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3660,6 +3684,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3683,6 +3708,8 @@ class SysMLDiagramWindow(tk.Frame):
                         arrow_default = "forward"
                     elif self.current_tool == "Feedback":
                         arrow_default = "backward"
+                    elif self.current_tool == "Trace":
+                        arrow_default = "both"
                     elif self.current_tool in (
                         "Flow",
                         "Generalize",
@@ -3753,17 +3780,39 @@ class SysMLDiagramWindow(tk.Frame):
                             if self.current_tool == "Feedback"
                             else None
                         )
-                        rel = self.repo.create_relationship(
-                            self.current_tool,
-                            self.start.element_id,
-                            obj.element_id,
-                            stereotype=rel_stereo,
-                        )
-                        self.repo.add_relationship_to_diagram(
-                            self.diagram_id, rel.rel_id
-                        )
-                        if self.current_tool == "Generalization":
-                            inherit_block_properties(self.repo, self.start.element_id)
+                        if self.current_tool == "Trace":
+                            rel1 = self.repo.create_relationship(
+                                self.current_tool,
+                                self.start.element_id,
+                                obj.element_id,
+                                stereotype=rel_stereo,
+                            )
+                            rel2 = self.repo.create_relationship(
+                                self.current_tool,
+                                obj.element_id,
+                                self.start.element_id,
+                                stereotype=rel_stereo,
+                            )
+                            self.repo.add_relationship_to_diagram(
+                                self.diagram_id, rel1.rel_id
+                            )
+                            self.repo.add_relationship_to_diagram(
+                                self.diagram_id, rel2.rel_id
+                            )
+                        else:
+                            rel = self.repo.create_relationship(
+                                self.current_tool,
+                                self.start.element_id,
+                                obj.element_id,
+                                stereotype=rel_stereo,
+                            )
+                            self.repo.add_relationship_to_diagram(
+                                self.diagram_id, rel.rel_id
+                            )
+                            if self.current_tool == "Generalization":
+                                inherit_block_properties(
+                                    self.repo, self.start.element_id
+                                )
                     self._sync_to_repository()
                     ConnectionDialog(self, conn)
                 else:
@@ -3961,6 +4010,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3985,6 +4035,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
             "Connector",
             "Generalization",
             "Generalize",
@@ -8235,6 +8286,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate by Review",
             "Propagate by Approval",
             "Re-use",
+            "Trace",
         ):
             ttk.Button(
                 governance_panel,
