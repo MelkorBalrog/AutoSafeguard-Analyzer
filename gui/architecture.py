@@ -9085,6 +9085,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
         self.refresh_from_repository()
+        self._pending_wp_name: str | None = None
+        self._pending_area_name: str | None = None
 
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
@@ -9205,11 +9207,41 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 f"Add process area '{required}' before adding this work product.",
             )
             return
+        if not getattr(self, "canvas", None):
+            self._place_work_product(name, 100.0, 100.0)
+        else:
+            self._pending_wp_name = name
+            try:
+                self.canvas.configure(cursor="crosshair")
+            except Exception:
+                pass
+
+    def add_process_area(self):  # pragma: no cover - requires tkinter
+        options = [
+            "System Design (Item Definition)",
+            "Hazard & Threat Analysis",
+            "Risk Assessment",
+            "Safety Analysis",
+        ]
+        dlg = self._SelectDialog(self, "Add Process Area", options)
+        name = getattr(dlg, "selection", "")
+        if not name:
+            return
+        if not getattr(self, "canvas", None):
+            self._place_process_area(name, 100.0, 100.0)
+        else:
+            self._pending_area_name = name
+            try:
+                self.canvas.configure(cursor="crosshair")
+            except Exception:
+                pass
+
+    def _place_work_product(self, name: str, x: float, y: float) -> None:
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
-            100.0,
-            100.0,
+            x,
+            y,
             width=60.0,
             height=80.0,
             properties={"name": name},
@@ -9228,22 +9260,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if getattr(self.app, "refresh_tool_enablement", None):
             self.app.refresh_tool_enablement()
 
-    def add_process_area(self):  # pragma: no cover - requires tkinter
-        options = [
-            "System Design (Item Definition)",
-            "Hazard & Threat Analysis",
-            "Risk Assessment",
-            "Safety Analysis",
-        ]
-        dlg = self._SelectDialog(self, "Add Process Area", options)
-        name = getattr(dlg, "selection", "")
-        if not name:
-            return
+    def _place_process_area(self, name: str, x: float, y: float) -> None:
         obj = SysMLObject(
             _get_next_id(),
             "System Boundary",
-            100.0,
-            100.0,
+            x,
+            y,
             width=200.0,
             height=150.0,
             properties={"name": name},
@@ -9254,6 +9276,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.redraw()
         if getattr(self.app, "enable_process_area", None):
             self.app.enable_process_area(name)
+
+    def on_left_press(self, event):  # pragma: no cover - requires tkinter
+        pending_wp = getattr(self, "_pending_wp_name", None)
+        pending_area = getattr(self, "_pending_area_name", None)
+        if pending_wp or pending_area:
+            x = self.canvas.canvasx(event.x) / self.zoom
+            y = self.canvas.canvasy(event.y) / self.zoom
+            if pending_wp:
+                self._pending_wp_name = None
+                self._place_work_product(pending_wp, x, y)
+            else:
+                self._pending_area_name = None
+                self._place_process_area(pending_area, x, y)
+            try:
+                self.canvas.configure(cursor="arrow")
+            except Exception:
+                pass
+            return
+        super().on_left_press(event)
 
     def add_lifecycle_phase(self):  # pragma: no cover - requires tkinter
         toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
