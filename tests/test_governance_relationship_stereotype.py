@@ -1,5 +1,11 @@
 import types
 import unittest
+import sys
+
+# Provide dummy PIL modules so tests can run without the Pillow dependency.
+sys.modules.setdefault("PIL", types.ModuleType("PIL"))
+sys.modules.setdefault("PIL.Image", types.ModuleType("PIL.Image"))
+sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from gui.toolboxes import allowed_action_labels
@@ -294,6 +300,59 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         self.assertEqual(toolbox.analysis_inputs("FTA"), set())
         self.assertEqual(toolbox.analysis_inputs("FTA", reviewed=True), set())
         self.assertEqual(toolbox.analysis_inputs("FTA", approved=True), {"Architecture Diagram"})
+
+    def test_usage_relationship_unique_within_phase(self):
+        repo = self.repo
+        diag1 = repo.create_diagram("Governance Diagram", name="Gov1")
+        diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        for d in (diag1, diag2):
+            repo.add_element_to_diagram(d.diag_id, e1.elem_id)
+            repo.add_element_to_diagram(d.diag_id, e2.elem_id)
+        o1a = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Architecture Diagram"},
+        )
+        o2a = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FMEA"},
+        )
+        diag1.objects = [o1a.__dict__, o2a.__dict__]
+        win1 = self._create_window("Used By", o1a, o2a, diag1)
+        GovernanceDiagramWindow.on_left_press(win1, types.SimpleNamespace(x=0, y=0, state=0))
+        GovernanceDiagramWindow.on_left_press(win1, types.SimpleNamespace(x=0, y=100, state=0))
+        diag1.connections = [c.__dict__ for c in win1.connections]
+        o1b = SysMLObject(
+            3,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Architecture Diagram"},
+        )
+        o2b = SysMLObject(
+            4,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FMEA"},
+        )
+        diag2.objects = [o1b.__dict__, o2b.__dict__]
+        win2 = self._create_window("Used after Review", o1b, o2b, diag2)
+        GovernanceDiagramWindow.on_left_press(win2, types.SimpleNamespace(x=0, y=0, state=0))
+        GovernanceDiagramWindow.on_left_press(win2, types.SimpleNamespace(x=0, y=100, state=0))
+        self.assertEqual(len(repo.relationships), 1)
+        self.assertEqual(repo.relationships[0].stereotype, "used by")
 
     def test_analysis_targets_used_after_review_visibility(self):
         repo = self.repo
