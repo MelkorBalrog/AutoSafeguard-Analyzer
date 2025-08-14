@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
@@ -29,6 +34,7 @@ def test_governance_work_product_enablement(analysis, monkeypatch):
     win.redraw = lambda: None
 
     enable_calls = []
+    captured = {}
 
     class DummyApp:
         safety_mgmt_toolbox = toolbox
@@ -39,15 +45,16 @@ def test_governance_work_product_enablement(analysis, monkeypatch):
 
     win.app = DummyApp()
 
-    # Pretend user selected analysis in dialog
-    monkeypatch.setattr(
-        GovernanceDiagramWindow,
-        "_SelectDialog",
-        lambda *a, **k: type("D", (), {"selection": analysis})(),
-    )
+    class DummyDialog:
+        def __init__(self, parent, title, options):
+            captured["options"] = options
+            self.selection = analysis
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", DummyDialog)
 
     win.add_work_product()
 
+    assert analysis in captured["options"]
     assert enable_calls == [analysis]
     assert any(wp.analysis == analysis for wp in toolbox.work_products)
     _sm.ACTIVE_TOOLBOX = prev_tb
