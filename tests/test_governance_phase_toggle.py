@@ -2,6 +2,7 @@ import types
 import tkinter as tk
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -99,6 +100,20 @@ def test_open_governance_diagram_refreshes_tools():
 
     assert toolbox.active_module == "Phase1"
     assert calls["refresh"] == 1
+
+
+def test_add_process_area_lists_scenario(monkeypatch):
+    captured = {}
+
+    def capture_dialog(self, parent, title, options):
+        captured["options"] = options
+        return types.SimpleNamespace(selection="")
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", capture_dialog)
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.add_process_area()
+
+    assert "Scenario" in captured["options"]
 
 
 def test_added_work_product_respects_phase(monkeypatch):
@@ -331,6 +346,168 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
 
     win.add_work_product()
     assert menu.state == tk.NORMAL
+
+
+@pytest.mark.parametrize(
+    "analysis,parent",
+    [
+        ("FTA", None),
+        ("Threat Analysis", "Qualitative Analysis"),
+        ("FI2TC", "Qualitative Analysis"),
+        ("TC2FI", "Qualitative Analysis"),
+        ("FMEA", "Qualitative Analysis"),
+        ("FMEDA", "Quantitative Analysis"),
+        ("Scenario Library", None),
+        ("ODD", "Scenario Library"),
+        ("Safety & Security Case", "GSN"),
+        ("GSN Argumentation", "GSN"),
+    ],
+)
+def test_work_product_group_activation(analysis, parent, monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="GovX")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [
+        GovernanceModule(name="P1"),
+        GovernanceModule(name="P2", diagrams=["GovX"]),
+    ]
+    toolbox.diagrams = {"GovX": diag.diag_id}
+
+    from AutoML import FaultTreeApp
+
+    class DummyListbox:
+        def __init__(self):
+            self.items = []
+            self.item_colors = {}
+
+        def get(self, *_):
+            return self.items
+
+        def insert(self, index, item):
+            self.items.insert(index if isinstance(index, int) else len(self.items), item)
+
+        def itemconfig(self, index, foreground="black"):
+            try:
+                item = self.items[index]
+            except IndexError:
+                return
+            self.item_colors[item] = foreground
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    lb = DummyListbox()
+    menu = DummyMenu()
+    area = FaultTreeApp.WORK_PRODUCT_INFO[analysis][0]
+    app.tool_listboxes = {area: lb}
+    app.tool_categories = {area: []}
+    app.tool_actions = {}
+    app.work_product_menus = {analysis: [(menu, 0)]}
+    parent_menu = None
+    if parent:
+        parent_menu = DummyMenu()
+        app.work_product_menus[parent] = [(parent_menu, 0)]
+        pinfo = FaultTreeApp.WORK_PRODUCT_INFO[parent]
+        setattr(app, pinfo[2], lambda: None)
+
+    info = FaultTreeApp.WORK_PRODUCT_INFO[analysis]
+    setattr(app, info[2], lambda: None)
+
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        app, FaultTreeApp
+    )
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
+        app, FaultTreeApp
+    )
+    app.lifecycle_var = DummyVar("P1")
+    app.safety_mgmt_toolbox = toolbox
+    toolbox.on_change = app.refresh_tool_enablement
+
+    app.on_lifecycle_selected()
+
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = [
+        SysMLObject(
+            1,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Safety Analysis"},
+        ),
+        SysMLObject(
+            2,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Hazard & Threat Analysis"},
+        ),
+        SysMLObject(
+            3,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Scenario"},
+        ),
+    ]
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = app
+
+    class FakeDialog:
+        def __init__(self, *args, **kwargs):
+            self.selection = analysis
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
+
+    win.add_work_product()
+
+    tool_name = FaultTreeApp.WORK_PRODUCT_INFO[analysis][1]
+    assert menu.state == tk.DISABLED
+    assert lb.item_colors.get(tool_name) == "gray"
+    if parent_menu:
+        assert parent_menu.state == tk.DISABLED
+
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    assert menu.state == tk.NORMAL
+    assert lb.item_colors.get(tool_name) == "black"
+    if parent_menu:
+        assert parent_menu.state == tk.NORMAL
 
 
 def test_open_diagram_updates_phase_combobox():
