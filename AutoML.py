@@ -16683,6 +16683,8 @@ class FaultTreeApp:
             return
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Activity Diagram", name=name, package=repo.root_package.elem_id)
+        if hasattr(self, "safety_mgmt_toolbox"):
+            self.safety_mgmt_toolbox.register_created_work_product("Activity Diagram", diag.name)
         tab = self._new_tab(self._format_diag_title(diag))
         self.diagram_tabs[diag.diag_id] = tab
         ActivityDiagramWindow(tab, self, diagram_id=diag.diag_id)
