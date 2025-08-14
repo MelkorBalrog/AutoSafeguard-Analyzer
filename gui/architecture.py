@@ -5479,28 +5479,58 @@ class SysMLDiagramWindow(tk.Frame):
             )
             label = obj.properties.get("name", "")
             if label:
-                diag = self.repo.diagrams.get(self.diagram_id)
-                if diag and diag.diag_type in ("Activity Diagram", "BPMN Diagram"):
-                    lx = x - w - 4 * self.zoom
-                    ly = y
-                    self.canvas.create_text(
-                        lx,
-                        ly,
-                        text=label,
-                        angle=90,
-                        anchor="e",
-                        font=self.font,
-                    )
-                else:
-                    lx = x
-                    ly = y - h - 4 * self.zoom
-                    self.canvas.create_text(
-                        lx,
-                        ly,
-                        text=label,
-                        anchor="s",
-                        font=self.font,
-                    )
+                # Wrap and scale the label so it always fits within the boundary box
+                avail_w = max(obj.width * self.zoom - 16 * self.zoom, 1)
+                avail_h = max(obj.height * self.zoom - 16 * self.zoom, 1)
+
+                try:
+                    font = tkFont.Font(font=self.font)
+                    char_w = max(font.measure("M"), 1)
+                    line_h = max(font.metrics("linespace"), 1)
+                except Exception:
+                    font = None
+                    char_w = 8
+                    line_h = 16
+
+                max_chars = max(int(avail_h / char_w), 1)
+                max_lines = max(int(avail_w / line_h), 1)
+
+                wrap_width = max_chars
+                wrapped = textwrap.fill(label, width=wrap_width)
+                lines = wrapped.count("\n") + 1
+
+                # Reduce font size until the wrapped text fits horizontally
+                if font is not None:
+                    while lines > max_lines and font.cget("size") > 6:
+                        font.configure(size=font.cget("size") - 1)
+                        char_w = max(font.measure("M"), 1)
+                        line_h = max(font.metrics("linespace"), 1)
+                        max_chars = max(int(avail_h / char_w), 1)
+                        max_lines = max(int(avail_w / line_h), 1)
+                        wrap_width = max_chars
+                        wrapped = textwrap.fill(label, width=wrap_width)
+                        lines = wrapped.count("\n") + 1
+                # create a compartment on the left for the vertical title
+                label_w = lines * line_h + 16 * self.zoom
+                cx = x - w + label_w
+                self.canvas.create_line(
+                    cx,
+                    y - h + self.zoom,
+                    cx,
+                    y + h - self.zoom,
+                    fill=outline,
+                )
+
+                lx = x - w + 8 * self.zoom
+                self.canvas.create_text(
+                    lx,
+                    y,
+                    text=wrapped,
+                    anchor="w",
+                    angle=90,
+                    font=font or self.font,
+                    justify="center",
+                )
         elif obj.obj_type == "Block Boundary":
             self._create_round_rect(
                 x - w,
