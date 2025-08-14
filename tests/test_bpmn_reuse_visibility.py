@@ -26,7 +26,7 @@ def test_work_product_reuse_visibility():
     wp = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "HAZOP"})
     phase = SysMLObject(2, "Lifecycle Phase", 0.0, 0.0, properties={"name": "P2"})
     diag.objects.extend([asdict(wp), asdict(phase)])
-    conn = DiagramConnection(wp.obj_id, phase.obj_id, "Re-use")
+    conn = DiagramConnection(phase.obj_id, wp.obj_id, "Re-use")
     diag.connections.append(asdict(conn))
 
     toolbox.add_work_product("Gov", "HAZOP", "")
@@ -35,6 +35,7 @@ def test_work_product_reuse_visibility():
 
     toolbox.set_active_module("P2")
     assert toolbox.document_visible("HAZOP", "Doc1")
+    assert toolbox.document_read_only("HAZOP", "Doc1")
     assert "HAZOP" in toolbox.enabled_products()
 
 
@@ -49,7 +50,7 @@ def test_phase_reuse_visibility():
     src = SysMLObject(1, "Lifecycle Phase", 0.0, 0.0, properties={"name": "P1"})
     dst = SysMLObject(2, "Lifecycle Phase", 0.0, 0.0, properties={"name": "P2"})
     diag.objects.extend([asdict(src), asdict(dst)])
-    conn = DiagramConnection(src.obj_id, dst.obj_id, "Re-use")
+    conn = DiagramConnection(dst.obj_id, src.obj_id, "Re-use")
     diag.connections.append(asdict(conn))
 
     toolbox.add_work_product("Gov1", "Risk Assessment", "")
@@ -58,5 +59,6 @@ def test_phase_reuse_visibility():
 
     toolbox.set_active_module("P2")
     assert toolbox.document_visible("Risk Assessment", "RA1")
+    assert toolbox.document_read_only("Risk Assessment", "RA1")
     assert "Risk Assessment" in toolbox.enabled_products()
 

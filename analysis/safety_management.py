@@ -218,14 +218,14 @@ class SafetyManagementToolbox:
                 dst = obj_map.get(conn.get("dst"))
                 if not src or not dst:
                     continue
-                if dst[0] != "Lifecycle Phase":
+                if src[0] != "Lifecycle Phase":
                     continue
-                dest = dst[1]
-                data = mapping.setdefault(dest, {"work_products": set(), "phases": set()})
-                if src[0] == "Work Product":
-                    data["work_products"].add(src[1])
-                elif src[0] == "Lifecycle Phase":
-                    data["phases"].add(src[1])
+                phase = src[1]
+                data = mapping.setdefault(phase, {"work_products": set(), "phases": set()})
+                if dst[0] == "Work Product":
+                    data["work_products"].add(dst[1])
+                elif dst[0] == "Lifecycle Phase":
+                    data["phases"].add(dst[1])
         return mapping
 
     # ------------------------------------------------------------------

@@ -22,7 +22,7 @@ def test_work_product_reuse_visible():
         _obj(1, "Work Product", "HAZOP"),
         _obj(2, "Lifecycle Phase", "P2"),
     ])
-    diag.connections.append({"src": 1, "dst": 2, "conn_type": "Re-use"})
+    diag.connections.append({"src": 2, "dst": 1, "conn_type": "Re-use"})
     toolbox = SafetyManagementToolbox()
     toolbox.diagrams = {"GovWP": diag.diag_id}
     toolbox.set_active_module("P1")
@@ -42,7 +42,7 @@ def test_phase_reuse_shows_all_docs():
         _obj(1, "Lifecycle Phase", "P1"),
         _obj(2, "Lifecycle Phase", "P2"),
     ])
-    diag.connections.append({"src": 1, "dst": 2, "conn_type": "Re-use"})
+    diag.connections.append({"src": 2, "dst": 1, "conn_type": "Re-use"})
     toolbox = SafetyManagementToolbox()
     toolbox.diagrams = {"GovPhase": diag.diag_id}
     toolbox.set_active_module("P1")
