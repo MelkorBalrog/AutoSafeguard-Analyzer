@@ -1732,6 +1732,9 @@ class FI2TCWindow(tk.Frame):
             if d.name == name:
                 self.app.active_fi2tc = d
                 self.app.fi2tc_entries = d.entries
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("FI2TC", name, self.app)
                 break
         self.refresh()
 
@@ -1896,6 +1899,9 @@ class HazopWindow(tk.Frame):
             if d.name == name:
                 self.app.active_hazop = d
                 self.app.hazop_entries = d.entries
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("HAZOP", name, self.app)
                 break
         self.refresh()
 
@@ -2426,6 +2432,9 @@ class RiskAssessmentWindow(tk.Frame):
                 threat = getattr(d, "threat", "")
                 self.threat_lbl.config(text=f"Threat: {threat}" if threat else "Threat: none")
                 self.status_lbl.config(text=f"Status: {getattr(d, 'status', 'draft')}")
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("Risk Assessment", name, self.app)
                 break
         self.refresh()
 
@@ -2657,7 +2666,7 @@ class RiskAssessmentWindow(tk.Frame):
             inputs = (
                 toolbox.analysis_inputs("Risk Assessment", reviewed=reviewed, approved=approved)
                 if toolbox
-                else set()
+                else SAFETY_ANALYSIS_WORK_PRODUCTS
             )
             if "HAZOP" not in inputs:
                 hazop_names = []
@@ -3836,6 +3845,9 @@ class TC2FIWindow(tk.Frame):
             if d.name == name:
                 self.app.active_tc2fi = d
                 self.app.tc2fi_entries = d.entries
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.activate_document_phase("TC2FI", name, self.app)
                 break
         self.refresh()
 

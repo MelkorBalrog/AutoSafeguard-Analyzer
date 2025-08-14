@@ -490,6 +490,62 @@ class SafetyManagementToolbox:
 
         return _search(self.modules)
 
+    def phase_for_document(self, analysis: str, name: str) -> Optional[str]:
+        """Return lifecycle phase assigned to ``analysis`` document ``name``."""
+
+        phase = self.doc_phases.get(analysis, {}).get(name)
+        if phase is None:
+            repo = SysMLRepository.get_instance()
+            diag = next(
+                (
+                    d
+                    for d in repo.diagrams.values()
+                    if d.diag_type == analysis and d.name == name
+                ),
+                None,
+            )
+            phase = diag.phase if diag else None
+        return phase
+
+    def activate_phase(self, phase: str, app=None) -> None:
+        """Synchronize *app* and toolbox with the given lifecycle *phase*."""
+
+        if not phase:
+            return
+        if app and hasattr(app, "lifecycle_var"):
+            try:
+                app.lifecycle_var.set(phase)
+            except Exception:
+                pass
+        if app and hasattr(app, "on_lifecycle_selected"):
+            try:
+                app.on_lifecycle_selected()
+            except Exception:
+                pass
+        else:
+            self.set_active_module(phase)
+            if app and hasattr(app, "refresh_tool_enablement"):
+                try:
+                    app.refresh_tool_enablement()
+                except Exception:
+                    pass
+        smw = getattr(app, "safety_mgmt_window", None)
+        if smw and hasattr(smw, "phase_var"):
+            try:
+                if smw.phase_var.get() != phase:
+                    smw.phase_var.set(phase)
+                    if hasattr(smw, "refresh_diagrams"):
+                        smw.refresh_diagrams()
+            except Exception:
+                pass
+
+    def activate_document_phase(self, analysis: str, name: str, app=None) -> None:
+        """Activate phase for document ``name`` of ``analysis``."""
+
+        phase = self.phase_for_document(analysis, name)
+        if phase:
+            self.activate_phase(phase, app)
+
     def list_modules(self) -> List[str]:
         """Return names of all governance modules including submodules."""
         names: List[str] = []
