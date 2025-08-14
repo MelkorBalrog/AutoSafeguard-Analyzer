@@ -122,6 +122,42 @@ def test_activity_boundary_label_rotated_left_inside():
     assert x1 == expected_x
 
 
+def test_process_area_boundary_title_clipped_inside():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.zoom = 1.0
+    win.canvas = DummyCanvas()
+    win.font = None
+    win._draw_gradient_rect = lambda *args, **kwargs: None
+    win.selected_objs = []
+    long_name = "A" * 200
+    obj = SysMLObject(
+        1,
+        "System Boundary",
+        0.0,
+        0.0,
+        width=100.0,
+        height=80.0,
+        properties={"name": long_name},
+    )
+    win.draw_object(obj)
+
+    assert win.canvas.text_calls, "label not drawn"
+    x, _y, kwargs = win.canvas.text_calls[0]
+    right = obj.x + obj.width / 2
+    (line_args, _line_kwargs) = win.canvas.line_calls[0]
+    x1, _y1, x2, _y2 = line_args
+    assert x1 == x2
+    assert x1 <= right, "compartment line extends beyond boundary"
+    assert "\n" in kwargs.get("text", "")
+    max_lines = 5
+    assert kwargs["text"].count("\n") + 1 <= max_lines
+
+
 def test_toolbox_manages_diagram_lifecycle():
     """Toolbox creates tagged diagrams, can rename, and delete them."""
     SysMLRepository._instance = None
