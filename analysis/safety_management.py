@@ -203,7 +203,68 @@ class SafetyManagementToolbox:
         phase = self.doc_phases.get(analysis, {}).get(name)
         if phase is None:
             return True
-        return phase == self.active_module
+        if phase == self.active_module:
+            return True
+        # allow visibility when the active phase reuses this work product
+        return analysis in self.reused_products_for_phase(self.active_module)
+
+    # ------------------------------------------------------------------
+    def _reuse_maps(self) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+        """Return mapping of reused phases and work products.
+
+        The first mapping is target phase -> set of source phases that are
+        reused.  The second mapping is target phase -> set of individual work
+        product names reused directly.
+        """
+
+        repo = SysMLRepository.get_instance()
+        phase_map: dict[str, set[str]] = {}
+        wp_map: dict[str, set[str]] = {}
+        for diag_name, diag_id in self.diagrams.items():
+            diag = repo.diagrams.get(diag_id)
+            if not diag or diag.diag_type != "BPMN Diagram":
+                continue
+            objects = {o.get("obj_id"): o for o in getattr(diag, "objects", [])}
+            for conn in getattr(diag, "connections", []):
+                ctype = (conn.get("stereotype") or conn.get("conn_type") or "").lower()
+                if ctype != "re-use" and ctype != "reuse":
+                    continue
+                src = objects.get(conn.get("src"))
+                dst = objects.get(conn.get("dst"))
+                if not src or not dst:
+                    continue
+                dst_name = dst.get("properties", {}).get("name")
+                if not dst_name:
+                    continue
+                if src.get("obj_type") == "Lifecycle Phase":
+                    src_name = src.get("properties", {}).get("name")
+                    if src_name:
+                        phase_map.setdefault(dst_name, set()).add(src_name)
+                elif src.get("obj_type") == "Work Product":
+                    wp_name = src.get("properties", {}).get("name")
+                    if wp_name:
+                        wp_map.setdefault(dst_name, set()).add(wp_name)
+        return phase_map, wp_map
+
+    # ------------------------------------------------------------------
+    def reused_products_for_phase(self, phase: str) -> set[str]:
+        """Return work product names reused into ``phase``."""
+
+        phase_map, wp_map = self._reuse_maps()
+        reused: set[str] = set(wp_map.get(phase, set()))
+        visited: set[str] = set()
+        stack = list(phase_map.get(phase, set()))
+        while stack:
+            src_phase = stack.pop()
+            if src_phase in visited:
+                continue
+            visited.add(src_phase)
+            diags = self.diagrams_in_module(src_phase)
+            reused.update(
+                {wp.analysis for wp in self.work_products if wp.diagram in diags}
+            )
+            stack.extend(phase_map.get(src_phase, set()))
+        return reused
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
