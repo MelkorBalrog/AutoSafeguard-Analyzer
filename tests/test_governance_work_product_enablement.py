@@ -1,9 +1,10 @@
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
+import pytest
 
 
-def test_add_work_product_enables_toolbox(monkeypatch):
+@pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
@@ -11,7 +12,7 @@ def test_add_work_product_enables_toolbox(monkeypatch):
 
     toolbox = SafetyManagementToolbox()
 
-    # Required process area for FI2TC
+    # Required process area for FI2TC/TC2FI
     area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": "Hazard & Threat Analysis"})
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
@@ -35,10 +36,14 @@ def test_add_work_product_enables_toolbox(monkeypatch):
 
     win.app = DummyApp()
 
-    # Pretend user selected FI2TC in dialog
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", lambda *a, **k: type("D", (), {"selection": "FI2TC"})())
+    # Pretend user selected analysis in dialog
+    monkeypatch.setattr(
+        GovernanceDiagramWindow,
+        "_SelectDialog",
+        lambda *a, **k: type("D", (), {"selection": analysis})(),
+    )
 
     win.add_work_product()
 
-    assert enable_calls == ["FI2TC"]
-    assert any(wp.analysis == "FI2TC" for wp in toolbox.work_products)
+    assert enable_calls == [analysis]
+    assert any(wp.analysis == analysis for wp in toolbox.work_products)
