@@ -161,15 +161,19 @@ class SafetyManagementToolbox:
         mod = self._find_module(self.active_module, self.modules)
         if not mod:
             return
+        diags = self.diagrams_in_module(self.active_module)
+        if not diags:
+            return
         mod.frozen = True
         repo = SysMLRepository.get_instance()
-        for name in self.diagrams_in_module(self.active_module):
+        for name in diags:
             diag_id = self.diagrams.get(name)
             if not diag_id:
                 continue
             diag = repo.diagrams.get(diag_id)
             if diag:
                 diag.locked = True
+        self._freeze_active_phase()
 
     # ------------------------------------------------------------------
     def add_work_product(self, diagram: str, analysis: str, rationale: str) -> None:
@@ -474,8 +478,6 @@ class SafetyManagementToolbox:
             return
 
         mod = self._find_module(old, self.modules)
-        if mod and getattr(mod, "frozen", False):
-            return
 
         existing = set(self.list_modules())
         existing.discard(old)

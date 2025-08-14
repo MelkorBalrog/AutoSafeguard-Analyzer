@@ -1994,6 +1994,16 @@ class FaultTreeApp:
             "Safety & Security Case Explorer",
             "manage_safety_cases",
         ),
+        "Safety & Security Case": (
+            "Safety Analysis",
+            "Safety & Security Case Explorer",
+            "manage_safety_cases",
+        ),
+        "GSN Argumentation": (
+            "Safety Analysis",
+            "GSN Explorer",
+            "manage_gsn",
+        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2064,6 +2074,16 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
+        "Mission Profile": (
+            "Safety Analysis",
+            "Mission Profiles",
+            "manage_mission_profiles",
+        ),
+        "Reliability Analysis": (
+            "Safety Analysis",
+            "Reliability Analysis",
+            "open_reliability_window",
+        ),
         "Scenario": (
             "Scenario",
             "Scenario Libraries",
@@ -2093,6 +2113,10 @@ class FaultTreeApp:
         "TC2FI": "Qualitative Analysis",
         "FMEA": "Qualitative Analysis",
         "FMEDA": "Quantitative Analysis",
+        "Mission Profile": "Quantitative Analysis",
+        "Reliability Analysis": "Quantitative Analysis",
+        "Safety & Security Case": "GSN",
+        "GSN Argumentation": "GSN",
     }
 
     def __init__(self, root):
@@ -2421,11 +2445,17 @@ class FaultTreeApp:
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
         quantitative_menu.add_command(label="Mission Profiles", command=self.manage_mission_profiles)
+        self.work_product_menus.setdefault("Mission Profile", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
+        )
         quantitative_menu.add_command(
             label="Mechanism Libraries", command=self.manage_mechanism_libraries
         )
         quantitative_menu.add_command(
             label="Reliability Analysis", command=self.open_reliability_window
+        )
+        self.work_product_menus.setdefault("Reliability Analysis", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
         )
         quantitative_menu.add_command(
             label="FMEDA Analysis",
@@ -2461,8 +2491,14 @@ class FaultTreeApp:
 
         gsn_menu = tk.Menu(menubar, tearoff=0)
         gsn_menu.add_command(label="GSN Explorer", command=self.manage_gsn)
+        self.work_product_menus.setdefault("GSN Argumentation", []).append(
+            (gsn_menu, gsn_menu.index("end"))
+        )
         gsn_menu.add_command(
             label="Safety & Security Case Explorer", command=self.manage_safety_cases
+        )
+        self.work_product_menus.setdefault("Safety & Security Case", []).append(
+            (gsn_menu, gsn_menu.index("end"))
         )
 
         # Add menus to the bar in the desired order
@@ -2491,6 +2527,9 @@ class FaultTreeApp:
         self.work_product_menus.setdefault("FTA", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="GSN", menu=gsn_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("GSN", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Process", menu=process_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Process", []).append((menubar, idx))
@@ -8991,11 +9030,8 @@ class FaultTreeApp:
                 "tc2fi_docs",
                 "hara_docs",
             ),
-            "Quantitative Analysis": (
-                "fmeas",
-                "fmedas",
-                "top_events",
-            ),
+            "Mission Profile": "mission_profiles",
+            "Reliability Analysis": "reliability_analyses",
         }
         attr = attr_map.get(name)
         if not attr:
