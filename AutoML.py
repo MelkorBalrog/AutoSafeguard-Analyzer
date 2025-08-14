@@ -2144,6 +2144,7 @@ class FaultTreeApp:
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
+        "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
         "ODD": "Scenario Library",
