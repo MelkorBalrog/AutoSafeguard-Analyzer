@@ -4,7 +4,10 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase
-from gui.tooltip import ToolTip
+try:  # Guard against environments where the tooltip module is unavailable
+    from gui.tooltip import ToolTip
+except Exception:  # pragma: no cover - fallback for minimal installs
+    ToolTip = None  # type: ignore
 import json
 import math
 import re
@@ -35,6 +38,26 @@ OBJECT_COLORS = StyleManager.get_instance().styles
 _next_obj_id = 1
 # Pixel distance used when detecting clicks on connection lines
 CONNECTION_SELECT_RADIUS = 15
+
+# Diagram types that belong to the generic "Architecture Diagram" work product
+ARCH_DIAGRAM_TYPES = {
+    "Use Case Diagram",
+    "Activity Diagram",
+    "Block Diagram",
+    "Internal Block Diagram",
+}
+
+
+def _work_product_name(diag_type: str) -> str:
+    """Return work product name for a given diagram type."""
+    return "Architecture Diagram" if diag_type in ARCH_DIAGRAM_TYPES else diag_type
+
+
+def _diag_matches_wp(diag_type: str, work_product: str) -> bool:
+    """Return True if *diag_type* is part of *work_product*."""
+    if work_product == "Architecture Diagram":
+        return diag_type in ARCH_DIAGRAM_TYPES
+    return diag_type == work_product
 
 
 def _get_next_id() -> int:
@@ -1960,6 +1983,89 @@ def unlink_requirement_from_object(obj, req_id: str, diagram_id: str | None = No
             obj.requirements = [r for r in obj.requirements if r.get("id") != req_id]
 
 
+# ---------------------------------------------------------------------------
+def link_trace_between_objects(src_obj, dst_obj, diagram_id: str):
+    """Create a ``Trace`` connection between two diagram objects.
+
+    Both ``src_obj`` and ``dst_obj`` may be :class:`SysMLObject` instances or
+    plain dictionaries representing diagram objects. The connection is stored in
+    the diagram's connection list and mirrored as bidirectional ``Trace``
+    relationships between the underlying elements when available.
+    """
+
+    repo = SysMLRepository.get_instance()
+
+    src_id = getattr(src_obj, "obj_id", None) or src_obj.get("obj_id")
+    dst_id = getattr(dst_obj, "obj_id", None) or dst_obj.get("obj_id")
+    if src_id is None or dst_id is None:
+        return None
+
+    conn = DiagramConnection(src_id, dst_id, "Trace", arrow="both", stereotype="trace")
+
+    diag = repo.diagrams.get(diagram_id)
+    if diag is not None:
+        diag.connections = getattr(diag, "connections", [])
+        diag.connections.append(conn.__dict__)
+        # Remove any leftover placeholder Trace objects that may exist from
+        # earlier versions where traces were represented as nodes.
+        diag.objects = [
+            o for o in getattr(diag, "objects", []) if o.get("obj_type") != "Trace"
+        ]
+
+    src_elem = getattr(src_obj, "element_id", None) or src_obj.get("element_id")
+    dst_elem = getattr(dst_obj, "element_id", None) or dst_obj.get("element_id")
+    if src_elem and dst_elem:
+        rel1 = repo.create_relationship("Trace", src_elem, dst_elem)
+        rel2 = repo.create_relationship("Trace", dst_elem, src_elem)
+        repo.add_relationship_to_diagram(diagram_id, rel1.rel_id)
+        repo.add_relationship_to_diagram(diagram_id, rel2.rel_id)
+
+    return conn
+
+
+# ---------------------------------------------------------------------------
+def link_requirements(src_id: str, relation: str, dst_id: str) -> None:
+    """Create a requirement relationship and mirror the inverse."""
+
+    src = global_requirements.get(src_id)
+    dst = global_requirements.get(dst_id)
+    if not src or not dst:
+        return
+    rel = {"type": relation, "id": dst_id}
+    rels = src.setdefault("relations", [])
+    if rel not in rels:
+        rels.append(rel)
+    inverse = None
+    if relation == "satisfied by":
+        inverse = "satisfies"
+    elif relation == "derived from":
+        inverse = "derives"
+    if inverse:
+        inv = {"type": inverse, "id": src_id}
+        dlist = dst.setdefault("relations", [])
+        if inv not in dlist:
+            dlist.append(inv)
+
+
+def unlink_requirements(src_id: str, relation: str, dst_id: str) -> None:
+    """Remove a requirement relationship."""
+
+    src = global_requirements.get(src_id)
+    dst = global_requirements.get(dst_id)
+    if not src or not dst:
+        return
+    src_rels = src.get("relations", [])
+    src["relations"] = [r for r in src_rels if not (r.get("type") == relation and r.get("id") == dst_id)]
+    inverse = None
+    if relation == "satisfied by":
+        inverse = "satisfies"
+    elif relation == "derived from":
+        inverse = "derives"
+    if inverse:
+        dst_rels = dst.get("relations", [])
+        dst["relations"] = [r for r in dst_rels if not (r.get("type") == inverse and r.get("id") == src_id)]
+
+
 def remove_orphan_ports(objs: List[SysMLObject]) -> None:
     """Delete ports that don't reference an existing parent part."""
     part_ids = {o.obj_id for o in objs if o.obj_type in ("Part", "Block Boundary")}
@@ -2811,6 +2917,8 @@ class SysMLDiagramWindow(tk.Frame):
                     "Propagate by Approval",
                     "Re-use",
                     "Trace",
+                    "Satisfied by",
+                    "Derived from",
                     "Connector",
                     "Generalize",
                     "Generalization",
@@ -2845,6 +2953,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3037,9 +3147,26 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Re-use":
                 if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
                     return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
+            elif conn_type in ("Satisfied by", "Derived from"):
+                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
+                    return False, "Requirement relations must connect Work Products"
+                from analysis.models import REQUIREMENT_WORK_PRODUCTS
+                req_wps = set(REQUIREMENT_WORK_PRODUCTS)
+                sname = src.properties.get("name")
+                dname = dst.properties.get("name")
+                if sname not in req_wps or dname not in req_wps:
+                    return False, "Requirement relations must connect requirement work products"
             elif conn_type == "Trace":
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, "Trace links must connect Work Products"
+                from analysis.models import REQUIREMENT_WORK_PRODUCTS
+                req_wps = set(REQUIREMENT_WORK_PRODUCTS)
+                sname = src.properties.get("name")
+                dname = dst.properties.get("name")
+                if sname in req_wps and dname in req_wps:
+                    return False, (
+                        "Requirement work products must use 'Satisfied by' or 'Derived from'"
+                    )
             else:
                 allowed = {
                     "Initial": {
@@ -3134,6 +3261,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3256,6 +3385,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalize",
             "Generalization",
@@ -3288,13 +3419,15 @@ class SysMLDiagramWindow(tk.Frame):
                             "Generalize",
                             "Generalization",
                             "Include",
-                            "Extend",
-                            "Propagate",
-                            "Propagate by Review",
-                            "Propagate by Approval",
-                            "Re-use",
-                            ):
-                            arrow_default = "forward"
+                          "Extend",
+                          "Propagate",
+                          "Propagate by Review",
+                          "Propagate by Approval",
+                          "Re-use",
+                          "Satisfied by",
+                          "Derived from",
+                          ):
+                              arrow_default = "forward"
                         else:
                             arrow_default = "none"
                         conn_stereo = (
@@ -3577,6 +3710,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3782,6 +3917,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
             "Connector",
             "Generalization",
             "Generalize",
@@ -3817,6 +3954,8 @@ class SysMLDiagramWindow(tk.Frame):
                         "Propagate by Review",
                         "Propagate by Approval",
                         "Re-use",
+                        "Satisfied by",
+                        "Derived from",
                     ):
                         arrow_default = "forward"
                     else:
@@ -6953,6 +7092,46 @@ class SysMLObjectDialog(simpledialog.Dialog):
         def apply(self):
             self.result = [c for c, var in self.selected.items() if var.get()]
 
+    class SelectTraceDialog(simpledialog.Dialog):
+        """Dialog to choose target elements for trace links."""
+
+        def __init__(
+            self,
+            parent,
+            repo: SysMLRepository,
+            work_products: list[str],
+            source_id: int | None,
+            source_diag: str | None,
+        ):
+            self.repo = repo
+            self.work_products = work_products
+            self.source_id = source_id
+            self.source_diag = source_diag
+            self.selection: list[str] = []
+            super().__init__(parent, title="Select Trace Targets")
+
+        def body(self, master):  # pragma: no cover - requires tkinter
+            ttk.Label(master, text="Select targets:").pack(anchor="w", padx=5, pady=5)
+            self.lb = tk.Listbox(master, selectmode=tk.MULTIPLE, width=40)
+            self._tokens: list[str] = []
+            for diag in self.repo.diagrams.values():
+                if not any(_diag_matches_wp(diag.diag_type, wp) for wp in self.work_products):
+                    continue
+                dname = diag.name or diag.diag_id
+                for obj in getattr(diag, "objects", []):
+                    if diag.diag_id == self.source_diag and obj.get("obj_id") == self.source_id:
+                        continue
+                    name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                    token = f"{diag.diag_id}:{obj.get('obj_id')}"
+                    self._tokens.append(token)
+                    self.lb.insert(tk.END, f"{dname}:{name}")
+            self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            return self.lb
+
+        def apply(self):  # pragma: no cover - requires tkinter
+            sels = self.lb.curselection()
+            self.selection = [self._tokens[i] for i in sels]
+
     class SelectNamesDialog(simpledialog.Dialog):
         """Dialog to choose which part names should be added."""
 
@@ -7335,14 +7514,14 @@ class SysMLObjectDialog(simpledialog.Dialog):
         self.current_diagram = current_diagram
         toolbox = getattr(app, "safety_mgmt_toolbox", None)
         wp_map = {wp.analysis: wp for wp in toolbox.get_work_products()} if toolbox else {}
-        diagram_wp = wp_map.get(getattr(current_diagram, "diag_type", ""))
-        diag_trace_opts = (
-            sorted(getattr(diagram_wp, "traceable", [])) if diagram_wp else []
-        )
+        diag_type = getattr(current_diagram, "diag_type", "")
+        analysis_name = _work_product_name(diag_type)
+        diagram_wp = wp_map.get(analysis_name)
+        diag_trace_opts = sorted(getattr(diagram_wp, "traceable", [])) if diagram_wp else []
         self._target_work_product = (
             self.obj.properties.get("name", "")
             if self.obj.obj_type == "Work Product"
-            else getattr(diagram_wp, "analysis", getattr(current_diagram, "diag_type", ""))
+            else getattr(diagram_wp, "analysis", analysis_name)
         )
         link_row = 0
         trace_shown = False
@@ -7492,19 +7671,16 @@ class SysMLObjectDialog(simpledialog.Dialog):
             ttk.Label(link_frame, text="Trace To:").grid(
                 row=link_row, column=0, sticky="e", padx=4, pady=2
             )
-            lb = tk.Listbox(link_frame, height=4, selectmode=tk.MULTIPLE)
-            for opt in diag_trace_opts:
-                lb.insert(tk.END, opt)
-            current = [
-                s.strip()
-                for s in self.obj.properties.get("trace_to", "").split(",")
-                if s.strip()
-            ]
-            for idx, opt in enumerate(diag_trace_opts):
-                if opt in current:
-                    lb.selection_set(idx)
-            lb.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
-            self.trace_list = lb
+            self.trace_list = tk.Listbox(link_frame, height=4)
+            self.trace_list.grid(row=link_row, column=1, padx=4, pady=2, sticky="we")
+            btnf = ttk.Frame(link_frame)
+            btnf.grid(row=link_row, column=2, padx=2)
+            ttk.Button(btnf, text="Add", command=lambda: self.add_trace(diag_trace_opts)).pack(side=tk.TOP)
+            ttk.Button(btnf, text="Remove", command=self.remove_trace).pack(side=tk.TOP)
+            self._trace_targets = []
+            for token in [t.strip() for t in self.obj.properties.get("trace_to", "").split(",") if t.strip()]:
+                self._trace_targets.append(token)
+                self.trace_list.insert(tk.END, self._format_trace_label(token))
             link_row += 1
             trace_shown = True
 
@@ -7528,10 +7704,11 @@ class SysMLObjectDialog(simpledialog.Dialog):
             ttk.Button(btnf, text="Add", command=self.add_requirement).pack(side=tk.TOP)
             ttk.Button(btnf, text="Remove", command=self.remove_requirement).pack(side=tk.TOP)
         else:
-            ToolTip(
-                self.req_list,
-                "Requirement allocation is disabled for this diagram due to governance restrictions.",
-            )
+            if ToolTip:
+                ToolTip(
+                    self.req_list,
+                    "Requirement allocation is disabled for this diagram due to governance restrictions.",
+                )
         for r in self.obj.requirements:
             self.req_list.insert(tk.END, f"[{r.get('id')}] {r.get('text','')}")
         req_row += 1
@@ -7581,6 +7758,47 @@ class SysMLObjectDialog(simpledialog.Dialog):
         if val:
             lb.delete(idx)
             lb.insert(idx, val)
+
+    def add_trace(self, trace_wps):
+        repo = SysMLRepository.get_instance()
+        dlg = self.SelectTraceDialog(
+            self,
+            repo,
+            trace_wps,
+            getattr(self.obj, "obj_id", None),
+            getattr(self.master, "diagram_id", None),
+        )
+        for token in getattr(dlg, "selection", []):
+            if token not in self._trace_targets:
+                self._trace_targets.append(token)
+                self.trace_list.insert(tk.END, self._format_trace_label(token))
+
+    def remove_trace(self):
+        sel = list(self.trace_list.curselection())
+        for idx in reversed(sel):
+            self.trace_list.delete(idx)
+            del self._trace_targets[idx]
+
+    def _format_trace_label(self, token: str) -> str:
+        repo = SysMLRepository.get_instance()
+        parts = token.split(":", 1)
+        if len(parts) != 2:
+            return token
+        diag_id, obj_id = parts
+        diag = repo.diagrams.get(diag_id)
+        dname = getattr(diag, "name", diag_id) if diag else diag_id
+        obj = None
+        if diag:
+            obj = next(
+                (o for o in getattr(diag, "objects", []) if str(o.get("obj_id")) == obj_id),
+                None,
+            )
+        oname = (
+            obj.get("properties", {}).get("name") or obj.get("obj_type")
+            if obj
+            else obj_id
+        )
+        return f"{dname}:{oname}"
 
     class OperationDialog(simpledialog.Dialog):
         def __init__(self, parent, operation=None):
@@ -7903,18 +8121,35 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         trace_lb = getattr(self, "trace_list", None)
         if trace_lb:
-            selected = [trace_lb.get(i) for i in trace_lb.curselection()]
-            joined = ", ".join(selected)
-            if joined:
-                self.obj.properties["trace_to"] = joined
-            else:
-                self.obj.properties.pop("trace_to", None)
-            if self.obj.element_id and self.obj.element_id in repo.elements:
-                elem_props = repo.elements[self.obj.element_id].properties
-                if joined:
-                    elem_props["trace_to"] = joined
-                else:
-                    elem_props.pop("trace_to", None)
+            targets = getattr(self, "_trace_targets", None)
+            if targets is None:
+                targets = [trace_lb.get(i) for i in getattr(trace_lb, "curselection", lambda: [])()]
+
+            current_diag = getattr(self.master, "diagram_id", None)
+            # Remove existing trace connections involving this object
+            if current_diag and hasattr(self.master, "connections"):
+                self.master.connections = [
+                    c
+                    for c in self.master.connections
+                    if not (
+                        c.conn_type == "Trace"
+                        and (c.src == self.obj.obj_id or c.dst == self.obj.obj_id)
+                    )
+                ]
+                diag_ref = repo.diagrams.get(current_diag)
+                if diag_ref:
+                    diag_ref.connections = [
+                        c
+                        for c in getattr(diag_ref, "connections", [])
+                        if not (
+                            c.get("conn_type") == "Trace"
+                            and (
+                                c.get("src") == self.obj.obj_id
+                                or c.get("dst") == self.obj.obj_id
+                            )
+                        )
+                    ]
+
             removed = {
                 r.rel_id
                 for r in repo.relationships
@@ -7925,14 +8160,50 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 repo.relationships = [r for r in repo.relationships if r.rel_id not in removed]
                 for diag in repo.diagrams.values():
                     diag.relationships = [rid for rid in diag.relationships if rid not in removed]
-            for name in selected:
-                target_elem = next(
-                    (e for e in repo.elements.values() if e.name == name),
+
+            stored_tokens: list[str] = []
+            for token in targets:
+                parts = token.split(":", 1)
+                if len(parts) != 2:
+                    stored_tokens.append(token)
+                    target_elem = next(
+                        (e for e in repo.elements.values() if e.name == token),
+                        None,
+                    )
+                    if target_elem and self.obj.element_id:
+                        repo.create_relationship("Trace", self.obj.element_id, target_elem.elem_id)
+                        repo.create_relationship("Trace", target_elem.elem_id, self.obj.element_id)
+                    continue
+                diag_id, obj_id = parts
+                diag = repo.diagrams.get(diag_id)
+                if not diag:
+                    continue
+                obj = next(
+                    (o for o in getattr(diag, "objects", []) if str(o.get("obj_id")) == obj_id),
                     None,
                 )
-                if target_elem and self.obj.element_id:
-                    repo.create_relationship("Trace", self.obj.element_id, target_elem.elem_id)
-                    repo.create_relationship("Trace", target_elem.elem_id, self.obj.element_id)
+                if not obj:
+                    continue
+                if diag_id == current_diag:
+                    link_trace_between_objects(self.obj, obj, current_diag)
+                else:
+                    stored_tokens.append(token)
+                    target_elem = obj.get("element_id")
+                    if target_elem and self.obj.element_id:
+                        repo.create_relationship("Trace", self.obj.element_id, target_elem)
+                        repo.create_relationship("Trace", target_elem, self.obj.element_id)
+
+            joined = ", ".join(stored_tokens)
+            if joined:
+                self.obj.properties["trace_to"] = joined
+            else:
+                self.obj.properties.pop("trace_to", None)
+            if self.obj.element_id and self.obj.element_id in repo.elements:
+                elem_props = repo.elements[self.obj.element_id].properties
+                if joined:
+                    elem_props["trace_to"] = joined
+                else:
+                    elem_props.pop("trace_to", None)
 
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem_type = repo.elements[self.obj.element_id].elem_type
@@ -8520,6 +8791,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Propagate by Approval",
             "Re-use",
             "Trace",
+            "Satisfied by",
+            "Derived from",
         ):
             ttk.Button(
                 governance_panel,

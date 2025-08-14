@@ -88,6 +88,37 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
         self.assertEqual(rel_types, {"Trace"})
         self.assertEqual(len(repo.relationships), 2)
 
+    def test_trace_between_requirements_disallowed(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        from analysis.models import REQUIREMENT_WORK_PRODUCTS
+
+        wp_name = next(iter(REQUIREMENT_WORK_PRODUCTS))
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": wp_name},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": wp_name},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        valid, msg = GovernanceDiagramWindow.validate_connection(win, o1, o2, "Trace")
+        self.assertFalse(valid)
+        self.assertIn("Requirement work products", msg)
+
 
 if __name__ == "__main__":
     unittest.main()
