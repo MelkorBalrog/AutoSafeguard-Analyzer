@@ -3202,13 +3202,6 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Requirement work products must use 'Satisfied by' or 'Derived from'"
                     )
-                if (
-                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                ):
-                    return False, (
-                        "Trace links cannot connect two safety analysis work products"
-                    )
             elif conn_type in (
                 "Used By",
                 "Used after Review",
@@ -3216,15 +3209,10 @@ class SysMLDiagramWindow(tk.Frame):
             ):
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, f"{conn_type} links must connect Work Products"
-                sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS:
                     return False, (
                         f"{conn_type} links must target a safety analysis work product",
-                    )
-                if sname in SAFETY_ANALYSIS_WORK_PRODUCTS:
-                    return False, (
-                        f"{conn_type} links cannot connect two safety analysis work products"
                     )
             else:
                 allowed = {

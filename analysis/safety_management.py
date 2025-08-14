@@ -379,18 +379,33 @@ class SafetyManagementToolbox:
 
     # ------------------------------------------------------------------
     def enabled_products(self) -> set[str]:
-        """Return the set of analysis names enabled for the active phase."""
-        all_products = {wp.analysis for wp in self.work_products}
-        if not self.modules:
-            return all_products
+        """Return analysis names declared in the active lifecycle phase."""
+
+        # Work products become available to the application only when they are
+        # declared on a governance diagram that belongs to the active phase.
+        # ``Re-use`` links may pull additional work products or entire phases
+        # into the active one so those must be considered as well.  When no
+        # phase is active we expose every declared work product so that a brand
+        # new project still shows its analyses.
         if not self.active_module:
-            return set()
-        diagrams = self.diagrams_in_module(self.active_module)
+            return {wp.analysis for wp in self.work_products}
+
+        names = self.diagrams_in_module(self.active_module)
         reuse = self._reuse_map().get(self.active_module, {})
-        for phase in reuse.get("phases", set()):
-            diagrams.update(self.diagrams_in_module(phase))
-        enabled = {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
-        enabled.update(reuse.get("work_products", set()))
+        reused_wps = reuse.get("work_products", set())
+        reused_phases = reuse.get("phases", set())
+
+        enabled: set[str] = set()
+        for wp in self.work_products:
+            if wp.diagram in names:
+                enabled.add(wp.analysis)
+                continue
+            if wp.analysis in reused_wps:
+                enabled.add(wp.analysis)
+                continue
+            mod = self.module_for_diagram(wp.diagram)
+            if mod in reused_phases:
+                enabled.add(wp.analysis)
         return enabled
 
     # ------------------------------------------------------------------
