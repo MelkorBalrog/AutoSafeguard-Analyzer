@@ -43,15 +43,9 @@ def _get_next_id() -> int:
     return val
 
 
-def _format_label(win, name: str, phase: str | None) -> str:
-    """Return *name* with a phase suffix unless it's a governance diagram."""
-    repo = getattr(win, "repo", None)
-    diag_id = getattr(win, "diagram_id", None)
-    if repo and diag_id:
-        diag = repo.diagrams.get(diag_id)
-        if diag and diag.diag_type == "Governance Diagram":
-            return name or ""
-    return format_name_with_phase(name, phase)
+def _format_label(_win, name: str, _phase: str | None) -> str:
+    """Return ``name`` unchanged for diagram labels."""
+    return name or ""
 
 
 def _parse_float(val: str | None, default: float) -> float:

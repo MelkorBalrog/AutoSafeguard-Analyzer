@@ -31,7 +31,7 @@ class PhaseLabelTests(unittest.TestCase):
         self.assertEqual(format_name_with_phase("Name", "P1"), "Name (P1)")
         self.assertEqual(format_name_with_phase("Name", None), "Name")
 
-    def test_object_label_includes_phase(self):
+    def test_object_label_omits_phase(self):
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Block Diagram")
         elem = repo.create_element("Use Case", name="Do")
@@ -39,7 +39,9 @@ class PhaseLabelTests(unittest.TestCase):
         obj = SysMLObject(1, "Use Case", 0.0, 0.0, element_id=elem.elem_id, phase="PhaseX")
         win = DummyWindow(diag.diag_id)
         lines = win._object_label_lines(obj)
-        self.assertIn("Do (PhaseX)", lines)
+        text = " ".join(lines)
+        self.assertIn("Do", text)
+        self.assertNotIn("PhaseX", text)
 
     def test_governance_label_omits_phase(self):
         repo = SysMLRepository.get_instance()
