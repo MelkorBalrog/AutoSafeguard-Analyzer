@@ -209,8 +209,10 @@ class SafetyManagementToolbox:
     def enabled_products(self) -> set[str]:
         """Return the set of analysis names enabled for the active phase."""
         all_products = {wp.analysis for wp in self.work_products}
-        if not self.active_module:
+        if not self.modules:
             return all_products
+        if not self.active_module:
+            return set()
         diagrams = self.diagrams_in_module(self.active_module)
         if not diagrams:
             return set()

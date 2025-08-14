@@ -8835,6 +8835,11 @@ class FaultTreeApp:
         else:
             self.safety_mgmt_toolbox.set_active_module(phase)
         self.update_views()
+        if hasattr(self, "refresh_tool_enablement"):
+            try:
+                self.refresh_tool_enablement()
+            except Exception:
+                pass
         for name in (
             "_hazop_window",
             "_risk_window",
