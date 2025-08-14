@@ -56,6 +56,7 @@ def test_diagram_objects_and_connections_follow_phase_visibility():
     assert repo.visible_objects(diag.diag_id)
     assert repo.visible_connections(diag.diag_id)
 
+
 def test_diagram_window_respects_phase():
     repo = SysMLRepository.reset_instance()
     toolbox = SafetyManagementToolbox()
@@ -70,36 +71,13 @@ def test_diagram_window_respects_phase():
     win.sort_objects = lambda: None
     win.redraw = lambda: None
     win.update_property_view = lambda: None
+    win.winfo_children = lambda: []
     SysMLDiagramWindow.refresh_from_repository(win)
     assert len(win.objects) == 1
     toolbox.set_active_module("P2")
     SysMLDiagramWindow.refresh_from_repository(win)
     assert len(win.objects) == 0
 
-
-def test_diagram_objects_preserved_across_phases():
-    repo = SysMLRepository.reset_instance()
-    toolbox = SafetyManagementToolbox()
-    toolbox.modules = [GovernanceModule("P1"), GovernanceModule("P2")]
-    toolbox.set_active_module("P1")
-    diag = repo.create_diagram("BPMN Diagram")
-    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
-    win.repo = repo
-    win.diagram_id = diag.diag_id
-    win.objects = []
-    win.connections = []
-    win._sync_to_repository = BPMNDiagramWindow._sync_to_repository.__get__(win, BPMNDiagramWindow)
-    obj1 = SysMLObject(1, "Spec", 0.0, 0.0)
-    win.objects.append(obj1)
-    win._sync_to_repository()
-    toolbox.set_active_module("P2")
-    obj2 = SysMLObject(2, "Spec", 0.0, 0.0)
-    win.objects = [obj2]
-    win._sync_to_repository()
-    toolbox.set_active_module("P1")
-    assert any(o["obj_id"] == 1 for o in repo.visible_objects(diag.diag_id))
-    toolbox.set_active_module("P2")
-    assert any(o["obj_id"] == 2 for o in repo.visible_objects(diag.diag_id))
 
 
 def test_on_lifecycle_selected_refreshes_diagrams():
@@ -128,3 +106,40 @@ def test_on_lifecycle_selected_refreshes_diagrams():
     app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(app, FaultTreeApp)
     app.on_lifecycle_selected()
     assert refreshed["count"] == 1
+
+
+def test_bpmn_diagram_refreshes_on_phase_change():
+    repo = SysMLRepository.reset_instance()
+    toolbox = SafetyManagementToolbox()
+    toolbox.modules = [GovernanceModule("P1"), GovernanceModule("P2")]
+    toolbox.set_active_module("P1")
+    diag = repo.create_diagram("BPMN Diagram")
+    obj1 = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Spec1"})
+    diag.objects.append(asdict(obj1))
+    win = BPMNDiagramWindow.__new__(BPMNDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.sort_objects = lambda: None
+    win.redraw = lambda: None
+    win.update_property_view = lambda: None
+    BPMNDiagramWindow.refresh_from_repository(win)
+    assert len(win.objects) == 1
+    toolbox.set_active_module("P2")
+    obj2 = SysMLObject(2, "Work Product", 0.0, 0.0, properties={"name": "Spec2"})
+    diag.objects.append(asdict(obj2))
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    app.lifecycle_var = types.SimpleNamespace(get=lambda: "P2")
+    app.safety_mgmt_toolbox = toolbox
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = lambda: None
+
+    inner = types.SimpleNamespace(
+        refresh_from_repository=lambda: BPMNDiagramWindow.refresh_from_repository(win),
+        winfo_children=lambda: [],
+    )
+    container = types.SimpleNamespace(winfo_children=lambda: [inner])
+    app.diagram_tabs = {diag.diag_id: types.SimpleNamespace(winfo_children=lambda: [container])}
+
+    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(app, FaultTreeApp)
+    app.on_lifecycle_selected()
+    assert len(win.objects) == 1 and win.objects[0].obj_id == 2

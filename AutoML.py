@@ -8852,10 +8852,14 @@ class FaultTreeApp:
             if win and getattr(win, "refresh_docs", None) and win.winfo_exists():
                 win.refresh_docs()
 
+        def _refresh_children(widget):
+            if hasattr(widget, "refresh_from_repository"):
+                widget.refresh_from_repository()
+            for ch in getattr(widget, "winfo_children", lambda: [])():
+                _refresh_children(ch)
+
         for tab in getattr(self, "diagram_tabs", {}).values():
-            for child in tab.winfo_children():
-                if hasattr(child, "refresh_from_repository"):
-                    child.refresh_from_repository()
+            _refresh_children(tab)
 
 
     def update_lifecycle_cb(self) -> None:
@@ -17425,6 +17429,9 @@ class FaultTreeApp:
             "safety_mgmt_toolbox": getattr(
                 self, "safety_mgmt_toolbox", SafetyManagementToolbox()
             ).to_dict(),
+            "enabled_work_products": sorted(
+                getattr(self, "enabled_work_products", set())
+            ),
         }
         if self.hazop_docs:
             data["hazop_entries"] = [asdict(e) for e in self.hazop_entries]
@@ -17489,6 +17496,12 @@ class FaultTreeApp:
         toolbox.on_change = self.refresh_tool_enablement
         for te in self.top_events:
             toolbox.register_loaded_work_product("FTA", te.user_name)
+
+        for name in data.get("enabled_work_products", []):
+            try:
+                self.enable_work_product(name)
+            except Exception:
+                self.enabled_work_products.add(name)
 
         self.fmeas = []
         for fmea_data in data.get("fmeas", []):
