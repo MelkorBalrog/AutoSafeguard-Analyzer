@@ -209,10 +209,14 @@ class SafetyManagementToolbox:
     def enabled_products(self) -> set[str]:
         """Return the set of analysis names enabled for the active phase."""
         all_products = {wp.analysis for wp in self.work_products}
-        if not self.modules:
+        # If no modules exist or no specific phase is selected, all declared
+        # work products should remain available. Previously the function
+        # returned an empty set when ``active_module`` was ``None`` which
+        # caused the application's menus to disable every tool when the user
+        # selected the "All" phase.  Returning the full set ensures menus
+        # remain active for the aggregate view.
+        if not self.modules or not self.active_module:
             return all_products
-        if not self.active_module:
-            return set()
         diagrams = self.diagrams_in_module(self.active_module)
         if not diagrams:
             return set()
