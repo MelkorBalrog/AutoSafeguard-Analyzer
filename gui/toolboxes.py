@@ -40,9 +40,6 @@ from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from gui.architecture import (
     _work_product_name,
-    link_requirements,
-    unlink_requirements,
-    link_requirement_to_object,
 )
 
 
@@ -3974,8 +3971,6 @@ class RequirementsExplorerWindow(tk.Frame):
         self.tree.pack(fill=tk.BOTH, expand=True)
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
-        ttk.Button(btnf, text="Link to Diagram...", command=self.link_to_diagram).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btnf, text="Link Requirement...", command=self.link_requirement).pack(side=tk.LEFT, padx=5)
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
 
@@ -4024,49 +4019,6 @@ class RequirementsExplorerWindow(tk.Frame):
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
 
-    def edit_traces(self) -> None:
-        sel = self.tree.selection()
-        if not sel:
-            return
-        values = self.tree.item(sel[0], "values")
-        rid = values[0]
-        req = global_requirements.get(rid)
-        if not req:
-            return
-        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
-        dlg = _TraceLinkDialog(self, req, toolbox)
-        if dlg.result is None:
-            return
-        chosen = dlg.result
-        for label, diag, obj in dlg.items:
-            rid = req.get("id")
-            if label in chosen:
-                key = (
-                    "safety_requirements"
-                    if "safety" in req.get("req_type", "").lower()
-                    else "requirements"
-                )
-                lst = obj.setdefault(key, [])
-                if not any(r.get("id") == rid for r in lst):
-                    lst.append(req)
-            else:
-                for key in ("requirements", "safety_requirements"):
-                    lst = obj.get(key, [])
-                    if lst:
-                        obj[key] = [r for r in lst if r.get("id") != rid]
-                        if not obj[key]:
-                            obj.pop(key, None)
-        self.refresh()
-
-    def _show_menu(self, event):
-        iid = self.tree.identify_row(event.y)
-        if iid:
-            self.tree.selection_set(iid)
-            try:
-                self.menu.tk_popup(event.x_root, event.y_root)
-            finally:
-                self.menu.grab_release()
-
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
         idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":6}
@@ -4086,58 +4038,3 @@ class RequirementsExplorerWindow(tk.Frame):
                         names.append(f"{dname}:{oname}")
         return sorted(set(names))
 
-    def link_to_diagram(self):
-        sel = self.tree.selection()
-        if not sel:
-            return
-        rid = self.tree.item(sel[0], "values")[0]
-        req = global_requirements.get(rid)
-        if not req:
-            return
-        repo = SysMLRepository.get_instance()
-        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
-        can_trace = toolbox.can_trace if toolbox else (lambda a, b: True)
-        req_wp = toolbox.requirement_work_product(req.get("req_type", "")) if toolbox else ""
-        dlg = DiagramElementDialog(self, repo, req_wp, can_trace)
-        targets = getattr(dlg, "selection", [])
-        if not targets:
-            return
-        from gui.architecture import link_requirement_to_object
-        for diag_id, obj_id in targets:
-            diag = repo.diagrams.get(diag_id)
-            if not diag:
-                continue
-            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
-            if not obj:
-                continue
-            link_requirement_to_object(obj, rid, diag_id)
-            repo.touch_diagram(diag_id)
-            elem_id = obj.get("element_id")
-            if elem_id:
-                repo.touch_element(elem_id)
-        self.refresh()
-
-    def link_requirement(self):
-        sel = self.tree.selection()
-        if not sel:
-            return
-        rid = self.tree.item(sel[0], "values")[0]
-        req = global_requirements.get(rid)
-        if not req:
-            return
-        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
-        dlg = _RequirementRelationDialog(self, req, toolbox)
-        if not dlg.result:
-            return
-        relation, targets = dlg.result
-        selected = set(targets)
-        existing = {
-            r.get("id")
-            for r in req.get("relations", [])
-            if r.get("type") == relation
-        }
-        for tid in selected - existing:
-            link_requirements(rid, relation, tid)
-        for tid in existing - selected:
-            unlink_requirements(rid, relation, tid)
-        self.refresh()
