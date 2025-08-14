@@ -9,7 +9,17 @@ from gui.toolboxes import RiskAssessmentWindow
 
 
 def test_edit_doc_updates_selections(monkeypatch):
-    doc = HaraDoc("RA1", ["HZ1"], [], False, "draft", stpa="STPA1", threat="TA1")
+    doc = HaraDoc(
+        "RA1",
+        ["HZ1"],
+        [],
+        False,
+        "draft",
+        stpa="STPA1",
+        threat="TA1",
+        fi2tc="FI1",
+        tc2fi="TC1",
+    )
     app = types.SimpleNamespace(
         active_hara=doc,
         hara_docs=[doc],
@@ -23,7 +33,7 @@ def test_edit_doc_updates_selections(monkeypatch):
 
     class DummyDialog:
         def __init__(self, *a, **k):
-            self.result = ("HZ2", "STPA2", "TA2")
+            self.result = ("HZ2", "STPA2", "TA2", "FI2", "TC2")
 
     monkeypatch.setattr(RiskAssessmentWindow, "EditAssessmentDialog", DummyDialog)
 
@@ -32,3 +42,5 @@ def test_edit_doc_updates_selections(monkeypatch):
     assert doc.hazops == ["HZ2"]
     assert doc.stpa == "STPA2"
     assert doc.threat == "TA2"
+    assert doc.fi2tc == "FI2"
+    assert doc.tc2fi == "TC2"

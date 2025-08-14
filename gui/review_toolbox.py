@@ -27,9 +27,8 @@ import json
 import re
 try:
     from PIL import Image, ImageTk
-except ModuleNotFoundError:
-    print("Error: Pillow package is required for image support. Please install pillow.")
-    sys.exit(1)
+except ModuleNotFoundError:  # pragma: no cover - pillow optional
+    Image = ImageTk = None
 
 # Node types treated as gates when deriving component names
 GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
@@ -1385,8 +1384,7 @@ class ReviewDocumentDialog(tk.Frame):
             c.bind("<B1-Motion>", lambda e, cv=c: cv.scan_dragto(e.x, e.y, gain=1))
 
             img = self.app.capture_diff_diagram(node)
-            if img:
-                from PIL import ImageTk
+            if img and Image and ImageTk:
                 img = img.resize((img.width // 2, img.height // 2), Image.LANCZOS)
                 photo = ImageTk.PhotoImage(img)
                 self.images.append(photo)
