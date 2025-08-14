@@ -8792,15 +8792,13 @@ class FaultTreeApp:
                 except Exception:
                     self.enabled_work_products.add(name)
             if getattr(toolbox, "work_products", None):
-                declared_all = {wp.analysis for wp in toolbox.work_products}
                 for name in current - declared:
                     try:
-                        if name in declared_all:
-                            # Temporarily hide work products not declared in
-                            # the active phase even if documents exist.
-                            self.disable_work_product(name, force=True)
-                        else:
-                            self.disable_work_product(name)
+                        # Always hide work products that are not declared in
+                        # the active phase. ``force`` ensures the menu and
+                        # toolbox entries are disabled even when documents of
+                        # that type already exist.
+                        self.disable_work_product(name, force=True)
                     except Exception:
                         pass
         global_enabled = getattr(self, "enabled_work_products", set())

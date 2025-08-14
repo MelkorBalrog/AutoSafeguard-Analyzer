@@ -213,7 +213,7 @@ class SafetyManagementToolbox:
             return all_products
         diagrams = self.diagrams_in_module(self.active_module)
         if not diagrams:
-            return all_products
+            return set()
         return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
 
     # ------------------------------------------------------------------
@@ -225,6 +225,7 @@ class SafetyManagementToolbox:
     def set_active_module(self, name: Optional[str]) -> None:
         """Select the active lifecycle phase by module *name*."""
         self.active_module = name
+        SysMLRepository.get_instance().active_phase = name
         if self.on_change:
             self.on_change()
 

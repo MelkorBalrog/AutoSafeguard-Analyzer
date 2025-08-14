@@ -616,12 +616,12 @@ def test_open_work_product_requires_enablement():
     assert opened["count"] == 1
 
 
-def test_phase_without_diagrams_keeps_products_enabled():
+def test_phase_without_diagrams_disables_products():
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Gov1", "HAZOP", "link")
     toolbox.modules = [GovernanceModule(name="P1")]
     toolbox.set_active_module("P1")
-    assert toolbox.enabled_products() == {"HAZOP"}
+    assert toolbox.enabled_products() == set()
 
 
 def test_menu_work_products_toggle_and_guard_existing_docs():
