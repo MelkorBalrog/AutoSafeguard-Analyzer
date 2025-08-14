@@ -80,6 +80,38 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
         GovernanceDiagramWindow.on_left_press(win, event2)
         self.assertEqual(repo.relationships[0].stereotype, "propagate")
 
+    def test_trace_relationship_bidirectional(self):
+        repo = self.repo
+        e1 = repo.create_element("Block", name="A")
+        e2 = repo.create_element("Block", name="B")
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "WP1"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "WP2"},
+        )
+        diag.objects = [o1.__dict__, o2.__dict__]
+        win = self._create_window("Trace", o1, o2, diag)
+        event1 = types.SimpleNamespace(x=0, y=0, state=0)
+        GovernanceDiagramWindow.on_left_press(win, event1)
+        event2 = types.SimpleNamespace(x=0, y=100, state=0)
+        GovernanceDiagramWindow.on_left_press(win, event2)
+        self.assertEqual(repo.relationships[0].stereotype, "trace")
+        self.assertEqual(win.connections[0].arrow, "both")
+
 
 if __name__ == "__main__":
     unittest.main()
