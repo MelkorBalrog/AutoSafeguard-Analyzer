@@ -2470,7 +2470,6 @@ class FaultTreeApp:
         qualitative_menu.add_command(
             label="Fault Prioritization",
             command=self.open_fault_prioritization_window,
-            state=tk.DISABLED,
         )
         # --- Quantitative Analysis Menu ---
         quantitative_menu = tk.Menu(menubar, tearoff=0)
@@ -2658,14 +2657,20 @@ class FaultTreeApp:
             "Safety & Security Management": self.open_safety_management_toolbox,
             "Safety & Security Management Explorer": self.manage_safety_management,
             "Safety & Security Case Explorer": self.manage_safety_cases,
+            "Safety Performance Indicators": self.show_safety_performance_indicators,
+            "Fault Prioritization": self.open_fault_prioritization_window,
         }
 
         self.tool_categories: dict[str, list[str]] = {
             "Safety & Security Management": [
                 "Safety & Security Management",
-            "Safety & Security Management Explorer",
-            "Safety & Security Case Explorer",
-        ]
+                "Safety & Security Management Explorer",
+                "Safety & Security Case Explorer",
+                "Safety Performance Indicators",
+            ],
+            "Safety Analysis": [
+                "Fault Prioritization",
+            ],
         }
         self.tool_to_work_product = {}
         for name, info in self.WORK_PRODUCT_INFO.items():
