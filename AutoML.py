@@ -8827,6 +8827,16 @@ class FaultTreeApp:
         global_enabled = getattr(self, "enabled_work_products", set())
         if toolbox and getattr(toolbox, "work_products", None):
             phase_enabled = toolbox.enabled_products()
+            # Parent menu categories also need to remain active when any of
+            # their children are enabled.  ``phase_enabled`` only contains the
+            # direct work products declared in the governance diagram so we
+            # ascend the hierarchy here to ensure parent menus are treated as
+            # enabled as well.
+            for name in list(phase_enabled):
+                parent = self.WORK_PRODUCT_PARENTS.get(name)
+                while parent:
+                    phase_enabled.add(parent)
+                    parent = self.WORK_PRODUCT_PARENTS.get(parent)
         else:
             phase_enabled = global_enabled
         enabled = global_enabled & phase_enabled
