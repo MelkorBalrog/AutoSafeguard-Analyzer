@@ -249,7 +249,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 0,
                 0,
                 element_id=e1.elem_id,
-                properties={"name": "Mission Profile"},
+                properties={"name": "Architecture Diagram"},
             )
             o2 = SysMLObject(
                 2,
@@ -272,8 +272,35 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
 
+    def test_used_relationships_disallow_analysis_sources(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "FMEA"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "FTA"},
+        )
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertFalse(valid)
 
-    def test_analysis_inputs_mapping(self):
+    def test_analysis_targets_used_after_review_visibility(self):
         repo = self.repo
         toolbox = SafetyManagementToolbox()
         diag = repo.create_diagram("Governance Diagram", name="Gov")
