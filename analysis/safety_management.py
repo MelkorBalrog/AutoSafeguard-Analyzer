@@ -276,9 +276,12 @@ class SafetyManagementToolbox:
         if not self.active_module:
             return set()
         diagrams = self.diagrams_in_module(self.active_module)
-        if not diagrams:
-            return set()
-        return {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
+        reuse = self._reuse_map().get(self.active_module, {})
+        for phase in reuse.get("phases", set()):
+            diagrams.update(self.diagrams_in_module(phase))
+        enabled = {wp.analysis for wp in self.work_products if wp.diagram in diagrams}
+        enabled.update(reuse.get("work_products", set()))
+        return enabled
 
     # ------------------------------------------------------------------
     def is_enabled(self, analysis: str) -> bool:

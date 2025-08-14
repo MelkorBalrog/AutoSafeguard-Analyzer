@@ -3193,16 +3193,34 @@ class SysMLDiagramWindow(tk.Frame):
                             if t == "Control Action"
                             else "feedback" if t == "Feedback" else t.lower()
                         )
-                        rel = self.repo.create_relationship(
-                            t, src_id, dst_id, stereotype=rel_stereo
+                        conn = DiagramConnection(
+                            self.start.obj_id,
+                            obj.obj_id,
+                            t,
+                            arrow=arrow_default,
+                            stereotype=conn_stereo,
                         )
-                        self.repo.add_relationship_to_diagram(
-                            self.diagram_id, rel.rel_id
-                        )
-                    self._sync_to_repository()
-                    ConnectionDialog(self, conn)
-                else:
-                    messagebox.showwarning("Invalid Connection", msg)
+                        self.connections.append(conn)
+                        src_id = self.start.element_id
+                        dst_id = obj.element_id
+                        if src_id and dst_id:
+                            rel_stereo = (
+                                "control action"
+                                if t == "Control Action"
+                                else "feedback" if t == "Feedback" else None
+                            )
+                            rel = self.repo.create_relationship(
+                                t, src_id, dst_id, stereotype=rel_stereo
+                            )
+                            self.repo.add_relationship_to_diagram(
+                                self.diagram_id, rel.rel_id
+                            )
+                            if t == "Generalization":
+                                inherit_block_properties(self.repo, src_id)
+                        self._sync_to_repository()
+                        ConnectionDialog(self, conn)
+                    else:
+                        messagebox.showwarning("Invalid Connection", msg)
                 self.start = None
                 self.temp_line_end = None
                 self.selected_obj = None

@@ -35,7 +35,7 @@ def test_work_product_reuse_visibility():
 
     toolbox.set_active_module("P2")
     assert toolbox.document_visible("HAZOP", "Doc1")
-    assert "HAZOP" not in toolbox.enabled_products()
+    assert "HAZOP" in toolbox.enabled_products()
 
 
 def test_phase_reuse_visibility():
@@ -58,5 +58,5 @@ def test_phase_reuse_visibility():
 
     toolbox.set_active_module("P2")
     assert toolbox.document_visible("Risk Assessment", "RA1")
-    assert "Risk Assessment" not in toolbox.enabled_products()
+    assert "Risk Assessment" in toolbox.enabled_products()
 
