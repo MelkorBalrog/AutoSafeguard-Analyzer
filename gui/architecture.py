@@ -5511,8 +5511,17 @@ class SysMLDiagramWindow(tk.Frame):
                         wrap_width = max_chars
                         wrapped = textwrap.fill(label, width=wrap_width)
                         lines = wrapped.count("\n") + 1
+
+                # Truncate wrapped lines if they still exceed available space
+                wrapped_lines = wrapped.splitlines()
+                if len(wrapped_lines) > max_lines:
+                    wrapped_lines = wrapped_lines[:max_lines]
+                    wrapped = "\n".join(wrapped_lines)
+                    lines = len(wrapped_lines)
+
                 # create a compartment on the left for the vertical title
                 label_w = lines * line_h + 16 * self.zoom
+                label_w = min(label_w, obj.width * self.zoom)
                 cx = x - w + label_w
                 self.canvas.create_line(
                     cx,
