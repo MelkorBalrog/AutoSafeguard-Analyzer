@@ -8,6 +8,7 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
+from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
     ReliabilityAnalysis,
@@ -36,6 +37,24 @@ from analysis.models import (
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
 from sysml.sysml_repository import SysMLRepository
+
+
+def find_requirement_traces(req_id: str) -> list[str]:
+    """Return names of diagram objects referencing the requirement ``req_id``."""
+    repo = SysMLRepository.get_instance()
+    traces: list[str] = []
+    for diag in repo.diagrams.values():
+        for obj in diag.objects:
+            reqs = []
+            reqs.extend(obj.get("requirements", []))
+            reqs.extend(obj.get("safety_requirements", []))
+            if any(r.get("id") == req_id for r in reqs):
+                name = obj.get("properties", {}).get("name") or obj.get("obj_type", "")
+                if diag.name:
+                    traces.append(f"{diag.name}:{name}")
+                else:
+                    traces.append(name)
+    return sorted(set(traces))
 
 
 def configure_table_style(style_name: str, rowheight: int = 60) -> None:
@@ -3840,6 +3859,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
         rtype = self.type_var.get().strip()
         asil = self.asil_var.get().strip()
         status = self.status_var.get().strip()
+        repo = SysMLRepository.get_instance()
         for req in global_requirements.values():
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue
@@ -3851,6 +3871,17 @@ class RequirementsExplorerWindow(tk.Toplevel):
                 continue
             rid = req.get("id", "")
             alloc = ", ".join(self.app.get_requirement_allocation_names(rid))
+            locations = []
+            for diag_id, obj_id in repo.find_requirements(req.get("id", "")):
+                diag = repo.diagrams.get(diag_id)
+                obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+                dname = diag.name if diag else ""
+                oname = obj.get("properties", {}).get("name", "") if obj else ""
+                if dname and oname:
+                    locations.append(f"{dname}:{oname}")
+                elif dname or oname:
+                    locations.append(dname or oname)
+            trace = ", ".join(locations)
             self.tree.insert(
                 "",
                 "end",
@@ -3859,7 +3890,9 @@ class RequirementsExplorerWindow(tk.Toplevel):
                     req.get("asil", ""),
                     req.get("req_type", ""),
                     req.get("status", ""),
+                    trace,
                     req.get("parent_id", ""),
+                    traces,
                     req.get("text", ""),
                     alloc,
                 ),
@@ -3924,7 +3957,7 @@ class RequirementsExplorerWindow(tk.Toplevel):
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":5}
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Trace":4, "Parent":5, "Text":6}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
