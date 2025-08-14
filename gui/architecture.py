@@ -1984,41 +1984,6 @@ def unlink_requirement_from_object(obj, req_id: str, diagram_id: str | None = No
 
 
 # ---------------------------------------------------------------------------
-def link_trace_between_objects(src_obj, dst_obj, diagram_id: str):
-    """Create a ``Trace`` connection between two diagram objects.
-
-    Both ``src_obj`` and ``dst_obj`` may be :class:`SysMLObject` instances or
-    plain dictionaries representing diagram objects. The connection is stored in
-    the diagram's connection list and mirrored as bidirectional ``Trace``
-    relationships between the underlying elements when available.
-    """
-
-    repo = SysMLRepository.get_instance()
-
-    src_id = getattr(src_obj, "obj_id", None) or src_obj.get("obj_id")
-    dst_id = getattr(dst_obj, "obj_id", None) or dst_obj.get("obj_id")
-    if src_id is None or dst_id is None:
-        return None
-
-    conn = DiagramConnection(src_id, dst_id, "Trace", arrow="both", stereotype="trace")
-
-    diag = repo.diagrams.get(diagram_id)
-    if diag is not None:
-        diag.connections = getattr(diag, "connections", [])
-        diag.connections.append(conn.__dict__)
-
-    src_elem = getattr(src_obj, "element_id", None) or src_obj.get("element_id")
-    dst_elem = getattr(dst_obj, "element_id", None) or dst_obj.get("element_id")
-    if src_elem and dst_elem:
-        rel1 = repo.create_relationship("Trace", src_elem, dst_elem)
-        rel2 = repo.create_relationship("Trace", dst_elem, src_elem)
-        repo.add_relationship_to_diagram(diagram_id, rel1.rel_id)
-        repo.add_relationship_to_diagram(diagram_id, rel2.rel_id)
-
-    return conn
-
-
-# ---------------------------------------------------------------------------
 def link_requirements(src_id: str, relation: str, dst_id: str) -> None:
     """Create a requirement relationship and mirror the inverse."""
 
@@ -8109,32 +8074,17 @@ class SysMLObjectDialog(simpledialog.Dialog):
             targets = getattr(self, "_trace_targets", None)
             if targets is None:
                 targets = [trace_lb.get(i) for i in getattr(trace_lb, "curselection", lambda: [])()]
-
-            current_diag = getattr(self.master, "diagram_id", None)
-            # Remove existing trace connections involving this object
-            if current_diag and hasattr(self.master, "connections"):
-                self.master.connections = [
-                    c
-                    for c in self.master.connections
-                    if not (
-                        c.conn_type == "Trace"
-                        and (c.src == self.obj.obj_id or c.dst == self.obj.obj_id)
-                    )
-                ]
-                diag_ref = repo.diagrams.get(current_diag)
-                if diag_ref:
-                    diag_ref.connections = [
-                        c
-                        for c in getattr(diag_ref, "connections", [])
-                        if not (
-                            c.get("conn_type") == "Trace"
-                            and (
-                                c.get("src") == self.obj.obj_id
-                                or c.get("dst") == self.obj.obj_id
-                            )
-                        )
-                    ]
-
+            joined = ", ".join(targets)
+            if joined:
+                self.obj.properties["trace_to"] = joined
+            else:
+                self.obj.properties.pop("trace_to", None)
+            if self.obj.element_id and self.obj.element_id in repo.elements:
+                elem_props = repo.elements[self.obj.element_id].properties
+                if joined:
+                    elem_props["trace_to"] = joined
+                else:
+                    elem_props.pop("trace_to", None)
             removed = {
                 r.rel_id
                 for r in repo.relationships
@@ -8145,12 +8095,9 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 repo.relationships = [r for r in repo.relationships if r.rel_id not in removed]
                 for diag in repo.diagrams.values():
                     diag.relationships = [rid for rid in diag.relationships if rid not in removed]
-
-            stored_tokens: list[str] = []
             for token in targets:
                 parts = token.split(":", 1)
                 if len(parts) != 2:
-                    stored_tokens.append(token)
                     target_elem = next(
                         (e for e in repo.elements.values() if e.name == token),
                         None,
@@ -8169,26 +8116,10 @@ class SysMLObjectDialog(simpledialog.Dialog):
                 )
                 if not obj:
                     continue
-                if diag_id == current_diag:
-                    link_trace_between_objects(self.obj, obj, current_diag)
-                else:
-                    stored_tokens.append(token)
-                    target_elem = obj.get("element_id")
-                    if target_elem and self.obj.element_id:
-                        repo.create_relationship("Trace", self.obj.element_id, target_elem)
-                        repo.create_relationship("Trace", target_elem, self.obj.element_id)
-
-            joined = ", ".join(stored_tokens)
-            if joined:
-                self.obj.properties["trace_to"] = joined
-            else:
-                self.obj.properties.pop("trace_to", None)
-            if self.obj.element_id and self.obj.element_id in repo.elements:
-                elem_props = repo.elements[self.obj.element_id].properties
-                if joined:
-                    elem_props["trace_to"] = joined
-                else:
-                    elem_props.pop("trace_to", None)
+                target_elem = obj.get("element_id")
+                if target_elem and self.obj.element_id:
+                    repo.create_relationship("Trace", self.obj.element_id, target_elem)
+                    repo.create_relationship("Trace", target_elem, self.obj.element_id)
 
         if self.obj.element_id and self.obj.element_id in repo.elements:
             elem_type = repo.elements[self.obj.element_id].elem_type
