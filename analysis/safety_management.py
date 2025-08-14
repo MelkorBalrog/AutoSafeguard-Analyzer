@@ -42,14 +42,17 @@ ALLOWED_PROPAGATIONS: set[tuple[str, str]] = {
     ("FTA", "Product Goal Specification"),
 }
 
-# Work products considered safety analyses which may consume Architecture Diagrams
+# Work products that support governed inputs from other work products
 SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "HAZOP",
+    "HARA",
     "STPA",
     "Threat Analysis",
+    "Cyber Risk Assessment",
     "FI2TC",
     "TC2FI",
     "Risk Assessment",
+    "Mission Profile",
     "FMEA",
     "FMEDA",
     "FTA",
