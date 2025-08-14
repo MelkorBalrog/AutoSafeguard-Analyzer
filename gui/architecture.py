@@ -449,6 +449,8 @@ def _shared_generalization_parent(
 
 def rename_block(repo: SysMLRepository, block_id: str, new_name: str) -> None:
     """Rename ``block_id`` and propagate changes to related blocks."""
+    if repo.element_read_only(block_id):
+        return
     repo.push_undo_state()
     block = repo.elements.get(block_id)
     if not block or block.elem_type != "Block":
@@ -1878,7 +1880,8 @@ def rename_port(
     repo: SysMLRepository, port: SysMLObject, objs: List[SysMLObject], new_name: str
 ) -> None:
     """Rename *port* and update its parent's port list."""
-
+    if port.element_id and repo.element_read_only(port.element_id):
+        return
     old_name = port.properties.get("name", "")
     if old_name == new_name:
         return

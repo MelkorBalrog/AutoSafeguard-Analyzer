@@ -80,6 +80,9 @@ class SysMLRepository:
         # diagrams belonging to any of these phases should remain visible even
         # though they were not created in ``active_phase``.
         self.reuse_phases: set[str] = set()
+        # Work product types reused by the active phase. Any diagrams of these
+        # types originating from other phases are visible but read-only.
+        self.reuse_products: set[str] = set()
         self.root_package = self.create_element("Package", name="Root")
 
     def touch_element(self, elem_id: str) -> None:
@@ -300,6 +303,8 @@ class SysMLRepository:
 
     def delete_element(self, elem_id: str) -> None:
         """Remove an element and any relationships referencing it."""
+        if self.element_read_only(elem_id):
+            return
         self.push_undo_state()
         if elem_id in self.elements:
             del self.elements[elem_id]
@@ -321,6 +326,8 @@ class SysMLRepository:
         self.delete_element(pkg_id)
 
     def delete_diagram(self, diag_id: str) -> None:
+        if self.diagram_read_only(diag_id):
+            return
         self.push_undo_state()
         if diag_id in self.diagrams:
             del self.diagrams[diag_id]
@@ -410,7 +417,14 @@ class SysMLRepository:
             return False
         if self.active_phase is None or elem.phase is None:
             return True
-        return elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set())
+        if elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set()):
+            return True
+        diag_id = self.element_diagrams.get(elem_id)
+        if diag_id:
+            diag = self.diagrams.get(diag_id)
+            if diag and diag.diag_type in getattr(self, "reuse_products", set()):
+                return True
+        return False
 
     def diagram_visible(self, diag_id: str) -> bool:
         """Return True if ``diag_id`` should be visible in the active phase."""
@@ -421,7 +435,36 @@ class SysMLRepository:
             return True
         if self.active_phase is None or diag.phase is None:
             return True
-        return diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set())
+        if diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set()):
+            return True
+        return diag.diag_type in getattr(self, "reuse_products", set())
+
+    def element_read_only(self, elem_id: str) -> bool:
+        """Return ``True`` if ``elem_id`` originates from a reused phase or work product."""
+        elem = self.elements.get(elem_id)
+        if not elem:
+            return False
+        if self.active_phase is None or elem.phase is None:
+            return False
+        if elem.phase != self.active_phase and elem.phase in getattr(self, "reuse_phases", set()):
+            return True
+        diag_id = self.element_diagrams.get(elem_id)
+        if diag_id:
+            diag = self.diagrams.get(diag_id)
+            if diag and diag.diag_type in getattr(self, "reuse_products", set()) and diag.phase != self.active_phase:
+                return True
+        return False
+
+    def diagram_read_only(self, diag_id: str) -> bool:
+        """Return ``True`` if ``diag_id`` originates from a reused phase or work product."""
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return False
+        if self.active_phase is None or diag.phase is None:
+            return False
+        if diag.phase != self.active_phase and diag.phase in getattr(self, "reuse_phases", set()):
+            return True
+        return diag.phase != self.active_phase and diag.diag_type in getattr(self, "reuse_products", set())
 
     def visible_elements(self) -> dict[str, SysMLElement]:
         """Return mapping of element IDs to elements visible in the active phase."""
@@ -434,7 +477,7 @@ class SysMLRepository:
     def object_visible(self, obj: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram object should be visible in the active phase."""
         diag = self.diagrams.get(diag_id) if diag_id else None
-        if diag and "safety-management" in getattr(diag, "tags", []):
+        if diag and ("safety-management" in getattr(diag, "tags", []) or diag.diag_type in getattr(self, "reuse_products", set())):
             return True
         if self.active_phase is None or obj.get("phase") is None:
             return True
@@ -443,7 +486,7 @@ class SysMLRepository:
     def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram connection should be visible in the active phase."""
         diag = self.diagrams.get(diag_id) if diag_id else None
-        if diag and "safety-management" in getattr(diag, "tags", []):
+        if diag and ("safety-management" in getattr(diag, "tags", []) or diag.diag_type in getattr(self, "reuse_products", set())):
             return True
         if self.active_phase is None or conn.get("phase") is None:
             return True
