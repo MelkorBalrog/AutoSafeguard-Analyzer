@@ -425,14 +425,20 @@ class SysMLRepository:
         """Return mapping of diagram IDs to diagrams visible in the active phase."""
         return {did: d for did, d in self.diagrams.items() if self.diagram_visible(did)}
 
-    def object_visible(self, obj: dict) -> bool:
+    def object_visible(self, obj: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram object should be visible in the active phase."""
+        diag = self.diagrams.get(diag_id) if diag_id else None
+        if diag and "safety-management" in getattr(diag, "tags", []):
+            return True
         if self.active_phase is None or obj.get("phase") is None:
             return True
         return obj.get("phase") == self.active_phase
 
-    def connection_visible(self, conn: dict) -> bool:
+    def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:
         """Return True if a diagram connection should be visible in the active phase."""
+        diag = self.diagrams.get(diag_id) if diag_id else None
+        if diag and "safety-management" in getattr(diag, "tags", []):
+            return True
         if self.active_phase is None or conn.get("phase") is None:
             return True
         return conn.get("phase") == self.active_phase
@@ -442,14 +448,14 @@ class SysMLRepository:
         diag = self.diagrams.get(diag_id)
         if not diag:
             return []
-        return [o for o in getattr(diag, "objects", []) if self.object_visible(o)]
+        return [o for o in getattr(diag, "objects", []) if self.object_visible(o, diag_id)]
 
     def visible_connections(self, diag_id: str) -> list[dict]:
         """Return list of connections in diagram ``diag_id`` visible in the active phase."""
         diag = self.diagrams.get(diag_id)
         if not diag:
             return []
-        return [c for c in getattr(diag, "connections", []) if self.connection_visible(c)]
+        return [c for c in getattr(diag, "connections", []) if self.connection_visible(c, diag_id)]
 
     # ------------------------------------------------------------
     # Diagram linkage helpers
