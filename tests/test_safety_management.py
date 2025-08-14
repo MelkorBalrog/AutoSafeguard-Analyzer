@@ -1147,7 +1147,6 @@ def test_refresh_tool_enablement_enables_parent_menus():
     assert fmeda_menu.state == tk.NORMAL
     assert quant_menu.state == tk.NORMAL
 
-
 def test_phase_without_diagrams_disables_tools():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
