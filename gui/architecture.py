@@ -3377,6 +3377,22 @@ class SysMLDiagramWindow(tk.Frame):
                         if abs(mx - x) <= 4 and abs(my - y) <= 4:
                             self.dragging_point_index = 0
                             self.conn_drag_offset = (x - mx, 0)
+                elif (
+                    self.repo.diagrams.get(self.diagram_id).diag_type
+                    == "Governance Diagram"
+                    and conn.style == "Straight"
+                ):
+                    src_obj = self.get_object(conn.src)
+                    dst_obj = self.get_object(conn.dst)
+                    if src_obj and dst_obj:
+                        mx = ((src_obj.x + dst_obj.x) / 2) * self.zoom
+                        my = ((src_obj.y + dst_obj.y) / 2) * self.zoom
+                        if abs(mx - x) <= 4 and abs(my - y) <= 4:
+                            conn.style = "Custom"
+                            if not conn.points:
+                                conn.points.append((mx / self.zoom, my / self.zoom))
+                            self.dragging_point_index = 0
+                            self.conn_drag_offset = (x - mx, y - my)
                 # check for dragging endpoints
                 src_obj = self.get_object(conn.src)
                 dst_obj = self.get_object(conn.dst)
@@ -6603,6 +6619,18 @@ class SysMLDiagramWindow(tk.Frame):
                     hy - s,
                     mx + s,
                     hy + s,
+                    outline="red",
+                    fill="white",
+                    tags="connection",
+                )
+            elif diag and diag.diag_type == "Governance Diagram" and conn.style == "Straight":
+                mx, my = (ax + bx) / 2, (ay + by) / 2
+                s = 3
+                self.canvas.create_rectangle(
+                    mx - s,
+                    my - s,
+                    mx + s,
+                    my + s,
                     outline="red",
                     fill="white",
                     tags="connection",
