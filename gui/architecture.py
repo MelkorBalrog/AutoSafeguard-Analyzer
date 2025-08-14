@@ -21,7 +21,7 @@ from analysis.models import (
     REQUIREMENT_WORK_PRODUCTS,
     REQUIREMENT_TYPE_OPTIONS,
 )
-from analysis.safety_management import ALLOWED_PROPAGATIONS
+from analysis.safety_management import ALLOWED_PROPAGATIONS, ACTIVE_TOOLBOX
 
 # ---------------------------------------------------------------------------
 # Appearance customization
@@ -7246,11 +7246,17 @@ class SysMLObjectDialog(simpledialog.Dialog):
 
         repo = SysMLRepository.get_instance()
         current_diagram = repo.diagrams.get(getattr(self.master, "diagram_id", ""))
+        self.current_diagram = current_diagram
         toolbox = getattr(app, "safety_mgmt_toolbox", None)
         wp_map = {wp.analysis: wp for wp in toolbox.get_work_products()} if toolbox else {}
         diagram_wp = wp_map.get(getattr(current_diagram, "diag_type", ""))
         diag_trace_opts = (
             sorted(getattr(diagram_wp, "traceable", [])) if diagram_wp else []
+        )
+        self._target_work_product = (
+            self.obj.properties.get("name", "")
+            if self.obj.obj_type == "Work Product"
+            else getattr(diagram_wp, "analysis", getattr(current_diagram, "diag_type", ""))
         )
         link_row = 0
         trace_shown = False
@@ -7620,7 +7626,19 @@ class SysMLObjectDialog(simpledialog.Dialog):
         if dialog.result:
             for rid in dialog.result:
                 req = global_requirements.get(rid)
-                if req and not any(r.get("id") == rid for r in self.obj.requirements):
+                if not req:
+                    continue
+                toolbox = ACTIVE_TOOLBOX
+                if toolbox:
+                    req_wp = toolbox.requirement_work_product(req.get("req_type", ""))
+                    target = self._target_work_product or ""
+                    if not toolbox.can_trace(req_wp, target):
+                        messagebox.showwarning(
+                            "Invalid Trace",
+                            f"Requirement {req['id']} cannot trace to {target}",
+                        )
+                        continue
+                if not any(r.get("id") == rid for r in self.obj.requirements):
                     self.obj.requirements.append(req)
                     self.req_list.insert(tk.END, f"[{req['id']}] {req.get('text','')}")
         self._update_asil()
