@@ -2,7 +2,7 @@
 import json
 import uuid
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import os
 import datetime
 import analysis.user_config as user_config
@@ -695,6 +695,18 @@ class SysMLRepository:
                     mapped = name_map.get(def_val)
                     if mapped:
                         obj.setdefault("properties", {})["definition"] = mapped
+
+    def find_requirements(self, req_id: str) -> List[Tuple[str, int]]:
+        """Return list of (diagram_id, obj_id) where ``req_id`` is allocated."""
+        matches: List[Tuple[str, int]] = []
+        for diag_id, diag in self.diagrams.items():
+            for obj in getattr(diag, "objects", []):
+                for req in obj.get("requirements", []):
+                    rid = req.get("id") if isinstance(req, dict) else req
+                    if rid == req_id:
+                        matches.append((diag_id, obj.get("obj_id")))
+                        break
+        return matches
 
     def get_activity_actions(self) -> list[str]:
         """Return all action names and activity diagram names."""

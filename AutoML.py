@@ -1402,6 +1402,16 @@ class EditNodeDialog(simpledialog.Dialog):
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.app.get_all_nodes(self.app.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -2701,6 +2711,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -2934,6 +2954,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -3083,6 +3113,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
@@ -3265,6 +3305,16 @@ class FaultTreeApp:
     def get_requirement_allocation_names(self, req_id):
         """Return a list of node or FMEA entry names where the requirement appears."""
         names = []
+        repo = SysMLRepository.get_instance()
+        for diag_id, obj_id in repo.find_requirements(req_id):
+            diag = repo.diagrams.get(diag_id)
+            obj = next((o for o in getattr(diag, "objects", []) if o.get("obj_id") == obj_id), None)
+            dname = diag.name if diag else ""
+            oname = obj.get("properties", {}).get("name", "") if obj else ""
+            if dname and oname:
+                names.append(f"{dname}:{oname}")
+            elif dname or oname:
+                names.append(dname or oname)
         for n in self.get_all_nodes(self.root_node):
             reqs = getattr(n, "safety_requirements", [])
             if any((r.get("id") if isinstance(r, dict) else getattr(r, "id", None)) == req_id for r in reqs):
