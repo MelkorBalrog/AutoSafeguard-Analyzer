@@ -2108,9 +2108,6 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
-        # Parent work product for scenario-related libraries; enables the
-        # "Scenario" menu without exposing a direct tool.
-        "Scenario": ("Scenario", None, None),
         "Scenario Library": (
             "Scenario",
             "Scenario Libraries",
@@ -2149,7 +2146,7 @@ class FaultTreeApp:
         "Reliability Analysis": "Quantitative Analysis",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
-        "ODD": "Scenario",
+        "ODD": "Scenario Library",
     }
 
     def __init__(self, root):
@@ -2551,7 +2548,7 @@ class FaultTreeApp:
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Scenario", menu=libs_menu)
         idx = menubar.index("end")
-        self.work_product_menus.setdefault("Scenario", []).append((menubar, idx))
+        self.work_product_menus.setdefault("Scenario Library", []).append((menubar, idx))
         self.work_product_menus.setdefault("ODD", []).append((menubar, idx))
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Qualitative Analysis", menu=qualitative_menu)
@@ -9107,7 +9104,7 @@ class FaultTreeApp:
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
             "Architecture Diagram": "arch_diagrams",
-            "Scenario": "scenario_libraries",
+            "Scenario Library": "scenario_libraries",
             "ODD": "odd_libraries",
             "Qualitative Analysis": (
                 "hazop_docs",

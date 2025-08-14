@@ -9186,7 +9186,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
-            "Scenario",
+            "Scenario Library",
             "ODD",
         ]
         options = list(dict.fromkeys(options))
@@ -9208,7 +9208,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
-            "Scenario": "Scenario",
+            "Scenario Library": "Scenario",
             "ODD": "Scenario",
         }
         areas = {
