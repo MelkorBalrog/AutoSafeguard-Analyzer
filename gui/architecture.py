@@ -43,6 +43,17 @@ def _get_next_id() -> int:
     return val
 
 
+def _format_label(win, name: str, phase: str | None) -> str:
+    """Return *name* with a phase suffix unless it's a governance diagram."""
+    repo = getattr(win, "repo", None)
+    diag_id = getattr(win, "diagram_id", None)
+    if repo and diag_id:
+        diag = repo.diagrams.get(diag_id)
+        if diag and diag.diag_type == "Governance Diagram":
+            return name or ""
+    return format_name_with_phase(name, phase)
+
+
 def _parse_float(val: str | None, default: float) -> float:
     """Convert *val* to ``float`` or return ``default`` if conversion fails."""
     try:
@@ -4701,7 +4712,7 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _min_block_size(self, obj: SysMLObject) -> tuple[float, float]:
         """Return minimum width and height to display all Block text."""
-        name = format_name_with_phase(obj.properties.get('name', ''), obj.phase)
+        name = _format_label(self, obj.properties.get('name', ''), obj.phase)
         header = f"<<block>> {name}".strip()
         width_px = self.font.measure(header) + 8 * self.zoom
         compartments = self._block_compartments(obj)
@@ -4791,7 +4802,7 @@ class SysMLDiagramWindow(tk.Frame):
     def _object_label_lines(self, obj: SysMLObject) -> list[str]:
         """Return the lines of text displayed inside *obj*."""
         if obj.obj_type == "System Boundary" or obj.obj_type == "Block Boundary":
-            name = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+            name = _format_label(self, obj.properties.get("name", ""), obj.phase)
             return [name] if name else []
 
         if obj.obj_type in ("Block", "Port"):
@@ -4877,12 +4888,12 @@ class SysMLDiagramWindow(tk.Frame):
                 elif not name:
                     name = f" : {def_part}"
 
-        name = format_name_with_phase(name, obj.phase)
+        name = _format_label(self, name, obj.phase)
         lines: list[str] = []
         diag_id = self.repo.get_linked_diagram(obj.element_id)
         if diag_id and diag_id in self.repo.diagrams:
             diag = self.repo.diagrams[diag_id]
-            diag_name = format_name_with_phase(diag.name or diag_id, diag.phase)
+            diag_name = _format_label(self, diag.name or diag_id, diag.phase)
             lines.append(diag_name)
 
         if obj.obj_type in ("Action", "CallBehaviorAction") and name:
@@ -4977,7 +4988,6 @@ class SysMLDiagramWindow(tk.Frame):
             "Merge",
         ) and min_h > obj.height:
             obj.height = min_h
-
     def sort_objects(self) -> None:
         """Order objects so boundaries render behind and their ports above."""
 
@@ -5537,7 +5547,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+            label = _format_label(self, obj.properties.get("name", ""), obj.phase)
             if label:
                 # Wrap and scale the label so it always fits within the boundary box
                 avail_w = max(obj.width * self.zoom - 16 * self.zoom, 1)
@@ -5612,7 +5622,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+            label = _format_label(self, obj.properties.get("name", ""), obj.phase)
             if label:
                 lx = x
                 ly = y - h - 4 * self.zoom
@@ -5624,7 +5634,7 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
-            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+            label = _format_label(self, obj.properties.get("name", ""), obj.phase)
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
@@ -5707,7 +5717,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill=color,
             )
-            label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+            label = _format_label(self, obj.properties.get("name", ""), obj.phase)
             if label:
                 self.canvas.create_text(
                     x,
@@ -5735,7 +5745,7 @@ class SysMLDiagramWindow(tk.Frame):
             )
             diag = self.repo.diagrams.get(self.diagram_id)
             if not diag or diag.diag_type != "Control Flow Diagram":
-                label = format_name_with_phase(obj.properties.get("name", ""), obj.phase)
+                label = _format_label(self, obj.properties.get("name", ""), obj.phase)
                 if label:
                     lx = x
                     ly = y - h - 4 * self.zoom
@@ -5845,8 +5855,8 @@ class SysMLDiagramWindow(tk.Frame):
                 ly_off = _parse_float(obj.properties.get("labelY"), -8.0)
                 lx = x + lx_off * self.zoom
                 ly = y + ly_off * self.zoom
-                port_label = format_name_with_phase(
-                    obj.properties.get("name", ""), obj.phase
+                port_label = _format_label(
+                    self, obj.properties.get("name", ""), obj.phase
                 )
                 self.canvas.create_text(
                     lx,
@@ -5892,7 +5902,7 @@ class SysMLDiagramWindow(tk.Frame):
                 fill="",
                 outline=outline,
             )
-            name = format_name_with_phase(obj.properties.get('name', ''), obj.phase)
+            name = _format_label(self, obj.properties.get('name', ''), obj.phase)
             header = f"<<block>> {name}".strip()
             self.canvas.create_line(left, top + 20 * self.zoom, right, top + 20 * self.zoom)
             self.canvas.create_text(

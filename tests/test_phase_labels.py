@@ -41,6 +41,24 @@ class PhaseLabelTests(unittest.TestCase):
         lines = win._object_label_lines(obj)
         self.assertIn("Do (PhaseX)", lines)
 
+    def test_governance_label_omits_phase(self):
+        repo = SysMLRepository.get_instance()
+        diag = repo.create_diagram("Governance Diagram")
+        elem = repo.create_element("Use Case", name="Check")
+        elem.phase = "PhaseZ"
+        obj = SysMLObject(
+            2,
+            "Work Product",
+            0.0,
+            0.0,
+            element_id=elem.elem_id,
+            phase="PhaseZ",
+            properties={"name": "Check"},
+        )
+        win = DummyWindow(diag.diag_id)
+        lines = win._object_label_lines(obj)
+        self.assertIn("Check", " ".join(lines))
+        self.assertNotIn("PhaseZ", " ".join(lines))
 
 if __name__ == "__main__":
     unittest.main()
