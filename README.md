@@ -73,9 +73,9 @@ coordinating reviews and communicating how safety, cybersecurity and AI
 assurance fit together across the item’s lifecycle.
 
 Governance diagrams can also produce **derived requirements**.  Each task,
-flow and relationship—including any optional conditions—is converted into a
-natural language statement so governance models can be exported as concise
-requirements lists.
+flow and relationship—including any optional conditions or labels—is
+converted into a natural language statement so governance models can be
+exported as concise requirements lists.
 
 When editing a governance diagram in the Safety & Security Management tool,
 use the **Requirements** button to generate these statements and view them in
@@ -91,7 +91,9 @@ diagram = GovernanceDiagram()
 diagram.add_task("Draft Plan")
 diagram.add_task("Review Plan")
 diagram.add_flow("Draft Plan", "Review Plan", condition="plan complete")
-diagram.add_relationship("Review Plan", "Draft Plan", "changes requested")
+diagram.add_relationship(
+    "Review Plan", "Draft Plan", condition="changes requested", label="rework"
+)
 
 for req in diagram.generate_requirements():
     print(req)
@@ -103,7 +105,7 @@ Running this script produces:
 The system shall perform task 'Draft Plan'.
 The system shall perform task 'Review Plan'.
 When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
-Task 'Review Plan' shall be related to task 'Draft Plan' when changes requested.
+Task 'Review Plan' shall rework task 'Draft Plan' when changes requested.
 ```
 
 To gather the requirements for every governance diagram within a specific lifecycle phase,

@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.safety_management_toolbox import SafetyManagementWindow, SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
 from gui import safety_management_toolbox as smt
-from analysis.models import global_requirements, REQUIREMENT_TYPE_OPTIONS
+from analysis.models import global_requirements
 
 
 def test_requirements_button_opens_tab(monkeypatch):
@@ -68,7 +68,7 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
     assert any("Task 'Start' shall precede task 'Finish'." in t for t in texts)
-    # Ensure requirement types are valid
-    assert all(row[1] in REQUIREMENT_TYPE_OPTIONS for row in trees[0].rows)
+    # Ensure requirement types are organizational
+    assert all(row[1] == "organizational" for row in trees[0].rows)
     # Requirements added to global registry
     assert len(global_requirements) == len(trees[0].rows)

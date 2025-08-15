@@ -601,6 +601,7 @@ REQUIREMENT_TYPE_OPTIONS = [
     "service",
     "product",
     "legal",
+    "organizational",
 ]
 
 # Work product names corresponding to each requirement category. These are used
@@ -619,6 +620,7 @@ REQUIREMENT_WORK_PRODUCTS = [
     "Service Requirement Specification",
     "Product Requirement Specification",
     "Legal Requirement Specification",
+    "Organizational Requirement Specification",
 ]
 # ASIL level options including decomposition levels
 ASIL_LEVEL_OPTIONS = [

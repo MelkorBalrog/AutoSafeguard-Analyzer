@@ -43,15 +43,31 @@ class GovernanceDiagram:
         self.edge_data[(src, dst)] = {"kind": "flow", "condition": condition}
 
     def add_relationship(
-        self, src: str, dst: str, condition: str | None = None
+        self,
+        src: str,
+        dst: str,
+        condition: str | None = None,
+        label: str | None = None,
     ) -> None:
-        """Add a non-flow relationship between two existing tasks."""
+        """Add a non-flow relationship between two existing tasks.
+
+        Parameters
+        ----------
+        src, dst:
+            Names of the existing source and destination tasks.
+        condition:
+            Optional textual condition that must hold for the relationship.
+        label:
+            Optional label describing the relationship between the tasks.
+        """
+
         if not self.graph.has_node(src) or not self.graph.has_node(dst):
             raise ValueError("Both tasks must exist before creating a relationship")
         self.graph.add_edge(src, dst)
         self.edge_data[(src, dst)] = {
             "kind": "relationship",
             "condition": condition,
+            "label": label,
         }
 
     def tasks(self) -> List[str]:
@@ -78,9 +94,9 @@ class GovernanceDiagram:
     def generate_requirements(self) -> List[str]:
         """Generate textual requirements from the diagram.
 
-        Tasks, flows, relationships and any optional conditions are converted
-        into simple natural language statements for downstream processing or
-        documentation.
+        Tasks, flows, relationships and any optional conditions or labels are
+        converted into simple natural language statements for downstream
+        processing or documentation.
         """
 
         requirements: List[str] = []
@@ -89,19 +105,32 @@ class GovernanceDiagram:
             requirements.append(f"The system shall perform task '{task}'.")
 
         for src, dst in self.graph.edges():
-            data = self.edge_data.get((src, dst), {"kind": "flow", "condition": None})
+            data = self.edge_data.get(
+                (src, dst), {"kind": "flow", "condition": None, "label": None}
+            )
             cond = data.get("condition")
             kind = data.get("kind")
+            label = data.get("label")
             if kind == "flow":
                 if cond:
                     req = f"When {cond}, task '{src}' shall precede task '{dst}'."
                 else:
                     req = f"Task '{src}' shall precede task '{dst}'."
             else:  # relationship
-                if cond:
-                    req = f"Task '{src}' shall be related to task '{dst}' when {cond}."
+                if label:
+                    if cond:
+                        req = (
+                            f"Task '{src}' shall {label} task '{dst}' when {cond}."
+                        )
+                    else:
+                        req = f"Task '{src}' shall {label} task '{dst}'."
                 else:
-                    req = f"Task '{src}' shall be related to task '{dst}'."
+                    if cond:
+                        req = (
+                            f"Task '{src}' shall be related to task '{dst}' when {cond}."
+                        )
+                    else:
+                        req = f"Task '{src}' shall be related to task '{dst}'."
             requirements.append(req)
 
         return requirements
@@ -154,11 +183,16 @@ class GovernanceDiagram:
             dst = id_to_name.get(cdict.get("dst"))
             if not src or not dst:
                 continue
-            cond = cdict.get("name") or cdict.get("properties", {}).get("condition")
+            name = cdict.get("name")
+            cond = cdict.get("properties", {}).get("condition")
             if cdict.get("conn_type") == "Flow":
-                diagram.add_flow(src, dst, cond)
+                diagram.add_flow(src, dst, cond or name)
             else:
-                diagram.add_relationship(src, dst, cond)
+                if cond is None and name is not None:
+                    # Backwards compatibility: older diagrams used the name as the condition
+                    diagram.add_relationship(src, dst, condition=name)
+                else:
+                    diagram.add_relationship(src, dst, condition=cond, label=name)
 
         return diagram
 
@@ -167,6 +201,8 @@ if __name__ == "__main__":  # pragma: no cover - example usage for docs
     demo.add_task("Draft Plan")
     demo.add_task("Review Plan")
     demo.add_flow("Draft Plan", "Review Plan")
-    demo.add_relationship("Review Plan", "Draft Plan", "changes requested")
+    demo.add_relationship(
+        "Review Plan", "Draft Plan", condition="changes requested", label="rework"
+    )
     for requirement in demo.generate_requirements():
         print(requirement)

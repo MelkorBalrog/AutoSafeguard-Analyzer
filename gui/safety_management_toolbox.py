@@ -21,10 +21,17 @@ class SafetyManagementWindow(tk.Frame):
     :class:`SafetyManagementToolbox` are listed.
     """
 
-    def __init__(self, master, app, toolbox: SafetyManagementToolbox | None = None):
+    def __init__(
+        self,
+        master,
+        app,
+        toolbox: SafetyManagementToolbox | None = None,
+        show_diagrams: bool = True,
+    ):
         super().__init__(master)
         self.app = app
         self.toolbox = toolbox or SafetyManagementToolbox()
+        self._auto_show_diagram = show_diagrams
         try:
             self.app.safety_mgmt_window = self
         except Exception:
@@ -79,8 +86,9 @@ class SafetyManagementWindow(tk.Frame):
             current = self.diag_var.get()
             if current not in names:
                 self.diag_var.set(names[0])
-            self.open_diagram(self.diag_var.get())
-        else:
+            if self._auto_show_diagram:
+                self.open_diagram(self.diag_var.get())
+        elif self._auto_show_diagram:
             self.diag_var.set("")
             self.open_diagram(None)
 
@@ -170,7 +178,7 @@ class SafetyManagementWindow(tk.Frame):
         while f"R{idx}" in global_requirements:
             idx += 1
         rid = f"R{idx}"
-        req_type = REQUIREMENT_TYPE_OPTIONS[0]
+        req_type = "organizational"
         app = getattr(self, "app", None)
         if app and hasattr(app, "add_new_requirement"):
             app.add_new_requirement(rid, req_type, text)

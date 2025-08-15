@@ -2815,6 +2815,7 @@ class SysMLDiagramWindow(tk.Frame):
         app=None,
         history=None,
         relation_tools: list[str] | None = None,
+        tool_groups: dict[str, list[str]] | None = None,
     ):
         super().__init__(master)
         self.app = app
@@ -2908,16 +2909,40 @@ class SysMLDiagramWindow(tk.Frame):
         self.back_btn.pack(fill=tk.X, padx=2, pady=2)
         self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
 
-        # Always provide a select tool
-        tools = ["Select"] + tools
+        # Always provide a select tool at the top of the toolbox
+        self.tool_buttons: dict[str, ttk.Button] = {}
         self.tools_frame = ttk.Frame(self.toolbox)
         self.tools_frame.pack(fill=tk.X, padx=2, pady=2)
-        for tool in tools:
-            ttk.Button(
-                self.tools_frame,
-                text=tool,
-                command=lambda t=tool: self.select_tool(t),
-            ).pack(fill=tk.X, padx=2, pady=2)
+        select_btn = ttk.Button(
+            self.tools_frame,
+            text="Select",
+            command=lambda: self.select_tool("Select"),
+        )
+        select_btn.pack(fill=tk.X, padx=2, pady=2)
+        self.tool_buttons["Select"] = select_btn
+
+        # Group element tools by category when provided
+        if tool_groups:
+            groups = tool_groups
+        else:
+            groups = {"": tools}
+        self.element_frames: dict[str, ttk.Frame] = {}
+        for name, group_tools in groups.items():
+            frame = (
+                ttk.LabelFrame(self.tools_frame, text=name)
+                if name
+                else ttk.Frame(self.tools_frame)
+            )
+            frame.pack(fill=tk.X, padx=2, pady=2)
+            self.element_frames[name] = frame
+            for tool in group_tools:
+                btn = ttk.Button(
+                    frame,
+                    text=tool,
+                    command=lambda t=tool: self.select_tool(t),
+                )
+                btn.pack(fill=tk.X, padx=2, pady=2)
+                self.tool_buttons[tool] = btn
 
         if relation_tools:
             self.rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
@@ -4975,6 +5000,46 @@ class SysMLDiagramWindow(tk.Frame):
         ]
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
 
+    def _allocate_diamond_corner(
+        self, obj: SysMLObject, tx: float, ty: float, current: DiagramConnection
+    ) -> Tuple[float, float]:
+        """Return a relative corner for *obj* avoiding corners used by other connections.
+
+        ``tx`` and ``ty`` are the coordinates of the opposite endpoint. ``current`` is
+        the connection being assigned. Returned values are one of ``(1, 0)``, ``(0, 1)``,
+        ``(-1, 0)``, or ``(0, -1)`` representing right, bottom, left, and top corners
+        respectively.
+        """
+
+        cx = obj.x * self.zoom
+        cy = obj.y * self.zoom
+        w = obj.width * self.zoom / 2
+        h = obj.height * self.zoom / 2
+        corner_data = [
+            ((cx, cy - h), (0.0, -1.0)),
+            ((cx + w, cy), (1.0, 0.0)),
+            ((cx, cy + h), (0.0, 1.0)),
+            ((cx - w, cy), (-1.0, 0.0)),
+        ]
+
+        # Order corners by proximity to the target coordinates
+        corner_data.sort(key=lambda c: (c[0][0] - tx) ** 2 + (c[0][1] - ty) ** 2)
+
+        used: set[Tuple[float, float]] = set()
+        for conn in self.connections:
+            if conn is current:
+                continue
+            if conn.src == obj.obj_id and conn.src_pos is not None:
+                used.add(conn.src_pos)
+            if conn.dst == obj.obj_id and conn.dst_pos is not None:
+                used.add(conn.dst_pos)
+
+        for _, rel in corner_data:
+            if rel not in used:
+                return rel
+        # All corners in use; fall back to the nearest one
+        return corner_data[0][1]
+
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         diag = self.repo.diagrams.get(self.diagram_id)
         for conn in self.connections:
@@ -6672,6 +6737,8 @@ class SysMLDiagramWindow(tk.Frame):
             max_neurons = max(layers)
             spacing_y = obj.height * self.zoom / (max_neurons - 1 if max_neurons > 1 else 1)
             layer_x = x - obj.width * self.zoom / 2
+
+            # Calculate neuron positions for each layer without drawing
             neuron_positions: list[list[tuple[float, float]]] = []
             for count in layers:
                 xs = layer_x
@@ -6680,6 +6747,19 @@ class SysMLDiagramWindow(tk.Frame):
                 for i in range(count):
                     cx = xs
                     cy = ys + i * spacing_y
+                    positions.append((cx, cy))
+                neuron_positions.append(positions)
+                layer_x += spacing_x
+
+            # Draw connections first so they appear behind the neuron nodes
+            for i in range(len(neuron_positions) - 1):
+                for src in neuron_positions[i]:
+                    for dst in neuron_positions[i + 1]:
+                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+
+            # Now draw the neuron nodes on top of the connections
+            for layer in neuron_positions:
+                for cx, cy in layer:
                     r = 5 * self.zoom
                     fta_drawing_helper._fill_gradient_circle(self.canvas, cx, cy, r, color)
                     self.canvas.create_oval(
@@ -6690,13 +6770,7 @@ class SysMLDiagramWindow(tk.Frame):
                         outline=outline,
                         fill="",
                     )
-                    positions.append((cx, cy))
-                neuron_positions.append(positions)
-                layer_x += spacing_x
-            for i in range(len(neuron_positions) - 1):
-                for src in neuron_positions[i]:
-                    for dst in neuron_positions[i + 1]:
-                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+
             label = obj.properties.get("name", obj.obj_type)
             self.canvas.create_text(x, y + h + 10 * self.zoom, text=label, font=self.font)
         elif obj.obj_type == "Data acquisition":
@@ -6896,7 +6970,11 @@ class SysMLDiagramWindow(tk.Frame):
             ax, ay = self.edge_point(a, 0, 0, (1, 0))
             bx, by = ax, ay
         else:
+            if conn.src_pos is None and a.obj_type in ("Decision", "Merge"):
+                conn.src_pos = self._allocate_diamond_corner(a, bxc, byc, conn)
             ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
+            if conn.dst_pos is None and b.obj_type in ("Decision", "Merge"):
+                conn.dst_pos = self._allocate_diamond_corner(b, axc, ayc, conn)
             bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
@@ -9229,7 +9307,11 @@ class ConnectionDialog(simpledialog.Dialog):
 
 class UseCaseDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Actor", "Use Case", "System Boundary"]
+        tool_groups = {
+            "Nodes": ["Actor", "Use Case"],
+            "Boundary": ["System Boundary"],
+        }
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = [
             "Association",
             "Communication Path",
@@ -9246,6 +9328,7 @@ class UseCaseDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
@@ -9262,17 +9345,19 @@ class UseCaseDiagramWindow(SysMLDiagramWindow):
 
 class ActivityDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = [
-            "Action",
-            "CallBehaviorAction",
-            "Initial",
-            "Final",
-            "Decision",
-            "Merge",
-            "Fork",
-            "Join",
-            "System Boundary",
-        ]
+        tool_groups = {
+            "Actions": ["Action", "CallBehaviorAction"],
+            "Control Nodes": [
+                "Initial",
+                "Final",
+                "Decision",
+                "Merge",
+                "Fork",
+                "Join",
+            ],
+            "Boundary": ["System Boundary"],
+        }
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = ["Flow"]
         try:
             super().__init__(
@@ -9283,6 +9368,7 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
@@ -9378,7 +9464,12 @@ class ActivityDiagramWindow(SysMLDiagramWindow):
 
 class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Action", "Initial", "Final", "Decision", "Merge", "System Boundary"]
+        tool_groups = {
+            "Tasks": ["Action"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
+            "Boundary": ["System Boundary"],
+        }
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = ["Flow"]
         try:
             super().__init__(
@@ -9389,6 +9480,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
@@ -9401,9 +9493,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
         if not hasattr(self, "tools_frame"):
             self.tools_frame = self.toolbox
-        for child in self.tools_frame.winfo_children():
-            if isinstance(child, ttk.Button) and child.cget("text") == "Action":
-                child.configure(text="Task")
+        btn = getattr(self, "tool_buttons", {}).get("Action")
+        if btn:
+            btn.configure(text="Task")
+            self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
@@ -9534,6 +9627,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
         node_cmds = [
             ("Add Work Product", self.add_work_product),
+            ("Add Generic Work Product", self.add_generic_work_product),
             ("Add Process Area", self.add_process_area),
             ("Add Lifecycle Phase", self.add_lifecycle_phase),
         ]
@@ -9700,6 +9794,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
 
+    def add_generic_work_product(self):  # pragma: no cover - requires tkinter
+        name = simpledialog.askstring("Add Work Product", "Enter work product name:")
+        if not name:
+            return
+        if not getattr(self, "canvas", None):
+            self._place_work_product(name, 100.0, 100.0)
+        else:
+            self._pending_wp_name = name
+            try:
+                self.canvas.configure(cursor="crosshair")
+            except Exception:
+                pass
+
     def add_process_area(self):  # pragma: no cover - requires tkinter
         options = [
             "System Design (Item Definition)",
@@ -9819,7 +9926,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
 class BlockDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Block"]
+        tool_groups = {"Blocks": ["Block"]}
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = [
             "Association",
             "Generalization",
@@ -9835,6 +9943,7 @@ class BlockDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
@@ -9960,7 +10069,8 @@ class BlockDiagramWindow(SysMLDiagramWindow):
 
 class InternalBlockDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Part", "Port"]
+        tool_groups = {"Structure": ["Part"], "Ports": ["Port"]}
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = ["Connector"]
         try:
             super().__init__(
@@ -9971,6 +10081,7 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
@@ -10298,9 +10409,10 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
 class ControlFlowDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Existing Element"]
+        tool_groups = {"Elements": ["Existing Element"]}
         if stpa_tool_enabled(app):
-            tools.append("STPA Analysis")
+            tool_groups["Analysis"] = ["STPA Analysis"]
+        tools = [t for group in tool_groups.values() for t in group]
         rel_tools = ["Control Action", "Feedback"]
         try:
             super().__init__(
@@ -10311,6 +10423,7 @@ class ControlFlowDiagramWindow(SysMLDiagramWindow):
                 app=app,
                 history=history,
                 relation_tools=rel_tools,
+                tool_groups=tool_groups,
             )
         except TypeError:
             super().__init__(
