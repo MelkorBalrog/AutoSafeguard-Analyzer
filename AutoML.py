@@ -386,7 +386,7 @@ from analysis.utils import (
     controllability_to_probability,
     severity_to_probability,
 )
-from analysis.safety_management import SafetyManagementToolbox
+from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -15868,19 +15868,28 @@ class FaultTreeApp:
                 self.name_var = tk.StringVar(value=self.data.get("name", ""))
                 ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, sticky="ew")
                 ttk.Label(master, text="ODD Libraries").grid(row=1, column=0, sticky="ne")
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None) or ACTIVE_TOOLBOX
+                self.allowed_inputs = bool(
+                    toolbox and "ODD" in toolbox.analysis_inputs("Scenario Library")
+                )
                 self.lb = tk.Listbox(master, selectmode=tk.MULTIPLE, height=5)
-                for i, lib in enumerate(self.app.odd_libraries):
-                    self.lb.insert(tk.END, lib.get("name", ""))
-                    if lib.get("name", "") in self.data.get("odds", []):
-                        self.lb.selection_set(i)
+                if self.allowed_inputs:
+                    for i, lib in enumerate(self.app.odd_libraries):
+                        self.lb.insert(tk.END, lib.get("name", ""))
+                        if lib.get("name", "") in self.data.get("odds", []):
+                            self.lb.selection_set(i)
+                else:
+                    self.lb.configure(state=tk.DISABLED)
                 self.lb.grid(row=1, column=1, sticky="nsew")
                 master.grid_rowconfigure(1, weight=1)
                 master.grid_columnconfigure(1, weight=1)
 
             def apply(self):
                 self.data["name"] = self.name_var.get()
-                sels = self.lb.curselection()
-                self.data["odds"] = [self.app.odd_libraries[i].get("name", "") for i in sels]
+                sels = self.lb.curselection() if self.allowed_inputs else []
+                self.data["odds"] = [
+                    self.app.odd_libraries[i].get("name", "") for i in sels
+                ]
 
         class ScenarioDialog(simpledialog.Dialog):
             def __init__(self, parent, app, lib, data=None):

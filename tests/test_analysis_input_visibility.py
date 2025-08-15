@@ -161,3 +161,59 @@ def test_analysis_inputs_respect_phase(analysis):
     assert toolbox.analysis_inputs(analysis) == set()
     toolbox.set_active_module("P1")
     assert toolbox.analysis_inputs(analysis) == {"Architecture Diagram"}
+
+
+def test_scenario_library_inputs_require_relationship():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    # Without any governance relationship the Scenario Library has no inputs
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "ODD", ""),
+        SafetyWorkProduct("Gov", "Scenario Library", ""),
+    ]
+    assert toolbox.analysis_inputs("Scenario Library") == set()
+
+    # Create a Used By relationship from ODD to Scenario Library
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "ODD"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": "Scenario Library"})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used By", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    assert toolbox.analysis_inputs("Scenario Library") == {"ODD"}
+
+
+def test_scenario_library_inputs_respect_phase():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    toolbox.modules = [GovernanceModule("P1", diagrams=["Gov"]), GovernanceModule("P2")]
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "ODD"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": "Scenario Library"})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used By", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "ODD", ""),
+        SafetyWorkProduct("Gov", "Scenario Library", ""),
+    ]
+    toolbox.set_active_module("P2")
+    assert toolbox.analysis_inputs("Scenario Library") == set()
+    toolbox.set_active_module("P1")
+    assert toolbox.analysis_inputs("Scenario Library") == {"ODD"}

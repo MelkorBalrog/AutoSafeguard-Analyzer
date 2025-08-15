@@ -89,6 +89,8 @@ ALLOWED_USAGE.update(
         ("Mission Profile", "FTA"),
         ("Requirement Specification", "HAZOP"),
         ("ODD", "Scenario Library"),
+        ("Reliability Analysis", "FMEA"),
+        ("Reliability Analysis", "FMEDA"),
     }
 )
 
