@@ -2678,6 +2678,7 @@ class FaultTreeApp:
             "Safety & Security Case Explorer": self.manage_safety_cases,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Fault Prioritization": self.open_fault_prioritization_window,
+            "Cause & Effect Diagram": self.show_cause_effect_chain,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2689,6 +2690,7 @@ class FaultTreeApp:
             ],
             "Safety Analysis": [
                 "Fault Prioritization",
+                "Cause & Effect Diagram",
             ],
         }
         self.tool_to_work_product = {}
@@ -2696,6 +2698,9 @@ class FaultTreeApp:
             tool_name = info[1]
             if tool_name:
                 self.tool_to_work_product.setdefault(tool_name, set()).add(name)
+        self.tool_to_work_product.setdefault(
+            "Cause & Effect Diagram", set()
+        ).add("FTA")
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
@@ -8917,7 +8922,14 @@ class FaultTreeApp:
         lb = event.widget
         sel = lb.curselection()
         if not sel:
-            return
+            # Tk may trigger a double-click event before updating the
+            # selection, so determine the item from the pointer location.
+            index = lb.nearest(getattr(event, "y", 0))
+            if index is None or index < 0:
+                return
+            lb.selection_clear(0, tk.END)
+            lb.selection_set(index)
+            sel = (index,)
         name = lb.get(sel[0])
         analysis_names = self.tool_to_work_product.get(name, set())
         if isinstance(analysis_names, str):
