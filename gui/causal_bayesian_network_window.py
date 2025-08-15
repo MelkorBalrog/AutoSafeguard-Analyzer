@@ -38,7 +38,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for name in (
             "Select",
             "Triggering Condition",
+            "Existing Triggering Condition",
             "Functional Insufficiency",
+            "Existing Functional Insufficiency",
             "Relationship",
         ):
             ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
@@ -159,6 +161,42 @@ class CausalBayesianNetworkWindow(tk.Frame):
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
+            if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+            elif kind == "insufficiency" and hasattr(
+                self.app, "update_functional_insufficiency_list"
+            ):
+                self.app.update_functional_insufficiency_list()
+        elif self.current_tool == "Existing Triggering Condition":
+            names = self._select_triggering_conditions()
+            if not names:
+                return
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "trigger"
+                self._draw_node(name, nx, y, "trigger")
+            if hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+        elif self.current_tool == "Existing Functional Insufficiency":
+            names = self._select_functional_insufficiencies()
+            if not names:
+                return
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "insufficiency"
+                self._draw_node(name, nx, y, "insufficiency")
+            if hasattr(self.app, "update_functional_insufficiency_list"):
+                self.app.update_functional_insufficiency_list()
         elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
@@ -425,6 +463,24 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         doc.network.cpds[name][current] = prob
         self._update_table(name)
+
+    # ------------------------------------------------------------------
+    def _select_triggering_conditions(self):
+        from gui.toolboxes import _SelectTriggeringConditionsDialog
+
+        dlg = _SelectTriggeringConditionsDialog(
+            self, getattr(self.app, "triggering_conditions", [])
+        )
+        return getattr(dlg, "result", [])
+
+    # ------------------------------------------------------------------
+    def _select_functional_insufficiencies(self):
+        from gui.toolboxes import _SelectFIsDialog
+
+        dlg = _SelectFIsDialog(
+            self, getattr(self.app, "functional_insufficiencies", [])
+        )
+        return getattr(dlg, "result", [])
 
     # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
