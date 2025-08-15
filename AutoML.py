@@ -2382,6 +2382,11 @@ class FaultTreeApp:
             label="Safety Performance Indicators",
             command=self.show_safety_performance_indicators,
         )
+        self.phase_req_menu = tk.Menu(requirements_menu, tearoff=0)
+        requirements_menu.add_cascade(
+            label="Phase Requirements", menu=self.phase_req_menu
+        )
+        self._refresh_phase_requirements_menu()
         requirements_menu.add_command(
             label="Export Product Goal Requirements",
             command=self.export_product_goal_requirements,
@@ -9031,6 +9036,7 @@ class FaultTreeApp:
 
     def _on_toolbox_change(self) -> None:
         self.refresh_tool_enablement()
+        self._refresh_phase_requirements_menu()
         try:
             self.update_views()
         except Exception:
@@ -14559,6 +14565,25 @@ class FaultTreeApp:
                     seen.add(rid)
                     writer.writerow([sg_text, sg_asil, te.safe_state, rid, req.get("asil", ""), req.get("text", "")])
         messagebox.showinfo("Export", "Product goal requirements exported.")
+    def generate_phase_requirements(self, phase: str) -> None:
+        """Generate requirements for all governance diagrams in a phase."""
+        self.open_safety_management_toolbox()
+        win = getattr(self, "safety_mgmt_window", None)
+        if win:
+            win.generate_phase_requirements(phase)
+
+    def _refresh_phase_requirements_menu(self) -> None:
+        if not hasattr(self, "phase_req_menu"):
+            return
+        self.phase_req_menu.delete(0, tk.END)
+        toolbox = getattr(self, "safety_mgmt_toolbox", None)
+        if not toolbox:
+            return
+        for phase in sorted(toolbox.list_modules()):
+            self.phase_req_menu.add_command(
+                label=phase,
+                command=lambda p=phase: self.generate_phase_requirements(p),
+            )
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
