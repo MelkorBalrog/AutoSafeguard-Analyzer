@@ -58,7 +58,12 @@ _CONFIG = load_diagram_rules(_CONFIG_PATH)
 ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
 
 # Elements available in the Safety & AI Lifecycle toolbox
-SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
+SAFETY_AI_NODES = _CONFIG.get("ai_nodes", [])
+SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
+
+# Relation labels treated as Safety & AI links
+SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
+SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
 # Relationship labels available in the Safety & AI toolbox
 SAFETY_AI_RELATIONS: list[str] = _CONFIG.get("ai_relations", [])
@@ -92,15 +97,93 @@ NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 
 
+# Connection types excluding Safety & AI relations used for membership checks
+_BASE_CONN_TYPES = {
+    "Association",
+    "Include",
+    "Extend",
+    "Flow",
+    "Propagate",
+    "Propagate by Review",
+    "Propagate by Approval",
+    "Used By",
+    "Used after Review",
+    "Used after Approval",
+    "Re-use",
+    "Trace",
+    "Satisfied by",
+    "Derived from",
+    "Connector",
+    "Generalize",
+    "Generalization",
+    "Communication Path",
+    "Aggregation",
+    "Composite Aggregation",
+    "Control Action",
+    "Feedback",
+}
+
+# Ordered list of base connection tools for toolbox composition
+_BASE_CONN_TOOLS = [
+    "Association",
+    "Include",
+    "Extend",
+    "Flow",
+    "Propagate",
+    "Propagate by Review",
+    "Propagate by Approval",
+    "Used By",
+    "Used after Review",
+    "Used after Approval",
+    "Re-use",
+    "Trace",
+    "Satisfied by",
+    "Derived from",
+    "Connector",
+    "Generalize",
+    "Generalization",
+    "Communication Path",
+    "Aggregation",
+    "Composite Aggregation",
+    "Control Action",
+    "Feedback",
+]
+
+# Connection types that default to forward arrows
+_ARROW_FORWARD_BASE = {
+    "Propagate",
+    "Propagate by Review",
+    "Propagate by Approval",
+    "Used By",
+    "Used after Review",
+    "Used after Approval",
+    "Re-use",
+    "Satisfied by",
+    "Derived from",
+}
+
+
+def _all_connection_tools() -> tuple[str, ...]:
+    """Return all connection tools including Safety & AI relations."""
+    return tuple(_BASE_CONN_TOOLS + SAFETY_AI_RELATIONS)
+
+
+def _arrow_forward_types() -> set[str]:
+    """Return connection types that use forward arrowheads."""
+    return _ARROW_FORWARD_BASE | SAFETY_AI_RELATION_SET
+
+
 def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
-    global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
-    global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_RULES, CONNECTION_RULES
-    global NODE_CONNECTION_LIMITS, GUARD_NODES
+    global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
+    global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
+    global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
-    SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
+    SAFETY_AI_NODES = _CONFIG.get("ai_nodes", [])
+    SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
+    SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -3107,35 +3190,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset = None
         cursor = "arrow"
         if tool != "Select":
-            cursor = (
-                "crosshair"
-                if tool
-                in (
-                    "Association",
-                    "Include",
-                    "Extend",
-                    "Flow",
-                    "Propagate",
-                    "Propagate by Review",
-                    "Propagate by Approval",
-                    "Used By",
-                    "Used after Review",
-                    "Used after Approval",
-                    "Re-use",
-                    "Trace",
-                    "Satisfied by",
-                    "Derived from",
-                    "Connector",
-                    "Generalize",
-                    "Generalization",
-                    "Communication Path",
-                    "Aggregation",
-                    "Composite Aggregation",
-                    "Control Action",
-                    "Feedback",
-                )
-                else "tcross"
-            )
+            cursor = "crosshair" if tool in _all_connection_tools() else "tcross"
         self.canvas.configure(cursor=cursor)
         self.update_property_view()
 
@@ -3149,44 +3204,7 @@ class SysMLDiagramWindow(tk.Frame):
         diag = self.repo.diagrams.get(self.diagram_id)
         diag_type = diag.diag_type if diag else ""
 
-        if conn_type in (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-            "Connector",
-            "Generalize",
-            "Generalization",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        ):
+        if conn_type in _BASE_CONN_TYPES or conn_type in SAFETY_AI_RELATION_SET:
             if src == dst:
                 return False, "Cannot connect an element to itself"
 
@@ -3309,22 +3327,7 @@ class SysMLDiagramWindow(tk.Frame):
                     and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
                 ):
                     return False, "Trace links cannot connect safety analysis work products"
-            elif conn_type in (
-                "Annotation",
-                "Synthesis",
-                "Augmentation",
-                "Acquisition",
-                "Labeling",
-                "Field risk evaluation",
-                "Field data collection",
-                "AI training",
-                "AI re-training",
-                "Curation",
-                "Ingestion",
-                "Model evaluation",
-                "Tune",
-                "Hyperparameter Validation",
-            ):
+            elif conn_type in SAFETY_AI_RELATION_SET:
                 allowed = SAFETY_AI_NODE_TYPES | GOVERNANCE_NODE_TYPES
                 if not (
                     src.obj_type in allowed
@@ -3453,44 +3456,7 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        conn_tools = (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-            "Connector",
-            "Generalize",
-            "Generalization",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        )
+        conn_tools = _all_connection_tools()
         prefer = self.current_tool in conn_tools
         t = self.current_tool
         if t in (None, "Select"):
@@ -3622,44 +3588,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.redraw()
                 return
 
-        if t in (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-            "Connector",
-            "Generalize",
-            "Generalization",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        ):
+        if t in _all_connection_tools():
             if self.start is None:
                 if obj:
                     self.start = obj
@@ -4011,44 +3940,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.update_property_view()
 
     def on_left_drag(self, event):
-        if self.start and self.current_tool in (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-            "Connector",
-            "Generalization",
-            "Generalize",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        ):
+        if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
@@ -4281,44 +4173,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.app.update_views()
 
     def on_left_release(self, event):
-        if self.start and self.current_tool in (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-            "Connector",
-            "Generalization",
-            "Generalize",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        ):
+        if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
             obj = self.find_object(
@@ -4335,36 +4190,7 @@ class SysMLDiagramWindow(tk.Frame):
                         arrow_default = "backward"
                     elif self.current_tool == "Trace":
                         arrow_default = "both"
-                    elif self.current_tool in (
-                        "Flow",
-                        "Generalize",
-                        "Generalization",
-                        "Include",
-                        "Extend",
-                        "Propagate",
-                        "Propagate by Review",
-                        "Propagate by Approval",
-                        "Used By",
-                        "Used after Review",
-                        "Used after Approval",
-                        "Re-use",
-                        "Satisfied by",
-                        "Derived from",
-                        "Annotation",
-                        "Synthesis",
-                        "Augmentation",
-                        "Acquisition",
-                        "Labeling",
-                        "Field risk evaluation",
-                        "Field data collection",
-                        "AI training",
-                        "AI re-training",
-                        "Curation",
-                        "Ingestion",
-                        "Model evaluation",
-                        "Tune",
-                        "Hyperparameter Validation",
-                    ):
+                    elif self.current_tool in _arrow_forward_types():
                         arrow_default = "forward"
                     else:
                         arrow_default = "none"
@@ -9707,9 +9533,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.gov_tools_frame = self.tools_frame
         self.gov_rel_frame = getattr(self, "rel_frame", None)
 
-        # Create Safety & AI Lifecycle toolbox frame using configurable rules
-        ai_nodes = sorted(SAFETY_AI_NODE_TYPES)
-        ai_relations = sorted(SAFETY_AI_RELATIONS)
+        # Create Safety & AI Lifecycle toolbox frame
+        ai_nodes = SAFETY_AI_NODES
+        ai_relations = SAFETY_AI_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
             ttk.Button(

@@ -275,7 +275,9 @@ class GovernanceDiagram:
             action: str
             explicit_subject = None
 
-            if self.node_types.get(src) == "Decision":
+            if data.get("origin_src"):
+                origin = src
+            elif self.node_types.get(src) == "Decision":
                 origin = decision_sources.get(src)
                 if origin and kind == "flow":
                     subject = origin
@@ -424,7 +426,8 @@ class GovernanceDiagram:
                     continue
                 cond = cond_prop or guard_text
                 if cond is None and name is not None:
-                    diagram.add_relationship(src, dst, condition=name, conn_type=conn_type, from_repo=True)
+                    diagram.add_relationship(src, dst, condition=name, conn_type=conn_type)
+                    diagram.edge_data[(src, dst)]["origin_src"] = True
                 else:
                     diagram.add_relationship(
                         src,
