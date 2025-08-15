@@ -20,8 +20,8 @@ _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
 # constraint instead of an object, and an optional default subject.  The
 # resulting requirement follows the ISO/IEC/IEEE 29148 pattern
 # ``[CND] <SUB> shall <ACT> [OBJ] [CON].``
-_RELATIONSHIP_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
-    "relationship_rules", {}
+_REQUIREMENT_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
+    "requirement_rules", _CONFIG.get("relationship_rules", {})
 )
 
 # Map node types to default requirement roles so that the generator can
@@ -31,11 +31,13 @@ _NODE_ROLES = _CONFIG.get("node_roles", {})
 
 def reload_config() -> None:
     """Reload governance-related configuration."""
-    global _CONFIG, _AI_NODES, _AI_RELATIONS, _RELATIONSHIP_RULES, _NODE_ROLES
+    global _CONFIG, _AI_NODES, _AI_RELATIONS, _REQUIREMENT_RULES, _NODE_ROLES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     _AI_NODES = set(_CONFIG.get("ai_nodes", []))
     _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
-    _RELATIONSHIP_RULES = _CONFIG.get("relationship_rules", {})
+    _REQUIREMENT_RULES = _CONFIG.get(
+        "requirement_rules", _CONFIG.get("relationship_rules", {})
+    )
     _NODE_ROLES = _CONFIG.get("node_roles", {})
 
 
@@ -285,7 +287,7 @@ class GovernanceDiagram:
                 action = "precede"
             else:
                 key = (label or conn_type or "").lower()
-                rule = _RELATIONSHIP_RULES.get(key, {})
+                rule = _REQUIREMENT_RULES.get(key, {})
                 action = str(rule.get("action", label or "relate to"))
                 explicit_subject = rule.get("subject")
                 if explicit_subject:

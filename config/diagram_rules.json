@@ -6,7 +6,7 @@
     - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
     - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
     - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types
-    - "relationship_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
+    - "requirement_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
     - "node_roles": { "Node Type": "subject|action|condition|constraint|object" } – default requirement role per node type
     - "safety_ai_relation_rules": { "Relation": { "Source": ["Target", ...] } } – allowed Safety & AI relationships
     - "connection_rules": { "Diagram": { "Connection": { "Source": ["Target", ...] } } } – per-diagram connection validation rules
@@ -69,7 +69,7 @@
 
   // Natural language mapping for relationship labels
   // Format: "label": {"action": "verb", "subject": "default subject", "constraint": true|false }
-  "relationship_rules": {
+  "requirement_rules": {
     "performs": {"action": "perform"},
     "executes": {"action": "execute"},
     "responsible for": {"action": "be responsible for"},
