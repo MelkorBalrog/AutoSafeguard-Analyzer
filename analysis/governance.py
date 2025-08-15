@@ -56,6 +56,7 @@ class GeneratedRequirement:
     subject: str | None = None
     obj: str | None = None
     constraint: str | None = None
+    origin: str | None = None
     req_type: str = "organizational"
 
     @property
@@ -63,6 +64,8 @@ class GeneratedRequirement:
         parts: List[str] = []
         if self.condition:
             parts.append(f"If {self.condition},")
+        if self.origin:
+            parts.append(f"after '{self.origin}',")
         subject = self.subject or "Task"
         main = f"{subject} shall {self.action}"
         if self.obj:
@@ -205,7 +208,15 @@ class GovernanceDiagram:
 
         requirements: List[GeneratedRequirement | tuple[str, str]] = []
 
+        decision_sources: dict[str, str] = {}
         for src, dst in self.graph.edges():
+            if self.node_types.get(dst) == "Decision":
+                decision_sources[dst] = src
+
+        for src, dst in self.graph.edges():
+            if self.node_types.get(dst) == "Decision":
+                continue
+
             data = self.edge_data.get(
                 (src, dst), {"kind": "flow", "condition": None, "label": None}
             )
@@ -249,13 +260,17 @@ class GovernanceDiagram:
                 requirements.append((text, req_type))
                 continue
 
+            origin = None
             subject = src
-            orig_subject = subject
             obj: str | None = dst
             constraint: str | None = None
             action: str
             explicit_subject = None
 
+            if self.node_types.get(src) == "Decision":
+                origin = decision_sources.get(src)
+                if origin and kind == "flow":
+                    subject = origin
             if kind == "flow":
                 action = "precede"
             else:
@@ -284,20 +299,10 @@ class GovernanceDiagram:
                     subject=subject,
                     obj=obj,
                     constraint=constraint,
+                    origin=origin if (origin and kind != "flow") else None,
                     req_type=req_type,
                 )
             )
-            if explicit_subject and self.node_types.get(src) == "Decision":
-                requirements.append(
-                    GeneratedRequirement(
-                        action=action,
-                        condition=cond,
-                        subject=orig_subject,
-                        obj=obj,
-                        constraint=constraint,
-                        req_type=req_type,
-                    )
-                )
 
         return requirements
 
