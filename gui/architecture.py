@@ -4081,6 +4081,8 @@ class SysMLDiagramWindow(tk.Frame):
                 min_w, min_h = self._min_block_size(obj)
             elif obj.obj_type in ("Action", "CallBehaviorAction"):
                 min_w, min_h = self._min_action_size(obj)
+            elif obj.obj_type == "Data acquisition":
+                min_w, min_h = self._min_data_acquisition_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
             left = obj.x - obj.width / 2
@@ -5408,6 +5410,17 @@ class SysMLDiagramWindow(tk.Frame):
         padding = 6 * self.zoom
         return (text_width + padding) / self.zoom, (text_height + padding) / self.zoom
 
+    def _min_data_acquisition_size(self, obj: SysMLObject) -> tuple[float, float]:
+        """Return minimum width and height to display Data acquisition compartments."""
+        compartments = obj.properties.get("compartments", ";;").split(";")
+        lines = [line for comp in compartments for line in comp.splitlines()]
+        if not lines:
+            lines = [""]
+        text_width = max(self.font.measure(line) for line in lines)
+        padding = 8 * self.zoom
+        text_height = self.font.metrics("linespace") * max(len(compartments), 1)
+        return (text_width + padding) / self.zoom, (text_height + padding) / self.zoom
+
     def _wrap_text_to_width(self, text: str, width_px: float) -> list[str]:
         """Return *text* wrapped to fit within *width_px* pixels."""
         if self.font.measure(text) <= width_px:
@@ -5604,6 +5617,11 @@ class SysMLDiagramWindow(tk.Frame):
         if obj.obj_type == "Block":
             b_w, b_h = self._min_block_size(obj)
             min_w, min_h = b_w, b_h
+        elif obj.obj_type == "Data acquisition":
+            min_w, min_h = self._min_data_acquisition_size(obj)
+            obj.width = min_w
+            obj.height = min_h
+            return
         else:
             label_lines = self._object_label_lines(obj)
             if not label_lines:

@@ -19,6 +19,7 @@ class DummyWindow:
     _object_label_lines = SysMLDiagramWindow._object_label_lines
     _min_block_size = SysMLDiagramWindow._min_block_size
     _min_action_size = SysMLDiagramWindow._min_action_size
+    _min_data_acquisition_size = SysMLDiagramWindow._min_data_acquisition_size
     _wrap_text_to_width = SysMLDiagramWindow._wrap_text_to_width
 
 class EnsureTextFitsTests(unittest.TestCase):
@@ -99,6 +100,22 @@ class EnsureTextFitsTests(unittest.TestCase):
             win.ensure_text_fits(obj)
             self.assertEqual(obj.width, 40)
             self.assertEqual(obj.height, 40)
+
+    def test_data_acquisition_sizes_to_text(self):
+        win = DummyWindow()
+        obj = SysMLObject(
+            1,
+            "Data acquisition",
+            0,
+            0,
+            width=120,
+            height=80,
+            properties={"compartments": "abc;de"},
+        )
+        obj.requirements = []
+        win.ensure_text_fits(obj)
+        self.assertEqual(obj.width, len("abc") + 8)
+        self.assertEqual(obj.height, 2 + 8)
 
 if __name__ == "__main__":
     unittest.main()
