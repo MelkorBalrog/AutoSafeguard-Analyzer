@@ -57,6 +57,7 @@ class GeneratedRequirement:
     obj: str | None = None
     constraint: str | None = None
     origin: str | None = None
+    source: str | None = None
     req_type: str = "organizational"
 
     @property
@@ -87,7 +88,12 @@ class GeneratedRequirement:
         return self.text
 
     def __contains__(self, item: str) -> bool:  # pragma: no cover - trivial
-        return item in self.text or item in self.req_type
+        return (
+            item in self.text
+            or item in self.req_type
+            or (self.origin and item in self.origin)
+            or (self.source and item in self.source)
+        )
 
 
 @dataclass
@@ -156,6 +162,7 @@ class GovernanceDiagram:
         condition: str | None = None,
         label: str | None = None,
         conn_type: str | None = None,
+        from_repo: bool = False,
     ) -> None:
         """Add a non-flow relationship between two existing tasks.
 
@@ -180,6 +187,7 @@ class GovernanceDiagram:
             "condition": condition,
             "label": label,
             "conn_type": conn_type,
+            "from_repo": from_repo,
         }
 
     def tasks(self) -> List[str]:
@@ -282,6 +290,8 @@ class GovernanceDiagram:
                 explicit_subject = rule.get("subject")
                 if explicit_subject:
                     subject = str(explicit_subject)
+                    if origin is None and data.get("from_repo"):
+                        origin = src
                 if rule.get("constraint"):
                     constraint = dst
                     obj = None
@@ -302,6 +312,7 @@ class GovernanceDiagram:
                     obj=obj,
                     constraint=constraint,
                     origin=origin if (origin and kind != "flow") else None,
+                    source=src,
                     req_type=req_type,
                 )
             )
@@ -419,7 +430,12 @@ class GovernanceDiagram:
                     diagram.edge_data[(src, dst)]["origin_src"] = True
                 else:
                     diagram.add_relationship(
-                        src, dst, condition=cond, label=name, conn_type=conn_type
+                        src,
+                        dst,
+                        condition=cond,
+                        label=name,
+                        conn_type=conn_type,
+                        from_repo=True,
                     )
 
         return diagram
