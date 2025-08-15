@@ -167,12 +167,13 @@ def _setup_window():
         def cpd_rows(self, name):
             parents = self.parents.get(name, [])
             if not parents:
-                prob = float(self.cpds.get(name, 0.0))
+                prob = float(self.cpds.get(name, 1.0))
                 return [((), prob, 1.0, prob)]
             cpds = self.cpds.get(name, {})
             rows = []
+            default = 1.0 / (2 ** len(parents))
             for combo in product([False, True], repeat=len(parents)):
-                prob = float(cpds.get(combo, 0.0))
+                prob = float(cpds.get(combo, default))
                 rows.append((combo, prob, 0.0, 0.0))
             return rows
 
@@ -255,7 +256,7 @@ def test_table_auto_fills_missing_rows():
     doc.network.nodes.add("A")
     doc.network.parents["A"] = ["P1", "P2"]
     doc.positions["A"] = (0, 0)
-    # only one CPD entry; others should default to 0.0
+    # only one CPD entry; others should default to 0.25
     doc.network.cpds["A"] = {(True, False): 0.2}
     win._update_table("A")
     assert tree.height == 4
