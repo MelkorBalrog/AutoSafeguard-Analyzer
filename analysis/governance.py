@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
 from pathlib import Path
-from config import load_json_with_comments
+from config import load_diagram_rules
 
 import networkx as nx
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
-_CONFIG = load_json_with_comments(_CONFIG_PATH)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
 
 # Element and relationship types associated with AI & safety lifecycle nodes.
 _AI_NODES = set(_CONFIG.get("ai_nodes", []))
@@ -32,7 +32,7 @@ _NODE_ROLES = _CONFIG.get("node_roles", {})
 def reload_config() -> None:
     """Reload governance-related configuration."""
     global _CONFIG, _AI_NODES, _AI_RELATIONS, _RELATIONSHIP_RULES, _NODE_ROLES
-    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
     _AI_NODES = set(_CONFIG.get("ai_nodes", []))
     _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
     _RELATIONSHIP_RULES = _CONFIG.get("relationship_rules", {})
