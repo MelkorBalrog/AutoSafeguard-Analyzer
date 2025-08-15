@@ -45,6 +45,9 @@ class SafetyManagementWindow(tk.Frame):
         ttk.Button(top, text="New", command=self.new_diagram).pack(side=tk.LEFT)
         ttk.Button(top, text="Rename", command=self.rename_diagram).pack(side=tk.LEFT)
         ttk.Button(top, text="Delete", command=self.delete_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
+            side=tk.LEFT
+        )
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
