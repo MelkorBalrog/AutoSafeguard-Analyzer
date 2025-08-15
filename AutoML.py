@@ -225,6 +225,7 @@ References
 import re
 import math
 import sys
+import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger
@@ -257,7 +258,8 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-import json
+from config_loader import load_json_with_comments
+from pathlib import Path
 from collections.abc import Mapping
 import csv
 try:
@@ -518,7 +520,16 @@ VALID_SUBTYPES = {
 }
 
 # Node types treated as gates when rendering and editing
-GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+_CONFIG_PATH = Path(__file__).resolve().parent / "diagram_rules.json"
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+
+
+def _reload_local_config() -> None:
+    """Reload gate node types from the external configuration file."""
+    global _CONFIG, GATE_NODE_TYPES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 ##########################################
 # Global Unique ID Counter for Nodes
@@ -2694,6 +2705,7 @@ class FaultTreeApp:
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Fault Prioritization": self.open_fault_prioritization_window,
             "Cause & Effect Diagram": self.show_cause_effect_chain,
+            "Diagram Rule Editor": self.open_diagram_rules_toolbox,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2706,6 +2718,9 @@ class FaultTreeApp:
             "Safety Analysis": [
                 "Fault Prioritization",
                 "Cause & Effect Diagram",
+            ],
+            "Configuration": [
+                "Diagram Rule Editor",
             ],
         }
         self.tool_to_work_product = {}
@@ -16708,6 +16723,32 @@ class FaultTreeApp:
         refresh = getattr(self, "refresh_all", None)
         if callable(refresh):
             refresh()
+
+    def open_diagram_rules_toolbox(self):
+        """Open editor for diagram rule configuration."""
+        tab_exists = (
+            hasattr(self, "_diagram_rules_tab") and self._diagram_rules_tab.winfo_exists()
+        )
+        if tab_exists:
+            self.doc_nb.select(self._diagram_rules_tab)
+            parent = self._diagram_rules_tab
+        else:
+            parent = self._diagram_rules_tab = self._new_tab("Diagram Rules")
+
+        from gui.diagram_rules_toolbox import DiagramRulesEditor
+
+        self.diagram_rules_editor = DiagramRulesEditor(parent, self, _CONFIG_PATH)
+        self.diagram_rules_editor.pack(fill=tk.BOTH, expand=True)
+
+    def reload_config(self) -> None:
+        """Reload diagram rule configuration across modules."""
+        _reload_local_config()
+        from gui import architecture, review_toolbox
+        from analysis import fmeda_utils, governance
+
+        for mod in (architecture, review_toolbox, fmeda_utils, governance):
+            if hasattr(mod, "reload_config"):
+                mod.reload_config()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
