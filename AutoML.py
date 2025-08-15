@@ -2392,6 +2392,7 @@ class FaultTreeApp:
             label="Safety Performance Indicators",
             command=self.show_safety_performance_indicators,
         )
+        self._add_lifecycle_requirements_menu(requirements_menu)
         self.phase_req_menu = tk.Menu(requirements_menu, tearoff=0)
         requirements_menu.add_cascade(
             label="Phase Requirements", menu=self.phase_req_menu
@@ -14597,6 +14598,20 @@ class FaultTreeApp:
         win = getattr(self, "safety_mgmt_window", None)
         if win:
             win.generate_phase_requirements(phase)
+
+    def generate_lifecycle_requirements(self) -> None:
+        """Generate requirements for all governance diagrams outside phases."""
+        self.open_safety_management_toolbox(show_diagrams=False)
+        win = getattr(self, "safety_mgmt_window", None)
+        if win:
+            win.generate_lifecycle_requirements()
+
+    def _add_lifecycle_requirements_menu(self, menu: tk.Menu) -> None:
+        """Insert a menu entry for lifecycle requirements."""
+        menu.add_command(
+            label="Lifecycle Requirements",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def _refresh_phase_requirements_menu(self) -> None:
         if not hasattr(self, "phase_req_menu"):
