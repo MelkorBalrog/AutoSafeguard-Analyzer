@@ -303,6 +303,16 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
     assert colors[2] == "lightgreen"
 
+
+def test_node_label_includes_stereotype():
+    win, doc = _setup_window()
+    doc.network.add_node("A", cpd=0.5)
+    doc.positions["A"] = (0, 0)
+    doc.types["A"] = "variable"
+    win._draw_node("A", 0, 0, "variable")
+    _, text_id, _ = win.nodes["A"]
+    assert win.canvas.items[text_id]["text"] == "<<variable>>\nA"
+
 def test_click_adds_existing_malfunction_nodes():
     win, doc = _setup_window()
     win.current_tool = "Existing Malfunction"
@@ -376,6 +386,50 @@ def test_drag_relationship_creates_edge():
     assert len(win.edges) == 1
     assert "A" in doc.network.parents.get("B", [])
     assert win.current_tool == "Select"
+
+
+def test_disallow_insufficiency_to_trigger_relationship():
+    from gui import causal_bayesian_network_window as cbn_mod
+
+    win, doc = _setup_window()
+    doc.network.nodes.update({"FI", "TC"})
+    doc.positions["FI"] = (0, 0)
+    doc.positions["TC"] = (100, 0)
+    doc.types["FI"] = "insufficiency"
+    doc.types["TC"] = "trigger"
+    win._draw_node("FI", 0, 0, "insufficiency")
+    win._draw_node("TC", 100, 0, "trigger")
+    win.current_tool = "Relationship"
+    with mock.patch.object(cbn_mod.messagebox, "showerror") as err:
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+        win.on_drag(types.SimpleNamespace(x=100, y=0))
+        win.on_release(types.SimpleNamespace(x=100, y=0))
+    assert len(win.edges) == 0
+    assert "FI" not in doc.network.parents.get("TC", [])
+    assert win.current_tool == "Select"
+    err.assert_called_once()
+
+
+def test_disallow_malfunction_relationship():
+    from gui import causal_bayesian_network_window as cbn_mod
+
+    win, doc = _setup_window()
+    doc.network.nodes.update({"M", "V"})
+    doc.positions["M"] = (0, 0)
+    doc.positions["V"] = (100, 0)
+    doc.types["M"] = "malfunction"
+    doc.types["V"] = "variable"
+    win._draw_node("M", 0, 0, "malfunction")
+    win._draw_node("V", 100, 0, "variable")
+    win.current_tool = "Relationship"
+    with mock.patch.object(cbn_mod.messagebox, "showerror") as err:
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+        win.on_drag(types.SimpleNamespace(x=100, y=0))
+        win.on_release(types.SimpleNamespace(x=100, y=0))
+    assert len(win.edges) == 0
+    assert "M" not in doc.network.parents.get("V", [])
+    assert win.current_tool == "Select"
+    err.assert_called_once()
 
 
 def test_add_node_returns_to_select():
