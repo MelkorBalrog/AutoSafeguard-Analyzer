@@ -60,6 +60,9 @@ ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
 # Elements available in the Safety & AI Lifecycle toolbox
 SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
 
+# Relationship labels available in the Safety & AI toolbox
+SAFETY_AI_RELATIONS: list[str] = _CONFIG.get("ai_relations", [])
+
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -92,10 +95,12 @@ GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
-    global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
+    global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_RULES, CONNECTION_RULES
+    global NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
     SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
+    SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9702,28 +9707,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.gov_tools_frame = self.tools_frame
         self.gov_rel_frame = getattr(self, "rel_frame", None)
 
-        # Create Safety & AI Lifecycle toolbox frame
-        ai_nodes = [
-            "Database",
-            "ANN",
-            "Data acquisition",
-        ]
-        ai_relations = [
-            "Annotation",
-            "Synthesis",
-            "Augmentation",
-            "Acquisition",
-            "Labeling",
-            "Field risk evaluation",
-            "Field data collection",
-            "AI training",
-            "AI re-training",
-            "Curation",
-            "Ingestion",
-            "Model evaluation",
-            "Tune",
-            "Hyperparameter Validation",
-        ]
+        # Create Safety & AI Lifecycle toolbox frame using configurable rules
+        ai_nodes = sorted(SAFETY_AI_NODE_TYPES)
+        ai_relations = sorted(SAFETY_AI_RELATIONS)
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
             ttk.Button(
