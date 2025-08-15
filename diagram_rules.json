@@ -34,7 +34,7 @@
     "AI re-training",
     "Curation",
     "Ingestion",
-    "Model evaluation"
+    "Model evaluation",
     "Tune",
     "Hyperparameter Validation"
   ],
@@ -100,7 +100,7 @@
       "subject": "Engineering team"
     },
     "ingestion": {"action": "ingest", "subject": "Engineering team"},
-    "model evaluation": {"action": "evaluate model", "subject": "Engineering team"}
+    "model evaluation": {"action": "evaluate model", "subject": "Engineering team"},
     "tune": {"action": "tune", "subject": "Engineering team"},
     "hyperparameter validation": {
       "action": "validate hyperparameters",
@@ -206,7 +206,6 @@
       "Used By": {"Work Product": ["Work Product"]},
       "Used after Review": {"Work Product": ["Work Product"]},
       "Used after Approval": {"Work Product": ["Work Product"]}
-      }
     }
   },
 
