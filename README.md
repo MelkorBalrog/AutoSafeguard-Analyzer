@@ -71,6 +71,11 @@ These diagrams provide a single reference for planning work products,
 coordinating reviews and communicating how safety, cybersecurity and AI
 assurance fit together across the item’s lifecycle.
 
+Governance diagrams can also produce **derived requirements**.  Each task,
+flow and relationship—including any optional conditions—is converted into a
+natural language statement so governance models can be exported as concise
+requirements lists.
+
 ## Workflow Overview
 
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
