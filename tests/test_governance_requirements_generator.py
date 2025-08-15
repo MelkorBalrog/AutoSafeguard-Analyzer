@@ -18,10 +18,11 @@ def test_generate_requirements_from_governance_diagram():
     diagram.add_relationship("Start", "Finish", condition="risk identified")
 
     reqs = diagram.generate_requirements()
+    texts = [t for t, _ in reqs]
 
-    assert "The system shall perform task 'Start'." in reqs
-    assert "Task 'Start' shall precede task 'Approve'." in reqs
-    assert "When approval granted, task 'Approve' shall precede task 'Finish'." in reqs
+    assert "The system shall perform task 'Start'." in texts
+    assert "Task 'Start' shall precede task 'Approve'." in texts
+    assert "When approval granted, task 'Approve' shall precede task 'Finish'." in texts
     assert (
-        "Task 'Start' shall be related to task 'Finish' when risk identified." in reqs
+        "Task 'Start' shall be related to task 'Finish' when risk identified." in texts
     )

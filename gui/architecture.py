@@ -2777,6 +2777,19 @@ def format_control_flow_label(
             guard_text = "\n".join(lines)
             return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
         return base
+    if diag_type == "Governance Diagram" and conn.conn_type == "Flow":
+        base = f"<<{stereo}>> {label}".strip() if stereo else label
+        if conn.guard:
+            lines: List[str] = []
+            for i, g in enumerate(conn.guard):
+                if i == 0:
+                    lines.append(g)
+                else:
+                    op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
+                    lines.append(f"{op} {g}")
+            guard_text = "\n".join(lines)
+            return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
+        return base
     if stereo:
         return f"<<{stereo}>> {label}".strip() if label else f"<<{stereo}>>"
     return label
@@ -3769,10 +3782,40 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow=arrow_default,
                             stereotype=conn_stereo,
                         )
-                        self.connections.append(conn)
+                        ok = True
+                        if self.start.obj_type in ("Decision", "Merge"):
+                            pref = self._nearest_diamond_corner(
+                                self.start, obj.x * self.zoom, obj.y * self.zoom
+                            )
+                            w = self.start.width * self.zoom / 2
+                            h = self.start.height * self.zoom / 2
+                            cx = self.start.x * self.zoom
+                            cy = self.start.y * self.zoom
+                            rel = ((pref[0] - cx) / w, (pref[1] - cy) / h)
+                            ok = self._assign_decision_corner(
+                                conn, self.start, "src_pos", rel
+                            )
+                        if ok and obj.obj_type in ("Decision", "Merge"):
+                            pref = self._nearest_diamond_corner(
+                                obj, self.start.x * self.zoom, self.start.y * self.zoom
+                            )
+                            w = obj.width * self.zoom / 2
+                            h = obj.height * self.zoom / 2
+                            cx = obj.x * self.zoom
+                            cy = obj.y * self.zoom
+                            rel = ((pref[0] - cx) / w, (pref[1] - cy) / h)
+                            ok = self._assign_decision_corner(conn, obj, "dst_pos", rel)
+                        if ok:
+                            self.connections.append(conn)
+                        else:
+                            messagebox.showwarning(
+                                "Invalid Connection",
+                                "Decision nodes support at most 4 connections",
+                            )
+                            conn = None
                         src_id = self.start.element_id
                         dst_id = obj.element_id
-                        if src_id and dst_id:
+                        if conn and src_id and dst_id:
                             rel_stereo = (
                                 "control action"
                                 if t == "Control Action"
@@ -3800,8 +3843,9 @@ class SysMLDiagramWindow(tk.Frame):
                                 )
                                 if t == "Generalization":
                                     inherit_block_properties(self.repo, src_id)
-                        self._sync_to_repository()
-                        ConnectionDialog(self, conn)
+                        if conn:
+                            self._sync_to_repository()
+                            ConnectionDialog(self, conn)
                     else:
                         messagebox.showwarning("Invalid Connection", msg)
                 self.start = None
@@ -4109,10 +4153,22 @@ class SysMLDiagramWindow(tk.Frame):
                 ex, ey = self._line_rect_intersection(x, y, dx, dy, dst_obj)
                 rx = (sx / self.zoom - src_obj.x) / (src_obj.width / 2)
                 ry = (sy / self.zoom - src_obj.y) / (src_obj.height / 2)
-                self.selected_conn.src_pos = (rx, ry)
+                if src_obj.obj_type in ("Decision", "Merge"):
+                    if not self._assign_decision_corner(
+                        self.selected_conn, src_obj, "src_pos", (rx, ry)
+                    ):
+                        pass
+                else:
+                    self.selected_conn.src_pos = (rx, ry)
                 rx = (ex / self.zoom - dst_obj.x) / (dst_obj.width / 2)
                 ry = (ey / self.zoom - dst_obj.y) / (dst_obj.height / 2)
-                self.selected_conn.dst_pos = (rx, ry)
+                if dst_obj.obj_type in ("Decision", "Merge"):
+                    if not self._assign_decision_corner(
+                        self.selected_conn, dst_obj, "dst_pos", (rx, ry)
+                    ):
+                        pass
+                else:
+                    self.selected_conn.dst_pos = (rx, ry)
             self.redraw()
             return
         if (
@@ -4138,9 +4194,21 @@ class SysMLDiagramWindow(tk.Frame):
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     if self.dragging_endpoint == "src":
-                        self.selected_conn.src_pos = (rx, ry)
+                        if obj.obj_type in ("Decision", "Merge"):
+                            if not self._assign_decision_corner(
+                                self.selected_conn, obj, "src_pos", (rx, ry)
+                            ):
+                                pass
+                        else:
+                            self.selected_conn.src_pos = (rx, ry)
                     else:
-                        self.selected_conn.dst_pos = (rx, ry)
+                        if obj.obj_type in ("Decision", "Merge"):
+                            if not self._assign_decision_corner(
+                                self.selected_conn, obj, "dst_pos", (rx, ry)
+                            ):
+                                pass
+                        else:
+                            self.selected_conn.dst_pos = (rx, ry)
                 else:
                     self.endpoint_drag_pos = (x, y)
             self.redraw()
@@ -9252,6 +9320,39 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
             ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
             row += 1
+        elif (
+            getattr(self.master, "diag_type", "") == "Governance Diagram"
+            and self.connection.conn_type == "Flow"
+        ):
+            src_obj = self.master.get_object(self.connection.src)
+            if src_obj and src_obj.obj_type == "Decision":
+                ttk.Label(master, text="Guard:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+                self.guard_list = tk.Listbox(master, height=4)
+                for g in self.connection.guard:
+                    self.guard_list.insert(tk.END, g)
+                self.guard_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+                gbtn = ttk.Frame(master)
+                gbtn.grid(row=row, column=2, padx=2)
+                ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
+                ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
+                row += 1
+                ttk.Label(master, text="Guard Ops:").grid(row=row, column=0, sticky="ne", padx=4, pady=4)
+                self.guard_ops_list = tk.Listbox(master, height=4)
+                for op in self.connection.guard_ops:
+                    self.guard_ops_list.insert(tk.END, op)
+                self.guard_ops_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+                opbtn = ttk.Frame(master)
+                opbtn.grid(row=row, column=2, padx=2)
+                self.guard_op_choice = tk.StringVar(value="AND")
+                ttk.Combobox(
+                    opbtn,
+                    textvariable=self.guard_op_choice,
+                    values=["AND", "OR"],
+                    state="readonly",
+                ).pack(side=tk.TOP)
+                ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
+                ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
+                row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             ttk.Label(master, text="Multiplicity:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
