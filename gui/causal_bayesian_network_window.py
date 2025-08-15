@@ -440,12 +440,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not parents:
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            for row_vals in rows:
-                if len(row_vals) == 4:
-                    combo, prob, combo_prob, _ = row_vals
-                else:
-                    combo, prob, combo_prob = row_vals
-                joint = combo_prob * prob
+            for combo, prob, combo_prob, joint in rows:
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{joint:.3f}")
                 tree.insert("", "end", values=row)
