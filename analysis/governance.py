@@ -185,6 +185,18 @@ class GovernanceDiagram:
                 continue
             name = cdict.get("name")
             cond = cdict.get("properties", {}).get("condition")
+            if not cond:
+                guard = cdict.get("guard") or []
+                if guard:
+                    ops = cdict.get("guard_ops", [])
+                    parts: list[str] = []
+                    for i, g in enumerate(guard):
+                        if i == 0:
+                            parts.append(g)
+                        else:
+                            op = ops[i - 1] if i - 1 < len(ops) else "AND"
+                            parts.append(f"{op} {g}")
+                    cond = " ".join(parts)
             if cdict.get("conn_type") == "Flow":
                 diagram.add_flow(src, dst, cond or name)
             else:
