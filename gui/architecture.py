@@ -9574,6 +9574,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
         node_cmds = [
             ("Add Work Product", self.add_work_product),
+            ("Add Generic Work Product", self.add_generic_work_product),
             ("Add Process Area", self.add_process_area),
             ("Add Lifecycle Phase", self.add_lifecycle_phase),
         ]
@@ -9730,6 +9731,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Missing Process Area",
                 f"Add process area '{required}' before adding this work product.",
             )
+            return
+        if not getattr(self, "canvas", None):
+            self._place_work_product(name, 100.0, 100.0)
+        else:
+            self._pending_wp_name = name
+            try:
+                self.canvas.configure(cursor="crosshair")
+            except Exception:
+                pass
+
+    def add_generic_work_product(self):  # pragma: no cover - requires tkinter
+        name = simpledialog.askstring("Add Work Product", "Enter work product name:")
+        if not name:
             return
         if not getattr(self, "canvas", None):
             self._place_work_product(name, 100.0, 100.0)
