@@ -36,7 +36,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         toolbox = ttk.Frame(body)
         toolbox.pack(side=tk.LEFT, fill=tk.Y)
         for name in (
-            "Select",
             "Triggering Condition",
             "Existing Triggering Condition",
             "Functional Insufficiency",
@@ -163,6 +162,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             prompt = self.current_tool
             name = simpledialog.askstring(prompt, "Name:", parent=self)
             if not name or name in doc.network.nodes:
+                self.select_tool("Select")
                 return
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
@@ -176,9 +176,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self.app, "update_functional_insufficiency_list"
             ):
                 self.app.update_functional_insufficiency_list()
+            self.select_tool("Select")
         elif self.current_tool == "Existing Triggering Condition":
             names = self._select_triggering_conditions()
             if not names:
+                self.select_tool("Select")
                 return
             x, y = event.x, event.y
             for idx, name in enumerate(names):
@@ -191,9 +193,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self._draw_node(name, nx, y, "trigger")
             if hasattr(self.app, "update_triggering_condition_list"):
                 self.app.update_triggering_condition_list()
+            self.select_tool("Select")
         elif self.current_tool == "Existing Functional Insufficiency":
             names = self._select_functional_insufficiencies()
             if not names:
+                self.select_tool("Select")
                 return
             x, y = event.x, event.y
             for idx, name in enumerate(names):
@@ -222,6 +226,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
+                self.select_tool("Select")
                 return
             self.edge_start = name
             self._highlight_node(None)
@@ -298,6 +303,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if self.temp_edge_anim:
                 self.after_cancel(self.temp_edge_anim)
                 self.temp_edge_anim = None
+            self.select_tool("Select")
 
     # ------------------------------------------------------------------
     def _animate_temp_edge(self):
