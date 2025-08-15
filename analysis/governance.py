@@ -137,8 +137,6 @@ class GovernanceDiagram:
         id_to_name: dict[int, str] = {}
         for obj in getattr(src_diagram, "objects", []):
             odict = obj if isinstance(obj, dict) else obj.__dict__
-            if odict.get("obj_type") != "Action":
-                continue
             elem_id = odict.get("element_id")
             name = ""
             if elem_id and elem_id in repo.elements:
