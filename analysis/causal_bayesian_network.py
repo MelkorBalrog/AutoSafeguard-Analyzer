@@ -233,11 +233,12 @@ class CausalBayesianNetwork:
             combo, prob = rows[0]
             return [(combo, prob, 1.0, prob)]
 
-        result: List[Tuple[Tuple[bool, ...], float, float]] = []
+        result: List[Tuple[Tuple[bool, ...], float, float, float]] = []
         for combo, p_true in rows:
             assignment = {p: v for p, v in zip(parents, combo)}
             combo_prob = self.joint_probability(assignment)
-            result.append((combo, p_true, combo_prob))
+            joint_prob = combo_prob * p_true
+            result.append((combo, p_true, combo_prob, joint_prob))
         return result
 
     # ------------------------------------------------------------------
