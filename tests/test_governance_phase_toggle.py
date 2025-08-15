@@ -357,6 +357,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
         ("TC2FI", "Qualitative Analysis"),
         ("FMEA", "Qualitative Analysis"),
         ("FMEDA", "Quantitative Analysis"),
+        ("Causal Bayesian Network Analysis", "Quantitative Analysis"),
         ("Scenario Library", None),
         ("ODD", "Scenario Library"),
         ("Safety & Security Case", "GSN"),
