@@ -459,7 +459,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             color = "lightyellow"
         fill_tag = f"fill_{name}"
-        self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color, tag=fill_tag)
+        fill_ids = self.drawing_helper._fill_gradient_circle(
+            self.canvas, x, y, r, color, tag=fill_tag
+        ) or []
         oval = self.canvas.create_oval(
             x - r, y - r, x + r, y + r, outline="black", fill=""
         )
@@ -471,6 +473,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.nodes[name] = (oval, text, fill_tag)
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
+        for fid in fill_ids:
+            self.id_to_node[fid] = name
         self._place_table(name)
         self._update_scroll_region()
 
@@ -783,6 +787,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.nodes[new] = (oval_id, text_id, fill_tag)
         self.id_to_node[oval_id] = new
         self.id_to_node[text_id] = new
+        find_withtag = getattr(self.canvas, "find_withtag", None)
+        if find_withtag:
+            for fid in find_withtag(fill_tag):
+                self.id_to_node[fid] = new
         if hasattr(self, "text_font"):
             self.canvas.itemconfigure(text_id, text=new, font=self.text_font)
         else:

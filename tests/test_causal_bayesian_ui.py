@@ -215,7 +215,7 @@ def _setup_window_real():
 
 def test_fill_moves_with_node():
     win, doc = _setup_window()
-    doc.network.nodes.add("A")
+    doc.network.add_node("A", cpd=0.5)
     doc.positions["A"] = (0, 0)
     win._draw_node("A", 0, 0)
     win.drag_node = "A"
@@ -223,6 +223,29 @@ def test_fill_moves_with_node():
     event = types.SimpleNamespace(x=10, y=15)
     win.on_drag(event)
     assert ("fill_A", 10, 15) in win.canvas.moves
+
+
+def test_node_selectable_from_fill_area():
+    win, doc = _setup_window_real()
+    captured = []
+
+    real_fill = win.drawing_helper._fill_gradient_circle
+
+    def capture(canvas, *args, **kwargs):
+        ids = real_fill(canvas, *args, **kwargs)
+        captured.extend(ids)
+        return ids
+
+    win.drawing_helper._fill_gradient_circle = capture
+
+    doc.network.add_node("A", cpd=0.5)
+    doc.positions["A"] = (0, 0)
+    win._draw_node("A", 0, 0)
+
+    fill_id = captured[0]
+    win.canvas.find_overlapping = lambda *a, **k: [fill_id]
+
+    assert win._find_node(0, 0) == "A"
 
 
 def test_table_resizes_for_new_rows():
