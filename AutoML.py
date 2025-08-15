@@ -243,6 +243,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from functools import partial
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
@@ -2380,20 +2381,32 @@ class FaultTreeApp:
         )
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
-        requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
+        requirements_menu.add_command(
+            label="Requirements Matrix",
+            command=self.show_requirements_matrix,
+            state=tk.DISABLED,
+        )
+        matrix_idx = requirements_menu.index("end")
         requirements_menu.add_command(
             label="Requirements Editor",
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        req_idx = requirements_menu.index("end")
-        for wp in REQUIREMENT_WORK_PRODUCTS:
-            self.work_product_menus.setdefault(wp, []).append(
-                (requirements_menu, req_idx)
-            )
+        editor_idx = requirements_menu.index("end")
         requirements_menu.add_command(
-            label="Requirements Explorer", command=self.show_requirements_explorer
+            label="Requirements Explorer",
+            command=self.show_requirements_explorer,
+            state=tk.DISABLED,
         )
+        explorer_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).extend(
+                [
+                    (requirements_menu, matrix_idx),
+                    (requirements_menu, editor_idx),
+                    (requirements_menu, explorer_idx),
+                ]
+            )
         requirements_menu.add_command(
             label="Product Goals Matrix", command=self.show_safety_goals_matrix
         )
@@ -14667,9 +14680,11 @@ class FaultTreeApp:
             return
         phases = sorted(toolbox.list_modules())
         for phase in phases:
+            # Use ``functools.partial`` to bind the phase name at creation time
+            # so each menu entry triggers generation for its own phase.
             self.phase_req_menu.add_command(
                 label=phase,
-                command=lambda p=phase: self.generate_phase_requirements(p),
+                command=partial(self.generate_phase_requirements, phase),
             )
         if phases:
             self.phase_req_menu.add_separator()
