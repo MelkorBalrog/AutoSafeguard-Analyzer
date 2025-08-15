@@ -6697,6 +6697,8 @@ class SysMLDiagramWindow(tk.Frame):
             max_neurons = max(layers)
             spacing_y = obj.height * self.zoom / (max_neurons - 1 if max_neurons > 1 else 1)
             layer_x = x - obj.width * self.zoom / 2
+
+            # Calculate neuron positions for each layer without drawing
             neuron_positions: list[list[tuple[float, float]]] = []
             for count in layers:
                 xs = layer_x
@@ -6705,6 +6707,19 @@ class SysMLDiagramWindow(tk.Frame):
                 for i in range(count):
                     cx = xs
                     cy = ys + i * spacing_y
+                    positions.append((cx, cy))
+                neuron_positions.append(positions)
+                layer_x += spacing_x
+
+            # Draw connections first so they appear behind the neuron nodes
+            for i in range(len(neuron_positions) - 1):
+                for src in neuron_positions[i]:
+                    for dst in neuron_positions[i + 1]:
+                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+
+            # Now draw the neuron nodes on top of the connections
+            for layer in neuron_positions:
+                for cx, cy in layer:
                     r = 5 * self.zoom
                     fta_drawing_helper._fill_gradient_circle(self.canvas, cx, cy, r, color)
                     self.canvas.create_oval(
@@ -6715,13 +6730,7 @@ class SysMLDiagramWindow(tk.Frame):
                         outline=outline,
                         fill="",
                     )
-                    positions.append((cx, cy))
-                neuron_positions.append(positions)
-                layer_x += spacing_x
-            for i in range(len(neuron_positions) - 1):
-                for src in neuron_positions[i]:
-                    for dst in neuron_positions[i + 1]:
-                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+
             label = obj.properties.get("name", obj.obj_type)
             self.canvas.create_text(x, y + h + 10 * self.zoom, text=label, font=self.font)
         elif obj.obj_type == "Data acquisition":
