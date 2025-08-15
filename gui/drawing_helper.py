@@ -43,6 +43,12 @@ class FTADrawingHelper:
         """No-op for API compatibility."""
         pass
 
+    def _resolve_outline(self, color: str | None) -> str:
+        """Return *color* or the style manager's default outline color."""
+        if color is None:
+            return StyleManager.get_instance().get_outline_color()
+        return color
+
     def _interpolate_color(self, color: str, ratio: float) -> str:
         """Return *color* blended with white by *ratio* (0..1)."""
         # ``color`` may be provided as ``#RRGGBB`` or a Tk-style name such as
@@ -145,12 +151,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a page connector for a cloned node using GSN's shared-marker notation."""
+        outline_color = self._resolve_outline(outline_color)
         # Draw the base triangle.
         self.draw_triangle_shape(
             canvas,
@@ -258,13 +265,14 @@ class FTADrawingHelper:
                 return best[0], best[1]
         return target_pt
 
-    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color="dimgray", line_width=1,
+    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color=None, line_width=1,
                            fixed_length=40, parent_shape=None, child_shape=None):
         """Draw a 90° connection line from a parent point to a child point.
 
         If *parent_shape* or *child_shape* dictionaries are provided, the start
         and end points are adjusted so the connector touches the object's surface.
         """
+        outline_color = self._resolve_outline(outline_color)
         if parent_shape:
             parent_pt = self.point_on_shape(parent_shape, child_pt)
         if child_shape:
@@ -322,12 +330,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a rotated AND gate shape with top and bottom text labels."""
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         raw_verts = self.compute_rotated_and_gate_vertices(scale)
@@ -420,12 +429,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a rotated OR gate shape with text labels."""
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         def cubic_bezier(P0, P1, P2, P3, t):
@@ -527,12 +537,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a rotated AND gate shape and mark it as a clone using GSN notation."""
+        outline_color = self._resolve_outline(outline_color)
         self.draw_rotated_and_gate_shape(
             canvas,
             x,
@@ -560,12 +571,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a rotated OR gate shape and mark it as a clone using GSN notation."""
+        outline_color = self._resolve_outline(outline_color)
         self.draw_rotated_or_gate_shape(
             canvas,
             x,
@@ -593,11 +605,12 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         effective_scale = scale * 2  
@@ -681,13 +694,14 @@ class FTADrawingHelper:
         top_text="",
         bottom_text="",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         base_event=False,
         obj_id: str = "",
     ):
         """Draw a circular event shape with optional text labels."""
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(radius * 2)
         left = x - radius
@@ -774,12 +788,13 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
         """Draw a triangle-shaped event and mark it as a clone using GSN notation."""
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = tkFont.Font(family="Arial", size=10)
         # Draw the base triangle as usual.
@@ -820,11 +835,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Goal",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
@@ -864,11 +880,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Module",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
@@ -964,11 +981,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         canvas,
         parent_pt,
         child_pt,
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         obj_id: str = "",
     ):
         """Draw a curved connector indicating a 'solved by' relationship."""
+        outline_color = self._resolve_outline(outline_color)
         px, py = parent_pt
         cx, cy = child_pt
         if parent_pt == child_pt:
@@ -1030,8 +1048,8 @@ class GSNDrawingHelper(FTADrawingHelper):
             canvas,
             start,
             end,
-            fill="black",
-            outline=StyleManager.get_instance().outline_color,
+            fill=outline_color,
+            outline=outline_color,
             obj_id=obj_id,
         )
 
@@ -1040,11 +1058,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         canvas,
         parent_pt,
         child_pt,
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         obj_id: str = "",
     ):
         """Draw a dashed curved connector for an 'in context of' relationship."""
+        outline_color = self._resolve_outline(outline_color)
         px, py = parent_pt
         cx, cy = child_pt
         dash = (4, 2)
@@ -1125,11 +1144,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Strategy",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
@@ -1163,11 +1183,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=40.0,
         text="Solution",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         radius = scale / 2
         if font_obj is None:
             font_obj = self._scaled_font(scale)
@@ -1204,11 +1225,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Assumption",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
@@ -1258,11 +1280,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Justification",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4
@@ -1312,11 +1335,12 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Context",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=None,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
     ):
+        outline_color = self._resolve_outline(outline_color)
         if font_obj is None:
             font_obj = self._scaled_font(scale)
         padding = 4

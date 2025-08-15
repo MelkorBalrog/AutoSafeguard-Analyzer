@@ -57,6 +57,7 @@ class GeneratedRequirement:
     obj: str | None = None
     constraint: str | None = None
     origin: str | None = None
+    source: str | None = None
     req_type: str = "organizational"
 
     @property
@@ -87,7 +88,12 @@ class GeneratedRequirement:
         return self.text
 
     def __contains__(self, item: str) -> bool:  # pragma: no cover - trivial
-        return item in self.text or item in self.req_type
+        return (
+            item in self.text
+            or item in self.req_type
+            or (self.origin and item in self.origin)
+            or (self.source and item in self.source)
+        )
 
 
 @dataclass
@@ -300,6 +306,7 @@ class GovernanceDiagram:
                     obj=obj,
                     constraint=constraint,
                     origin=origin if (origin and kind != "flow") else None,
+                    source=src,
                     req_type=req_type,
                 )
             )

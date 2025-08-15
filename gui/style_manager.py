@@ -16,6 +16,9 @@ class StyleManager:
     def __init__(self):
         self.styles = {}
         self.canvas_bg = "#FFFFFF"
+        # Default outline color follows canvas background.  For light
+        # backgrounds we use black outlines, while a dark canvas uses
+        # white outlines for visibility.
         self.outline_color = "black"
         try:
             self.load_style(_DEFAULT_STYLE)
@@ -44,14 +47,8 @@ class StyleManager:
         canvas = root.find('canvas')
         if canvas is not None:
             self.canvas_bg = canvas.get('color', "#FFFFFF")
-        # Choose a contrasting outline color based on canvas brightness.
-        try:
-            bg = self.canvas_bg.lstrip('#')
-            r, g, b = int(bg[0:2], 16), int(bg[2:4], 16), int(bg[4:6], 16)
-            brightness = (r * 299 + g * 587 + b * 114) / 1000
-            self.outline_color = "white" if brightness < 128 else "black"
-        except Exception:
-            self.outline_color = "black"
+        # Determine default outline color based on canvas brightness.
+        self.outline_color = "#FFFFFF" if self._is_dark(self.canvas_bg) else "black"
         for obj in root.findall('object'):
             typ = obj.get('type')
             color = obj.get('color')
@@ -71,3 +68,26 @@ class StyleManager:
 
     def get_canvas_color(self) -> str:
         return self.canvas_bg
+
+    def get_outline_color(self) -> str:
+        """Return the default outline color for shapes."""
+        return self.outline_color
+
+    @staticmethod
+    def _is_dark(color: str) -> bool:
+        """Return True if *color* is perceptually dark.
+
+        The check converts the hex color to RGB and computes the luminance
+        using the Rec. 601 luma formula.  Colors with luminance below 128 are
+        treated as dark backgrounds.
+        """
+        if not isinstance(color, str) or not color.startswith("#") or len(color) != 7:
+            return False
+        try:
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+        except ValueError:
+            return False
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return luminance < 128
