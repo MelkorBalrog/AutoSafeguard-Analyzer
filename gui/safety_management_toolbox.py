@@ -3,6 +3,11 @@ from tkinter import ttk, simpledialog
 
 from analysis import SafetyManagementToolbox
 from analysis.governance import GovernanceDiagram
+from analysis.models import (
+    REQUIREMENT_TYPE_OPTIONS,
+    ensure_requirement_defaults,
+    global_requirements,
+)
 from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox
 from sysml.sysml_repository import SysMLRepository
@@ -48,6 +53,10 @@ class SafetyManagementWindow(tk.Frame):
         ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
             side=tk.LEFT
         )
+        self.phase_menu_btn = tk.Menubutton(top, text="Phase Requirements")
+        self.phase_menu = tk.Menu(self.phase_menu_btn, tearoff=False)
+        self.phase_menu_btn.configure(menu=self.phase_menu)
+        self.phase_menu_btn.pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
@@ -82,6 +91,7 @@ class SafetyManagementWindow(tk.Frame):
         if current not in phases:
             self.phase_var.set("All")
         self.select_phase()
+        self._refresh_phase_menu()
 
     def select_phase(self, *_):
         phase = self.phase_var.get()
@@ -153,6 +163,42 @@ class SafetyManagementWindow(tk.Frame):
         self.current_window = GovernanceDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
         self.current_window.pack(fill=tk.BOTH, expand=True)
 
+    # ------------------------------------------------------------------
+    def _add_requirement(self, text: str) -> str:
+        """Create a new requirement with a unique identifier."""
+        idx = 1
+        while f"R{idx}" in global_requirements:
+            idx += 1
+        rid = f"R{idx}"
+        req_type = REQUIREMENT_TYPE_OPTIONS[0]
+        app = getattr(self, "app", None)
+        if app and hasattr(app, "add_new_requirement"):
+            app.add_new_requirement(rid, req_type, text)
+        else:
+            req = {
+                "id": rid,
+                "custom_id": rid,
+                "req_type": req_type,
+                "text": text,
+                "status": "draft",
+                "parent_id": "",
+            }
+            ensure_requirement_defaults(req)
+            global_requirements[rid] = req
+        return rid
+
+    # ------------------------------------------------------------------
+    def _display_requirements(self, title: str, ids: list[str]) -> None:
+        frame = self.app._new_tab(title)
+        columns = ("ID", "Type", "Text")
+        tree = ttk.Treeview(frame, columns=columns, show="headings")
+        for c in columns:
+            tree.heading(c, text=c)
+        for rid in ids:
+            req = global_requirements.get(rid, {})
+            tree.insert("", "end", values=(rid, req.get("req_type", ""), req.get("text", "")))
+        tree.pack(fill=tk.BOTH, expand=True)
+
     def generate_requirements(self) -> None:
         """Generate requirements for the selected governance diagram."""
         name = self.diag_var.get()
@@ -167,8 +213,36 @@ class SafetyManagementWindow(tk.Frame):
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
-        frame = self.app._new_tab(f"{name} Requirements")
-        txt = tk.Text(frame, wrap="word")
-        txt.insert("1.0", "\n".join(reqs))
-        txt.configure(state="disabled")
-        txt.pack(fill=tk.BOTH, expand=True)
+        ids = [self._add_requirement(text) for text in reqs]
+        self._display_requirements(f"{name} Requirements", ids)
+
+    def _refresh_phase_menu(self) -> None:
+        self.phase_menu.delete(0, tk.END)
+        for phase in sorted(self.toolbox.list_modules()):
+            self.phase_menu.add_command(
+                label=phase,
+                command=lambda p=phase: self.generate_phase_requirements(p),
+            )
+
+    def generate_phase_requirements(self, phase: str) -> None:
+        diag_names = sorted(self.toolbox.diagrams_for_module(phase))
+        if not diag_names:
+            messagebox.showinfo("Requirements", f"No governance diagrams for phase '{phase}'.")
+            return
+        repo = SysMLRepository.get_instance()
+        ids: list[str] = []
+        for name in diag_names:
+            diag_id = self.toolbox.diagrams.get(name)
+            if not diag_id:
+                continue
+            gov = GovernanceDiagram.from_repository(repo, diag_id)
+            reqs = gov.generate_requirements()
+            for text in reqs:
+                ids.append(self._add_requirement(text))
+        if not ids:
+            messagebox.showinfo(
+                "Requirements",
+                f"No requirements were generated for phase '{phase}'.",
+            )
+            return
+        self._display_requirements(f"{phase} Requirements", ids)
