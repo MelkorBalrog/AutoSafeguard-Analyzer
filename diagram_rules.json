@@ -194,6 +194,18 @@
         "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
         "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
         "Final": []
+      },
+      // Relationships between governance work products and phases
+      "Propagate": {"Work Product": ["Work Product"]},
+      "Propagate by Review": {"Work Product": ["Work Product"]},
+      "Propagate by Approval": {"Work Product": ["Work Product"]},
+      "Re-use": {"Work Product": ["Lifecycle Phase"], "Lifecycle Phase": ["Lifecycle Phase"]},
+      "Satisfied by": {"Work Product": ["Work Product"]},
+      "Derived from": {"Work Product": ["Work Product"]},
+      "Trace": {"Work Product": ["Work Product"]},
+      "Used By": {"Work Product": ["Work Product"]},
+      "Used after Review": {"Work Product": ["Work Product"]},
+      "Used after Approval": {"Work Product": ["Work Product"]}
       }
     }
   },
