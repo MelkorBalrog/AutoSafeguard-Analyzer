@@ -17704,8 +17704,9 @@ class FaultTreeApp:
             "cbn_docs": [
                 {
                     "name": doc.name,
-                    "nodes": doc.network.nodes,
-                    "parents": doc.network.parents,
+                    # Copy node and parent collections so undo/redo work correctly
+                    "nodes": list(doc.network.nodes),
+                    "parents": {k: list(v) for k, v in doc.network.parents.items()},
                     "cpds": {
                         var: (
                             cpd
@@ -17717,8 +17718,9 @@ class FaultTreeApp:
                         )
                         for var, cpd in doc.network.cpds.items()
                     },
-                    "positions": doc.positions,
-                    "types": doc.types,
+                    # Positions and types must also be copied to avoid mutation
+                    "positions": {k: tuple(v) for k, v in doc.positions.items()},
+                    "types": dict(doc.types),
                 }
                 for doc in getattr(self, "cbn_docs", [])
             ],

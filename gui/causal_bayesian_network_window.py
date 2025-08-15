@@ -695,6 +695,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
+    def refresh_from_repository(self, _event=None) -> None:
+        """Refresh the canvas after undo/redo operations."""
+        self.refresh_docs()
+
+    # ------------------------------------------------------------------
     def _update_scroll_region(self) -> None:
         if not hasattr(self.canvas, "bbox") or not hasattr(self.canvas, "configure"):
             return
