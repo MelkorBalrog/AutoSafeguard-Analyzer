@@ -39,3 +39,20 @@ def test_intervention_matches_conditioning_for_root():
     p_do = cbn.intervention("SlipperyRoad", {"Rain": True})
     p_cond = cbn.query("SlipperyRoad", {"Rain": True})
     assert p_do == pytest.approx(p_cond, rel=1e-6)
+
+
+def test_missing_cpd_defaults_to_zero():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("Rain", cpd=0.5)
+    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9})
+    assert cbn.query("WetGround") == pytest.approx(0.45, rel=1e-3)
+
+
+def test_truth_table_auto_fill():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("A", cpd=0.4)
+    cbn.add_node("B", parents=["A"], cpd={(True,): 0.7})
+    rows = cbn.cpd_rows("B")
+    assert len(rows) == 2
+    assert rows[0][0] == (False,)
+    assert rows[0][1] == pytest.approx(0.0)

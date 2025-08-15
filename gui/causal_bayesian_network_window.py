@@ -335,17 +335,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         win, frame, tree = self.tables[name]
         tree.delete(*tree.get_children())
         parents = doc.network.parents.get(name, [])
+        rows = doc.network.cpd_rows(name)
         if not parents:
-            prob = doc.network.cpds.get(name, 0.0)
-            tree.insert("", "end", values=[f"{prob:.3f}"])
-            tree.configure(height=1)
+            tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            cpds = doc.network.cpds.get(name, {})
-            for combo, prob in cpds.items():
+            for combo, prob in rows:
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
-            tree.configure(height=len(cpds))
+        tree.configure(height=len(rows))
         frame.update_idletasks()
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
