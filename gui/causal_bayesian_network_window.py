@@ -50,6 +50,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.on_release)
         self.canvas.bind("<Double-1>", self.on_double_click)
         self.drawing_helper = FTADrawingHelper()
 
@@ -59,6 +60,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.edges = []  # (line_id, src, dst)
         self.edge_start = None
         self.drag_node = None
+        self.selected_node = None
+        self.selection_rect = None
+        self.temp_edge_line = None
+        self.temp_edge_anim = None
+        self.temp_edge_offset = 0
 
         self.refresh_docs()
         self.pack(fill=tk.BOTH, expand=True)
@@ -142,6 +148,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.current_tool = tool
         self.edge_start = None
         self.drag_node = None
+        if tool != "Select":
+            self._highlight_node(None)
 
     # ------------------------------------------------------------------
     def on_click(self, event) -> None:
@@ -163,24 +171,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
             name = self._find_node(event.x, event.y)
             if not name:
                 return
-            if self.edge_start is None:
-                self.edge_start = name
-            else:
-                src, dst = self.edge_start, name
-                if src == dst:
-                    self.edge_start = None
-                    return
-                self._draw_edge(src, dst)
-                parents = doc.network.parents.setdefault(dst, [])
-                if src not in parents:
-                    parents.append(src)
-                    doc.network.cpds[dst] = {}
-                    self._rebuild_table(dst)
-                self.edge_start = None
+            self.edge_start = name
+            self._highlight_node(None)
         else:  # Select tool
             name = self._find_node(event.x, event.y)
             self.drag_node = name
             self.drag_offset = (0, 0)
+            self._highlight_node(name)
             if name:
                 x, y = doc.positions.get(name, (0, 0))
                 self.drag_offset = (x - event.x, y - event.y)
@@ -188,30 +185,94 @@ class CausalBayesianNetworkWindow(tk.Frame):
     # ------------------------------------------------------------------
     def on_drag(self, event) -> None:
         doc = getattr(self.app, "active_cbn", None)
-        if not doc or not self.drag_node or self.current_tool != "Select":
+        if not doc:
             return
-        name = self.drag_node
-        old_x, old_y = doc.positions.get(name, (0, 0))
-        x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
-        doc.positions[name] = (x, y)
-        oval_id, text_id, fill_tag = self.nodes[name]
+        if self.current_tool == "Select" and self.drag_node:
+            name = self.drag_node
+            old_x, old_y = doc.positions.get(name, (0, 0))
+            x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
+            doc.positions[name] = (x, y)
+            oval_id, text_id, fill_tag = self.nodes[name]
+            r = self.NODE_RADIUS
+            self.canvas.coords(fill_tag, x - r, y - r, x + r, y + r)
+            self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
+            self.canvas.coords(text_id, x, y)
+            self.canvas.move(fill_tag, x - old_x, y - old_y)
+            for line_id, src, dst in self.edges:
+                if src == name or dst == name:
+                    x1, y1 = doc.positions[src]
+                    x2, y2 = doc.positions[dst]
+                    dx, dy = x2 - x1, y2 - y1
+                    dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
+                    sx = x1 + dx / dist * r
+                    sy = y1 + dy / dist * r
+                    tx = x2 - dx / dist * r
+                    ty = y2 - dy / dist * r
+                    self.canvas.coords(line_id, sx, sy, tx, ty)
+            self._position_table(name, x, y)
+            if self.selected_node == name and self.selection_rect:
+                self.canvas.coords(self.selection_rect, x - r, y - r, x + r, y + r)
+        elif self.current_tool == "Relationship" and self.edge_start:
+            x1, y1 = doc.positions.get(self.edge_start, (0, 0))
+            if self.temp_edge_line is None:
+                self.temp_edge_line = self.canvas.create_line(
+                    x1, y1, event.x, event.y, dash=(2, 2)
+                )
+                self.temp_edge_offset = 0
+                self._animate_temp_edge()
+            else:
+                self.canvas.coords(self.temp_edge_line, x1, y1, event.x, event.y)
+
+    # ------------------------------------------------------------------
+    def on_release(self, event) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        if self.current_tool == "Select":
+            self.drag_node = None
+        elif self.current_tool == "Relationship" and self.edge_start:
+            dst = self._find_node(event.x, event.y)
+            src = self.edge_start
+            if dst and dst != src:
+                self._draw_edge(src, dst)
+                parents = doc.network.parents.setdefault(dst, [])
+                if src not in parents:
+                    parents.append(src)
+                    doc.network.cpds[dst] = {}
+                    self._rebuild_table(dst)
+            self.edge_start = None
+            if self.temp_edge_line:
+                self.canvas.delete(self.temp_edge_line)
+                self.temp_edge_line = None
+            if self.temp_edge_anim:
+                self.after_cancel(self.temp_edge_anim)
+                self.temp_edge_anim = None
+
+    # ------------------------------------------------------------------
+    def _animate_temp_edge(self):
+        if self.temp_edge_line:
+            self.temp_edge_offset = (self.temp_edge_offset + 2) % 12
+            self.canvas.itemconfigure(
+                self.temp_edge_line, dashoffset=self.temp_edge_offset
+            )
+            self.temp_edge_anim = self.after(100, self._animate_temp_edge)
+
+    # ------------------------------------------------------------------
+    def _highlight_node(self, name: str | None) -> None:
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+        self.selected_node = name
+        if not name:
+            return
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        x, y = doc.positions.get(name, (0, 0))
         r = self.NODE_RADIUS
-        self.canvas.coords(fill_tag, x - r, y - r, x + r, y + r)
-        self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
-        self.canvas.coords(text_id, x, y)
-        self.canvas.move(fill_tag, x - old_x, y - old_y)
-        for line_id, src, dst in self.edges:
-            if src == name or dst == name:
-                x1, y1 = doc.positions[src]
-                x2, y2 = doc.positions[dst]
-                dx, dy = x2 - x1, y2 - y1
-                dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
-                sx = x1 + dx / dist * r
-                sy = y1 + dy / dist * r
-                tx = x2 - dx / dist * r
-                ty = y2 - dy / dist * r
-                self.canvas.coords(line_id, sx, sy, tx, ty)
-        self._position_table(name, x, y)
+        self.selection_rect = self.canvas.create_rectangle(
+            x - r, y - r, x + r, y + r, outline="red", dash=(2, 2)
+        )
 
     # ------------------------------------------------------------------
     def on_double_click(self, event) -> None:
