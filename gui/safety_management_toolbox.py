@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 
 from analysis import SafetyManagementToolbox
+from analysis.governance import GovernanceDiagram
 from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox
+from sysml.sysml_repository import SysMLRepository
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -147,3 +149,23 @@ class SafetyManagementWindow(tk.Frame):
             return
         self.current_window = GovernanceDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
         self.current_window.pack(fill=tk.BOTH, expand=True)
+
+    def generate_requirements(self) -> None:
+        """Generate requirements for the selected governance diagram."""
+        name = self.diag_var.get()
+        if not name:
+            return
+        diag_id = self.toolbox.diagrams.get(name)
+        if not diag_id:
+            return
+        repo = SysMLRepository.get_instance()
+        gov = GovernanceDiagram.from_repository(repo, diag_id)
+        reqs = gov.generate_requirements()
+        if not reqs:
+            messagebox.showinfo("Requirements", "No requirements were generated.")
+            return
+        frame = self.app._new_tab(f"{name} Requirements")
+        txt = tk.Text(frame, wrap="word")
+        txt.insert("1.0", "\n".join(reqs))
+        txt.configure(state="disabled")
+        txt.pack(fill=tk.BOTH, expand=True)

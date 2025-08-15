@@ -2376,6 +2376,10 @@ class FaultTreeApp:
             label="Export Product Goal Requirements",
             command=self.export_product_goal_requirements,
         )
+        requirements_menu.add_command(
+            label="Generate Governance Requirements",
+            command=self.generate_governance_requirements,
+        )
         review_menu = tk.Menu(menubar, tearoff=0)
         review_menu.add_command(label="Start Peer Review", command=self.start_peer_review)
         review_menu.add_command(label="Start Joint Review", command=self.start_joint_review)
@@ -16605,6 +16609,15 @@ class FaultTreeApp:
         SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
+
+    def generate_governance_requirements(self):
+        """Generate requirements for the active governance diagram."""
+        win = getattr(self, "safety_mgmt_window", None)
+        if win is None or not win.winfo_exists():
+            self.open_safety_management_toolbox()
+            win = getattr(self, "safety_mgmt_window", None)
+        if win is not None:
+            win.generate_requirements()
 
     def open_safety_management_toolbox(self):
         """Open the Safety & Security Management editor and browser."""
