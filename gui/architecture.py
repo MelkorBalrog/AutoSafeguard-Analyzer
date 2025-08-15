@@ -5115,6 +5115,76 @@ class SysMLDiagramWindow(tk.Frame):
                 return corners[idx]
         return None
 
+    def _assign_decision_corner(
+        self,
+        conn: DiagramConnection,
+        node: SysMLObject,
+        attr: str,
+        pref: tuple[float, float] | None = None,
+    ) -> bool:
+        """Assign a connection endpoint to a unique corner of *node*.
+
+        ``attr`` is either ``"src_pos"`` or ``"dst_pos"`` identifying which
+        endpoint to update.  ``pref`` optionally provides a preferred relative
+        location.  The method ensures that each decision/merge node is limited to
+        four connections, one per corner.  Returns ``True`` if a corner was
+        assigned, ``False`` when no free corner is available.
+        """
+
+        corners = [(0.0, -1.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 0.0)]
+
+        # Determine which corners are already occupied by other connections
+        used: set[int] = set()
+        for other in self.connections:
+            if other is conn:
+                continue
+            if other.src == node.obj_id and other.src_pos:
+                rx, ry = other.src_pos
+            elif other.dst == node.obj_id and other.dst_pos:
+                rx, ry = other.dst_pos
+            else:
+                continue
+            if abs(rx) >= abs(ry):
+                used.add(1 if rx >= 0 else 3)
+            else:
+                used.add(2 if ry >= 0 else 0)
+
+        # If a preferred corner was provided, try to use it
+        if pref is not None:
+            rx, ry = pref
+            if abs(rx) >= abs(ry):
+                idx = 1 if rx >= 0 else 3
+            else:
+                idx = 2 if ry >= 0 else 0
+            if idx in used:
+                return False
+            setattr(conn, attr, corners[idx])
+            return True
+
+        # Choose the corner nearest to the other object, falling back to the
+        # first available corner if necessary
+        other = self.get_object(conn.dst if attr == "src_pos" else conn.src)
+        if other:
+            x = node.x * self.zoom
+            y = node.y * self.zoom
+            w = node.width * self.zoom / 2
+            h = node.height * self.zoom / 2
+            corner_pts = [(x, y - h), (x + w, y), (x, y + h), (x - w, y)]
+            tx = other.x * self.zoom
+            ty = other.y * self.zoom
+            pref_idx = min(range(4), key=lambda i: (corner_pts[i][0] - tx) ** 2 + (corner_pts[i][1] - ty) ** 2)
+            order = [pref_idx, (pref_idx + 1) % 4, (pref_idx + 3) % 4, (pref_idx + 2) % 4]
+            for idx in order:
+                if idx not in used:
+                    setattr(conn, attr, corners[idx])
+                    return True
+
+        for idx, corner in enumerate(corners):
+            if idx not in used:
+                setattr(conn, attr, corner)
+                return True
+        return False
+
     def _assign_decision_corners(self, conn: DiagramConnection) -> None:
         src_obj = self.get_object(conn.src)
         dst_obj = self.get_object(conn.dst)
