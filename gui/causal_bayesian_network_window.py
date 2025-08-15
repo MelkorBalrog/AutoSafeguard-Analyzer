@@ -793,12 +793,27 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_scroll_region()
 
     # ------------------------------------------------------------------
-    def on_right_click(self, event) -> None:
+    def on_right_click(self, event) -> None:  # pragma: no cover - requires tkinter
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
         name = self._find_node(event.x, event.y)
         if not name:
+            return
+        menu = tk.Menu(self, tearoff=0)
+        menu.add_command(label="Rename", command=lambda n=name: self._prompt_rename_node(n))
+        menu.add_command(label="Delete", command=lambda n=name: self._delete_node(n))
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:  # pragma: no cover - no-op on simple stubs
+            grab = getattr(menu, "grab_release", None)
+            if grab:
+                grab()
+
+    # ------------------------------------------------------------------
+    def _prompt_rename_node(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
             return
         new = simpledialog.askstring("Edit Node", "Name:", initialvalue=name, parent=self)
         if not new or new == name:
@@ -811,6 +826,54 @@ class CausalBayesianNetworkWindow(tk.Frame):
             undo()
         self._rename_node(name, new)
         self._update_all_tables()
+
+    # ------------------------------------------------------------------
+    def _delete_node(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        delete_model = messagebox.askyesno(
+            "Delete Node",
+            "Delete node from model?\nNo removes it from diagram only.",
+            parent=self,
+        )
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
+        if delete_model:
+            if name in doc.network.nodes:
+                doc.network.nodes.remove(name)
+            doc.network.cpds.pop(name, None)
+            doc.network.parents.pop(name, None)
+            for child, parents in list(doc.network.parents.items()):
+                if name in parents:
+                    parents.remove(name)
+                    doc.network.cpds[child] = {}
+                    self._rebuild_table(child)
+        oval_text = self.nodes.pop(name, None)
+        if oval_text:
+            oval_id, text_id, fill_tag = oval_text
+            self.canvas.delete(oval_id)
+            self.canvas.delete(text_id)
+            find_withtag = getattr(self.canvas, "find_withtag", None)
+            if find_withtag:
+                for fid in find_withtag(fill_tag):
+                    self.canvas.delete(fid)
+                    self.id_to_node.pop(fid, None)
+            self.id_to_node.pop(oval_id, None)
+            self.id_to_node.pop(text_id, None)
+        if name in self.tables:
+            win, _, _ = self.tables.pop(name)
+            self.canvas.delete(win)
+        doc.positions.pop(name, None)
+        doc.types.pop(name, None)
+        if self.selected_node == name:
+            self._highlight_node(None)
+        for line, src, dst in self.edges[:]:
+            if src == name or dst == name:
+                self.canvas.delete(line)
+                self.edges.remove((line, src, dst))
+        self._update_scroll_region()
 
     # ------------------------------------------------------------------
     def _rename_node(self, old: str, new: str) -> None:
