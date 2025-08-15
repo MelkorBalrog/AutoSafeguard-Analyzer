@@ -7,6 +7,7 @@ from analysis import CausalBayesianNetwork
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
 from analysis import CausalBayesianNetwork
+from unittest import mock
 
 
 class DummyCanvas:
@@ -273,8 +274,39 @@ def test_node_colors_by_type():
     win.drawing_helper._fill_gradient_circle = capture
     win._draw_node("T", 0, 0, "trigger")
     win._draw_node("I", 0, 0, "insufficiency")
+    win._draw_node("M", 0, 0, "malfunction")
     assert colors[0] == "lightblue"
     assert colors[1] == "lightyellow"
+    assert colors[2] == "lightgreen"
+
+
+def test_click_adds_new_malfunction_node():
+    win, doc = _setup_window()
+    app = win.app
+    app.malfunctions = []
+    app.add_malfunction = lambda name: app.malfunctions.append(name)
+    win.current_tool = "Malfunction"
+    with mock.patch(
+        "gui.causal_bayesian_network_window.simpledialog.askstring",
+        return_value="M1",
+    ):
+        win.on_click(types.SimpleNamespace(x=5, y=6))
+    assert "M1" in doc.network.nodes
+    assert doc.types["M1"] == "malfunction"
+    assert doc.positions["M1"] == (5, 6)
+    assert "M1" in app.malfunctions
+
+
+def test_click_adds_existing_malfunction_nodes():
+    win, doc = _setup_window()
+    win.current_tool = "Existing Malfunction"
+    with mock.patch.object(win, "_select_malfunctions", return_value=["M1", "M2"]):
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+    assert "M1" in doc.network.nodes and "M2" in doc.network.nodes
+    assert doc.types["M1"] == doc.types["M2"] == "malfunction"
+    # Second node should be offset horizontally
+    expected_x = (2 * win.NODE_RADIUS + 10)
+    assert doc.positions["M2"][0] == expected_x
 
 
 def test_update_all_tables_refreshes_dependencies():
