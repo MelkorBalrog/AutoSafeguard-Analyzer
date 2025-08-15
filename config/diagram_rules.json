@@ -105,7 +105,26 @@
     "hyperparameter validation": {
       "action": "validate hyperparameters",
       "subject": "Engineering team"
-    }
+    },
+    "association": {"action": "associate with"},
+    "communication path": {"action": "communicate with"},
+    "include": {"action": "include"},
+    "extend": {"action": "extend"},
+    "generalize": {"action": "generalize"},
+    "generalization": {"action": "generalize"},
+    "aggregation": {"action": "aggregate"},
+    "composite aggregation": {"action": "compose"},
+    "connector": {"action": "connect to"},
+    "propagate": {"action": "propagate"},
+    "propagate by review": {"action": "propagate by review"},
+    "propagate by approval": {"action": "propagate by approval"},
+    "re-use": {"action": "re-use"},
+    "satisfied by": {"action": "be satisfied by"},
+    "derived from": {"action": "be derived from"},
+    "trace": {"action": "trace to"},
+    "used by": {"action": "be used by"},
+    "used after review": {"action": "be used after review"},
+    "used after approval": {"action": "be used after approval"}
   },
 
   // Default requirement role per node type
