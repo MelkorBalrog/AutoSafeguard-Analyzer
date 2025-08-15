@@ -2841,8 +2841,31 @@ class SysMLDiagramWindow(tk.Frame):
         self.endpoint_drag_pos: tuple[float, float] | None = None
         self.rc_dragged = False
 
-        self.toolbox = ttk.Frame(self)
-        self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+        self.toolbox_container = ttk.Frame(self)
+        self.toolbox_container.pack(side=tk.LEFT, fill=tk.Y)
+        self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
+        self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        toolbox_scroll = ttk.Scrollbar(
+            self.toolbox_container, orient=tk.VERTICAL, command=self.toolbox_canvas.yview
+        )
+        toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.toolbox_canvas.configure(yscrollcommand=toolbox_scroll.set)
+        self.toolbox = ttk.Frame(self.toolbox_canvas)
+        self._toolbox_window = self.toolbox_canvas.create_window(
+            (0, 0), window=self.toolbox, anchor="nw"
+        )
+        self.toolbox.bind(
+            "<Configure>",
+            lambda e: self.toolbox_canvas.configure(
+                scrollregion=self.toolbox_canvas.bbox("all")
+            ),
+        )
+        self.toolbox_canvas.bind(
+            "<Configure>",
+            lambda e: self.toolbox_canvas.itemconfig(
+                self._toolbox_window, width=e.width
+            ),
+        )
 
         self.back_btn = ttk.Button(self.toolbox, text="Go Back", command=self.go_back)
         self.back_btn.pack(fill=tk.X, padx=2, pady=2)

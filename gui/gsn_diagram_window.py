@@ -65,8 +65,23 @@ class GSNDiagramWindow(tk.Frame):
         self.diagram = diagram
 
         # toolbox with buttons to add nodes and connectors
-        self.toolbox = ttk.Frame(self)
-        self.toolbox.pack(side=tk.TOP, fill=tk.X)
+        self.toolbox_container = ttk.Frame(self)
+        self.toolbox_container.pack(side=tk.TOP, fill=tk.X)
+        self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
+        self.toolbox_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+        toolbox_scroll = ttk.Scrollbar(
+            self.toolbox_container, orient=tk.HORIZONTAL, command=self.toolbox_canvas.xview
+        )
+        toolbox_scroll.pack(side=tk.BOTTOM, fill=tk.X)
+        self.toolbox_canvas.configure(xscrollcommand=toolbox_scroll.set)
+        self.toolbox = ttk.Frame(self.toolbox_canvas)
+        self.toolbox_canvas.create_window((0, 0), window=self.toolbox, anchor="nw")
+        self.toolbox.bind(
+            "<Configure>",
+            lambda e: self.toolbox_canvas.configure(
+                scrollregion=self.toolbox_canvas.bbox("all"), height=e.height
+            ),
+        )
 
         node_cmds = [
             ("Goal", self.add_goal),
