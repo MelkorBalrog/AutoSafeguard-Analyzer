@@ -317,7 +317,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in self.tables:
             return
-        _, _, tree = self.tables[name]
+        win, frame, tree = self.tables[name]
         tree.delete(*tree.get_children())
         parents = doc.network.parents.get(name, [])
         if not parents:
@@ -332,6 +332,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
         self.canvas.update_idletasks()
+        self.canvas.itemconfigure(
+            win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
+        )
         x, y = doc.positions.get(name, (0, 0))
         self._position_table(name, x, y)
 
@@ -341,8 +344,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         win, frame, _ = self.tables[name]
         self.canvas.update_idletasks()
-        h = frame.winfo_reqheight()
+        w, h = frame.winfo_reqwidth(), frame.winfo_reqheight()
         r = self.NODE_RADIUS
+        self.canvas.itemconfigure(win, width=w, height=h)
         self.canvas.coords(win, x + r + 10, y - h / 2)
 
     # ------------------------------------------------------------------
