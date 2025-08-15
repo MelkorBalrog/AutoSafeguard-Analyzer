@@ -7715,6 +7715,7 @@ class FaultTreeApp:
             from reportlab.lib import colors
             from io import BytesIO
             import PIL.Image as PILImage
+            from analysis.governance import GovernanceDiagram
         except ImportError:
             messagebox.showerror(
                 "Report",
@@ -7813,6 +7814,13 @@ class FaultTreeApp:
                 Story.append(Spacer(1, 12))
                 Story.append(rl_img)
                 Story.append(Spacer(1, 12))
+                try:
+                    gov_doc = GovernanceDiagram.from_repository(repo, diag.diag_id)
+                    for req in gov_doc.generate_requirements():
+                        Story.append(Paragraph(req, pdf_styles["Normal"]))
+                    Story.append(Spacer(1, 12))
+                except Exception:
+                    pass
             diagram_section_added = True
 
         if gsn_diagrams:
@@ -8175,6 +8183,58 @@ class FaultTreeApp:
                         ('FONTSIZE', (0,0), (-1,-1), 8)
                     ])
                 )
+                Story.append(table)
+                Story.append(Spacer(1, 12))
+
+        # --- Causal Bayesian Network Analyses ---
+        if getattr(self, "cbn_docs", []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("Causal Bayesian Network Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for cbn_doc in self.cbn_docs:
+                Story.append(Paragraph(cbn_doc.name, pdf_styles["Heading3"]))
+                try:
+                    import networkx as nx
+                    import matplotlib
+                    matplotlib.use("Agg")
+                    import matplotlib.pyplot as plt
+                    G = nx.DiGraph()
+                    for node in cbn_doc.network.nodes:
+                        G.add_node(node)
+                        for parent in cbn_doc.network.parents.get(node, []):
+                            G.add_edge(parent, node)
+                    fig, ax = plt.subplots()
+                    ax.axis("off")
+                    pos = nx.spring_layout(G)
+                    nx.draw_networkx(G, pos, ax=ax, node_color="lightblue", edge_color="gray")
+                    buf = BytesIO()
+                    fig.savefig(buf, format="PNG", bbox_inches="tight")
+                    plt.close(fig)
+                    buf.seek(0)
+                    img = PILImage.open(buf)
+                    desired_width, desired_height = scale_image(img)
+                    buf.seek(0)
+                    rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                    Story.append(rl_img)
+                    Story.append(Spacer(1, 12))
+                except Exception:
+                    pass
+                data = [["Variable", "Parents", "CPD"]]
+                for var in cbn_doc.network.nodes:
+                    parents = ", ".join(cbn_doc.network.parents.get(var, []))
+                    cpd = cbn_doc.network.cpds.get(var, "")
+                    if isinstance(cpd, dict):
+                        cpd_str = "; ".join([f"{tuple(k)}: {v}" for k, v in cpd.items()])
+                    else:
+                        cpd_str = str(cpd)
+                    data.append([var, parents, cpd_str])
+                table = Table(data, repeatRows=1)
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('FONTSIZE', (0,0), (-1,-1), 8)
+                ]))
                 Story.append(table)
                 Story.append(Spacer(1, 12))
 
