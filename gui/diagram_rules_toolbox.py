@@ -72,9 +72,6 @@ class DiagramRulesEditor(tk.Frame):
                     item_id = f"rule|{diag}|{conn}|{src}"
                     dest_text = ", ".join(sorted(dests))
                     self.tree.insert(c_id, "end", item_id, text=src, values=(dest_text,))
-        self.tree.item(root, open=True)
-        for child in self.tree.get_children(root):
-            self.tree.item(child, open=True)
 
         # Safety & AI relation rules
         ai_root = self.tree.insert(
@@ -89,9 +86,6 @@ class DiagramRulesEditor(tk.Frame):
                 item_id = f"sar|{rel}|{src}"
                 dest_text = ", ".join(sorted(dests))
                 self.tree.insert(r_id, "end", item_id, text=src, values=(dest_text,))
-        self.tree.item(ai_root, open=True)
-        for child in self.tree.get_children(ai_root):
-            self.tree.item(child, open=True)
 
         # Requirement generation rules
         req_root = self.tree.insert(
@@ -114,7 +108,6 @@ class DiagramRulesEditor(tk.Frame):
                 text=label,
                 values=(", ".join(parts),),
             )
-        self.tree.item(req_root, open=True)
 
         # Node roles
         role_root = self.tree.insert("", "end", "node_roles", text="node_roles")
@@ -125,7 +118,6 @@ class DiagramRulesEditor(tk.Frame):
             self.tree.insert(
                 role_root, "end", f"role|{node}", text=node, values=(role,)
             )
-        self.tree.item(role_root, open=True)
 
     def _on_select(self, _event=None):
         item = self.tree.selection()
