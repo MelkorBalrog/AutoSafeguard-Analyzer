@@ -323,9 +323,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
         ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
-        add_btn = ttk.Button(frame, text="Add", command=lambda n=name: self.add_cpd_row(n))
-        add_btn.pack(side=tk.TOP, fill=tk.X)
-        ToolTip(add_btn, "Add a new probability entry")
         win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
         self.tables[name] = (win, frame, tree)
         self._update_table(name)
@@ -375,34 +372,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.canvas.delete(win)
             frame.destroy()
         self._place_table(name)
-
-    # ------------------------------------------------------------------
-    def add_cpd_row(self, name: str) -> None:
-        doc = getattr(self.app, "active_cbn", None)
-        if not doc:
-            return
-        parents = doc.network.parents.get(name, [])
-        if not parents:
-            prob = simpledialog.askfloat(
-                "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
-            )
-            if prob is not None:
-                doc.network.cpds[name] = prob
-                self._update_table(name)
-            return
-        values = []
-        for p in parents:
-            val = simpledialog.askstring(f"{p}", "T/F", parent=self)
-            if val is None:
-                return
-            values.append(val.strip().upper().startswith("T"))
-        prob = simpledialog.askfloat(
-            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
-        )
-        if prob is None:
-            return
-        doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
-        self._update_table(name)
 
     # ------------------------------------------------------------------
     def edit_cpd_row(self, name: str) -> None:
