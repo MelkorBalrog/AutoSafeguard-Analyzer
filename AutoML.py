@@ -260,7 +260,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config_loader import load_json_with_comments
+from config import load_json_with_comments
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -522,7 +522,7 @@ VALID_SUBTYPES = {
 }
 
 # Node types treated as gates when rendering and editing
-_CONFIG_PATH = Path(__file__).resolve().parent / "diagram_rules.json"
+_CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
 _CONFIG = load_json_with_comments(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 

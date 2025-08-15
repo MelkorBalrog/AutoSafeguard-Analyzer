@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
-from config_loader import load_json_with_comments
+from config import load_json_with_comments
 import json
 
 from sysml.sysml_spec import SYSML_PROPERTIES
@@ -51,7 +51,7 @@ _next_obj_id = 1
 CONNECTION_SELECT_RADIUS = 15
 
 
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_json_with_comments(_CONFIG_PATH)
 
 # Diagram types that belong to the generic "Architecture Diagram" work product

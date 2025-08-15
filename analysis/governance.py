@@ -4,11 +4,11 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
 from pathlib import Path
-from config_loader import load_json_with_comments
+from config import load_json_with_comments
 
 import networkx as nx
 
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_json_with_comments(_CONFIG_PATH)
 
 # Element and relationship types associated with AI & safety lifecycle nodes.
