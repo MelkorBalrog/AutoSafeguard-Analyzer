@@ -23,6 +23,11 @@ class ConnectionStereotypeLabelTests(unittest.TestCase):
         label = format_control_flow_label(conn, self.repo, "Governance Diagram")
         self.assertEqual(label, "<<propagate>>")
 
+    def test_governance_relationship_guard_label(self):
+        conn = DiagramConnection(1, 2, "Trace", guard=["g1"])
+        label = format_control_flow_label(conn, self.repo, "Governance Diagram")
+        self.assertEqual(label, "[g1] / <<trace>>")
+
 
 if __name__ == "__main__":
     unittest.main()

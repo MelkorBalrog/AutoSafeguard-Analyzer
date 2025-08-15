@@ -38,7 +38,6 @@ def test_generate_requirements_from_governance_diagram():
     assert approve_req.subject == "Data Steward"
     assert approve_req.obj == "Report"
 
-
 def test_ai_training_and_curation_requirements():
     diagram = GovernanceDiagram()
     diagram.add_task("Decision1", node_type="Decision")

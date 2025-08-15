@@ -1,4 +1,8 @@
+import sys
 import unittest
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import SysMLObject, DiagramConnection
 from sysml.sysml_repository import SysMLRepository
