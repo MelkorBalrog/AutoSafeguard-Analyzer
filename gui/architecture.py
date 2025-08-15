@@ -2982,7 +2982,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        self.canvas = tk.Canvas(canvas_frame, bg="white")
+        bg = StyleManager.get_instance().background
+        self.canvas = tk.Canvas(canvas_frame, bg=bg)
         vbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         hbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
         self.canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
@@ -6381,7 +6382,11 @@ class SysMLDiagramWindow(tk.Frame):
         y1 = bottom - size - pad
         x2 = right - pad
         y2 = bottom - pad
-        self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="white")
+        self.canvas.create_rectangle(
+            x1, y1, x2, y2,
+            outline=StyleManager.get_instance().get_outline(),
+            fill="white",
+        )
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
         self.canvas.create_text(
@@ -6398,7 +6403,7 @@ class SysMLDiagramWindow(tk.Frame):
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         color = StyleManager.get_instance().get_color(obj.obj_type)
-        outline = "black"
+        outline = StyleManager.get_instance().get_outline()
         if color == "#FFFFFF":
             if obj.obj_type == "Database":
                 color = "#cfe2f3"
@@ -6830,7 +6835,11 @@ class SysMLDiagramWindow(tk.Frame):
                 by1 = cy + (20 * self.zoom - btn_sz) / 2
                 bx2 = bx1 + btn_sz
                 by2 = by1 + btn_sz
-                self.canvas.create_rectangle(bx1, by1, bx2, by2, outline="black", fill="white")
+                self.canvas.create_rectangle(
+                    bx1, by1, bx2, by2,
+                    outline=StyleManager.get_instance().get_outline(),
+                    fill="white",
+                )
                 self.canvas.create_text((bx1 + bx2) / 2, (by1 + by2) / 2, text="-" if not collapsed else "+", font=self.font)
                 self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
                 tx = bx2 + 2 * self.zoom

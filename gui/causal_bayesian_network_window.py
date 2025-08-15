@@ -7,6 +7,7 @@ from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
+from .style_manager import StyleManager
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -52,7 +53,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         canvas_container = ttk.Frame(body)
         canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.canvas = tk.Canvas(canvas_container, background="white")
+        bg = StyleManager.get_instance().background
+        self.canvas = tk.Canvas(canvas_container, background=bg)
         self.canvas.grid(row=0, column=0, sticky="nsew")
         xbar = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
         xbar.grid(row=1, column=0, sticky="ew")
@@ -482,8 +484,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         fill_ids = self.drawing_helper._fill_gradient_circle(
             self.canvas, x, y, r, color, tag=fill_tag
         ) or []
+        outline = StyleManager.get_instance().get_outline()
         oval = self.canvas.create_oval(
-            x - r, y - r, x + r, y + r, outline="black", fill=""
+            x - r, y - r, x + r, y + r, outline=outline, fill=""
         )
         label = f"<<{stereo}>>\n{name}" if stereo else name
         font = getattr(self, "text_font", None)

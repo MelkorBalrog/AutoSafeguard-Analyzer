@@ -3,19 +3,12 @@ import math
 import tkinter as tk
 import tkinter.font as tkFont
 
-TEXT_BOX_COLOR = "#CFD8DC"
+from .style_manager import StyleManager
 
-# Basic mapping of a few common color names to their hex equivalents. The
-# gradient routines expect ``#RRGGBB`` colors; previously passing a named color
-# such as ``"lightyellow"`` caused a ``ValueError`` when converting to integers.
-# The small table below covers the named colors used by the drawing helpers and
-# can be extended easily if additional names are required.
-_NAMED_COLORS = {
-    "lightgray": "#d3d3d3",
-    "lightgrey": "#d3d3d3",
-    "lightblue": "#add8e6",
-    "lightyellow": "#ffffe0",
-}
+DEFAULT_OUTLINE = StyleManager.get_instance().get_outline()
+DEFAULT_FILL = "black" if DEFAULT_OUTLINE.lower() == "#000000" else DEFAULT_OUTLINE
+
+TEXT_BOX_COLOR = "#CFD8DC"
 
 # Basic mapping of a few common color names to their hex equivalents. The
 # gradient routines expect ``#RRGGBB`` colors; previously passing a named color
@@ -144,7 +137,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -175,7 +168,7 @@ class FTADrawingHelper:
         v1 = (x, y)
         v2 = (x - size, y)
         v3 = (x, y - size)
-        canvas.create_polygon([v1, v2, v3], fill="black", outline="black")
+        canvas.create_polygon([v1, v2, v3], fill=DEFAULT_FILL, outline=DEFAULT_OUTLINE)
 
     def _segment_intersection(self, p1, p2, p3, p4):
         """Return intersection point (x, y, t) of segments *p1*-*p2* and *p3*-*p4* or None."""
@@ -253,7 +246,7 @@ class FTADrawingHelper:
                 return best[0], best[1]
         return target_pt
 
-    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color="dimgray", line_width=1,
+    def draw_90_connection(self, canvas, parent_pt, child_pt, outline_color=DEFAULT_OUTLINE, line_width=1,
                            fixed_length=40, parent_shape=None, child_shape=None):
         """Draw a 90° connection line from a parent point to a child point.
 
@@ -317,7 +310,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -415,7 +408,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -522,7 +515,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -555,7 +548,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -588,7 +581,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Event",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -676,7 +669,7 @@ class FTADrawingHelper:
         top_text="",
         bottom_text="",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         base_event=False,
@@ -769,7 +762,7 @@ class FTADrawingHelper:
         top_text="Desc:\n\nRationale:",
         bottom_text="Node",
         fill="lightgray",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -815,7 +808,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Goal",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -859,7 +852,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Module",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -915,8 +908,8 @@ class GSNDrawingHelper(FTADrawingHelper):
         start_pt,
         end_pt,
         *,
-        fill="black",
-        outline="black",
+        fill=DEFAULT_FILL,
+        outline=DEFAULT_OUTLINE,
         obj_id: str = "",
     ) -> None:
         """Draw a triangular arrow head from *start_pt* to *end_pt*."""
@@ -957,7 +950,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         canvas,
         parent_pt,
         child_pt,
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         obj_id: str = "",
     ):
@@ -1023,8 +1016,8 @@ class GSNDrawingHelper(FTADrawingHelper):
             canvas,
             start,
             end,
-            fill="black",
-            outline="black",
+            fill=DEFAULT_FILL,
+            outline=DEFAULT_OUTLINE,
             obj_id=obj_id,
         )
 
@@ -1033,7 +1026,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         canvas,
         parent_pt,
         child_pt,
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         obj_id: str = "",
     ):
@@ -1118,7 +1111,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Strategy",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -1156,7 +1149,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=40.0,
         text="Solution",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -1197,7 +1190,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Assumption",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -1251,7 +1244,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Justification",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",
@@ -1305,7 +1298,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         scale=60.0,
         text="Context",
         fill="lightyellow",
-        outline_color="dimgray",
+        outline_color=DEFAULT_OUTLINE,
         line_width=1,
         font_obj=None,
         obj_id: str = "",

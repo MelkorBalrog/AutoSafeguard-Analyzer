@@ -1547,6 +1547,11 @@ peach actions and steel-blue nodes. `modern.xml` offers a Material-inspired
 palette for a different look. Open the Style Editor via **View → Style Editor**, click **Load** and choose
 the desired style. All open diagrams update immediately.
 
+To enable a global dark theme for diagrams, set the environment variable
+`AUTOML_STYLE=dark` before launching the application. The included
+`dark.xml` defines a black canvas background and colors tuned for low-light
+environments.
+
 ## License
 
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
