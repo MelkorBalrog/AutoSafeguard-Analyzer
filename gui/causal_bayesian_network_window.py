@@ -232,10 +232,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
             r = self.NODE_RADIUS
-            self.canvas.coords(fill_tag, x - r, y - r, x + r, y + r)
+            self.canvas.move(fill_tag, x - old_x, y - old_y)
             self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
             self.canvas.coords(text_id, x, y)
-            self.canvas.move(fill_tag, x - old_x, y - old_y)
             for line_id, src, dst in self.edges:
                 if src == name or dst == name:
                     x1, y1 = doc.positions[src]
