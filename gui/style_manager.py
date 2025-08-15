@@ -43,6 +43,7 @@ class StyleManager:
         root = tree.getroot()
         self.styles.clear()
         self.canvas_bg = "#FFFFFF"
+        self.outline_color = "black"
         canvas = root.find('canvas')
         if canvas is not None:
             self.canvas_bg = canvas.get('color', "#FFFFFF")

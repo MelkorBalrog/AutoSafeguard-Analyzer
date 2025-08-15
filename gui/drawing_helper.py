@@ -183,7 +183,11 @@ class FTADrawingHelper:
         v1 = (x, y)
         v2 = (x - size, y)
         v3 = (x, y - size)
-        canvas.create_polygon([v1, v2, v3], fill="black", outline="black")
+        canvas.create_polygon(
+            [v1, v2, v3],
+            fill="black",
+            outline=StyleManager.get_instance().outline_color,
+        )
 
     def _segment_intersection(self, p1, p2, p3, p4):
         """Return intersection point (x, y, t) of segments *p1*-*p2* and *p3*-*p4* or None."""
@@ -934,7 +938,7 @@ class GSNDrawingHelper(FTADrawingHelper):
         end_pt,
         *,
         fill="black",
-        outline="black",
+        outline=None,
         obj_id: str = "",
     ) -> None:
         """Draw a triangular arrow head from *start_pt* to *end_pt*."""
@@ -945,6 +949,8 @@ class GSNDrawingHelper(FTADrawingHelper):
         length = math.hypot(dx, dy)
         if length == 0:
             return
+        if outline is None:
+            outline = StyleManager.get_instance().outline_color
         ux, uy = dx / length, dy / length
         arrow_length = 10
         arrow_width = 6

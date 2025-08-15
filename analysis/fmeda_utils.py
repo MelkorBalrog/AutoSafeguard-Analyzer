@@ -1,18 +1,18 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, component_fit_map
 from pathlib import Path
-from config import load_json_with_comments
+from config import load_diagram_rules
 
 # Node types treated as gates when determining component names
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
-_CONFIG = load_json_with_comments(_CONFIG_PATH)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 
 def reload_config() -> None:
     """Reload gate node types from configuration."""
     global _CONFIG, GATE_NODE_TYPES
-    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
     GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 

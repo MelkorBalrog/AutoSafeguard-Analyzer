@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
-from config import load_json_with_comments
+from config import load_diagram_rules
 import json
 
 from sysml.sysml_spec import SYSML_PROPERTIES
@@ -52,7 +52,7 @@ CONNECTION_SELECT_RADIUS = 15
 
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
-_CONFIG = load_json_with_comments(_CONFIG_PATH)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
 
 # Diagram types that belong to the generic "Architecture Diagram" work product
 ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -93,7 +93,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
-    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
     SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -6311,7 +6311,14 @@ class SysMLDiagramWindow(tk.Frame):
         y1 = bottom - size - pad
         x2 = right - pad
         y2 = bottom - pad
-        self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", fill="white")
+        self.canvas.create_rectangle(
+            x1,
+            y1,
+            x2,
+            y2,
+            outline=StyleManager.get_instance().outline_color,
+            fill="white",
+        )
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
         self.canvas.create_text(
@@ -6328,7 +6335,7 @@ class SysMLDiagramWindow(tk.Frame):
         w = obj.width * self.zoom / 2
         h = obj.height * self.zoom / 2
         color = StyleManager.get_instance().get_color(obj.obj_type)
-        outline = "black"
+        outline = StyleManager.get_instance().outline_color
         if color == "#FFFFFF":
             if obj.obj_type == "Database":
                 color = "#cfe2f3"
@@ -6760,7 +6767,14 @@ class SysMLDiagramWindow(tk.Frame):
                 by1 = cy + (20 * self.zoom - btn_sz) / 2
                 bx2 = bx1 + btn_sz
                 by2 = by1 + btn_sz
-                self.canvas.create_rectangle(bx1, by1, bx2, by2, outline="black", fill="white")
+                self.canvas.create_rectangle(
+                    bx1,
+                    by1,
+                    bx2,
+                    by2,
+                    outline=StyleManager.get_instance().outline_color,
+                    fill="white",
+                )
                 self.canvas.create_text((bx1 + bx2) / 2, (by1 + by2) / 2, text="-" if not collapsed else "+", font=self.font)
                 self.compartment_buttons.append((obj.obj_id, label, (bx1, by1, bx2, by2)))
                 tx = bx2 + 2 * self.zoom
