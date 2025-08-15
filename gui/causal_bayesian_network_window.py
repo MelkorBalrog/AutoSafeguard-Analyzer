@@ -492,7 +492,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.canvas, x, y, r, color, tag=fill_tag
         ) or []
         oval = self.canvas.create_oval(
-            x - r, y - r, x + r, y + r, outline="black", fill=""
+            x - r,
+            y - r,
+            x + r,
+            y + r,
+            outline=StyleManager.get_instance().outline_color,
+            fill="",
         )
         label = f"<<{stereo}>>\n{name}" if stereo else name
         font = getattr(self, "text_font", None)
