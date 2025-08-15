@@ -1,4 +1,5 @@
 <style>
+  <canvas color="#1e1e1e" />
   <object type="Actor" color="#0D47A1" />
   <object type="Use Case" color="#FF8F00" />
   <object type="System Boundary" color="#37474F" />
@@ -9,6 +10,6 @@
   <object type="Part" color="#F57F17" />
   <object type="Port" color="#4A148C" />
   <object type="Block" color="#455A64" />
-  <object type="Decision" color="#006064" />
+  <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#006064" />
 </style>
