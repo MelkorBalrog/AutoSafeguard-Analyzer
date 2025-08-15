@@ -257,7 +257,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         """Draw a node as a filled circle with a text label."""
         r = self.NODE_RADIUS
         if kind == "trigger":
-            color = "lightgreen"
+            color = "lightblue"
         elif kind == "insufficiency":
             color = "lightyellow"
         else:
@@ -297,7 +297,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         parents = doc.network.parents.get(name, [])
         prob_col = f"P({name}=T)"
-        cols = list(parents) + [prob_col]
+        if parents:
+            combo_col = "P(parents)"
+            cols = list(parents) + [combo_col, prob_col]
+        else:
+            cols = [prob_col]
         frame = ttk.Frame(self.canvas)
         label_text = (
             f"Prior probability of {name}" if not parents else f"Conditional probabilities for {name}"
@@ -314,7 +318,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             info = (
                 "Each row shows a combination of parent values; "
-                f"{prob_col} is the probability that {name} is True for that combination"
+                f"{prob_col} is the probability that {name} is True for that combination "
+                f"and {combo_col} is the probability of the parent combination"
             )
         ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
@@ -339,8 +344,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not parents:
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            for combo, prob in rows:
+            for combo, prob, combo_prob in rows:
                 row = ["T" if val else "F" for val in combo]
+                row.append(f"{combo_prob:.3f}")
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
         tree.configure(height=len(rows))

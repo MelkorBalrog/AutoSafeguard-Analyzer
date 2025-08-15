@@ -202,7 +202,7 @@ class CausalBayesianNetwork:
                 probs[node] = float(self.cpds.get(node, 0.0))
                 continue
             total = 0.0
-            for combo, p_true in self.cpd_rows(node):
+            for combo, p_true in self._cpd_rows_only(node):
                 weight = 1.0
                 for parent, val in zip(parents, combo):
                     parent_prob = probs.get(parent, 0.0)
@@ -212,13 +212,14 @@ class CausalBayesianNetwork:
         return probs
 
     # ------------------------------------------------------------------
-    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
-        """Return all combinations of parent values and their probabilities.
+    def _cpd_rows_only(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
+        """Return combinations of parent values with their ``P(var=True)``.
 
-        The returned list represents the rows of the node's conditional
-        probability table.  All ``2^n`` combinations of parent values are
-        included.  Probabilities not explicitly provided when the node was
-        added default to ``0.0`` so that the table is always complete.
+        This private helper is used internally by :meth:`marginal_probabilities`
+        to avoid recursive calls once :meth:`cpd_rows` starts depending on those
+        marginals as well.  It mirrors the previous behaviour of
+        :meth:`cpd_rows` by simply enumerating the conditional probability table
+        without computing additional information.
         """
 
         parents = self.parents.get(var, [])
@@ -230,6 +231,34 @@ class CausalBayesianNetwork:
         for combo in product([False, True], repeat=len(parents)):
             rows.append((combo, float(cpds.get(combo, 0.0))))
         return rows
+
+    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float]]:
+        """Return parent combinations, ``P(var=True)`` and their probabilities.
+
+        The returned list represents the rows of the node's conditional
+        probability table.  All ``2^n`` combinations of parent values are
+        included.  The third element of each tuple is the probability of that
+        parent combination occurring based on the current marginal
+        probabilities of the parent nodes.  Probabilities not explicitly
+        provided when the node was added default to ``0.0`` so that the table is
+        always complete.
+        """
+
+        rows = self._cpd_rows_only(var)
+        parents = self.parents.get(var, [])
+        if not parents:
+            combo, prob = rows[0]
+            return [(combo, prob, 1.0)]
+
+        parent_probs = self.marginal_probabilities()
+        result: List[Tuple[Tuple[bool, ...], float, float]] = []
+        for combo, p_true in rows:
+            weight = 1.0
+            for parent, val in zip(parents, combo):
+                parent_prob = parent_probs.get(parent, 0.0)
+                weight *= parent_prob if val else 1.0 - parent_prob
+            result.append((combo, p_true, weight))
+        return result
 
 
 @dataclass
