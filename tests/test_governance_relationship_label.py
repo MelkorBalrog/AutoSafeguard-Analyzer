@@ -19,3 +19,7 @@ def test_label_relationship_between_database_nodes():
     reqs = diagram.generate_requirements()
     texts = [t for t, _ in reqs]
     assert "Task 'User DB' shall sync with task 'Analytics DB'." in texts
+    req = next(r for r in reqs if r.text == "Task 'User DB' shall sync with task 'Analytics DB'.")
+    assert req.sub == "Task 'User DB'"
+    assert req.act == "sync with"
+    assert req.obj == "task 'Analytics DB'"
