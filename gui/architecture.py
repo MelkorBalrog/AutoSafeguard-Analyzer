@@ -3790,7 +3790,9 @@ class SysMLDiagramWindow(tk.Frame):
             elif t == "Data acquisition":
                 new_obj.width = 120.0
                 new_obj.height = 80.0
-                new_obj.properties.setdefault("compartments", ";;")
+                new_obj.properties.setdefault(
+                    "compartments", "data source1;data source2;data source 3"
+                )
                 new_obj.properties.setdefault("name", "Data acquisition")
             key = f"{t.replace(' ', '')}Usage"
 
@@ -5412,7 +5414,9 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _min_data_acquisition_size(self, obj: SysMLObject) -> tuple[float, float]:
         """Return minimum width and height to display Data acquisition compartments."""
-        compartments = obj.properties.get("compartments", ";;").split(";")
+        compartments = obj.properties.get(
+            "compartments", "data source1;data source2;data source 3"
+        ).split(";")
         lines = [line for comp in compartments for line in comp.splitlines()]
         if not lines:
             lines = [""]
@@ -6756,7 +6760,9 @@ class SysMLDiagramWindow(tk.Frame):
             right, bottom = x + w, y + h
             self._draw_gradient_rect(left, top, right, bottom, color, obj.obj_id)
             self.canvas.create_rectangle(left, top, right, bottom, outline=outline, fill="")
-            compartments = obj.properties.get("compartments", ";;").split(";")
+            compartments = obj.properties.get(
+                "compartments", "data source1;data source2;data source 3"
+            ).split(";")
             n = max(len(compartments), 1)
             step = (bottom - top) / n
             for idx in range(1, n):
