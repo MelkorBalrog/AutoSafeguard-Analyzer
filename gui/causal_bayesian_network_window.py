@@ -35,13 +35,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         toolbox = ttk.Frame(body)
         toolbox.pack(side=tk.LEFT, fill=tk.Y)
-        for name in ("Select", "Variable", "Relationship"):
+        for name in (
+            "Select",
+            "Triggering Condition",
+            "Functional Insufficiency",
+            "Relationship",
+        ):
             ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
                 fill=tk.X, padx=2, pady=2
             )
-        ttk.Button(toolbox, text="Calculate", command=self.calculate).pack(
-            fill=tk.X, padx=2, pady=2
-        )
         self.current_tool = "Select"
 
         self.canvas = tk.Canvas(body, background="white")
@@ -146,14 +148,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        if self.current_tool == "Variable":
-            name = simpledialog.askstring("Variable", "Name:", parent=self)
+        if self.current_tool in ("Triggering Condition", "Functional Insufficiency"):
+            prompt = self.current_tool
+            name = simpledialog.askstring(prompt, "Name:", parent=self)
             if not name or name in doc.network.nodes:
                 return
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
-            self._draw_node(name, x, y)
+            kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
+            doc.types[name] = kind
+            self._draw_node(name, x, y, kind)
         elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
@@ -191,7 +196,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc.positions[name] = (x, y)
         oval_id, text_id, fill_tag = self.nodes[name]
         r = self.NODE_RADIUS
-        self.canvas.coords(fill_id, x - r, y - r, x + r, y + r)
+        self.canvas.coords(fill_tag, x - r, y - r, x + r, y + r)
         self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(text_id, x, y)
         self.canvas.move(fill_tag, x - old_x, y - old_y)
@@ -248,10 +253,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_table(name)
 
     # ------------------------------------------------------------------
-    def _draw_node(self, name: str, x: float, y: float) -> None:
+    def _draw_node(self, name: str, x: float, y: float, kind: str | None = None) -> None:
         """Draw a node as a filled circle with a text label."""
         r = self.NODE_RADIUS
-        color = "lightyellow"
+        if kind == "trigger":
+            color = "lightgreen"
+        elif kind == "insufficiency":
+            color = "lightcoral"
+        else:
+            color = "lightyellow"
         fill_tag = f"fill_{name}"
         self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color, tag=fill_tag)
         oval = self.canvas.create_oval(
@@ -335,6 +345,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
+            tree.configure(height=len(cpds))
         frame.update_idletasks()
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
@@ -434,17 +445,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_table(name)
 
     # ------------------------------------------------------------------
-    def calculate(self) -> None:
-        doc = getattr(self.app, "active_cbn", None)
-        if not doc:
-            return
-        lines = []
-        for name in doc.network.nodes:
-            prob = doc.network.query(name)
-            lines.append(f"P({name}=True) = {prob:.3f}")
-        messagebox.showinfo("Probabilities", "\n".join(lines), parent=self)
-
-    # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
         ids = self.canvas.find_overlapping(x, y, x, y)
         for i in ids:
@@ -468,7 +468,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for name in doc.network.nodes:
             x, y = doc.positions.get(name, (100, 100))
             doc.positions[name] = (x, y)
-            self._draw_node(name, x, y)
+            kind = doc.types.get(name)
+            self._draw_node(name, x, y, kind)
         for child, parents in doc.network.parents.items():
             for parent in parents:
                 if parent in doc.network.nodes and child in doc.network.nodes:

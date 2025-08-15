@@ -17718,6 +17718,7 @@ class FaultTreeApp:
                         for var, cpd in doc.network.cpds.items()
                     },
                     "positions": doc.positions,
+                    "types": doc.types,
                 }
                 for doc in getattr(self, "cbn_docs", [])
             ],
@@ -18197,7 +18198,8 @@ class FaultTreeApp:
             net.cpds = parsed_cpds
             name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
             positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
-            doc = CausalBayesianNetworkDoc(name, network=net, positions=positions)
+            types = {k: v for k, v in d.get("types", {}).items()}
+            doc = CausalBayesianNetworkDoc(name, network=net, positions=positions, types=types)
             self.cbn_docs.append(doc)
             toolbox.register_loaded_work_product("Causal Bayesian Network Analysis", name)
         self.active_cbn = self.cbn_docs[0] if self.cbn_docs else None

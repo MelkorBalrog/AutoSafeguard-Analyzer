@@ -38,7 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
-from analysis.causal_bayesian_network import CausalBayesianNetwork
+from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
     _work_product_name,
 )
@@ -4206,8 +4206,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         name = simpledialog.askstring("New Analysis", "Name:", parent=self)
         if not name:
             return
-        doc = CausalBayesianNetwork()
-        doc.name = name
+        doc = CausalBayesianNetworkDoc(name)
         if not hasattr(self.app, "cbn_docs"):
             self.app.cbn_docs = []
         self.app.cbn_docs.append(doc)
