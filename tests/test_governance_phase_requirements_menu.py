@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.safety_management_toolbox import SafetyManagementWindow, SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
 from gui import safety_management_toolbox as smt
-from analysis.models import global_requirements, REQUIREMENT_TYPE_OPTIONS
+from analysis.models import global_requirements
 
 
 def test_phase_requirements_menu(monkeypatch):
@@ -82,5 +82,5 @@ def test_phase_requirements_menu(monkeypatch):
     texts = [row[2] for row in trees[0].rows]
     assert any("Task 'Start' shall precede task 'Finish'." in t for t in texts)
     assert any("Task 'Check' shall precede task 'Complete'." in t for t in texts)
-    assert all(row[1] in REQUIREMENT_TYPE_OPTIONS for row in trees[0].rows)
+    assert all(row[1] == "organizational" for row in trees[0].rows)
     assert len(global_requirements) == len(trees[0].rows)
