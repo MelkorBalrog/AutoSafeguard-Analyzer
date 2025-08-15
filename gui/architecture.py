@@ -5000,46 +5000,6 @@ class SysMLDiagramWindow(tk.Frame):
         ]
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
 
-    def _allocate_diamond_corner(
-        self, obj: SysMLObject, tx: float, ty: float, current: DiagramConnection
-    ) -> Tuple[float, float]:
-        """Return a relative corner for *obj* avoiding corners used by other connections.
-
-        ``tx`` and ``ty`` are the coordinates of the opposite endpoint. ``current`` is
-        the connection being assigned. Returned values are one of ``(1, 0)``, ``(0, 1)``,
-        ``(-1, 0)``, or ``(0, -1)`` representing right, bottom, left, and top corners
-        respectively.
-        """
-
-        cx = obj.x * self.zoom
-        cy = obj.y * self.zoom
-        w = obj.width * self.zoom / 2
-        h = obj.height * self.zoom / 2
-        corner_data = [
-            ((cx, cy - h), (0.0, -1.0)),
-            ((cx + w, cy), (1.0, 0.0)),
-            ((cx, cy + h), (0.0, 1.0)),
-            ((cx - w, cy), (-1.0, 0.0)),
-        ]
-
-        # Order corners by proximity to the target coordinates
-        corner_data.sort(key=lambda c: (c[0][0] - tx) ** 2 + (c[0][1] - ty) ** 2)
-
-        used: set[Tuple[float, float]] = set()
-        for conn in self.connections:
-            if conn is current:
-                continue
-            if conn.src == obj.obj_id and conn.src_pos is not None:
-                used.add(conn.src_pos)
-            if conn.dst == obj.obj_id and conn.dst_pos is not None:
-                used.add(conn.dst_pos)
-
-        for _, rel in corner_data:
-            if rel not in used:
-                return rel
-        # All corners in use; fall back to the nearest one
-        return corner_data[0][1]
-
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         diag = self.repo.diagrams.get(self.diagram_id)
         for conn in self.connections:
@@ -6970,11 +6930,7 @@ class SysMLDiagramWindow(tk.Frame):
             ax, ay = self.edge_point(a, 0, 0, (1, 0))
             bx, by = ax, ay
         else:
-            if conn.src_pos is None and a.obj_type in ("Decision", "Merge"):
-                conn.src_pos = self._allocate_diamond_corner(a, bxc, byc, conn)
             ax, ay = self.edge_point(a, bxc, byc, conn.src_pos)
-            if conn.dst_pos is None and b.obj_type in ("Decision", "Merge"):
-                conn.dst_pos = self._allocate_diamond_corner(b, axc, ayc, conn)
             bx, by = self.edge_point(b, axc, ayc, conn.dst_pos)
         if conn.conn_type in ("Include", "Extend"):
             dash = (4, 2)
