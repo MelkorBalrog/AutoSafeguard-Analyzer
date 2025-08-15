@@ -60,10 +60,15 @@ class SafetyManagementWindow(tk.Frame):
         ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
             side=tk.LEFT
         )
-        self.phase_menu_btn = tk.Menubutton(top, text="Phase Requirements")
+        self.phase_menu_btn = ttk.Menubutton(top, text="Phase Requirements")
         self.phase_menu = tk.Menu(self.phase_menu_btn, tearoff=False)
         self.phase_menu_btn.configure(menu=self.phase_menu)
         self.phase_menu_btn.pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Lifecycle Requirements",
+            command=self.generate_lifecycle_requirements,
+        ).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
