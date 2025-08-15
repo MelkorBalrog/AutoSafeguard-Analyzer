@@ -221,20 +221,16 @@ class GovernanceDiagram:
         decision_sources: dict[int, str] = {}
         for obj in getattr(src_diagram, "objects", []):
             odict = obj if isinstance(obj, dict) else obj.__dict__
-            otype = odict.get("obj_type")
-            if otype == "Action":
-                elem_id = odict.get("element_id")
-                name = ""
-                if elem_id and elem_id in repo.elements:
-                    name = repo.elements[elem_id].name
-                if not name:
-                    name = odict.get("properties", {}).get("name", "")
-                if not name:
-                    continue
-                diagram.add_task(name)
-                id_to_name[odict.get("obj_id")] = name
-            elif otype == "Decision":
-                decision_sources[odict.get("obj_id")] = ""
+            elem_id = odict.get("element_id")
+            name = ""
+            if elem_id and elem_id in repo.elements:
+                name = repo.elements[elem_id].name
+            if not name:
+                name = odict.get("properties", {}).get("name", "")
+            if not name:
+                continue
+            diagram.add_task(name)
+            id_to_name[odict.get("obj_id")] = name
 
         # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):

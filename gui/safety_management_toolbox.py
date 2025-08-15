@@ -217,7 +217,7 @@ class SafetyManagementWindow(tk.Frame):
         repo = SysMLRepository.get_instance()
         gov = GovernanceDiagram.from_repository(repo, diag_id)
         try:
-            reqs = [r for r in gov.generate_requirements() if r.strip()]
+            reqs = self._collect_requirements(gov)
         except Exception as exc:  # pragma: no cover - defensive
             messagebox.showerror(
                 "Requirements", f"Failed to generate requirements: {exc}"
@@ -250,15 +250,15 @@ class SafetyManagementWindow(tk.Frame):
                 continue
             gov = GovernanceDiagram.from_repository(repo, diag_id)
             try:
-                reqs = [r for r in gov.generate_requirements() if r.strip()]
+                reqs = self._collect_requirements(gov)
             except Exception as exc:  # pragma: no cover - defensive
                 messagebox.showerror(
                     "Requirements",
                     f"Failed to generate requirements for '{name}': {exc}",
                 )
-                return
-            for text, rtype in reqs:
-                ids.append(self._add_requirement(text, rtype))
+                continue
+            for text in reqs:
+                ids.append(self._add_requirement(text))
         if not ids:
             messagebox.showinfo(
                 "Requirements",
@@ -266,3 +266,21 @@ class SafetyManagementWindow(tk.Frame):
             )
             return
         self._display_requirements(f"{phase} Requirements", ids)
+
+    @staticmethod
+    def _collect_requirements(gov: GovernanceDiagram) -> list[str]:
+        """Return sanitized requirements from ``gov``.
+
+        Each requirement must be a non-empty string; otherwise a :class:`TypeError`
+        is raised to signal a model problem to the caller.
+        """
+        reqs: list[str] = []
+        for r in gov.generate_requirements():
+            if not isinstance(r, str):
+                raise TypeError(
+                    f"Requirement must be a string, got {type(r).__name__}"
+                )
+            text = r.strip()
+            if text:
+                reqs.append(text)
+        return reqs
