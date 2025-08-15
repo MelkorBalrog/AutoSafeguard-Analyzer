@@ -41,11 +41,11 @@ def test_intervention_matches_conditioning_for_root():
     assert p_do == pytest.approx(p_cond, rel=1e-6)
 
 
-def test_missing_cpd_defaults_to_one():
+def test_missing_cpd_defaults_to_uniform_probability():
     cbn = CausalBayesianNetwork()
     cbn.add_node("Rain", cpd=0.5)
     cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9})
-    assert cbn.query("WetGround") == pytest.approx(0.95, rel=1e-3)
+    assert cbn.query("WetGround") == pytest.approx(0.7, rel=1e-3)
 
 
 def test_truth_table_auto_fill():
@@ -55,7 +55,7 @@ def test_truth_table_auto_fill():
     rows = cbn.cpd_rows("B")
     assert len(rows) == 2
     assert rows[0][0] == (False,)
-    assert rows[0][1] == pytest.approx(1.0)
+    assert rows[0][1] == pytest.approx(0.5)
     # probability of parent combination P(A=False) = 0.6
     assert rows[0][2] == pytest.approx(0.6, rel=1e-3)
     assert rows[1][2] == pytest.approx(0.4, rel=1e-3)

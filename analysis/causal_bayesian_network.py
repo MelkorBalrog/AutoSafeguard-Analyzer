@@ -153,7 +153,8 @@ class CausalBayesianNetwork:
             p_true = float(self.cpds[var])
         else:
             key = tuple(evidence[p] for p in parents)
-            p_true = float(self.cpds[var].get(key, 1.0))
+            default = 1.0 / (2 ** len(parents))
+            p_true = float(self.cpds[var].get(key, default))
         return p_true if value else 1.0 - p_true
 
     # ------------------------------------------------------------------
@@ -206,12 +207,13 @@ class CausalBayesianNetwork:
 
         parents = self.parents.get(var, [])
         if not parents:
-            prob = float(self.cpds.get(var, 0.0))
+            prob = float(self.cpds.get(var, 1.0))
             return [((), prob)]
         cpds = self.cpds.get(var, {})
         rows: List[Tuple[Tuple[bool, ...], float]] = []
+        default = 1.0 / (2 ** len(parents))
         for combo in product([False, True], repeat=len(parents)):
-            rows.append((combo, float(cpds.get(combo, 1.0))))
+            rows.append((combo, float(cpds.get(combo, default))))
         return rows
 
     def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float, float]]:
@@ -224,8 +226,8 @@ class CausalBayesianNetwork:
         where ``P(all)`` is the joint probability of the entire row, i.e. the
         probability that the parents take ``parent_values`` *and* ``var`` is
         ``True``.  Missing entries in the conditional probability table default
-        to ``1.0`` so that the table is always complete until explicitly edited
-        by the user.
+        to ``1 / 2^k`` (where ``k`` is the number of parents) so that the table
+        starts as a uniform distribution until explicitly edited by the user.
         """
 
         rows = self._cpd_rows_only(var)
