@@ -6,6 +6,7 @@ from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui import format_name_with_phase
+from gui.style_manager import StyleManager
 
 
 class GSNExplorer(tk.Frame):
@@ -480,7 +481,12 @@ class GSNExplorer(tk.Frame):
             return
         win = tk.Toplevel(self)
         win.title(obj.root.user_name)
-        canvas = tk.Canvas(win, width=800, height=600, bg="white")
+        canvas = tk.Canvas(
+            win,
+            width=800,
+            height=600,
+            bg=StyleManager.get_instance().canvas_bg,
+        )
         canvas.pack(fill=tk.BOTH, expand=True)
         obj.draw(canvas)
 
@@ -489,7 +495,7 @@ class GSNExplorer(tk.Frame):
         """Return a simple 16x16 icon for treeview items."""
         size = 16
         img = tk.PhotoImage(width=size, height=size)
-        img.put("white", to=(0, 0, size - 1, size - 1))
+        img.put(StyleManager.get_instance().canvas_bg, to=(0, 0, size - 1, size - 1))
         c = color
         if shape == "circle":
             r = size // 2 - 2
