@@ -11,6 +11,7 @@ except Exception:  # pragma: no cover - fallback for minimal installs
 import json
 import math
 import re
+import types
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
@@ -3710,6 +3711,36 @@ class SysMLDiagramWindow(tk.Frame):
             elif t in ("Fork", "Join"):
                 new_obj.width = 60.0
                 new_obj.height = 10.0
+            elif t == "Database":
+                new_obj.width = 80.0
+                new_obj.height = 60.0
+                new_obj.properties.setdefault("name", "Database")
+            elif t == "ANN":
+                new_obj.width = 120.0
+                new_obj.height = 80.0
+                new_obj.properties.setdefault("name", "ANN")
+            elif t == "Data acquisition":
+                new_obj.width = 120.0
+                new_obj.height = 80.0
+                new_obj.properties.setdefault("compartments", ";;")
+                new_obj.properties.setdefault("name", "Data acquisition")
+            elif t in (
+                "Annotation",
+                "Synthesis",
+                "Augmentation",
+                "Acquisition",
+                "Labeling",
+                "Field risk evaluation",
+                "Field data collection",
+                "AI training",
+                "AI re-training",
+                "Curation",
+                "Ingestion",
+                "Model evaluation",
+            ):
+                new_obj.width = 80.0
+                new_obj.height = 60.0
+                new_obj.properties.setdefault("name", t)
             key = f"{t.replace(' ', '')}Usage"
 
             for prop in SYSML_PROPERTIES.get(key, []):
@@ -6425,18 +6456,105 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.create_oval(x - r, y - r, x + r, y + r)
                 self.canvas.create_oval(x - inner, y - inner, x + inner, y + inner, fill="black")
         elif obj.obj_type in ("Decision", "Merge"):
-            self.canvas.create_polygon(
-                x,
-                y - h,
-                x + w,
-                y,
-                x,
-                y + h,
+                self.canvas.create_polygon(
+                    x,
+                    y - h,
+                    x + w,
+                    y,
+                    x,
+                    y + h,
+                    x - w,
+                    y,
+                    fill=color,
+                    outline=outline,
+                )
+        elif obj.obj_type == "Database":
+            top = y - h
+            bottom = y + h
+            self.canvas.create_oval(
                 x - w,
-                y,
+                top - 10 * self.zoom,
+                x + w,
+                top + 10 * self.zoom,
                 fill=color,
                 outline=outline,
             )
+            self.canvas.create_rectangle(
+                x - w,
+                top,
+                x + w,
+                bottom,
+                fill=color,
+                outline=outline,
+            )
+            self.canvas.create_oval(
+                x - w,
+                bottom - 10 * self.zoom,
+                x + w,
+                bottom + 10 * self.zoom,
+                fill=color,
+                outline=outline,
+            )
+        elif obj.obj_type == "ANN":
+            # Draw three layers of neurons connected
+            layers = [3, 6, 2]
+            spacing_x = obj.width * self.zoom / (len(layers) - 1)
+            max_neurons = max(layers)
+            spacing_y = obj.height * self.zoom / (max_neurons - 1 if max_neurons > 1 else 1)
+            layer_x = x - obj.width * self.zoom / 2
+            neuron_positions: list[list[tuple[float, float]]] = []
+            for count in layers:
+                xs = layer_x
+                ys = y - ((count - 1) * spacing_y) / 2
+                positions = []
+                for i in range(count):
+                    cx = xs
+                    cy = ys + i * spacing_y
+                    r = 5 * self.zoom
+                    self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill=color, outline=outline)
+                    positions.append((cx, cy))
+                neuron_positions.append(positions)
+                layer_x += spacing_x
+            for i in range(len(neuron_positions) - 1):
+                for src in neuron_positions[i]:
+                    for dst in neuron_positions[i + 1]:
+                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+        elif obj.obj_type == "Data acquisition":
+            left, top = x - w, y - h
+            right, bottom = x + w, y + h
+            self.canvas.create_rectangle(left, top, right, bottom, fill=color, outline=outline)
+            compartments = obj.properties.get("compartments", ";;").split(";")
+            n = max(len(compartments), 1)
+            step = (bottom - top) / n
+            for idx in range(1, n):
+                self.canvas.create_line(left, top + idx * step, right, top + idx * step)
+            for idx, text in enumerate(compartments):
+                cy = top + idx * step + step / 2
+                self.canvas.create_text(x, cy, text=text, font=self.font)
+        elif obj.obj_type in (
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
+        ):
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                fill=color,
+                outline=outline,
+            )
+            label = obj.properties.get("name", obj.obj_type)
+            self.canvas.create_text(x, y, text=label, font=self.font)
         elif obj.obj_type in ("Fork", "Join"):
             half = obj.width / 2 * self.zoom
             self.canvas.create_rectangle(
@@ -9125,6 +9243,96 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
+        # ------------------------------------------------------------------
+        # Toolbox toggle between Governance and Safety & AI Lifecycle
+        # ------------------------------------------------------------------
+        try:
+            self.toolbox_var = tk.StringVar(value="Governance")
+        except Exception:  # pragma: no cover - headless tests
+            class _Var:
+                def __init__(self, value):
+                    self._value = value
+
+                def get(self):
+                    return self._value
+
+                def set(self, v):
+                    self._value = v
+
+            self.toolbox_var = _Var("Governance")
+        if hasattr(self.toolbox, "tk"):
+            selector = ttk.Combobox(
+                self.toolbox,
+                values=["Governance", "Safety & AI Lifecycle"],
+                state="readonly",
+                textvariable=self.toolbox_var,
+            )
+            selector.pack(fill=tk.X, padx=2, pady=2)
+            selector.bind("<<ComboboxSelected>>", lambda e: self._switch_toolbox())
+        else:  # pragma: no cover - headless tests
+            selector = types.SimpleNamespace(pack=lambda *a, **k: None, bind=lambda *a, **k: None, lift=lambda: None)
+
+        # Store original governance tool frame and relationship frame
+        self.gov_tools_frame = self.tools_frame
+        self.gov_rel_frame = getattr(self, "rel_frame", None)
+
+        # Create Safety & AI Lifecycle toolbox frame
+        ai_tools = [
+            "Database",
+            "ANN",
+            "Data acquisition",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
+        ]
+        if hasattr(self.toolbox, "tk"):
+            self.ai_tools_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.ai_tools_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            for name in ai_tools:
+                ttk.Button(
+                    self.ai_tools_frame,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+        else:  # pragma: no cover - headless tests
+            self.ai_tools_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
+        # Repack toolbox to include selector and default to governance frame
+        if hasattr(self, "back_btn"):
+            self.back_btn.pack_forget()
+        if hasattr(self.gov_tools_frame, "pack_forget"):
+            self.gov_tools_frame.pack_forget()
+        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
+            self.gov_rel_frame.pack_forget()
+        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack_forget"):
+            self.prop_frame.pack_forget()
+
+        if hasattr(self, "back_btn"):
+            self.back_btn.pack(fill=tk.X, padx=2, pady=2)
+        selector.lift()
+        if hasattr(self.gov_tools_frame, "pack"):
+            self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+            self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack"):
+            self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
 
@@ -9189,6 +9397,35 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if not phase:
             return
         toolbox.activate_phase(phase, app)
+
+    # ------------------------------------------------------------------
+    # Toolbox switching logic
+    # ------------------------------------------------------------------
+    def _switch_toolbox(self) -> None:
+        choice = self.toolbox_var.get()
+        before = self.prop_frame if hasattr(self, "prop_frame") else None
+        if choice == "Governance":
+            if hasattr(self.ai_tools_frame, "pack_forget"):
+                self.ai_tools_frame.pack_forget()
+            if before and hasattr(self.gov_tools_frame, "pack"):
+                self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+            else:
+                if hasattr(self.gov_tools_frame, "pack"):
+                    self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        else:
+            if hasattr(self.gov_tools_frame, "pack_forget"):
+                self.gov_tools_frame.pack_forget()
+            if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
+                self.gov_rel_frame.pack_forget()
+            if before and hasattr(self.ai_tools_frame, "pack"):
+                self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+            else:
+                if hasattr(self.ai_tools_frame, "pack"):
+                    self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
