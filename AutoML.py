@@ -258,6 +258,7 @@ from analysis.mechanisms import (
     PAS_8800_MECHANISMS,
 )
 import json
+from pathlib import Path
 from collections.abc import Mapping
 import csv
 try:
@@ -518,7 +519,10 @@ VALID_SUBTYPES = {
 }
 
 # Node types treated as gates when rendering and editing
-GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+_CONFIG_PATH = Path(__file__).resolve().parent / "diagram_rules.json"
+with _CONFIG_PATH.open() as f:
+    _CONFIG = json.load(f)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 ##########################################
 # Global Unique ID Counter for Nodes

@@ -25,13 +25,17 @@ import difflib
 import sys
 import json
 import re
+from pathlib import Path
 try:
     from PIL import Image, ImageTk
 except ModuleNotFoundError:  # pragma: no cover - pillow optional
     Image = ImageTk = None
 
 # Node types treated as gates when deriving component names
-GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+with _CONFIG_PATH.open() as f:
+    _CONFIG = json.load(f)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
