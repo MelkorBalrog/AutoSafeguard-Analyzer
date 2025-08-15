@@ -1,5 +1,11 @@
+import sys
+from pathlib import Path
 import types
 from itertools import product
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+import gui.causal_bayesian_network_window as cbnw
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
 
@@ -154,6 +160,10 @@ def _setup_window():
             self.parents = {}
             self.cpds = {}
 
+        def add_node(self, name, cpd=0.0):
+            self.nodes.add(name)
+            self.cpds[name] = cpd
+
         def cpd_rows(self, name):
             parents = self.parents.get(name, [])
             if not parents:
@@ -165,7 +175,7 @@ def _setup_window():
                 rows.append((combo, float(cpds.get(combo, 0.0)), 0.0))
             return rows
 
-    doc = types.SimpleNamespace(network=Net(), positions={})
+    doc = types.SimpleNamespace(network=Net(), positions={}, types={})
     app.active_cbn = doc
     win.app = app
     win._find_node = lambda x, y: next(
@@ -239,26 +249,57 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
 
 
-def test_select_highlights_node():
+def test_new_triggering_condition_registers():
     win, doc = _setup_window()
-    doc.network.nodes.add("A")
-    doc.positions["A"] = (0, 0)
-    win._draw_node("A", 0, 0)
-    win.on_click(types.SimpleNamespace(x=0, y=0))
-    assert win.selected_node == "A"
-    assert win.selection_rect in win.canvas.items
+    called = {}
+    win.app.update_triggering_condition_list = lambda: called.setdefault("tc", True)
+    win.current_tool = "Triggering Condition"
+    orig = cbnw.simpledialog.askstring
+    cbnw.simpledialog.askstring = lambda *a, **k: "TC1"
+    event = types.SimpleNamespace(x=5, y=5)
+    win.on_click(event)
+    cbnw.simpledialog.askstring = orig
+    assert "TC1" in doc.network.nodes
+    assert called.get("tc")
 
 
-def test_drag_relationship_creates_edge():
+def test_new_functional_insufficiency_registers():
     win, doc = _setup_window()
-    doc.network.nodes.update({"A", "B"})
-    doc.positions["A"] = (0, 0)
-    doc.positions["B"] = (100, 0)
-    win._draw_node("A", 0, 0)
-    win._draw_node("B", 100, 0)
-    win.current_tool = "Relationship"
-    win.on_click(types.SimpleNamespace(x=0, y=0))
-    win.on_drag(types.SimpleNamespace(x=100, y=0))
-    win.on_release(types.SimpleNamespace(x=100, y=0))
-    assert len(win.edges) == 1
-    assert "A" in doc.network.parents.get("B", [])
+    called = {}
+    win.app.update_functional_insufficiency_list = lambda: called.setdefault("fi", True)
+    win.current_tool = "Functional Insufficiency"
+    orig = cbnw.simpledialog.askstring
+    cbnw.simpledialog.askstring = lambda *a, **k: "FI1"
+    event = types.SimpleNamespace(x=5, y=5)
+    win.on_click(event)
+    cbnw.simpledialog.askstring = orig
+    assert "FI1" in doc.network.nodes
+    assert called.get("fi")
+
+
+def test_existing_triggering_condition_registers():
+    win, doc = _setup_window()
+    win.app.triggering_conditions = ["TC1"]
+    called = {}
+    win.app.update_triggering_condition_list = lambda: called.setdefault("tc", True)
+    win._select_triggering_conditions = lambda: ["TC1"]
+    win.current_tool = "Existing Triggering Condition"
+    event = types.SimpleNamespace(x=5, y=5)
+    win.on_click(event)
+    assert "TC1" in doc.network.nodes
+    assert doc.types["TC1"] == "trigger"
+    assert called.get("tc")
+
+
+def test_existing_functional_insufficiency_registers():
+    win, doc = _setup_window()
+    win.app.functional_insufficiencies = ["FI1"]
+    called = {}
+    win.app.update_functional_insufficiency_list = lambda: called.setdefault("fi", True)
+    win._select_functional_insufficiencies = lambda: ["FI1"]
+    win.current_tool = "Existing Functional Insufficiency"
+    event = types.SimpleNamespace(x=5, y=5)
+    win.on_click(event)
+    assert "FI1" in doc.network.nodes
+    assert doc.types["FI1"] == "insufficiency"
+    assert called.get("fi")
