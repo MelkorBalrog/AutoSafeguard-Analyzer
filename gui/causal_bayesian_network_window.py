@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk, simpledialog
 from itertools import product
 
@@ -49,12 +50,22 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
         self.current_tool = "Select"
 
-        self.canvas = tk.Canvas(body, background="white")
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        canvas_container = ttk.Frame(body)
+        canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(canvas_container, background="white")
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        xbar = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        xbar.grid(row=1, column=0, sticky="ew")
+        ybar = ttk.Scrollbar(canvas_container, orient=tk.VERTICAL, command=self.canvas.yview)
+        ybar.grid(row=0, column=1, sticky="ns")
+        canvas_container.rowconfigure(0, weight=1)
+        canvas_container.columnconfigure(0, weight=1)
+        self.canvas.configure(xscrollcommand=xbar.set, yscrollcommand=ybar.set)
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
         self.canvas.bind("<Double-1>", self.on_double_click)
+        self.canvas.bind("<Button-3>", self.on_right_click)
         self.drawing_helper = FTADrawingHelper()
 
         self.nodes = {}  # name -> (oval_id, text_id, fill_tag)
@@ -69,8 +80,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.temp_edge_anim = None
         self.temp_edge_offset = 0
 
+        self.zoom_level = 1.0
+        self.base_radius = self.NODE_RADIUS
+        self.base_font_size = 10
+        self.text_font = tkfont.Font(size=self.base_font_size)
+
         self.refresh_docs()
         self.pack(fill=tk.BOTH, expand=True)
+        self._bind_shortcuts()
+        self.focus_set()
 
     # ------------------------------------------------------------------
     def refresh_docs(self) -> None:
@@ -160,6 +178,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc:
             return
         if self.current_tool == "Variable":
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
             name = simpledialog.askstring("Variable", "Name:", parent=self)
             if not name or name in doc.network.nodes:
                 self.select_tool("Select")
@@ -176,6 +197,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if not name or name in doc.network.nodes:
                 self.select_tool("Select")
                 return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
@@ -194,6 +218,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if not names:
                 self.select_tool("Select")
                 return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
             x, y = event.x, event.y
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
@@ -211,6 +238,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if not names:
                 self.select_tool("Select")
                 return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
             x, y = event.x, event.y
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
@@ -226,6 +256,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             names = self._select_malfunctions()
             if not names:
                 return
+            undo = getattr(self.app, "push_undo_state", None)
+            if undo:
+                undo()
             x, y = event.x, event.y
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
@@ -244,6 +277,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._highlight_node(None)
         else:  # Select tool
             name = self._find_node(event.x, event.y)
+            if name:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
             self.drag_node = name
             self.drag_offset = (0, 0)
             self._highlight_node(name)
@@ -280,6 +317,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._position_table(name, x, y)
             if self.selected_node == name and self.selection_rect:
                 self.canvas.coords(self.selection_rect, x - r, y - r, x + r, y + r)
+            self._update_scroll_region()
         elif self.current_tool == "Relationship" and self.edge_start:
             x1, y1 = doc.positions.get(self.edge_start, (0, 0))
             if self.temp_edge_line is None:
@@ -290,6 +328,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self._animate_temp_edge()
             else:
                 self.canvas.coords(self.temp_edge_line, x1, y1, event.x, event.y)
+            self._update_scroll_region()
 
     # ------------------------------------------------------------------
     def on_release(self, event) -> None:
@@ -302,6 +341,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             dst = self._find_node(event.x, event.y)
             src = self.edge_start
             if dst and dst != src:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 self._draw_edge(src, dst)
                 parents = doc.network.parents.setdefault(dst, [])
                 if src not in parents:
@@ -351,6 +393,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         name = self._find_node(event.x, event.y)
         if not name:
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         parents = doc.network.parents.get(name, [])
         if not parents:
             prob = simpledialog.askfloat(
@@ -401,11 +446,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         oval = self.canvas.create_oval(
             x - r, y - r, x + r, y + r, outline="black", fill=""
         )
-        text = self.canvas.create_text(x, y, text=name)
+        font = getattr(self, "text_font", None)
+        if font:
+            text = self.canvas.create_text(x, y, text=name, font=font)
+        else:
+            text = self.canvas.create_text(x, y, text=name)
         self.nodes[name] = (oval, text, fill_tag)
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
         self._place_table(name)
+        self._update_scroll_region()
 
     # ------------------------------------------------------------------
     def _draw_edge(self, src: str, dst: str) -> None:
@@ -423,6 +473,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         ty = y2 - dy / dist * r
         line = self.canvas.create_line(sx, sy, tx, ty, arrow=tk.LAST)
         self.edges.append((line, src, dst))
+        self._update_scroll_region()
 
     # ------------------------------------------------------------------
     def _place_table(self, name: str) -> None:
@@ -463,6 +514,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_table(name)
         x, y = doc.positions.get(name, (0, 0))
         self._position_table(name, x, y)
+        self._update_scroll_region()
 
     # ------------------------------------------------------------------
     def _update_table(self, name: str) -> None:
@@ -536,6 +588,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
             )
             if prob is not None:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 doc.network.cpds[name] = prob
                 self._update_all_tables()
             return
@@ -550,6 +605,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         )
         if prob is None:
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
         self._update_all_tables()
 
@@ -569,6 +627,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
             )
             if prob is not None:
+                undo = getattr(self.app, "push_undo_state", None)
+                if undo:
+                    undo()
                 doc.network.cpds[name] = prob
                 self._update_all_tables()
             return
@@ -578,6 +639,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         )
         if prob is None:
             return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
         doc.network.cpds[name][current] = prob
         self._update_all_tables()
 
@@ -628,4 +692,85 @@ class CausalBayesianNetworkWindow(tk.Frame):
             for parent in parents:
                 if parent in doc.network.nodes and child in doc.network.nodes:
                     self._draw_edge(parent, child)
+        self._update_scroll_region()
+
+    # ------------------------------------------------------------------
+    def _update_scroll_region(self) -> None:
+        if not hasattr(self.canvas, "bbox") or not hasattr(self.canvas, "configure"):
+            return
+        bbox = self.canvas.bbox("all")
+        if bbox:
+            self.canvas.configure(scrollregion=bbox)
+
+    # ------------------------------------------------------------------
+    def _bind_shortcuts(self) -> None:
+        if self.app:
+            self.bind("<Control-z>", lambda e: self.app.undo())
+            self.bind("<Control-y>", lambda e: self.app.redo())
+            self.bind("<Control-plus>", lambda e: self.zoom(1.1))
+            self.bind("<Control-minus>", lambda e: self.zoom(0.9))
+            self.bind("<Control-=>", lambda e: self.zoom(1.1))
+
+    # ------------------------------------------------------------------
+    def zoom(self, factor: float) -> None:
+        self.zoom_level *= factor
+        self.NODE_RADIUS = self.base_radius * self.zoom_level
+        self.canvas.scale("all", 0, 0, factor, factor)
+        doc = getattr(self.app, "active_cbn", None)
+        if doc:
+            for name, (x, y) in doc.positions.items():
+                doc.positions[name] = (x * factor, y * factor)
+        if hasattr(self, "text_font"):
+            self.text_font.configure(size=int(self.base_font_size * self.zoom_level))
+        self._update_scroll_region()
+
+    # ------------------------------------------------------------------
+    def on_right_click(self, event) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        name = self._find_node(event.x, event.y)
+        if not name:
+            return
+        new = simpledialog.askstring("Edit Node", "Name:", initialvalue=name, parent=self)
+        if not new or new == name:
+            return
+        if new in doc.network.nodes:
+            messagebox.showerror("Edit Node", "Name already exists", parent=self)
+            return
+        undo = getattr(self.app, "push_undo_state", None)
+        if undo:
+            undo()
+        self._rename_node(name, new)
+        self._update_all_tables()
+
+    # ------------------------------------------------------------------
+    def _rename_node(self, old: str, new: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        doc.network.nodes = [new if n == old else n for n in doc.network.nodes]
+        doc.network.cpds[new] = doc.network.cpds.pop(old)
+        if old in doc.network.parents:
+            doc.network.parents[new] = doc.network.parents.pop(old)
+        for child, parents in doc.network.parents.items():
+            doc.network.parents[child] = [new if p == old else p for p in parents]
+        doc.positions[new] = doc.positions.pop(old)
+        doc.types[new] = doc.types.pop(old)
+        oval_id, text_id, fill_tag = self.nodes.pop(old)
+        self.nodes[new] = (oval_id, text_id, fill_tag)
+        self.id_to_node[oval_id] = new
+        self.id_to_node[text_id] = new
+        if hasattr(self, "text_font"):
+            self.canvas.itemconfigure(text_id, text=new, font=self.text_font)
+        else:
+            self.canvas.itemconfigure(text_id, text=new)
+        for idx, (line, src, dst) in enumerate(self.edges):
+            s = new if src == old else src
+            d = new if dst == old else dst
+            self.edges[idx] = (line, s, d)
+        self._rebuild_table(new)
+        for child, parents in doc.network.parents.items():
+            if new in parents and child != new:
+                self._rebuild_table(child)
 
