@@ -320,7 +320,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
         add_btn = ttk.Button(frame, text="Add", command=lambda n=name: self.add_cpd_row(n))
         add_btn.pack(side=tk.TOP, fill=tk.X)
-        ToolTip(add_btn, "Add a new probability entry")
+        ToolTip(add_btn, "Add probability for the next combination of parent values")
         win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
         self.tables[name] = (win, frame, tree)
         self._update_table(name)
@@ -389,18 +389,34 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 doc.network.cpds[name] = prob
                 self._update_table(name)
             return
-        values = []
-        for p in parents:
-            val = simpledialog.askstring(f"{p}", "T/F", parent=self)
-            if val is None:
-                return
-            values.append(val.strip().upper().startswith("T"))
+
+        existing = set(doc.network.cpds.get(name, {}).keys())
+        combo = None
+        for candidate in product([False, True], repeat=len(parents)):
+            if candidate not in existing:
+                combo = candidate
+                break
+        if combo is None:
+            messagebox.showinfo(
+                "Combinations complete",
+                "All parent value combinations already have probabilities",
+                parent=self,
+            )
+            return
+
+        condition = ", ".join(
+            f"{p}={'T' if v else 'F'}" for p, v in zip(parents, combo)
+        )
         prob = simpledialog.askfloat(
-            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+            "Probability",
+            f"P({name}=True | {condition})",
+            minvalue=0.0,
+            maxvalue=1.0,
+            parent=self,
         )
         if prob is None:
             return
-        doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
+        doc.network.cpds.setdefault(name, {})[combo] = prob
         self._update_table(name)
 
     # ------------------------------------------------------------------
