@@ -164,6 +164,7 @@ class GovernanceDiagram:
 
         return diagram
 
+
 if __name__ == "__main__":  # pragma: no cover - example usage for docs
     demo = GovernanceDiagram()
     demo.add_task("Draft Plan")
