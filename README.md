@@ -106,6 +106,55 @@ When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
 Task 'Review Plan' shall be related to task 'Draft Plan' when changes requested.
 ```
 
+To gather the requirements for every governance diagram within a specific lifecycle phase,
+use the Safety & Security Management tool's *Phase Requirements* menu or call the helper
+directly:
+
+```python
+from analysis import SafetyManagementToolbox
+from gui.safety_management_toolbox import SafetyManagementWindow
+
+toolbox = SafetyManagementToolbox()
+# diagrams would normally be created and assigned to a phase here
+window = SafetyManagementWindow(None, app=None, toolbox=toolbox)
+window.generate_phase_requirements("Concept")  # collects all Concept phase requirements
+```
+
+This opens a tab listing the combined requirements for the chosen phase.
+
+When importing governance diagrams from a SysML repository, every diagram object
+is treated as a task regardless of its type. Custom elements such as ANN or
+Database nodes therefore participate in requirement generation:
+
+```python
+from sysml.sysml_repository import SysMLRepository
+from analysis.governance import GovernanceDiagram
+
+repo = SysMLRepository()
+diag = repo.create_diagram("Governance Diagram", name="Train")
+ann = repo.create_element("ANN", name="ANN1")
+gate = repo.create_element("Decision", name="Gate")
+diag.objects = [
+    {"obj_id": 1, "obj_type": "ANN", "element_id": ann.elem_id, "properties": {}},
+    {"obj_id": 2, "obj_type": "Decision", "element_id": gate.elem_id, "properties": {}},
+]
+diag.connections = [
+    {"src": 2, "dst": 1, "conn_type": "AI training", "name": "data ready", "properties": {}}
+]
+
+gov = GovernanceDiagram.from_repository(repo, diag.diag_id)
+for req in gov.generate_requirements():
+    print(req)
+```
+
+The output includes the relationship requirement:
+
+```
+The system shall perform task 'ANN1'.
+The system shall perform task 'Gate'.
+Task 'Gate' shall be related to task 'ANN1' when data ready.
+```
+
 ## Workflow Overview
 
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
