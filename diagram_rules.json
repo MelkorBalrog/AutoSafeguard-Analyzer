@@ -1,4 +1,19 @@
 {
+  /*
+    Configuration format overview:
+    - "ai_nodes": ["Type", ...] – node types available in the Safety & AI toolbox
+    - "ai_relations": ["Label", ...] – relation labels treated as Safety & AI links
+    - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
+    - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
+    - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types
+    - "relationship_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
+    - "node_roles": { "Node Type": "subject|action|condition|constraint|object" } – default requirement role per node type
+    - "safety_ai_relation_rules": { "Relation": { "Source": ["Target", ...] } } – allowed Safety & AI relationships
+    - "connection_rules": { "Diagram": { "Connection": { "Source": ["Target", ...] } } } – per-diagram connection validation rules
+    - "node_connection_limits": { "Node Type": max_connections } – maximum number of outgoing connections
+    - "guard_nodes": ["Node Type", ...] – nodes that require guard expressions on outgoing flows
+  */
+
   // Types shown in the Safety & AI lifecycle toolbox
   "ai_nodes": [
     "Database",
@@ -51,6 +66,7 @@
   ],
 
   // Natural language mapping for relationship labels
+  // Format: "label": {"action": "verb", "subject": "default subject", "constraint": true|false }
   "relationship_rules": {
     "performs": {"action": "perform"},
     "executes": {"action": "execute"},
@@ -71,6 +87,7 @@
   },
 
   // Default requirement role per node type
+  // Format: "Node Type": "subject|action|condition|constraint|object"
   "node_roles": {
     "Role": "subject",
     "Actor": "subject",
@@ -98,6 +115,7 @@
   },
 
   // Allowed Safety & AI relationships between node types
+  // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
     "Acquisition": {"Data acquisition": ["Database"]},
     "Field data collection": {"Data acquisition": ["Database"]},
@@ -114,6 +132,7 @@
   },
 
   // Connection validation rules per diagram type and connection kind
+  // Format: "Diagram Type": {"Connection Kind": {"Source": ["Allowed Target", ...] }}
   "connection_rules": {
     "Use Case Diagram": {
       "Association": {"Actor": ["Use Case"], "Use Case": ["Actor"]},
@@ -158,11 +177,13 @@
   },
 
   // Maximum number of connections allowed per node type
+  // Format: "Node Type": max_connections
   "node_connection_limits": {
     "Decision": 4,
     "Merge": 4
   },
 
   // Node types that require guards on outgoing flows
+  // Format: ["Node Type", ...]
   "guard_nodes": ["Decision"]
 }
