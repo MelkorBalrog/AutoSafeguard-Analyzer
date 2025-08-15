@@ -38,7 +38,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         for name in (
             "Select",
             "Triggering Condition",
+            "Existing Triggering Condition",
             "Functional Insufficiency",
+            "Existing Functional Insufficiency",
             "Relationship",
         ):
             ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
@@ -167,6 +169,42 @@ class CausalBayesianNetworkWindow(tk.Frame):
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
+            if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+            elif kind == "insufficiency" and hasattr(
+                self.app, "update_functional_insufficiency_list"
+            ):
+                self.app.update_functional_insufficiency_list()
+        elif self.current_tool == "Existing Triggering Condition":
+            names = self._select_triggering_conditions()
+            if not names:
+                return
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "trigger"
+                self._draw_node(name, nx, y, "trigger")
+            if hasattr(self.app, "update_triggering_condition_list"):
+                self.app.update_triggering_condition_list()
+        elif self.current_tool == "Existing Functional Insufficiency":
+            names = self._select_functional_insufficiencies()
+            if not names:
+                return
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "insufficiency"
+                self._draw_node(name, nx, y, "insufficiency")
+            if hasattr(self.app, "update_functional_insufficiency_list"):
+                self.app.update_functional_insufficiency_list()
         elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
@@ -442,6 +480,44 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.canvas.delete(win)
             frame.destroy()
         self._place_table(name)
+
+    # ------------------------------------------------------------------
+    def _update_all_tables(self) -> None:
+        """Update probability tables for all nodes in the active document."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        for node in doc.network.nodes:
+            if node in self.tables:
+                self._update_table(node)
+
+    # ------------------------------------------------------------------
+    def add_cpd_row(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        parents = doc.network.parents.get(name, [])
+        if not parents:
+            prob = simpledialog.askfloat(
+                "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+            )
+            if prob is not None:
+                doc.network.cpds[name] = prob
+                self._update_all_tables()
+            return
+        values = []
+        for p in parents:
+            val = simpledialog.askstring(f"{p}", "T/F", parent=self)
+            if val is None:
+                return
+            values.append(val.strip().upper().startswith("T"))
+        prob = simpledialog.askfloat(
+            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+        )
+        if prob is None:
+            return
+        doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
+        self._update_all_tables()
 
     # ------------------------------------------------------------------
     def edit_cpd_row(self, name: str) -> None:

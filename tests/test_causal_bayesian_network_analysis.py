@@ -59,6 +59,8 @@ def test_truth_table_auto_fill():
     # probability of parent combination P(A=False) = 0.6
     assert rows[0][2] == pytest.approx(0.6, rel=1e-3)
     assert rows[1][2] == pytest.approx(0.4, rel=1e-3)
+    # total probability for row A=True is 0.4 * 0.7
+    assert rows[1][3] == pytest.approx(0.28, rel=1e-3)
 
 def test_marginal_probability_propagation():
     cbn = CausalBayesianNetwork()
@@ -77,3 +79,18 @@ def test_marginal_probability_propagation():
     probs = cbn.marginal_probabilities()
     assert probs["WetGround"] == pytest.approx(0.58, rel=1e-3)
     assert probs["SlipperyRoad"] == pytest.approx(0.485, rel=1e-3)
+
+
+def test_cpd_rows_updates_with_parent_change():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("Rain", cpd=0.3)
+    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    rows = cbn.cpd_rows("WetGround")
+    # row for Rain=True is second row
+    assert rows[1][2] == pytest.approx(0.3, rel=1e-3)
+    assert rows[1][3] == pytest.approx(0.27, rel=1e-3)
+    # change parent probability
+    cbn.cpds["Rain"] = 0.6
+    rows = cbn.cpd_rows("WetGround")
+    assert rows[1][2] == pytest.approx(0.6, rel=1e-3)
+    assert rows[1][3] == pytest.approx(0.54, rel=1e-3)
