@@ -16705,6 +16705,9 @@ class FaultTreeApp:
             if hasattr(self.safety_mgmt_window, "pack"):
                 self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
 
+        # Opening the toolbox can affect menu enablement, so refresh the UI.
+        self.refresh_all()
+
     def open_style_editor(self):
         """Open the diagram style editor window."""
         StyleEditor(self.root)
