@@ -2775,22 +2775,8 @@ def format_control_flow_label(
         diag_type == "Control Flow Diagram"
         and conn.conn_type in ("Control Action", "Feedback")
         or diag_type == "Governance Diagram"
-        and conn.conn_type == "Flow"
     )
     if special_case:
-        base = f"<<{stereo}>> {label}".strip() if stereo else label
-        if conn.guard:
-            lines: List[str] = []
-            for i, g in enumerate(conn.guard):
-                if i == 0:
-                    lines.append(g)
-                else:
-                    op = conn.guard_ops[i - 1] if i - 1 < len(conn.guard_ops) else "AND"
-                    lines.append(f"{op} {g}")
-            guard_text = "\n".join(lines)
-            return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
-        return base
-    if diag_type == "Governance Diagram" and conn.conn_type == "Flow":
         base = f"<<{stereo}>> {label}".strip() if stereo else label
         if conn.guard:
             lines: List[str] = []
@@ -9334,8 +9320,7 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
             row += 1
         elif (
-            self.connection.conn_type == "Flow"
-            and getattr(
+            getattr(
                 self.master.repo.diagrams.get(self.master.diagram_id), "diag_type", ""
             )
             == "Governance Diagram"

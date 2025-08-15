@@ -353,6 +353,7 @@ class GovernanceDiagram:
             if src_name and dst_id in decision_sources:
                 decision_sources[dst_id] = src_name
 
+        # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):
             cdict = conn if isinstance(conn, dict) else conn.__dict__
             src_id = cdict.get("src")
@@ -397,7 +398,7 @@ class GovernanceDiagram:
                     if prev:
                         diagram.add_flow(prev, dst, cond)
             else:
-                src = id_to_name.get(src_id)
+                src = id_to_name.get(src_id) or decision_sources.get(src_id)
                 dst = id_to_name.get(dst_id)
                 if not src or not dst:
                     continue
