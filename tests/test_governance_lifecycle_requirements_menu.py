@@ -42,7 +42,8 @@ def test_lifecycle_requirements_menu(monkeypatch):
     monkeypatch.setattr(toolbox, "list_diagrams", lambda: list(toolbox.diagrams.keys()))
 
     class DummyTab:
-        pass
+        def winfo_children(self):
+            return []
 
     tabs = []
 

@@ -41,7 +41,8 @@ def test_phase_requirements_menu(monkeypatch):
     mod.diagrams.extend(["Gov1", "Gov2"])
 
     class DummyTab:
-        pass
+        def winfo_children(self):
+            return []
 
     tabs = []
 
