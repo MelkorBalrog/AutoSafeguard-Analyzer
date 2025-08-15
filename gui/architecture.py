@@ -65,9 +65,6 @@ SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
 SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
 SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
-# Relationship labels available in the Safety & AI toolbox
-SAFETY_AI_RELATIONS: list[str] = _CONFIG.get("ai_relations", [])
-
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))

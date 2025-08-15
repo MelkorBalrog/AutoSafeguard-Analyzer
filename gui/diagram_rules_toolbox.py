@@ -59,6 +59,7 @@ class DiagramRulesEditor(tk.Frame):
 
     def _populate_tree(self):
         self.tree.delete(*self.tree.get_children(""))
+        # Connection rules
         root = self.tree.insert("", "end", "connection_rules", text="connection_rules")
         rules = self.data.get("connection_rules", {})
         if not rules:
@@ -71,9 +72,25 @@ class DiagramRulesEditor(tk.Frame):
                     item_id = f"rule|{diag}|{conn}|{src}"
                     dest_text = ", ".join(sorted(dests))
                     self.tree.insert(c_id, "end", item_id, text=src, values=(dest_text,))
-        # Ensure all top-level items are visible
         self.tree.item(root, open=True)
         for child in self.tree.get_children(root):
+            self.tree.item(child, open=True)
+
+        # Safety & AI relation rules
+        ai_root = self.tree.insert(
+            "", "end", "safety_ai_relation_rules", text="safety_ai_relation_rules"
+        )
+        ai_rules = self.data.get("safety_ai_relation_rules", {})
+        if not ai_rules:
+            self.tree.insert(ai_root, "end", "no_ai_rules", text="(no rules defined)")
+        for rel, sources in sorted(ai_rules.items()):
+            r_id = self.tree.insert(ai_root, "end", f"rel|{rel}", text=rel)
+            for src, dests in sorted(sources.items()):
+                item_id = f"sar|{rel}|{src}"
+                dest_text = ", ".join(sorted(dests))
+                self.tree.insert(r_id, "end", item_id, text=src, values=(dest_text,))
+        self.tree.item(ai_root, open=True)
+        for child in self.tree.get_children(ai_root):
             self.tree.item(child, open=True)
 
     def _on_select(self, _event=None):
@@ -84,15 +101,22 @@ class DiagramRulesEditor(tk.Frame):
         if item.startswith("rule|"):
             _, diag, conn, src = item.split("|", 3)
             self._draw_rule(diag, conn, src)
+        elif item.startswith("sar|"):
+            _, rel, src = item.split("|", 2)
+            self._draw_rule(None, rel, src)
         else:
             self.canvas.delete("all")
 
     def _edit_item(self, _event=None):
         item = self.tree.focus()
-        if not item.startswith("rule|"):
+        if item.startswith("rule|"):
+            _, diag, conn, src = item.split("|", 3)
+            cur = self.data["connection_rules"][diag][conn][src]
+        elif item.startswith("sar|"):
+            _, rel, src = item.split("|", 2)
+            cur = self.data["safety_ai_relation_rules"][rel][src]
+        else:
             return
-        _, diag, conn, src = item.split("|", 3)
-        cur = self.data["connection_rules"][diag][conn][src]
         initial = ", ".join(cur)
         new_val = simpledialog.askstring(
             "Edit Targets",
@@ -103,13 +127,23 @@ class DiagramRulesEditor(tk.Frame):
         if new_val is None:
             return
         dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
-        self.data["connection_rules"][diag][conn][src] = dest_list
-        self.tree.set(item, "value", ", ".join(dest_list))
-        self._draw_rule(diag, conn, src)
+        if item.startswith("rule|"):
+            self.data["connection_rules"][diag][conn][src] = dest_list
+            self.tree.set(item, "value", ", ".join(dest_list))
+            self._draw_rule(diag, conn, src)
+        else:
+            self.data["safety_ai_relation_rules"][rel][src] = dest_list
+            self.tree.set(item, "value", ", ".join(dest_list))
+            self._draw_rule(None, rel, src)
 
     def _draw_rule(self, diagram, connection, source):
         self.canvas.delete("all")
-        dests = self.data["connection_rules"][diagram][connection].get(source, [])
+        if diagram is None:
+            dests = self.data["safety_ai_relation_rules"][connection].get(source, [])
+            title = connection
+        else:
+            dests = self.data["connection_rules"][diagram][connection].get(source, [])
+            title = f"{diagram} - {connection}"
         w = int(self.canvas.winfo_width()) or 400
         h = int(self.canvas.winfo_height()) or 300
         src_x, src_y = 80, h // 2
@@ -126,7 +160,7 @@ class DiagramRulesEditor(tk.Frame):
             self.canvas.create_rectangle(dest_x - 40, y - 20, dest_x + 40, y + 20, fill="#efe")
             self.canvas.create_text(dest_x, y, text=dst)
             self.canvas.create_line(src_x + 40, src_y, dest_x - 40, y, arrow=tk.LAST)
-        self.canvas.create_text((src_x + dest_x) / 2, 20, text=f"{diagram} - {connection}")
+        self.canvas.create_text((src_x + dest_x) / 2, 20, text=title)
 
     def save(self):
         try:
