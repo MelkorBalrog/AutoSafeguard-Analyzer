@@ -51,7 +51,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self.on_double_click)
         self.drawing_helper = FTADrawingHelper()
 
-        self.nodes = {}  # name -> (oval_id, text_id)
+        # Each entry maps a node name to the canvas item IDs that make up the
+        # visual representation of the node.  ``fill_id`` is the filled oval
+        # background, ``oval_id`` is the outline and ``text_id`` is the label.
+        # Keeping the fill as a separate item allows us to move it together
+        # with the outline when the node is dragged.
+        self.nodes = {}  # name -> (fill_id, oval_id, text_id)
         self.tables = {}  # name -> (window_id, frame, treeview)
         self.id_to_node = {}
         self.edges = []  # (line_id, src, dst)
@@ -188,8 +193,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         name = self.drag_node
         x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
         doc.positions[name] = (x, y)
-        oval_id, text_id = self.nodes[name]
+        fill_id, oval_id, text_id = self.nodes[name]
         r = self.NODE_RADIUS
+        self.canvas.coords(fill_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(text_id, x, y)
         for line_id, src, dst in self.edges:
@@ -246,14 +252,23 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float) -> None:
+        """Draw a node as a filled circle with a text label."""
         r = self.NODE_RADIUS
         color = "lightyellow"
-        self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
+
+        # ``create_oval`` with a fill ensures the colored background is a single
+        # canvas item that can be moved when the node is dragged.  Previously the
+        # gradient fill was drawn using many individual lines which remained in
+        # place when a node was moved, leaving the outline without its fill.
+        fill = self.canvas.create_oval(
+            x - r, y - r, x + r, y + r, outline="", fill=color
+        )
         oval = self.canvas.create_oval(
             x - r, y - r, x + r, y + r, outline="black", fill=""
         )
         text = self.canvas.create_text(x, y, text=name)
-        self.nodes[name] = (oval, text)
+        self.nodes[name] = (fill, oval, text)
+        self.id_to_node[fill] = name
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
         self._place_table(name)
@@ -322,16 +337,19 @@ class CausalBayesianNetworkWindow(tk.Frame):
         parents = doc.network.parents.get(name, [])
         if not parents:
             prob = doc.network.cpds.get(name, 0.0)
-            tree.configure(height=1)
             tree.insert("", "end", values=[f"{prob:.3f}"])
+            tree.configure(height=1)
         else:
             cpds = doc.network.cpds.get(name, {})
-            tree.configure(height=len(cpds) or 1)
             for combo, prob in cpds.items():
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
-        self.canvas.update_idletasks()
+            tree.configure(height=len(cpds) or 1)
+        # Update geometry based on the new content so the canvas window adapts to
+        # the new size.  Using ``frame.update_idletasks`` ensures the frame and
+        # its children recalculates their requested size before we query it.
+        frame.update_idletasks()
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
         )
@@ -343,7 +361,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if name not in self.tables:
             return
         win, frame, _ = self.tables[name]
-        self.canvas.update_idletasks()
+        frame.update_idletasks()
         w, h = frame.winfo_reqwidth(), frame.winfo_reqheight()
         r = self.NODE_RADIUS
         self.canvas.itemconfigure(win, width=w, height=h)
