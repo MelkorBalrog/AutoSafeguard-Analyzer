@@ -26,6 +26,7 @@ queries map to the "circles and tables" intuition.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import product
 from typing import Dict, Iterable, List, Mapping, Tuple
 
 
@@ -152,7 +153,7 @@ class CausalBayesianNetwork:
             p_true = float(self.cpds[var])
         else:
             key = tuple(evidence[p] for p in parents)
-            p_true = float(self.cpds[var][key])
+            p_true = float(self.cpds[var].get(key, 0.0))
         return p_true if value else 1.0 - p_true
 
     # ------------------------------------------------------------------
@@ -177,6 +178,58 @@ class CausalBayesianNetwork:
         for node in self.nodes:
             visit(node)
         return order
+
+    # ------------------------------------------------------------------
+    def marginal_probabilities(self) -> Dict[str, float]:
+        """Return ``P(node=True)`` for every node via probability propagation.
+
+        The computation proceeds in topological order so that each node's
+        probability only depends on already computed parent probabilities.
+        For a node ``X`` with parents ``Pa(X)`` the marginal is calculated as::
+
+            P(X=True) = \sum_{pa} P(X=True | pa) \prod_{Y in Pa(X)} P(Y=pa_Y)
+
+        where the sum iterates over all ``2^n`` combinations of parent values
+        ``pa``.  Missing entries in the conditional probability table default
+        to ``0.0`` ensuring the propagation always succeeds.
+        """
+
+        order = self._topological()
+        probs: Dict[str, float] = {}
+        for node in order:
+            parents = self.parents.get(node, [])
+            if not parents:
+                probs[node] = float(self.cpds.get(node, 0.0))
+                continue
+            total = 0.0
+            for combo, p_true in self.cpd_rows(node):
+                weight = 1.0
+                for parent, val in zip(parents, combo):
+                    parent_prob = probs.get(parent, 0.0)
+                    weight *= parent_prob if val else 1.0 - parent_prob
+                total += weight * p_true
+            probs[node] = total
+        return probs
+
+    # ------------------------------------------------------------------
+    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
+        """Return all combinations of parent values and their probabilities.
+
+        The returned list represents the rows of the node's conditional
+        probability table.  All ``2^n`` combinations of parent values are
+        included.  Probabilities not explicitly provided when the node was
+        added default to ``0.0`` so that the table is always complete.
+        """
+
+        parents = self.parents.get(var, [])
+        if not parents:
+            prob = float(self.cpds.get(var, 0.0))
+            return [((), prob)]
+        cpds = self.cpds.get(var, {})
+        rows: List[Tuple[Tuple[bool, ...], float]] = []
+        for combo in product([False, True], repeat=len(parents)):
+            rows.append((combo, float(cpds.get(combo, 0.0))))
+        return rows
 
 
 @dataclass

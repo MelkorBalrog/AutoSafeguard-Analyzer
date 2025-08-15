@@ -39,3 +39,39 @@ def test_intervention_matches_conditioning_for_root():
     p_do = cbn.intervention("SlipperyRoad", {"Rain": True})
     p_cond = cbn.query("SlipperyRoad", {"Rain": True})
     assert p_do == pytest.approx(p_cond, rel=1e-6)
+
+
+def test_missing_cpd_defaults_to_zero():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("Rain", cpd=0.5)
+    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9})
+    assert cbn.query("WetGround") == pytest.approx(0.45, rel=1e-3)
+
+
+def test_truth_table_auto_fill():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("A", cpd=0.4)
+    cbn.add_node("B", parents=["A"], cpd={(True,): 0.7})
+    rows = cbn.cpd_rows("B")
+    assert len(rows) == 2
+    assert rows[0][0] == (False,)
+    assert rows[0][1] == pytest.approx(0.0)
+
+
+def test_marginal_probability_propagation():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("Rain", cpd=0.3)
+    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    cbn.add_node(
+        "SlipperyRoad",
+        parents=["WetGround"],
+        cpd={(True,): 0.8, (False,): 0.05},
+    )
+    probs = cbn.marginal_probabilities()
+    assert probs["Rain"] == pytest.approx(0.3, rel=1e-3)
+    assert probs["WetGround"] == pytest.approx(0.34, rel=1e-3)
+    assert probs["SlipperyRoad"] == pytest.approx(0.305, rel=1e-3)
+    cbn.cpds["Rain"] = 0.6
+    probs = cbn.marginal_probabilities()
+    assert probs["WetGround"] == pytest.approx(0.58, rel=1e-3)
+    assert probs["SlipperyRoad"] == pytest.approx(0.485, rel=1e-3)

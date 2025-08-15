@@ -1,4 +1,5 @@
 import types
+from itertools import product
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
 
@@ -119,10 +120,24 @@ def _setup_window():
     win._place_table = lambda *a, **k: None
     win._position_table = lambda *a, **k: None
     app = DummyApp()
-    doc = types.SimpleNamespace(
-        network=types.SimpleNamespace(nodes=set(), parents={}, cpds={}),
-        positions={},
-    )
+    class Net:
+        def __init__(self):
+            self.nodes = set()
+            self.parents = {}
+            self.cpds = {}
+
+        def cpd_rows(self, name):
+            parents = self.parents.get(name, [])
+            if not parents:
+                prob = float(self.cpds.get(name, 0.0))
+                return [((), prob)]
+            cpds = self.cpds.get(name, {})
+            rows = []
+            for combo in product([False, True], repeat=len(parents)):
+                rows.append((combo, float(cpds.get(combo, 0.0))))
+            return rows
+
+    doc = types.SimpleNamespace(network=Net(), positions={})
     app.active_cbn = doc
     win.app = app
     return win, doc
@@ -153,10 +168,40 @@ def test_table_resizes_for_new_rows():
     first_height = win.canvas.last_configure.get("height")
     assert frame.update_idletasks_called
 
-    # add two rows and update
+    # updating CPDs should keep the same table size because all rows are
+    # present from the start
     frame.update_idletasks_called = False
     doc.network.cpds["A"] = {(True,): 0.1, (False,): 0.2}
     win._update_table("A")
     second_height = win.canvas.last_configure.get("height")
     assert frame.update_idletasks_called
-    assert second_height and second_height > first_height
+    assert second_height == first_height
+
+
+def test_table_auto_fills_missing_rows():
+    win, doc = _setup_window()
+    tree = DummyTree()
+    frame = DummyFrame(tree)
+    win.tables["A"] = (1, frame, tree)
+    doc.network.nodes.add("A")
+    doc.network.parents["A"] = ["P1", "P2"]
+    doc.positions["A"] = (0, 0)
+    # only one CPD entry; others should default to 0.0
+    doc.network.cpds["A"] = {(True, False): 0.2}
+    win._update_table("A")
+    assert tree.height == 4
+    assert len(tree.rows) == 4
+
+
+def test_node_colors_by_type():
+    win, _ = _setup_window()
+    colors = []
+
+    def capture(canvas, x, y, r, color, tag=None):
+        colors.append(color)
+
+    win.drawing_helper._fill_gradient_circle = capture
+    win._draw_node("T", 0, 0, "trigger")
+    win._draw_node("I", 0, 0, "insufficiency")
+    assert colors[0] == "lightgreen"
+    assert colors[1] == "lightyellow"
