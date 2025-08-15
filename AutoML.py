@@ -387,6 +387,7 @@ from analysis.utils import (
     severity_to_probability,
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
+from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -2108,6 +2109,11 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
+        "Causal Bayesian Network Analysis": (
+            "Safety Analysis",
+            "Causal Bayesian Network",
+            "open_causal_bayesian_network_window",
+        ),
         "Scenario Library": (
             "Scenario",
             "Scenario Libraries",
@@ -2144,6 +2150,7 @@ class FaultTreeApp:
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
+        "Causal Bayesian Network Analysis": "Quantitative Analysis",
         "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
@@ -2232,6 +2239,8 @@ class FaultTreeApp:
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
         self.active_tc2fi = None
+        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
+        self.active_cbn = None
         self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
         self.management_diagrams = []
@@ -2491,6 +2500,14 @@ class FaultTreeApp:
             state=tk.DISABLED,
         )
         self.work_product_menus.setdefault("Reliability Analysis", []).append(
+            (quantitative_menu, quantitative_menu.index("end"))
+        )
+        quantitative_menu.add_command(
+            label="Causal Bayesian Network",
+            command=self.open_causal_bayesian_network_window,
+            state=tk.DISABLED,
+        )
+        self.work_product_menus.setdefault("Causal Bayesian Network Analysis", []).append(
             (quantitative_menu, quantitative_menu.index("end"))
         )
         quantitative_menu.add_command(
@@ -9106,6 +9123,7 @@ class FaultTreeApp:
             "Threat Analysis": "threat_docs",
             "FI2TC": "fi2tc_docs",
             "TC2FI": "tc2fi_docs",
+            "Causal Bayesian Network Analysis": "cbn_docs",
             "FMEA": "reliability_analyses",
             "FMEDA": "fmeda_components",
             "FTA": "top_events",
@@ -16475,6 +16493,19 @@ class FaultTreeApp:
             self._threat_window = ThreatWindow(self._threat_tab, self)
         self.refresh_all()
 
+    def open_causal_bayesian_network_window(self):
+        """Open the Causal Bayesian Network analysis window."""
+        if hasattr(self, "_cbn_tab") and self._cbn_tab.winfo_exists():
+            self.doc_nb.select(self._cbn_tab)
+        else:
+            self._cbn_tab = self._new_tab("Causal Bayesian Network")
+            from gui.causal_bayesian_network_window import (
+                CausalBayesianNetworkWindow,
+            )
+
+            self._cbn_window = CausalBayesianNetworkWindow(self._cbn_tab, self)
+        self.refresh_all()
+
     def open_fi2tc_window(self):
         if hasattr(self, "_fi2tc_tab") and self._fi2tc_tab.winfo_exists():
             self.doc_nb.select(self._fi2tc_tab)
@@ -17669,6 +17700,16 @@ class FaultTreeApp:
                 {"name": doc.name, "entries": doc.entries}
                 for doc in self.tc2fi_docs
             ],
+            "cbn_docs": [
+                {
+                    "name": doc.name,
+                    "nodes": doc.network.nodes,
+                    "parents": doc.network.parents,
+                    "cpds": doc.network.cpds,
+                    "positions": doc.positions,
+                }
+                for doc in self.cbn_docs
+            ],
             "scenario_libraries": copy.deepcopy(self.scenario_libraries),
             "odd_libraries": copy.deepcopy(self.odd_libraries),
             "faults": self.faults.copy(),
@@ -18126,6 +18167,20 @@ class FaultTreeApp:
             toolbox.register_loaded_work_product("TC2FI", doc.name)
         self.active_tc2fi = self.tc2fi_docs[0] if self.tc2fi_docs else None
         self.tc2fi_entries = self.active_tc2fi.entries if self.active_tc2fi else []
+
+        self.cbn_docs = []
+        for d in data.get("cbn_docs", []):
+            net = CausalBayesianNetwork()
+            net.nodes = d.get("nodes", [])
+            net.parents = {k: list(v) for k, v in d.get("parents", {}).items()}
+            net.cpds = {k: v for k, v in d.get("cpds", {}).items()}
+            name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
+            positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
+            doc = CausalBayesianNetworkDoc(name, network=net, positions=positions)
+            self.cbn_docs.append(doc)
+            toolbox.register_loaded_work_product("Causal Bayesian Network Analysis", name)
+        self.active_cbn = self.cbn_docs[0] if self.cbn_docs else None
+
         self.scenario_libraries = data.get("scenario_libraries", [])
         self.odd_libraries = data.get("odd_libraries", [])
         self.faults = data.get("faults", [])

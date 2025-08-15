@@ -68,6 +68,7 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "FMEDA",
     "FTA",
     "Reliability Analysis",
+    "Causal Bayesian Network Analysis",
     "Safety & Security Case",
     "GSN Argumentation",
     "Scenario Library",
