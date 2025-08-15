@@ -10,26 +10,26 @@ from gui import safety_management_toolbox as smt
 from analysis.models import global_requirements
 
 
-def test_requirements_button_opens_tab(monkeypatch):
+def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
     repo = SysMLRepository.reset_instance()
-    diag = repo.create_diagram("Governance Diagram", name="Gov")
-    t1 = repo.create_element("Action", name="Start")
-    t2 = repo.create_element("Action", name="Finish")
+    diag = repo.create_diagram("Governance Diagram", name="AI Gov")
+    e1 = repo.create_element("Block", name="DB")
+    e2 = repo.create_element("Block", name="NN")
     diag.objects = [
-        {"obj_id": 1, "obj_type": "Action", "x": 0, "y": 0, "element_id": t1.elem_id, "properties": {"name": "Start"}},
-        {"obj_id": 2, "obj_type": "Action", "x": 0, "y": 0, "element_id": t2.elem_id, "properties": {"name": "Finish"}},
+        {"obj_id": 1, "obj_type": "Database", "x": 0, "y": 0, "element_id": e1.elem_id, "properties": {"name": "DB"}},
+        {"obj_id": 2, "obj_type": "ANN", "x": 100, "y": 0, "element_id": e2.elem_id, "properties": {"name": "NN"}},
     ]
     diag.connections = [
-        {"src": 1, "dst": 2, "conn_type": "Flow", "name": "", "properties": {}}
+        {"src": 1, "dst": 2, "conn_type": "AI training", "name": "", "properties": {}}
     ]
 
     toolbox = SafetyManagementToolbox()
-    toolbox.diagrams["Gov"] = diag.diag_id
+    toolbox.diagrams["AI Gov"] = diag.diag_id
 
     class DummyTab:
         pass
 
-    tabs: list[tuple[str, DummyTab]] = []
+    tabs = []
 
     def _new_tab(title):
         tab = DummyTab()
@@ -57,18 +57,11 @@ def test_requirements_button_opens_tab(monkeypatch):
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
     win.toolbox = toolbox
     win.app = types.SimpleNamespace(_new_tab=_new_tab)
-    win.diag_var = types.SimpleNamespace(get=lambda: "Gov")
+    win.diag_var = types.SimpleNamespace(get=lambda: "AI Gov")
 
     global_requirements.clear()
     win.generate_requirements()
 
     assert tabs
-    title, _tab = tabs[0]
-    assert "Gov Requirements" in title
     assert trees and trees[0].rows
-    texts = [row[2] for row in trees[0].rows]
-    assert any("Task 'Start' shall precede task 'Finish'." in t for t in texts)
-    # Ensure requirement types are organizational
-    assert all(row[1] == "organizational" for row in trees[0].rows)
-    # Requirements added to global registry
-    assert len(global_requirements) == len(trees[0].rows)
+    assert all(row[1] == "AI safety" for row in trees[0].rows)

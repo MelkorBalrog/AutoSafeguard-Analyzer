@@ -479,6 +479,7 @@ class StpaWindow(tk.Frame):
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 ],
             )
             if dlg.result:
@@ -513,6 +514,7 @@ class StpaWindow(tk.Frame):
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 ],
             )
             if dlg.result:
