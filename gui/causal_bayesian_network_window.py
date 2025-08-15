@@ -8,6 +8,25 @@ from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 
 
+class _SelectMalfunctionsDialog(simpledialog.Dialog):
+    """Dialog to choose one or more existing malfunctions."""
+
+    def __init__(self, parent, names):
+        self.names = names
+        self.result = []
+        super().__init__(parent, title="Select Malfunctions")
+
+    def body(self, master):  # pragma: no cover - requires tkinter
+        self.lb = tk.Listbox(master, selectmode="extended", height=8, exportselection=False)
+        for name in sorted(self.names):
+            self.lb.insert(tk.END, name)
+        self.lb.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        return self.lb
+
+    def apply(self):  # pragma: no cover - requires tkinter
+        self.result = [self.lb.get(i) for i in self.lb.curselection()]
+
+
 class CausalBayesianNetworkWindow(tk.Frame):
     """Editor for Causal Bayesian Network analyses with diagram support."""
 
@@ -41,6 +60,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Existing Triggering Condition",
             "Functional Insufficiency",
             "Existing Functional Insufficiency",
+            "Malfunction",
+            "Existing Malfunction",
             "Relationship",
         ):
             ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
@@ -158,7 +179,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        if self.current_tool in ("Triggering Condition", "Functional Insufficiency"):
+        if self.current_tool in (
+            "Triggering Condition",
+            "Functional Insufficiency",
+            "Malfunction",
+        ):
             prompt = self.current_tool
             name = simpledialog.askstring(prompt, "Name:", parent=self)
             if not name or name in doc.network.nodes:
@@ -166,7 +191,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
             x, y = event.x, event.y
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
-            kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
+            if self.current_tool == "Triggering Condition":
+                kind = "trigger"
+            elif self.current_tool == "Functional Insufficiency":
+                kind = "insufficiency"
+            else:
+                kind = "malfunction"
             doc.types[name] = kind
             self._draw_node(name, x, y, kind)
             if kind == "trigger" and hasattr(self.app, "update_triggering_condition_list"):
@@ -175,6 +205,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self.app, "update_functional_insufficiency_list"
             ):
                 self.app.update_functional_insufficiency_list()
+            elif kind == "malfunction" and hasattr(self.app, "add_malfunction"):
+                self.app.add_malfunction(name)
         elif self.current_tool == "Existing Triggering Condition":
             names = self._select_triggering_conditions()
             if not names:
@@ -205,6 +237,19 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self._draw_node(name, nx, y, "insufficiency")
             if hasattr(self.app, "update_functional_insufficiency_list"):
                 self.app.update_functional_insufficiency_list()
+        elif self.current_tool == "Existing Malfunction":
+            names = self._select_malfunctions()
+            if not names:
+                return
+            x, y = event.x, event.y
+            for idx, name in enumerate(names):
+                if name in doc.network.nodes:
+                    continue
+                nx = x + idx * (2 * self.NODE_RADIUS + 10)
+                doc.network.add_node(name, cpd=0.5)
+                doc.positions[name] = (nx, y)
+                doc.types[name] = "malfunction"
+                self._draw_node(name, nx, y, "malfunction")
         elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
@@ -358,6 +403,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             color = "lightblue"
         elif kind == "insufficiency":
             color = "lightyellow"
+        elif kind == "malfunction":
+            color = "lightgreen"
         else:
             color = "lightyellow"
         fill_tag = f"fill_{name}"
@@ -544,6 +591,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         doc.network.cpds[name][current] = prob
         self._update_all_tables()
+
+    # ------------------------------------------------------------------
+    def _select_malfunctions(self) -> list[str]:
+        names = sorted(getattr(self.app, "malfunctions", []))
+        if not names:
+            messagebox.showinfo(
+                "Malfunctions", "No malfunctions available", parent=self
+            )
+            return []
+        dlg = _SelectMalfunctionsDialog(self, names)
+        return getattr(dlg, "result", [])
 
     # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
