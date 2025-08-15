@@ -11,11 +11,13 @@ except Exception:  # pragma: no cover - fallback for minimal installs
 import json
 import math
 import re
+import types
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
+from gui.drawing_helper import fta_drawing_helper
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -3027,6 +3029,18 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
         ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
@@ -3237,6 +3251,25 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in (
+                "Annotation",
+                "Synthesis",
+                "Augmentation",
+                "Acquisition",
+                "Labeling",
+                "Field risk evaluation",
+                "Field data collection",
+                "AI training",
+                "AI re-training",
+                "Curation",
+                "Ingestion",
+                "Model evaluation",
+            ):
+                allowed_types = {"Database", "ANN", "Data acquisition"}
+                if src.obj_type not in allowed_types or dst.obj_type not in allowed_types:
+                    return False, (
+                        "Safety & AI relationships must connect Safety & AI elements"
+                    )
+            elif conn_type in (
                 "Used By",
                 "Used after Review",
                 "Used after Approval",
@@ -3392,6 +3425,18 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
         )
         prefer = self.current_tool in conn_tools
         t = self.current_tool
@@ -3547,6 +3592,18 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
         ):
             if self.start is None:
                 if obj:
@@ -3710,6 +3767,19 @@ class SysMLDiagramWindow(tk.Frame):
             elif t in ("Fork", "Join"):
                 new_obj.width = 60.0
                 new_obj.height = 10.0
+            elif t == "Database":
+                new_obj.width = 80.0
+                new_obj.height = 60.0
+                new_obj.properties.setdefault("name", "Database")
+            elif t == "ANN":
+                new_obj.width = 120.0
+                new_obj.height = 80.0
+                new_obj.properties.setdefault("name", "ANN")
+            elif t == "Data acquisition":
+                new_obj.width = 120.0
+                new_obj.height = 80.0
+                new_obj.properties.setdefault("compartments", ";;")
+                new_obj.properties.setdefault("name", "Data acquisition")
             key = f"{t.replace(' ', '')}Usage"
 
             for prop in SYSML_PROPERTIES.get(key, []):
@@ -3878,6 +3948,18 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -4110,6 +4192,18 @@ class SysMLDiagramWindow(tk.Frame):
             "Composite Aggregation",
             "Control Action",
             "Feedback",
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -4142,6 +4236,18 @@ class SysMLDiagramWindow(tk.Frame):
                         "Re-use",
                         "Satisfied by",
                         "Derived from",
+                        "Annotation",
+                        "Synthesis",
+                        "Augmentation",
+                        "Acquisition",
+                        "Labeling",
+                        "Field risk evaluation",
+                        "Field data collection",
+                        "AI training",
+                        "AI re-training",
+                        "Curation",
+                        "Ingestion",
+                        "Model evaluation",
                     ):
                         arrow_default = "forward"
                     else:
@@ -5956,6 +6062,13 @@ class SysMLDiagramWindow(tk.Frame):
         h = obj.height * self.zoom / 2
         color = StyleManager.get_instance().get_color(obj.obj_type)
         outline = "black"
+        if color == "#FFFFFF":
+            if obj.obj_type == "Database":
+                color = "#cfe2f3"
+            elif obj.obj_type == "ANN":
+                color = "#d5e8d4"
+            elif obj.obj_type == "Data acquisition":
+                color = "#ffe6cc"
         if obj.obj_type == "Actor":
             sx = obj.width / 80.0 * self.zoom
             sy = obj.height / 40.0 * self.zoom
@@ -6425,18 +6538,98 @@ class SysMLDiagramWindow(tk.Frame):
                 self.canvas.create_oval(x - r, y - r, x + r, y + r)
                 self.canvas.create_oval(x - inner, y - inner, x + inner, y + inner, fill="black")
         elif obj.obj_type in ("Decision", "Merge"):
-            self.canvas.create_polygon(
-                x,
-                y - h,
-                x + w,
-                y,
-                x,
-                y + h,
+                self.canvas.create_polygon(
+                    x,
+                    y - h,
+                    x + w,
+                    y,
+                    x,
+                    y + h,
+                    x - w,
+                    y,
+                    fill=color,
+                    outline=outline,
+                )
+        elif obj.obj_type == "Database":
+            top = y - h
+            bottom = y + h
+            oval_h = 10 * self.zoom
+            self._draw_gradient_rect(x - w, top, x + w, bottom, color, obj.obj_id)
+            self.canvas.create_rectangle(
                 x - w,
-                y,
+                top,
+                x + w,
+                bottom,
+                outline=outline,
+                fill="",
+            )
+            self.canvas.create_oval(
+                x - w,
+                top - oval_h,
+                x + w,
+                top + oval_h,
                 fill=color,
                 outline=outline,
             )
+            self.canvas.create_oval(
+                x - w,
+                bottom - oval_h,
+                x + w,
+                bottom + oval_h,
+                fill=color,
+                outline=outline,
+            )
+            label = obj.properties.get("name", obj.obj_type)
+            self.canvas.create_text(x, bottom + 20 * self.zoom, text=label, font=self.font)
+        elif obj.obj_type == "ANN":
+            # Draw three layers of neurons connected
+            layers = [3, 6, 2]
+            spacing_x = obj.width * self.zoom / (len(layers) - 1)
+            max_neurons = max(layers)
+            spacing_y = obj.height * self.zoom / (max_neurons - 1 if max_neurons > 1 else 1)
+            layer_x = x - obj.width * self.zoom / 2
+            neuron_positions: list[list[tuple[float, float]]] = []
+            for count in layers:
+                xs = layer_x
+                ys = y - ((count - 1) * spacing_y) / 2
+                positions = []
+                for i in range(count):
+                    cx = xs
+                    cy = ys + i * spacing_y
+                    r = 5 * self.zoom
+                    fta_drawing_helper._fill_gradient_circle(self.canvas, cx, cy, r, color)
+                    self.canvas.create_oval(
+                        cx - r,
+                        cy - r,
+                        cx + r,
+                        cy + r,
+                        outline=outline,
+                        fill="",
+                    )
+                    positions.append((cx, cy))
+                neuron_positions.append(positions)
+                layer_x += spacing_x
+            for i in range(len(neuron_positions) - 1):
+                for src in neuron_positions[i]:
+                    for dst in neuron_positions[i + 1]:
+                        self.canvas.create_line(src[0], src[1], dst[0], dst[1], fill=outline)
+            label = obj.properties.get("name", obj.obj_type)
+            self.canvas.create_text(x, y + h + 10 * self.zoom, text=label, font=self.font)
+        elif obj.obj_type == "Data acquisition":
+            left, top = x - w, y - h
+            right, bottom = x + w, y + h
+            self._draw_gradient_rect(left, top, right, bottom, color, obj.obj_id)
+            self.canvas.create_rectangle(left, top, right, bottom, outline=outline, fill="")
+            compartments = obj.properties.get("compartments", ";;").split(";")
+            n = max(len(compartments), 1)
+            step = (bottom - top) / n
+            for idx in range(1, n):
+                self.canvas.create_line(left, top + idx * step, right, top + idx * step)
+            for idx, text in enumerate(compartments):
+                cy = top + idx * step + step / 2
+                self.canvas.create_text(x, cy, text=text, font=self.font)
+            label = obj.properties.get("name", obj.obj_type)
+            self.canvas.create_text(x, bottom + 10 * self.zoom, text=label, font=self.font)
         elif obj.obj_type in ("Fork", "Join"):
             half = obj.width / 2 * self.zoom
             self.canvas.create_rectangle(
@@ -6459,6 +6652,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Block Boundary",
             "Port",
             "Work Product",
+            "Database",
+            "ANN",
+            "Data acquisition",
         ):
             if hasattr(self, "_object_label_lines"):
                 label_lines = self._object_label_lines(obj)
@@ -9125,6 +9321,106 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
+        # ------------------------------------------------------------------
+        # Toolbox toggle between Governance and Safety & AI Lifecycle
+        # ------------------------------------------------------------------
+        try:
+            self.toolbox_var = tk.StringVar(value="Governance")
+        except Exception:  # pragma: no cover - headless tests
+            class _Var:
+                def __init__(self, value):
+                    self._value = value
+
+                def get(self):
+                    return self._value
+
+                def set(self, v):
+                    self._value = v
+
+            self.toolbox_var = _Var("Governance")
+        if hasattr(self.toolbox, "tk"):
+            selector = ttk.Combobox(
+                self.toolbox,
+                values=["Governance", "Safety & AI Lifecycle"],
+                state="readonly",
+                textvariable=self.toolbox_var,
+            )
+            selector.pack(fill=tk.X, padx=2, pady=2)
+            selector.bind("<<ComboboxSelected>>", lambda e: self._switch_toolbox())
+        else:  # pragma: no cover - headless tests
+            selector = types.SimpleNamespace(pack=lambda *a, **k: None, bind=lambda *a, **k: None, lift=lambda: None)
+
+        # Store original governance tool frame and relationship frame
+        self.gov_tools_frame = self.tools_frame
+        self.gov_rel_frame = getattr(self, "rel_frame", None)
+
+        # Create Safety & AI Lifecycle toolbox frame
+        ai_nodes = [
+            "Database",
+            "ANN",
+            "Data acquisition",
+        ]
+        ai_relations = [
+            "Annotation",
+            "Synthesis",
+            "Augmentation",
+            "Acquisition",
+            "Labeling",
+            "Field risk evaluation",
+            "Field data collection",
+            "AI training",
+            "AI re-training",
+            "Curation",
+            "Ingestion",
+            "Model evaluation",
+        ]
+        if hasattr(self.toolbox, "tk"):
+            self.ai_tools_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.ai_tools_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            for name in ai_nodes:
+                ttk.Button(
+                    self.ai_tools_frame,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+            rel_frame = ttk.LabelFrame(self.ai_tools_frame, text="Relationships")
+            rel_frame.pack(fill=tk.X, padx=2, pady=2)
+            for name in ai_relations:
+                ttk.Button(
+                    rel_frame,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+        else:  # pragma: no cover - headless tests
+            self.ai_tools_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
+        # Repack toolbox to include selector and default to governance frame
+        if hasattr(self, "back_btn"):
+            self.back_btn.pack_forget()
+        if hasattr(self.gov_tools_frame, "pack_forget"):
+            self.gov_tools_frame.pack_forget()
+        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
+            self.gov_rel_frame.pack_forget()
+        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack_forget"):
+            self.prop_frame.pack_forget()
+
+        if hasattr(self, "back_btn"):
+            self.back_btn.pack(fill=tk.X, padx=2, pady=2)
+        selector.lift()
+        if hasattr(self.gov_tools_frame, "pack"):
+            self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+            self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack"):
+            self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
 
@@ -9189,6 +9485,35 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if not phase:
             return
         toolbox.activate_phase(phase, app)
+
+    # ------------------------------------------------------------------
+    # Toolbox switching logic
+    # ------------------------------------------------------------------
+    def _switch_toolbox(self) -> None:
+        choice = self.toolbox_var.get()
+        before = self.prop_frame if hasattr(self, "prop_frame") else None
+        if choice == "Governance":
+            if hasattr(self.ai_tools_frame, "pack_forget"):
+                self.ai_tools_frame.pack_forget()
+            if before and hasattr(self.gov_tools_frame, "pack"):
+                self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+            else:
+                if hasattr(self.gov_tools_frame, "pack"):
+                    self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
+                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
+        else:
+            if hasattr(self.gov_tools_frame, "pack_forget"):
+                self.gov_tools_frame.pack_forget()
+            if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
+                self.gov_rel_frame.pack_forget()
+            if before and hasattr(self.ai_tools_frame, "pack"):
+                self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+            else:
+                if hasattr(self.ai_tools_frame, "pack"):
+                    self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
