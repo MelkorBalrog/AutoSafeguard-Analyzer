@@ -84,3 +84,16 @@ for prop in (
 # Keep BlockBoundaryUsage in sync with BlockUsage properties, including
 # reliability annotations.
 SYSML_PROPERTIES['BlockBoundaryUsage'] = list(SYSML_PROPERTIES['BlockUsage'])
+
+# ----------------------------------------------------------------------
+# Additional elements for Safety & AI Lifecycle toolbox
+# ----------------------------------------------------------------------
+for key in (
+    'DatabaseUsage',
+    'ANNUsage',
+    'DataacquisitionUsage',
+):
+    SYSML_PROPERTIES.setdefault(key, [])
+
+# Data acquisition nodes allow custom compartments
+SYSML_PROPERTIES['DataacquisitionUsage'] = ['compartments']
