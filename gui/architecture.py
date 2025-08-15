@@ -2846,11 +2846,11 @@ class SysMLDiagramWindow(tk.Frame):
         self.toolbox_container.pack_propagate(False)
         self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
         self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y)
-        toolbox_scroll = ttk.Scrollbar(
+        self.toolbox_scroll = ttk.Scrollbar(
             self.toolbox_container, orient=tk.VERTICAL, command=self.toolbox_canvas.yview
         )
-        toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.toolbox_canvas.configure(yscrollcommand=toolbox_scroll.set)
+        self.toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.toolbox_canvas.configure(yscrollcommand=self.toolbox_scroll.set)
         self.toolbox = ttk.Frame(self.toolbox_canvas)
         self._toolbox_window = self.toolbox_canvas.create_window(
             (0, 0), window=self.toolbox, anchor="nw"
@@ -2968,10 +2968,11 @@ class SysMLDiagramWindow(tk.Frame):
 
         button_width = max_button_width(self.toolbox)
         prop_width = self.prop_view.winfo_reqwidth()
-        width = max(button_width, prop_width)
-        self.toolbox_container.configure(width=width)
-        self.toolbox_canvas.configure(width=width)
-        self.toolbox_canvas.itemconfig(self._toolbox_window, width=width)
+        content_width = max(button_width, prop_width)
+        scroll_width = self.toolbox_scroll.winfo_reqwidth()
+        self.toolbox_container.configure(width=content_width + scroll_width)
+        self.toolbox_canvas.configure(width=content_width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=content_width)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
