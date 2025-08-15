@@ -11,7 +11,6 @@ except Exception:  # pragma: no cover - fallback for minimal installs
 import json
 import math
 import re
-import types
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
@@ -54,25 +53,6 @@ ARCH_DIAGRAM_TYPES = {
     "Block Diagram",
     "Internal Block Diagram",
 }
-
-# Elements available in the Safety & AI Lifecycle toolbox
-SAFETY_AI_ELEMENTS = [
-    "Database",
-    "ANN",
-    "Data acquisition",
-    "Annotation",
-    "Synthesis",
-    "Augmentation",
-    "Acquisition",
-    "Labeling",
-    "Field risk evaluation",
-    "Field data collection",
-    "AI training",
-    "AI re-training",
-    "Curation",
-    "Ingestion",
-    "Model evaluation",
-]
 
 
 def _work_product_name(diag_type: str) -> str:
@@ -3703,10 +3683,7 @@ class SysMLDiagramWindow(tk.Frame):
                     if parent_obj is None:
                         return
                 pkg = self.repo.diagrams[self.diagram_id].package
-                if t in SAFETY_AI_ELEMENTS:
-                    element = self.repo.create_element(t, name=t, owner=pkg)
-                else:
-                    element = self.repo.create_element(t, owner=pkg)
+                element = self.repo.create_element(t, owner=pkg)
                 self.repo.add_element_to_diagram(self.diagram_id, element.elem_id)
                 new_obj = SysMLObject(
                     _get_next_id(),
@@ -3715,11 +3692,6 @@ class SysMLDiagramWindow(tk.Frame):
                     y / self.zoom,
                     element_id=element.elem_id,
                 )
-                if t in SAFETY_AI_ELEMENTS:
-                    new_obj.properties["name"] = t
-                    if t == "Data acquisition":
-                        for i in range(1, 4):
-                            new_obj.properties[f"comp{i}"] = ""
             if t == "Block":
                 new_obj.height = 140.0
                 new_obj.width = 160.0
@@ -3738,18 +3710,6 @@ class SysMLDiagramWindow(tk.Frame):
             elif t in ("Fork", "Join"):
                 new_obj.width = 60.0
                 new_obj.height = 10.0
-            elif t == "Database":
-                new_obj.width = 80.0
-                new_obj.height = 80.0
-            elif t == "ANN":
-                new_obj.width = 120.0
-                new_obj.height = 80.0
-            elif t == "Data acquisition":
-                new_obj.width = 120.0
-                new_obj.height = 90.0
-            elif t in SAFETY_AI_ELEMENTS:
-                new_obj.width = 80.0
-                new_obj.height = 80.0
             key = f"{t.replace(' ', '')}Usage"
 
             for prop in SYSML_PROPERTIES.get(key, []):
@@ -6363,48 +6323,7 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
             else:
-                if obj.obj_type == "Database":
-                    top_h = 10 * self.zoom
-                    self.canvas.create_oval(x - w, y - h, x + w, y - h + top_h, fill=color, outline=outline)
-                    self.canvas.create_rectangle(x - w, y - h + top_h / 2, x + w, y + h - top_h / 2, fill=color, outline=outline)
-                    self.canvas.create_oval(x - w, y + h - top_h, x + w, y + h, outline=outline, fill=color)
-                elif obj.obj_type == "ANN":
-                    layers = [3, 6, 2]
-                    layer_w = obj.width * self.zoom
-                    layer_h = obj.height * self.zoom
-                    spacing = layer_w / (len(layers) + 1)
-                    radius = 4 * self.zoom
-                    prev = []
-                    for idx, count in enumerate(layers):
-                        lx = x - layer_w / 2 + spacing * (idx + 1)
-                        ly_step = layer_h / (count + 1)
-                        current = []
-                        for i in range(count):
-                            ly = y - layer_h / 2 + ly_step * (i + 1)
-                            self.canvas.create_oval(lx - radius, ly - radius, lx + radius, ly + radius, fill=color, outline=outline)
-                            current.append((lx, ly))
-                        for px, py in prev:
-                            for cx, cy in current:
-                                self.canvas.create_line(px, py, cx, cy, fill=outline)
-                        prev = current
-                elif obj.obj_type == "Data acquisition":
-                    left, top, right, bottom = x - w, y - h, x + w, y + h
-                    self._draw_gradient_rect(left, top, right, bottom, color, obj.obj_id)
-                    self.canvas.create_rectangle(left, top, right, bottom, outline=outline)
-                    step = (bottom - top) / 3
-                    for i in range(1, 3):
-                        self.canvas.create_line(left, top + step * i, right, top + step * i, fill=outline)
-                    for idx in range(3):
-                        text = obj.properties.get(f"comp{idx+1}", "")
-                        if text:
-                            ty = top + step * idx + step / 2
-                            self.canvas.create_text(x, ty, text=text, anchor="center", font=self.font)
-                elif obj.obj_type in SAFETY_AI_ELEMENTS:
-                    self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
-                    self.canvas.create_rectangle(x - w, y - h, x + w, y + h, outline=outline)
-                    label = _format_label(self, obj.properties.get("name", obj.obj_type), obj.phase)
-                    self.canvas.create_text(x, y, text=label, anchor="center", font=self.font)
-                elif obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
+                if obj.obj_type in ("Action Usage", "Action", "CallBehaviorAction"):
                     self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
                     self._create_round_rect(
                         x - w,
@@ -9206,53 +9125,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             if isinstance(child, ttk.Button) and child.cget("text") == "Action":
                 child.configure(text="Task")
 
-        # store default toolbox frames
-        self.gov_tools_frame = self.tools_frame
-        self.gov_rel_frame = getattr(self, "rel_frame", None)
-        # remove packed frames to insert selector at top
-        if hasattr(self.gov_tools_frame, "pack_forget"):
-            self.gov_tools_frame.pack_forget()
-        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
-            self.gov_rel_frame.pack_forget()
-
-        # toolbox selector
-        try:
-            self.toolbox_var = tk.StringVar(value="Governance")
-            self.toolbox_cb = ttk.Combobox(
-                self.toolbox,
-                textvariable=self.toolbox_var,
-                values=["Governance", "Safety & AI Lifecycle"],
-                state="readonly",
-            )
-            if hasattr(self.toolbox_cb, "pack"):
-                self.toolbox_cb.pack(fill=tk.X, padx=2, pady=2)
-            self.toolbox_cb.bind("<<ComboboxSelected>>", self._select_toolbox)
-        except Exception:
-            self.toolbox_var = types.SimpleNamespace(get=lambda: "Governance", set=lambda v: None)
-            self.toolbox_cb = types.SimpleNamespace()
-
-        # safety & AI lifecycle toolbox frames (hidden by default)
-        try:
-            self.safety_tools_frame = ttk.Frame(self.toolbox)
-            self.safety_rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
-            for name in SAFETY_AI_ELEMENTS:
-                btn = ttk.Button(
-                    self.safety_tools_frame,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                )
-                if hasattr(btn, "pack"):
-                    btn.pack(fill=tk.X, padx=2, pady=2)
-        except Exception:
-            self.safety_tools_frame = types.SimpleNamespace()
-            self.safety_rel_frame = types.SimpleNamespace(winfo_children=lambda: [])
-
-        # repack default governance toolbox initially
-        if hasattr(self.gov_tools_frame, "pack"):
-            self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
-        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
-            self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
-
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
 
@@ -9295,30 +9167,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.refresh_from_repository()
         self._pending_wp_name: str | None = None
         self._pending_area_name: str | None = None
-
-    def _select_toolbox(self, *_):
-        """Show the selected toolbox in the sidebar."""
-        choice = self.toolbox_var.get()
-        if choice == "Safety & AI Lifecycle":
-            if hasattr(self.gov_tools_frame, "pack_forget"):
-                self.gov_tools_frame.pack_forget()
-            if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
-                self.gov_rel_frame.pack_forget()
-            if hasattr(self.safety_tools_frame, "pack"):
-                self.safety_tools_frame.pack(fill=tk.X, padx=2, pady=2)
-            if self.safety_rel_frame.winfo_children() and hasattr(
-                self.safety_rel_frame, "pack"
-            ):
-                self.safety_rel_frame.pack(fill=tk.X, padx=2, pady=2)
-        else:
-            if hasattr(self.safety_tools_frame, "pack_forget"):
-                self.safety_tools_frame.pack_forget()
-            if hasattr(self.safety_rel_frame, "pack_forget"):
-                self.safety_rel_frame.pack_forget()
-            if hasattr(self.gov_tools_frame, "pack"):
-                self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
-            if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
-                self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
 
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
