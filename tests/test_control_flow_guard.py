@@ -60,5 +60,10 @@ class ControlFlowGuardTests(unittest.TestCase):
         label = format_control_flow_label(conn, repo, "Control Flow Diagram")
         self.assertEqual(label, "[g1\nAND g2\nOR g3] / <<control action>> Do")
 
+    def test_guard_string_coercion(self):
+        conn = DiagramConnection(1, 2, "Flow", guard="g1", guard_ops="OR")
+        self.assertEqual(conn.guard, ["g1"])
+        self.assertEqual(conn.guard_ops, ["OR"])
+
 if __name__ == "__main__":
     unittest.main()

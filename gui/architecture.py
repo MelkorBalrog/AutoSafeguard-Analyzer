@@ -2746,6 +2746,16 @@ class DiagramConnection:
     stereotype: str = ""
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
 
+    def __post_init__(self) -> None:
+        if isinstance(self.guard, str):
+            self.guard = [self.guard]
+        elif self.guard is None:
+            self.guard = []
+        if isinstance(self.guard_ops, str):
+            self.guard_ops = [self.guard_ops]
+        elif self.guard_ops is None:
+            self.guard_ops = []
+
 
 def format_control_flow_label(
     conn: DiagramConnection, repo: "SysMLRepository", diag_type: str | None
@@ -2761,10 +2771,13 @@ def format_control_flow_label(
         if elem:
             label = elem.name or ""
     stereo = conn.stereotype or conn.conn_type.lower()
-    if diag_type == "Control Flow Diagram" and conn.conn_type in (
-        "Control Action",
-        "Feedback",
-    ):
+    special_case = (
+        diag_type == "Control Flow Diagram"
+        and conn.conn_type in ("Control Action", "Feedback")
+        or diag_type == "Governance Diagram"
+        and conn.conn_type == "Flow"
+    )
+    if special_case:
         base = f"<<{stereo}>> {label}".strip() if stereo else label
         if conn.guard:
             lines: List[str] = []
@@ -9161,6 +9174,50 @@ class ConnectionDialog(simpledialog.Dialog):
             ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(side=tk.TOP)
             ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(side=tk.TOP)
             row += 1
+        elif (
+            self.connection.conn_type == "Flow"
+            and getattr(
+                self.master.repo.diagrams.get(self.master.diagram_id), "diag_type", ""
+            )
+            == "Governance Diagram"
+        ):
+            src_obj = self.master.get_object(self.connection.src)
+            if src_obj and src_obj.obj_type == "Decision":
+                ttk.Label(master, text="Guard:").grid(
+                    row=row, column=0, sticky="ne", padx=4, pady=4
+                )
+                self.guard_list = tk.Listbox(master, height=4)
+                for g in self.connection.guard:
+                    self.guard_list.insert(tk.END, g)
+                self.guard_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+                gbtn = ttk.Frame(master)
+                gbtn.grid(row=row, column=2, padx=2)
+                ttk.Button(gbtn, text="Add", command=self.add_guard).pack(side=tk.TOP)
+                ttk.Button(gbtn, text="Remove", command=self.remove_guard).pack(side=tk.TOP)
+                row += 1
+                ttk.Label(master, text="Guard Ops:").grid(
+                    row=row, column=0, sticky="ne", padx=4, pady=4
+                )
+                self.guard_ops_list = tk.Listbox(master, height=4)
+                for op in self.connection.guard_ops:
+                    self.guard_ops_list.insert(tk.END, op)
+                self.guard_ops_list.grid(row=row, column=1, padx=4, pady=4, sticky="we")
+                opbtn = ttk.Frame(master)
+                opbtn.grid(row=row, column=2, padx=2)
+                self.guard_op_choice = tk.StringVar(value="AND")
+                ttk.Combobox(
+                    opbtn,
+                    textvariable=self.guard_op_choice,
+                    values=["AND", "OR"],
+                    state="readonly",
+                ).pack(side=tk.TOP)
+                ttk.Button(opbtn, text="Add", command=self.add_guard_op).pack(
+                    side=tk.TOP
+                )
+                ttk.Button(opbtn, text="Remove", command=self.remove_guard_op).pack(
+                    side=tk.TOP
+                )
+                row += 1
 
         if self.connection.conn_type in ("Aggregation", "Composite Aggregation"):
             ttk.Label(master, text="Multiplicity:").grid(row=row, column=0, sticky="e", padx=4, pady=4)
