@@ -36,6 +36,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         toolbox = ttk.Frame(body)
         toolbox.pack(side=tk.LEFT, fill=tk.Y)
         for name in (
+            "Variable",
             "Triggering Condition",
             "Existing Triggering Condition",
             "Functional Insufficiency",
@@ -158,7 +159,18 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        if self.current_tool in ("Triggering Condition", "Functional Insufficiency"):
+        if self.current_tool == "Variable":
+            name = simpledialog.askstring("Variable", "Name:", parent=self)
+            if not name or name in doc.network.nodes:
+                self.select_tool("Select")
+                return
+            x, y = event.x, event.y
+            doc.network.add_node(name, cpd=0.5)
+            doc.positions[name] = (x, y)
+            doc.types[name] = "variable"
+            self._draw_node(name, x, y, "variable")
+            self.select_tool("Select")
+        elif self.current_tool in ("Triggering Condition", "Functional Insufficiency"):
             prompt = self.current_tool
             name = simpledialog.askstring(prompt, "Name:", parent=self)
             if not name or name in doc.network.nodes:
@@ -380,6 +392,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
             color = "lightyellow"
         elif kind == "malfunction":
             color = "lightgreen"
+        elif kind == "variable":
+            color = "lightgray"
         else:
             color = "lightyellow"
         fill_tag = f"fill_{name}"
