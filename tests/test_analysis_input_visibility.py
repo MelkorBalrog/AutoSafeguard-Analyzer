@@ -237,7 +237,6 @@ def test_scenario_library_inputs_respect_phase():
     toolbox.set_active_module("P1")
     assert toolbox.analysis_inputs("Scenario Library") == {"ODD"}
 
-
 def test_stpa_button_requires_relationship():
     SysMLRepository.reset_instance()
     repo = SysMLRepository.get_instance()
