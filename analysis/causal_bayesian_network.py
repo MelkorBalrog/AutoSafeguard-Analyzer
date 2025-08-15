@@ -26,6 +26,7 @@ queries map to the "circles and tables" intuition.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import product
 from typing import Dict, Iterable, List, Mapping, Tuple
 
 
@@ -152,7 +153,7 @@ class CausalBayesianNetwork:
             p_true = float(self.cpds[var])
         else:
             key = tuple(evidence[p] for p in parents)
-            p_true = float(self.cpds[var][key])
+            p_true = float(self.cpds[var].get(key, 0.0))
         return p_true if value else 1.0 - p_true
 
     # ------------------------------------------------------------------
@@ -177,6 +178,26 @@ class CausalBayesianNetwork:
         for node in self.nodes:
             visit(node)
         return order
+
+    # ------------------------------------------------------------------
+    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
+        """Return all combinations of parent values and their probabilities.
+
+        The returned list represents the rows of the node's conditional
+        probability table.  All ``2^n`` combinations of parent values are
+        included.  Probabilities not explicitly provided when the node was
+        added default to ``0.0`` so that the table is always complete.
+        """
+
+        parents = self.parents.get(var, [])
+        if not parents:
+            prob = float(self.cpds.get(var, 0.0))
+            return [((), prob)]
+        cpds = self.cpds.get(var, {})
+        rows: List[Tuple[Tuple[bool, ...], float]] = []
+        for combo in product([False, True], repeat=len(parents)):
+            rows.append((combo, float(cpds.get(combo, 0.0))))
+        return rows
 
 
 @dataclass
