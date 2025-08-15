@@ -71,6 +71,40 @@ These diagrams provide a single reference for planning work products,
 coordinating reviews and communicating how safety, cybersecurity and AI
 assurance fit together across the item’s lifecycle.
 
+Governance diagrams can also produce **derived requirements**.  Each task,
+flow and relationship—including any optional conditions—is converted into a
+natural language statement so governance models can be exported as concise
+requirements lists.
+
+When editing a governance diagram in the Safety & Security Management tool,
+use the **Requirements** button to generate these statements and view them in
+a new tab within the working area.
+
+For example, the snippet below creates a tiny governance diagram and prints
+its derived requirements:
+
+```python
+from analysis.governance import GovernanceDiagram
+
+diagram = GovernanceDiagram()
+diagram.add_task("Draft Plan")
+diagram.add_task("Review Plan")
+diagram.add_flow("Draft Plan", "Review Plan", condition="plan complete")
+diagram.add_relationship("Review Plan", "Draft Plan", "changes requested")
+
+for req in diagram.generate_requirements():
+    print(req)
+```
+
+Running this script produces:
+
+```
+The system shall perform task 'Draft Plan'.
+The system shall perform task 'Review Plan'.
+When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
+Task 'Review Plan' shall be related to task 'Draft Plan' when changes requested.
+```
+
 ## Workflow Overview
 
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
