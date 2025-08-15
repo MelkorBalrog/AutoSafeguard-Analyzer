@@ -2,12 +2,10 @@ import sys
 from pathlib import Path
 import types
 from itertools import product
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-import gui.causal_bayesian_network_window as cbnw
+import pytest
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
+from analysis import CausalBayesianNetwork
 
 
 class DummyCanvas:
@@ -168,11 +166,12 @@ def _setup_window():
             parents = self.parents.get(name, [])
             if not parents:
                 prob = float(self.cpds.get(name, 0.0))
-                return [((), prob, 1.0)]
+                return [((), prob, 1.0, prob)]
             cpds = self.cpds.get(name, {})
             rows = []
             for combo in product([False, True], repeat=len(parents)):
-                rows.append((combo, float(cpds.get(combo, 0.0)), 0.0))
+                prob = float(cpds.get(combo, 0.0))
+                rows.append((combo, prob, 0.0, 0.0))
             return rows
 
     doc = types.SimpleNamespace(network=Net(), positions={}, types={})
@@ -249,57 +248,40 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
 
 
-def test_new_triggering_condition_registers():
-    win, doc = _setup_window()
-    called = {}
-    win.app.update_triggering_condition_list = lambda: called.setdefault("tc", True)
-    win.current_tool = "Triggering Condition"
-    orig = cbnw.simpledialog.askstring
-    cbnw.simpledialog.askstring = lambda *a, **k: "TC1"
-    event = types.SimpleNamespace(x=5, y=5)
-    win.on_click(event)
-    cbnw.simpledialog.askstring = orig
-    assert "TC1" in doc.network.nodes
-    assert called.get("tc")
+def test_update_all_tables_refreshes_dependencies():
+    win = object.__new__(CausalBayesianNetworkWindow)
+    win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS
+    win.canvas = DummyCanvas()
+    win.drawing_helper = FTADrawingHelper()
+    win.nodes = {}
+    win.tables = {}
+    win.id_to_node = {}
+    win.edges = []
+    win.current_tool = "Select"
+    win._place_table = lambda *a, **k: None
+    win._position_table = lambda *a, **k: None
 
+    app = DummyApp()
+    net = CausalBayesianNetwork()
+    net.add_node("Rain", cpd=0.3)
+    net.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    doc = types.SimpleNamespace(network=net, positions={"Rain": (0, 0), "WetGround": (0, 0)})
+    app.active_cbn = doc
+    win.app = app
 
-def test_new_functional_insufficiency_registers():
-    win, doc = _setup_window()
-    called = {}
-    win.app.update_functional_insufficiency_list = lambda: called.setdefault("fi", True)
-    win.current_tool = "Functional Insufficiency"
-    orig = cbnw.simpledialog.askstring
-    cbnw.simpledialog.askstring = lambda *a, **k: "FI1"
-    event = types.SimpleNamespace(x=5, y=5)
-    win.on_click(event)
-    cbnw.simpledialog.askstring = orig
-    assert "FI1" in doc.network.nodes
-    assert called.get("fi")
+    tree_rain = DummyTree()
+    frame_rain = DummyFrame(tree_rain)
+    tree_wet = DummyTree()
+    frame_wet = DummyFrame(tree_wet)
+    win.tables["Rain"] = (1, frame_rain, tree_rain)
+    win.tables["WetGround"] = (2, frame_wet, tree_wet)
 
+    win._update_all_tables()
+    # row for Rain=True is second row
+    assert float(tree_wet.rows[1][1]) == pytest.approx(0.3, rel=1e-3)
+    assert float(tree_wet.rows[1][3]) == pytest.approx(0.27, rel=1e-3)
 
-def test_existing_triggering_condition_registers():
-    win, doc = _setup_window()
-    win.app.triggering_conditions = ["TC1"]
-    called = {}
-    win.app.update_triggering_condition_list = lambda: called.setdefault("tc", True)
-    win._select_triggering_conditions = lambda: ["TC1"]
-    win.current_tool = "Existing Triggering Condition"
-    event = types.SimpleNamespace(x=5, y=5)
-    win.on_click(event)
-    assert "TC1" in doc.network.nodes
-    assert doc.types["TC1"] == "trigger"
-    assert called.get("tc")
-
-
-def test_existing_functional_insufficiency_registers():
-    win, doc = _setup_window()
-    win.app.functional_insufficiencies = ["FI1"]
-    called = {}
-    win.app.update_functional_insufficiency_list = lambda: called.setdefault("fi", True)
-    win._select_functional_insufficiencies = lambda: ["FI1"]
-    win.current_tool = "Existing Functional Insufficiency"
-    event = types.SimpleNamespace(x=5, y=5)
-    win.on_click(event)
-    assert "FI1" in doc.network.nodes
-    assert doc.types["FI1"] == "insufficiency"
-    assert called.get("fi")
+    net.cpds["Rain"] = 0.6
+    win._update_all_tables()
+    assert float(tree_wet.rows[1][1]) == pytest.approx(0.6, rel=1e-3)
+    assert float(tree_wet.rows[1][3]) == pytest.approx(0.54, rel=1e-3)

@@ -398,7 +398,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         prob_col = f"P({name}=T)"
         if parents:
             combo_col = "P(parents)"
-            cols = list(parents) + [combo_col, prob_col]
+            total_col = "P(total)"
+            cols = list(parents) + [combo_col, prob_col, total_col]
         else:
             cols = [prob_col]
         frame = ttk.Frame(self.canvas)
@@ -410,15 +411,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
         for c in cols:
             tree.heading(c, text=c)
-            tree.column(c, width=80 if c == prob_col else 60, anchor=tk.CENTER)
+            width = 80 if c in (prob_col, total_col if parents else None) else 60
+            tree.column(c, width=width, anchor=tk.CENTER)
         tree.pack(side=tk.TOP, fill=tk.X)
         if not parents:
             info = f"Prior probability that {name} is True"
         else:
             info = (
                 "Each row shows a combination of parent values; "
-                f"{prob_col} is the probability that {name} is True for that combination "
-                f"and {combo_col} is the probability of the parent combination"
+                f"{prob_col} is the probability that {name} is True for that combination, "
+                f"{combo_col} is the probability of the parent combination and {total_col} is the "
+                "joint probability of the entire row"
             )
         ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
@@ -440,10 +443,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not parents:
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            for combo, prob, combo_prob in rows:
+            for combo, prob, combo_prob, total_prob in rows:
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{combo_prob:.3f}")
                 row.append(f"{prob:.3f}")
+                row.append(f"{total_prob:.3f}")
                 tree.insert("", "end", values=row)
         tree.configure(height=len(rows))
         frame.update_idletasks()
@@ -473,6 +477,44 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._place_table(name)
 
     # ------------------------------------------------------------------
+    def _update_all_tables(self) -> None:
+        """Update probability tables for all nodes in the active document."""
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        for node in doc.network.nodes:
+            if node in self.tables:
+                self._update_table(node)
+
+    # ------------------------------------------------------------------
+    def add_cpd_row(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        parents = doc.network.parents.get(name, [])
+        if not parents:
+            prob = simpledialog.askfloat(
+                "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+            )
+            if prob is not None:
+                doc.network.cpds[name] = prob
+                self._update_all_tables()
+            return
+        values = []
+        for p in parents:
+            val = simpledialog.askstring(f"{p}", "T/F", parent=self)
+            if val is None:
+                return
+            values.append(val.strip().upper().startswith("T"))
+        prob = simpledialog.askfloat(
+            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+        )
+        if prob is None:
+            return
+        doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
+        self._update_all_tables()
+
+    # ------------------------------------------------------------------
     def edit_cpd_row(self, name: str) -> None:
         doc = getattr(self.app, "active_cbn", None)
         if not doc or name not in self.tables:
@@ -489,7 +531,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
             if prob is not None:
                 doc.network.cpds[name] = prob
-                self._update_table(name)
+                self._update_all_tables()
             return
         current = tuple(v == "T" for v in values[:-1])
         prob = simpledialog.askfloat(
@@ -498,7 +540,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if prob is None:
             return
         doc.network.cpds[name][current] = prob
-        self._update_table(name)
+        self._update_all_tables()
 
     # ------------------------------------------------------------------
     def _select_triggering_conditions(self):
