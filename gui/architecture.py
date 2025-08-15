@@ -2843,8 +2843,9 @@ class SysMLDiagramWindow(tk.Frame):
 
         self.toolbox_container = ttk.Frame(self)
         self.toolbox_container.pack(side=tk.LEFT, fill=tk.Y)
+        self.toolbox_container.pack_propagate(False)
         self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
-        self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y)
         toolbox_scroll = ttk.Scrollbar(
             self.toolbox_container, orient=tk.VERTICAL, command=self.toolbox_canvas.yview
         )
@@ -2946,10 +2947,31 @@ class SysMLDiagramWindow(tk.Frame):
         # Refresh from the repository whenever the window gains focus
         self.bind("<FocusIn>", self.refresh_from_repository)
 
+        self.after_idle(self._fit_toolbox)
         self.redraw()
         self.update_property_view()
         if not isinstance(self.master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
+
+    def _fit_toolbox(self) -> None:
+        """Resize the toolbox to the smallest width that shows all button text."""
+        self.toolbox.update_idletasks()
+
+        def max_button_width(widget: tk.Misc) -> int:
+            width = 0
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    width = max(width, child.winfo_reqwidth())
+                else:
+                    width = max(width, max_button_width(child))
+            return width
+
+        button_width = max_button_width(self.toolbox)
+        prop_width = self.prop_view.winfo_reqwidth()
+        width = max(button_width, prop_width)
+        self.toolbox_container.configure(width=width)
+        self.toolbox_canvas.configure(width=width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=width)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
