@@ -450,14 +450,19 @@ class CausalBayesianNetworkWindow(tk.Frame):
         r = self.NODE_RADIUS
         if kind == "trigger":
             color = "lightblue"
+            stereo = "triggering condition"
         elif kind == "insufficiency":
             color = "lightyellow"
+            stereo = "functional insufficiency"
         elif kind == "malfunction":
             color = "lightgreen"
+            stereo = "malfunction"
         elif kind == "variable":
             color = "lightgray"
+            stereo = "variable"
         else:
             color = "lightyellow"
+            stereo = None
         fill_tag = f"fill_{name}"
         fill_ids = self.drawing_helper._fill_gradient_circle(
             self.canvas, x, y, r, color, tag=fill_tag
@@ -465,11 +470,12 @@ class CausalBayesianNetworkWindow(tk.Frame):
         oval = self.canvas.create_oval(
             x - r, y - r, x + r, y + r, outline="black", fill=""
         )
+        label = f"<<{stereo}>>\n{name}" if stereo else name
         font = getattr(self, "text_font", None)
         if font:
-            text = self.canvas.create_text(x, y, text=name, font=font)
+            text = self.canvas.create_text(x, y, text=label, font=font)
         else:
-            text = self.canvas.create_text(x, y, text=name)
+            text = self.canvas.create_text(x, y, text=label)
         self.nodes[name] = (oval, text, fill_tag)
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
@@ -896,10 +902,22 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if find_withtag:
             for fid in find_withtag(fill_tag):
                 self.id_to_node[fid] = new
-        if hasattr(self, "text_font"):
-            self.canvas.itemconfigure(text_id, text=new, font=self.text_font)
+        kind = doc.types.get(new)
+        if kind == "trigger":
+            stereo = "triggering condition"
+        elif kind == "insufficiency":
+            stereo = "functional insufficiency"
+        elif kind == "malfunction":
+            stereo = "malfunction"
+        elif kind == "variable":
+            stereo = "variable"
         else:
-            self.canvas.itemconfigure(text_id, text=new)
+            stereo = None
+        label = f"<<{stereo}>>\n{new}" if stereo else new
+        if hasattr(self, "text_font"):
+            self.canvas.itemconfigure(text_id, text=label, font=self.text_font)
+        else:
+            self.canvas.itemconfigure(text_id, text=label)
         for idx, (line, src, dst) in enumerate(self.edges):
             s = new if src == old else src
             d = new if dst == old else dst
