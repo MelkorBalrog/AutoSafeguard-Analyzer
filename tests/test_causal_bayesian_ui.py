@@ -1,3 +1,5 @@
+import sys
+from pathlib import Path
 import types
 from itertools import product
 import pytest
@@ -15,31 +17,52 @@ class DummyCanvas:
         self.moves = []
         self.last_configure = {}
 
-    def create_line(self, x1, y1, x2, y2, fill=None, tags=None):
+    def create_line(self, x1, y1, x2, y2, **kw):
         i = self.next_id
         self.next_id += 1
-        self.items[i] = {"type": "line", "tags": set([tags]) if tags else set()}
+        self.items[i] = {"type": "line", "coords": [x1, y1, x2, y2]}
+        self.items[i].update(kw)
         return i
 
     def create_oval(self, x1, y1, x2, y2, **kw):
         i = self.next_id
         self.next_id += 1
-        self.items[i] = {"type": "oval"}
+        self.items[i] = {"type": "oval", "coords": [x1, y1, x2, y2]}
+        self.items[i].update(kw)
         return i
 
     def create_text(self, x, y, **kw):
         i = self.next_id
         self.next_id += 1
-        self.items[i] = {"type": "text"}
+        self.items[i] = {"type": "text", "coords": [x, y]}
+        self.items[i].update(kw)
         return i
 
-    def coords(self, *args, **kwargs):
-        pass
+    def create_rectangle(self, x1, y1, x2, y2, **kw):
+        i = self.next_id
+        self.next_id += 1
+        self.items[i] = {"type": "rectangle", "coords": [x1, y1, x2, y2]}
+        self.items[i].update(kw)
+        return i
+
+    def delete(self, item):
+        if item == "all":
+            self.items.clear()
+        else:
+            self.items.pop(item, None)
+
+    def coords(self, item, x1, y1, x2=None, y2=None):
+        if item in self.items:
+            if x2 is None and y2 is None:
+                self.items[item]["coords"] = [x1, y1]
+            else:
+                self.items[item]["coords"] = [x1, y1, x2, y2]
 
     def move(self, tag, dx, dy):
         self.moves.append((tag, dx, dy))
 
     def itemconfigure(self, item, **kw):
+        self.items.setdefault(item, {}).update(kw)
         self.last_configure.update(kw)
 
     def update_idletasks(self):
@@ -121,12 +144,23 @@ def _setup_window():
     win.current_tool = "Select"
     win._place_table = lambda *a, **k: None
     win._position_table = lambda *a, **k: None
+    win.after = lambda *a, **k: None
+    win.after_cancel = lambda *a, **k: None
+    win.selected_node = None
+    win.selection_rect = None
+    win.temp_edge_line = None
+    win.temp_edge_anim = None
+    win.temp_edge_offset = 0
     app = DummyApp()
     class Net:
         def __init__(self):
             self.nodes = set()
             self.parents = {}
             self.cpds = {}
+
+        def add_node(self, name, cpd=0.0):
+            self.nodes.add(name)
+            self.cpds[name] = cpd
 
         def cpd_rows(self, name):
             parents = self.parents.get(name, [])
@@ -140,9 +174,13 @@ def _setup_window():
                 rows.append((combo, prob, 0.0, 0.0))
             return rows
 
-    doc = types.SimpleNamespace(network=Net(), positions={})
+    doc = types.SimpleNamespace(network=Net(), positions={}, types={})
     app.active_cbn = doc
     win.app = app
+    win._find_node = lambda x, y: next(
+        (n for n, (nx, ny) in doc.positions.items() if abs(nx - x) <= win.NODE_RADIUS and abs(ny - y) <= win.NODE_RADIUS),
+        None,
+    )
     return win, doc
 
 
