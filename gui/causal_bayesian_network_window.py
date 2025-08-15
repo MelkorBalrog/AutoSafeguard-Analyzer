@@ -191,6 +191,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc.positions[name] = (x, y)
         oval_id, text_id, fill_tag = self.nodes[name]
         r = self.NODE_RADIUS
+        self.canvas.coords(fill_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(text_id, x, y)
         self.canvas.move(fill_tag, x - old_x, y - old_y)
@@ -248,6 +249,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float) -> None:
+        """Draw a node as a filled circle with a text label."""
         r = self.NODE_RADIUS
         color = "lightyellow"
         fill_tag = f"fill_{name}"
@@ -325,11 +327,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
         parents = doc.network.parents.get(name, [])
         if not parents:
             prob = doc.network.cpds.get(name, 0.0)
-            tree.configure(height=1)
             tree.insert("", "end", values=[f"{prob:.3f}"])
+            tree.configure(height=1)
         else:
             cpds = doc.network.cpds.get(name, {})
-            tree.configure(height=len(cpds) or 1)
             for combo, prob in cpds.items():
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{prob:.3f}")
