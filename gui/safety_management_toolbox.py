@@ -85,9 +85,16 @@ class SafetyManagementWindow(tk.Frame):
         if names:
             current = self.diag_var.get()
             if current not in names:
+                # Setting the variable programmatically fires the
+                # ``<<ComboboxSelected>>`` event which in turn calls
+                # ``open_diagram``.  Calling ``open_diagram`` here as well would
+                # result in the widget being destroyed while the first call is
+                # still rendering, leading to ``invalid command name`` errors.
+                # Therefore only set the variable and let the event handler
+                # perform the actual opening.
                 self.diag_var.set(names[0])
-            if self._auto_show_diagram:
-                self.open_diagram(self.diag_var.get())
+            elif self._auto_show_diagram:
+                self.open_diagram(current)
         elif self._auto_show_diagram:
             self.diag_var.set("")
             self.open_diagram(None)
@@ -267,15 +274,31 @@ class SafetyManagementWindow(tk.Frame):
                     f"Failed to generate requirements for '{name}': {exc}",
                 )
                 continue
+            pairs: list[tuple[str, str]] = []
+            invalid = False
             for r in raw_reqs:
                 if isinstance(r, tuple):
+                    if len(r) != 2:
+                        invalid = True
+                        break
                     text, rtype = r
                 elif hasattr(r, "text"):
                     text, rtype = r.text, getattr(r, "req_type", "organizational")
+                elif isinstance(r, str):
+                    text, rtype = r, "organizational"
                 else:
-                    text, rtype = str(r), "organizational"
+                    invalid = True
+                    break
                 if text.strip():
-                    ids.append(self._add_requirement(text, rtype))
+                    pairs.append((text, rtype))
+            if invalid:
+                messagebox.showerror(
+                    "Requirements",
+                    "Requirement entries must be strings or (text, type) pairs.",
+                )
+                continue
+            for text, rtype in pairs:
+                ids.append(self._add_requirement(text, rtype))
         if not ids:
             messagebox.showinfo(
                 "Requirements",

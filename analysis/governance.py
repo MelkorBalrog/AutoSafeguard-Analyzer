@@ -254,9 +254,11 @@ class GovernanceDiagram:
             conn_type = data.get("conn_type")
 
             subject = src
+            orig_subject = subject
             obj: str | None = dst
             constraint: str | None = None
             action: str
+            explicit_subject = None
 
             if kind == "flow":
                 action = "precede"
@@ -297,6 +299,17 @@ class GovernanceDiagram:
                     req_type=req_type,
                 )
             )
+            if explicit_subject and self.node_types.get(src) == "Decision":
+                requirements.append(
+                    GeneratedRequirement(
+                        action=action,
+                        condition=cond,
+                        subject=orig_subject,
+                        obj=obj,
+                        constraint=constraint,
+                        req_type=req_type,
+                    )
+                )
 
         return requirements
 
@@ -336,7 +349,6 @@ class GovernanceDiagram:
             obj_id = odict.get("obj_id")
             if obj_type == "Decision":
                 decision_sources[obj_id] = ""
-                continue
             elem_id = odict.get("element_id")
             name = ""
             if elem_id and elem_id in repo.elements:
@@ -344,10 +356,8 @@ class GovernanceDiagram:
             if not name:
                 name = odict.get("properties", {}).get("name", "")
             if name:
-                diagram.add_task(name)
-                id_to_name[odict.get("obj_id")] = name
-            if obj_type == "Decision":
-                decision_sources[odict.get("obj_id")] = ""
+                diagram.add_task(name, node_type=obj_type or "Action")
+                id_to_name[obj_id] = name
 
         # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):
