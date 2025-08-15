@@ -186,15 +186,23 @@ class SafetyManagementWindow(tk.Frame):
         self.current_window.pack(fill=tk.BOTH, expand=True)
 
     # ------------------------------------------------------------------
-    def _add_requirement(self, text: str, req_type: str = "organizational") -> str:
-        """Create a new requirement with a unique identifier."""
+    def _add_requirement(
+        self, text: str, req_type: str = "organizational", phase: str | None = None
+    ) -> str:
+        """Create a new requirement with a unique identifier.
+
+        ``phase`` indicates the lifecycle phase the requirement originates from.
+        ``None`` means it is a lifecycle requirement visible in all phases.
+        """
         idx = 1
         while f"R{idx}" in global_requirements:
             idx += 1
         rid = f"R{idx}"
         app = getattr(self, "app", None)
         if app and hasattr(app, "add_new_requirement"):
-            app.add_new_requirement(rid, req_type, text)
+            req = app.add_new_requirement(rid, req_type, text)
+            req["phase"] = phase
+            global_requirements[rid] = req
         else:
             req = {
                 "id": rid,
@@ -203,6 +211,7 @@ class SafetyManagementWindow(tk.Frame):
                 "text": text,
                 "status": "draft",
                 "parent_id": "",
+                "phase": phase,
             }
             ensure_requirement_defaults(req)
             global_requirements[rid] = req
@@ -250,7 +259,27 @@ class SafetyManagementWindow(tk.Frame):
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
-        ids = [self._add_requirement(text, rtype) for text, rtype in reqs]
+        phase = self.toolbox.module_for_diagram(name)
+        ids: list[str] = []
+        for text, rtype in reqs:
+            existing_id = next(
+                (
+                    rid
+                    for rid, req in global_requirements.items()
+                    if req.get("phase") == phase and req.get("text") == text
+                ),
+                None,
+            )
+            if existing_id:
+                global_requirements[existing_id]["req_type"] = rtype
+                ids.append(existing_id)
+            else:
+                ids.append(self._add_requirement(text, rtype, phase=phase))
+        ids = [
+            rid
+            for rid, req in global_requirements.items()
+            if req.get("phase") in (phase, None)
+        ]
         self._display_requirements(f"{name} Requirements", ids)
 
     def _refresh_phase_menu(self) -> None:
@@ -318,13 +347,32 @@ class SafetyManagementWindow(tk.Frame):
                 )
                 continue
             for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype))
-        if not ids:
+                existing_id = next(
+                    (
+                        rid
+                        for rid, req in global_requirements.items()
+                        if req.get("phase") == phase and req.get("text") == text
+                    ),
+                    None,
+                )
+                if existing_id:
+                    global_requirements[existing_id]["req_type"] = rtype
+                    ids.append(existing_id)
+                else:
+                    ids.append(self._add_requirement(text, rtype, phase=phase))
+        if not ids and not any(
+            req.get("phase") == phase for req in global_requirements.values()
+        ):
             messagebox.showinfo(
                 "Requirements",
                 f"No requirements were generated for phase '{phase}'.",
             )
             return
+        ids = [
+            rid
+            for rid, req in global_requirements.items()
+            if req.get("phase") in (phase, None)
+        ]
         self._display_requirements(f"{phase} Requirements", ids)
 
     def generate_lifecycle_requirements(self) -> None:
@@ -376,13 +424,26 @@ class SafetyManagementWindow(tk.Frame):
                 )
                 continue
             for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype))
-        if not ids:
+                existing_id = next(
+                    (
+                        rid
+                        for rid, req in global_requirements.items()
+                        if req.get("phase") is None and req.get("text") == text
+                    ),
+                    None,
+                )
+                if existing_id:
+                    global_requirements[existing_id]["req_type"] = rtype
+                    ids.append(existing_id)
+                else:
+                    ids.append(self._add_requirement(text, rtype))
+        if not ids and not any(req.get("phase") is None for req in global_requirements.values()):
             messagebox.showinfo(
                 "Requirements",
                 "No requirements were generated for lifecycle diagrams.",
             )
             return
+        ids = [rid for rid, req in global_requirements.items() if req.get("phase") is None]
         self._display_requirements("Lifecycle Requirements", ids)
 
     @staticmethod
