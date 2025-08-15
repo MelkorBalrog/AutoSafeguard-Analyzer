@@ -358,15 +358,30 @@ class CausalBayesianNetworkWindow(tk.Frame):
             dst = self._find_node(event.x, event.y)
             src = self.edge_start
             if dst and dst != src:
-                undo = getattr(self.app, "push_undo_state", None)
-                if undo:
-                    undo()
-                self._draw_edge(src, dst)
-                parents = doc.network.parents.setdefault(dst, [])
-                if src not in parents:
-                    parents.append(src)
-                    doc.network.cpds[dst] = {}
-                    self._rebuild_table(dst)
+                kind_src = doc.types.get(src)
+                kind_dst = doc.types.get(dst)
+                if kind_src == "insufficiency" and kind_dst == "trigger":
+                    messagebox.showerror(
+                        "Invalid Relationship",
+                        "Functional insufficiency cannot connect to a triggering condition.",
+                        parent=self,
+                    )
+                elif kind_src == "malfunction":
+                    messagebox.showerror(
+                        "Invalid Relationship",
+                        "Malfunction nodes cannot connect to other nodes.",
+                        parent=self,
+                    )
+                else:
+                    undo = getattr(self.app, "push_undo_state", None)
+                    if undo:
+                        undo()
+                    self._draw_edge(src, dst)
+                    parents = doc.network.parents.setdefault(dst, [])
+                    if src not in parents:
+                        parents.append(src)
+                        doc.network.cpds[dst] = {}
+                        self._rebuild_table(dst)
             self.edge_start = None
             if self.temp_edge_line:
                 self.canvas.delete(self.temp_edge_line)
