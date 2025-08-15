@@ -202,33 +202,41 @@ class CausalBayesianNetwork:
                 probs[node] = float(self.cpds.get(node, 0.0))
                 continue
             total = 0.0
-            for combo, p_true in self.cpd_rows(node):
-                weight = 1.0
-                for parent, val in zip(parents, combo):
-                    parent_prob = probs.get(parent, 0.0)
-                    weight *= parent_prob if val else 1.0 - parent_prob
+            for combo, p_true, weight in self.cpd_rows(node, parent_probs=probs):
                 total += weight * p_true
             probs[node] = total
         return probs
 
     # ------------------------------------------------------------------
-    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
-        """Return all combinations of parent values and their probabilities.
+    def cpd_rows(
+        self, var: str, parent_probs: Mapping[str, float] | None = None
+    ) -> List[Tuple[Tuple[bool, ...], float, float]]:
+        """Return combinations of parent values, CPDs and their probabilities.
 
         The returned list represents the rows of the node's conditional
         probability table.  All ``2^n`` combinations of parent values are
-        included.  Probabilities not explicitly provided when the node was
-        added default to ``0.0`` so that the table is always complete.
+        included.  Each row is a ``(combo, p_true, p_combo)`` tuple where
+        ``p_true`` is ``P(var=True | combo)`` and ``p_combo`` is the
+        probability of the parent combination itself.  Missing entries in
+        the conditional probability table default to ``0.0`` ensuring the
+        table is always complete.
         """
 
         parents = self.parents.get(var, [])
+        if parent_probs is None:
+            parent_probs = self.marginal_probabilities()
         if not parents:
             prob = float(self.cpds.get(var, 0.0))
-            return [((), prob)]
+            return [((), prob, 1.0)]
         cpds = self.cpds.get(var, {})
-        rows: List[Tuple[Tuple[bool, ...], float]] = []
+        rows: List[Tuple[Tuple[bool, ...], float, float]] = []
         for combo in product([False, True], repeat=len(parents)):
-            rows.append((combo, float(cpds.get(combo, 0.0))))
+            p_true = float(cpds.get(combo, 0.0))
+            weight = 1.0
+            for parent, val in zip(parents, combo):
+                p_parent = parent_probs.get(parent, 0.0)
+                weight *= p_parent if val else 1.0 - p_parent
+            rows.append((combo, p_true, weight))
         return rows
 
 

@@ -57,6 +57,15 @@ def test_truth_table_auto_fill():
     assert rows[0][0] == (False,)
     assert rows[0][1] == pytest.approx(0.0)
 
+
+def test_cpd_rows_include_parent_probabilities():
+    cbn = CausalBayesianNetwork()
+    cbn.add_node("Rain", cpd=0.3)
+    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    rows = cbn.cpd_rows("WetGround")
+    assert rows[0][2] == pytest.approx(0.7, rel=1e-3)
+    assert rows[1][2] == pytest.approx(0.3, rel=1e-3)
+
 def test_marginal_probability_propagation():
     cbn = CausalBayesianNetwork()
     cbn.add_node("Rain", cpd=0.3)

@@ -130,11 +130,11 @@ def _setup_window():
             parents = self.parents.get(name, [])
             if not parents:
                 prob = float(self.cpds.get(name, 0.0))
-                return [((), prob)]
+                return [((), prob, 1.0)]
             cpds = self.cpds.get(name, {})
             rows = []
             for combo in product([False, True], repeat=len(parents)):
-                rows.append((combo, float(cpds.get(combo, 0.0))))
+                rows.append((combo, float(cpds.get(combo, 0.0)), 0.0))
             return rows
 
     doc = types.SimpleNamespace(network=Net(), positions={})
@@ -203,5 +203,5 @@ def test_node_colors_by_type():
     win.drawing_helper._fill_gradient_circle = capture
     win._draw_node("T", 0, 0, "trigger")
     win._draw_node("I", 0, 0, "insufficiency")
-    assert colors[0] == "lightgreen"
+    assert colors[0] == "lightblue"
     assert colors[1] == "lightyellow"
