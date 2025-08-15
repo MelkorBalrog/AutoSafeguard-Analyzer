@@ -1,9 +1,27 @@
 {
+  /*
+    Configuration format overview:
+    - "ai_nodes": ["Type", ...] – node types available in the Safety & AI toolbox
+    - "ai_relations": ["Label", ...] – relation labels treated as Safety & AI links
+    - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
+    - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
+    - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types
+    - "relationship_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
+    - "node_roles": { "Node Type": "subject|action|condition|constraint|object" } – default requirement role per node type
+    - "safety_ai_relation_rules": { "Relation": { "Source": ["Target", ...] } } – allowed Safety & AI relationships
+    - "connection_rules": { "Diagram": { "Connection": { "Source": ["Target", ...] } } } – per-diagram connection validation rules
+    - "node_connection_limits": { "Node Type": max_connections } – maximum number of outgoing connections
+    - "guard_nodes": ["Node Type", ...] – nodes that require guard expressions on outgoing flows
+  */
+
+  // Types shown in the Safety & AI lifecycle toolbox
   "ai_nodes": [
     "Database",
     "ANN",
     "Data acquisition"
   ],
+
+  // Relation labels treated as Safety & AI links
   "ai_relations": [
     "Annotation",
     "Synthesis",
@@ -18,12 +36,16 @@
     "Ingestion",
     "Model evaluation"
   ],
+
+  // Diagram types considered part of the generic "Architecture Diagram" work product
   "arch_diagram_types": [
     "Use Case Diagram",
     "Activity Diagram",
     "Block Diagram",
     "Internal Block Diagram"
   ],
+
+  // Node types available in the governance toolbox
   "governance_node_types": [
     "Action",
     "Initial",
@@ -34,12 +56,17 @@
     "Work Product",
     "Lifecycle Phase"
   ],
+
+  // FMEDA/Fault tree gate node types
   "gate_node_types": [
     "GATE",
     "RIGOR LEVEL",
     "TOP EVENT",
     "FUNCTIONAL INSUFFICIENCY"
   ],
+
+  // Natural language mapping for relationship labels
+  // Format: "label": {"action": "verb", "subject": "default subject", "constraint": true|false }
   "relationship_rules": {
     "performs": {"action": "perform"},
     "executes": {"action": "execute"},
@@ -58,6 +85,9 @@
     "ai re-training": {"action": "retrain", "subject": "Engineering team"},
     "curation": {"action": "curate", "subject": "Engineering team"}
   },
+
+  // Default requirement role per node type
+  // Format: "Node Type": "subject|action|condition|constraint|object"
   "node_roles": {
     "Role": "subject",
     "Actor": "subject",
@@ -83,6 +113,9 @@
     "Metric": "constraint",
     "KPI": "constraint"
   },
+
+  // Allowed Safety & AI relationships between node types
+  // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
     "Acquisition": {"Data acquisition": ["Database"]},
     "Field data collection": {"Data acquisition": ["Database"]},
@@ -96,5 +129,61 @@
     "Model evaluation": {"ANN": ["Database"]},
     "Curation": {"Database": ["Database"]},
     "Ingestion": {"Database": ["Database"]}
-  }
+  },
+
+  // Connection validation rules per diagram type and connection kind
+  // Format: "Diagram Type": {"Connection Kind": {"Source": ["Allowed Target", ...] }}
+  "connection_rules": {
+    "Use Case Diagram": {
+      "Association": {"Actor": ["Use Case"], "Use Case": ["Actor"]},
+      "Include": {"Use Case": ["Use Case"]},
+      "Extend": {"Use Case": ["Use Case"]},
+      "Generalize": {"Actor": ["Actor"], "Use Case": ["Use Case"]},
+      "Communication Path": {"Actor": ["Actor"]}
+    },
+    "Block Diagram": {
+      "Association": {"Block": ["Block"]},
+      "Generalization": {"Block": ["Block"]},
+      "Aggregation": {"Block": ["Block"]},
+      "Composite Aggregation": {"Block": ["Block"]}
+    },
+    "Internal Block Diagram": {
+      "Connector": {"Part": ["Part", "Port"], "Port": ["Part", "Port"]}
+    },
+    "Activity Diagram": {
+      "Flow": {
+        "Initial": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join"],
+        "Action": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
+        "CallBehaviorAction": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
+        "Decision": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
+        "Merge": ["Action", "CallBehaviorAction", "Decision", "Fork", "Join"],
+        "Fork": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join"],
+        "Join": ["Action", "CallBehaviorAction", "Decision", "Merge"],
+        "Final": []
+      }
+    },
+    "Governance Diagram": {
+      "Flow": {
+        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
+        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
+        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
+        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
+        "Final": []
+      }
+    }
+  },
+
+  // Maximum number of connections allowed per node type
+  // Format: "Node Type": max_connections
+  "node_connection_limits": {
+    "Decision": 4,
+    "Merge": 4
+  },
+
+  // Node types that require guards on outgoing flows
+  // Format: ["Node Type", ...]
+  "guard_nodes": ["Decision"]
 }

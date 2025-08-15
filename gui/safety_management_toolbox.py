@@ -259,6 +259,12 @@ class SafetyManagementWindow(tk.Frame):
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
+        if phases:
+            self.phase_menu.add_separator()
+        self.phase_menu.add_command(
+            label="Lifecycle",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def generate_phase_requirements(self, phase: str) -> None:
         diag_names = sorted(self.toolbox.diagrams_for_module(phase))

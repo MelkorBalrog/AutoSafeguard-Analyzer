@@ -45,6 +45,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
         def add_separator(self):
             self.items.append(("-", None))
 
+
     app.phase_req_menu = DummyMenu()
     req_menu = DummyMenu()
     FaultTreeApp._add_lifecycle_requirements_menu(app, req_menu)
@@ -53,7 +54,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
     labels = [label for label, _ in app.phase_req_menu.items]
     assert "Phase1" in labels and "Lifecycle" not in labels
     for label, cmd in app.phase_req_menu.items:
-        if label == "Phase1":
+        if label == "Phase1" or label == "Lifecycle":
             cmd()
     req_labels = [label for label, _ in req_menu.items]
     assert "Lifecycle Requirements" in req_labels

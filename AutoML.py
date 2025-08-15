@@ -225,10 +225,12 @@ References
 import re
 import math
 import sys
+import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger
 from gui.tooltip import ToolTip
+from gui.style_manager import StyleManager
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -251,13 +253,14 @@ from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from dataclasses import asdict
+from pathlib import Path
 from analysis.mechanisms import (
     DiagnosticMechanism,
     MechanismLibrary,
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-import json
+from config_loader import load_json_with_comments
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -520,9 +523,15 @@ VALID_SUBTYPES = {
 
 # Node types treated as gates when rendering and editing
 _CONFIG_PATH = Path(__file__).resolve().parent / "diagram_rules.json"
-with _CONFIG_PATH.open() as f:
-    _CONFIG = json.load(f)
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+
+
+def _reload_local_config() -> None:
+    """Reload gate node types from the external configuration file."""
+    global _CONFIG, GATE_NODE_TYPES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 ##########################################
 # Global Unique ID Counter for Nodes
@@ -2361,6 +2370,14 @@ class FaultTreeApp:
         view_menu.add_command(label="Zoom In", command=self.zoom_in, accelerator="Ctrl++")
         view_menu.add_command(label="Zoom Out", command=self.zoom_out, accelerator="Ctrl+-")
         view_menu.add_command(label="Style Editor", command=self.open_style_editor)
+        view_menu.add_command(
+            label="Light Mode",
+            command=lambda: self.apply_style('pastel.xml'),
+        )
+        view_menu.add_command(
+            label="Dark Mode",
+            command=lambda: self.apply_style('dark.xml'),
+        )
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
@@ -2699,6 +2716,7 @@ class FaultTreeApp:
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Fault Prioritization": self.open_fault_prioritization_window,
             "Cause & Effect Diagram": self.show_cause_effect_chain,
+            "Diagram Rule Editor": self.open_diagram_rules_toolbox,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2711,6 +2729,9 @@ class FaultTreeApp:
             "Safety Analysis": [
                 "Fault Prioritization",
                 "Cause & Effect Diagram",
+            ],
+            "Configuration": [
+                "Diagram Rule Editor",
             ],
         }
         self.tool_to_work_product = {}
@@ -4310,7 +4331,7 @@ class FaultTreeApp:
         # Create a temporary Toplevel window and canvas
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
         
         # Create and redraw the page diagram
@@ -4355,7 +4376,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         try:
@@ -4581,7 +4602,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -4846,7 +4867,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5111,7 +5132,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5376,7 +5397,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5641,7 +5662,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5906,7 +5927,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6160,7 +6181,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6414,7 +6435,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6668,7 +6689,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -8593,7 +8614,7 @@ class FaultTreeApp:
     def capture_event_diagram(self, event_node):
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=StyleManager.get_instance().canvas_bg, width=2000, height=2000)
         canvas.pack()
         self.draw_subtree_with_filter(canvas, event_node, self.get_all_nodes(event_node))
         canvas.delete("grid")
@@ -14620,11 +14641,18 @@ class FaultTreeApp:
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
         if not toolbox:
             return
-        for phase in sorted(toolbox.list_modules()):
+        phases = sorted(toolbox.list_modules())
+        for phase in phases:
             self.phase_req_menu.add_command(
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
+        if phases:
+            self.phase_req_menu.add_separator()
+        self.phase_req_menu.add_command(
+            label="Lifecycle",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
@@ -15074,7 +15102,7 @@ class FaultTreeApp:
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        canvas = tk.Canvas(diagram_frame, bg="white")
+        canvas = tk.Canvas(diagram_frame, bg=StyleManager.get_instance().canvas_bg)
         cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
         cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
         canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
@@ -16728,12 +16756,45 @@ class FaultTreeApp:
         if callable(refresh):
             refresh()
 
+    def open_diagram_rules_toolbox(self):
+        """Open editor for diagram rule configuration."""
+        tab_exists = (
+            hasattr(self, "_diagram_rules_tab") and self._diagram_rules_tab.winfo_exists()
+        )
+        if tab_exists:
+            self.doc_nb.select(self._diagram_rules_tab)
+            parent = self._diagram_rules_tab
+        else:
+            parent = self._diagram_rules_tab = self._new_tab("Diagram Rules")
+
+        from gui.diagram_rules_toolbox import DiagramRulesEditor
+
+        self.diagram_rules_editor = DiagramRulesEditor(parent, self, _CONFIG_PATH)
+        self.diagram_rules_editor.pack(fill=tk.BOTH, expand=True)
+
+    def reload_config(self) -> None:
+        """Reload diagram rule configuration across modules."""
+        _reload_local_config()
+        from gui import architecture, review_toolbox
+        from analysis import fmeda_utils, governance
+
+        for mod in (architecture, review_toolbox, fmeda_utils, governance):
+            if hasattr(mod, "reload_config"):
+                mod.reload_config()
+
     def open_style_editor(self):
         """Open the diagram style editor window."""
         StyleEditor(self.root)
 
+    def apply_style(self, filename: str) -> None:
+        path = Path(__file__).resolve().parent / 'styles' / filename
+        StyleManager.get_instance().load_style(path)
+        self.root.event_generate('<<StyleChanged>>', when='tail')
+
     def refresh_styles(self, event=None):
         """Redraw all open diagram windows using current styles."""
+        if getattr(self, 'canvas', None):
+            self.canvas.config(bg=StyleManager.get_instance().canvas_bg)
         for tab in getattr(self, 'diagram_tabs', {}).values():
             for child in tab.winfo_children():
                 if hasattr(child, 'redraw'):
@@ -16766,7 +16827,7 @@ class FaultTreeApp:
         self.doc_nb.add(self.canvas_tab, text="FTA")
 
         self.canvas_frame = self.canvas_tab
-        self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+        self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
         self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -19018,7 +19079,7 @@ class FaultTreeApp:
         back_button = ttk.Button(header_frame, text="Go Back", command=self.go_back)
         back_button.grid(row=0, column=1, sticky="e", padx=5)
 
-        page_canvas = tk.Canvas(self.canvas_frame, bg="white")
+        page_canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
         page_canvas.grid(row=1, column=0, sticky="nsew")
         vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
         vbar.grid(row=1, column=1, sticky="ns")
@@ -19202,7 +19263,7 @@ class FaultTreeApp:
             for widget in self.canvas_frame.winfo_children():
                 widget.destroy()
             if prev is None:
-                self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+                self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
                 self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
                 self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
                 self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -19224,7 +19285,7 @@ class FaultTreeApp:
         else:
             for widget in self.canvas_frame.winfo_children():
                 widget.destroy()
-            self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+            self.canvas = tk.Canvas(self.canvas_frame, bg=StyleManager.get_instance().canvas_bg)
             self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
             self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
