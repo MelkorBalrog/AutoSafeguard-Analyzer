@@ -73,6 +73,26 @@ GOVERNANCE_NODE_TYPES = {
 }
 
 
+# Directed relationship rules for connections between Safety & AI elements.
+# Each entry maps a connection type to allowed source and target element
+# combinations. Rules are only enforced when both endpoints are Safety & AI
+# nodes.
+SAFETY_AI_RELATION_RULES: dict[str, dict[str, set[str]]] = {
+    "Acquisition": {"Data acquisition": {"Database"}},
+    "Field data collection": {"Data acquisition": {"Database"}},
+    "Field risk evaluation": {"Data acquisition": {"Database"}},
+    "Annotation": {"ANN": {"Database"}},
+    "Synthesis": {"ANN": {"Database"}},
+    "Augmentation": {"ANN": {"Database"}},
+    "Labeling": {"ANN": {"Database"}},
+    "AI training": {"Database": {"ANN"}},
+    "AI re-training": {"Database": {"ANN"}},
+    "Model evaluation": {"ANN": {"Database"}},
+    "Curation": {"Database": {"Database"}},
+    "Ingestion": {"Database": {"Database"}},
+}
+
+
 def _work_product_name(diag_type: str) -> str:
     """Return work product name for a given diagram type."""
     return "Architecture Diagram" if diag_type in ARCH_DIAGRAM_TYPES else diag_type
@@ -3338,6 +3358,18 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Safety & AI relationships must connect Safety & AI and/or Governance elements"
                     )
+                rule = SAFETY_AI_RELATION_RULES.get(conn_type)
+                if (
+                    rule
+                    and src.obj_type in SAFETY_AI_NODE_TYPES
+                    and dst.obj_type in SAFETY_AI_NODE_TYPES
+                ):
+                    targets = rule.get(src.obj_type, set())
+                    if dst.obj_type not in targets:
+                        return (
+                            False,
+                            f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed",
+                        )
             elif conn_type in (
                 "Used By",
                 "Used after Review",
