@@ -95,6 +95,11 @@ class GeneratedRequirement:
     obj: str | None
     constraint: str | None
     req_type: str
+    cnd: str | None = None  # Condition
+    sub: str | None = None  # Subject
+    act: str | None = None  # Action
+    obj: str | None = None  # Object
+    con: str | None = None  # Constraint
 
     @property
     def text(self) -> str:
@@ -251,7 +256,6 @@ class GovernanceDiagram:
             kind = data.get("kind")
             label = data.get("label")
             conn_type = data.get("conn_type")
-
             subject = src
             obj: str | None = dst
             constraint: str | None = None
@@ -325,6 +329,10 @@ class GovernanceDiagram:
         for obj in getattr(src_diagram, "objects", []):
             odict = obj if isinstance(obj, dict) else obj.__dict__
             obj_type = odict.get("obj_type")
+            obj_id = odict.get("obj_id")
+            if obj_type == "Decision":
+                decision_sources[obj_id] = ""
+                continue
             elem_id = odict.get("element_id")
             name = ""
             if elem_id and elem_id in repo.elements:
@@ -347,6 +355,7 @@ class GovernanceDiagram:
             if src_name and dst_id in decision_sources:
                 decision_sources[dst_id] = src_name
 
+        # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):
             cdict = conn if isinstance(conn, dict) else conn.__dict__
             src_id = cdict.get("src")
@@ -391,7 +400,7 @@ class GovernanceDiagram:
                     if prev:
                         diagram.add_flow(prev, dst, cond)
             else:
-                src = id_to_name.get(src_id)
+                src = id_to_name.get(src_id) or decision_sources.get(src_id)
                 dst = id_to_name.get(dst_id)
                 if not src or not dst:
                     continue
