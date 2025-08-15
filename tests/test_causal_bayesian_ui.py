@@ -315,6 +315,32 @@ def test_click_adds_existing_malfunction_nodes():
     assert doc.positions["M2"][0] == expected_x
 
 
+def test_click_adds_existing_triggering_condition_nodes():
+    win, doc = _setup_window()
+    win.current_tool = "Existing Triggering Condition"
+    with mock.patch.object(
+        win, "_select_triggering_conditions", return_value=["TC1", "TC2"]
+    ):
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+    assert "TC1" in doc.network.nodes and "TC2" in doc.network.nodes
+    assert doc.types["TC1"] == doc.types["TC2"] == "trigger"
+    expected_x = (2 * win.NODE_RADIUS + 10)
+    assert doc.positions["TC2"][0] == expected_x
+
+
+def test_click_adds_existing_functional_insufficiency_nodes():
+    win, doc = _setup_window()
+    win.current_tool = "Existing Functional Insufficiency"
+    with mock.patch.object(
+        win, "_select_functional_insufficiencies", return_value=["FI1", "FI2"]
+    ):
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+    assert "FI1" in doc.network.nodes and "FI2" in doc.network.nodes
+    assert doc.types["FI1"] == doc.types["FI2"] == "insufficiency"
+    expected_x = (2 * win.NODE_RADIUS + 10)
+    assert doc.positions["FI2"][0] == expected_x
+
+
 def test_update_all_tables_refreshes_dependencies():
     win = object.__new__(CausalBayesianNetworkWindow)
     win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS

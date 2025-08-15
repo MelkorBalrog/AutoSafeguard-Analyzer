@@ -667,6 +667,48 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._update_all_tables()
 
     # ------------------------------------------------------------------
+    def _select_triggering_conditions(self) -> list[str]:
+        """Return existing triggering conditions chosen by the user."""
+        tcs = sorted(getattr(self.app, "triggering_conditions", []))
+        if not tcs:
+            messagebox.showinfo(
+                "No Triggering Conditions",
+                "No triggering conditions available.",
+                parent=self,
+            )
+            return []
+        prompt = ", ".join(tcs)
+        sel = simpledialog.askstring(
+            "Existing Triggering Conditions",
+            f"Names (comma separated):\n{prompt}",
+            parent=self,
+        )
+        if not sel:
+            return []
+        return [n.strip() for n in sel.split(",") if n.strip() in tcs]
+
+    # ------------------------------------------------------------------
+    def _select_functional_insufficiencies(self) -> list[str]:
+        """Return existing functional insufficiencies chosen by the user."""
+        fis = sorted(getattr(self.app, "functional_insufficiencies", []))
+        if not fis:
+            messagebox.showinfo(
+                "No Functional Insufficiencies",
+                "No functional insufficiencies available.",
+                parent=self,
+            )
+            return []
+        prompt = ", ".join(fis)
+        sel = simpledialog.askstring(
+            "Existing Functional Insufficiencies",
+            f"Names (comma separated):\n{prompt}",
+            parent=self,
+        )
+        if not sel:
+            return []
+        return [n.strip() for n in sel.split(",") if n.strip() in fis]
+
+    # ------------------------------------------------------------------
     def _select_malfunctions(self) -> list[str]:
         """Return a list of existing malfunctions chosen by the user."""
         mals = sorted(getattr(self.app, "malfunctions", []))
