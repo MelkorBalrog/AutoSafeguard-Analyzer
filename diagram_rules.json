@@ -34,7 +34,9 @@
     "AI re-training",
     "Curation",
     "Ingestion",
-    "Model evaluation"
+    "Model evaluation",
+    "Tune",
+    "Hyperparameter Validation"
   ],
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
@@ -83,7 +85,12 @@
     "constrained by": {"action": "comply with", "constraint": true},
     "ai training": {"action": "train", "subject": "Engineering team"},
     "ai re-training": {"action": "retrain", "subject": "Engineering team"},
-    "curation": {"action": "curate", "subject": "Engineering team"}
+    "curation": {"action": "curate", "subject": "Engineering team"},
+    "tune": {"action": "tune", "subject": "Engineering team"},
+    "hyperparameter validation": {
+      "action": "validate hyperparameters",
+      "subject": "Engineering team"
+    }
   },
 
   // Default requirement role per node type

@@ -3179,6 +3179,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         ):
             if src == dst:
                 return False, "Cannot connect an element to itself"
@@ -3315,6 +3317,8 @@ class SysMLDiagramWindow(tk.Frame):
                 "Curation",
                 "Ingestion",
                 "Model evaluation",
+                "Tune",
+                "Hyperparameter Validation",
             ):
                 allowed = SAFETY_AI_NODE_TYPES | GOVERNANCE_NODE_TYPES
                 if not (
@@ -3479,6 +3483,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         )
         prefer = self.current_tool in conn_tools
         t = self.current_tool
@@ -3646,6 +3652,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         ):
             if self.start is None:
                 if obj:
@@ -4033,6 +4041,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -4301,6 +4311,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         ):
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -4345,6 +4357,8 @@ class SysMLDiagramWindow(tk.Frame):
                         "Curation",
                         "Ingestion",
                         "Model evaluation",
+                        "Tune",
+                        "Hyperparameter Validation",
                     ):
                         arrow_default = "forward"
                     else:
@@ -9693,6 +9707,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Curation",
             "Ingestion",
             "Model evaluation",
+            "Tune",
+            "Hyperparameter Validation",
         ]
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
