@@ -289,6 +289,74 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertTrue(valid)
 
+    def test_scenario_library_odd_used_relationships_invalid(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        rels = ["Used By", "Used after Review", "Used after Approval"]
+        for rel in rels:
+            o1 = SysMLObject(
+                1,
+                "Work Product",
+                0,
+                0,
+                element_id=e1.elem_id,
+                properties={"name": "Scenario Library"},
+            )
+            o2 = SysMLObject(
+                2,
+                "Work Product",
+                0,
+                100,
+                element_id=e2.elem_id,
+                properties={"name": "ODD"},
+            )
+            valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
+            self.assertFalse(valid)
+
+    def test_analysis_targets_inputs_for_odd_scenario_library(self):
+        repo = self.repo
+        toolbox = SafetyManagementToolbox()
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "ODD"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "Scenario Library"},
+        )
+        diag.objects = [o1.__dict__, o2.__dict__]
+        win = self._create_window("Used By", o1, o2, diag)
+        event1 = types.SimpleNamespace(x=0, y=0, state=0)
+        GovernanceDiagramWindow.on_left_press(win, event1)
+        event2 = types.SimpleNamespace(x=0, y=100, state=0)
+        GovernanceDiagramWindow.on_left_press(win, event2)
+        diag.connections = [c.__dict__ for c in win.connections]
+        toolbox.work_products = [
+            SafetyWorkProduct("Gov", "ODD", ""),
+            SafetyWorkProduct("Gov", "Scenario Library", ""),
+        ]
+        self.assertEqual(toolbox.analysis_targets("ODD"), {"Scenario Library"})
+        self.assertEqual(toolbox.analysis_inputs("Scenario Library"), {"ODD"})
+
     def test_used_relationship_requires_dependency(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")
@@ -305,7 +373,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 0,
                 0,
                 element_id=e1.elem_id,
-                properties={"name": "Mission Profile"},
+                properties={"name": "STPA"},
             )
             o2 = SysMLObject(
                 2,
@@ -313,7 +381,7 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
                 0,
                 100,
                 element_id=e2.elem_id,
-                properties={"name": "STPA"},
+                properties={"name": "HARA"},
             )
             valid, _ = GovernanceDiagramWindow.validate_connection(win, o1, o2, rel)
             self.assertFalse(valid)
