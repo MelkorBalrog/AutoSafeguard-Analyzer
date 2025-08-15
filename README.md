@@ -77,8 +77,8 @@ natural language statement so governance models can be exported as concise
 requirements lists.
 
 When editing a governance diagram in the Safety & Security Management tool,
-choose **Generate Governance Requirements** from the Requirements menu to
-export these statements into a new tab within the working area.
+use the **Requirements** button to generate these statements and view them in
+a new tab within the working area.
 
 For example, the snippet below creates a tiny governance diagram and prints
 its derived requirements:
