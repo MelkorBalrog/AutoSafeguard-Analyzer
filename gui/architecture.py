@@ -17,6 +17,7 @@ from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
+from gui.drawing_helper import fta_drawing_helper
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -3250,6 +3251,25 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in (
+                "Annotation",
+                "Synthesis",
+                "Augmentation",
+                "Acquisition",
+                "Labeling",
+                "Field risk evaluation",
+                "Field data collection",
+                "AI training",
+                "AI re-training",
+                "Curation",
+                "Ingestion",
+                "Model evaluation",
+            ):
+                allowed_types = {"Database", "ANN", "Data acquisition"}
+                if src.obj_type not in allowed_types or dst.obj_type not in allowed_types:
+                    return False, (
+                        "Safety & AI relationships must connect Safety & AI elements"
+                    )
+            elif conn_type in (
                 "Used By",
                 "Used after Review",
                 "Used after Approval",
@@ -6042,6 +6062,13 @@ class SysMLDiagramWindow(tk.Frame):
         h = obj.height * self.zoom / 2
         color = StyleManager.get_instance().get_color(obj.obj_type)
         outline = "black"
+        if color == "#FFFFFF":
+            if obj.obj_type == "Database":
+                color = "#cfe2f3"
+            elif obj.obj_type == "ANN":
+                color = "#d5e8d4"
+            elif obj.obj_type == "Data acquisition":
+                color = "#ffe6cc"
         if obj.obj_type == "Actor":
             sx = obj.width / 80.0 * self.zoom
             sy = obj.height / 40.0 * self.zoom
@@ -6526,27 +6553,29 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj.obj_type == "Database":
             top = y - h
             bottom = y + h
-            self.canvas.create_oval(
-                x - w,
-                top - 10 * self.zoom,
-                x + w,
-                top + 10 * self.zoom,
-                fill=color,
-                outline=outline,
-            )
+            oval_h = 10 * self.zoom
+            self._draw_gradient_rect(x - w, top, x + w, bottom, color, obj.obj_id)
             self.canvas.create_rectangle(
                 x - w,
                 top,
                 x + w,
                 bottom,
+                outline=outline,
+                fill="",
+            )
+            self.canvas.create_oval(
+                x - w,
+                top - oval_h,
+                x + w,
+                top + oval_h,
                 fill=color,
                 outline=outline,
             )
             self.canvas.create_oval(
                 x - w,
-                bottom - 10 * self.zoom,
+                bottom - oval_h,
                 x + w,
-                bottom + 10 * self.zoom,
+                bottom + oval_h,
                 fill=color,
                 outline=outline,
             )
@@ -6568,7 +6597,15 @@ class SysMLDiagramWindow(tk.Frame):
                     cx = xs
                     cy = ys + i * spacing_y
                     r = 5 * self.zoom
-                    self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill=color, outline=outline)
+                    fta_drawing_helper._fill_gradient_circle(self.canvas, cx, cy, r, color)
+                    self.canvas.create_oval(
+                        cx - r,
+                        cy - r,
+                        cx + r,
+                        cy + r,
+                        outline=outline,
+                        fill="",
+                    )
                     positions.append((cx, cy))
                 neuron_positions.append(positions)
                 layer_x += spacing_x
@@ -6581,7 +6618,8 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj.obj_type == "Data acquisition":
             left, top = x - w, y - h
             right, bottom = x + w, y + h
-            self.canvas.create_rectangle(left, top, right, bottom, fill=color, outline=outline)
+            self._draw_gradient_rect(left, top, right, bottom, color, obj.obj_id)
+            self.canvas.create_rectangle(left, top, right, bottom, outline=outline, fill="")
             compartments = obj.properties.get("compartments", ";;").split(";")
             n = max(len(compartments), 1)
             step = (bottom - top) / n
