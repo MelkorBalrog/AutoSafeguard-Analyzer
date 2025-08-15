@@ -4102,7 +4102,13 @@ class RequirementsExplorerWindow(tk.Frame):
         rtype = self.type_var.get().strip()
         asil = self.asil_var.get().strip()
         status = self.status_var.get().strip()
+        phase = None
+        if self.app and getattr(self.app, "safety_mgmt_toolbox", None):
+            phase = getattr(self.app.safety_mgmt_toolbox, "active_module", None)
         for rid, req in global_requirements.items():
+            req_phase = req.get("phase")
+            if phase and req_phase not in (phase, None):
+                continue
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue
             if rtype and req.get("req_type") != rtype:
