@@ -58,7 +58,20 @@ class CausalBayesianNetwork:
         if self.parents[name]:
             if not isinstance(cpd, Mapping):
                 raise TypeError("cpd must be a mapping for non-root nodes")
-            self.cpds[name] = dict(cpd)
+            # Normalize keys so they are always tuples of parent values.
+            normalised: Dict[Tuple[bool, ...], float] = {}
+            for key, prob in cpd.items():
+                # ``key`` may be provided as a single bool, a list of bools or a
+                # proper tuple.  Convert everything to a tuple of booleans so that
+                # internal lookups are consistent.
+                if isinstance(key, tuple):
+                    combo = key
+                elif isinstance(key, list):
+                    combo = tuple(key)
+                else:
+                    combo = (key,)
+                normalised[combo] = float(prob)
+            self.cpds[name] = normalised
         else:
             self.cpds[name] = float(cpd)
 
