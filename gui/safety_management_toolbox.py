@@ -172,13 +172,12 @@ class SafetyManagementWindow(tk.Frame):
         self.current_window.pack(fill=tk.BOTH, expand=True)
 
     # ------------------------------------------------------------------
-    def _add_requirement(self, text: str) -> str:
+    def _add_requirement(self, text: str, req_type: str = "organizational") -> str:
         """Create a new requirement with a unique identifier."""
         idx = 1
         while f"R{idx}" in global_requirements:
             idx += 1
         rid = f"R{idx}"
-        req_type = "organizational"
         app = getattr(self, "app", None)
         if app and hasattr(app, "add_new_requirement"):
             app.add_new_requirement(rid, req_type, text)
@@ -228,7 +227,7 @@ class SafetyManagementWindow(tk.Frame):
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
-        ids = [self._add_requirement(text) for text in reqs]
+        ids = [self._add_requirement(text, rtype) for text, rtype in reqs]
         self._display_requirements(f"{name} Requirements", ids)
 
     def _refresh_phase_menu(self) -> None:
@@ -259,8 +258,8 @@ class SafetyManagementWindow(tk.Frame):
                     f"Unable to generate requirements for '{name}': {exc}",
                 )
                 return
-            for text in reqs:
-                ids.append(self._add_requirement(text))
+            for text, rtype in reqs:
+                ids.append(self._add_requirement(text, rtype))
         if not ids:
             messagebox.showinfo(
                 "Requirements",
