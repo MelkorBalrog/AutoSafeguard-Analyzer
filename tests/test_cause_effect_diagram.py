@@ -89,6 +89,10 @@ def _norm(vec):
 numpy_stub = types.ModuleType("numpy")
 numpy_stub.array = _array
 numpy_stub.linalg = types.SimpleNamespace(norm=_norm)
+# Provide minimal helpers so other tests using :mod:`pytest` don't fail when
+# ``numpy`` is present in :data:`sys.modules`.
+numpy_stub.isscalar = lambda x: isinstance(x, (int, float, bool))
+numpy_stub.bool_ = bool
 sys.modules.setdefault("numpy", numpy_stub)
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 

@@ -258,6 +258,7 @@ from analysis.mechanisms import (
     PAS_8800_MECHANISMS,
 )
 import json
+from collections.abc import Mapping
 import csv
 try:
     from openpyxl import load_workbook
@@ -17705,10 +17706,20 @@ class FaultTreeApp:
                     "name": doc.name,
                     "nodes": doc.network.nodes,
                     "parents": doc.network.parents,
-                    "cpds": doc.network.cpds,
+                    "cpds": {
+                        var: (
+                            cpd
+                            if not isinstance(cpd, Mapping)
+                            else {
+                                "".join("1" if b else "0" for b in key): val
+                                for key, val in cpd.items()
+                            }
+                        )
+                        for var, cpd in doc.network.cpds.items()
+                    },
                     "positions": doc.positions,
                 }
-                for doc in self.cbn_docs
+                for doc in getattr(self, "cbn_docs", [])
             ],
             "scenario_libraries": copy.deepcopy(self.scenario_libraries),
             "odd_libraries": copy.deepcopy(self.odd_libraries),
@@ -18173,7 +18184,17 @@ class FaultTreeApp:
             net = CausalBayesianNetwork()
             net.nodes = d.get("nodes", [])
             net.parents = {k: list(v) for k, v in d.get("parents", {}).items()}
-            net.cpds = {k: v for k, v in d.get("cpds", {}).items()}
+            raw_cpds = d.get("cpds", {})
+            parsed_cpds = {}
+            for var, cpd in raw_cpds.items():
+                if isinstance(cpd, Mapping):
+                    parsed_cpds[var] = {
+                        tuple(ch == "1" for ch in key): val
+                        for key, val in cpd.items()
+                    }
+                else:
+                    parsed_cpds[var] = cpd
+            net.cpds = parsed_cpds
             name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
             positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
             doc = CausalBayesianNetworkDoc(name, network=net, positions=positions)
