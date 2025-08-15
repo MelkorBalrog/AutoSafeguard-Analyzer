@@ -2,7 +2,7 @@
   /*
     Configuration format overview:
     - "ai_nodes": ["Type", ...] – node types available in the Safety & AI toolbox
-    - "ai_relations": ["Label", ...] – relation labels treated as Safety & AI links
+    - "ai_relations": ["Label", ...] – relation labels available in the Safety & AI toolbox and treated as Safety & AI links
     - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
     - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
     - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types

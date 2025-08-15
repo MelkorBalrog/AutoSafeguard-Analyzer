@@ -156,6 +156,7 @@ class GovernanceDiagram:
         condition: str | None = None,
         label: str | None = None,
         conn_type: str | None = None,
+        from_repo: bool = False,
     ) -> None:
         """Add a non-flow relationship between two existing tasks.
 
@@ -180,6 +181,7 @@ class GovernanceDiagram:
             "condition": condition,
             "label": label,
             "conn_type": conn_type,
+            "from_repo": from_repo,
         }
 
     def tasks(self) -> List[str]:
@@ -280,6 +282,8 @@ class GovernanceDiagram:
                 explicit_subject = rule.get("subject")
                 if explicit_subject:
                     subject = str(explicit_subject)
+                    if origin is None and data.get("from_repo"):
+                        origin = src
                 if rule.get("constraint"):
                     constraint = dst
                     obj = None
@@ -413,10 +417,15 @@ class GovernanceDiagram:
                     continue
                 cond = cond_prop or guard_text
                 if cond is None and name is not None:
-                    diagram.add_relationship(src, dst, condition=name, conn_type=conn_type)
+                    diagram.add_relationship(src, dst, condition=name, conn_type=conn_type, from_repo=True)
                 else:
                     diagram.add_relationship(
-                        src, dst, condition=cond, label=name, conn_type=conn_type
+                        src,
+                        dst,
+                        condition=cond,
+                        label=name,
+                        conn_type=conn_type,
+                        from_repo=True,
                     )
 
         return diagram
