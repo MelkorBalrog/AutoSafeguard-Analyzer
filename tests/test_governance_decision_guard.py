@@ -31,7 +31,8 @@ class GovernanceDecisionGuardTests(unittest.TestCase):
         self.assertIn(("A", "B"), gdiag.flows())
         self.assertEqual(gdiag.edge_data[("A", "B")]["condition"], "g1")
         reqs = gdiag.generate_requirements()
-        self.assertIn("When g1, task 'A' shall precede task 'B'.", reqs)
+        texts = [r.text for r in reqs]
+        self.assertIn("If g1, A shall precede 'B'.", texts)
 
 
 if __name__ == "__main__":
