@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
+from functools import partial
+
 from analysis import SafetyManagementToolbox
 from analysis.governance import GovernanceDiagram
 from analysis.models import (
@@ -255,9 +257,15 @@ class SafetyManagementWindow(tk.Frame):
         self.phase_menu.delete(0, tk.END)
         phases = sorted(self.toolbox.list_modules())
         for phase in phases:
+            # Use ``functools.partial`` to bind the current ``phase`` to the
+            # callback.  Using ``lambda`` without binding would result in all
+            # menu entries invoking the handler with the last value from the
+            # loop.  ``partial`` creates a function with ``phase`` fixed to the
+            # desired value so selecting a phase generates the correct
+            # requirements.
             self.phase_menu.add_command(
                 label=phase,
-                command=lambda p=phase: self.generate_phase_requirements(p),
+                command=partial(self.generate_phase_requirements, phase),
             )
         if phases:
             self.phase_menu.add_separator()
