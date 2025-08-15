@@ -143,6 +143,11 @@ class SafetyManagementWindow(tk.Frame):
                     pass
 
         self.refresh_diagrams()
+        if app and hasattr(app, "refresh_all"):
+            try:
+                app.refresh_all()
+            except Exception:
+                pass
 
     def new_diagram(self):
         messagebox.showerror(

@@ -2377,20 +2377,28 @@ class FaultTreeApp:
         )
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
-        requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
+        requirements_menu.add_command(
+            label="Requirements Matrix", command=self.show_requirements_matrix
+        )
         requirements_menu.add_command(
             label="Requirements Editor",
             command=self.show_requirements_editor,
             state=tk.DISABLED,
         )
-        req_idx = requirements_menu.index("end")
-        for wp in REQUIREMENT_WORK_PRODUCTS:
-            self.work_product_menus.setdefault(wp, []).append(
-                (requirements_menu, req_idx)
-            )
+        editor_idx = requirements_menu.index("end")
         requirements_menu.add_command(
-            label="Requirements Explorer", command=self.show_requirements_explorer
+            label="Requirements Explorer",
+            command=self.show_requirements_explorer,
+            state=tk.DISABLED,
         )
+        explorer_idx = requirements_menu.index("end")
+        for wp in REQUIREMENT_WORK_PRODUCTS:
+            self.work_product_menus.setdefault(wp, []).extend(
+                [
+                    (requirements_menu, editor_idx),
+                    (requirements_menu, explorer_idx),
+                ]
+            )
         requirements_menu.add_command(
             label="Product Goals Matrix", command=self.show_safety_goals_matrix
         )
