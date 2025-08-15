@@ -35,7 +35,7 @@ class DiagramRulesEditor(tk.Frame):
 
         self.tree = ttk.Treeview(tree_frame, columns=("value",), show="tree headings")
         self.tree.heading("#0", text="Item")
-        self.tree.heading("value", text="Allowed Targets")
+        self.tree.heading("value", text="Details")
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.bind("<Double-1>", self._edit_item)
         self.tree.column("#0", width=200, stretch=True)
@@ -93,6 +93,40 @@ class DiagramRulesEditor(tk.Frame):
         for child in self.tree.get_children(ai_root):
             self.tree.item(child, open=True)
 
+        # Requirement generation rules
+        req_root = self.tree.insert(
+            "", "end", "requirement_rules", text="requirement_rules"
+        )
+        req_rules = self.data.get("requirement_rules", {})
+        if not req_rules:
+            self.tree.insert(req_root, "end", "no_req_rules", text="(no rules defined)")
+        for label, info in sorted(req_rules.items()):
+            parts = [info.get("action", "")]
+            subject = info.get("subject")
+            if subject:
+                parts.append(f"subject: {subject}")
+            if info.get("constraint"):
+                parts.append("constraint")
+            self.tree.insert(
+                req_root,
+                "end",
+                f"req|{label}",
+                text=label,
+                values=(", ".join(parts),),
+            )
+        self.tree.item(req_root, open=True)
+
+        # Node roles
+        role_root = self.tree.insert("", "end", "node_roles", text="node_roles")
+        roles = self.data.get("node_roles", {})
+        if not roles:
+            self.tree.insert(role_root, "end", "no_node_roles", text="(no roles defined)")
+        for node, role in sorted(roles.items()):
+            self.tree.insert(
+                role_root, "end", f"role|{node}", text=node, values=(role,)
+            )
+        self.tree.item(role_root, open=True)
+
     def _on_select(self, _event=None):
         item = self.tree.selection()
         if not item:
@@ -112,29 +146,89 @@ class DiagramRulesEditor(tk.Frame):
         if item.startswith("rule|"):
             _, diag, conn, src = item.split("|", 3)
             cur = self.data["connection_rules"][diag][conn][src]
-        elif item.startswith("sar|"):
-            _, rel, src = item.split("|", 2)
-            cur = self.data["safety_ai_relation_rules"][rel][src]
-        else:
-            return
-        initial = ", ".join(cur)
-        new_val = simpledialog.askstring(
-            "Edit Targets",
-            f"Allowed targets for {src}",
-            initialvalue=initial,
-            parent=self,
-        )
-        if new_val is None:
-            return
-        dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
-        if item.startswith("rule|"):
+            initial = ", ".join(cur)
+            new_val = simpledialog.askstring(
+                "Edit Targets",
+                f"Allowed targets for {src}",
+                initialvalue=initial,
+                parent=self,
+            )
+            if new_val is None:
+                return
+            dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
             self.data["connection_rules"][diag][conn][src] = dest_list
             self.tree.set(item, "value", ", ".join(dest_list))
             self._draw_rule(diag, conn, src)
-        else:
+        elif item.startswith("sar|"):
+            _, rel, src = item.split("|", 2)
+            cur = self.data["safety_ai_relation_rules"][rel][src]
+            initial = ", ".join(cur)
+            new_val = simpledialog.askstring(
+                "Edit Targets",
+                f"Allowed targets for {src}",
+                initialvalue=initial,
+                parent=self,
+            )
+            if new_val is None:
+                return
+            dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
             self.data["safety_ai_relation_rules"][rel][src] = dest_list
             self.tree.set(item, "value", ", ".join(dest_list))
             self._draw_rule(None, rel, src)
+        elif item.startswith("req|"):
+            _, label = item.split("|", 1)
+            rule = self.data.setdefault("requirement_rules", {}).get(label, {})
+            action = simpledialog.askstring(
+                "Edit Action",
+                f"Action for {label}",
+                initialvalue=rule.get("action", ""),
+                parent=self,
+            )
+            if action is None:
+                return
+            subject = simpledialog.askstring(
+                "Edit Subject",
+                f"Subject for {label} (optional)",
+                initialvalue=rule.get("subject", ""),
+                parent=self,
+            )
+            if subject is None:
+                return
+            constraint = simpledialog.askstring(
+                "Constraint",
+                f"Is {label} a constraint? (true/false)",
+                initialvalue=str(rule.get("constraint", False)).lower(),
+                parent=self,
+            )
+            if constraint is None:
+                return
+            new_rule = {"action": action.strip()}
+            if subject.strip():
+                new_rule["subject"] = subject.strip()
+            if constraint.strip().lower() in {"true", "1", "yes"}:
+                new_rule["constraint"] = True
+            self.data.setdefault("requirement_rules", {})[label] = new_rule
+            parts = [new_rule.get("action", "")]
+            if new_rule.get("subject"):
+                parts.append(f"subject: {new_rule['subject']}")
+            if new_rule.get("constraint"):
+                parts.append("constraint")
+            self.tree.set(item, "value", ", ".join(parts))
+        elif item.startswith("role|"):
+            _, node = item.split("|", 1)
+            cur = self.data.setdefault("node_roles", {}).get(node, "")
+            new_role = simpledialog.askstring(
+                "Edit Role",
+                f"Role for {node}",
+                initialvalue=cur,
+                parent=self,
+            )
+            if new_role is None:
+                return
+            self.data.setdefault("node_roles", {})[node] = new_role
+            self.tree.set(item, "value", new_role)
+        else:
+            return
 
     def _draw_rule(self, diagram, connection, source):
         self.canvas.delete("all")

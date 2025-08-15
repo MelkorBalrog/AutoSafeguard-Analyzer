@@ -57,23 +57,25 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
         if field in data:
             _ensure_list_of_strings(data[field], field)
 
-    if "relationship_rules" in data:
-        rr = data["relationship_rules"]
+    if "requirement_rules" in data or "relationship_rules" in data:
+        rr = data.get("requirement_rules", data.get("relationship_rules", {}))
         if not isinstance(rr, dict):
-            raise ValueError("relationship_rules must be an object")
+            raise ValueError("requirement_rules must be an object")
         for label, info in rr.items():
             if not isinstance(info, dict):
-                raise ValueError(f"relationship_rules[{label}] must be an object")
+                raise ValueError(f"requirement_rules[{label}] must be an object")
             action = info.get("action")
             if not isinstance(action, str):
-                raise ValueError(f"relationship_rules[{label}]['action'] must be a string")
+                raise ValueError(
+                    f"requirement_rules[{label}]['action'] must be a string"
+                )
             if "subject" in info and not isinstance(info["subject"], str):
                 raise ValueError(
-                    f"relationship_rules[{label}]['subject'] must be a string"
+                    f"requirement_rules[{label}]['subject'] must be a string"
                 )
             if "constraint" in info and not isinstance(info["constraint"], bool):
                 raise ValueError(
-                    f"relationship_rules[{label}]['constraint'] must be a boolean"
+                    f"requirement_rules[{label}]['constraint'] must be a boolean"
                 )
 
     if "node_roles" in data:
