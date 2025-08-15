@@ -3461,7 +3461,7 @@ class SysMLDiagramWindow(tk.Frame):
                 allowed = {
                     "Initial": {"Action", "Decision", "Merge", *ai_targets},
                     "Action": {"Action", "Decision", "Merge", "Final", *ai_targets},
-                    "Decision": {"Action", "Decision", "Merge", "Final", *ai_targets},
+                    "Decision": {"Action", "Decision", "Merge", "Final", "Lifecycle Phase", *ai_targets},
                     "Merge": {"Action", "Decision", "Merge", *ai_targets},
                     "Final": set(),
                 }
