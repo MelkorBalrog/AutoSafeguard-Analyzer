@@ -3219,6 +3219,12 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
+                if sname not in UNRESTRICTED_USAGE_SOURCES and (
+                    sname, dname
+                ) not in ALLOWED_USAGE:
+                    return False, (
+                        "No metamodel dependency between these work products"
+                    )
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
                     sname == "ODD" and dname == "Scenario Library"
                 ):
