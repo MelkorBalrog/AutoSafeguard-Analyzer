@@ -16761,8 +16761,14 @@ class FaultTreeApp:
         tab_exists = (
             hasattr(self, "_diagram_rules_tab") and self._diagram_rules_tab.winfo_exists()
         )
+        editor_exists = (
+            hasattr(self, "diagram_rules_editor")
+            and self.diagram_rules_editor.winfo_exists()
+        )
         if tab_exists:
             self.doc_nb.select(self._diagram_rules_tab)
+            if editor_exists:
+                return
             parent = self._diagram_rules_tab
         else:
             parent = self._diagram_rules_tab = self._new_tab("Diagram Rules")
