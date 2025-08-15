@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from analysis.causal_bayesian_network import CausalBayesianNetwork
 from gui.architecture import (
     _work_product_name,
 )
@@ -4156,4 +4157,96 @@ class RequirementsExplorerWindow(tk.Frame):
                         oname = obj.get("properties", {}).get("name", obj.get("obj_type"))
                         names.append(f"{dname}:{oname}")
         return sorted(set(names))
+
+
+class CausalBayesianNetworkWindow(tk.Frame):
+    """Minimal editor for Causal Bayesian Network analyses."""
+
+    def __init__(self, master, app):
+        super().__init__(master)
+        self.app = app
+        if isinstance(master, tk.Toplevel):
+            master.title("Causal Bayesian Network Analysis")
+        top = ttk.Frame(self)
+        top.pack(fill=tk.X)
+        ttk.Label(top, text="Analysis:").pack(side=tk.LEFT)
+        self.doc_var = tk.StringVar()
+        self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
+        self.doc_cb.pack(side=tk.LEFT, padx=2)
+        ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
+        ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
+        ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
+        self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
+        self.pack(fill=tk.BOTH, expand=True)
+        self.refresh_docs()
+
+    # ------------------------------------------------------------------
+    def refresh_docs(self) -> None:
+        names = [getattr(d, "name", "") for d in getattr(self.app, "cbn_docs", [])]
+        self.doc_cb.configure(values=names)
+        if names:
+            current = self.doc_var.get()
+            if current not in names:
+                self.doc_var.set(names[0])
+            self.select_doc()
+        else:
+            self.doc_var.set("")
+            self.app.active_cbn = None
+
+    # ------------------------------------------------------------------
+    def select_doc(self, *_):
+        name = self.doc_var.get()
+        for doc in getattr(self.app, "cbn_docs", []):
+            if getattr(doc, "name", "") == name:
+                self.app.active_cbn = doc
+                break
+
+    # ------------------------------------------------------------------
+    def new_doc(self) -> None:
+        name = simpledialog.askstring("New Analysis", "Name:", parent=self)
+        if not name:
+            return
+        doc = CausalBayesianNetwork()
+        doc.name = name
+        if not hasattr(self.app, "cbn_docs"):
+            self.app.cbn_docs = []
+        self.app.cbn_docs.append(doc)
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        if toolbox:
+            toolbox.register_created_work_product("Causal Bayesian Network Analysis", name)
+        self.refresh_docs()
+        self.doc_var.set(name)
+
+    # ------------------------------------------------------------------
+    def rename_doc(self) -> None:
+        old = self.doc_var.get()
+        if not old:
+            return
+        new = simpledialog.askstring("Rename Analysis", "Name:", initialvalue=old, parent=self)
+        if not new or new == old:
+            return
+        for doc in getattr(self.app, "cbn_docs", []):
+            if getattr(doc, "name", "") == old:
+                doc.name = new
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.rename_document("Causal Bayesian Network Analysis", old, new)
+                break
+        self.refresh_docs()
+        self.doc_var.set(new)
+
+    # ------------------------------------------------------------------
+    def delete_doc(self) -> None:
+        name = self.doc_var.get()
+        if not name:
+            return
+        docs = getattr(self.app, "cbn_docs", [])
+        for idx, doc in enumerate(docs):
+            if getattr(doc, "name", "") == name:
+                del docs[idx]
+                toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                if toolbox:
+                    toolbox.register_deleted_work_product("Causal Bayesian Network Analysis", name)
+                break
+        self.refresh_docs()
 
