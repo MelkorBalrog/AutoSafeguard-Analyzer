@@ -2678,6 +2678,7 @@ class FaultTreeApp:
             "Safety & Security Case Explorer": self.manage_safety_cases,
             "Safety Performance Indicators": self.show_safety_performance_indicators,
             "Fault Prioritization": self.open_fault_prioritization_window,
+            "Cause & Effect Chain": self.show_cause_effect_chain,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2689,6 +2690,7 @@ class FaultTreeApp:
             ],
             "Safety Analysis": [
                 "Fault Prioritization",
+                "Cause & Effect Chain",
             ],
         }
         self.tool_to_work_product = {}
@@ -2696,6 +2698,7 @@ class FaultTreeApp:
             tool_name = info[1]
             if tool_name:
                 self.tool_to_work_product.setdefault(tool_name, set()).add(name)
+        self.tool_to_work_product.setdefault("Cause & Effect Chain", set()).add("FTA")
         self.tool_listboxes: dict[str, tk.Listbox] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
