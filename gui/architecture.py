@@ -67,6 +67,32 @@ def _diag_matches_wp(diag_type: str, work_product: str) -> bool:
     return diag_type == work_product
 
 
+def stpa_tool_enabled(app) -> bool:
+    """Return True if STPA Analysis should be available for the diagram.
+
+    The STPA Analysis tool is only enabled when the active governance phase
+    declares a "Used" style relationship from an Architecture Diagram to the
+    STPA work product and any lifecycle conditions on that relationship are
+    satisfied.  In practice this means:
+
+    * "Used By" relations always enable the button.
+    * "Used after Review" requires the diagram to be reviewed or approved.
+    * "Used after Approval" requires the diagram to be approved.
+    * The relationship must be part of the active lifecycle phase if one is
+      selected in the safety management toolbox.
+    """
+
+    toolbox = getattr(app, "safety_mgmt_toolbox", None) or ACTIVE_TOOLBOX
+    if not toolbox:
+        return True
+    review = getattr(app, "current_review", None)
+    reviewed = getattr(review, "reviewed", False)
+    approved = getattr(review, "approved", False)
+    return "Architecture Diagram" in toolbox.analysis_inputs(
+        "STPA", reviewed=reviewed, approved=approved
+    )
+
+
 def _get_next_id() -> int:
     global _next_obj_id
     val = _next_obj_id
@@ -3219,6 +3245,12 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
+                if sname not in UNRESTRICTED_USAGE_SOURCES and (
+                    sname, dname
+                ) not in ALLOWED_USAGE:
+                    return False, (
+                        "No metamodel dependency between these work products"
+                    )
                 if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
                     sname == "ODD" and dname == "Scenario Library"
                 ):
@@ -9855,7 +9887,9 @@ class InternalBlockDiagramWindow(SysMLDiagramWindow):
 
 class ControlFlowDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
-        tools = ["Existing Element", "STPA Analysis"]
+        tools = ["Existing Element"]
+        if stpa_tool_enabled(app):
+            tools.append("STPA Analysis")
         rel_tools = ["Control Action", "Feedback"]
         try:
             super().__init__(

@@ -274,7 +274,7 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
                 win, scenario_lib, odd, rel
             )
             self.assertFalse(valid)
-            self.assertIn("safety analysis work product", msg)
+            self.assertIn("metamodel dependency", msg)
 
 
 if __name__ == "__main__":

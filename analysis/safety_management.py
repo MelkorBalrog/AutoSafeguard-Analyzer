@@ -50,6 +50,7 @@ ALLOWED_ANALYSIS_USAGE: set[tuple[str, str]] = {
     # in connection validation so it is omitted here.
     ("Reliability Analysis", "FMEA"),
     ("Reliability Analysis", "FMEDA"),
+    ("ODD", "Scenario Library"),
 }
 
 # Work products that support governed inputs from other work products
@@ -88,6 +89,8 @@ ALLOWED_USAGE.update(
         ("Mission Profile", "FTA"),
         ("Requirement Specification", "HAZOP"),
         ("ODD", "Scenario Library"),
+        ("Reliability Analysis", "FMEA"),
+        ("Reliability Analysis", "FMEDA"),
     }
 )
 
