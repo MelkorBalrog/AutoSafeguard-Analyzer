@@ -3464,6 +3464,12 @@ class SysMLDiagramWindow(tk.Frame):
                         f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
                     )
 
+        for node in (src, dst):
+            if node.obj_type in ("Decision", "Merge"):
+                used = self._decision_used_corners(node.obj_id)
+                if len(used) >= 4:
+                    return False, "Decision and Merge nodes support at most 4 connections"
+
         return True, ""
 
     def _constrain_horizontal_movement(
@@ -4408,6 +4414,7 @@ class SysMLDiagramWindow(tk.Frame):
                                     conn.arrow = "backward"
                                 else:
                                     conn.arrow = "both"
+                    self._assign_decision_corners(conn)
                     self.connections.append(conn)
                     if self.start.element_id and obj.element_id:
                         rel_stereo = (
@@ -4576,6 +4583,7 @@ class SysMLDiagramWindow(tk.Frame):
                                         rel.source = obj.element_id
                                         self.selected_conn.src = obj.obj_id
                             break
+                    self._assign_decision_corners(self.selected_conn)
                     self._sync_to_repository()
                 elif not valid:
                     messagebox.showwarning("Invalid Connection", msg)
@@ -4999,6 +5007,89 @@ class SysMLDiagramWindow(tk.Frame):
             (x - w, y),
         ]
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
+
+    def _corner_index(self, pos: tuple[float, float]) -> int:
+        rx, ry = pos
+        if abs(rx) >= abs(ry):
+            return 1 if rx >= 0 else 3
+        else:
+            return 2 if ry >= 0 else 0
+
+    def _decision_used_corners(
+        self, obj_id: int, exclude: DiagramConnection | None = None
+    ) -> set[int]:
+        used: set[int] = set()
+        for conn in self.connections:
+            if conn is exclude:
+                continue
+            if conn.src == obj_id and conn.src_pos:
+                used.add(self._corner_index(conn.src_pos))
+            if conn.dst == obj_id and conn.dst_pos:
+                used.add(self._corner_index(conn.dst_pos))
+        return used
+
+    def _choose_decision_corner(
+        self, node: SysMLObject, other: SysMLObject, used: set[int]
+    ) -> tuple[float, float] | None:
+        corners = [(0.0, -1.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 0.0)]
+        w = node.width * self.zoom / 2
+        h = node.height * self.zoom / 2
+        corner_pts = [
+            (node.x * self.zoom, node.y * self.zoom - h),
+            (node.x * self.zoom + w, node.y * self.zoom),
+            (node.x * self.zoom, node.y * self.zoom + h),
+            (node.x * self.zoom - w, node.y * self.zoom),
+        ]
+        pref = self._nearest_diamond_corner(node, other.x * self.zoom, other.y * self.zoom)
+        pref_idx = corner_pts.index(pref)
+        order = [pref_idx, (pref_idx + 1) % 4, (pref_idx + 3) % 4, (pref_idx + 2) % 4]
+        for idx in order:
+            if idx not in used:
+                return corners[idx]
+        return None
+
+    def _assign_decision_corners(self, conn: DiagramConnection) -> None:
+        src_obj = self.get_object(conn.src)
+        dst_obj = self.get_object(conn.dst)
+        corners = [(0.0, -1.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 0.0)]
+
+        if src_obj and src_obj.obj_type in ("Decision", "Merge") and dst_obj:
+            used = self._decision_used_corners(src_obj.obj_id, exclude=conn)
+            pair_idx = None
+            for other in self.connections:
+                if other is conn:
+                    continue
+                if other.src == dst_obj.obj_id and other.dst == src_obj.obj_id and other.dst_pos:
+                    pair_idx = self._corner_index(other.dst_pos)
+                    break
+            corner = None
+            if pair_idx is not None:
+                opp_idx = (pair_idx + 2) % 4
+                if opp_idx not in used:
+                    corner = corners[opp_idx]
+            if corner is None:
+                corner = self._choose_decision_corner(src_obj, dst_obj, used)
+            if corner:
+                conn.src_pos = corner
+
+        if dst_obj and dst_obj.obj_type in ("Decision", "Merge") and src_obj:
+            used = self._decision_used_corners(dst_obj.obj_id, exclude=conn)
+            pair_idx = None
+            for other in self.connections:
+                if other is conn:
+                    continue
+                if other.src == dst_obj.obj_id and other.dst == src_obj.obj_id and other.src_pos:
+                    pair_idx = self._corner_index(other.src_pos)
+                    break
+            corner = None
+            if pair_idx is not None:
+                opp_idx = (pair_idx + 2) % 4
+                if opp_idx not in used:
+                    corner = corners[opp_idx]
+            if corner is None:
+                corner = self._choose_decision_corner(dst_obj, src_obj, used)
+            if corner:
+                conn.dst_pos = corner
 
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         diag = self.repo.diagrams.get(self.diagram_id)
