@@ -12,6 +12,7 @@ import json
 import math
 import re
 import types
+from pathlib import Path
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
@@ -48,48 +49,28 @@ _next_obj_id = 1
 # Pixel distance used when detecting clicks on connection lines
 CONNECTION_SELECT_RADIUS = 15
 
+
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+with _CONFIG_PATH.open() as f:
+    _CONFIG = json.load(f)
+
 # Diagram types that belong to the generic "Architecture Diagram" work product
-ARCH_DIAGRAM_TYPES = {
-    "Use Case Diagram",
-    "Activity Diagram",
-    "Block Diagram",
-    "Internal Block Diagram",
-}
+ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
 
 # Elements available in the Safety & AI Lifecycle toolbox
-SAFETY_AI_NODE_TYPES = {"Database", "ANN", "Data acquisition"}
+SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
-GOVERNANCE_NODE_TYPES = {
-    "Action",
-    "Initial",
-    "Final",
-    "Decision",
-    "Merge",
-    "System Boundary",
-    "Work Product",
-    "Lifecycle Phase",
-}
-
+GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
 
 # Directed relationship rules for connections between Safety & AI elements.
 # Each entry maps a connection type to allowed source and target element
 # combinations. Rules are only enforced when both endpoints are Safety & AI
 # nodes.
 SAFETY_AI_RELATION_RULES: dict[str, dict[str, set[str]]] = {
-    "Acquisition": {"Data acquisition": {"Database"}},
-    "Field data collection": {"Data acquisition": {"Database"}},
-    "Field risk evaluation": {"Data acquisition": {"Database"}},
-    "Annotation": {"ANN": {"Database"}},
-    "Synthesis": {"ANN": {"Database"}},
-    "Augmentation": {"ANN": {"Database"}},
-    "Labeling": {"ANN": {"Database"}},
-    "AI training": {"Database": {"ANN"}},
-    "AI re-training": {"Database": {"ANN"}},
-    "Model evaluation": {"ANN": {"Database"}},
-    "Curation": {"Database": {"Database"}},
-    "Ingestion": {"Database": {"Database"}},
+    conn: {src: set(dests) for src, dests in srcs.items()}
+    for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
 }
 
 
