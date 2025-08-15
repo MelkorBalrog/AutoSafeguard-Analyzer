@@ -214,23 +214,24 @@ class CausalBayesianNetwork:
             rows.append((combo, float(cpds.get(combo, 0.0))))
         return rows
 
-    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float]]:
-        """Return parent combinations, ``P(var=True)`` and their probabilities.
+    def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float, float]]:
+        """Return rows of the conditional probability table for ``var``.
 
-        The returned list represents the rows of the node's conditional
-        probability table.  All ``2^n`` combinations of parent values are
-        included.  The third element of each tuple is the probability of that
-        parent combination occurring based on the current marginal
-        probabilities of the parent nodes.  Probabilities not explicitly
-        provided when the node was added default to ``0.0`` so that the table is
-        always complete.
+        Each returned tuple has four elements:
+
+        ``(parent_values, P(var=True | parents), P(parents), P(all))``
+
+        where ``P(all)`` is the joint probability of the entire row, i.e. the
+        probability that the parents take ``parent_values`` *and* ``var`` is
+        ``True``.  Missing entries in the conditional probability table default
+        to ``0.0`` so that the table is always complete.
         """
 
         rows = self._cpd_rows_only(var)
         parents = self.parents.get(var, [])
         if not parents:
             combo, prob = rows[0]
-            return [(combo, prob, 1.0)]
+            return [(combo, prob, 1.0, prob)]
 
         result: List[Tuple[Tuple[bool, ...], float, float]] = []
         for combo, p_true in rows:

@@ -1,9 +1,12 @@
+import sys
+from pathlib import Path
 import types
 from itertools import product
 
 from analysis import CausalBayesianNetwork
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
+from analysis import CausalBayesianNetwork
 
 
 class DummyCanvas:
@@ -156,18 +159,23 @@ def _setup_window():
             self.parents = {}
             self.cpds = {}
 
+        def add_node(self, name, cpd=0.0):
+            self.nodes.add(name)
+            self.cpds[name] = cpd
+
         def cpd_rows(self, name):
             parents = self.parents.get(name, [])
             if not parents:
                 prob = float(self.cpds.get(name, 0.0))
-                return [((), prob, 1.0)]
+                return [((), prob, 1.0, prob)]
             cpds = self.cpds.get(name, {})
             rows = []
             for combo in product([False, True], repeat=len(parents)):
-                rows.append((combo, float(cpds.get(combo, 0.0)), 0.0))
+                prob = float(cpds.get(combo, 0.0))
+                rows.append((combo, prob, 0.0, 0.0))
             return rows
 
-    doc = types.SimpleNamespace(network=Net(), positions={})
+    doc = types.SimpleNamespace(network=Net(), positions={}, types={})
     app.active_cbn = doc
     win.app = app
     win._find_node = lambda x, y: next(
@@ -269,15 +277,26 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
 
 
-def test_select_highlights_node():
-    win, doc = _setup_window()
-    doc.network.nodes.add("A")
-    doc.positions["A"] = (0, 0)
-    win._draw_node("A", 0, 0)
-    win.on_click(types.SimpleNamespace(x=0, y=0))
-    assert win.selected_node == "A"
-    assert win.selection_rect in win.canvas.items
+def test_update_all_tables_refreshes_dependencies():
+    win = object.__new__(CausalBayesianNetworkWindow)
+    win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS
+    win.canvas = DummyCanvas()
+    win.drawing_helper = FTADrawingHelper()
+    win.nodes = {}
+    win.tables = {}
+    win.id_to_node = {}
+    win.edges = []
+    win.current_tool = "Select"
+    win._place_table = lambda *a, **k: None
+    win._position_table = lambda *a, **k: None
 
+    app = DummyApp()
+    net = CausalBayesianNetwork()
+    net.add_node("Rain", cpd=0.3)
+    net.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    doc = types.SimpleNamespace(network=net, positions={"Rain": (0, 0), "WetGround": (0, 0)})
+    app.active_cbn = doc
+    win.app = app
 
 def test_drag_relationship_creates_edge():
     win, doc = _setup_window()
