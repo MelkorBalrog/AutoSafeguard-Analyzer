@@ -636,11 +636,6 @@ class FaultsWindow(QMainWindow):
         act_light.triggered.connect(lambda: apply_fusion_palette(light=True))
         tb.addAction(act_light)
 
-        act_dark = QAction("Dark Theme", self)
-        act_dark.setToolTip("Switch to a dark Fusion palette.")
-        act_dark.triggered.connect(lambda: apply_fusion_palette(light=False))
-        tb.addAction(act_dark)
-
     def build_help_menu(self):
         menubar = self.menuBar()
         help_menu: QMenu = menubar.addMenu("&Help")

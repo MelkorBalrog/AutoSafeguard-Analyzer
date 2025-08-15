@@ -2374,10 +2374,6 @@ class FaultTreeApp:
             label="Light Mode",
             command=lambda: self.apply_style('pastel.xml'),
         )
-        view_menu.add_command(
-            label="Dark Mode",
-            command=lambda: self.apply_style('dark.xml'),
-        )
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(label="Requirements Matrix", command=self.show_requirements_matrix)
