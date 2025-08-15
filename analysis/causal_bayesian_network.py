@@ -181,7 +181,7 @@ class CausalBayesianNetwork:
 
     # ------------------------------------------------------------------
     def marginal_probabilities(self) -> Dict[str, float]:
-        """Return ``P(node=True)`` for every node.
+        r"""Return ``P(node=True)`` for every node.
 
         This implementation follows the standard marginalisation formula
 
@@ -243,7 +243,7 @@ class CausalBayesianNetwork:
 
     # ------------------------------------------------------------------
     def joint_probability(self, assignment: Mapping[str, bool]) -> float:
-        """Return ``P(assignment)`` for the provided variable/value mapping.
+        r"""Return ``P(assignment)`` for the provided variable/value mapping.
 
         The computation mirrors the classic factorisation of a Bayesian
         network, ``\prod_i P(X_i \mid Parents(X_i))``, while summing out all
