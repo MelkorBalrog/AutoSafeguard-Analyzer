@@ -2,7 +2,8 @@ import sys
 from pathlib import Path
 import types
 from itertools import product
-import pytest
+
+from analysis import CausalBayesianNetwork
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
 from analysis import CausalBayesianNetwork
@@ -184,6 +185,32 @@ def _setup_window():
     return win, doc
 
 
+def _setup_window_real():
+    win = object.__new__(CausalBayesianNetworkWindow)
+    win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS
+    win.canvas = DummyCanvas()
+    win.drawing_helper = FTADrawingHelper()
+    win.nodes = {}
+    win.tables = {}
+    win.id_to_node = {}
+    win.edges = []
+    win.current_tool = "Select"
+    win._place_table = lambda *a, **k: None
+    win._position_table = lambda *a, **k: None
+    win.after = lambda *a, **k: None
+    win.after_cancel = lambda *a, **k: None
+    win.selected_node = None
+    win.selection_rect = None
+    win.temp_edge_line = None
+    win.temp_edge_anim = None
+    win.temp_edge_offset = 0
+    app = DummyApp()
+    doc = types.SimpleNamespace(network=CausalBayesianNetwork(), positions={})
+    app.active_cbn = doc
+    win.app = app
+    return win, doc
+
+
 def test_fill_moves_with_node():
     win, doc = _setup_window()
     doc.network.nodes.add("A")
@@ -269,19 +296,36 @@ def test_update_all_tables_refreshes_dependencies():
     app.active_cbn = doc
     win.app = app
 
-    tree_rain = DummyTree()
-    frame_rain = DummyFrame(tree_rain)
-    tree_wet = DummyTree()
-    frame_wet = DummyFrame(tree_wet)
-    win.tables["Rain"] = (1, frame_rain, tree_rain)
-    win.tables["WetGround"] = (2, frame_wet, tree_wet)
+def test_drag_relationship_creates_edge():
+    win, doc = _setup_window()
+    doc.network.nodes.update({"A", "B"})
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (100, 0)
+    win._draw_node("A", 0, 0)
+    win._draw_node("B", 100, 0)
+    win.current_tool = "Relationship"
+    win.on_click(types.SimpleNamespace(x=0, y=0))
+    win.on_drag(types.SimpleNamespace(x=100, y=0))
+    win.on_release(types.SimpleNamespace(x=100, y=0))
+    assert len(win.edges) == 1
+    assert "A" in doc.network.parents.get("B", [])
+
+
+def test_joint_probabilities_refresh_on_parent_change():
+    win, doc = _setup_window_real()
+    cbn = doc.network
+    cbn.add_node("A", cpd=0.2)
+    cbn.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
+    tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = (1, frame_a, tree_a)
+    tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = (2, frame_b, tree_b)
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (0, 0)
 
     win._update_all_tables()
-    # row for Rain=True is second row
-    assert float(tree_wet.rows[1][1]) == pytest.approx(0.3, rel=1e-3)
-    assert float(tree_wet.rows[1][3]) == pytest.approx(0.27, rel=1e-3)
+    assert tree_b.rows[0][-1] == f"{0.8 * 0.1:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.2 * 0.5:.3f}"
 
-    net.cpds["Rain"] = 0.6
+    cbn.cpds["A"] = 0.7
     win._update_all_tables()
-    assert float(tree_wet.rows[1][1]) == pytest.approx(0.6, rel=1e-3)
-    assert float(tree_wet.rows[1][3]) == pytest.approx(0.54, rel=1e-3)
+    assert tree_b.rows[0][-1] == f"{0.3 * 0.1:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.7 * 0.5:.3f}"
