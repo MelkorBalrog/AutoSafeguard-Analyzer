@@ -232,10 +232,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
             r = self.NODE_RADIUS
-            self.canvas.coords(fill_tag, x - r, y - r, x + r, y + r)
+            self.canvas.move(fill_tag, x - old_x, y - old_y)
             self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
             self.canvas.coords(text_id, x, y)
-            self.canvas.move(fill_tag, x - old_x, y - old_y)
             for line_id, src, dst in self.edges:
                 if src == name or dst == name:
                     x1, y1 = doc.positions[src]
@@ -441,7 +440,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not parents:
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            for combo, prob, combo_prob in rows:
+            for row_vals in rows:
+                if len(row_vals) == 4:
+                    combo, prob, combo_prob, _ = row_vals
+                else:
+                    combo, prob, combo_prob = row_vals
                 joint = combo_prob * prob
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{joint:.3f}")
