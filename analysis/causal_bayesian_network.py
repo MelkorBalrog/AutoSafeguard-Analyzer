@@ -153,7 +153,7 @@ class CausalBayesianNetwork:
             p_true = float(self.cpds[var])
         else:
             key = tuple(evidence[p] for p in parents)
-            p_true = float(self.cpds[var].get(key, 0.0))
+            p_true = float(self.cpds[var].get(key, 1.0))
         return p_true if value else 1.0 - p_true
 
     # ------------------------------------------------------------------
@@ -211,7 +211,7 @@ class CausalBayesianNetwork:
         cpds = self.cpds.get(var, {})
         rows: List[Tuple[Tuple[bool, ...], float]] = []
         for combo in product([False, True], repeat=len(parents)):
-            rows.append((combo, float(cpds.get(combo, 0.0))))
+            rows.append((combo, float(cpds.get(combo, 1.0))))
         return rows
 
     def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float, float]]:
@@ -224,7 +224,8 @@ class CausalBayesianNetwork:
         where ``P(all)`` is the joint probability of the entire row, i.e. the
         probability that the parents take ``parent_values`` *and* ``var`` is
         ``True``.  Missing entries in the conditional probability table default
-        to ``0.0`` so that the table is always complete.
+        to ``1.0`` so that the table is always complete until explicitly edited
+        by the user.
         """
 
         rows = self._cpd_rows_only(var)
