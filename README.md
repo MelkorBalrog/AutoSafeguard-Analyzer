@@ -14,6 +14,7 @@ Recent updates add a **Review Toolbox** supporting peer and joint review workflo
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
 - [Risk Assessment](#risk-assessment)
+- [Causal Bayesian Network Analysis](#causal-bayesian-network-analysis)
 - [Requirements Creation and Management](#requirements-creation-and-management)
 - [AutoML Diagrams and Safety Analyses](#automl-diagrams-and-safety-analyses)
 - [Metamodel Overview](#metamodel-overview)
@@ -159,6 +160,20 @@ The **Risk Assessment** view builds on the safety relevant malfunctions from a s
 If a cyber risk entry is selected, its damage scenario and CAL are stored with the row for traceability to cybersecurity goals. The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
 
 The **Hazard Explorer** window lists all hazards from every risk assessment in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
+
+## Causal Bayesian Network Analysis
+
+The **Causal Bayesian Network** editor models causal relationships between binary variables and supports classic probability queries alongside `do`-style interventions. Add variables with the **Variable** tool, connect them with directed edges and enter prior or conditional probabilities in the table beneath the diagram. Queries can be run with observational evidence or by forcing interventions on selected variables.
+
+```python
+from analysis import CausalBayesianNetwork
+cbn = CausalBayesianNetwork()
+cbn.add_node("Rain", cpd=0.3)
+cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+cbn.add_node("SlipperyRoad", parents=["WetGround"], cpd={(True,): 0.8, (False,): 0.05})
+cbn.query("SlipperyRoad")
+cbn.intervention("SlipperyRoad", {"Rain": True})
+```
 
 ## Requirements Creation and Management
 
@@ -439,6 +454,8 @@ classDiagram
     FmeaDoc --> "*" FmeaEntry
     SysMLRepository --> "*" FmedaDoc
     FmedaDoc --> "*" FmeaEntry
+    SysMLRepository --> "*" CausalBayesianNetworkDoc
+    CausalBayesianNetworkDoc --> CausalBayesianNetwork : network
     FmeaEntry --> Fault : cause
     FmeaEntry --> Failure : effect
     Failure --> FaultTreeNode : representedBy
@@ -480,6 +497,8 @@ classDiagram
     CyberRiskEntry --> ThreatScenario : threatScenario
     CyberRiskEntry --> DamageScenario : damageScenario
     HaraEntry --> CyberRiskEntry : cyber
+    class CausalBayesianNetworkDoc
+    class CausalBayesianNetwork
     class FI2TCEntry
     class TC2FIEntry
     class Hazard
@@ -520,7 +539,7 @@ share a consistent context. HAZOP and risk assessment tables use `HazopDoc`/`Haz
 and `HaraDoc`/`HaraEntry` pairs to store their rows. FMEA and FMEDA tables are
 stored as `FmeaDoc` and `FmedaDoc` with lists of generic `FmeaEntry`
 dictionaries capturing the failure mode, cause, detection rating and diagnostic
-coverage. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
+coverage. Causal Bayesian Network analyses use `CausalBayesianNetworkDoc` containers that pair a network with its diagram layout so probabilistic models can be edited alongside other work products. Fault tree diagrams consist of nested `FaultTreeNode` objects that hold
 FMEA metrics, FMEDA values and traced requirements. Cybersecurity analyses use
 `ThreatDoc` and `CyberRiskEntry` records to capture STRIDE-based threat
 scenarios, attack paths and damage assessments. Each `CyberRiskEntry`
@@ -1545,5 +1564,16 @@ Steps to reproduce:
 | resistor | resistor | 20 | 297.505 |
 | capacitor | capacitor | 10 | 961.17 |
 
-This end-to-end flow links HAZOP findings to risk assessment ratings, fault trees and FMEDA metrics for a coherent safety & security case.
+### Causal Bayesian Network
+
+Steps to reproduce:
+1. Open **Safety → Causal Bayesian Network** and create a document named "CBN".
+2. Add variables `Rain`, `WetGround` and `SlipperyRoad` linking them in that order.
+3. Set probabilities:
+   - `Rain` prior 0.3
+   - `WetGround` | `Rain` = 0.9, `¬Rain` = 0.1
+   - `SlipperyRoad` | `WetGround` = 0.8, `¬WetGround` = 0.05
+4. Use **Query** for `SlipperyRoad` to obtain approximately 0.305.
+
+This end-to-end flow links HAZOP findings to risk assessment ratings, fault trees, FMEDA metrics, reliability data and causal Bayesian network reasoning for a coherent safety & security case.
 
