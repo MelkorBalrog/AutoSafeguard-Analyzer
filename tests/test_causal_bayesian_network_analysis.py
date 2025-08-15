@@ -56,6 +56,9 @@ def test_truth_table_auto_fill():
     assert len(rows) == 2
     assert rows[0][0] == (False,)
     assert rows[0][1] == pytest.approx(0.0)
+    # probability of parent combination P(A=False) = 0.6
+    assert rows[0][2] == pytest.approx(0.6, rel=1e-3)
+    assert rows[1][2] == pytest.approx(0.4, rel=1e-3)
 
 def test_marginal_probability_propagation():
     cbn = CausalBayesianNetwork()
