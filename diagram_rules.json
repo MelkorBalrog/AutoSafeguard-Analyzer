@@ -34,7 +34,7 @@
     "AI re-training",
     "Curation",
     "Ingestion",
-    "Model evaluation",
+    "Model evaluation"
     "Tune",
     "Hyperparameter Validation"
   ],
@@ -86,6 +86,21 @@
     "ai training": {"action": "train", "subject": "Engineering team"},
     "ai re-training": {"action": "retrain", "subject": "Engineering team"},
     "curation": {"action": "curate", "subject": "Engineering team"},
+    "annotation": {"action": "annotate", "subject": "Engineering team"},
+    "synthesis": {"action": "synthesize", "subject": "Engineering team"},
+    "augmentation": {"action": "augment", "subject": "Engineering team"},
+    "acquisition": {"action": "acquire", "subject": "Engineering team"},
+    "labeling": {"action": "label", "subject": "Engineering team"},
+    "field risk evaluation": {
+      "action": "evaluate field risk",
+      "subject": "Engineering team"
+    },
+    "field data collection": {
+      "action": "collect field data",
+      "subject": "Engineering team"
+    },
+    "ingestion": {"action": "ingest", "subject": "Engineering team"},
+    "model evaluation": {"action": "evaluate model", "subject": "Engineering team"}
     "tune": {"action": "tune", "subject": "Engineering team"},
     "hyperparameter validation": {
       "action": "validate hyperparameters",
