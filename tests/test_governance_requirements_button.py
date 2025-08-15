@@ -67,7 +67,7 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert "Gov Requirements" in title
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
-    assert any("Task 'Start' shall precede task 'Finish'." in t for t in texts)
+    assert any("Start shall precede 'Finish'." in t for t in texts)
     # Ensure requirement types are organizational
     assert all(row[1] == "organizational" for row in trees[0].rows)
     # Requirements added to global registry

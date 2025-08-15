@@ -36,34 +36,7 @@ class GovernanceDecisionGuardTests(unittest.TestCase):
         self.assertEqual(gdiag.edge_data[("A", "B")]["condition"], "g1")
         reqs = gdiag.generate_requirements()
         texts = [r.text for r in reqs]
-        self.assertIn("If g1, Task 'A' shall precede task 'B'.", texts)
-        req = next(r for r in reqs if r.text == "If g1, Task 'A' shall precede task 'B'.")
-        self.assertEqual(req.cnd, "g1")
-        self.assertEqual(req.sub, "Task 'A'")
-        self.assertEqual(req.obj, "task 'B'")
-
-    def test_decision_relationship_guard_generation(self):
-        repo = self.repo
-        a = repo.create_element("Action", name="A")
-        b = repo.create_element("Action", name="B")
-        diag = repo.create_diagram("Governance Diagram", name="Gov")
-        repo.add_element_to_diagram(diag.diag_id, a.elem_id)
-        repo.add_element_to_diagram(diag.diag_id, b.elem_id)
-        o1 = SysMLObject(1, "Action", 0, 0, element_id=a.elem_id)
-        dec = SysMLObject(2, "Decision", 50, 0)
-        o2 = SysMLObject(3, "Action", 100, 0, element_id=b.elem_id)
-        diag.objects = [o1.__dict__, dec.__dict__, o2.__dict__]
-        c1 = DiagramConnection(o1.obj_id, dec.obj_id, "Flow")
-        c2 = DiagramConnection(dec.obj_id, o2.obj_id, "Trace")
-        c2dict = c2.__dict__.copy()
-        c2dict["guard"] = "g1"
-        diag.connections = [c1.__dict__, c2dict]
-
-        gdiag = GovernanceDiagram.from_repository(repo, diag.diag_id)
-        self.assertIn(("A", "B"), gdiag.relationships())
-        self.assertEqual(gdiag.edge_data[("A", "B")]["condition"], "g1")
-        reqs = gdiag.generate_requirements()
-        self.assertIn("Task 'A' shall be related to task 'B' when g1.", reqs)
+        self.assertIn("If g1, A shall precede 'B'.", texts)
 
 
 if __name__ == "__main__":

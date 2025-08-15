@@ -22,46 +22,99 @@ _AI_RELATIONS = {
     "Model evaluation",
 }
 
-# Node type groupings for requirement component extraction.
-_SUBJECT_NODE_TYPES = {"Role", "Actor", "Stakeholder", "Organization", "Business Unit"}
-_ACTION_NODE_TYPES = {
-    "Process",
-    "Procedure",
-    "Activity",
-    "Task",
-    "Action",
-    "Control",
-    "Mechanism",
+# Map relationship labels or connection types to requirement actions.  Each
+# entry defines the verb to use, whether the destination element acts as a
+# constraint instead of an object, and an optional default subject.  The
+# resulting requirement follows the ISO/IEC/IEEE 29148 pattern
+# ``[CND] <SUB> shall <ACT> [OBJ] [CON].``
+_RELATIONSHIP_RULES: dict[str, dict[str, str | bool]] = {
+    "performs": {"action": "perform"},
+    "executes": {"action": "execute"},
+    "responsible for": {"action": "be responsible for"},
+    "produces": {"action": "produce"},
+    "delivers": {"action": "deliver"},
+    "uses": {"action": "use"},
+    "consumes": {"action": "use"},
+    "monitors": {"action": "monitor"},
+    "audits": {"action": "audit"},
+    "approves": {"action": "approve"},
+    "authorizes": {"action": "authorize"},
+    "governed by": {"action": "comply with", "constraint": True},
+    "constrained by": {"action": "comply with", "constraint": True},
+    # AI specific relationship types default the subject to the engineering
+    # team because these actions are typically performed by developers rather
+    # than by elements explicitly modelled in the diagram.
+    "ai training": {"action": "train", "subject": "Engineering team"},
+    "ai re-training": {"action": "retrain", "subject": "Engineering team"},
+    "curation": {"action": "curate", "subject": "Engineering team"},
 }
-_OBJECT_NODE_TYPES = {"Document", "Artifact", "Data", "Record", "Resource"}
-_CONSTRAINT_NODE_TYPES = {
-    "Policy",
-    "Principle",
-    "Standard",
-    "Guideline",
-    "Metric",
-    "KPI",
+
+# Map node types to default requirement roles so that the generator can
+# identify the subject, object or constraint directly from the model.
+_NODE_ROLES = {
+    "Role": "subject",
+    "Actor": "subject",
+    "Stakeholder": "subject",
+    "Organization": "subject",
+    "Business Unit": "subject",
+    "Process": "action",
+    "Procedure": "action",
+    "Activity": "action",
+    "Task": "action",
+    "Decision": "condition",
+    "Policy": "constraint",
+    "Principle": "constraint",
+    "Standard": "constraint",
+    "Guideline": "constraint",
+    "Document": "object",
+    "Artifact": "object",
+    "Data": "object",
+    "Record": "object",
+    "Database": "object",
+    "ANN": "object",
+    "Data acquisition": "object",
+    "Metric": "constraint",
+    "KPI": "constraint",
 }
 
 
 @dataclass
 class GeneratedRequirement:
-    """Container for a generated requirement.
+    """Structured requirement composed from diagram elements.
 
-    ``GeneratedRequirement`` stores the individual requirement components so
-    governance diagrams can be translated into structured statements following
-    ISO/IEC/IEEE 29148.  The object still behaves like both a tuple
-    ``(text, type)`` and a string so existing code and tests that expect either
-    representation continue to work.
+    The dataclass exposes the individual requirement components (condition,
+    subject, action, object and constraint) alongside the requirement category.
+    For backward compatibility the object behaves like a tuple ``(text,
+    req_type)`` and can be treated as a string containing the rendered
+    requirement sentence.
     """
 
-    text: str
+    condition: str | None
+    subject: str | None
+    action: str
+    obj: str | None
+    constraint: str | None
     req_type: str
     cnd: str | None = None  # Condition
     sub: str | None = None  # Subject
     act: str | None = None  # Action
     obj: str | None = None  # Object
     con: str | None = None  # Constraint
+
+    @property
+    def text(self) -> str:
+        parts: List[str] = []
+        if self.condition:
+            parts.append(f"If {self.condition},")
+        subject = self.subject or "Task"
+        main = f"{subject} shall {self.action}"
+        if self.obj:
+            main += f" '{self.obj}'"
+        if self.constraint:
+            main += f" '{self.constraint}'"
+        main += "."
+        parts.append(main)
+        return " ".join(parts)
 
     def __iter__(self) -> Iterator[str]:
         yield self.text
@@ -96,6 +149,11 @@ class GovernanceDiagram:
     # be categorised.  Tasks originating from AI & safety nodes produce AI
     # safety requirements.
     node_types: dict[str, str] = field(default_factory=dict)
+
+    def _role_for(self, name: str) -> str:
+        """Return the requirement role for a node name."""
+        ntype = self.node_types.get(name, "")
+        return _NODE_ROLES.get(ntype, "object")
 
     def add_task(self, name: str, node_type: str = "Action") -> None:
         """Add a task node to the diagram."""
@@ -186,47 +244,9 @@ class GovernanceDiagram:
         ]
 
     def generate_requirements(self) -> List[GeneratedRequirement]:
-        """Generate structured requirements from the diagram.
-
-        Diagram elements are mapped onto requirement components following the
-        ``[CND] SUB shall ACT [OBJ] [CON]`` pattern.  The resulting
-        :class:`GeneratedRequirement` objects preserve these components to aid
-        downstream tooling.
-        """
+        """Generate structured requirements from the diagram."""
 
         requirements: List[GeneratedRequirement] = []
-
-        def compose(cnd: str | None, sub: str, act: str, obj: str | None = None, con: str | None = None) -> str:
-            parts: list[str] = []
-            if cnd:
-                parts.append(f"If {cnd}, ")
-            parts.append(f"{sub} shall {act}")
-            if obj:
-                parts.append(f" {obj}")
-            if con:
-                parts.append(f" {con}")
-            return "".join(parts) + "."
-
-        def req_type_for(conn_type: str | None, src: str, dst: str) -> str:
-            if (
-                conn_type in _AI_RELATIONS
-                or self.node_types.get(src) in _AI_NODES
-                or self.node_types.get(dst) in _AI_NODES
-            ):
-                return "AI safety"
-            return "organizational"
-
-        for task in self.tasks():
-            ntype = self.node_types.get(task)
-            if ntype not in _ACTION_NODE_TYPES:
-                continue
-            req_type = "AI safety" if ntype in _AI_NODES else "organizational"
-            sub = "The system"
-            act = f"perform {task}"
-            text = compose(None, sub, act)
-            requirements.append(
-                GeneratedRequirement(text, req_type, sub=sub, act=act)
-            )
 
         for src, dst in self.graph.edges():
             data = self.edge_data.get(
@@ -236,62 +256,43 @@ class GovernanceDiagram:
             kind = data.get("kind")
             label = data.get("label")
             conn_type = data.get("conn_type")
-            dst_type = self.node_types.get(dst)
-            sub = f"Task '{src}'"
+            subject = src
+            obj: str | None = dst
+            constraint: str | None = None
+            action: str
 
             if kind == "flow":
-                act = "precede"
-                obj = f"task '{dst}'"
-                text = compose(cond, sub, act, obj=obj)
-                requirements.append(
-                    GeneratedRequirement(
-                        text,
-                        req_type_for(conn_type, src, dst),
-                        cnd=cond,
-                        sub=sub,
-                        act=act,
-                        obj=obj,
-                    )
-                )
-                continue
-
-            # relationship
-            if dst_type in _CONSTRAINT_NODE_TYPES or (
-                label and label.lower() in {"governed by", "constrained by"}
-            ):
-                if label:
-                    lower = label.lower()
-                    act = f"be {lower}" if lower in {"governed by", "constrained by"} else label
-                else:
-                    act = "comply with"
-                con = dst
-                text = compose(cond, sub, act, con=con)
-                requirements.append(
-                    GeneratedRequirement(
-                        text,
-                        req_type_for(conn_type, src, dst),
-                        cnd=cond,
-                        sub=sub,
-                        act=act,
-                        con=con,
-                    )
-                )
+                action = "precede"
             else:
-                act = label if label else "relate to"
-                obj = (
-                    f"task '{dst}'" if dst_type in _ACTION_NODE_TYPES else dst
-                )
-                text = compose(cond, sub, act, obj=obj)
-                requirements.append(
-                    GeneratedRequirement(
-                        text,
-                        req_type_for(conn_type, src, dst),
-                        cnd=cond,
-                        sub=sub,
-                        act=act,
-                        obj=obj,
-                    )
-                )
+                key = (label or conn_type or "").lower()
+                rule = _RELATIONSHIP_RULES.get(key, {})
+                action = str(rule.get("action", label or "relate to"))
+                explicit_subject = rule.get("subject")
+                if explicit_subject:
+                    subject = str(explicit_subject)
+                if rule.get("constraint"):
+                    constraint = dst
+                    obj = None
+                elif not label and not rule:
+                    action = "be related to"
+
+            if obj is not None:
+                s_role = self._role_for(subject)
+                d_role = self._role_for(obj)
+                if s_role != "subject" and d_role == "subject":
+                    subject, obj = obj, subject
+
+            req_type = "organizational"
+            if (
+                conn_type in _AI_RELATIONS
+                or self.node_types.get(src) in _AI_NODES
+                or self.node_types.get(dst) in _AI_NODES
+            ):
+                req_type = "AI safety"
+
+            requirements.append(
+                GeneratedRequirement(cond, subject, action, obj, constraint, req_type)
+            )
 
         return requirements
 
@@ -338,10 +339,11 @@ class GovernanceDiagram:
                 name = repo.elements[elem_id].name
             if not name:
                 name = odict.get("properties", {}).get("name", "")
-            if not name:
-                continue
-            diagram.add_task(name)
-            id_to_name[obj_id] = name
+            if name:
+                diagram.add_task(name)
+                id_to_name[odict.get("obj_id")] = name
+            if obj_type == "Decision":
+                decision_sources[odict.get("obj_id")] = ""
 
         # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):
