@@ -279,24 +279,6 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
     assert colors[2] == "lightgreen"
 
-
-def test_click_adds_new_malfunction_node():
-    win, doc = _setup_window()
-    app = win.app
-    app.malfunctions = []
-    app.add_malfunction = lambda name: app.malfunctions.append(name)
-    win.current_tool = "Malfunction"
-    with mock.patch(
-        "gui.causal_bayesian_network_window.simpledialog.askstring",
-        return_value="M1",
-    ):
-        win.on_click(types.SimpleNamespace(x=5, y=6))
-    assert "M1" in doc.network.nodes
-    assert doc.types["M1"] == "malfunction"
-    assert doc.positions["M1"] == (5, 6)
-    assert "M1" in app.malfunctions
-
-
 def test_click_adds_existing_malfunction_nodes():
     win, doc = _setup_window()
     win.current_tool = "Existing Malfunction"

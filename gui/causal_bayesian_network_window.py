@@ -40,7 +40,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Existing Triggering Condition",
             "Functional Insufficiency",
             "Existing Functional Insufficiency",
-            "Malfunction",
             "Existing Malfunction",
             "Relationship",
         ):
@@ -211,17 +210,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self._draw_node(name, nx, y, "insufficiency")
             if hasattr(self.app, "update_functional_insufficiency_list"):
                 self.app.update_functional_insufficiency_list()
-        elif self.current_tool == "Malfunction":
-            name = simpledialog.askstring("Malfunction", "Name:", parent=self)
-            if not name or name in doc.network.nodes:
-                return
-            x, y = event.x, event.y
-            doc.network.add_node(name, cpd=0.5)
-            doc.positions[name] = (x, y)
-            doc.types[name] = "malfunction"
-            self._draw_node(name, x, y, "malfunction")
-            if hasattr(self.app, "add_malfunction"):
-                self.app.add_malfunction(name)
         elif self.current_tool == "Existing Malfunction":
             names = self._select_malfunctions()
             if not names:
