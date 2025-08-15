@@ -81,16 +81,23 @@ def test_marginal_probability_propagation():
     assert probs["SlipperyRoad"] == pytest.approx(0.485, rel=1e-3)
 
 
-def test_cpd_rows_updates_with_parent_change():
+def test_cpd_rows_respect_parent_dependencies():
     cbn = CausalBayesianNetwork()
-    cbn.add_node("Rain", cpd=0.3)
-    cbn.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
-    rows = cbn.cpd_rows("WetGround")
-    # row for Rain=True is second row
-    assert rows[1][2] == pytest.approx(0.3, rel=1e-3)
-    assert rows[1][3] == pytest.approx(0.27, rel=1e-3)
-    # change parent probability
-    cbn.cpds["Rain"] = 0.6
-    rows = cbn.cpd_rows("WetGround")
-    assert rows[1][2] == pytest.approx(0.6, rel=1e-3)
-    assert rows[1][3] == pytest.approx(0.54, rel=1e-3)
+    cbn.add_node("A", cpd=0.5)
+    cbn.add_node("B", parents=["A"], cpd={(True,): 0.9, (False,): 0.1})
+    # Conditional probabilities of C are irrelevant; set all to 1 so joint column
+    # mirrors P(A,B) directly.
+    all_true = {
+        (False, False): 1.0,
+        (False, True): 1.0,
+        (True, False): 1.0,
+        (True, True): 1.0,
+    }
+    cbn.add_node("C", parents=["A", "B"], cpd=all_true)
+
+    rows = cbn.cpd_rows("C")
+    # Expected joint distribution of (A, B) taking into account the dependency
+    # of B on A.
+    expected = [0.45, 0.05, 0.05, 0.45]
+    for row, exp in zip(rows, expected):
+        assert row[2] == pytest.approx(exp, rel=1e-3)
