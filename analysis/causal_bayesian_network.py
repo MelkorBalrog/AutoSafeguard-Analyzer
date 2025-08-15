@@ -43,13 +43,14 @@ class CausalBayesianNetwork:
         name: str,
         *,
         parents: Iterable[str] | None = None,
-        cpd: Mapping[Tuple[bool, ...], float] | float,
+        cpd: Mapping[Tuple[bool, ...], float] | float | None = None,
     ) -> None:
-        """Add ``name`` with optional ``parents`` and probability ``cpd``.
+        """Add ``name`` with optional ``parents``.
 
         For root nodes (without parents) ``cpd`` is the prior probability
-        of the node being ``True``.  Otherwise ``cpd`` must be a mapping
-        from tuples of parent values to the probability of ``True``.
+        of the node being ``True``.  Nodes with parents ignore the ``cpd``
+        parameter and assume a probability of ``1`` when all parents are
+        ``True`` and ``0`` otherwise.
         """
 
         if name in self.nodes:
@@ -57,23 +58,12 @@ class CausalBayesianNetwork:
         self.nodes.append(name)
         self.parents[name] = list(parents or [])
         if self.parents[name]:
-            if not isinstance(cpd, Mapping):
-                raise TypeError("cpd must be a mapping for non-root nodes")
-            # Normalize keys so they are always tuples of parent values.
-            normalised: Dict[Tuple[bool, ...], float] = {}
-            for key, prob in cpd.items():
-                # ``key`` may be provided as a single bool, a list of bools or a
-                # proper tuple.  Convert everything to a tuple of booleans so that
-                # internal lookups are consistent.
-                if isinstance(key, tuple):
-                    combo = key
-                elif isinstance(key, list):
-                    combo = tuple(key)
-                else:
-                    combo = (key,)
-                normalised[combo] = float(prob)
-            self.cpds[name] = normalised
+            # Conditional probabilities are fixed (probability 1 when all
+            # parents are True) so any provided ``cpd`` is ignored.
+            self.cpds[name] = None
         else:
+            if cpd is None:
+                raise TypeError("cpd must be provided for root nodes")
             self.cpds[name] = float(cpd)
 
     # ------------------------------------------------------------------
@@ -152,8 +142,7 @@ class CausalBayesianNetwork:
         if not parents:
             p_true = float(self.cpds[var])
         else:
-            key = tuple(evidence[p] for p in parents)
-            p_true = float(self.cpds[var].get(key, 0.0))
+            p_true = 1.0 if all(evidence.get(p, False) for p in parents) else 0.0
         return p_true if value else 1.0 - p_true
 
     # ------------------------------------------------------------------
@@ -208,10 +197,10 @@ class CausalBayesianNetwork:
         if not parents:
             prob = float(self.cpds.get(var, 0.0))
             return [((), prob)]
-        cpds = self.cpds.get(var, {})
         rows: List[Tuple[Tuple[bool, ...], float]] = []
         for combo in product([False, True], repeat=len(parents)):
-            rows.append((combo, float(cpds.get(combo, 0.0))))
+            p_true = 1.0 if all(combo) else 0.0
+            rows.append((combo, p_true))
         return rows
 
     def cpd_rows(self, var: str) -> List[Tuple[Tuple[bool, ...], float, float, float]]:
@@ -223,8 +212,8 @@ class CausalBayesianNetwork:
 
         where ``P(all)`` is the joint probability of the entire row, i.e. the
         probability that the parents take ``parent_values`` *and* ``var`` is
-        ``True``.  Missing entries in the conditional probability table default
-        to ``0.0`` so that the table is always complete.
+        ``True``.  Conditional probabilities are fixed such that ``var`` is
+        ``True`` only when all parents are ``True``.
         """
 
         rows = self._cpd_rows_only(var)
