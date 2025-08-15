@@ -3310,10 +3310,28 @@ class SysMLDiagramWindow(tk.Frame):
                 "Ingestion",
                 "Model evaluation",
             ):
-                allowed_types = {"Database", "ANN", "Data acquisition"}
-                if src.obj_type not in allowed_types or dst.obj_type not in allowed_types:
+                ai_types = {"Database", "ANN", "Data acquisition"}
+                gov_types = {
+                    "Work Product",
+                    "Lifecycle Phase",
+                    "Initial",
+                    "Action",
+                    "CallBehaviorAction",
+                    "Decision",
+                    "Merge",
+                    "Fork",
+                    "Join",
+                    "Final",
+                }
+                if not (
+                    (src.obj_type in ai_types and dst.obj_type in ai_types | gov_types)
+                    or (
+                        dst.obj_type in ai_types
+                        and src.obj_type in ai_types | gov_types
+                    )
+                ):
                     return False, (
-                        "Safety & AI relationships must connect Safety & AI elements"
+                        "Safety & AI relationships must involve a Safety & AI element"
                     )
             elif conn_type in (
                 "Used By",
@@ -3365,29 +3383,12 @@ class SysMLDiagramWindow(tk.Frame):
                             "already exists in this phase",
                         )
             else:
+                ai_types = {"Database", "ANN", "Data acquisition"}
                 allowed = {
-                    "Initial": {
-                        "Action",
-                        "Decision",
-                        "Merge",
-                    },
-                    "Action": {
-                        "Action",
-                        "Decision",
-                        "Merge",
-                        "Final",
-                    },
-                    "Decision": {
-                        "Action",
-                        "Decision",
-                        "Merge",
-                        "Final",
-                    },
-                    "Merge": {
-                        "Action",
-                        "Decision",
-                        "Merge",
-                    },
+                    "Initial": {"Action", "Decision", "Merge"} | ai_types,
+                    "Action": {"Action", "Decision", "Merge", "Final"} | ai_types,
+                    "Decision": {"Action", "Decision", "Merge", "Final"} | ai_types,
+                    "Merge": {"Action", "Decision", "Merge"} | ai_types,
                     "Final": set(),
                 }
                 if src.obj_type == "Final":
