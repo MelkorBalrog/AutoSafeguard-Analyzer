@@ -4,6 +4,8 @@ from itertools import product
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox
+from gui.tooltip import ToolTip
+from gui.drawing_helper import FTADrawingHelper
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -47,6 +49,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<Double-1>", self.on_double_click)
+        self.drawing_helper = FTADrawingHelper()
 
         self.nodes = {}  # name -> (oval_id, text_id)
         self.tables = {}  # name -> (window_id, frame, treeview)
@@ -244,7 +247,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float) -> None:
         r = self.NODE_RADIUS
-        oval = self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="#ffffe0")
+        color = "lightyellow"
+        self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
+        oval = self.canvas.create_oval(
+            x - r, y - r, x + r, y + r, outline="black", fill=""
+        )
         text = self.canvas.create_text(x, y, text=name)
         self.nodes[name] = (oval, text)
         self.id_to_node[oval] = name
@@ -274,17 +281,31 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc:
             return
         parents = doc.network.parents.get(name, [])
-        cols = list(parents) + ["P(True)"]
+        prob_col = f"P({name}=T)"
+        cols = list(parents) + [prob_col]
         frame = ttk.Frame(self.canvas)
+        label_text = (
+            f"Prior probability of {name}" if not parents else f"Conditional probabilities for {name}"
+        )
+        label = ttk.Label(frame, text=label_text)
+        label.pack(side=tk.TOP, fill=tk.X)
         tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
         for c in cols:
             tree.heading(c, text=c)
-            tree.column(c, width=60, anchor=tk.CENTER)
+            tree.column(c, width=80 if c == prob_col else 60, anchor=tk.CENTER)
         tree.pack(side=tk.TOP, fill=tk.X)
+        if not parents:
+            info = f"Prior probability that {name} is True"
+        else:
+            info = (
+                "Each row shows a combination of parent values; "
+                f"{prob_col} is the probability that {name} is True for that combination"
+            )
+        ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
-        ttk.Button(frame, text="Add", command=lambda n=name: self.add_cpd_row(n)).pack(
-            side=tk.TOP, fill=tk.X
-        )
+        add_btn = ttk.Button(frame, text="Add", command=lambda n=name: self.add_cpd_row(n))
+        add_btn.pack(side=tk.TOP, fill=tk.X)
+        ToolTip(add_btn, "Add a new probability entry")
         win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
         self.tables[name] = (win, frame, tree)
         self._update_table(name)
