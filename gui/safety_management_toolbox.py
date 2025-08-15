@@ -217,12 +217,22 @@ class SafetyManagementWindow(tk.Frame):
         repo = SysMLRepository.get_instance()
         gov = GovernanceDiagram.from_repository(repo, diag_id)
         try:
-            reqs = [r for r in gov.generate_requirements() if r.strip()]
+            raw_reqs = gov.generate_requirements()
         except Exception as exc:  # pragma: no cover - defensive
             messagebox.showerror(
                 "Requirements", f"Failed to generate requirements: {exc}"
             )
             return
+        reqs: list[tuple[str, str]] = []
+        for r in raw_reqs:
+            if isinstance(r, tuple):
+                text, rtype = r
+            elif hasattr(r, "text"):
+                text, rtype = r.text, getattr(r, "req_type", "organizational")
+            else:
+                text, rtype = str(r), "organizational"
+            if text.strip():
+                reqs.append((text, rtype))
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
@@ -250,15 +260,22 @@ class SafetyManagementWindow(tk.Frame):
                 continue
             gov = GovernanceDiagram.from_repository(repo, diag_id)
             try:
-                reqs = [r for r in gov.generate_requirements() if r.strip()]
+                raw_reqs = gov.generate_requirements()
             except Exception as exc:  # pragma: no cover - defensive
                 messagebox.showerror(
                     "Requirements",
                     f"Failed to generate requirements for '{name}': {exc}",
                 )
-                return
-            for text, rtype in reqs:
-                ids.append(self._add_requirement(text, rtype))
+                continue
+            for r in raw_reqs:
+                if isinstance(r, tuple):
+                    text, rtype = r
+                elif hasattr(r, "text"):
+                    text, rtype = r.text, getattr(r, "req_type", "organizational")
+                else:
+                    text, rtype = str(r), "organizational"
+                if text.strip():
+                    ids.append(self._add_requirement(text, rtype))
         if not ids:
             messagebox.showinfo(
                 "Requirements",

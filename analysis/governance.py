@@ -1,7 +1,7 @@
 """Basic governance diagram support for safety workflows."""
 
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any, Iterator, List, Tuple
 
 import networkx as nx
 
@@ -21,6 +21,31 @@ _AI_RELATIONS = {
     "Ingestion",
     "Model evaluation",
 }
+
+
+@dataclass
+class GeneratedRequirement:
+    """Container for a generated requirement.
+
+    The object behaves like both a tuple ``(text, type)`` and a string so that
+    existing code and tests that expect either representation continue to work.
+    """
+
+    text: str
+    req_type: str
+
+    def __iter__(self) -> Iterator[str]:
+        yield self.text
+        yield self.req_type
+
+    def __getitem__(self, idx: int) -> str:
+        return (self.text, self.req_type)[idx]
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        return self.text
+
+    def __contains__(self, item: str) -> bool:  # pragma: no cover - trivial
+        return item in self.text or item in self.req_type
 
 
 @dataclass
@@ -131,16 +156,17 @@ class GovernanceDiagram:
             if data.get("kind") == "relationship"
         ]
 
-    def generate_requirements(self) -> List[tuple[str, str]]:
+    def generate_requirements(self) -> List[GeneratedRequirement]:
         """Generate textual requirements from the diagram.
 
         Tasks, flows, relationships and any optional conditions or labels are
         converted into simple natural language statements for downstream
-        processing or documentation.  Each returned item is a ``(text, type)``
-        tuple where ``type`` is either ``"AI safety"`` or ``"organizational``.
+        processing or documentation.  Each returned item is a
+        :class:`GeneratedRequirement` containing the requirement text and its
+        category (``"AI safety"`` or ``"organizational"``).
         """
 
-        requirements: List[tuple[str, str]] = []
+        requirements: List[GeneratedRequirement] = []
 
         for task in self.tasks():
             req_type = (
@@ -148,7 +174,11 @@ class GovernanceDiagram:
                 if self.node_types.get(task) in _AI_NODES
                 else "organizational"
             )
-            requirements.append((f"The system shall perform task '{task}'.", req_type))
+            requirements.append(
+                GeneratedRequirement(
+                    f"The system shall perform task '{task}'.", req_type
+                )
+            )
 
         for src, dst in self.graph.edges():
             data = self.edge_data.get(
@@ -185,7 +215,7 @@ class GovernanceDiagram:
                 or self.node_types.get(dst) in _AI_NODES
             ):
                 req_type = "AI safety"
-            requirements.append((req, req_type))
+            requirements.append(GeneratedRequirement(req, req_type))
 
         return requirements
 
@@ -221,8 +251,6 @@ class GovernanceDiagram:
         for obj in getattr(src_diagram, "objects", []):
             odict = obj if isinstance(obj, dict) else obj.__dict__
             obj_type = odict.get("obj_type")
-            if obj_type not in _AI_NODES and obj_type != "Action":
-                continue
             elem_id = odict.get("element_id")
             name = ""
             if elem_id and elem_id in repo.elements:
@@ -241,13 +269,21 @@ class GovernanceDiagram:
             if not src or not dst:
                 continue
             name = cdict.get("name")
-            cond = cdict.get("properties", {}).get("condition")
+            props = cdict.get("properties", {})
+            cond = props.get("condition")
+            if not cond:
+                guard = cdict.get("guard")
+                if guard:
+                    ops = cdict.get("guard_ops") or []
+                    sep = f" {ops[0]} " if ops else " AND "
+                    cond = sep.join(guard)
+                elif name and cdict.get("conn_type") == "Flow":
+                    cond = name
             conn_type = cdict.get("conn_type")
             if conn_type == "Flow":
-                diagram.add_flow(src, dst, cond or name, conn_type=conn_type)
+                diagram.add_flow(src, dst, cond, conn_type=conn_type)
             else:
                 if cond is None and name is not None:
-                    # Backwards compatibility: older diagrams used the name as the condition
                     diagram.add_relationship(src, dst, condition=name, conn_type=conn_type)
                 else:
                     diagram.add_relationship(
