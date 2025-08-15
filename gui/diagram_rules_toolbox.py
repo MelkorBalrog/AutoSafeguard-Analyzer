@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 from pathlib import Path
 import json
-from config_loader import load_json_with_comments
+from config import load_json_with_comments
 from gui import messagebox
 
 class DiagramRulesEditor(tk.Frame):
@@ -12,7 +12,7 @@ class DiagramRulesEditor(tk.Frame):
         super().__init__(master)
         self.app = app
         self.config_path = Path(
-            config_path or Path(__file__).resolve().parents[1] / "diagram_rules.json"
+            config_path or Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
         )
         try:
             self.data = load_json_with_comments(self.config_path)

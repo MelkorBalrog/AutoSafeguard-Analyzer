@@ -26,7 +26,7 @@ import difflib
 import sys
 import re
 from pathlib import Path
-from config_loader import load_json_with_comments
+from config import load_json_with_comments
 import json
 try:
     from PIL import Image, ImageTk
@@ -34,7 +34,7 @@ except ModuleNotFoundError:  # pragma: no cover - pillow optional
     Image = ImageTk = None
 
 # Node types treated as gates when deriving component names
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_json_with_comments(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
