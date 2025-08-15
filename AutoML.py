@@ -14647,11 +14647,12 @@ class FaultTreeApp:
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
-        if not phases:
-            self.phase_req_menu.add_command(
-                label="Lifecycle",
-                command=self.generate_lifecycle_requirements,
-            )
+        if phases:
+            self.phase_req_menu.add_separator()
+        self.phase_req_menu.add_command(
+            label="Lifecycle",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
@@ -16931,7 +16932,16 @@ class FaultTreeApp:
             self.doc_nb.select(tabs[index + 1])
 
     def _new_tab(self, title: str) -> ttk.Frame:
-        """Create and select a new tab in the document notebook."""
+        """Create or select a tab in the document notebook.
+
+        If a tab with the given title already exists, it will be selected and
+        returned instead of creating a duplicate tab. Otherwise a new tab is
+        created and selected.
+        """
+        for tab_id in self.doc_nb.tabs():
+            if self.doc_nb.tab(tab_id, "text") == title:
+                self.doc_nb.select(tab_id)
+                return self.doc_nb.nametowidget(tab_id)
         tab = ttk.Frame(self.doc_nb)
         self.doc_nb.add(tab, text=title)
         self.doc_nb.select(tab)
