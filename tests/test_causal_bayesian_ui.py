@@ -1,7 +1,9 @@
 import types
 from itertools import product
+import pytest
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
+from analysis import CausalBayesianNetwork
 
 
 class DummyCanvas:
@@ -130,11 +132,12 @@ def _setup_window():
             parents = self.parents.get(name, [])
             if not parents:
                 prob = float(self.cpds.get(name, 0.0))
-                return [((), prob, 1.0)]
+                return [((), prob, 1.0, prob)]
             cpds = self.cpds.get(name, {})
             rows = []
             for combo in product([False, True], repeat=len(parents)):
-                rows.append((combo, float(cpds.get(combo, 0.0)), 0.0))
+                prob = float(cpds.get(combo, 0.0))
+                rows.append((combo, prob, 0.0, 0.0))
             return rows
 
     doc = types.SimpleNamespace(network=Net(), positions={})
@@ -205,3 +208,42 @@ def test_node_colors_by_type():
     win._draw_node("I", 0, 0, "insufficiency")
     assert colors[0] == "lightblue"
     assert colors[1] == "lightyellow"
+
+
+def test_update_all_tables_refreshes_dependencies():
+    win = object.__new__(CausalBayesianNetworkWindow)
+    win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS
+    win.canvas = DummyCanvas()
+    win.drawing_helper = FTADrawingHelper()
+    win.nodes = {}
+    win.tables = {}
+    win.id_to_node = {}
+    win.edges = []
+    win.current_tool = "Select"
+    win._place_table = lambda *a, **k: None
+    win._position_table = lambda *a, **k: None
+
+    app = DummyApp()
+    net = CausalBayesianNetwork()
+    net.add_node("Rain", cpd=0.3)
+    net.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    doc = types.SimpleNamespace(network=net, positions={"Rain": (0, 0), "WetGround": (0, 0)})
+    app.active_cbn = doc
+    win.app = app
+
+    tree_rain = DummyTree()
+    frame_rain = DummyFrame(tree_rain)
+    tree_wet = DummyTree()
+    frame_wet = DummyFrame(tree_wet)
+    win.tables["Rain"] = (1, frame_rain, tree_rain)
+    win.tables["WetGround"] = (2, frame_wet, tree_wet)
+
+    win._update_all_tables()
+    # row for Rain=True is second row
+    assert float(tree_wet.rows[1][1]) == pytest.approx(0.3, rel=1e-3)
+    assert float(tree_wet.rows[1][3]) == pytest.approx(0.27, rel=1e-3)
+
+    net.cpds["Rain"] = 0.6
+    win._update_all_tables()
+    assert float(tree_wet.rows[1][1]) == pytest.approx(0.6, rel=1e-3)
+    assert float(tree_wet.rows[1][3]) == pytest.approx(0.54, rel=1e-3)
