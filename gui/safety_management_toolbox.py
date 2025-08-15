@@ -216,13 +216,12 @@ class SafetyManagementWindow(tk.Frame):
         if not diag_id:
             return
         repo = SysMLRepository.get_instance()
+        gov = GovernanceDiagram.from_repository(repo, diag_id)
         try:
-            gov = GovernanceDiagram.from_repository(repo, diag_id)
-            reqs = gov.generate_requirements()
+            reqs = [r for r in gov.generate_requirements() if r.strip()]
         except Exception as exc:  # pragma: no cover - defensive
             messagebox.showerror(
-                "Requirements",
-                f"Unable to generate requirements for '{name}': {exc}",
+                "Requirements", f"Failed to generate requirements: {exc}"
             )
             return
         if not reqs:
@@ -250,15 +249,15 @@ class SafetyManagementWindow(tk.Frame):
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
+            gov = GovernanceDiagram.from_repository(repo, diag_id)
             try:
-                gov = GovernanceDiagram.from_repository(repo, diag_id)
-                reqs = gov.generate_requirements()
+                reqs = [r for r in gov.generate_requirements() if r.strip()]
             except Exception as exc:  # pragma: no cover - defensive
                 messagebox.showerror(
                     "Requirements",
-                    f"Unable to generate requirements for '{name}': {exc}",
+                    f"Failed to generate requirements for '{name}': {exc}",
                 )
-                return
+                continue
             for text in reqs:
                 ids.append(self._add_requirement(text))
         if not ids:
