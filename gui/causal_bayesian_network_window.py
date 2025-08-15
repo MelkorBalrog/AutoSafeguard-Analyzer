@@ -331,7 +331,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
             if prob is not None:
                 doc.network.cpds[name] = prob
-                self._update_all_tables()
+                self._update_table(name)
             return
         cpds = {}
         for combo in product([True, False], repeat=len(parents)):
@@ -349,7 +349,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 return
             cpds[combo] = prob
         doc.network.cpds[name] = cpds
-        self._update_all_tables()
+        self._update_table(name)
 
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float, kind: str | None = None) -> None:
@@ -397,8 +397,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         parents = doc.network.parents.get(name, [])
         prob_col = f"P({name}=T)"
         if parents:
-            joint_col = f"P({name}=T, parents)"
-            cols = list(parents) + [joint_col]
+            combo_col = "P(parents)"
+            total_col = "P(total)"
+            cols = list(parents) + [combo_col, prob_col, total_col]
         else:
             cols = [prob_col]
         frame = ttk.Frame(self.canvas)
@@ -410,16 +411,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
         for c in cols:
             tree.heading(c, text=c)
-            is_prob = c == prob_col or (parents and c == joint_col)
-            tree.column(c, width=80 if is_prob else 60, anchor=tk.CENTER)
+            width = 80 if c in (prob_col, total_col if parents else None) else 60
+            tree.column(c, width=width, anchor=tk.CENTER)
         tree.pack(side=tk.TOP, fill=tk.X)
         if not parents:
             info = f"Prior probability that {name} is True"
         else:
             info = (
                 "Each row shows a combination of parent values; "
-                f"{joint_col} is the joint probability that the parents take that combination "
-                f"and {name} is True"
+                f"{prob_col} is the probability that {name} is True for that combination, "
+                f"{combo_col} is the probability of the parent combination and {total_col} is the "
+                "joint probability of the entire row"
             )
         ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
@@ -441,10 +443,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not parents:
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
-            for combo, prob, combo_prob in rows:
-                joint = combo_prob * prob
+            for combo, prob, combo_prob, total_prob in rows:
                 row = ["T" if val else "F" for val in combo]
-                row.append(f"{joint:.3f}")
+                row.append(f"{combo_prob:.3f}")
+                row.append(f"{prob:.3f}")
+                row.append(f"{total_prob:.3f}")
                 tree.insert("", "end", values=row)
         tree.configure(height=len(rows))
         frame.update_idletasks()
@@ -464,14 +467,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         r = self.NODE_RADIUS
         self.canvas.itemconfigure(win, width=w, height=h)
         self.canvas.coords(win, x + r + 10, y - h / 2)
-
-    # ------------------------------------------------------------------
-    def _update_all_tables(self) -> None:
-        doc = getattr(self.app, "active_cbn", None)
-        if not doc:
-            return
-        for node in doc.network.nodes:
-            self._update_table(node)
 
     # ------------------------------------------------------------------
     def _rebuild_table(self, name: str) -> None:
@@ -546,6 +541,24 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         doc.network.cpds[name][current] = prob
         self._update_all_tables()
+
+    # ------------------------------------------------------------------
+    def _select_triggering_conditions(self):
+        from gui.toolboxes import _SelectTriggeringConditionsDialog
+
+        dlg = _SelectTriggeringConditionsDialog(
+            self, getattr(self.app, "triggering_conditions", [])
+        )
+        return getattr(dlg, "result", [])
+
+    # ------------------------------------------------------------------
+    def _select_functional_insufficiencies(self):
+        from gui.toolboxes import _SelectFIsDialog
+
+        dlg = _SelectFIsDialog(
+            self, getattr(self.app, "functional_insufficiencies", [])
+        )
+        return getattr(dlg, "result", [])
 
     # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
