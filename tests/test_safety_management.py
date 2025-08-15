@@ -282,7 +282,7 @@ def test_open_safety_management_toolbox_uses_browser():
             pass
 
     class DummySMW:
-        def __init__(self, master, app, toolbox):
+        def __init__(self, master, app, toolbox, show_diagrams=True):
             DummySMW.created = True
             assert toolbox is app.safety_mgmt_toolbox
 

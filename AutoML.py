@@ -14589,7 +14589,7 @@ class FaultTreeApp:
         messagebox.showinfo("Export", "Product goal requirements exported.")
     def generate_phase_requirements(self, phase: str) -> None:
         """Generate requirements for all governance diagrams in a phase."""
-        self.open_safety_management_toolbox()
+        self.open_safety_management_toolbox(show_diagrams=False)
         win = getattr(self, "safety_mgmt_window", None)
         if win:
             win.generate_phase_requirements(phase)
@@ -16676,7 +16676,7 @@ class FaultTreeApp:
             self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
         self.refresh_all()
 
-    def open_safety_management_toolbox(self):
+    def open_safety_management_toolbox(self, show_diagrams: bool = True):
         """Open the Safety & Security Management editor and browser."""
         tab_exists = (
             hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists()
@@ -16695,18 +16695,19 @@ class FaultTreeApp:
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
-        if (
-            not getattr(self, "safety_mgmt_window", None)
-            or not self.safety_mgmt_window.winfo_exists()
-        ):
-            self.safety_mgmt_window = SafetyManagementWindow(
-                parent, self, self.safety_mgmt_toolbox
-            )
-            if hasattr(self.safety_mgmt_window, "pack"):
-                self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
+        self.safety_mgmt_window = SafetyManagementWindow(
+            self._safety_mgmt_tab, self, self.safety_mgmt_toolbox, show_diagrams=show_diagrams
+        )
+        # SafetyManagementWindow may not pack itself when embedded. If the
+        # widget exposes a ``pack`` method, invoke it so the tab shows the
+        # expected controls instead of appearing blank.
+        if hasattr(self.safety_mgmt_window, "pack"):
+            self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
 
         # Opening the toolbox can affect menu enablement, so refresh the UI.
-        self.refresh_all()
+        refresh = getattr(self, "refresh_all", None)
+        if callable(refresh):
+            refresh()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""

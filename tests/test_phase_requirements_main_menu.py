@@ -8,6 +8,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 sys.modules.setdefault("PIL", types.ModuleType("PIL"))
 sys.modules.setdefault("PIL.Image", types.ModuleType("Image"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("ImageTk"))
+sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("ImageDraw"))
+sys.modules.setdefault("PIL.ImageFont", types.ModuleType("ImageFont"))
 
 from AutoML import FaultTreeApp
 from analysis import SafetyManagementToolbox
@@ -51,8 +53,8 @@ def test_generate_phase_requirements_delegates(monkeypatch):
     app = FaultTreeApp.__new__(FaultTreeApp)
     events = []
 
-    def fake_open():
-        events.append("open")
+    def fake_open(show_diagrams=True):
+        events.append(show_diagrams)
 
     app.open_safety_management_toolbox = fake_open
     app.safety_mgmt_window = types.SimpleNamespace(
@@ -61,4 +63,4 @@ def test_generate_phase_requirements_delegates(monkeypatch):
 
     FaultTreeApp.generate_phase_requirements(app, "PhaseX")
 
-    assert events == ["open", "PhaseX"]
+    assert events == [False, "PhaseX"]
