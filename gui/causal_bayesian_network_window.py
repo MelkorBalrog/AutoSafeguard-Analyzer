@@ -3,6 +3,7 @@ from tkinter import ttk, simpledialog
 from itertools import product
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
+from gui import messagebox
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -32,10 +33,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         toolbox = ttk.Frame(body)
         toolbox.pack(side=tk.LEFT, fill=tk.Y)
-        for name in ("Select", "Variable", "Edge"):
+        for name in ("Select", "Variable", "Relationship"):
             ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
                 fill=tk.X, padx=2, pady=2
             )
+        ttk.Button(toolbox, text="Calculate", command=self.calculate).pack(
+            fill=tk.X, padx=2, pady=2
+        )
         self.current_tool = "Select"
 
         self.canvas = tk.Canvas(body, background="white")
@@ -45,6 +49,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self.on_double_click)
 
         self.nodes = {}  # name -> (oval_id, text_id)
+        self.tables = {}  # name -> (window_id, frame, treeview)
         self.id_to_node = {}
         self.edges = []  # (line_id, src, dst)
         self.edge_start = None
@@ -146,7 +151,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
             self._draw_node(name, x, y)
-        elif self.current_tool == "Edge":
+        elif self.current_tool == "Relationship":
             name = self._find_node(event.x, event.y)
             if not name:
                 return
@@ -162,6 +167,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 if src not in parents:
                     parents.append(src)
                     doc.network.cpds[dst] = {}
+                    self._rebuild_table(dst)
                 self.edge_start = None
         else:  # Select tool
             name = self._find_node(event.x, event.y)
@@ -187,7 +193,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if src == name or dst == name:
                 x1, y1 = doc.positions[src]
                 x2, y2 = doc.positions[dst]
-                self.canvas.coords(line_id, x1, y1, x2, y2)
+                dx, dy = x2 - x1, y2 - y1
+                dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
+                sx = x1 + dx / dist * r
+                sy = y1 + dy / dist * r
+                tx = x2 - dx / dist * r
+                ty = y2 - dy / dist * r
+                self.canvas.coords(line_id, sx, sy, tx, ty)
+        self._position_table(name, x, y)
 
     # ------------------------------------------------------------------
     def on_double_click(self, event) -> None:
@@ -208,6 +221,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
             if prob is not None:
                 doc.network.cpds[name] = prob
+                self._update_table(name)
             return
         cpds = {}
         for combo in product([True, False], repeat=len(parents)):
@@ -225,6 +239,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 return
             cpds[combo] = prob
         doc.network.cpds[name] = cpds
+        self._update_table(name)
 
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float) -> None:
@@ -234,6 +249,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.nodes[name] = (oval, text)
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
+        self._place_table(name)
 
     # ------------------------------------------------------------------
     def _draw_edge(self, src: str, dst: str) -> None:
@@ -242,8 +258,146 @@ class CausalBayesianNetworkWindow(tk.Frame):
             return
         x1, y1 = doc.positions.get(src, (0, 0))
         x2, y2 = doc.positions.get(dst, (0, 0))
-        line = self.canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST)
+        r = self.NODE_RADIUS
+        dx, dy = x2 - x1, y2 - y1
+        dist = (dx ** 2 + dy ** 2) ** 0.5 or 1
+        sx = x1 + dx / dist * r
+        sy = y1 + dy / dist * r
+        tx = x2 - dx / dist * r
+        ty = y2 - dy / dist * r
+        line = self.canvas.create_line(sx, sy, tx, ty, arrow=tk.LAST)
         self.edges.append((line, src, dst))
+
+    # ------------------------------------------------------------------
+    def _place_table(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        parents = doc.network.parents.get(name, [])
+        cols = list(parents) + ["P(True)"]
+        frame = ttk.Frame(self.canvas)
+        tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
+        for c in cols:
+            tree.heading(c, text=c)
+            tree.column(c, width=60, anchor=tk.CENTER)
+        tree.pack(side=tk.TOP, fill=tk.X)
+        tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
+        ttk.Button(frame, text="Add", command=lambda n=name: self.add_cpd_row(n)).pack(
+            side=tk.TOP, fill=tk.X
+        )
+        win = self.canvas.create_window(0, 0, window=frame, anchor="nw")
+        self.tables[name] = (win, frame, tree)
+        self._update_table(name)
+        x, y = doc.positions.get(name, (0, 0))
+        self._position_table(name, x, y)
+
+    # ------------------------------------------------------------------
+    def _update_table(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc or name not in self.tables:
+            return
+        _, _, tree = self.tables[name]
+        tree.delete(*tree.get_children())
+        parents = doc.network.parents.get(name, [])
+        if not parents:
+            prob = doc.network.cpds.get(name, 0.0)
+            tree.configure(height=1)
+            tree.insert("", "end", values=[f"{prob:.3f}"])
+        else:
+            cpds = doc.network.cpds.get(name, {})
+            tree.configure(height=len(cpds) or 1)
+            for combo, prob in cpds.items():
+                row = ["T" if val else "F" for val in combo]
+                row.append(f"{prob:.3f}")
+                tree.insert("", "end", values=row)
+        self.canvas.update_idletasks()
+        x, y = doc.positions.get(name, (0, 0))
+        self._position_table(name, x, y)
+
+    # ------------------------------------------------------------------
+    def _position_table(self, name: str, x: float, y: float) -> None:
+        if name not in self.tables:
+            return
+        win, frame, _ = self.tables[name]
+        self.canvas.update_idletasks()
+        h = frame.winfo_reqheight()
+        r = self.NODE_RADIUS
+        self.canvas.coords(win, x + r + 10, y - h / 2)
+
+    # ------------------------------------------------------------------
+    def _rebuild_table(self, name: str) -> None:
+        if name in self.tables:
+            win, frame, _ = self.tables.pop(name)
+            self.canvas.delete(win)
+            frame.destroy()
+        self._place_table(name)
+
+    # ------------------------------------------------------------------
+    def add_cpd_row(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        parents = doc.network.parents.get(name, [])
+        if not parents:
+            prob = simpledialog.askfloat(
+                "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+            )
+            if prob is not None:
+                doc.network.cpds[name] = prob
+                self._update_table(name)
+            return
+        values = []
+        for p in parents:
+            val = simpledialog.askstring(f"{p}", "T/F", parent=self)
+            if val is None:
+                return
+            values.append(val.strip().upper().startswith("T"))
+        prob = simpledialog.askfloat(
+            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+        )
+        if prob is None:
+            return
+        doc.network.cpds.setdefault(name, {})[tuple(values)] = prob
+        self._update_table(name)
+
+    # ------------------------------------------------------------------
+    def edit_cpd_row(self, name: str) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc or name not in self.tables:
+            return
+        parents = doc.network.parents.get(name, [])
+        _, _, tree = self.tables[name]
+        item = tree.focus()
+        if not item:
+            return
+        values = tree.item(item, "values")
+        if not parents:
+            prob = simpledialog.askfloat(
+                "Prior", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+            )
+            if prob is not None:
+                doc.network.cpds[name] = prob
+                self._update_table(name)
+            return
+        current = tuple(v == "T" for v in values[:-1])
+        prob = simpledialog.askfloat(
+            "Probability", f"P({name}=True)", minvalue=0.0, maxvalue=1.0, parent=self
+        )
+        if prob is None:
+            return
+        doc.network.cpds[name][current] = prob
+        self._update_table(name)
+
+    # ------------------------------------------------------------------
+    def calculate(self) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        lines = []
+        for name in doc.network.nodes:
+            prob = doc.network.query(name)
+            lines.append(f"P({name}=True) = {prob:.3f}")
+        messagebox.showinfo("Probabilities", "\n".join(lines), parent=self)
 
     # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
@@ -258,6 +412,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
     def load_doc(self) -> None:
         self.canvas.delete("all")
         self.nodes.clear()
+        for _, frame, _ in self.tables.values():
+            frame.destroy()
+        self.tables.clear()
         self.id_to_node.clear()
         self.edges.clear()
         doc = getattr(self.app, "active_cbn", None)
