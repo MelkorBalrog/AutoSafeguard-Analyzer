@@ -181,45 +181,27 @@ class CausalBayesianNetwork:
 
     # ------------------------------------------------------------------
     def marginal_probabilities(self) -> Dict[str, float]:
-        """Return ``P(node=True)`` for every node via probability propagation.
+        """Return ``P(node=True)`` for every node.
 
-        The computation proceeds in topological order so that each node's
-        probability only depends on already computed parent probabilities.
-        For a node ``X`` with parents ``Pa(X)`` the marginal is calculated as::
+        This implementation follows the standard marginalisation formula
 
-            P(X=True) = \sum_{pa} P(X=True | pa) \prod_{Y in Pa(X)} P(Y=pa_Y)
+            P(X=True) = \sum_{pa} P(X=True \mid pa) P(pa)
 
-        where the sum iterates over all ``2^n`` combinations of parent values
-        ``pa``.  Missing entries in the conditional probability table default
-        to ``0.0`` ensuring the propagation always succeeds.
+        by delegating the computation of each term to the enumeration based
+        :meth:`joint_probability` helper.  While potentially more expensive
+        than simple propagation, it produces correct results even when parent
+        nodes are themselves dependent.
         """
 
-        order = self._topological()
-        probs: Dict[str, float] = {}
-        for node in order:
-            parents = self.parents.get(node, [])
-            if not parents:
-                probs[node] = float(self.cpds.get(node, 0.0))
-                continue
-            total = 0.0
-            for combo, p_true in self._cpd_rows_only(node):
-                weight = 1.0
-                for parent, val in zip(parents, combo):
-                    parent_prob = probs.get(parent, 0.0)
-                    weight *= parent_prob if val else 1.0 - parent_prob
-                total += weight * p_true
-            probs[node] = total
-        return probs
+        return {node: self.joint_probability({node: True}) for node in self.nodes}
 
     # ------------------------------------------------------------------
     def _cpd_rows_only(self, var: str) -> List[Tuple[Tuple[bool, ...], float]]:
         """Return combinations of parent values with their ``P(var=True)``.
 
-        This private helper is used internally by :meth:`marginal_probabilities`
-        to avoid recursive calls once :meth:`cpd_rows` starts depending on those
-        marginals as well.  It mirrors the previous behaviour of
-        :meth:`cpd_rows` by simply enumerating the conditional probability table
-        without computing additional information.
+        This private helper simply enumerates the conditional probability
+        table of ``var`` without computing any additional information.  It is
+        used as the starting point for :meth:`cpd_rows`.
         """
 
         parents = self.parents.get(var, [])
@@ -250,15 +232,25 @@ class CausalBayesianNetwork:
             combo, prob = rows[0]
             return [(combo, prob, 1.0)]
 
-        parent_probs = self.marginal_probabilities()
         result: List[Tuple[Tuple[bool, ...], float, float]] = []
         for combo, p_true in rows:
-            weight = 1.0
-            for parent, val in zip(parents, combo):
-                parent_prob = parent_probs.get(parent, 0.0)
-                weight *= parent_prob if val else 1.0 - parent_prob
-            result.append((combo, p_true, weight))
+            assignment = {p: v for p, v in zip(parents, combo)}
+            combo_prob = self.joint_probability(assignment)
+            result.append((combo, p_true, combo_prob))
         return result
+
+    # ------------------------------------------------------------------
+    def joint_probability(self, assignment: Mapping[str, bool]) -> float:
+        """Return ``P(assignment)`` for the provided variable/value mapping.
+
+        The computation mirrors the classic factorisation of a Bayesian
+        network, ``\prod_i P(X_i \mid Parents(X_i))``, while summing out all
+        unspecified variables.  It forms the basis for deriving marginal and
+        conditional probabilities used throughout the UI.
+        """
+
+        order = self._topological()
+        return self._enumerate_all(order, dict(assignment), {})
 
 
 @dataclass

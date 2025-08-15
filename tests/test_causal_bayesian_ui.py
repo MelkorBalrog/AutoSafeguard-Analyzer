@@ -1,5 +1,7 @@
 import types
 from itertools import product
+
+from analysis import CausalBayesianNetwork
 from gui.causal_bayesian_network_window import CausalBayesianNetworkWindow
 from gui.drawing_helper import FTADrawingHelper
 
@@ -175,6 +177,32 @@ def _setup_window():
     return win, doc
 
 
+def _setup_window_real():
+    win = object.__new__(CausalBayesianNetworkWindow)
+    win.NODE_RADIUS = CausalBayesianNetworkWindow.NODE_RADIUS
+    win.canvas = DummyCanvas()
+    win.drawing_helper = FTADrawingHelper()
+    win.nodes = {}
+    win.tables = {}
+    win.id_to_node = {}
+    win.edges = []
+    win.current_tool = "Select"
+    win._place_table = lambda *a, **k: None
+    win._position_table = lambda *a, **k: None
+    win.after = lambda *a, **k: None
+    win.after_cancel = lambda *a, **k: None
+    win.selected_node = None
+    win.selection_rect = None
+    win.temp_edge_line = None
+    win.temp_edge_anim = None
+    win.temp_edge_offset = 0
+    app = DummyApp()
+    doc = types.SimpleNamespace(network=CausalBayesianNetwork(), positions={})
+    app.active_cbn = doc
+    win.app = app
+    return win, doc
+
+
 def test_fill_moves_with_node():
     win, doc = _setup_window()
     doc.network.nodes.add("A")
@@ -223,6 +251,8 @@ def test_table_auto_fills_missing_rows():
     win._update_table("A")
     assert tree.height == 4
     assert len(tree.rows) == 4
+    # two parent columns plus a single probability column
+    assert all(len(row) == 3 for row in tree.rows)
 
 
 def test_node_colors_by_type():
@@ -262,3 +292,23 @@ def test_drag_relationship_creates_edge():
     win.on_release(types.SimpleNamespace(x=100, y=0))
     assert len(win.edges) == 1
     assert "A" in doc.network.parents.get("B", [])
+
+
+def test_joint_probabilities_refresh_on_parent_change():
+    win, doc = _setup_window_real()
+    cbn = doc.network
+    cbn.add_node("A", cpd=0.2)
+    cbn.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
+    tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = (1, frame_a, tree_a)
+    tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = (2, frame_b, tree_b)
+    doc.positions["A"] = (0, 0)
+    doc.positions["B"] = (0, 0)
+
+    win._update_all_tables()
+    assert tree_b.rows[0][-1] == f"{0.8 * 0.1:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.2 * 0.5:.3f}"
+
+    cbn.cpds["A"] = 0.7
+    win._update_all_tables()
+    assert tree_b.rows[0][-1] == f"{0.3 * 0.1:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.7 * 0.5:.3f}"

@@ -293,7 +293,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
             if prob is not None:
                 doc.network.cpds[name] = prob
-                self._update_table(name)
+                self._update_all_tables()
             return
         cpds = {}
         for combo in product([True, False], repeat=len(parents)):
@@ -311,7 +311,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 return
             cpds[combo] = prob
         doc.network.cpds[name] = cpds
-        self._update_table(name)
+        self._update_all_tables()
 
     # ------------------------------------------------------------------
     def _draw_node(self, name: str, x: float, y: float, kind: str | None = None) -> None:
@@ -359,8 +359,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         parents = doc.network.parents.get(name, [])
         prob_col = f"P({name}=T)"
         if parents:
-            combo_col = "P(parents)"
-            cols = list(parents) + [combo_col, prob_col]
+            joint_col = f"P({name}=T, parents)"
+            cols = list(parents) + [joint_col]
         else:
             cols = [prob_col]
         frame = ttk.Frame(self.canvas)
@@ -372,15 +372,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
         for c in cols:
             tree.heading(c, text=c)
-            tree.column(c, width=80 if c == prob_col else 60, anchor=tk.CENTER)
+            is_prob = c == prob_col or (parents and c == joint_col)
+            tree.column(c, width=80 if is_prob else 60, anchor=tk.CENTER)
         tree.pack(side=tk.TOP, fill=tk.X)
         if not parents:
             info = f"Prior probability that {name} is True"
         else:
             info = (
                 "Each row shows a combination of parent values; "
-                f"{prob_col} is the probability that {name} is True for that combination "
-                f"and {combo_col} is the probability of the parent combination"
+                f"{joint_col} is the joint probability that the parents take that combination "
+                f"and {name} is True"
             )
         ToolTip(tree, info)
         tree.bind("<Double-1>", lambda e, n=name: self.edit_cpd_row(n))
@@ -403,9 +404,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             tree.insert("", "end", values=[f"{rows[0][1]:.3f}"])
         else:
             for combo, prob, combo_prob in rows:
+                joint = combo_prob * prob
                 row = ["T" if val else "F" for val in combo]
-                row.append(f"{combo_prob:.3f}")
-                row.append(f"{prob:.3f}")
+                row.append(f"{joint:.3f}")
                 tree.insert("", "end", values=row)
         tree.configure(height=len(rows))
         frame.update_idletasks()
@@ -425,6 +426,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
         r = self.NODE_RADIUS
         self.canvas.itemconfigure(win, width=w, height=h)
         self.canvas.coords(win, x + r + 10, y - h / 2)
+
+    # ------------------------------------------------------------------
+    def _update_all_tables(self) -> None:
+        doc = getattr(self.app, "active_cbn", None)
+        if not doc:
+            return
+        for node in doc.network.nodes:
+            self._update_table(node)
 
     # ------------------------------------------------------------------
     def _rebuild_table(self, name: str) -> None:
@@ -451,7 +460,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             )
             if prob is not None:
                 doc.network.cpds[name] = prob
-                self._update_table(name)
+                self._update_all_tables()
             return
         current = tuple(v == "T" for v in values[:-1])
         prob = simpledialog.askfloat(
@@ -460,7 +469,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if prob is None:
             return
         doc.network.cpds[name][current] = prob
-        self._update_table(name)
+        self._update_all_tables()
 
     # ------------------------------------------------------------------
     def _find_node(self, x: float, y: float) -> str | None:
