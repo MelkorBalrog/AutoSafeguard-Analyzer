@@ -27,7 +27,8 @@ def test_requirements_button_opens_tab(monkeypatch):
     toolbox.diagrams["Gov"] = diag.diag_id
 
     class DummyTab:
-        pass
+        def winfo_children(self):
+            return []
 
     tabs: list[tuple[str, DummyTab]] = []
 

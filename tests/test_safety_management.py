@@ -263,7 +263,7 @@ def test_disable_work_product_rejects_existing_docs():
     assert menu.state == tk.DISABLED
 
 
-def test_open_safety_management_toolbox_uses_browser():
+def test_open_safety_management_toolbox_uses_browser(monkeypatch):
     """FaultTreeApp opens the Safety & Security Management window and toolbox."""
     SysMLRepository._instance = None
 
@@ -287,7 +287,7 @@ def test_open_safety_management_toolbox_uses_browser():
             assert toolbox is app.safety_mgmt_toolbox
 
     import gui.safety_management_toolbox as smt
-    smt.SafetyManagementWindow = DummySMW
+    monkeypatch.setattr(smt, "SafetyManagementWindow", DummySMW)
 
     class DummyApp:
         open_safety_management_toolbox = FaultTreeApp.open_safety_management_toolbox

@@ -225,6 +225,8 @@ class SafetyManagementWindow(tk.Frame):
     # ------------------------------------------------------------------
     def _display_requirements(self, title: str, ids: list[str]) -> None:
         frame = self.app._new_tab(title)
+        for child in frame.winfo_children():
+            child.destroy()
         columns = ("ID", "Type", "Text")
         tree = ttk.Treeview(frame, columns=columns, show="headings")
         for c in columns:

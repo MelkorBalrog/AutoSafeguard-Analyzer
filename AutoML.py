@@ -16767,8 +16767,14 @@ class FaultTreeApp:
         tab_exists = (
             hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists()
         )
+        window_exists = (
+            hasattr(self, "safety_mgmt_window")
+            and getattr(self.safety_mgmt_window, "winfo_exists", lambda: False)()
+        )
         if tab_exists:
             self.doc_nb.select(self._safety_mgmt_tab)
+            if window_exists:
+                return
             parent = self._safety_mgmt_tab
         else:
             parent = self._safety_mgmt_tab = self._new_tab(

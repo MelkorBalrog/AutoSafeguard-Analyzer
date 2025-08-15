@@ -27,7 +27,8 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
     toolbox.diagrams["AI Gov"] = diag.diag_id
 
     class DummyTab:
-        pass
+        def winfo_children(self):
+            return []
 
     tabs = []
 
