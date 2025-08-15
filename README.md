@@ -108,34 +108,103 @@ When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
 Task 'Review Plan' shall rework task 'Draft Plan' when changes requested.
 ```
 
-To generate requirements for every governance diagram in a particular phase,
-iterate over the diagrams registered with a
-``SafetyManagementToolbox``:
+To gather the requirements for every governance diagram within a specific lifecycle phase,
+use the Safety & Security Management tool's *Phase Requirements* menu or call the helper
+directly:
 
 ```python
-from analysis.governance import GovernanceDiagram
-from analysis.safety_management import SafetyManagementToolbox
-from sysml.sysml_repository import SysMLRepository
+from analysis import SafetyManagementToolbox
+from gui.safety_management_toolbox import SafetyManagementWindow
 
-repo = SysMLRepository.get_instance()
 toolbox = SafetyManagementToolbox()
-
-# Assume the repository already contains governance diagrams "Gov1" and "Gov2"
-mod = toolbox.add_module("Phase1")
-mod.diagrams.extend(["Gov1", "Gov2"])
-
-reqs: list[str] = []
-for name in toolbox.diagrams_for_module("Phase1"):
-    diag_id = toolbox.diagrams[name]
-    gov = GovernanceDiagram.from_repository(repo, diag_id)
-    reqs.extend(gov.generate_requirements())
-
-for r in reqs:
-    print(r)
+# diagrams would normally be created and assigned to a phase here
+window = SafetyManagementWindow(None, app=None, toolbox=toolbox)
+window.generate_phase_requirements("Concept")  # collects all Concept phase requirements
 ```
 
-This example prints the requirements derived from all governance diagrams in the
-``Phase1`` module.
+This opens a tab listing the combined requirements for the chosen phase.
+
+When importing governance diagrams from a SysML repository, every diagram object
+is treated as a task regardless of its type. Custom elements such as ANN or
+Database nodes therefore participate in requirement generation:
+
+```python
+from sysml.sysml_repository import SysMLRepository
+from analysis.governance import GovernanceDiagram
+
+repo = SysMLRepository()
+diag = repo.create_diagram("Governance Diagram", name="Train")
+ann = repo.create_element("ANN", name="ANN1")
+gate = repo.create_element("Decision", name="Gate")
+diag.objects = [
+    {"obj_id": 1, "obj_type": "ANN", "element_id": ann.elem_id, "properties": {}},
+    {"obj_id": 2, "obj_type": "Decision", "element_id": gate.elem_id, "properties": {}},
+]
+diag.connections = [
+    {"src": 2, "dst": 1, "conn_type": "AI training", "name": "data ready", "properties": {}}
+]
+
+gov = GovernanceDiagram.from_repository(repo, diag.diag_id)
+for req in gov.generate_requirements():
+    print(req)
+```
+
+The output includes the relationship requirement:
+
+```
+The system shall perform task 'ANN1'.
+The system shall perform task 'Gate'.
+Task 'Gate' shall be related to task 'ANN1' when data ready.
+```
+
+To gather the requirements for every governance diagram within a specific lifecycle phase,
+use the Safety & Security Management tool's *Phase Requirements* menu or call the helper
+directly:
+
+```python
+from analysis import SafetyManagementToolbox
+from gui.safety_management_toolbox import SafetyManagementWindow
+
+toolbox = SafetyManagementToolbox()
+# diagrams would normally be created and assigned to a phase here
+window = SafetyManagementWindow(None, app=None, toolbox=toolbox)
+window.generate_phase_requirements("Concept")  # collects all Concept phase requirements
+```
+
+This opens a tab listing the combined requirements for the chosen phase.
+
+When importing governance diagrams from a SysML repository, every diagram object
+is treated as a task regardless of its type. Custom elements such as ANN or
+Database nodes therefore participate in requirement generation:
+
+```python
+from sysml.sysml_repository import SysMLRepository
+from analysis.governance import GovernanceDiagram
+
+repo = SysMLRepository()
+diag = repo.create_diagram("Governance Diagram", name="Train")
+ann = repo.create_element("ANN", name="ANN1")
+gate = repo.create_element("Decision", name="Gate")
+diag.objects = [
+    {"obj_id": 1, "obj_type": "ANN", "element_id": ann.elem_id, "properties": {}},
+    {"obj_id": 2, "obj_type": "Decision", "element_id": gate.elem_id, "properties": {}},
+]
+diag.connections = [
+    {"src": 2, "dst": 1, "conn_type": "AI training", "name": "data ready", "properties": {}}
+]
+
+gov = GovernanceDiagram.from_repository(repo, diag.diag_id)
+for req in gov.generate_requirements():
+    print(req)
+```
+
+The output includes the relationship requirement:
+
+```
+The system shall perform task 'ANN1'.
+The system shall perform task 'Gate'.
+Task 'Gate' shall be related to task 'ANN1' when data ready.
+```
 
 ## Workflow Overview
 
