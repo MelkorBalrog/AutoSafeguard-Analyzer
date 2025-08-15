@@ -117,16 +117,36 @@ class GovernanceDiagram:
     # be categorised.  Tasks originating from AI & safety nodes produce AI
     # safety requirements.
     node_types: dict[str, str] = field(default_factory=dict)
+    # Optional mapping of task names to their data source compartments.
+    node_sources: dict[str, list[str]] = field(default_factory=dict)
 
     def _role_for(self, name: str) -> str:
         """Return the requirement role for a node name."""
         ntype = self.node_types.get(name, "")
         return _NODE_ROLES.get(ntype, "object")
 
-    def add_task(self, name: str, node_type: str = "Action") -> None:
-        """Add a task node to the diagram."""
+    def add_task(
+        self,
+        name: str,
+        node_type: str = "Action",
+        compartments: list[str] | None = None,
+    ) -> None:
+        """Add a task node to the diagram.
+
+        Parameters
+        ----------
+        name:
+            Task identifier to add to the diagram.
+        node_type:
+            Original diagram object type.
+        compartments:
+            Optional list of compartment labels for ``Data acquisition`` nodes
+            describing the sources of acquired data.
+        """
         self.graph.add_node(name)
         self.node_types[name] = node_type
+        if compartments:
+            self.node_sources[name] = [c for c in compartments if c]
 
     def add_flow(
         self,
@@ -319,6 +339,23 @@ class GovernanceDiagram:
                 )
             )
 
+        # Create explicit requirements for Data acquisition nodes listing their
+        # configured compartments as data sources.  Each compartment becomes a
+        # separate requirement so that individual data sources remain traceable.
+        for node, sources in self.node_sources.items():
+            req_type = (
+                "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
+            )
+            for src in sources:
+                requirements.append(
+                    GeneratedRequirement(
+                        action="obtain data from",
+                        subject=node,
+                        obj=src,
+                        req_type=req_type,
+                    )
+                )
+
         return requirements
 
     @classmethod
@@ -364,7 +401,14 @@ class GovernanceDiagram:
             if not name:
                 name = odict.get("properties", {}).get("name", "")
             if name:
-                diagram.add_task(name, node_type=obj_type or "Action")
+                props = odict.get("properties", {})
+                comp_str = props.get("compartments", "")
+                comps = [c for c in comp_str.split(";") if c]
+                diagram.add_task(
+                    name,
+                    node_type=obj_type or "Action",
+                    compartments=comps or None,
+                )
                 id_to_name[obj_id] = name
 
         # Map decision nodes to their predecessor action
