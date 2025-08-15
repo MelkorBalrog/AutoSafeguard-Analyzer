@@ -15,6 +15,7 @@ from gsn import GSNNode, GSNDiagram
 from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
 from . import messagebox
+from .style_manager import StyleManager
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -119,7 +120,12 @@ class GSNDiagramWindow(tk.Frame):
         # drawing canvas with scrollbars so large diagrams remain accessible
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(fill=tk.BOTH, expand=True)
-        self.canvas = tk.Canvas(canvas_frame, width=800, height=600, bg="white")
+        self.canvas = tk.Canvas(
+            canvas_frame,
+            width=800,
+            height=600,
+            bg=StyleManager.get_instance().canvas_bg,
+        )
         self.canvas.grid(row=0, column=0, sticky="nsew")
         hbar = ttk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
         vbar = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
@@ -180,6 +186,11 @@ class GSNDiagramWindow(tk.Frame):
         # update scroll region to encompass all drawn items
         bbox = self.canvas.bbox("all") or (0, 0, 0, 0)
         self.canvas.configure(scrollregion=bbox)
+
+    # ------------------------------------------------------------------
+    def redraw(self):
+        self.canvas.configure(bg=StyleManager.get_instance().canvas_bg)
+        self.refresh()
 
     # ------------------------------------------------------------------
     def _bind_shortcuts(self):

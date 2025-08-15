@@ -15,11 +15,13 @@ class StyleManager:
 
     def __init__(self):
         self.styles = {}
+        self.canvas_bg = "#FFFFFF"
         try:
             self.load_style(_DEFAULT_STYLE)
         except Exception:
             # fallback to hard coded white style
             self.styles = {}
+            self.canvas_bg = "#FFFFFF"
 
     @classmethod
     def get_instance(cls):
@@ -35,6 +37,10 @@ class StyleManager:
         tree = ET.parse(path)
         root = tree.getroot()
         self.styles.clear()
+        self.canvas_bg = "#FFFFFF"
+        canvas = root.find('canvas')
+        if canvas is not None:
+            self.canvas_bg = canvas.get('color', "#FFFFFF")
         for obj in root.findall('object'):
             typ = obj.get('type')
             color = obj.get('color')
@@ -43,6 +49,7 @@ class StyleManager:
 
     def save_style(self, path: str) -> None:
         root = ET.Element('style')
+        ET.SubElement(root, 'canvas', color=self.canvas_bg)
         for typ, color in self.styles.items():
             ET.SubElement(root, 'object', type=typ, color=color)
         tree = ET.ElementTree(root)
@@ -50,3 +57,6 @@ class StyleManager:
 
     def get_color(self, obj_type: str) -> str:
         return self.styles.get(obj_type, '#FFFFFF')
+
+    def get_canvas_color(self) -> str:
+        return self.canvas_bg
