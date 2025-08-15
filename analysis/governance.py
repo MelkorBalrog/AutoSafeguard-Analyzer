@@ -116,3 +116,13 @@ class GovernanceDiagram:
         for src, dst in zip(tasks, tasks[1:]):
             diagram.add_flow(src, dst)
         return diagram
+
+
+if __name__ == "__main__":  # pragma: no cover - example usage for docs
+    demo = GovernanceDiagram()
+    demo.add_task("Draft Plan")
+    demo.add_task("Review Plan")
+    demo.add_flow("Draft Plan", "Review Plan")
+    demo.add_relationship("Review Plan", "Draft Plan", "changes requested")
+    for requirement in demo.generate_requirements():
+        print(requirement)
