@@ -51,7 +51,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.canvas.bind("<Double-1>", self.on_double_click)
         self.drawing_helper = FTADrawingHelper()
 
-        self.nodes = {}  # name -> (oval_id, text_id)
+        self.nodes = {}  # name -> (oval_id, text_id, fill_tag)
         self.tables = {}  # name -> (window_id, frame, treeview)
         self.id_to_node = {}
         self.edges = []  # (line_id, src, dst)
@@ -186,12 +186,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if not doc or not self.drag_node or self.current_tool != "Select":
             return
         name = self.drag_node
+        old_x, old_y = doc.positions.get(name, (0, 0))
         x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
         doc.positions[name] = (x, y)
-        oval_id, text_id = self.nodes[name]
+        oval_id, text_id, fill_tag = self.nodes[name]
         r = self.NODE_RADIUS
         self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
         self.canvas.coords(text_id, x, y)
+        self.canvas.move(fill_tag, x - old_x, y - old_y)
         for line_id, src, dst in self.edges:
             if src == name or dst == name:
                 x1, y1 = doc.positions[src]
@@ -248,12 +250,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
     def _draw_node(self, name: str, x: float, y: float) -> None:
         r = self.NODE_RADIUS
         color = "lightyellow"
-        self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
+        fill_tag = f"fill_{name}"
+        self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color, tag=fill_tag)
         oval = self.canvas.create_oval(
             x - r, y - r, x + r, y + r, outline="black", fill=""
         )
         text = self.canvas.create_text(x, y, text=name)
-        self.nodes[name] = (oval, text)
+        self.nodes[name] = (oval, text, fill_tag)
         self.id_to_node[oval] = name
         self.id_to_node[text] = name
         self._place_table(name)
@@ -331,7 +334,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 row = ["T" if val else "F" for val in combo]
                 row.append(f"{prob:.3f}")
                 tree.insert("", "end", values=row)
-        self.canvas.update_idletasks()
+        frame.update_idletasks()
         self.canvas.itemconfigure(
             win, width=frame.winfo_reqwidth(), height=frame.winfo_reqheight()
         )
@@ -343,7 +346,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if name not in self.tables:
             return
         win, frame, _ = self.tables[name]
-        self.canvas.update_idletasks()
+        frame.update_idletasks()
         w, h = frame.winfo_reqwidth(), frame.winfo_reqheight()
         r = self.NODE_RADIUS
         self.canvas.itemconfigure(win, width=w, height=h)
