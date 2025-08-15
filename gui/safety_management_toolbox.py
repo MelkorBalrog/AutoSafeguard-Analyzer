@@ -178,7 +178,7 @@ class SafetyManagementWindow(tk.Frame):
         while f"R{idx}" in global_requirements:
             idx += 1
         rid = f"R{idx}"
-        req_type = REQUIREMENT_TYPE_OPTIONS[0]
+        req_type = "organizational"
         app = getattr(self, "app", None)
         if app and hasattr(app, "add_new_requirement"):
             app.add_new_requirement(rid, req_type, text)

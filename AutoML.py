@@ -1259,6 +1259,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
@@ -1288,6 +1289,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
@@ -1392,6 +1394,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         ):
             req["asil"] = asil
             req["cal"] = cal
@@ -1594,6 +1597,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 req["asil"] = (
                     asil_default
@@ -1623,6 +1627,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 req["asil"] = (
                     asil_default
@@ -1679,6 +1684,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
@@ -11857,6 +11863,7 @@ class FaultTreeApp:
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
@@ -11877,6 +11884,7 @@ class FaultTreeApp:
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
@@ -16670,11 +16678,16 @@ class FaultTreeApp:
 
     def open_safety_management_toolbox(self, show_diagrams: bool = True):
         """Open the Safety & Security Management editor and browser."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
+        tab_exists = (
+            hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists()
+        )
+        if tab_exists:
             self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
+            parent = self._safety_mgmt_tab
+        else:
+            parent = self._safety_mgmt_tab = self._new_tab(
+                "Safety & Security Management"
+            )
 
         from gui.safety_management_toolbox import SafetyManagementWindow
         from analysis import SafetyManagementToolbox
