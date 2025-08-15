@@ -82,6 +82,21 @@ def test_move_connection_updates_links():
     assert p in c2.parents
 
 
+def test_move_connection_cancelled_on_empty_drop():
+    p = GSNNode("p", "Goal")
+    c1 = GSNNode("c1", "Goal")
+    p.add_child(c1)
+    diag = GSNDiagram(p)
+    win = GSNDiagramWindow.__new__(GSNDiagramWindow)
+    win.diagram = diag
+    win.refresh = lambda: None
+    # Attempt to move the connection without specifying a new child node.
+    win._move_connection(p, c1, None)
+    # The original relationship should remain intact.
+    assert c1 in p.children
+    assert p in c1.parents
+
+
 def test_delete_connection_removes_links():
     p = GSNNode("p", "Goal")
     c = GSNNode("c", "Context")

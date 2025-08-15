@@ -609,8 +609,19 @@ class GSNDiagramWindow(tk.Frame):
         return None
 
     def _move_connection(
-        self, parent: GSNNode, old_child: GSNNode, new_child: GSNNode
+        self, parent: GSNNode, old_child: GSNNode, new_child: Optional[GSNNode]
     ) -> None:
+        """Reattach an existing relationship to a new child node.
+
+        If *new_child* is ``None`` the move is cancelled and the original
+        connection is left intact.  This ensures accidental drops on empty
+        space do not delete the relationship.
+        """
+
+        # Abort when the connection was not dropped on a valid node.
+        if new_child is None:
+            return
+
         app = getattr(self, "app", None)
         undo = getattr(app, "push_undo_state", None)
         if undo:
