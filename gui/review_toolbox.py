@@ -19,6 +19,7 @@
 import tkinter as tk
 from tkinter import simpledialog, ttk
 from gui import messagebox
+from gui.style_manager import StyleManager
 from dataclasses import dataclass, field
 from typing import List
 import difflib
@@ -1375,7 +1376,12 @@ class ReviewDocumentDialog(tk.Frame):
             row += 1
             frame = tk.Frame(self.inner)
             frame.grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
-            c = tk.Canvas(frame, width=600, height=400, bg="white")
+            c = tk.Canvas(
+                frame,
+                width=600,
+                height=400,
+                bg=StyleManager.get_instance().canvas_bg,
+            )
             hbar = tk.Scrollbar(frame, orient=tk.HORIZONTAL, command=c.xview)
             vbar = tk.Scrollbar(frame, orient=tk.VERTICAL, command=c.yview)
             c.configure(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
@@ -1691,7 +1697,12 @@ class VersionCompareDialog(tk.Frame):
         # canvas to display FTA differences
         canvas_frame = tk.Frame(self)
         canvas_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.tree_canvas = tk.Canvas(canvas_frame, width=600, height=300, bg="white")
+        self.tree_canvas = tk.Canvas(
+            canvas_frame,
+            width=600,
+            height=300,
+            bg=StyleManager.get_instance().canvas_bg,
+        )
         vbar = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.tree_canvas.yview)
         hbar = tk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self.tree_canvas.xview)
         self.tree_canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
