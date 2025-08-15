@@ -311,6 +311,22 @@ def test_drag_relationship_creates_edge():
     win.on_release(types.SimpleNamespace(x=100, y=0))
     assert len(win.edges) == 1
     assert "A" in doc.network.parents.get("B", [])
+    assert win.current_tool == "Select"
+
+
+def test_add_node_returns_to_select():
+    from gui import causal_bayesian_network_window as cbn_mod
+
+    win, doc = _setup_window()
+    win.current_tool = "Triggering Condition"
+    orig = cbn_mod.simpledialog.askstring
+    cbn_mod.simpledialog.askstring = lambda *a, **k: "N1"
+    try:
+        win.on_click(types.SimpleNamespace(x=10, y=20))
+    finally:
+        cbn_mod.simpledialog.askstring = orig
+    assert "N1" in doc.network.nodes
+    assert win.current_tool == "Select"
 
 
 def test_joint_probabilities_refresh_on_parent_change():
