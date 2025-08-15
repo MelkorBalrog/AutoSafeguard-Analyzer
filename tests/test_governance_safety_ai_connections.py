@@ -74,6 +74,24 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Model evaluation")
         self.assertFalse(valid)
 
+    def test_tune_connection(self):
+        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        win = self._window(diag)
+        valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Tune")
+        self.assertTrue(valid)
+        valid, _ = GovernanceDiagramWindow.validate_connection(win, ann, db, "Tune")
+        self.assertTrue(valid)
+
+    def test_hyperparameter_validation_connection(self):
+        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        win = self._window(diag)
+        valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Hyperparameter Validation")
+        self.assertTrue(valid)
+        valid, _ = GovernanceDiagramWindow.validate_connection(
+            win, ann, db, "Hyperparameter Validation"
+        )
+        self.assertTrue(valid)
+
 
 if __name__ == "__main__":
     unittest.main()

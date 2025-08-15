@@ -52,7 +52,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
     FaultTreeApp._refresh_phase_requirements_menu(app)
 
     labels = [label for label, _ in app.phase_req_menu.items]
-    assert "Phase1" in labels and "Lifecycle" not in labels
+    assert "Phase1" in labels and "Lifecycle" in labels
     for label, cmd in app.phase_req_menu.items:
         if label == "Phase1" or label == "Lifecycle":
             cmd()
@@ -61,7 +61,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
     for label, cmd in req_menu.items:
         if label == "Lifecycle Requirements":
             cmd()
-    assert called == ["Phase1", "lifecycle"]
+    assert called == ["Phase1", "lifecycle", "lifecycle"]
 
 
 def test_generate_phase_requirements_delegates(monkeypatch):
