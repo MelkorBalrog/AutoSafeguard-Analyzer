@@ -22,6 +22,32 @@ _AI_RELATIONS = {
     "Model evaluation",
 }
 
+# Mapping of common governance relationships to requirement templates.  The
+# templates follow the ISO/IEC/IEEE 29148 structure "[CND] <SUB> shall <ACT>
+# [OBJ] [CON]."  Placeholders are filled using the names of the source and
+# destination nodes when generating requirements.
+_RELATIONSHIP_TEMPLATES = {
+    "performs": "{SUB} shall perform '{OBJ}'.",
+    "executes": "{SUB} shall execute '{OBJ}'.",
+    "responsible for": "{SUB} shall be responsible for '{OBJ}'.",
+    "produces": "{SUB} shall produce '{OBJ}'.",
+    "delivers": "{SUB} shall deliver '{OBJ}'.",
+    "uses": "{SUB} shall use '{OBJ}'.",
+    "consumes": "{SUB} shall use '{OBJ}'.",
+    "monitors": "{SUB} shall monitor '{OBJ}'.",
+    "audits": "{SUB} shall audit '{OBJ}'.",
+    "approves": "{SUB} shall approve '{OBJ}'.",
+    "authorizes": "{SUB} shall authorize '{OBJ}'.",
+    "governed by": "{SUB} shall comply with '{OBJ}'.",
+    "constrained by": "{SUB} shall comply with '{OBJ}'.",
+    # AI specific relationship types default to the engineering team acting on
+    # the destination object.  The subject placeholder is intentionally unused
+    # so that the caller does not need to provide an explicit role node.
+    "ai training": "Engineering team shall train '{OBJ}'.",
+    "ai re-training": "Engineering team shall retrain '{OBJ}'.",
+    "curation": "Engineering team shall curate '{OBJ}'.",
+}
+
 
 @dataclass
 class GeneratedRequirement:
@@ -168,18 +194,6 @@ class GovernanceDiagram:
 
         requirements: List[GeneratedRequirement] = []
 
-        for task in self.tasks():
-            req_type = (
-                "AI safety"
-                if self.node_types.get(task) in _AI_NODES
-                else "organizational"
-            )
-            requirements.append(
-                GeneratedRequirement(
-                    f"The system shall perform task '{task}'.", req_type
-                )
-            )
-
         for src, dst in self.graph.edges():
             data = self.edge_data.get(
                 (src, dst), {"kind": "flow", "condition": None, "label": None}
@@ -194,20 +208,16 @@ class GovernanceDiagram:
                 else:
                     req = f"Task '{src}' shall precede task '{dst}'."
             else:  # relationship
-                if label:
-                    if cond:
-                        req = (
-                            f"Task '{src}' shall {label} task '{dst}' when {cond}."
-                        )
-                    else:
-                        req = f"Task '{src}' shall {label} task '{dst}'."
+                key = (label or conn_type or "").lower()
+                template = _RELATIONSHIP_TEMPLATES.get(key)
+                if template:
+                    req = template.format(SUB=src, OBJ=dst)
+                elif label:
+                    req = f"Task '{src}' shall {label} task '{dst}'."
                 else:
-                    if cond:
-                        req = (
-                            f"Task '{src}' shall be related to task '{dst}' when {cond}."
-                        )
-                    else:
-                        req = f"Task '{src}' shall be related to task '{dst}'."
+                    req = f"Task '{src}' shall be related to task '{dst}'."
+                if cond:
+                    req = f"If {cond}, {req}"
             req_type = "organizational"
             if (
                 conn_type in _AI_RELATIONS
@@ -258,10 +268,11 @@ class GovernanceDiagram:
                 name = repo.elements[elem_id].name
             if not name:
                 name = odict.get("properties", {}).get("name", "")
-            if not name:
-                continue
-            diagram.add_task(name)
-            id_to_name[odict.get("obj_id")] = name
+            if name:
+                diagram.add_task(name)
+                id_to_name[odict.get("obj_id")] = name
+            if obj_type == "Decision":
+                decision_sources[odict.get("obj_id")] = ""
 
         # Map decision nodes to their predecessor action
         for conn in getattr(src_diagram, "connections", []):
@@ -289,8 +300,6 @@ class GovernanceDiagram:
                 elif name and cdict.get("conn_type") == "Flow":
                     cond = name
             conn_type = cdict.get("conn_type")
-            if conn_type == "Flow":
-                diagram.add_flow(src, dst, cond, conn_type=conn_type)
             cond_prop = cdict.get("properties", {}).get("condition")
             guards = cdict.get("guard") or []
             guard_ops = cdict.get("guard_ops") or []
