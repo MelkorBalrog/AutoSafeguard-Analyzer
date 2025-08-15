@@ -8,16 +8,18 @@ try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
     ToolTip = None  # type: ignore
-import json
 import math
 import re
 import types
+from pathlib import Path
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
 
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
+from config_loader import load_json_with_comments
+import json
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -48,49 +50,66 @@ _next_obj_id = 1
 # Pixel distance used when detecting clicks on connection lines
 CONNECTION_SELECT_RADIUS = 15
 
+
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
+
 # Diagram types that belong to the generic "Architecture Diagram" work product
-ARCH_DIAGRAM_TYPES = {
-    "Use Case Diagram",
-    "Activity Diagram",
-    "Block Diagram",
-    "Internal Block Diagram",
-}
+ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
 
 # Elements available in the Safety & AI Lifecycle toolbox
-SAFETY_AI_NODE_TYPES = {"Database", "ANN", "Data acquisition"}
+SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
-GOVERNANCE_NODE_TYPES = {
-    "Action",
-    "Initial",
-    "Final",
-    "Decision",
-    "Merge",
-    "System Boundary",
-    "Work Product",
-    "Lifecycle Phase",
-}
-
+GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
 
 # Directed relationship rules for connections between Safety & AI elements.
 # Each entry maps a connection type to allowed source and target element
 # combinations. Rules are only enforced when both endpoints are Safety & AI
 # nodes.
 SAFETY_AI_RELATION_RULES: dict[str, dict[str, set[str]]] = {
-    "Acquisition": {"Data acquisition": {"Database"}},
-    "Field data collection": {"Data acquisition": {"Database"}},
-    "Field risk evaluation": {"Data acquisition": {"Database"}},
-    "Annotation": {"ANN": {"Database"}},
-    "Synthesis": {"ANN": {"Database"}},
-    "Augmentation": {"ANN": {"Database"}},
-    "Labeling": {"ANN": {"Database"}},
-    "AI training": {"Database": {"ANN"}},
-    "AI re-training": {"Database": {"ANN"}},
-    "Model evaluation": {"ANN": {"Database"}},
-    "Curation": {"Database": {"Database"}},
-    "Ingestion": {"Database": {"Database"}},
+    conn: {src: set(dests) for src, dests in srcs.items()}
+    for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
 }
+
+# Basic source/target constraints per diagram and connection type
+CONNECTION_RULES: dict[str, dict[str, dict[str, set[str]]]] = {
+    diag: {
+        conn: {src: set(dests) for src, dests in srcs.items()}
+        for conn, srcs in conns.items()
+    }
+    for diag, conns in _CONFIG.get("connection_rules", {}).items()
+}
+
+# Maximum number of connections allowed per node type
+NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {})
+
+# Node types that require guards on outgoing flows
+GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+
+
+def reload_config() -> None:
+    """Reload diagram rule configuration at runtime."""
+    global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
+    global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
+    SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
+    GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
+    SAFETY_AI_RELATION_RULES = {
+        conn: {src: set(dests) for src, dests in srcs.items()}
+        for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
+    }
+    CONNECTION_RULES = {
+        diag: {
+            conn: {src: set(dests) for src, dests in srcs.items()}
+            for conn, srcs in conns.items()
+        }
+        for diag, conns in _CONFIG.get("connection_rules", {}).items()
+    }
+    NODE_CONNECTION_LIMITS = _CONFIG.get("node_connection_limits", {})
+    GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 
 
 def _work_product_name(diag_type: str) -> str:
@@ -3164,31 +3183,18 @@ class SysMLDiagramWindow(tk.Frame):
             if src == dst:
                 return False, "Cannot connect an element to itself"
 
-        if diag_type == "Use Case Diagram":
-            if conn_type == "Association":
-                actors = {"Actor"}
-                if not (
-                    (src.obj_type in actors and dst.obj_type == "Use Case")
-                    or (dst.obj_type in actors and src.obj_type == "Use Case")
-                ):
-                    return False, "Associations must connect an Actor and a Use Case"
-            elif conn_type in ("Include", "Extend"):
-                if src.obj_type != "Use Case" or dst.obj_type != "Use Case":
-                    return False, f"{conn_type} relationships must connect two Use Cases"
-            elif conn_type == "Generalize":
-                if src.obj_type != dst.obj_type or src.obj_type not in ("Actor", "Use Case"):
-                    return False, "Generalizations must link two Actors or two Use Cases"
-            elif conn_type == "Communication Path":
-                if src.obj_type != "Actor" or dst.obj_type != "Actor":
-                    return False, "Communication Paths must connect two Actors"
+        # Config-driven source/target constraints
+        diag_rules = CONNECTION_RULES.get(diag_type, {})
+        conn_rules = diag_rules.get(conn_type)
+        if conn_rules:
+            targets = conn_rules.get(src.obj_type, set())
+            if dst.obj_type not in targets:
+                return False, (
+                    f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed"
+                )
 
-        elif diag_type == "Block Diagram":
-            if conn_type == "Association":
-                if src.obj_type != "Block" or dst.obj_type != "Block":
-                    return False, "Associations in block diagrams must connect Blocks"
-            elif conn_type == "Generalization":
-                if src.obj_type != "Block" or dst.obj_type != "Block":
-                    return False, "Generalizations in block diagrams must connect Blocks"
+        if diag_type == "Block Diagram":
+            if conn_type == "Generalization":
                 if _shared_generalization_parent(
                     self.repo, src.element_id, dst.element_id
                 ):
@@ -3200,8 +3206,6 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Blocks cannot generalize each other"
             elif conn_type in ("Aggregation", "Composite Aggregation"):
-                if src.obj_type != "Block" or dst.obj_type != "Block":
-                    return False, "Aggregations must connect Blocks"
                 if _aggregation_exists(self.repo, src.element_id, dst.element_id):
                     return False, "Aggregation already defined for this block"
                 if _reverse_aggregation_exists(self.repo, src.element_id, dst.element_id):
@@ -3209,11 +3213,6 @@ class SysMLDiagramWindow(tk.Frame):
 
         elif diag_type == "Internal Block Diagram":
             if conn_type == "Connector":
-                if src.obj_type not in ("Port", "Part") or dst.obj_type not in (
-                    "Port",
-                    "Part",
-                ):
-                    return False, "Connectors must link Parts or Ports"
                 if src.obj_type == "Block Boundary" or dst.obj_type == "Block Boundary":
                     return False, "Connectors must link Parts or Ports"
                 if src.obj_type == "Port" and dst.obj_type == "Port":
@@ -3259,76 +3258,10 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, "Connections must be vertical"
 
         elif diag_type == "Activity Diagram":
-            # Basic control flow rules
-            allowed = {
-                "Initial": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                    "Fork",
-                    "Join",
-                },
-                "Action": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                    "Fork",
-                    "Join",
-                    "Final",
-                },
-                "CallBehaviorAction": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                    "Fork",
-                    "Join",
-                    "Final",
-                },
-                "Decision": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                    "Fork",
-                    "Join",
-                    "Final",
-                },
-                "Merge": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Fork",
-                    "Join",
-                },
-                "Fork": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                    "Fork",
-                    "Join",
-                },
-                "Join": {
-                    "Action",
-                    "CallBehaviorAction",
-                    "Decision",
-                    "Merge",
-                },
-                "Final": set(),
-            }
             if src.obj_type == "Final":
                 return False, "Flows cannot originate from Final nodes"
             if dst.obj_type == "Initial":
                 return False, "Flows cannot terminate at an Initial node"
-            valid_targets = allowed.get(src.obj_type)
-            if valid_targets and dst.obj_type not in valid_targets:
-                return (
-                    False,
-                    f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
-                )
         elif diag_type == "Governance Diagram":
             if conn_type in (
                 "Propagate",
@@ -3456,31 +3389,13 @@ class SysMLDiagramWindow(tk.Frame):
                             "A 'Used' relationship between these work products "
                             "already exists in this phase",
                         )
-            else:
-                ai_targets = SAFETY_AI_NODE_TYPES
-                allowed = {
-                    "Initial": {"Action", "Decision", "Merge", *ai_targets},
-                    "Action": {"Action", "Decision", "Merge", "Final", *ai_targets},
-                    "Decision": {"Action", "Decision", "Merge", "Final", "Lifecycle Phase", *ai_targets},
-                    "Merge": {"Action", "Decision", "Merge", *ai_targets},
-                    "Final": set(),
-                }
-                if src.obj_type == "Final":
-                    return False, "Flows cannot originate from Final nodes"
-                if dst.obj_type == "Initial":
-                    return False, "Flows cannot terminate at an Initial node"
-                valid_targets = allowed.get(src.obj_type)
-                if valid_targets and dst.obj_type not in valid_targets:
-                    return (
-                        False,
-                        f"Flow from {src.obj_type} to {dst.obj_type} is not allowed",
-                    )
 
         for node in (src, dst):
-            if node.obj_type in ("Decision", "Merge"):
+            limit = NODE_CONNECTION_LIMITS.get(node.obj_type)
+            if limit is not None:
                 used = self._decision_used_corners(node.obj_id)
-                if len(used) >= 4:
-                    return False, "Decision and Merge nodes support at most 4 connections"
+                if len(used) >= limit:
+                    return False, f"{node.obj_type} nodes support at most {limit} connections"
 
         return True, ""
 
