@@ -7556,7 +7556,11 @@ class FaultTreeApp:
             top = y - node_h / 2
             right = x + node_w / 2
             bottom = y + node_h / 2
-            draw.rectangle([left, top, right, bottom], fill=node_colors[n], outline="black")
+            draw.rectangle(
+                [left, top, right, bottom],
+                fill=node_colors[n],
+                outline=StyleManager.get_instance().outline_color,
+            )
             lbl = node_labels.get(n, str(n))
             bbox = draw.multiline_textbbox((0, 0), lbl, font=font, align="center")
             tw = bbox[2] - bbox[0]
@@ -11046,30 +11050,50 @@ class FaultTreeApp:
         if self.review_data:
             unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
             if unresolved:
-                self.canvas.create_oval(eff_x + 35 * self.zoom, eff_y + 35 * self.zoom,
-                                        eff_x + 45 * self.zoom, eff_y + 45 * self.zoom,
-                                        fill='yellow', outline='black')
+                self.canvas.create_oval(
+                    eff_x + 35 * self.zoom,
+                    eff_y + 35 * self.zoom,
+                    eff_x + 45 * self.zoom,
+                    eff_y + 45 * self.zoom,
+                    fill='yellow',
+                    outline=StyleManager.get_instance().outline_color,
+                )
 
         if self.review_data:
             unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
             if unresolved:
-                self.canvas.create_oval(eff_x + 35 * self.zoom, eff_y + 35 * self.zoom,
-                                        eff_x + 45 * self.zoom, eff_y + 45 * self.zoom,
-                                        fill='yellow', outline='black')
+                self.canvas.create_oval(
+                    eff_x + 35 * self.zoom,
+                    eff_y + 35 * self.zoom,
+                    eff_x + 45 * self.zoom,
+                    eff_y + 45 * self.zoom,
+                    fill='yellow',
+                    outline=StyleManager.get_instance().outline_color,
+                )
 
         if self.review_data:
             unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
             if unresolved:
-                self.canvas.create_oval(eff_x + 35 * self.zoom, eff_y + 35 * self.zoom,
-                                        eff_x + 45 * self.zoom, eff_y + 45 * self.zoom,
-                                        fill='yellow', outline='black')
+                self.canvas.create_oval(
+                    eff_x + 35 * self.zoom,
+                    eff_y + 35 * self.zoom,
+                    eff_x + 45 * self.zoom,
+                    eff_y + 45 * self.zoom,
+                    fill='yellow',
+                    outline=StyleManager.get_instance().outline_color,
+                )
 
         if self.review_data:
             unresolved = any(c.node_id == node.unique_id and not c.resolved for c in self.review_data.comments)
             if unresolved:
-                self.canvas.create_oval(eff_x + 35 * self.zoom, eff_y + 35 * self.zoom,
-                                        eff_x + 45 * self.zoom, eff_y + 45 * self.zoom,
-                                        fill='yellow', outline='black')
+                self.canvas.create_oval(
+                    eff_x + 35 * self.zoom,
+                    eff_y + 35 * self.zoom,
+                    eff_x + 45 * self.zoom,
+                    eff_y + 45 * self.zoom,
+                    fill='yellow',
+                    outline=StyleManager.get_instance().outline_color,
+                )
 
     def find_node_by_id(self, node, unique_id, visited=None):
         if visited is None:
@@ -15049,7 +15073,11 @@ class FaultTreeApp:
             color = color_map.get(kind, "white")
             cx, cy = to_canvas(x, y)
             rect = [cx - box_w / 2, cy - box_h / 2, cx + box_w / 2, cy + box_h / 2]
-            draw.rectangle(rect, fill=color, outline="black")
+            draw.rectangle(
+                rect,
+                fill=color,
+                outline=StyleManager.get_instance().outline_color,
+            )
             text = textwrap.fill(str(label), 20)
             bbox = draw.multiline_textbbox((0, 0), text, font=font)
             tw = bbox[2] - bbox[0]
@@ -15185,7 +15213,7 @@ class FaultTreeApp:
                     cx + box_w / 2,
                     cy + box_h / 2,
                     fill=color,
-                    outline="black",
+                    outline=StyleManager.get_instance().outline_color,
                     tags="node",
                 )
                 label = textwrap.fill(str(label), 20)
@@ -19257,7 +19285,7 @@ class FaultTreeApp:
                     eff_x + 45,
                     eff_y + 45,
                     fill="yellow",
-                    outline="black",
+                    outline=StyleManager.get_instance().outline_color,
                 )
 
     def on_ctrl_mousewheel_page(self, event):

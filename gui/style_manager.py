@@ -16,12 +16,14 @@ class StyleManager:
     def __init__(self):
         self.styles = {}
         self.canvas_bg = "#FFFFFF"
+        self.outline_color = "black"
         try:
             self.load_style(_DEFAULT_STYLE)
         except Exception:
             # fallback to hard coded white style
             self.styles = {}
             self.canvas_bg = "#FFFFFF"
+            self.outline_color = "black"
 
     @classmethod
     def get_instance(cls):
@@ -38,9 +40,18 @@ class StyleManager:
         root = tree.getroot()
         self.styles.clear()
         self.canvas_bg = "#FFFFFF"
+        self.outline_color = "black"
         canvas = root.find('canvas')
         if canvas is not None:
             self.canvas_bg = canvas.get('color', "#FFFFFF")
+        # Choose a contrasting outline color based on canvas brightness.
+        try:
+            bg = self.canvas_bg.lstrip('#')
+            r, g, b = int(bg[0:2], 16), int(bg[2:4], 16), int(bg[4:6], 16)
+            brightness = (r * 299 + g * 587 + b * 114) / 1000
+            self.outline_color = "white" if brightness < 128 else "black"
+        except Exception:
+            self.outline_color = "black"
         for obj in root.findall('object'):
             typ = obj.get('type')
             color = obj.get('color')
