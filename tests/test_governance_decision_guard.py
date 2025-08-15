@@ -1,4 +1,8 @@
+import sys
 import unittest
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import SysMLObject, DiagramConnection
 from sysml.sysml_repository import SysMLRepository
@@ -31,7 +35,12 @@ class GovernanceDecisionGuardTests(unittest.TestCase):
         self.assertIn(("A", "B"), gdiag.flows())
         self.assertEqual(gdiag.edge_data[("A", "B")]["condition"], "g1")
         reqs = gdiag.generate_requirements()
-        self.assertIn("When g1, task 'A' shall precede task 'B'.", reqs)
+        texts = [r.text for r in reqs]
+        self.assertIn("If g1, Task 'A' shall precede task 'B'.", texts)
+        req = next(r for r in reqs if r.text == "If g1, Task 'A' shall precede task 'B'.")
+        self.assertEqual(req.cnd, "g1")
+        self.assertEqual(req.sub, "Task 'A'")
+        self.assertEqual(req.obj, "task 'B'")
 
 
 if __name__ == "__main__":

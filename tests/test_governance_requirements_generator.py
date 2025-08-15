@@ -20,9 +20,14 @@ def test_generate_requirements_from_governance_diagram():
     reqs = diagram.generate_requirements()
     texts = [t for t, _ in reqs]
 
-    assert "The system shall perform task 'Start'." in texts
+    assert "The system shall perform Start." in texts
     assert "Task 'Start' shall precede task 'Approve'." in texts
-    assert "When approval granted, task 'Approve' shall precede task 'Finish'." in texts
-    assert (
-        "Task 'Start' shall be related to task 'Finish' when risk identified." in texts
-    )
+    assert "If approval granted, Task 'Approve' shall precede task 'Finish'." in texts
+    assert "If risk identified, Task 'Start' shall relate to task 'Finish'." in texts
+
+    # Check structured components for one requirement
+    start_req = next(r for r in reqs if r.text == "Task 'Start' shall precede task 'Approve'.")
+    assert start_req.sub == "Task 'Start'"
+    assert start_req.act == "precede"
+    assert start_req.obj == "task 'Approve'"
+    assert start_req.cnd is None
