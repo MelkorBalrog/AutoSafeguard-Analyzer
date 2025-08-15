@@ -14647,12 +14647,11 @@ class FaultTreeApp:
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
-        if phases:
-            self.phase_req_menu.add_separator()
-        self.phase_req_menu.add_command(
-            label="Lifecycle",
-            command=self.generate_lifecycle_requirements,
-        )
+        if not phases:
+            self.phase_req_menu.add_command(
+                label="Lifecycle",
+                command=self.generate_lifecycle_requirements,
+            )
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
