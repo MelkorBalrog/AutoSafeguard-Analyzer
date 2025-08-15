@@ -16756,7 +16756,7 @@ class FaultTreeApp:
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
-        SafetyManagementWindow(
+        self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
 
@@ -16774,7 +16774,7 @@ class FaultTreeApp:
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
-        SafetyManagementWindow(
+        self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
 
@@ -16792,7 +16792,7 @@ class FaultTreeApp:
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
-        SafetyManagementWindow(
+        self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
 
@@ -16810,7 +16810,7 @@ class FaultTreeApp:
         if not hasattr(self, "safety_mgmt_toolbox"):
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
-        SafetyManagementWindow(
+        self.safety_mgmt_window = SafetyManagementWindow(
             self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
         )
 
