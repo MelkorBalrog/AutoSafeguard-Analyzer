@@ -243,6 +243,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from functools import partial
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
 from gui.safety_management_explorer import SafetyManagementExplorer
@@ -14667,9 +14668,11 @@ class FaultTreeApp:
             return
         phases = sorted(toolbox.list_modules())
         for phase in phases:
+            # Use ``functools.partial`` to bind the phase name at creation time
+            # so each menu entry triggers generation for its own phase.
             self.phase_req_menu.add_command(
                 label=phase,
-                command=lambda p=phase: self.generate_phase_requirements(p),
+                command=partial(self.generate_phase_requirements, phase),
             )
         if phases:
             self.phase_req_menu.add_separator()
