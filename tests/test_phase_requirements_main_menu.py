@@ -23,10 +23,14 @@ def test_phase_requirements_menu_populated(monkeypatch):
 
     called = []
 
-    def fake_generate(phase):
+    def fake_generate_phase(phase):
         called.append(phase)
 
-    app.generate_phase_requirements = fake_generate
+    def fake_generate_lifecycle():
+        called.append("lifecycle")
+
+    app.generate_phase_requirements = fake_generate_phase
+    app.generate_lifecycle_requirements = fake_generate_lifecycle
 
     class DummyMenu:
         def __init__(self):
@@ -38,15 +42,19 @@ def test_phase_requirements_menu_populated(monkeypatch):
         def add_command(self, label, command):
             self.items.append((label, command))
 
+        def add_separator(self):
+            self.items.append(("-", None))
+
     app.phase_req_menu = DummyMenu()
 
     FaultTreeApp._refresh_phase_requirements_menu(app)
 
-    assert any(label == "Phase1" for label, _ in app.phase_req_menu.items)
+    labels = [label for label, _ in app.phase_req_menu.items]
+    assert "Phase1" in labels and "Lifecycle" in labels
     for label, cmd in app.phase_req_menu.items:
-        if label == "Phase1":
+        if label == "Phase1" or label == "Lifecycle":
             cmd()
-    assert called == ["Phase1"]
+    assert called == ["Phase1", "lifecycle"]
 
 
 def test_generate_phase_requirements_delegates(monkeypatch):
@@ -64,3 +72,20 @@ def test_generate_phase_requirements_delegates(monkeypatch):
     FaultTreeApp.generate_phase_requirements(app, "PhaseX")
 
     assert events == [False, "PhaseX"]
+
+
+def test_generate_lifecycle_requirements_delegates(monkeypatch):
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    events = []
+
+    def fake_open(show_diagrams=True):
+        events.append(show_diagrams)
+
+    app.open_safety_management_toolbox = fake_open
+    app.safety_mgmt_window = types.SimpleNamespace(
+        generate_lifecycle_requirements=lambda: events.append("lifecycle")
+    )
+
+    FaultTreeApp.generate_lifecycle_requirements(app)
+
+    assert events == [False, "lifecycle"]
