@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Tuple
+import ast
 
 
 @dataclass
@@ -58,7 +59,17 @@ class CausalBayesianNetwork:
         if self.parents[name]:
             if not isinstance(cpd, Mapping):
                 raise TypeError("cpd must be a mapping for non-root nodes")
-            self.cpds[name] = dict(cpd)
+            normalised: Dict[Tuple[bool, ...], float] = {}
+            for key, val in cpd.items():
+                if isinstance(key, str):
+                    try:
+                        key = ast.literal_eval(key)
+                    except Exception:
+                        pass
+                if not isinstance(key, tuple):
+                    key = (key,)
+                normalised[tuple(key)] = float(val)
+            self.cpds[name] = normalised
         else:
             self.cpds[name] = float(cpd)
 

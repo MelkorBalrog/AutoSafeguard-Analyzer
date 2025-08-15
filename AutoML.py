@@ -259,6 +259,7 @@ from analysis.mechanisms import (
 )
 import json
 import csv
+import ast
 try:
     from openpyxl import load_workbook
 except Exception:  # openpyxl may not be installed
@@ -17705,7 +17706,14 @@ class FaultTreeApp:
                     "name": doc.name,
                     "nodes": doc.network.nodes,
                     "parents": doc.network.parents,
-                    "cpds": doc.network.cpds,
+                    "cpds": {
+                        var: (
+                            {str(k): v for k, v in cpd.items()}
+                            if isinstance(cpd, dict)
+                            else cpd
+                        )
+                        for var, cpd in doc.network.cpds.items()
+                    },
                     "positions": doc.positions,
                 }
                 for doc in self.cbn_docs
@@ -18173,7 +18181,21 @@ class FaultTreeApp:
             net = CausalBayesianNetwork()
             net.nodes = d.get("nodes", [])
             net.parents = {k: list(v) for k, v in d.get("parents", {}).items()}
-            net.cpds = {k: v for k, v in d.get("cpds", {}).items()}
+            net.cpds = {}
+            for var, cpd in d.get("cpds", {}).items():
+                if isinstance(cpd, dict):
+                    new_cpd = {}
+                    for key, val in cpd.items():
+                        try:
+                            parsed = ast.literal_eval(key)
+                        except Exception:
+                            parsed = key
+                        if not isinstance(parsed, tuple):
+                            parsed = (parsed,)
+                        new_cpd[parsed] = val
+                    net.cpds[var] = new_cpd
+                else:
+                    net.cpds[var] = float(cpd)
             name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
             positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
             doc = CausalBayesianNetworkDoc(name, network=net, positions=positions)
