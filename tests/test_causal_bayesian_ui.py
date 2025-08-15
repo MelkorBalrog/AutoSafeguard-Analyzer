@@ -307,7 +307,7 @@ def test_update_all_tables_refreshes_dependencies():
     app = DummyApp()
     net = CausalBayesianNetwork()
     net.add_node("Rain", cpd=0.3)
-    net.add_node("WetGround", parents=["Rain"], cpd={(True,): 0.9, (False,): 0.1})
+    net.add_node("WetGround", parents=["Rain"])
     doc = types.SimpleNamespace(network=net, positions={"Rain": (0, 0), "WetGround": (0, 0)})
     app.active_cbn = doc
     win.app = app
@@ -347,17 +347,17 @@ def test_joint_probabilities_refresh_on_parent_change():
     win, doc = _setup_window_real()
     cbn = doc.network
     cbn.add_node("A", cpd=0.2)
-    cbn.add_node("B", parents=["A"], cpd={(True,): 0.5, (False,): 0.1})
+    cbn.add_node("B", parents=["A"])
     tree_a = DummyTree(); frame_a = DummyFrame(tree_a); win.tables["A"] = (1, frame_a, tree_a)
     tree_b = DummyTree(); frame_b = DummyFrame(tree_b); win.tables["B"] = (2, frame_b, tree_b)
     doc.positions["A"] = (0, 0)
     doc.positions["B"] = (0, 0)
 
     win._update_all_tables()
-    assert tree_b.rows[0][-1] == f"{0.8 * 0.1:.3f}"
-    assert tree_b.rows[1][-1] == f"{0.2 * 0.5:.3f}"
+    assert tree_b.rows[0][-1] == f"{0.8 * 0.0:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.2 * 1.0:.3f}"
 
     cbn.cpds["A"] = 0.7
     win._update_all_tables()
-    assert tree_b.rows[0][-1] == f"{0.3 * 0.1:.3f}"
-    assert tree_b.rows[1][-1] == f"{0.7 * 0.5:.3f}"
+    assert tree_b.rows[0][-1] == f"{0.3 * 0.0:.3f}"
+    assert tree_b.rows[1][-1] == f"{0.7 * 1.0:.3f}"
