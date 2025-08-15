@@ -3,10 +3,12 @@ import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-_DEFAULT_STYLE = Path(__file__).resolve().parent.parent / 'styles' / 'pastel.xml'
+# Allow overriding the default style (e.g. dark mode) via env var
+_STYLE_NAME = os.environ.get("AUTOML_STYLE", "pastel")
+_DEFAULT_STYLE = Path(__file__).resolve().parent.parent / 'styles' / f"{_STYLE_NAME}.xml"
 if getattr(sys, 'frozen', False):
     # When packaged by PyInstaller resources live under sys._MEIPASS
-    _DEFAULT_STYLE = Path(sys._MEIPASS) / 'styles' / 'pastel.xml'
+    _DEFAULT_STYLE = Path(sys._MEIPASS) / 'styles' / f"{_STYLE_NAME}.xml"
 
 class StyleManager:
     """Singleton manager for diagram styles loaded from XML files."""
@@ -15,11 +17,13 @@ class StyleManager:
 
     def __init__(self):
         self.styles = {}
+        self.background = '#FFFFFF'
         try:
             self.load_style(_DEFAULT_STYLE)
         except Exception:
             # fallback to hard coded white style
             self.styles = {}
+            self.background = '#FFFFFF'
 
     @classmethod
     def get_instance(cls):
@@ -35,6 +39,11 @@ class StyleManager:
         tree = ET.parse(path)
         root = tree.getroot()
         self.styles.clear()
+        bg = root.find('background')
+        if bg is not None and bg.get('color'):
+            self.background = bg.get('color')
+        else:
+            self.background = '#FFFFFF'
         for obj in root.findall('object'):
             typ = obj.get('type')
             color = obj.get('color')
@@ -43,6 +52,7 @@ class StyleManager:
 
     def save_style(self, path: str) -> None:
         root = ET.Element('style')
+        ET.SubElement(root, 'background', color=self.background)
         for typ, color in self.styles.items():
             ET.SubElement(root, 'object', type=typ, color=color)
         tree = ET.ElementTree(root)

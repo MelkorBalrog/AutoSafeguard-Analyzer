@@ -229,6 +229,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger
 from gui.tooltip import ToolTip
+from gui.style_manager import StyleManager
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -373,6 +374,8 @@ from reportlab.platypus import LongTable
 from email.message import EmailMessage
 import smtplib
 import socket
+
+CANVAS_BG = StyleManager.get_instance().background
 
 styles = getSampleStyleSheet()  # Create the stylesheet.
 preformatted_style = ParagraphStyle(name="Preformatted", fontName="Courier", fontSize=10)
@@ -4305,7 +4308,7 @@ class FaultTreeApp:
         # Create a temporary Toplevel window and canvas
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
         
         # Create and redraw the page diagram
@@ -4350,7 +4353,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         try:
@@ -4576,7 +4579,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -4841,7 +4844,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5106,7 +5109,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5371,7 +5374,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5636,7 +5639,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -5901,7 +5904,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6155,7 +6158,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6409,7 +6412,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -6663,7 +6666,7 @@ class FaultTreeApp:
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
 
         def draw_connections(n):
@@ -8588,7 +8591,7 @@ class FaultTreeApp:
     def capture_event_diagram(self, event_node):
         temp = tk.Toplevel(self.root)
         temp.withdraw()
-        canvas = tk.Canvas(temp, bg="white", width=2000, height=2000)
+        canvas = tk.Canvas(temp, bg=CANVAS_BG, width=2000, height=2000)
         canvas.pack()
         self.draw_subtree_with_filter(canvas, event_node, self.get_all_nodes(event_node))
         canvas.delete("grid")
@@ -15055,7 +15058,7 @@ class FaultTreeApp:
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        canvas = tk.Canvas(diagram_frame, bg="white")
+        canvas = tk.Canvas(diagram_frame, bg=CANVAS_BG)
         cvs_vsb = ttk.Scrollbar(diagram_frame, orient="vertical", command=canvas.yview)
         cvs_hsb = ttk.Scrollbar(diagram_frame, orient="horizontal", command=canvas.xview)
         canvas.configure(yscrollcommand=cvs_vsb.set, xscrollcommand=cvs_hsb.set)
@@ -16747,7 +16750,7 @@ class FaultTreeApp:
         self.doc_nb.add(self.canvas_tab, text="FTA")
 
         self.canvas_frame = self.canvas_tab
-        self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+        self.canvas = tk.Canvas(self.canvas_frame, bg=CANVAS_BG)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
         self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -18999,7 +19002,7 @@ class FaultTreeApp:
         back_button = ttk.Button(header_frame, text="Go Back", command=self.go_back)
         back_button.grid(row=0, column=1, sticky="e", padx=5)
 
-        page_canvas = tk.Canvas(self.canvas_frame, bg="white")
+        page_canvas = tk.Canvas(self.canvas_frame, bg=CANVAS_BG)
         page_canvas.grid(row=1, column=0, sticky="nsew")
         vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
         vbar.grid(row=1, column=1, sticky="ns")
@@ -19183,7 +19186,7 @@ class FaultTreeApp:
             for widget in self.canvas_frame.winfo_children():
                 widget.destroy()
             if prev is None:
-                self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+                self.canvas = tk.Canvas(self.canvas_frame, bg=CANVAS_BG)
                 self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
                 self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
                 self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -19205,7 +19208,7 @@ class FaultTreeApp:
         else:
             for widget in self.canvas_frame.winfo_children():
                 widget.destroy()
-            self.canvas = tk.Canvas(self.canvas_frame, bg="white")
+            self.canvas = tk.Canvas(self.canvas_frame, bg=CANVAS_BG)
             self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=self.canvas.xview)
             self.hbar.pack(side=tk.BOTTOM, fill=tk.X)

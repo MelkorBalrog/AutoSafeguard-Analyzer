@@ -2982,7 +2982,8 @@ class SysMLDiagramWindow(tk.Frame):
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        self.canvas = tk.Canvas(canvas_frame, bg="white")
+        bg = StyleManager.get_instance().background
+        self.canvas = tk.Canvas(canvas_frame, bg=bg)
         vbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         hbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
         self.canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)

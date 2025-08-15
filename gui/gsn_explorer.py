@@ -6,6 +6,7 @@ from tkinter import ttk, simpledialog
 
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui import format_name_with_phase
+from .style_manager import StyleManager
 
 
 class GSNExplorer(tk.Frame):
@@ -480,7 +481,8 @@ class GSNExplorer(tk.Frame):
             return
         win = tk.Toplevel(self)
         win.title(obj.root.user_name)
-        canvas = tk.Canvas(win, width=800, height=600, bg="white")
+        bg = StyleManager.get_instance().background
+        canvas = tk.Canvas(win, width=800, height=600, bg=bg)
         canvas.pack(fill=tk.BOTH, expand=True)
         obj.draw(canvas)
 

@@ -1,14 +1,19 @@
 <style>
-  <object type="Actor" color="#0D47A1" />
-  <object type="Use Case" color="#FF8F00" />
-  <object type="System Boundary" color="#37474F" />
-  <object type="Block Boundary" color="#263238" />
-  <object type="Action Usage" color="#1B5E20" />
-  <object type="Action" color="#1B5E20" />
-  <object type="CallBehaviorAction" color="#1B5E20" />
-  <object type="Part" color="#F57F17" />
-  <object type="Port" color="#4A148C" />
-  <object type="Block" color="#455A64" />
-  <object type="Decision" color="#C8E6C9" />
-  <object type="Merge" color="#006064" />
+  <background color="#000000" />
+  <object type="Actor" color="#90CAF9" />
+  <object type="Use Case" color="#FFCC80" />
+  <object type="System Boundary" color="#90A4AE" />
+  <object type="Block Boundary" color="#B0BEC5" />
+  <object type="Existing Element" color="#90A4AE" />
+  <object type="Action Usage" color="#81C784" />
+  <object type="Action" color="#81C784" />
+  <object type="CallBehaviorAction" color="#81C784" />
+  <object type="Part" color="#FFB74D" />
+  <object type="Port" color="#CE93D8" />
+  <object type="Block" color="#CFD8DC" />
+  <object type="Decision" color="#E8F5E9" />
+  <object type="Merge" color="#4DD0E1" />
+  <object type="Database" color="#E1F5FE" />
+  <object type="ANN" color="#DCEDC8" />
+  <object type="Data acquisition" color="#FFF3E0" />
 </style>
