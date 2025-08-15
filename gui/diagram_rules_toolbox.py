@@ -11,9 +11,19 @@ class DiagramRulesEditor(tk.Frame):
     def __init__(self, master, app, config_path: Path | None = None):
         super().__init__(master)
         self.app = app
-        self.config_path = Path(config_path or Path(__file__).resolve().parents[1] / "diagram_rules.json")
-        self.data = load_json_with_comments(self.config_path)
+        self.config_path = Path(
+            config_path or Path(__file__).resolve().parents[1] / "diagram_rules.json"
+        )
+        try:
+            self.data = load_json_with_comments(self.config_path)
+        except Exception as exc:  # pragma: no cover - GUI fallback
+            messagebox.showerror(
+                "Diagram Rules", f"Failed to load configuration:\n{exc}"
+            )
+            self.data = {"connection_rules": {}}
 
+        # Make both columns expandable so the tree is always visible
+        self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -22,6 +32,8 @@ class DiagramRulesEditor(tk.Frame):
         self.tree.heading("value", text="Allowed Targets")
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.bind("<Double-1>", self._edit_item)
+        self.tree.column("#0", width=200, stretch=True)
+        self.tree.column("value", width=200, stretch=True)
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         self.canvas = tk.Canvas(self, background="white")
@@ -36,6 +48,8 @@ class DiagramRulesEditor(tk.Frame):
         self.tree.delete(*self.tree.get_children(""))
         root = self.tree.insert("", "end", "connection_rules", text="connection_rules")
         rules = self.data.get("connection_rules", {})
+        if not rules:
+            self.tree.insert(root, "end", "no_rules", text="(no rules defined)")
         for diag, conns in sorted(rules.items()):
             d_id = self.tree.insert(root, "end", f"diag|{diag}", text=diag)
             for conn, sources in sorted(conns.items()):
@@ -44,7 +58,10 @@ class DiagramRulesEditor(tk.Frame):
                     item_id = f"rule|{diag}|{conn}|{src}"
                     dest_text = ", ".join(sorted(dests))
                     self.tree.insert(c_id, "end", item_id, text=src, values=(dest_text,))
-        self.tree.expand(root)
+        # Ensure all top-level items are visible
+        self.tree.item(root, open=True)
+        for child in self.tree.get_children(root):
+            self.tree.item(child, open=True)
 
     def _on_select(self, _event=None):
         item = self.tree.selection()
