@@ -1,4 +1,5 @@
 <style>
+  <canvas color="#FFFFFF" />
   <object type="Actor" color="#F4D698" />
   <object type="Use Case" color="#B0E0E6" />
   <object type="System Boundary" color="#CFD8DC" />
