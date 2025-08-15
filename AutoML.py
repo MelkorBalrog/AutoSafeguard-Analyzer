@@ -8942,7 +8942,7 @@ class FaultTreeApp:
                     self.enable_work_product(name)
                 except Exception:
                     self.enabled_work_products.add(name)
-            if getattr(toolbox, "work_products", None):
+            if getattr(toolbox, "work_products", None) or toolbox.active_module:
                 for name in current - declared:
                     try:
                         # Always hide work products that are not declared in
@@ -8953,7 +8953,7 @@ class FaultTreeApp:
                     except Exception:
                         pass
         global_enabled = getattr(self, "enabled_work_products", set())
-        if toolbox and getattr(toolbox, "work_products", None):
+        if toolbox and (getattr(toolbox, "work_products", None) or toolbox.active_module):
             phase_enabled = toolbox.enabled_products()
             # Parent menu categories also need to remain active when any of
             # their children are enabled.  ``phase_enabled`` only contains the
