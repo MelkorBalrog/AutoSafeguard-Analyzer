@@ -91,20 +91,31 @@ class FTADrawingHelper:
                     canvas.create_line(x, yvals[j], x, yvals[j + 1], fill=fill)
             x += 0.5
 
-    def _fill_gradient_circle(self, canvas, cx: float, cy: float, radius: float, color: str) -> None:
-        """Fill circle with gradient from white to *color*."""
+    def _fill_gradient_circle(
+        self,
+        canvas,
+        cx: float,
+        cy: float,
+        radius: float,
+        color: str,
+        tag: str | None = None,
+    ) -> list[int]:
+        """Fill circle with gradient from white to *color* and return created line IDs."""
         left = math.floor(cx - radius)
         right = math.ceil(cx + radius)
         if right <= left:
-            return
+            return []
+        ids: list[int] = []
         x = left
         while x <= right:
             ratio = (x - left) / (right - left) if right > left else 1
             fill = self._interpolate_color(color, ratio)
             dx = x - cx
             dy = math.sqrt(max(radius ** 2 - dx ** 2, 0))
-            canvas.create_line(x, cy - dy, x, cy + dy, fill=fill)
+            line_id = canvas.create_line(x, cy - dy, x, cy + dy, fill=fill, tags=tag)
+            ids.append(line_id)
             x += 0.5
+        return ids
 
     def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
         """Fill rectangle with gradient from white to *color*."""
