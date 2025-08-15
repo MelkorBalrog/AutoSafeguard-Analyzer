@@ -1066,6 +1066,102 @@ def test_governance_enables_tools_per_phase():
     assert lb.colors == ["black"]
 
 
+def test_phase_without_governance_disables_tools():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    d1 = repo.create_diagram("Governance Diagram", name="Gov1")
+    d1.tags.append("safety-management")
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.list_diagrams()
+    toolbox.modules = [
+        GovernanceModule(name="P1", diagrams=["Gov1"]),
+        GovernanceModule(name="P2"),
+    ]
+
+    class DummyListbox:
+        def __init__(self):
+            self.items: list[str] = []
+            self.colors: list[str] = []
+
+        def get(self, *args):
+            if len(args) == 1:
+                return self.items[args[0]]
+            return list(self.items)
+
+        def insert(self, _index, item):
+            self.items.append(item)
+            self.colors.append("black")
+
+        def itemconfig(self, index, foreground="black"):
+            self.colors[index] = foreground
+
+        def delete(self, index):
+            del self.items[index]
+            del self.colors[index]
+
+        def size(self):
+            return len(self.items)
+
+    class DummyMenu:
+        def __init__(self):
+            self.state = None
+
+        def entryconfig(self, _idx, state=tk.DISABLED):
+            self.state = state
+
+    class DummyVar:
+        def __init__(self, value=""):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+        def set(self, value):
+            self.value = value
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    lb = DummyListbox()
+    menu_arch = DummyMenu()
+    app.tool_listboxes = {"System Design (Item Definition)": lb}
+    app.tool_categories = {"System Design (Item Definition)": []}
+    app.tool_actions = {}
+    app.work_product_menus = {"Architecture Diagram": [(menu_arch, 0)]}
+    app.enabled_work_products = set()
+    app.enable_process_area = lambda area: None
+    app.manage_architecture = lambda: None
+    app.tool_to_work_product = {
+        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+    }
+    app.update_views = lambda: None
+    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
+        app, FaultTreeApp
+    )
+    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
+        app, FaultTreeApp
+    )
+    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
+        app, FaultTreeApp
+    )
+    app.safety_mgmt_toolbox = toolbox
+    toolbox.on_change = app.refresh_tool_enablement
+
+    toolbox.add_work_product("Gov1", "Architecture Diagram", "r")
+
+    app.lifecycle_var = DummyVar("P1")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.NORMAL
+    assert lb.items == ["AutoML Explorer"]
+
+    app.lifecycle_var.set("P2")
+    app.on_lifecycle_selected()
+    assert menu_arch.state == tk.DISABLED
+    assert lb.items == []
+
+
 def test_phase_selection_updates_app(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
