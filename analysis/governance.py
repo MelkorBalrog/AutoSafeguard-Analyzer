@@ -3,79 +3,30 @@
 from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
+from pathlib import Path
+from config_loader import load_json_with_comments
+
 import networkx as nx
 
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
+
 # Element and relationship types associated with AI & safety lifecycle nodes.
-_AI_NODES = {"Database", "ANN", "Data acquisition"}
-_AI_RELATIONS = {
-    "Annotation",
-    "Synthesis",
-    "Augmentation",
-    "Acquisition",
-    "Labeling",
-    "Field risk evaluation",
-    "Field data collection",
-    "AI training",
-    "AI re-training",
-    "Curation",
-    "Ingestion",
-    "Model evaluation",
-}
+_AI_NODES = set(_CONFIG.get("ai_nodes", []))
+_AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
 
 # Map relationship labels or connection types to requirement actions.  Each
 # entry defines the verb to use, whether the destination element acts as a
 # constraint instead of an object, and an optional default subject.  The
 # resulting requirement follows the ISO/IEC/IEEE 29148 pattern
 # ``[CND] <SUB> shall <ACT> [OBJ] [CON].``
-_RELATIONSHIP_RULES: dict[str, dict[str, str | bool]] = {
-    "performs": {"action": "perform"},
-    "executes": {"action": "execute"},
-    "responsible for": {"action": "be responsible for"},
-    "produces": {"action": "produce"},
-    "delivers": {"action": "deliver"},
-    "uses": {"action": "use"},
-    "consumes": {"action": "use"},
-    "monitors": {"action": "monitor"},
-    "audits": {"action": "audit"},
-    "approves": {"action": "approve"},
-    "authorizes": {"action": "authorize"},
-    "governed by": {"action": "comply with", "constraint": True},
-    "constrained by": {"action": "comply with", "constraint": True},
-    # AI specific relationship types default the subject to the engineering
-    # team because these actions are typically performed by developers rather
-    # than by elements explicitly modelled in the diagram.
-    "ai training": {"action": "train", "subject": "Engineering team"},
-    "ai re-training": {"action": "retrain", "subject": "Engineering team"},
-    "curation": {"action": "curate", "subject": "Engineering team"},
-}
+_RELATIONSHIP_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
+    "relationship_rules", {}
+)
 
 # Map node types to default requirement roles so that the generator can
 # identify the subject, object or constraint directly from the model.
-_NODE_ROLES = {
-    "Role": "subject",
-    "Actor": "subject",
-    "Stakeholder": "subject",
-    "Organization": "subject",
-    "Business Unit": "subject",
-    "Process": "action",
-    "Procedure": "action",
-    "Activity": "action",
-    "Task": "action",
-    "Decision": "condition",
-    "Policy": "constraint",
-    "Principle": "constraint",
-    "Standard": "constraint",
-    "Guideline": "constraint",
-    "Document": "object",
-    "Artifact": "object",
-    "Data": "object",
-    "Record": "object",
-    "Database": "object",
-    "ANN": "object",
-    "Data acquisition": "object",
-    "Metric": "constraint",
-    "KPI": "constraint",
-}
+_NODE_ROLES = _CONFIG.get("node_roles", {})
 
 
 @dataclass
