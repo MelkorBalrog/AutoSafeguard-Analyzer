@@ -7,6 +7,7 @@ from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
+from gui.style_manager import StyleManager
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -52,7 +53,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         canvas_container = ttk.Frame(body)
         canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.canvas = tk.Canvas(canvas_container, background="white")
+        self.canvas = tk.Canvas(
+            canvas_container,
+            background=StyleManager.get_instance().canvas_bg,
+        )
         self.canvas.grid(row=0, column=0, sticky="nsew")
         xbar = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
         xbar.grid(row=1, column=0, sticky="ew")
@@ -103,6 +107,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.doc_var.set("")
             self.app.active_cbn = None
             self.canvas.delete("all")
+
+    # ------------------------------------------------------------------
+    def redraw(self):
+        self.canvas.configure(background=StyleManager.get_instance().canvas_bg)
+        self.select_doc()
 
     # ------------------------------------------------------------------
     def select_doc(self, *_):

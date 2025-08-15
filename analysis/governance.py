@@ -200,10 +200,10 @@ class GovernanceDiagram:
             if data.get("kind") == "relationship"
         ]
 
-    def generate_requirements(self) -> List[GeneratedRequirement]:
+    def generate_requirements(self) -> List[GeneratedRequirement | tuple[str, str]]:
         """Generate structured requirements from the diagram."""
 
-        requirements: List[GeneratedRequirement] = []
+        requirements: List[GeneratedRequirement | tuple[str, str]] = []
 
         for src, dst in self.graph.edges():
             data = self.edge_data.get(
@@ -213,6 +213,41 @@ class GovernanceDiagram:
             kind = data.get("kind")
             label = data.get("label")
             conn_type = data.get("conn_type")
+
+            # Skip standalone reuse links between lifecycle phases. The
+            # corresponding transition requirement will incorporate reuse
+            # information so an additional requirement would be redundant.
+            if (
+                conn_type == "Re-use"
+                and self.node_types.get(src) == "Lifecycle Phase"
+                and self.node_types.get(dst) == "Lifecycle Phase"
+            ):
+                continue
+
+            req_type = "organizational"
+            if (
+                conn_type in _AI_RELATIONS
+                or self.node_types.get(src) in _AI_NODES
+                or self.node_types.get(dst) in _AI_NODES
+            ):
+                req_type = "AI safety"
+
+            # Express lifecycle phase transitions explicitly.
+            if (
+                kind == "flow"
+                and self.node_types.get(src) == "Lifecycle Phase"
+                and self.node_types.get(dst) == "Lifecycle Phase"
+            ):
+                reuse_edge = self.edge_data.get((dst, src), {})
+                has_reuse = reuse_edge.get("conn_type") == "Re-use"
+                text = f"{src} shall transition to '{dst}'"
+                if has_reuse:
+                    text += f" reusing outputs from '{src}'"
+                if cond:
+                    text += f" only after {cond}"
+                text += "."
+                requirements.append((text, req_type))
+                continue
 
             subject = src
             orig_subject = subject
@@ -241,14 +276,6 @@ class GovernanceDiagram:
                 d_role = self._role_for(obj)
                 if s_role != "subject" and d_role == "subject":
                     subject, obj = obj, subject
-
-            req_type = "organizational"
-            if (
-                conn_type in _AI_RELATIONS
-                or self.node_types.get(src) in _AI_NODES
-                or self.node_types.get(dst) in _AI_NODES
-            ):
-                req_type = "AI safety"
 
             requirements.append(
                 GeneratedRequirement(

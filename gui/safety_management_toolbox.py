@@ -60,10 +60,15 @@ class SafetyManagementWindow(tk.Frame):
         ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
             side=tk.LEFT
         )
-        self.phase_menu_btn = tk.Menubutton(top, text="Phase Requirements")
+        self.phase_menu_btn = ttk.Menubutton(top, text="Phase Requirements")
         self.phase_menu = tk.Menu(self.phase_menu_btn, tearoff=False)
         self.phase_menu_btn.configure(menu=self.phase_menu)
         self.phase_menu_btn.pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Lifecycle Requirements",
+            command=self.generate_lifecycle_requirements,
+        ).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
@@ -248,11 +253,18 @@ class SafetyManagementWindow(tk.Frame):
 
     def _refresh_phase_menu(self) -> None:
         self.phase_menu.delete(0, tk.END)
-        for phase in sorted(self.toolbox.list_modules()):
+        phases = sorted(self.toolbox.list_modules())
+        for phase in phases:
             self.phase_menu.add_command(
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
+        if phases:
+            self.phase_menu.add_separator()
+        self.phase_menu.add_command(
+            label="Lifecycle",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def generate_phase_requirements(self, phase: str) -> None:
         diag_names = sorted(self.toolbox.diagrams_for_module(phase))
@@ -306,6 +318,64 @@ class SafetyManagementWindow(tk.Frame):
             )
             return
         self._display_requirements(f"{phase} Requirements", ids)
+
+    def generate_lifecycle_requirements(self) -> None:
+        """Generate requirements for diagrams outside of any phase."""
+        all_diags = set(self.toolbox.list_diagrams())
+        for phase in self.toolbox.list_modules():
+            all_diags -= self.toolbox.diagrams_for_module(phase)
+        diag_names = sorted(all_diags)
+        if not diag_names:
+            messagebox.showinfo(
+                "Requirements", "No lifecycle governance diagrams.")
+            return
+        repo = SysMLRepository.get_instance()
+        ids: list[str] = []
+        for name in diag_names:
+            diag_id = self.toolbox.diagrams.get(name)
+            if not diag_id:
+                continue
+            gov = GovernanceDiagram.from_repository(repo, diag_id)
+            try:
+                raw_reqs = gov.generate_requirements()
+            except Exception as exc:  # pragma: no cover - defensive
+                messagebox.showerror(
+                    "Requirements",
+                    f"Failed to generate requirements for '{name}': {exc}",
+                )
+                continue
+            pairs: list[tuple[str, str]] = []
+            invalid = False
+            for r in raw_reqs:
+                if isinstance(r, tuple):
+                    if len(r) != 2:
+                        invalid = True
+                        break
+                    text, rtype = r
+                elif hasattr(r, "text"):
+                    text, rtype = r.text, getattr(r, "req_type", "organizational")
+                elif isinstance(r, str):
+                    text, rtype = r, "organizational"
+                else:
+                    invalid = True
+                    break
+                if text.strip():
+                    pairs.append((text, rtype))
+            if invalid:
+                messagebox.showerror(
+                    "Requirements",
+                    "Requirement entries must be strings or (text, type) pairs.",
+                )
+                continue
+            for text, rtype in pairs:
+                ids.append(self._add_requirement(text, rtype))
+        if not ids:
+            messagebox.showinfo(
+                "Requirements",
+                "No requirements were generated for lifecycle diagrams.",
+            )
+            return
+        self._display_requirements("Lifecycle Requirements", ids)
 
     @staticmethod
     def _collect_requirements(gov: GovernanceDiagram) -> list[str]:
