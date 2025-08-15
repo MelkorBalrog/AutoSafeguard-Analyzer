@@ -2378,8 +2378,11 @@ class FaultTreeApp:
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(
-            label="Requirements Matrix", command=self.show_requirements_matrix
+            label="Requirements Matrix",
+            command=self.show_requirements_matrix,
+            state=tk.DISABLED,
         )
+        matrix_idx = requirements_menu.index("end")
         requirements_menu.add_command(
             label="Requirements Editor",
             command=self.show_requirements_editor,
@@ -2395,6 +2398,7 @@ class FaultTreeApp:
         for wp in REQUIREMENT_WORK_PRODUCTS:
             self.work_product_menus.setdefault(wp, []).extend(
                 [
+                    (requirements_menu, matrix_idx),
                     (requirements_menu, editor_idx),
                     (requirements_menu, explorer_idx),
                 ]
