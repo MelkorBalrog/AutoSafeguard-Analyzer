@@ -164,3 +164,12 @@ class CausalBayesianNetwork:
         for node in self.nodes:
             visit(node)
         return order
+
+
+@dataclass
+class CausalBayesianNetworkDoc:
+    """Container pairing a named network with node positions for diagrams."""
+
+    name: str
+    network: CausalBayesianNetwork = field(default_factory=CausalBayesianNetwork)
+    positions: Dict[str, Tuple[float, float]] = field(default_factory=dict)

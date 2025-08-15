@@ -387,7 +387,7 @@ from analysis.utils import (
     severity_to_probability,
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
-from analysis.causal_bayesian_network import CausalBayesianNetwork
+from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
 
 from gui.toolboxes import (
     ReliabilityWindow,
@@ -2239,7 +2239,7 @@ class FaultTreeApp:
         self.tc2fi_docs = []  # list of TC2FIDoc
         self.active_fi2tc = None
         self.active_tc2fi = None
-        self.cbn_docs = []  # list of CausalBayesianNetwork
+        self.cbn_docs = []  # list of CausalBayesianNetworkDoc
         self.active_cbn = None
         self.cybersecurity_goals: list[CybersecurityGoal] = []
         self.arch_diagrams = []
@@ -16499,7 +16499,9 @@ class FaultTreeApp:
             self.doc_nb.select(self._cbn_tab)
         else:
             self._cbn_tab = self._new_tab("Causal Bayesian Network")
-            from gui.toolboxes import CausalBayesianNetworkWindow
+            from gui.causal_bayesian_network_window import (
+                CausalBayesianNetworkWindow,
+            )
 
             self._cbn_window = CausalBayesianNetworkWindow(self._cbn_tab, self)
         self.refresh_all()
@@ -17700,10 +17702,11 @@ class FaultTreeApp:
             ],
             "cbn_docs": [
                 {
-                    "name": getattr(doc, "name", ""),
-                    "nodes": doc.nodes,
-                    "parents": doc.parents,
-                    "cpds": doc.cpds,
+                    "name": doc.name,
+                    "nodes": doc.network.nodes,
+                    "parents": doc.network.parents,
+                    "cpds": doc.network.cpds,
+                    "positions": doc.positions,
                 }
                 for doc in self.cbn_docs
             ],
@@ -18171,9 +18174,11 @@ class FaultTreeApp:
             net.nodes = d.get("nodes", [])
             net.parents = {k: list(v) for k, v in d.get("parents", {}).items()}
             net.cpds = {k: v for k, v in d.get("cpds", {}).items()}
-            net.name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
-            self.cbn_docs.append(net)
-            toolbox.register_loaded_work_product("Causal Bayesian Network Analysis", net.name)
+            name = d.get("name", f"CBN {len(self.cbn_docs)+1}")
+            positions = {k: tuple(v) for k, v in d.get("positions", {}).items()}
+            doc = CausalBayesianNetworkDoc(name, network=net, positions=positions)
+            self.cbn_docs.append(doc)
+            toolbox.register_loaded_work_product("Causal Bayesian Network Analysis", name)
         self.active_cbn = self.cbn_docs[0] if self.cbn_docs else None
 
         self.scenario_libraries = data.get("scenario_libraries", [])
