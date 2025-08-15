@@ -9,6 +9,13 @@ _CONFIG = load_json_with_comments(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 
+def reload_config() -> None:
+    """Reload gate node types from configuration."""
+    global _CONFIG, GATE_NODE_TYPES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+
+
 def _aggregate_goal_metrics(entries, components, sg_to_asil, sg_targets=None, get_node=lambda x: x):
     """Return metrics per safety goal."""
     comp_fit = component_fit_map(components)

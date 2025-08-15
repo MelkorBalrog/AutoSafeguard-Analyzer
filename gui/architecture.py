@@ -89,6 +89,29 @@ NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 
 
+def reload_config() -> None:
+    """Reload diagram rule configuration at runtime."""
+    global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
+    global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
+    SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
+    GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
+    SAFETY_AI_RELATION_RULES = {
+        conn: {src: set(dests) for src, dests in srcs.items()}
+        for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
+    }
+    CONNECTION_RULES = {
+        diag: {
+            conn: {src: set(dests) for src, dests in srcs.items()}
+            for conn, srcs in conns.items()
+        }
+        for diag, conns in _CONFIG.get("connection_rules", {}).items()
+    }
+    NODE_CONNECTION_LIMITS = _CONFIG.get("node_connection_limits", {})
+    GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+
+
 def _work_product_name(diag_type: str) -> str:
     """Return work product name for a given diagram type."""
     return "Architecture Diagram" if diag_type in ARCH_DIAGRAM_TYPES else diag_type

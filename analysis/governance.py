@@ -29,6 +29,16 @@ _RELATIONSHIP_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
 _NODE_ROLES = _CONFIG.get("node_roles", {})
 
 
+def reload_config() -> None:
+    """Reload governance-related configuration."""
+    global _CONFIG, _AI_NODES, _AI_RELATIONS, _RELATIONSHIP_RULES, _NODE_ROLES
+    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _AI_NODES = set(_CONFIG.get("ai_nodes", []))
+    _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
+    _RELATIONSHIP_RULES = _CONFIG.get("relationship_rules", {})
+    _NODE_ROLES = _CONFIG.get("node_roles", {})
+
+
 @dataclass
 class GeneratedRequirement:
     """Structured requirement composed from diagram elements.
