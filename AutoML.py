@@ -2629,6 +2629,10 @@ class FaultTreeApp:
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
         self.log_frame = logger.init_log_window(root)
         self.log_frame.pack(side=tk.BOTTOM, fill=tk.BOTH)
+        self.toggle_log_button = ttk.Button(
+            root, text="Hide Logs", command=self.toggle_logs
+        )
+        self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         self.main_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.explorer_nb = ttk.Notebook(self.main_pane)
@@ -9596,6 +9600,16 @@ class FaultTreeApp:
         self.zoom /= 1.2
         self.diagram_font.config(size=int(8 * self.zoom))
         self.redraw_canvas()
+
+    def toggle_logs(self):
+        if self.log_frame.winfo_manager():
+            self.log_frame.pack_forget()
+            self.toggle_log_button.config(text="Show Logs")
+        else:
+            self.log_frame.pack(
+                side=tk.BOTTOM, fill=tk.BOTH, before=self.toggle_log_button
+            )
+            self.toggle_log_button.config(text="Hide Logs")
 
     def auto_arrange(self):
         if self.root_node is None:
