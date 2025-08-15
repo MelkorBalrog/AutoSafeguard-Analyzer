@@ -300,6 +300,7 @@ class _RequirementDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         ):
             self.result["asil"] = self.asil_var.get().strip()
             self.result["cal"] = self.cal_var.get().strip()
@@ -313,6 +314,7 @@ class _RequirementDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         )
         widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
         if hide:

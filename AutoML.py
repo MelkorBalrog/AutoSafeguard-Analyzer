@@ -1259,6 +1259,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 self.result["asil"] = asil
                 self.result["cal"] = cal
@@ -1288,6 +1289,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             )
             widgets = [self.asil_label, self.req_asil_combo, self.cal_label, self.req_cal_combo]
             if hide:
@@ -1392,6 +1394,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         ):
             req["asil"] = asil
             req["cal"] = cal
@@ -1594,6 +1597,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 req["asil"] = (
                     asil_default
@@ -1623,6 +1627,7 @@ class EditNodeDialog(simpledialog.Dialog):
                 "service",
                 "product",
                 "legal",
+                "organizational",
             ):
                 req["asil"] = (
                     asil_default
@@ -1679,6 +1684,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "service",
             "product",
             "legal",
+            "organizational",
         ):
             if self.node.node_type.upper() == "BASIC EVENT":
                 # Leave the ASIL untouched for decomposed requirements when
@@ -11857,6 +11863,7 @@ class FaultTreeApp:
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 ):
                     self.result["asil"] = self.asil_var.get().strip()
                     self.result["cal"] = self.cal_var.get().strip()
@@ -11877,6 +11884,7 @@ class FaultTreeApp:
                     "service",
                     "product",
                     "legal",
+                    "organizational",
                 )
                 widgets = [self.asil_label, self.asil_combo, self.cal_label, self.cal_combo]
                 if hide:
