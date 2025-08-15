@@ -57,7 +57,6 @@ def test_truth_table_auto_fill():
     assert rows[0][0] == (False,)
     assert rows[0][1] == pytest.approx(0.0)
 
-
 def test_marginal_probability_propagation():
     cbn = CausalBayesianNetwork()
     cbn.add_node("Rain", cpd=0.3)
