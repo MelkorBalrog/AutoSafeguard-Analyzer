@@ -17,4 +17,5 @@ def test_label_relationship_between_database_nodes():
     assert diagram.edge_data[("User DB", "Analytics DB")]["label"] == "sync with"
 
     reqs = diagram.generate_requirements()
-    assert "Task 'User DB' shall sync with task 'Analytics DB'." in reqs
+    texts = [t for t, _ in reqs]
+    assert "Task 'User DB' shall sync with task 'Analytics DB'." in texts
