@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 
 import tkinter as tk
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
@@ -91,4 +90,3 @@ def test_cause_effect_tool_opens_on_double_click():
     app.on_tool_list_double_click(event)
 
     assert action_called["flag"]
-
