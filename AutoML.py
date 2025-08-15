@@ -2108,6 +2108,11 @@ class FaultTreeApp:
             "Reliability Analysis",
             "open_reliability_window",
         ),
+        "Causal Bayesian Network Analysis": (
+            "Safety Analysis",
+            "Causal Bayesian Network",
+            "open_causal_bayesian_network_window",
+        ),
         "Scenario Library": (
             "Scenario",
             "Scenario Libraries",
@@ -2144,6 +2149,7 @@ class FaultTreeApp:
         "FMEDA": "Quantitative Analysis",
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
+        "Causal Bayesian Network Analysis": "Quantitative Analysis",
         "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
@@ -16473,6 +16479,13 @@ class FaultTreeApp:
         else:
             self._threat_tab = self._new_tab("Threat")
             self._threat_window = ThreatWindow(self._threat_tab, self)
+        self.refresh_all()
+
+    def open_causal_bayesian_network_window(self):
+        """Open the Causal Bayesian Network analysis window.
+
+        Placeholder stub so the work product is usable even without a
+        dedicated UI implementation."""
         self.refresh_all()
 
     def open_fi2tc_window(self):
