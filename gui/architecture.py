@@ -3763,10 +3763,40 @@ class SysMLDiagramWindow(tk.Frame):
                             arrow=arrow_default,
                             stereotype=conn_stereo,
                         )
-                        self.connections.append(conn)
+                        ok = True
+                        if self.start.obj_type in ("Decision", "Merge"):
+                            pref = self._nearest_diamond_corner(
+                                self.start, obj.x * self.zoom, obj.y * self.zoom
+                            )
+                            w = self.start.width * self.zoom / 2
+                            h = self.start.height * self.zoom / 2
+                            cx = self.start.x * self.zoom
+                            cy = self.start.y * self.zoom
+                            rel = ((pref[0] - cx) / w, (pref[1] - cy) / h)
+                            ok = self._assign_decision_corner(
+                                conn, self.start, "src_pos", rel
+                            )
+                        if ok and obj.obj_type in ("Decision", "Merge"):
+                            pref = self._nearest_diamond_corner(
+                                obj, self.start.x * self.zoom, self.start.y * self.zoom
+                            )
+                            w = obj.width * self.zoom / 2
+                            h = obj.height * self.zoom / 2
+                            cx = obj.x * self.zoom
+                            cy = obj.y * self.zoom
+                            rel = ((pref[0] - cx) / w, (pref[1] - cy) / h)
+                            ok = self._assign_decision_corner(conn, obj, "dst_pos", rel)
+                        if ok:
+                            self.connections.append(conn)
+                        else:
+                            messagebox.showwarning(
+                                "Invalid Connection",
+                                "Decision nodes support at most 4 connections",
+                            )
+                            conn = None
                         src_id = self.start.element_id
                         dst_id = obj.element_id
-                        if src_id and dst_id:
+                        if conn and src_id and dst_id:
                             rel_stereo = (
                                 "control action"
                                 if t == "Control Action"
@@ -3794,8 +3824,9 @@ class SysMLDiagramWindow(tk.Frame):
                                 )
                                 if t == "Generalization":
                                     inherit_block_properties(self.repo, src_id)
-                        self._sync_to_repository()
-                        ConnectionDialog(self, conn)
+                        if conn:
+                            self._sync_to_repository()
+                            ConnectionDialog(self, conn)
                     else:
                         messagebox.showwarning("Invalid Connection", msg)
                 self.start = None
@@ -4103,10 +4134,22 @@ class SysMLDiagramWindow(tk.Frame):
                 ex, ey = self._line_rect_intersection(x, y, dx, dy, dst_obj)
                 rx = (sx / self.zoom - src_obj.x) / (src_obj.width / 2)
                 ry = (sy / self.zoom - src_obj.y) / (src_obj.height / 2)
-                self.selected_conn.src_pos = (rx, ry)
+                if src_obj.obj_type in ("Decision", "Merge"):
+                    if not self._assign_decision_corner(
+                        self.selected_conn, src_obj, "src_pos", (rx, ry)
+                    ):
+                        pass
+                else:
+                    self.selected_conn.src_pos = (rx, ry)
                 rx = (ex / self.zoom - dst_obj.x) / (dst_obj.width / 2)
                 ry = (ey / self.zoom - dst_obj.y) / (dst_obj.height / 2)
-                self.selected_conn.dst_pos = (rx, ry)
+                if dst_obj.obj_type in ("Decision", "Merge"):
+                    if not self._assign_decision_corner(
+                        self.selected_conn, dst_obj, "dst_pos", (rx, ry)
+                    ):
+                        pass
+                else:
+                    self.selected_conn.dst_pos = (rx, ry)
             self.redraw()
             return
         if (
@@ -4132,9 +4175,21 @@ class SysMLDiagramWindow(tk.Frame):
                     rx = (ex / self.zoom - obj.x) / (obj.width / 2)
                     ry = (ey / self.zoom - obj.y) / (obj.height / 2)
                     if self.dragging_endpoint == "src":
-                        self.selected_conn.src_pos = (rx, ry)
+                        if obj.obj_type in ("Decision", "Merge"):
+                            if not self._assign_decision_corner(
+                                self.selected_conn, obj, "src_pos", (rx, ry)
+                            ):
+                                pass
+                        else:
+                            self.selected_conn.src_pos = (rx, ry)
                     else:
-                        self.selected_conn.dst_pos = (rx, ry)
+                        if obj.obj_type in ("Decision", "Merge"):
+                            if not self._assign_decision_corner(
+                                self.selected_conn, obj, "dst_pos", (rx, ry)
+                            ):
+                                pass
+                        else:
+                            self.selected_conn.dst_pos = (rx, ry)
                 else:
                     self.endpoint_drag_pos = (x, y)
             self.redraw()
@@ -4999,6 +5054,72 @@ class SysMLDiagramWindow(tk.Frame):
             (x - w, y),
         ]
         return min(corners, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
+
+    def _assign_decision_corner(
+        self,
+        conn: DiagramConnection,
+        obj: SysMLObject,
+        attr: str,
+        preferred: Tuple[float, float] | None = None,
+    ) -> bool:
+        """Assign a free diamond corner to *conn* on *obj*.
+
+        The connection endpoint attribute *attr* (``src_pos`` or ``dst_pos``)
+        is set to one of four vectors representing the diamond corners. If all
+        corners are already used, the attribute is left unchanged and ``False``
+        is returned.
+        """
+
+        if obj.obj_type not in ("Decision", "Merge"):
+            return True
+
+        corners = [(0.0, -1.0), (1.0, 0.0), (0.0, 1.0), (-1.0, 0.0)]
+
+        def corner_index(pos: Tuple[float, float]) -> int:
+            rx, ry = pos
+            if abs(rx) >= abs(ry):
+                return 1 if rx >= 0 else 3
+            return 0 if ry < 0 else 2
+
+        used: set[int] = set()
+        for other in self.connections:
+            if other is conn:
+                continue
+            if attr == "src_pos":
+                if other.src != obj.obj_id:
+                    continue
+                pos = other.src_pos
+                other_obj = self.get_object(other.dst)
+            else:
+                if other.dst != obj.obj_id:
+                    continue
+                pos = other.dst_pos
+                other_obj = self.get_object(other.src)
+            if pos is None and other_obj is not None:
+                corner_pt = self._nearest_diamond_corner(
+                    obj, other_obj.x * self.zoom, other_obj.y * self.zoom
+                )
+                cx = obj.x * self.zoom
+                cy = obj.y * self.zoom
+                w = obj.width * self.zoom / 2
+                h = obj.height * self.zoom / 2
+                pos = ((corner_pt[0] - cx) / w, (corner_pt[1] - cy) / h)
+            if pos is not None:
+                used.add(corner_index(pos))
+
+        order: List[int]
+        if preferred is not None:
+            idx = corner_index(preferred)
+            order = [idx, (idx + 1) % 4, (idx + 2) % 4, (idx + 3) % 4]
+        else:
+            order = list(range(4))
+
+        for idx in order:
+            if idx not in used:
+                setattr(conn, attr, corners[idx])
+                return True
+
+        return False
 
     def find_connection(self, x: float, y: float) -> DiagramConnection | None:
         diag = self.repo.diagrams.get(self.diagram_id)
