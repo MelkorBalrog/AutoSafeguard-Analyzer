@@ -14581,7 +14581,7 @@ class FaultTreeApp:
         messagebox.showinfo("Export", "Product goal requirements exported.")
     def generate_phase_requirements(self, phase: str) -> None:
         """Generate requirements for all governance diagrams in a phase."""
-        self.open_safety_management_toolbox()
+        self.open_safety_management_toolbox(show_diagrams=False)
         win = getattr(self, "safety_mgmt_window", None)
         if win:
             win.generate_phase_requirements(phase)
@@ -16668,95 +16668,7 @@ class FaultTreeApp:
             self._fault_prio_window = FaultPrioritizationWindow(self._fault_prio_tab, self)
         self.refresh_all()
 
-    def open_safety_management_toolbox(self):
-        """Open a placeholder tab for the Safety & Security Management toolbox."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
-            self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
-
-        from analysis.safety_management import SafetyManagementToolbox
-
-        # Reuse existing toolbox instance if present; otherwise create one
-        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
-
-        msg = (
-            "Safety & Security Management toolbox initialized.\n"
-            "Future versions will provide a full graphical interface."
-        )
-        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
-            fill=tk.BOTH, expand=True, padx=10, pady=10
-        )
-
-    def open_safety_management_toolbox(self):
-        """Open a placeholder tab for the Safety & Security Management toolbox."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
-            self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
-
-        from analysis.safety_management import SafetyManagementToolbox
-
-        # Reuse existing toolbox instance if present; otherwise create one
-        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
-
-        msg = (
-            "Safety & Security Management toolbox initialized.\n"
-            "Future versions will provide a full graphical interface."
-        )
-        ttk.Label(self._safety_mgmt_tab, text=msg, justify=tk.CENTER).pack(
-            fill=tk.BOTH, expand=True, padx=10, pady=10
-        )
-
-    def open_safety_management_toolbox(self):
-        """Open the Safety & Security Management toolbox tab."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
-            self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
-
-        from analysis.safety_management import SafetyManagementToolbox
-        from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
-
-        # Reuse existing toolbox instance if present; otherwise create one
-        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
-
-        gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
-        gui.pack(fill=tk.BOTH, expand=True)
-
-    def open_safety_management_toolbox(self):
-        """Open the Safety & Security Management toolbox tab."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
-            self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
-
-        from analysis.safety_management import SafetyManagementToolbox
-        from gui.safety_management_toolbox import SafetyManagementToolbox as SMTGUI
-
-        # Reuse existing toolbox instance if present; otherwise create one
-        self.safety_toolbox = getattr(self, "safety_toolbox", SafetyManagementToolbox())
-
-        gui = SMTGUI(self._safety_mgmt_tab, toolbox=self.safety_toolbox)
-        gui.pack(fill=tk.BOTH, expand=True)
-
-    def open_safety_management_toolbox(self):
-        """Open a Safety & Security Management tab with an Activity Diagram."""
-        if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
-            self.doc_nb.select(self._safety_mgmt_tab)
-            return
-
-        self._safety_mgmt_tab = self._new_tab("Safety & Security Management")
-
-        from gui.architecture import ActivityDiagramWindow
-
-        ActivityDiagramWindow(self._safety_mgmt_tab, self)
-
-    def open_safety_management_toolbox(self):
+    def open_safety_management_toolbox(self, show_diagrams: bool = True):
         """Open the Safety & Security Management editor and browser."""
         if hasattr(self, "_safety_mgmt_tab") and self._safety_mgmt_tab.winfo_exists():
             self.doc_nb.select(self._safety_mgmt_tab)
@@ -16771,13 +16683,18 @@ class FaultTreeApp:
             self.safety_mgmt_toolbox = SafetyManagementToolbox()
 
         self.safety_mgmt_window = SafetyManagementWindow(
-            self._safety_mgmt_tab, self, self.safety_mgmt_toolbox
+            self._safety_mgmt_tab, self, self.safety_mgmt_toolbox, show_diagrams=show_diagrams
         )
         # SafetyManagementWindow may not pack itself when embedded. If the
         # widget exposes a ``pack`` method, invoke it so the tab shows the
         # expected controls instead of appearing blank.
         if hasattr(self.safety_mgmt_window, "pack"):
             self.safety_mgmt_window.pack(fill=tk.BOTH, expand=True)
+
+        # Opening the toolbox can affect menu enablement, so refresh the UI.
+        refresh = getattr(self, "refresh_all", None)
+        if callable(refresh):
+            refresh()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
