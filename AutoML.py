@@ -4329,6 +4329,9 @@ class FaultTreeApp:
         """Return a PIL Image of the given GSN diagram."""
         from io import BytesIO
         from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
@@ -4362,6 +4365,9 @@ class FaultTreeApp:
         """Return a PIL Image of the given SysML diagram."""
         from io import BytesIO
         from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
 
         temp = tk.Toplevel(self.root)
         temp.withdraw()
@@ -4398,6 +4404,38 @@ class FaultTreeApp:
         except Exception:
             img = None
         temp.destroy()
+        return img.convert("RGB") if img else None
+
+    def capture_cbn_diagram(self, doc):
+        """Return a PIL Image of the given Causal Bayesian Network diagram."""
+        from io import BytesIO
+        from PIL import Image
+        from gui.causal_bayesian_network_window import (
+            CausalBayesianNetworkWindow,
+        )
+
+        temp = tk.Toplevel(self.root)
+        temp.withdraw()
+        try:
+            win = CausalBayesianNetworkWindow(temp, self)
+            win.doc_var.set(doc.name)
+            win.select_doc()
+            win.canvas.update()
+            bbox = win.canvas.bbox("all")
+            if not bbox:
+                temp.destroy()
+                return None
+            x, y, x2, y2 = bbox
+            width, height = x2 - x, y2 - y
+            ps = win.canvas.postscript(colormode="color", x=x, y=y, width=width, height=height)
+            ps_bytes = BytesIO(ps.encode("utf-8"))
+            try:
+                img = Image.open(ps_bytes)
+                img.load(scale=3)
+            except Exception:
+                img = None
+        finally:
+            temp.destroy()
         return img.convert("RGB") if img else None
 
     def capture_diff_diagram(self, top_event):
@@ -8177,6 +8215,53 @@ class FaultTreeApp:
                 )
                 Story.append(table)
                 Story.append(Spacer(1, 12))
+
+        # --- Causal Bayesian Network Analyses ---
+        if getattr(self, "cbn_docs", []):
+            Story.append(PageBreak())
+            Story.append(Paragraph("Causal Bayesian Network Analyses", pdf_styles["Heading2"]))
+            Story.append(Spacer(1, 12))
+            for cbn_doc in self.cbn_docs:
+                Story.append(Paragraph(cbn_doc.name, pdf_styles["Heading3"]))
+                img = self.capture_cbn_diagram(cbn_doc)
+                if img is not None:
+                    buf = BytesIO()
+                    img.save(buf, format="PNG")
+                    buf.seek(0)
+                    desired_width, desired_height = scale_image(img)
+                    rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                    Story.append(rl_img)
+                    Story.append(Spacer(1, 12))
+                network = cbn_doc.network
+                for var in network.nodes:
+                    Story.append(Paragraph(var, pdf_styles["Heading4"]))
+                    data = [["Combination", "P(True)", "P(Parents)", "P(All)"]]
+                    parents = network.parents.get(var, [])
+                    for combo, p_true, combo_prob, joint_prob in network.cpd_rows(var):
+                        combo_str = (
+                            ", ".join(f"{p}={v}" for p, v in zip(parents, combo))
+                            if parents
+                            else "(prior)"
+                        )
+                        data.append([
+                            combo_str,
+                            f"{p_true:.3f}",
+                            f"{combo_prob:.3f}",
+                            f"{joint_prob:.3f}",
+                        ])
+                    table = Table(data, repeatRows=1)
+                    table.setStyle(
+                        TableStyle(
+                            [
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                                ('FONTSIZE', (0,0), (-1,-1), 8),
+                            ]
+                        )
+                    )
+                    Story.append(table)
+                    Story.append(Spacer(1, 12))
 
         # ------------------------------------------------------------------
         # Helper: Get the highest Prototype Assurance Level (PAL) from immediate parents.
