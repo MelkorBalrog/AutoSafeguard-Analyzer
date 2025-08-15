@@ -92,18 +92,6 @@ for key in (
     'DatabaseUsage',
     'ANNUsage',
     'DataacquisitionUsage',
-    'AnnotationUsage',
-    'SynthesisUsage',
-    'AugmentationUsage',
-    'AcquisitionUsage',
-    'LabelingUsage',
-    'FieldriskevaluationUsage',
-    'FielddatacollectionUsage',
-    'AItrainingUsage',
-    'AIre-trainingUsage',
-    'CurationUsage',
-    'IngestionUsage',
-    'ModelevaluationUsage',
 ):
     SYSML_PROPERTIES.setdefault(key, [])
 
