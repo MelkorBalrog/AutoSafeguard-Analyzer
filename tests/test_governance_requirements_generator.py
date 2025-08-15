@@ -69,3 +69,22 @@ def test_ai_training_and_curation_requirements():
     assert curate_req.subject == "Engineering team"
     assert curate_req.obj == "Database1"
     assert curate_req.condition == "completion < 0.98"
+
+
+def test_data_acquisition_compartment_sources():
+    diagram = GovernanceDiagram()
+    diagram.add_task(
+        "Acquire Data",
+        node_type="Data acquisition",
+        compartments=["Sensor A", "Sensor B"],
+    )
+
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+
+    assert "Acquire Data shall obtain data from 'Sensor A'." in texts
+    assert "Acquire Data shall obtain data from 'Sensor B'." in texts
+
+    data_reqs = [r for r in reqs if r.action == "obtain data from"]
+    assert all(r.req_type == "AI safety" for r in data_reqs)
+    assert {r.obj for r in data_reqs} == {"Sensor A", "Sensor B"}
