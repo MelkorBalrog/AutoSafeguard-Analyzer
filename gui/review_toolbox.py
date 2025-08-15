@@ -24,9 +24,10 @@ from dataclasses import dataclass, field
 from typing import List
 import difflib
 import sys
-import json
 import re
 from pathlib import Path
+from config_loader import load_json_with_comments
+import json
 try:
     from PIL import Image, ImageTk
 except ModuleNotFoundError:  # pragma: no cover - pillow optional
@@ -34,8 +35,7 @@ except ModuleNotFoundError:  # pragma: no cover - pillow optional
 
 # Node types treated as gates when deriving component names
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
-with _CONFIG_PATH.open() as f:
-    _CONFIG = json.load(f)
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
