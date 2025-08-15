@@ -172,6 +172,23 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if tool != "Select":
             self._highlight_node(None)
 
+        configure = getattr(self.canvas, "configure", None)
+        if configure:
+            node_tools = {
+                "Variable",
+                "Triggering Condition",
+                "Existing Triggering Condition",
+                "Functional Insufficiency",
+                "Existing Functional Insufficiency",
+                "Existing Malfunction",
+            }
+            if tool == "Relationship":
+                configure(cursor="tcross")
+            elif tool in node_tools:
+                configure(cursor="crosshair")
+            else:
+                configure(cursor="")
+
     # ------------------------------------------------------------------
     def on_click(self, event) -> None:
         doc = getattr(self.app, "active_cbn", None)

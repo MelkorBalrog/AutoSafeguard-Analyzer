@@ -362,3 +362,47 @@ def test_joint_probabilities_refresh_on_parent_change():
     win._update_all_tables()
     assert tree_b.rows[0][-1] == f"{0.3 * 0.1:.3f}"
     assert tree_b.rows[1][-1] == f"{0.7 * 0.5:.3f}"
+
+
+def test_node_tool_cursor_and_reset():
+    """Node tools show a crosshair cursor and reset after selection."""
+
+    win = object.__new__(CausalBayesianNetworkWindow)
+
+    class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
+        def configure(self, **kw):
+            if "cursor" in kw:
+                self.cursor = kw["cursor"]
+
+    win.canvas = CanvasStub()
+    win._highlight_node = lambda name: None
+
+    CausalBayesianNetworkWindow.select_tool(win, "Variable")
+    assert win.canvas.cursor == "crosshair"
+    CausalBayesianNetworkWindow.select_tool(win, "Select")
+    assert win.canvas.cursor == ""
+
+
+def test_relationship_cursor_and_reset():
+    """Relationship tool shows tcross cursor and resets after selection."""
+
+    win = object.__new__(CausalBayesianNetworkWindow)
+
+    class CanvasStub:
+        def __init__(self):
+            self.cursor = None
+
+        def configure(self, **kw):
+            if "cursor" in kw:
+                self.cursor = kw["cursor"]
+
+    win.canvas = CanvasStub()
+    win._highlight_node = lambda name: None
+
+    CausalBayesianNetworkWindow.select_tool(win, "Relationship")
+    assert win.canvas.cursor == "tcross"
+    CausalBayesianNetworkWindow.select_tool(win, "Select")
+    assert win.canvas.cursor == ""
