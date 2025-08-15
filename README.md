@@ -106,6 +106,35 @@ When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
 Task 'Review Plan' shall be related to task 'Draft Plan' when changes requested.
 ```
 
+To generate requirements for every governance diagram in a particular phase,
+iterate over the diagrams registered with a
+``SafetyManagementToolbox``:
+
+```python
+from analysis.governance import GovernanceDiagram
+from analysis.safety_management import SafetyManagementToolbox
+from sysml.sysml_repository import SysMLRepository
+
+repo = SysMLRepository.get_instance()
+toolbox = SafetyManagementToolbox()
+
+# Assume the repository already contains governance diagrams "Gov1" and "Gov2"
+mod = toolbox.add_module("Phase1")
+mod.diagrams.extend(["Gov1", "Gov2"])
+
+reqs: list[str] = []
+for name in toolbox.diagrams_for_module("Phase1"):
+    diag_id = toolbox.diagrams[name]
+    gov = GovernanceDiagram.from_repository(repo, diag_id)
+    reqs.extend(gov.generate_requirements())
+
+for r in reqs:
+    print(r)
+```
+
+This example prints the requirements derived from all governance diagrams in the
+``Phase1`` module.
+
 ## Workflow Overview
 
 The diagram below illustrates how information flows through the major work products. Each box lists the main inputs and outputs so you can see how analyses feed into one another and where the review workflow fits. Approved reviews update the ASIL and CAL values propagated throughout the model.
