@@ -83,23 +83,19 @@ class GeneratedRequirement:
     """Structured requirement composed from diagram elements.
 
     The dataclass exposes the individual requirement components (condition,
-    subject, action, object and constraint) alongside the requirement category.
-    For backward compatibility the object behaves like a tuple ``(text,
-    req_type)`` and can be treated as a string containing the rendered
-    requirement sentence.
+    subject, action, object and constraint) alongside the requirement
+    category.  Each field except ``action`` is optional and therefore given a
+    default value.  This ordering avoids the ``TypeError`` raised when optional
+    fields precede required ones in a :func:`dataclass` definition and mirrors
+    how requirements are instantiated in the generator.
     """
 
-    condition: str | None
-    subject: str | None
     action: str
-    obj: str | None
-    constraint: str | None
-    req_type: str
-    cnd: str | None = None  # Condition
-    sub: str | None = None  # Subject
-    act: str | None = None  # Action
-    obj: str | None = None  # Object
-    con: str | None = None  # Constraint
+    condition: str | None = None
+    subject: str | None = None
+    obj: str | None = None
+    constraint: str | None = None
+    req_type: str = "organizational"
 
     @property
     def text(self) -> str:
@@ -256,6 +252,7 @@ class GovernanceDiagram:
             kind = data.get("kind")
             label = data.get("label")
             conn_type = data.get("conn_type")
+
             subject = src
             obj: str | None = dst
             constraint: str | None = None
@@ -291,7 +288,14 @@ class GovernanceDiagram:
                 req_type = "AI safety"
 
             requirements.append(
-                GeneratedRequirement(cond, subject, action, obj, constraint, req_type)
+                GeneratedRequirement(
+                    action=action,
+                    condition=cond,
+                    subject=subject,
+                    obj=obj,
+                    constraint=constraint,
+                    req_type=req_type,
+                )
             )
 
         return requirements
