@@ -158,9 +158,9 @@
   // Allowed Safety & AI relationships between node types
   // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
-    "Acquisition": {"Data acquisition": ["Database"]},
-    "Field data collection": {"Data acquisition": ["Database"]},
-    "Field risk evaluation": {"Data acquisition": ["Database"]},
+    "Acquisition": {"Database": ["Data acquisition"]},
+    "Field data collection": {"Database": ["Data acquisition"]},
+    "Field risk evaluation": {"Database": ["Data acquisition"]},
     "Annotation": {"ANN": ["Database"]},
     "Synthesis": {"ANN": ["Database"]},
     "Augmentation": {"ANN": ["Database"]},
