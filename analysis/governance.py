@@ -1,7 +1,7 @@
 """Basic governance diagram support for safety workflows."""
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import networkx as nx
 
@@ -117,6 +117,52 @@ class GovernanceDiagram:
             diagram.add_flow(src, dst)
         return diagram
 
+    @classmethod
+    def from_repository(cls, repo: Any, diag_id: str) -> "GovernanceDiagram":
+        """Build a :class:`GovernanceDiagram` from a repository diagram.
+
+        Parameters
+        ----------
+        repo:
+            Repository instance providing ``diagrams`` and ``elements`` maps.
+        diag_id:
+            Identifier of the governance diagram to convert.
+        """
+
+        diagram = cls()
+        src_diagram = repo.diagrams.get(diag_id)
+        if not src_diagram:
+            return diagram
+
+        id_to_name: dict[int, str] = {}
+        for obj in getattr(src_diagram, "objects", []):
+            odict = obj if isinstance(obj, dict) else obj.__dict__
+            if odict.get("obj_type") != "Action":
+                continue
+            elem_id = odict.get("element_id")
+            name = ""
+            if elem_id and elem_id in repo.elements:
+                name = repo.elements[elem_id].name
+            if not name:
+                name = odict.get("properties", {}).get("name", "")
+            if not name:
+                continue
+            diagram.add_task(name)
+            id_to_name[odict.get("obj_id")] = name
+
+        for conn in getattr(src_diagram, "connections", []):
+            cdict = conn if isinstance(conn, dict) else conn.__dict__
+            src = id_to_name.get(cdict.get("src"))
+            dst = id_to_name.get(cdict.get("dst"))
+            if not src or not dst:
+                continue
+            cond = cdict.get("name") or cdict.get("properties", {}).get("condition")
+            if cdict.get("conn_type") == "Flow":
+                diagram.add_flow(src, dst, cond)
+            else:
+                diagram.add_relationship(src, dst, cond)
+
+        return diagram
 
 if __name__ == "__main__":  # pragma: no cover - example usage for docs
     demo = GovernanceDiagram()
