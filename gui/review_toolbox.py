@@ -23,15 +23,19 @@ from dataclasses import dataclass, field
 from typing import List
 import difflib
 import sys
-import json
 import re
+from pathlib import Path
+from config_loader import load_json_with_comments
+import json
 try:
     from PIL import Image, ImageTk
 except ModuleNotFoundError:  # pragma: no cover - pillow optional
     Image = ImageTk = None
 
 # Node types treated as gates when deriving component names
-GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 

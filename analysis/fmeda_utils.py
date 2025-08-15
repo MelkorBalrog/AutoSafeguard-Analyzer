@@ -1,8 +1,12 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 from analysis.models import ASIL_ORDER, ASIL_TARGETS, component_fit_map
+from pathlib import Path
+from config_loader import load_json_with_comments
 
 # Node types treated as gates when determining component names
-GATE_NODE_TYPES = {"GATE", "RIGOR LEVEL", "TOP EVENT", "FUNCTIONAL INSUFFICIENCY"}
+_CONFIG_PATH = Path(__file__).resolve().parents[1] / "diagram_rules.json"
+_CONFIG = load_json_with_comments(_CONFIG_PATH)
+GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 
 def _aggregate_goal_metrics(entries, components, sg_to_asil, sg_targets=None, get_node=lambda x: x):
