@@ -22,12 +22,18 @@ class DiagramRulesEditor(tk.Frame):
             )
             self.data = {"connection_rules": {}}
 
-        # Make both columns expandable so the tree is always visible
+        # Make both columns expandable so the tree and canvas resize with window
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
-        self.tree = ttk.Treeview(self, columns=("value",), show="tree headings")
+        # Container for the rule tree so we can attach scrollbars
+        tree_frame = ttk.Frame(self)
+        tree_frame.grid(row=0, column=0, sticky="nsew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+
+        self.tree = ttk.Treeview(tree_frame, columns=("value",), show="tree headings")
         self.tree.heading("#0", text="Item")
         self.tree.heading("value", text="Allowed Targets")
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
@@ -35,6 +41,13 @@ class DiagramRulesEditor(tk.Frame):
         self.tree.column("#0", width=200, stretch=True)
         self.tree.column("value", width=200, stretch=True)
         self.tree.grid(row=0, column=0, sticky="nsew")
+
+        # Add scrollbars to the treeview
+        ybar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        xbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=ybar.set, xscrollcommand=xbar.set)
+        ybar.grid(row=0, column=1, sticky="ns")
+        xbar.grid(row=1, column=0, sticky="ew")
 
         self.canvas = tk.Canvas(self, background="white")
         self.canvas.grid(row=0, column=1, sticky="nsew")
