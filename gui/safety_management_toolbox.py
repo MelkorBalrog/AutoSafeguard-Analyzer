@@ -283,3 +283,21 @@ class SafetyManagementWindow(tk.Frame):
             )
             return
         self._display_requirements(f"{phase} Requirements", ids)
+
+    @staticmethod
+    def _collect_requirements(gov: GovernanceDiagram) -> list[str]:
+        """Return sanitized requirements from ``gov``.
+
+        Each requirement must be a non-empty string; otherwise a :class:`TypeError`
+        is raised to signal a model problem to the caller.
+        """
+        reqs: list[str] = []
+        for r in gov.generate_requirements():
+            if not isinstance(r, str):
+                raise TypeError(
+                    f"Requirement must be a string, got {type(r).__name__}"
+                )
+            text = r.strip()
+            if text:
+                reqs.append(text)
+        return reqs

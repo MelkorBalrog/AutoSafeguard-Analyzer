@@ -248,6 +248,7 @@ class GovernanceDiagram:
             return diagram
 
         id_to_name: dict[int, str] = {}
+        decision_sources: dict[int, str] = {}
         for obj in getattr(src_diagram, "objects", []):
             odict = obj if isinstance(obj, dict) else obj.__dict__
             obj_type = odict.get("obj_type")
@@ -259,15 +260,23 @@ class GovernanceDiagram:
                 name = odict.get("properties", {}).get("name", "")
             if not name:
                 continue
-            diagram.add_task(name, obj_type)
+            diagram.add_task(name)
             id_to_name[odict.get("obj_id")] = name
+
+        # Map decision nodes to their predecessor action
+        for conn in getattr(src_diagram, "connections", []):
+            cdict = conn if isinstance(conn, dict) else conn.__dict__
+            if cdict.get("conn_type") != "Flow":
+                continue
+            src_name = id_to_name.get(cdict.get("src"))
+            dst_id = cdict.get("dst")
+            if src_name and dst_id in decision_sources:
+                decision_sources[dst_id] = src_name
 
         for conn in getattr(src_diagram, "connections", []):
             cdict = conn if isinstance(conn, dict) else conn.__dict__
-            src = id_to_name.get(cdict.get("src"))
-            dst = id_to_name.get(cdict.get("dst"))
-            if not src or not dst:
-                continue
+            src_id = cdict.get("src")
+            dst_id = cdict.get("dst")
             name = cdict.get("name")
             props = cdict.get("properties", {})
             cond = props.get("condition")
@@ -282,7 +291,39 @@ class GovernanceDiagram:
             conn_type = cdict.get("conn_type")
             if conn_type == "Flow":
                 diagram.add_flow(src, dst, cond, conn_type=conn_type)
+            cond_prop = cdict.get("properties", {}).get("condition")
+            guards = cdict.get("guard") or []
+            guard_ops = cdict.get("guard_ops") or []
+            if isinstance(guards, str):
+                guards = [guards]
+            if isinstance(guard_ops, str):
+                guard_ops = [guard_ops]
+            guard_text: str | None = None
+            if guards:
+                parts: list[str] = []
+                for i, g in enumerate(guards):
+                    if i == 0:
+                        parts.append(g)
+                    else:
+                        op = guard_ops[i - 1] if i - 1 < len(guard_ops) else "AND"
+                        parts.append(f"{op} {g}")
+                guard_text = " ".join(parts)
+            if cdict.get("conn_type") == "Flow":
+                cond = cond_prop or guard_text or name
+                src = id_to_name.get(src_id)
+                dst = id_to_name.get(dst_id)
+                if src and dst:
+                    diagram.add_flow(src, dst, cond)
+                elif src_id in decision_sources and dst:
+                    prev = decision_sources.get(src_id)
+                    if prev:
+                        diagram.add_flow(prev, dst, cond)
             else:
+                src = id_to_name.get(src_id)
+                dst = id_to_name.get(dst_id)
+                if not src or not dst:
+                    continue
+                cond = cond_prop or guard_text
                 if cond is None and name is not None:
                     diagram.add_relationship(src, dst, condition=name, conn_type=conn_type)
                 else:
