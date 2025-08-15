@@ -14598,6 +14598,13 @@ class FaultTreeApp:
         if win:
             win.generate_phase_requirements(phase)
 
+    def generate_lifecycle_requirements(self) -> None:
+        """Generate requirements for all governance diagrams outside phases."""
+        self.open_safety_management_toolbox(show_diagrams=False)
+        win = getattr(self, "safety_mgmt_window", None)
+        if win:
+            win.generate_lifecycle_requirements()
+
     def _refresh_phase_requirements_menu(self) -> None:
         if not hasattr(self, "phase_req_menu"):
             return
@@ -14605,11 +14612,18 @@ class FaultTreeApp:
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
         if not toolbox:
             return
-        for phase in sorted(toolbox.list_modules()):
+        phases = sorted(toolbox.list_modules())
+        for phase in phases:
             self.phase_req_menu.add_command(
                 label=phase,
                 command=lambda p=phase: self.generate_phase_requirements(p),
             )
+        if phases:
+            self.phase_req_menu.add_separator()
+        self.phase_req_menu.add_command(
+            label="Lifecycle",
+            command=self.generate_lifecycle_requirements,
+        )
 
     def export_cybersecurity_goal_requirements(self):
         """Export cybersecurity goals with linked risk assessments."""
