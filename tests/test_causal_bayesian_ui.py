@@ -191,3 +191,17 @@ def test_table_auto_fills_missing_rows():
     win._update_table("A")
     assert tree.height == 4
     assert len(tree.rows) == 4
+
+
+def test_node_colors_by_type():
+    win, _ = _setup_window()
+    colors = []
+
+    def capture(canvas, x, y, r, color, tag=None):
+        colors.append(color)
+
+    win.drawing_helper._fill_gradient_circle = capture
+    win._draw_node("T", 0, 0, "trigger")
+    win._draw_node("I", 0, 0, "insufficiency")
+    assert colors[0] == "lightgreen"
+    assert colors[1] == "lightyellow"

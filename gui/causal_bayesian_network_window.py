@@ -259,7 +259,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if kind == "trigger":
             color = "lightgreen"
         elif kind == "insufficiency":
-            color = "lightcoral"
+            color = "lightyellow"
         else:
             color = "lightyellow"
         fill_tag = f"fill_{name}"
