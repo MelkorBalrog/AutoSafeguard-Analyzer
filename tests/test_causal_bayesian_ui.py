@@ -303,6 +303,16 @@ def test_node_colors_by_type():
     assert colors[1] == "lightyellow"
     assert colors[2] == "lightgreen"
 
+
+def test_node_label_includes_stereotype():
+    win, doc = _setup_window()
+    doc.network.add_node("A", cpd=0.5)
+    doc.positions["A"] = (0, 0)
+    doc.types["A"] = "variable"
+    win._draw_node("A", 0, 0, "variable")
+    _, text_id, _ = win.nodes["A"]
+    assert win.canvas.items[text_id]["text"] == "<<variable>>\nA"
+
 def test_click_adds_existing_malfunction_nodes():
     win, doc = _setup_window()
     win.current_tool = "Existing Malfunction"
