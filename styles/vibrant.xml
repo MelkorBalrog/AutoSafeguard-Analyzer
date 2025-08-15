@@ -9,6 +9,6 @@
   <object type="Part" color="#FDD835" />
   <object type="Port" color="#8E24AA" />
   <object type="Block" color="#546E7A" />
-  <object type="Decision" color="#00ACC1" />
+  <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#00ACC1" />
 </style>

@@ -10,7 +10,7 @@
   <object type="Part" color="#FFB6C1" />
   <object type="Port" color="#FFA07A" />
   <object type="Block" color="#B0C4DE" />
-  <object type="Decision" color="#FFFFFF" />
+  <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#FFFFFF" />
   <object type="Database" color="#cfe2f3" />
   <object type="ANN" color="#d5e8d4" />
