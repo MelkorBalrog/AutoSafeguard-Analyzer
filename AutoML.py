@@ -260,7 +260,7 @@ from analysis.mechanisms import (
     ANNEX_D_MECHANISMS,
     PAS_8800_MECHANISMS,
 )
-from config import load_json_with_comments
+from config import load_diagram_rules
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -523,14 +523,14 @@ VALID_SUBTYPES = {
 
 # Node types treated as gates when rendering and editing
 _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
-_CONFIG = load_json_with_comments(_CONFIG_PATH)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 
 def _reload_local_config() -> None:
     """Reload gate node types from the external configuration file."""
     global _CONFIG, GATE_NODE_TYPES
-    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
     GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 
 ##########################################

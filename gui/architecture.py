@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
-from config import load_json_with_comments
+from config import load_diagram_rules
 import json
 
 from sysml.sysml_spec import SYSML_PROPERTIES
@@ -52,7 +52,7 @@ CONNECTION_SELECT_RADIUS = 15
 
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
-_CONFIG = load_json_with_comments(_CONFIG_PATH)
+_CONFIG = load_diagram_rules(_CONFIG_PATH)
 
 # Diagram types that belong to the generic "Architecture Diagram" work product
 ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -93,7 +93,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODE_TYPES, GOVERNANCE_NODE_TYPES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
-    _CONFIG = load_json_with_comments(_CONFIG_PATH)
+    _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
     SAFETY_AI_NODE_TYPES = set(_CONFIG.get("ai_nodes", []))
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))

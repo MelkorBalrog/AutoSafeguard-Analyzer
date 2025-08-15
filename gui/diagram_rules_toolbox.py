@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 from pathlib import Path
 import json
-from config import load_json_with_comments
+from config import load_diagram_rules, validate_diagram_rules
 from gui import messagebox
 
 class DiagramRulesEditor(tk.Frame):
@@ -15,7 +15,7 @@ class DiagramRulesEditor(tk.Frame):
             config_path or Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
         )
         try:
-            self.data = load_json_with_comments(self.config_path)
+            self.data = load_diagram_rules(self.config_path)
         except Exception as exc:  # pragma: no cover - GUI fallback
             messagebox.showerror(
                 "Diagram Rules", f"Failed to load configuration:\n{exc}"
@@ -129,6 +129,11 @@ class DiagramRulesEditor(tk.Frame):
         self.canvas.create_text((src_x + dest_x) / 2, 20, text=f"{diagram} - {connection}")
 
     def save(self):
+        try:
+            validate_diagram_rules(self.data)
+        except ValueError as exc:  # pragma: no cover - GUI feedback
+            messagebox.showerror("Diagram Rules", f"Invalid configuration:\n{exc}")
+            return
         self.config_path.write_text(json.dumps(self.data, indent=2) + "\n")
         if hasattr(self.app, "reload_config"):
             self.app.reload_config()
