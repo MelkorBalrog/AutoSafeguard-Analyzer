@@ -94,7 +94,7 @@ def test_propagate_by_review_pattern():
     diagram.add_relationship("WP1", "WP2", conn_type="Propagate by Review")
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "System shall propagate by review the WP2." in texts
+    assert "WP1 shall propagate by review the WP2." in texts
 
 def test_data_acquisition_compartment_sources():
     diagram = GovernanceDiagram()
