@@ -61,8 +61,8 @@ def test_work_product_groups_follow_phase(work_product, parent):
 
     app = FaultTreeApp.__new__(FaultTreeApp)
     lb = DummyListbox()
-    app.tool_listboxes = {"Safety Analysis": lb}
-    app.tool_categories = {"Safety Analysis": []}
+    app.tool_listboxes = {FaultTreeApp.WORK_PRODUCT_INFO[work_product][0]: lb}
+    app.tool_categories = {FaultTreeApp.WORK_PRODUCT_INFO[work_product][0]: []}
     app.tool_actions = {}
     wp_menu = DummyMenu()
     parent_menu = wp_menu if work_product == parent else DummyMenu()

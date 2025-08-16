@@ -2041,22 +2041,22 @@ class FaultTreeApp:
             "manage_safety_cases",
         ),
         "Safety & Security Case": (
-            "Safety Analysis",
+            "Safety & Security Management",
             "Safety & Security Case Explorer",
             "manage_safety_cases",
         ),
         "GSN Argumentation": (
-            "Safety Analysis",
+            "Safety & Security Management",
             "GSN Explorer",
             "manage_gsn",
         ),
         "GSN": (
-            "Safety Analysis",
+            "Safety & Security Management",
             "GSN Explorer",
             "manage_gsn",
         ),
         "SPI": (
-            "Safety Analysis",
+            "Safety & Security Management",
             "Safety Performance Indicators",
             "show_safety_performance_indicators",
         ),

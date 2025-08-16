@@ -19,7 +19,9 @@ def test_governance_spi_work_product_enablement(monkeypatch):
     prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
-    area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": "Safety Analysis"})
+    area = SysMLObject(
+        1, "System Boundary", 0, 0, properties={"name": "Safety & Security Management"}
+    )
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo

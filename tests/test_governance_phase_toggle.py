@@ -483,6 +483,15 @@ def test_work_product_group_activation(analysis, parent, monkeypatch):
             height=150.0,
             properties={"name": "Scenario"},
         ),
+        SysMLObject(
+            4,
+            "System Boundary",
+            0.0,
+            0.0,
+            width=200.0,
+            height=150.0,
+            properties={"name": "Safety & Security Management"},
+        ),
     ]
     win.sort_objects = lambda: None
     win._sync_to_repository = lambda: None
