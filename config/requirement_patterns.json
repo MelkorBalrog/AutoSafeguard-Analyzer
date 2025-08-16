@@ -266,7 +266,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Document",
     "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<Role> shall approve '<Document>'.",
+    "Template": "<Role> shall approve the <Document>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -277,7 +277,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Policy",
     "Trigger": "Gov: Role --[Approves]--> Policy",
-    "Template": "<Role> shall approve '<Policy>'.",
+    "Template": "<Role> shall approve the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -288,7 +288,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Procedure",
     "Trigger": "Gov: Role --[Approves]--> Procedure",
-    "Template": "<Role> shall approve '<Procedure>'.",
+    "Template": "<Role> shall approve the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -299,7 +299,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Record",
     "Trigger": "Gov: Role --[Approves]--> Record",
-    "Template": "<Role> shall approve '<Record>'.",
+    "Template": "<Role> shall approve the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -662,7 +662,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Activity",
     "Trigger": "Gov: Role --[Performs]--> Activity",
-    "Template": "<Role> shall perform '<Activity>'.",
+    "Template": "<Role> shall perform the <Activity>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -673,7 +673,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Task",
     "Trigger": "Gov: Role --[Performs]--> Task",
-    "Template": "<Role> shall perform '<Task>'.",
+    "Template": "<Role> shall perform the <Task>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -684,7 +684,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Procedure",
     "Trigger": "Gov: Role --[Performs]--> Procedure",
-    "Template": "<Role> shall perform '<Procedure>'.",
+    "Template": "<Role> shall perform the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -944,85 +944,5 @@
       "<acceptance_criteria>"
     ],
     "Notes": "Traceability between data repositories and applicable standards."
-  },
-  {
-    "Pattern ID": "EARS-UBIQ",
-    "Trigger": "Generic (roles identifiable)",
-    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<business_objective>",
-      "<verification_method>",
-      "<record>"
-    ],
-    "Notes": "Operation/engineering-aligned ubiquitous requirement."
-  },
-  {
-    "Pattern ID": "EARS-EVENT",
-    "Trigger": "Event-driven behavior",
-    "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<verification_method>"
-    ],
-    "Notes": "Suitable for automotive timing/latency requirements."
-  },
-  {
-    "Pattern ID": "EARS-STATE",
-    "Trigger": "State-dependent behavior",
-    "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<state>",
-      "<performance_kpi>"
-    ],
-    "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
-  },
-  {
-    "Pattern ID": "EARS-UNWANTED",
-    "Trigger": "Fault/HAZARD response",
-    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record>.",
-    "Variables": [
-      "<subject>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>",
-      "<record>"
-    ],
-    "Notes": "Directly useful for ISO 26262/operational safety."
-  },
-  {
-    "Pattern ID": "NFR-METRIC-PERF",
-    "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record>.",
-    "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>",
-      "<record>"
-    ],
-    "Notes": "Performance KPI in engineering terms."
-  },
-  {
-    "Pattern ID": "NFR-COMPLIANCE",
-    "Trigger": "Constraint node via Constrained by / Governed by",
-    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
-    "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>"
-    ],
-    "Notes": "Compliance requirement with auditable trail."
   }
 ]
