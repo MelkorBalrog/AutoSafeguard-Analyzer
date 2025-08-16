@@ -39,22 +39,6 @@
     "Hyperparameter Validation"
   ],
 
-  // Types shown in the Stakeholder toolbox
-  "stakeholder_nodes": [
-    "Stakeholder"
-  ],
-
-  // Relation labels for the Stakeholder toolbox
-  "stakeholder_relations": [],
-
-  // Types shown in the KPI toolbox
-  "kpi_nodes": [
-    "KPI"
-  ],
-
-  // Relation labels for the KPI toolbox
-  "kpi_relations": [],
-
   // Diagram types considered part of the generic "Architecture Diagram" work product
   "arch_diagram_types": [
     "Use Case Diagram",

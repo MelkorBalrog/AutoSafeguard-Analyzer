@@ -65,14 +65,6 @@ SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
 SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
 SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
-# Elements available in the Stakeholder toolbox
-STAKEHOLDER_NODES = _CONFIG.get("stakeholder_nodes", [])
-STAKEHOLDER_RELATIONS = _CONFIG.get("stakeholder_relations", [])
-
-# Elements available in the KPI toolbox
-KPI_NODES = _CONFIG.get("kpi_nodes", [])
-KPI_RELATIONS = _CONFIG.get("kpi_relations", [])
-
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -227,7 +219,6 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
-    global STAKEHOLDER_NODES, STAKEHOLDER_RELATIONS, KPI_NODES, KPI_RELATIONS
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -235,10 +226,6 @@ def reload_config() -> None:
     SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
-    STAKEHOLDER_NODES = _CONFIG.get("stakeholder_nodes", [])
-    STAKEHOLDER_RELATIONS = _CONFIG.get("stakeholder_relations", [])
-    KPI_NODES = _CONFIG.get("kpi_nodes", [])
-    KPI_RELATIONS = _CONFIG.get("kpi_relations", [])
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9639,8 +9626,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 values=[
                     "Governance",
                     "Safety & AI Lifecycle",
-                    "Stakeholders",
-                    "KPIs",
                     "Governance Elements",
                 ],
                 state="readonly",
@@ -9681,58 +9666,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ).pack(fill=tk.X, padx=2, pady=2)
         else:  # pragma: no cover - headless tests
             self.ai_tools_frame = types.SimpleNamespace(
-                pack=lambda *a, **k: None,
-                pack_forget=lambda *a, **k: None,
-            )
-
-        # Create Stakeholder toolbox frame
-        if hasattr(self.toolbox, "tk"):
-            self.stakeholder_tools_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.stakeholder_tools_frame,
-                text="Select",
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-            ttk.Button(
-                self.stakeholder_tools_frame,
-                text="Stakeholder",
-                command=lambda: self.select_tool("Stakeholder"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-            s_rel = ttk.LabelFrame(self.stakeholder_tools_frame, text="Relationships")
-            s_rel.pack(fill=tk.X, padx=2, pady=2)
-            ttk.Button(
-                s_rel,
-                text="Flow",
-                command=lambda: self.select_tool("Flow"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-        else:
-            self.stakeholder_tools_frame = types.SimpleNamespace(
-                pack=lambda *a, **k: None,
-                pack_forget=lambda *a, **k: None,
-            )
-
-        # Create KPI toolbox frame
-        if hasattr(self.toolbox, "tk"):
-            self.kpi_tools_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.kpi_tools_frame,
-                text="Select",
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-            ttk.Button(
-                self.kpi_tools_frame,
-                text="KPI",
-                command=lambda: self.select_tool("KPI"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-            k_rel = ttk.LabelFrame(self.kpi_tools_frame, text="Relationships")
-            k_rel.pack(fill=tk.X, padx=2, pady=2)
-            ttk.Button(
-                k_rel,
-                text="Flow",
-                command=lambda: self.select_tool("Flow"),
-            ).pack(fill=tk.X, padx=2, pady=2)
-        else:
-            self.kpi_tools_frame = types.SimpleNamespace(
                 pack=lambda *a, **k: None,
                 pack_forget=lambda *a, **k: None,
             )
@@ -9908,16 +9841,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         frames = {
             "Governance": [self.gov_tools_frame, self.gov_rel_frame],
             "Safety & AI Lifecycle": [self.ai_tools_frame],
-            "Stakeholders": [getattr(self, "stakeholder_tools_frame", None)],
-            "KPIs": [getattr(self, "kpi_tools_frame", None)],
             "Governance Elements": [getattr(self, "gov_elements_frame", None)],
         }
         for frame in [
             self.gov_tools_frame,
             self.gov_rel_frame,
             self.ai_tools_frame,
-            getattr(self, "stakeholder_tools_frame", None),
-            getattr(self, "kpi_tools_frame", None),
             getattr(self, "gov_elements_frame", None),
         ]:
             if frame and hasattr(frame, "pack_forget"):
