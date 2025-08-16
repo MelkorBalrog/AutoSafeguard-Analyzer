@@ -10532,13 +10532,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.gov_elements_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for group, nodes in ge_nodes.items():
                 frame = ttk.LabelFrame(self.gov_elements_frame, text=group)
                 frame.pack(fill=tk.X, padx=2, pady=2)
