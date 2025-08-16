@@ -435,7 +435,7 @@ class GovernanceDiagram:
                 elif not label and not rule:
                     action = "be related to"
 
-            if obj is not None:
+            if obj is not None and explicit_subject is None:
                 s_role = self._role_for(subject)
                 d_role = self._role_for(obj)
                 if s_role != "subject" and d_role == "subject":
