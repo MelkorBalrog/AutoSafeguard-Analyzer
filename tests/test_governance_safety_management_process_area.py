@@ -34,3 +34,4 @@ def test_safety_management_process_area_available(monkeypatch):
     win.add_process_area()
 
     assert "Safety & Security Management" in captured["options"]
+    assert len(captured["options"]) == len(set(captured["options"]))
