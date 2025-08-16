@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
 from pathlib import Path
-from config import load_diagram_rules
+from config import load_diagram_rules, load_json_with_comments
 
 import networkx as nx
+import re
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
@@ -27,6 +28,60 @@ _REQUIREMENT_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
 # Map node types to default requirement roles so that the generator can
 # identify the subject, object or constraint directly from the model.
 _NODE_ROLES = _CONFIG.get("node_roles", {})
+
+# Optional requirement pattern definitions allowing users to customise
+# requirement text based on specific relationship triggers.  Each pattern
+# entry is keyed by ``(source_type, label, dest_type)`` so that users can
+# modify or extend the patterns in ``config/requirement_patterns.json``
+# without touching the code.
+_PATTERN_PATH = Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
+try:
+    _PATTERN_DEFS = load_json_with_comments(_PATTERN_PATH)
+except FileNotFoundError:  # pragma: no cover - optional file
+    _PATTERN_DEFS = []
+
+_TRIGGER_RE = re.compile(r"[^:]+:\s*(.*?)\s*--\[(.*?)\]-->\s*(.*)")
+_PATTERN_MAP: dict[tuple[str, str, str], dict[str, str]] = {}
+for pat in _PATTERN_DEFS:
+    trig = pat.get("Trigger", "")
+    tmpl = pat.get("Template", "")
+    m = _TRIGGER_RE.fullmatch(trig)
+    if not m:
+        continue
+    src_t, label, dst_t = [g.strip().lower() for g in m.groups()]
+    # Only register patterns that reference the source node in the template
+    # so that generated text includes the actual element names.
+    placeholders = [p.lower() for p in re.findall(r"<([^>]+)>", tmpl)]
+    if src_t == dst_t or (
+        src_t not in placeholders and "source_id" not in placeholders
+    ):
+        continue
+    _PATTERN_MAP[(src_t, label.lower(), dst_t)] = pat
+
+
+def _apply_pattern(
+    pat: dict[str, str],
+    src: str,
+    dst: str,
+    src_type: str,
+    dst_type: str,
+    cond: str | None,
+) -> str:
+    """Instantiate a pattern template with diagram values."""
+
+    template = pat.get("Template", "")
+
+    def repl(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key == "source_id" or key == src_type:
+            return src
+        if key == "target_id" or key == dst_type:
+            return dst
+        if key == "acceptance_criteria":
+            return cond or ""
+        return ""
+
+    return re.sub(r"<([^>]+)>", repl, template)
 
 
 def reload_config() -> None:
@@ -61,9 +116,12 @@ class GeneratedRequirement:
     origin: str | None = None
     source: str | None = None
     req_type: str = "organizational"
+    text_override: str | None = None
 
     @property
     def text(self) -> str:
+        if self.text_override is not None:
+            return self.text_override
         parts: List[str] = []
         if self.condition:
             parts.append(f"If {self.condition},")
@@ -341,6 +399,16 @@ class GovernanceDiagram:
                 d_role = self._role_for(obj)
                 if s_role != "subject" and d_role == "subject":
                     subject, obj = obj, subject
+            text_override: str | None = None
+            src_type = self.node_types.get(src, "")
+            dst_type = self.node_types.get(dst, "")
+            pattern = _PATTERN_MAP.get(
+                (src_type.lower(), (label or conn_type or "").lower(), dst_type.lower())
+            )
+            if pattern:
+                text_override = _apply_pattern(pattern, src, dst, src_type, dst_type, cond)
+                if cond and "<acceptance_criteria>" not in pattern.get("Template", ""):
+                    text_override = f"If {cond}, {text_override}"
 
             requirements.append(
                 GeneratedRequirement(
@@ -352,6 +420,7 @@ class GovernanceDiagram:
                     origin=origin if (origin and kind != "flow") else None,
                     source=src,
                     req_type=req_type,
+                    text_override=text_override,
                 )
             )
 
