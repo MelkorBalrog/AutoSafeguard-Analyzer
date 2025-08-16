@@ -1,8 +1,11 @@
 {
+  "elements": {
+    "overview_diagram": "diagram"
+  },
   "sections": [
     {
       "title": "Introduction",
-      "content": "This is the introduction section."
+      "content": "This is the introduction section.\n<overview_diagram>"
     },
     {
       "title": "Conclusion",
