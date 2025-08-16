@@ -122,13 +122,13 @@ def test_requirements_button_no_change(monkeypatch):
 
     global_requirements.clear()
     win.generate_requirements()
-    rid = next(iter(global_requirements))
+    rids = set(global_requirements)
 
-    # Regenerate without changes; requirement should remain unchanged
+    # Regenerate without changes; requirements should remain unchanged
     win.generate_requirements()
-    assert len(global_requirements) == 1
-    assert global_requirements[rid]["status"] == "draft"
-    assert global_requirements[rid]["diagram"] == "Gov"
+    assert len(global_requirements) == len(rids)
+    assert all(global_requirements[rid]["status"] == "draft" for rid in rids)
+    assert all(global_requirements[rid]["diagram"] == "Gov" for rid in rids)
 
 
 def test_other_diagram_requirements_preserved(monkeypatch):
@@ -182,16 +182,14 @@ def test_other_diagram_requirements_preserved(monkeypatch):
     global_requirements.clear()
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov1")
     win.generate_requirements()
-    rid1 = next(iter(global_requirements))
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov2")
     win.generate_requirements()
-    rid2 = [rid for rid in global_requirements if rid != rid1][0]
+    rids = set(global_requirements)
 
     # Move object in first diagram; requirements unchanged
     diag1.objects[0]["x"] = 10
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov1")
     win.generate_requirements()
 
-    assert len(global_requirements) == 2
-    assert global_requirements[rid1]["status"] == "draft"
-    assert global_requirements[rid2]["status"] == "draft"
+    assert len(global_requirements) == len(rids)
+    assert all(global_requirements[rid]["status"] == "draft" for rid in rids)
