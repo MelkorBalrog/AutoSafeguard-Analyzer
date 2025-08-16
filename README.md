@@ -122,7 +122,9 @@ window = SafetyManagementWindow(None, app=None, toolbox=toolbox)
 window.generate_phase_requirements("Concept")  # collects all Concept phase requirements
 ```
 
-This opens a tab listing the combined requirements for the chosen phase.
+This opens a tab listing the combined requirements for the chosen phase, and
+now includes a dedicated column displaying the lifecycle phase for each
+requirement.
 
 When importing governance diagrams from a SysML repository, every diagram object
 is treated as a task regardless of its type. Custom elements such as ANN or
