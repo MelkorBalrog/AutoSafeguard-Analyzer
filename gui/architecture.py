@@ -10206,6 +10206,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "System Design (Item Definition)",
             "Hazard & Threat Analysis",
             "Risk Assessment",
+            "Safety & Security Management",
             "Safety Analysis",
             "Scenario",
         ]
