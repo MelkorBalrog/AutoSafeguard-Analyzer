@@ -124,8 +124,6 @@
     "Final",
     "Decision",
     "Merge",
-    "Fork",
-    "Join",
     "System Boundary",
     "Work Product",
     "Lifecycle Phase",
@@ -334,13 +332,11 @@
     },
     "Governance Diagram": {
       "Flow": {
-        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
-        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
-        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
-        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
+        "Initial": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
+        "Action": ["Action", "Decision", "Merge", "Final", "Database", "ANN", "Data acquisition"],
+        "Decision": ["Action", "Decision", "Merge", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
+        "Merge": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
+        "Lifecycle Phase": ["Decision", "Action", "Merge", "Final", "Database", "ANN", "Data acquisition"],
         "Final": []
       },
       // Relationships between governance work products and phases

@@ -10286,7 +10286,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tool_groups = {
             "Tasks": ["Action"],
-            "Control Nodes": ["Initial", "Final", "Decision", "Merge", "Fork", "Join"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
@@ -10317,6 +10317,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if btn:
             btn.configure(text="Task")
             self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
+        # Ensure legacy control nodes are removed from the toolbox
+        tool_btns = getattr(self, "tool_buttons", {})
+        for legacy in ("Fork", "Join"):
+            extra = tool_btns.pop(legacy, None)
+            if extra:
+                try:
+                    extra.destroy()
+                except Exception:  # pragma: no cover - headless tests
+                    pass
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
