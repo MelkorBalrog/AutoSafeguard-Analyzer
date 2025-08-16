@@ -1,0 +1,124 @@
+{
+  "elements": {
+    "base_matrix": "base_matrix",
+    "discretization": "discretization",
+    "hazop": "hazop",
+    "fi2tc": "fi2tc",
+    "tc2fi": "tc2fi",
+    "risk": "risk",
+    "cbn": "cbn",
+    "safety_goals": "safety_goals",
+    "top_events": "top_events",
+    "page_diagrams": "page_diagrams",
+    "fmea_tables": "fmea_tables",
+    "fmeda_tables": "fmeda_tables",
+    "traceability": "traceability",
+    "cut_sets": "cut_sets",
+    "common_cause": "common_cause",
+    "sysml_diagrams": "sysml_diagrams",
+    "req_vehicle": "req_vehicle",
+    "req_operational": "req_operational",
+    "req_functional_safety": "req_functional_safety",
+    "req_technical_safety": "req_technical_safety",
+    "req_ai_safety": "req_ai_safety",
+    "req_functional_modification": "req_functional_modification",
+    "req_cybersecurity": "req_cybersecurity",
+    "req_production": "req_production",
+    "req_service": "req_service",
+    "req_product": "req_product",
+    "req_legal": "req_legal",
+    "req_organizational": "req_organizational",
+    "req_spi": "req_spi"
+  },
+  "sections": [
+    {
+      "title": "Executive Summary",
+      "content": "<b>Executive Summary: Manual Calculation of Prototype Assurance Level (PAL)</b><br/><br/>This document provides a step-by-step procedure to manually calculate the Prototype Assurance Level (PAL) for a subsystem in an autonomous system. The Prototype Assurance Level (PAL) is a single metric ranging from 1 to 5 (mapped to qualitative labels: PAL1 through PAL5). Follow these instructions using the provided tables.<br/><br/><b>Calculation Instructions:</b><br/>1. <u>Base Assurance Derivation</u>:<br/>\ta. Assign a Confidence Level (CL) and a Robustness Score (RS) to the component, each on a scale from 1 (PAL1) to 5 (PAL5).<br/>\tb. Using Table 1 (Base Assurance Inversion Matrix), locate the cell at the intersection of the CL (row) and RS (column).<br/>\t\tFor example, a CL of 1 and an RS of 1 yields a base assurance value of 5, indicating a very high requirement for additional safety measures.<br/><br/>2. <u>Combining Multiple Components</u>:<br/>\ta. If the subsystem consists of multiple components, first compute the base assurance value for each component individually as described above.<br/>\tb. Then, combine these values based on how the components interact:<br/>\t\t- If the components must all perform reliably (an AND configuration), use a complement-product method as outlined in Table 3 (AND Decomposition Guidelines).<br/>\t\t- If the components function as alternative options (an OR configuration), simply compute the average of their assurance values (see Table 4 for OR Decomposition Guidelines).<br/>\tc. When both types of inputs are present, average the base-derived values with the aggregated values to obtain a combined score.<br/><br/>3. <u>Severity Adjustment</u>:<br/>\ta. Adjust the combined assurance value to reflect hazard severity.<br/>\tb. For most subsystems, take the highest severity rating from the related elements and compute the average with the combined assurance score.<br/>\tc. For vehicle-level functions, use the formula: <br/>\t\tFinal Assurance = (Combined Value + Severity) / 2 <br/>\t\tEnsure the final score remains within the 1 to 5 range.<br/><br/>4. <u>Final Discretization</u>:<br/>\ta. Round the adjusted assurance value to the nearest 0.5.<br/>\tb. Refer to Table 2 (Output Discretization Mapping) to map the rounded value to one of the five discrete Prototype Assurance Levels (PAL), (PAL1 through PAL5).<br/><br/>By following these steps\u2014deriving a base assurance from individual Confidence and Robustness ratings, combining multiple values through averaging or using complement-product methods (depending on the configuration), adjusting for hazard severity, and finally discretizing the result\u2014you can manually calculate the Prototype Assurance Level (PAL) for any subsystem in a clear and systematic manner.<br/><br/><base_matrix><discretization>"
+    },
+    {
+      "title": "Analyses",
+      "content": "<hazop><fi2tc><tc2fi><risk>"
+    },
+    {
+      "title": "Safety Goals Summary",
+      "content": "<safety_goals>"
+    },
+    {
+      "title": "Top-Level Events",
+      "content": "<top_events>"
+    },
+    {
+      "title": "Page Diagrams",
+      "content": "<page_diagrams>"
+    },
+    {
+      "title": "SysML Diagrams",
+      "content": "<sysml_diagrams>"
+    },
+    {
+      "title": "Failure Tables",
+      "content": "<fmea_tables><fmeda_tables>"
+    },
+    {
+      "title": "Traceability",
+      "content": "<traceability><cut_sets><common_cause>"
+    },
+    {
+      "title": "Causal Bayesian Networks",
+      "content": "<cbn>"
+    },
+    {
+      "title": "Vehicle Requirements",
+      "content": "<req_vehicle>"
+    },
+    {
+      "title": "Operational Requirements",
+      "content": "<req_operational>"
+    },
+    {
+      "title": "Functional Safety Requirements",
+      "content": "<req_functional_safety>"
+    },
+    {
+      "title": "Technical Safety Requirements",
+      "content": "<req_technical_safety>"
+    },
+    {
+      "title": "AI Safety Requirements",
+      "content": "<req_ai_safety>"
+    },
+    {
+      "title": "Functional Modification Requirements",
+      "content": "<req_functional_modification>"
+    },
+    {
+      "title": "Cybersecurity Requirements",
+      "content": "<req_cybersecurity>"
+    },
+    {
+      "title": "Production Requirements",
+      "content": "<req_production>"
+    },
+    {
+      "title": "Service Requirements",
+      "content": "<req_service>"
+    },
+    {
+      "title": "Product Requirements",
+      "content": "<req_product>"
+    },
+    {
+      "title": "Legal Requirements",
+      "content": "<req_legal>"
+    },
+    {
+      "title": "Organizational Requirements",
+      "content": "<req_organizational>"
+    },
+    {
+      "title": "SPI Requirements",
+      "content": "<req_spi>"
+    }
+  ]
+}
+
