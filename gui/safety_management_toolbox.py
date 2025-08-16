@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
+from collections import Counter
 from functools import partial
 
 from analysis import SafetyManagementToolbox
@@ -271,12 +272,20 @@ class SafetyManagementWindow(tk.Frame):
                 text, rtype = r.text, getattr(r, "req_type", "organizational")
             else:
                 text, rtype = str(r), "organizational"
-            if text.strip():
+            text = text.strip()
+            if text:
                 reqs.append((text, rtype))
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
         phase = self.toolbox.module_for_diagram(name)
+        existing_pairs = [
+            (req.get("text", "").strip(), req.get("req_type", "organizational"))
+            for req in global_requirements.values()
+            if req.get("phase") == phase and req.get("status") != "obsolete"
+        ]
+        if Counter(existing_pairs) == Counter(reqs):
+            return
         # Mark existing requirements for this phase as obsolete before
         # creating new ones to reflect the updated governance model.
         for req in global_requirements.values():
