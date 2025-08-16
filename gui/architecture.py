@@ -3210,13 +3210,21 @@ class SysMLDiagramWindow(tk.Frame):
                     width = max(width, max_button_width(child))
             return width
 
-        button_width = max_button_width(self.toolbox)
-        prop_width = self.prop_view.winfo_reqwidth()
-        content_width = max(button_width, prop_width)
+        # Account for the external padding applied when packing buttons so the
+        # canvas is only as wide as necessary to show them.
+        button_width = max_button_width(self.toolbox) + 4
         scroll_width = self.toolbox_scroll.winfo_reqwidth()
-        self.toolbox_container.configure(width=content_width + scroll_width)
-        self.toolbox_canvas.configure(width=content_width)
-        self.toolbox_canvas.itemconfig(self._toolbox_window, width=content_width)
+
+        self.toolbox_container.configure(width=button_width + scroll_width)
+        self.toolbox_canvas.configure(width=button_width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
+
+        # Shrink the property view to match the button area so it does not force
+        # the toolbox wider than needed.
+        field_width = button_width // 2
+        self.prop_view.configure(width=button_width)
+        self.prop_view.column("field", width=field_width, stretch=False)
+        self.prop_view.column("value", width=button_width - field_width, stretch=False)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
