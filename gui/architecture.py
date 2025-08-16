@@ -132,7 +132,7 @@ def _make_gov_relation_groups(rels: list[str]) -> dict[str, list[str]]:
         ],
         "Flow": [
             n
-            for n in ["Communication Path", "Delivers", "Produces", "Consumes", "Uses", "Curation"]
+            for n in ["Communication Path", "Delivers", "Produces", "Consumes", "Uses"]
             if n in rels
         ],
         "Execution": [
@@ -268,7 +268,6 @@ _BASE_CONN_TOOLS = [
     "Authorizes",
     "Constrained by",
     "Consumes",
-    "Curation",
     "Delivers",
     "Executes",
     "Monitors",
