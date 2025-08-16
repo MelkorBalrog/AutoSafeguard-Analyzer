@@ -28,6 +28,7 @@
   <object type="Record" color="#fce5cd" />
   <object type="Role" color="#F4D698" />
   <object type="Standard" color="#a2c4c9" />
+  <object type="Work Product" color="#fff2cc" />
   <object type="Process" color="#e6f2ff" />
   <object type="Activity" color="#fff2cc" />
   <object type="Task" color="#d9ead3" />
