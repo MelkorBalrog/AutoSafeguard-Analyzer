@@ -265,6 +265,7 @@ from analysis.mechanisms import (
 from config import load_diagram_rules, load_report_template
 from pathlib import Path
 from collections.abc import Mapping
+from typing import Any
 import csv
 try:
     from openpyxl import load_workbook
@@ -525,19 +526,34 @@ VALID_SUBTYPES = {
 
 # Node types treated as gates when rendering and editing
 _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
-_CONFIG = load_diagram_rules(_CONFIG_PATH)
-GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 _PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
 _REPORT_TEMPLATE_PATH = (
     Path(__file__).resolve().parent / "config/report_template.json"
 )
 
+# Globals populated from the external configuration
+_CONFIG: dict[str, Any] = {}
+GATE_NODE_TYPES: set[str] = set()
+
 
 def _reload_local_config() -> None:
-    """Reload gate node types from the external configuration file."""
+    """Reload configuration and regenerate requirement patterns."""
     global _CONFIG, GATE_NODE_TYPES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+
+    # Automatically refresh requirement patterns derived from the diagram rules
+    from analysis.requirement_rule_generator import generate_patterns_from_config
+    import json
+
+    patterns = generate_patterns_from_config(_CONFIG)
+    _PATTERN_PATH.write_text(
+        json.dumps(patterns, ensure_ascii=False, indent=2) + "\n"
+    )
+
+
+# Perform an initial load so global config and patterns are ready on startup
+_reload_local_config()
 
 ##########################################
 # Global Unique ID Counter for Nodes
