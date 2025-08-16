@@ -54,14 +54,17 @@ def create_icon(shape: str, color: str = "black", bg: str = "white") -> tk.Photo
             img.put(outline, (1, y))
     elif shape == "arrow":
         mid = size // 2
-        for x in range(2, mid + 2):
-            img.put(c, to=(x, mid - 2, x + 1, mid + 2))
-        for i in range(4):
-            img.put(c, to=(mid + i, mid - 3 - i, mid + i + 1, mid - i))
-            img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 3 + i))
+        # Draw a thin horizontal shaft
+        for x in range(2, size - 5):
+            img.put(c, (x, mid))
+            img.put(outline, (x, mid))
+        # Add a triangular arrow head
+        head = size - 5
         for i in range(5):
-            img.put(outline, (mid + i, mid - 3 - i))
-            img.put(outline, (mid + i, mid + 3 + i))
+            for y in range(mid - i, mid + i + 1):
+                img.put(c, (head + i, y))
+            img.put(outline, (head + i, mid - i))
+            img.put(outline, (head + i, mid + i))
     elif shape == "triangle":
         mid = size // 2
         height = size - 4

@@ -17056,6 +17056,7 @@ class FaultTreeApp:
         img = tk.PhotoImage(width=size, height=size)
         img.put("white", to=(0, 0, size - 1, size - 1))
         c = color
+        outline = "black"
         if shape == "circle":
             r = size // 2 - 2
             cx = cy = size // 2
@@ -17065,11 +17066,15 @@ class FaultTreeApp:
                         img.put(c, (x, y))
         elif shape == "arrow":
             mid = size // 2
-            for x in range(2, mid + 1):
-                img.put(c, to=(x, mid - 1, x + 1, mid + 1))
-            for i in range(4):
-                img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
-                img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+            for x in range(2, size - 5):
+                img.put(c, (x, mid))
+                img.put(outline, (x, mid))
+            head = size - 5
+            for i in range(5):
+                for y in range(mid - i, mid + i + 1):
+                    img.put(c, (head + i, y))
+                img.put(outline, (head + i, mid - i))
+                img.put(outline, (head + i, mid + i))
         elif shape == "diamond":
             mid = size // 2
             for y in range(2, size - 2):
