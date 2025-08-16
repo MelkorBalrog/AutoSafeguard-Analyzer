@@ -23,28 +23,24 @@ def test_generate_requirements_from_governance_diagram():
 
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "Organization shall Data Steward." in texts
-    assert "Organization shall Review Data." in texts
-    assert "Organization shall Report." in texts
-    assert "Organization shall Policy DP-001." in texts
-    assert "Organization shall perform 'Review Data' after 'Data Steward'." in texts
-    assert "Organization shall produce 'Report' after 'Review Data'." in texts
-    assert (
-        "If data validated, Organization shall approve 'Report' after 'Data Steward'."
-        in texts
-    )
-    assert "Organization shall comply with 'Policy DP-001' after 'Review Data'." in texts
+
+    assert "Data Steward shall perform 'Review Data'." in texts
+    assert "Review Data shall produce 'Report'." in texts
+    assert "If data validated, Data Steward shall approve 'Report'." in texts
+    assert "Review Data shall comply with 'Policy DP-001'." in texts
+    assert "Organization shall review data." in texts
 
     perf_req = next(r for r in reqs if r.action == "perform")
-    assert perf_req.subject == "Organization"
+    assert perf_req.subject == "Data Steward"
     assert perf_req.obj == "Review Data"
-    assert perf_req.origin == "Data Steward"
 
     approve_req = next(r for r in reqs if r.action == "approve")
     assert approve_req.condition == "data validated"
-    assert approve_req.subject == "Organization"
+    assert approve_req.subject == "Data Steward"
     assert approve_req.obj == "Report"
-    assert approve_req.origin == "Data Steward"
+    review_req = next(r for r in reqs if r.action == "review data")
+    assert review_req.subject == "Organization"
+    assert review_req.req_type == "organizational"
 
 def test_ai_training_and_curation_requirements():
     diagram = GovernanceDiagram()
@@ -65,27 +61,18 @@ def test_ai_training_and_curation_requirements():
     )
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "Organization shall Decision1." in texts
-    assert "Engineering team shall ANN1." in texts
-    assert "Engineering team shall Database1." in texts
-    assert (
-        "If completion >= 0.98, Engineering team shall train 'ANN1'." in texts
-    )
-    assert (
-        "If completion < 0.98, Engineering team shall curate 'Database1'." in texts
-    )
+    assert "If completion >= 0.98, Engineering team shall train 'ANN1'." in texts
+    assert "If completion < 0.98, Engineering team shall curate 'Database1'." in texts
 
     train_req = next(r for r in reqs if r.action == "train")
     assert train_req.subject == "Engineering team"
     assert train_req.obj == "ANN1"
     assert train_req.condition == "completion >= 0.98"
-    assert train_req.origin is None
 
     curate_req = next(r for r in reqs if r.action == "curate")
     assert curate_req.subject == "Engineering team"
     assert curate_req.obj == "Database1"
     assert curate_req.condition == "completion < 0.98"
-    assert curate_req.origin is None
 
 
 def test_data_acquisition_compartment_sources():
@@ -99,15 +86,8 @@ def test_data_acquisition_compartment_sources():
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
 
-    assert "Engineering team shall Acquire Data." in texts
-    assert (
-        "Engineering team shall obtain data from 'Sensor A' after 'Acquire Data'."
-        in texts
-    )
-    assert (
-        "Engineering team shall obtain data from 'Sensor B' after 'Acquire Data'."
-        in texts
-    )
+    assert "Engineering team shall acquire data from 'Sensor A'." in texts
+    assert "Engineering team shall acquire data from 'Sensor B'." in texts
 
     data_reqs = [r for r in reqs if r.action == "acquire data from"]
     assert all(r.req_type == "AI safety" for r in data_reqs)

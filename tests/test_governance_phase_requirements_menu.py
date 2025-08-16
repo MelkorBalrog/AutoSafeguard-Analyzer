@@ -131,8 +131,8 @@ def test_phase_requirements_menu(monkeypatch):
     assert "Phase1 Requirements" in title
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
-    assert any("Organization shall Finish after 'Start'." in t for t in texts)
-    assert any("Organization shall Complete after 'Check'." in t for t in texts)
+    assert any("Start shall precede 'Finish'." in t for t in texts)
+    assert any("Check shall precede 'Complete'." in t for t in texts)
     assert all(row[1] == "organizational" for row in trees[0].rows)
     assert all(row[4] == "draft" for row in trees[0].rows)
     assert len(global_requirements) == len(trees[0].rows)

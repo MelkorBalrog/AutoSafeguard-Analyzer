@@ -67,14 +67,14 @@ class GeneratedRequirement:
         parts: List[str] = []
         if self.condition:
             parts.append(f"If {self.condition},")
+        if self.origin:
+            parts.append(f"after '{self.origin}',")
         subject = self.subject or "Task"
         main = f"{subject} shall {self.action}"
         if self.obj:
             main += f" '{self.obj}'"
         if self.constraint:
             main += f" '{self.constraint}'"
-        if self.origin:
-            main += f" after '{self.origin}'"
         main += "."
         parts.append(main)
         return " ".join(parts)
@@ -235,18 +235,8 @@ class GovernanceDiagram:
 
     def generate_requirements(self) -> List[GeneratedRequirement | tuple[str, str]]:
         """Generate structured requirements from the diagram."""
-        requirements: List[GeneratedRequirement | tuple[str, str]] = []
 
-        for node in self.graph.nodes():
-            req_type = (
-                "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
-            )
-            subject = "Engineering team" if req_type == "AI safety" else "Organization"
-            requirements.append(
-                GeneratedRequirement(
-                    action=node, subject=subject, source=node, req_type=req_type
-                )
-            )
+        requirements: List[GeneratedRequirement | tuple[str, str]] = []
 
         decision_sources: dict[str, str] = {}
         for src, dst in self.graph.edges():
@@ -265,6 +255,9 @@ class GovernanceDiagram:
             label = data.get("label")
             conn_type = data.get("conn_type")
 
+            # Skip standalone reuse links between lifecycle phases. The
+            # corresponding transition requirement will incorporate reuse
+            # information so an additional requirement would be redundant.
             if (
                 conn_type == "Re-use"
                 and self.node_types.get(src) == "Lifecycle Phase"
@@ -279,8 +272,8 @@ class GovernanceDiagram:
                 or self.node_types.get(dst) in _AI_NODES
             ):
                 req_type = "AI safety"
-            subject = "Engineering team" if req_type == "AI safety" else "Organization"
 
+            # Express lifecycle phase transitions explicitly.
             if (
                 kind == "flow"
                 and self.node_types.get(src) == "Lifecycle Phase"
@@ -297,27 +290,41 @@ class GovernanceDiagram:
                 requirements.append((text, req_type))
                 continue
 
-            origin = src
+            origin = None
+            subject = src
             obj: str | None = dst
             constraint: str | None = None
+            action: str
+            explicit_subject = None
 
             if data.get("origin_src"):
                 origin = src
             elif self.node_types.get(src) == "Decision":
                 origin = decision_sources.get(src)
-
+                if origin and kind == "flow":
+                    subject = origin
             if kind == "flow":
-                action = dst
-                obj = None
+                action = "precede"
             else:
                 key = (label or conn_type or "").lower()
                 rule = _REQUIREMENT_RULES.get(key, {})
                 action = str(rule.get("action", label or "relate to"))
+                explicit_subject = rule.get("subject")
+                if explicit_subject:
+                    subject = str(explicit_subject)
+                    if origin is None and data.get("from_repo"):
+                        origin = src
                 if rule.get("constraint"):
                     constraint = dst
                     obj = None
                 elif not label and not rule:
                     action = "be related to"
+
+            if obj is not None:
+                s_role = self._role_for(subject)
+                d_role = self._role_for(obj)
+                if s_role != "subject" and d_role == "subject":
+                    subject, obj = obj, subject
 
             requirements.append(
                 GeneratedRequirement(
@@ -326,7 +333,7 @@ class GovernanceDiagram:
                     subject=subject,
                     obj=obj,
                     constraint=constraint,
-                    origin=origin,
+                    origin=origin if (origin and kind != "flow") else None,
                     source=src,
                     req_type=req_type,
                 )
@@ -341,14 +348,13 @@ class GovernanceDiagram:
                 "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
             )
             subject = "Engineering team" if req_type == "AI safety" else "Organization"
+            action = f"{node.lower()} from"
             for src in sources:
                 requirements.append(
                     GeneratedRequirement(
-                        action="obtain data from",
+                        action=action,
                         subject=subject,
                         obj=src,
-                        origin=node,
-                        source=node,
                         req_type=req_type,
                     )
                 )

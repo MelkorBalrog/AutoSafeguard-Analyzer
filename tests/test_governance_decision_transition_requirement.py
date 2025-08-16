@@ -23,6 +23,5 @@ def test_decision_transition_requirement_mentions_source():
 
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "If completion >= 0.98, Engineering team shall train 'ANN1' after 'Collect Data'." in texts
-    assert sum("Decision1" in t for t in texts) == 1
-    assert any(t == "Organization shall Decision1." for t in texts)
+    assert "If completion >= 0.98, after 'Collect Data', Engineering team shall train 'ANN1'." in texts
+    assert all("Decision1" not in t for t in texts)

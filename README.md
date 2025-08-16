@@ -102,10 +102,10 @@ for req in diagram.generate_requirements():
 Running this script produces:
 
 ```
-Organization shall Draft Plan.
-Organization shall Review Plan.
-If plan complete, Organization shall Review Plan after 'Draft Plan'.
-If changes requested, Organization shall rework 'Draft Plan' after 'Review Plan'.
+The system shall perform task 'Draft Plan'.
+The system shall perform task 'Review Plan'.
+When plan complete, task 'Draft Plan' shall precede task 'Review Plan'.
+Task 'Review Plan' shall rework task 'Draft Plan' when changes requested.
 ```
 
 To gather the requirements for every governance diagram within a specific lifecycle phase,
@@ -154,9 +154,9 @@ for req in gov.generate_requirements():
 The output includes the relationship requirement:
 
 ```
-Engineering team shall ANN1.
-Organization shall Gate.
-If data ready, Engineering team shall train 'ANN1' after 'Gate'.
+The system shall perform task 'ANN1'.
+The system shall perform task 'Gate'.
+Task 'Gate' shall be related to task 'ANN1' when data ready.
 ```
 
 To gather the requirements for every governance diagram within a specific lifecycle phase,
@@ -203,9 +203,9 @@ for req in gov.generate_requirements():
 The output includes the relationship requirement:
 
 ```
-Engineering team shall ANN1.
-Organization shall Gate.
-If data ready, Engineering team shall train 'ANN1' after 'Gate'.
+The system shall perform task 'ANN1'.
+The system shall perform task 'Gate'.
+Task 'Gate' shall be related to task 'ANN1' when data ready.
 ```
 
 ## Workflow Overview
