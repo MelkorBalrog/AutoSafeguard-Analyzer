@@ -19,6 +19,7 @@ sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
 from config import validate_report_template
+from gui.report_template_toolbox import layout_report_template
 
 def test_report_template_toolbox_single_instance():
     """Opening report template toolbox twice doesn't duplicate editor."""
@@ -80,3 +81,14 @@ def test_validate_report_template_unknown_element():
     }
     with pytest.raises(ValueError):
         validate_report_template(cfg)
+
+
+def test_layout_report_template_basic():
+    data = {
+        "elements": {"img": "diagram"},
+        "sections": [{"title": "Intro", "content": "Hello\n<img>World"}],
+    }
+    items, height = layout_report_template(data)
+    assert height > 0
+    types = [i["type"] for i in items]
+    assert "title" in types and "element" in types and "text" in types
