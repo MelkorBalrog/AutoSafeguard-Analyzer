@@ -227,7 +227,6 @@ class ReportTemplateEditor(tk.Frame):
 
         paned.add(tree_frame, weight=1)
         paned.add(preview_frame, weight=3)
-
         elem_btn = ttk.Button(self, text="Elements...", command=self._edit_elements)
         elem_btn.grid(row=1, column=0, sticky="w", padx=4, pady=4)
         btn = ttk.Button(self, text="Save", command=self.save)
