@@ -73,34 +73,93 @@ GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
     base = {
         "Entities": [n for n in ["Organization", "Business Unit", "Role"] if n in nodes],
-        "Artifacts": [n for n in ["Data", "Document", "Record"] if n in nodes],
+        "Artifacts": [n for n in ["Data", "Document", "Record", "Field Data"] if n in nodes],
         "Governance": [
             n
-            for n in ["Policy", "Principle", "Procedure", "Guideline", "Standard", "Metric"]
+            for n in [
+                "Policy",
+                "Principle",
+                "Procedure",
+                "Guideline",
+                "Standard",
+                "Metric",
+                "Safety Compliance",
+            ]
             if n in nodes
         ],
+        "Processes": [
+            n
+            for n in [
+                "Process",
+                "Activity",
+                "Task",
+                "Operation",
+                "Manufacturing Process",
+            ]
+            if n in nodes
+        ],
+        "Components": [
+            n
+            for n in [
+                "Driving Function",
+                "Software Component",
+                "Component",
+                "System",
+                "Vehicle",
+                "Fleet",
+                "Model",
+            ]
+            if n in nodes
+        ],
+        "Verification": [
+            n for n in ["Test Suite", "Verification Plan"] if n in nodes
+        ],
+        "Events": [n for n in ["Incident", "Safety Issue"] if n in nodes],
     }
-    known = {
-        "Organization",
-        "Business Unit",
-        "Role",
-        "Data",
-        "Document",
-        "Record",
-        "Policy",
-        "Principle",
-        "Procedure",
-        "Guideline",
-        "Standard",
-        "Metric",
-    }
+    known = {n for vals in base.values() for n in vals}
     other = [n for n in nodes if n not in known]
     if other:
         base["Other"] = other
     return base
 
 
+def _make_gov_relation_groups(rels: list[str]) -> dict[str, list[str]]:
+    base = {
+        "Authority": [
+            n
+            for n in ["Approves", "Audits", "Authorizes", "Monitors", "Responsible for"]
+            if n in rels
+        ],
+        "Flow": [
+            n
+            for n in ["Communication Path", "Delivers", "Produces", "Consumes", "Uses", "Curation"]
+            if n in rels
+        ],
+        "Execution": [
+            n
+            for n in ["Executes", "Performs", "Implement", "Operate", "Manufacture"]
+            if n in rels
+        ],
+        "Quality": [
+            n
+            for n in ["Validate", "Verify", "Inspect", "Triage", "Improve"]
+            if n in rels
+        ],
+        "Structure": [
+            n
+            for n in ["Constrained by", "Constrains", "Extend", "Generalize", "Establish"]
+            if n in rels
+        ],
+    }
+    known = {n for vals in base.values() for n in vals}
+    other = [n for n in rels if n not in known]
+    if other:
+        base["Other"] = other
+    return base
+
+
 GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
+GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
@@ -286,7 +345,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
-    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
+    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES, GOV_ELEMENT_RELATION_GROUPS
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -297,6 +356,7 @@ def reload_config() -> None:
     GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
     GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
+    GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9996,7 +10056,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
-            wp_rel = ttk.LabelFrame(governance_panel, text="Work Product Links")
+            relationships = ttk.LabelFrame(governance_panel, text="Relationships")
+            relationships.pack(fill=tk.X, padx=2, pady=2)
+            wp_rel = ttk.LabelFrame(relationships, text="Work Product Links")
             wp_rel.pack(fill=tk.X, padx=2, pady=2)
             for name in work_rel_names:
                 ttk.Button(
@@ -10005,16 +10067,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
-            elem_rel = ttk.LabelFrame(
-                governance_panel, text="Element Relationships"
-            )
-            elem_rel.pack(fill=tk.X, padx=2, pady=2)
-            for name in GOV_ELEMENT_RELATIONS:
-                ttk.Button(
-                    elem_rel,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
+            for group, names in GOV_ELEMENT_RELATION_GROUPS.items():
+                rel_frame = ttk.LabelFrame(relationships, text=group)
+                rel_frame.pack(fill=tk.X, padx=2, pady=2)
+                for name in names:
+                    ttk.Button(
+                        rel_frame,
+                        text=name,
+                        command=lambda t=name: self.select_tool(t),
+                    ).pack(fill=tk.X, padx=2, pady=2)
 
             node_cmds = [
                 ("Add Work Product", self.add_work_product),
@@ -10022,8 +10083,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ("Add Process Area", self.add_process_area),
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
+            elem_group = ttk.LabelFrame(governance_panel, text="Elements")
+            elem_group.pack(fill=tk.X, padx=2, pady=2)
             for name, cmd in node_cmds:
-                ttk.Button(governance_panel, text=name, command=cmd).pack(
+                ttk.Button(elem_group, text=name, command=cmd).pack(
                     fill=tk.X, padx=2, pady=2
                 )
         else:  # pragma: no cover - headless tests
@@ -10206,6 +10269,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "System Design (Item Definition)",
             "Hazard & Threat Analysis",
             "Risk Assessment",
+            "Safety & Security Management",
             "Safety Analysis",
             "Safety & Security Management",
             "Scenario",
@@ -11013,6 +11077,7 @@ class ArchitectureManagerDialog(tk.Frame):
         tree_frame.columnconfigure(0, weight=1)
 
         # simple icons to visually distinguish packages, diagrams and objects
+        style = StyleManager.get_instance()
         self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
@@ -11022,14 +11087,33 @@ class ArchitectureManagerDialog(tk.Frame):
             "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
         self.elem_icons = {
-            "Actor": self._create_icon("circle"),
-            "Use Case": self._create_icon("circle"),
-            "Block": self._create_icon("rect"),
-            "Part": self._create_icon("rect"),
-            "Port": self._create_icon("circle"),
+            "Actor": self._create_icon("circle", style.get_color("Actor")),
+            "Use Case": self._create_icon("circle", style.get_color("Use Case")),
+            "Block": self._create_icon("rect", style.get_color("Block")),
+            "Part": self._create_icon("rect", style.get_color("Part")),
+            "Port": self._create_icon("circle", style.get_color("Port")),
+            "Decision": self._create_icon("diamond", style.get_color("Decision")),
+            "Merge": self._create_icon("diamond", style.get_color("Merge")),
+            "Fork": self._create_icon("bar", style.get_color("Fork")),
+            "Join": self._create_icon("bar", style.get_color("Join")),
+            "Database": self._create_icon("cylinder", style.get_color("Database")),
+            "ANN": self._create_icon("triangle", style.get_color("ANN")),
+            "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
+            "Business Unit": self._create_icon("rect", style.get_color("Business Unit")),
+            "Data": self._create_icon("circle", style.get_color("Data")),
+            "Document": self._create_icon("document", style.get_color("Document")),
+            "Guideline": self._create_icon("document", style.get_color("Guideline")),
+            "Metric": self._create_icon("diamond", style.get_color("Metric")),
+            "Organization": self._create_icon("rect", style.get_color("Organization")),
+            "Policy": self._create_icon("document", style.get_color("Policy")),
+            "Principle": self._create_icon("triangle", style.get_color("Principle")),
+            "Procedure": self._create_icon("document", style.get_color("Procedure")),
+            "Record": self._create_icon("circle", style.get_color("Record")),
+            "Role": self._create_icon("circle", style.get_color("Role")),
+            "Standard": self._create_icon("document", style.get_color("Standard")),
         }
-        self.default_diag_icon = self._create_icon("rect")
-        self.default_elem_icon = self._create_icon("rect")
+        self.default_diag_icon = self._create_icon("rect", "gray")
+        self.default_elem_icon = self._create_icon("rect", style.get_color("Existing Element"))
         btns = ttk.Frame(self)
         btns.pack(fill=tk.X, padx=4, pady=4)
         ttk.Button(btns, text="Open", command=self.open).pack(side=tk.LEFT, padx=2)
@@ -11519,6 +11603,32 @@ class ArchitectureManagerDialog(tk.Frame):
             for i in range(4):
                 img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
                 img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "diamond":
+            mid = size // 2
+            for y in range(2, size - 2):
+                span = mid - abs(mid - y)
+                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+        elif shape == "triangle":
+            mid = size // 2
+            height = size - 4
+            for y in range(height):
+                span = (y * mid) // height
+                img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+        elif shape == "cylinder":
+            img.put(c, to=(2, 4, size - 2, size - 4))
+            for x in range(2, size - 2):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+                img.put(c, (x, size - 3))
+        elif shape == "document":
+            img.put(c, to=(2, 2, size - 2, size - 2))
+            fold = "white"
+            for i in range(4):
+                img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
+        elif shape == "bar":
+            img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
         elif shape == "rect":
             for x in range(3, size - 3):
                 img.put(c, (x, 3))
