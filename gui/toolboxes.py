@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
     _work_product_name,
@@ -1212,57 +1213,8 @@ class ReliabilityWindow(tk.Frame):
         )
 
     def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
-        """Return a simple 16x16 icon for toolbox buttons."""
-        size = 16
-        img = tk.PhotoImage(width=size, height=size)
-        img.put("white", to=(0, 0, size - 1, size - 1))
-        c = color
-        if shape == "plus":
-            mid = size // 2
-            for x in range(3, size - 3):
-                img.put(c, (x, mid))
-            for y in range(3, size - 3):
-                img.put(c, (mid, y))
-        elif shape == "cross":
-            for i in range(3, size - 3):
-                img.put(c, (i, i))
-                img.put(c, (i, size - i - 1))
-        elif shape == "gear":
-            mid = size // 2
-            r = size // 2 - 4
-            for y in range(size):
-                for x in range(size):
-                    if (x - mid) ** 2 + (y - mid) ** 2 <= r * r:
-                        img.put(c, (x, y))
-            for t in (-r, r):
-                for x in range(mid - 1, mid + 2):
-                    img.put(c, (x, mid + t))
-                for y in range(mid - 1, mid + 2):
-                    img.put(c, (mid + t, y))
-        elif shape == "sigma":
-            for x in range(3, size - 3):
-                img.put(c, (x, 3))
-                img.put(c, (x, size - 4))
-            for i in range(6):
-                img.put(c, (3 + i, 3 + i))
-                img.put(c, (size - 4 - i, 3 + i))
-        elif shape == "disk":
-            img.put(c, to=(2, 2, size - 2, size - 2))
-            img.put("white", to=(size - 6, 2, size - 2, 6))
-            img.put("white", to=(3, 3, size - 3, 6))
-        elif shape == "folder":
-            for x in range(1, size - 1):
-                img.put(c, (x, 4))
-                img.put(c, (x, size - 2))
-            for y in range(4, size - 1):
-                img.put(c, (1, y))
-                img.put(c, (size - 2, y))
-            for x in range(3, size - 3):
-                img.put(c, (x, 2))
-            img.put(c, to=(1, 3, size - 2, 4))
-        else:
-            img.put(c, to=(2, 2, size - 2, size - 2))
-        return img
+        """Proxy to the shared icon factory."""
+        return create_icon(shape, color)
 
 
 class FI2TCWindow(tk.Frame):

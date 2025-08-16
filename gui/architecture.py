@@ -20,6 +20,7 @@ from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
 from config import load_diagram_rules
 import json
+from gui.icon_factory import create_icon
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -69,86 +70,8 @@ SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 
-
-def draw_icon(shape: str, color: str = "black") -> tk.PhotoImage:
-    """Return a simple 16x16 PhotoImage representing the given *shape*."""
-    size = 16
-    img = tk.PhotoImage(width=size, height=size)
-    img.put("white", to=(0, 0, size - 1, size - 1))
-    c = color
-    if shape == "circle":
-        r = size // 2 - 2
-        cx = cy = size // 2
-        for y in range(size):
-            for x in range(size):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                    img.put(c, (x, y))
-    elif shape == "arrow":
-        mid = size // 2
-        for x in range(2, mid + 1):
-            img.put(c, to=(x, mid - 1, x + 1, mid + 1))
-        for i in range(4):
-            img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
-            img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
-    elif shape == "diamond":
-        mid = size // 2
-        for y in range(2, size - 2):
-            span = mid - abs(mid - y)
-            img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
-    elif shape == "triangle":
-        mid = size // 2
-        height = size - 4
-        for y in range(height):
-            span = (y * mid) // height
-            img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
-    elif shape == "cylinder":
-        img.put(c, to=(2, 4, size - 2, size - 4))
-        for x in range(2, size - 2):
-            img.put(c, (x, 3))
-            img.put(c, (x, size - 4))
-        for x in range(3, size - 3):
-            img.put(c, (x, 2))
-            img.put(c, (x, size - 3))
-    elif shape == "document":
-        img.put(c, to=(2, 2, size - 2, size - 2))
-        fold = "white"
-        for i in range(4):
-            img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
-    elif shape == "bar":
-        img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
-    elif shape == "rect":
-        for x in range(3, size - 3):
-            img.put(c, (x, 3))
-            img.put(c, (x, size - 4))
-        for y in range(3, size - 3):
-            img.put(c, (3, y))
-            img.put(c, (size - 4, y))
-    elif shape == "nested":
-        for x in range(1, size - 1):
-            img.put(c, (x, 1))
-            img.put(c, (x, size - 2))
-        for y in range(1, size - 1):
-            img.put(c, (1, y))
-            img.put(c, (size - 2, y))
-        for x in range(5, size - 5):
-            img.put(c, (x, 5))
-            img.put(c, (x, size - 6))
-        for y in range(5, size - 5):
-            img.put(c, (5, y))
-            img.put(c, (size - 6, y))
-    elif shape == "folder":
-        for x in range(1, size - 1):
-            img.put(c, (x, 4))
-            img.put(c, (x, size - 2))
-        for y in range(4, size - 1):
-            img.put(c, (1, y))
-            img.put(c, (size - 2, y))
-        for x in range(3, size - 3):
-            img.put(c, (x, 2))
-        img.put(c, to=(1, 3, size - 2, 4))
-    else:
-        img.put(c, to=(2, 2, size - 2, size - 2))
-    return img
+# expose the icon factory under the old name used throughout the module
+draw_icon = create_icon
 
 
 def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
