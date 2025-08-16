@@ -2,7 +2,7 @@
   {
     "Pattern ID": "SA-acquisition-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
-    "Template": "Engineering team shall acquire the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall acquire '<Data acquisition>' and persist it in '<Database>' meeting <data_quality_kpis> (completeness, accuracy, timeliness).",
     "Variables": [
       "<source_id>",
       "<target_id>",
@@ -123,7 +123,7 @@
   {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "Engineering team shall curate the <Database> using the <Database>.",
+    "Template": "Engineering team shall curate the <source_id> using the <target_id>.",
     "Variables": [
       "<source_id>",
       "<target_id>",
@@ -134,7 +134,7 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "Engineering team shall ingest the <Database> using the <Database>.",
+    "Template": "Engineering team shall ingest the <source_id> using the <target_id>.",
     "Variables": [
       "<source_id>",
       "<target_id>",
@@ -156,7 +156,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "System shall propagate by review the <Work Product>.",
+    "Template": "Owner shall propagate '<Work Product>' after peer review and record outcomes in <record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -189,7 +189,7 @@
   {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
-    "Template": "<Lifecycle Phase> shall re-use the <Lifecycle Phase>.",
+    "Template": "<source_id> shall re-use the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -266,11 +266,13 @@
   {
     "Pattern ID": "GOV-approves-Role-Document",
     "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<Role> shall approve the <Document>.",
+    "Template": "<Role> shall approve '<Document>' prior to <milestone>, recording evidence in <record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<evidence_ref>",
+      "<milestone>",
+      "<record>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -398,7 +400,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Role",
     "Trigger": "Gov: Role --[Communication Path]--> Role",
-    "Template": "<Role> shall communicate with the <Role>.",
+    "Template": "<source_id> shall communicate with the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -431,7 +433,7 @@
   {
     "Pattern ID": "GOV-communication_path-Organization-Organization",
     "Trigger": "Gov: Organization --[Communication Path]--> Organization",
-    "Template": "<Organization> shall communicate with the <Organization>.",
+    "Template": "<source_id> shall communicate with the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -453,7 +455,7 @@
   {
     "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit",
     "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
-    "Template": "<Business Unit> shall communicate with the <Business Unit>.",
+    "Template": "<source_id> shall communicate with the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -585,7 +587,7 @@
   {
     "Pattern ID": "GOV-extend-Policy-Policy",
     "Trigger": "Gov: Policy --[Extend]--> Policy",
-    "Template": "<Policy> shall extend the <Policy>.",
+    "Template": "<source_id> shall extend the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -596,7 +598,7 @@
   {
     "Pattern ID": "GOV-extend-Standard-Standard",
     "Trigger": "Gov: Standard --[Extend]--> Standard",
-    "Template": "<Standard> shall extend the <Standard>.",
+    "Template": "<source_id> shall extend the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -607,7 +609,7 @@
   {
     "Pattern ID": "GOV-generalize-Policy-Policy",
     "Trigger": "Gov: Policy --[Generalize]--> Policy",
-    "Template": "<Policy> shall generalize the <Policy>.",
+    "Template": "<source_id> shall generalize the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -618,7 +620,7 @@
   {
     "Pattern ID": "GOV-generalize-Standard-Standard",
     "Trigger": "Gov: Standard --[Generalize]--> Standard",
-    "Template": "<Standard> shall generalize the <Standard>.",
+    "Template": "<source_id> shall generalize the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -662,7 +664,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Activity",
     "Trigger": "Gov: Role --[Performs]--> Activity",
-    "Template": "<Role> shall perform the <Activity>.",
+    "Template": "<Role> shall perform '<Activity>'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -673,7 +675,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Task",
     "Trigger": "Gov: Role --[Performs]--> Task",
-    "Template": "<Role> shall perform the <Task>.",
+    "Template": "<Role> shall perform '<Task>'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -684,7 +686,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Procedure",
     "Trigger": "Gov: Role --[Performs]--> Procedure",
-    "Template": "<Role> shall perform the <Procedure>.",
+    "Template": "<Role> shall perform '<Procedure>'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -695,11 +697,12 @@
   {
     "Pattern ID": "GOV-produces-Process-Document",
     "Trigger": "Gov: Process --[Produces]--> Document",
-    "Template": "<Process> shall produce the <Document>.",
+    "Template": "<Process> shall produce '<Document>' with quality criteria <quality_kpis>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<evidence_ref>",
+      "<quality_kpis>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -944,5 +947,1359 @@
       "<acceptance_criteria>"
     ],
     "Notes": "Traceability between data repositories and applicable standards."
+  },
+  {
+    "Pattern ID": "USE-association-Actor-Use_Case",
+    "Trigger": "Use Case Diagram: Actor --[Association]--> Use Case",
+    "Template": "In Use Case Diagram, the Association between <Actor> and <Use Case> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-association-Use_Case-Actor",
+    "Trigger": "Use Case Diagram: Use Case --[Association]--> Actor",
+    "Template": "In Use Case Diagram, the Association between <Use Case> and <Actor> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-include-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Include]--> Use Case",
+    "Template": "In Use Case Diagram, the Include between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-extend-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Extend]--> Use Case",
+    "Template": "In Use Case Diagram, the Extend between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-generalize-Actor-Actor",
+    "Trigger": "Use Case Diagram: Actor --[Generalize]--> Actor",
+    "Template": "In Use Case Diagram, the Generalize between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-generalize-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Generalize]--> Use Case",
+    "Template": "In Use Case Diagram, the Generalize between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "USE-communication path-Actor-Actor",
+    "Trigger": "Use Case Diagram: Actor --[Communication Path]--> Actor",
+    "Template": "In Use Case Diagram, the Communication Path between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "BLOCK-association-Block-Block",
+    "Trigger": "Block Diagram: Block --[Association]--> Block",
+    "Template": "In Block Diagram, the Association between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "BLOCK-generalization-Block-Block",
+    "Trigger": "Block Diagram: Block --[Generalization]--> Block",
+    "Template": "In Block Diagram, the Generalization between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "BLOCK-aggregation-Block-Block",
+    "Trigger": "Block Diagram: Block --[Aggregation]--> Block",
+    "Template": "In Block Diagram, the Aggregation between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "BLOCK-composite aggregation-Block-Block",
+    "Trigger": "Block Diagram: Block --[Composite Aggregation]--> Block",
+    "Template": "In Block Diagram, the Composite Aggregation between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Part-Part",
+    "Trigger": "Internal Block Diagram: Part --[Connector]--> Part",
+    "Template": "In Internal Block Diagram, the Connector between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Part-Port",
+    "Trigger": "Internal Block Diagram: Part --[Connector]--> Port",
+    "Template": "In Internal Block Diagram, the Connector between <Part> and <Port> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Port-Part",
+    "Trigger": "Internal Block Diagram: Port --[Connector]--> Part",
+    "Template": "In Internal Block Diagram, the Connector between <Port> and <Part> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Port-Port",
+    "Trigger": "Internal Block Diagram: Port --[Connector]--> Port",
+    "Template": "In Internal Block Diagram, the Connector between <source_id> and <target_id> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
+    "Variables": [
+      "<model_checker_job>",
+      "<metamodel_version>"
+    ],
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Action",
+    "Trigger": "Activity Diagram: Flow Initial -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Initial -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Decision",
+    "Trigger": "Activity Diagram: Flow Initial -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Merge",
+    "Trigger": "Activity Diagram: Flow Initial -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Fork",
+    "Trigger": "Activity Diagram: Flow Initial -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Join",
+    "Trigger": "Activity Diagram: Flow Initial -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Action",
+    "Trigger": "Activity Diagram: Flow Action -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Action -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Decision",
+    "Trigger": "Activity Diagram: Flow Action -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Merge",
+    "Trigger": "Activity Diagram: Flow Action -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Fork",
+    "Trigger": "Activity Diagram: Flow Action -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Join",
+    "Trigger": "Activity Diagram: Flow Action -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Final",
+    "Trigger": "Activity Diagram: Flow Action -> Final allowed",
+    "Template": "In Activity Diagram, a flow from <Action> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Action",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Decision",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Merge",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Fork",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Join",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Final",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Final allowed",
+    "Template": "In Activity Diagram, a flow from <CallBehaviorAction> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Action",
+    "Trigger": "Activity Diagram: Flow Decision -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Decision -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Decision",
+    "Trigger": "Activity Diagram: Flow Decision -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Merge",
+    "Trigger": "Activity Diagram: Flow Decision -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Fork",
+    "Trigger": "Activity Diagram: Flow Decision -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Join",
+    "Trigger": "Activity Diagram: Flow Decision -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Final",
+    "Trigger": "Activity Diagram: Flow Decision -> Final allowed",
+    "Template": "In Activity Diagram, a flow from <Decision> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Action",
+    "Trigger": "Activity Diagram: Flow Merge -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Merge> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Merge -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Merge> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Decision",
+    "Trigger": "Activity Diagram: Flow Merge -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Merge> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Fork",
+    "Trigger": "Activity Diagram: Flow Merge -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <Merge> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Join",
+    "Trigger": "Activity Diagram: Flow Merge -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <Merge> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Action",
+    "Trigger": "Activity Diagram: Flow Fork -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Fork -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Decision",
+    "Trigger": "Activity Diagram: Flow Fork -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Merge",
+    "Trigger": "Activity Diagram: Flow Fork -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Fork",
+    "Trigger": "Activity Diagram: Flow Fork -> Fork allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Join",
+    "Trigger": "Activity Diagram: Flow Fork -> Join allowed",
+    "Template": "In Activity Diagram, a flow from <Fork> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Action",
+    "Trigger": "Activity Diagram: Flow Join -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Join> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Join -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a flow from <Join> to <CallBehaviorAction> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Decision",
+    "Trigger": "Activity Diagram: Flow Join -> Decision allowed",
+    "Template": "In Activity Diagram, a flow from <Join> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Merge",
+    "Trigger": "Activity Diagram: Flow Join -> Merge allowed",
+    "Template": "In Activity Diagram, a flow from <Join> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Action",
+    "Trigger": "Governance Diagram: Flow Initial -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Decision",
+    "Trigger": "Governance Diagram: Flow Initial -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Merge",
+    "Trigger": "Governance Diagram: Flow Initial -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Fork",
+    "Trigger": "Governance Diagram: Flow Initial -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Join",
+    "Trigger": "Governance Diagram: Flow Initial -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Database",
+    "Trigger": "Governance Diagram: Flow Initial -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-ANN",
+    "Trigger": "Governance Diagram: Flow Initial -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Initial -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Initial> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Action",
+    "Trigger": "Governance Diagram: Flow Action -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Decision",
+    "Trigger": "Governance Diagram: Flow Action -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Merge",
+    "Trigger": "Governance Diagram: Flow Action -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Fork",
+    "Trigger": "Governance Diagram: Flow Action -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Join",
+    "Trigger": "Governance Diagram: Flow Action -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Final",
+    "Trigger": "Governance Diagram: Flow Action -> Final allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Database",
+    "Trigger": "Governance Diagram: Flow Action -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-ANN",
+    "Trigger": "Governance Diagram: Flow Action -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Action -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Action> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Action",
+    "Trigger": "Governance Diagram: Flow Decision -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Decision",
+    "Trigger": "Governance Diagram: Flow Decision -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Merge",
+    "Trigger": "Governance Diagram: Flow Decision -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Fork",
+    "Trigger": "Governance Diagram: Flow Decision -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Join",
+    "Trigger": "Governance Diagram: Flow Decision -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Final",
+    "Trigger": "Governance Diagram: Flow Decision -> Final allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Lifecycle Phase",
+    "Trigger": "Governance Diagram: Flow Decision -> Lifecycle Phase allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Lifecycle Phase> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Database",
+    "Trigger": "Governance Diagram: Flow Decision -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-ANN",
+    "Trigger": "Governance Diagram: Flow Decision -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Decision -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Decision> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Action",
+    "Trigger": "Governance Diagram: Flow Merge -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Decision",
+    "Trigger": "Governance Diagram: Flow Merge -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Merge",
+    "Trigger": "Governance Diagram: Flow Merge -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Fork",
+    "Trigger": "Governance Diagram: Flow Merge -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Join",
+    "Trigger": "Governance Diagram: Flow Merge -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Database",
+    "Trigger": "Governance Diagram: Flow Merge -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-ANN",
+    "Trigger": "Governance Diagram: Flow Merge -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Merge -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Merge> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Action",
+    "Trigger": "Governance Diagram: Flow Fork -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Decision",
+    "Trigger": "Governance Diagram: Flow Fork -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Merge",
+    "Trigger": "Governance Diagram: Flow Fork -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Fork",
+    "Trigger": "Governance Diagram: Flow Fork -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Join",
+    "Trigger": "Governance Diagram: Flow Fork -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Database",
+    "Trigger": "Governance Diagram: Flow Fork -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-ANN",
+    "Trigger": "Governance Diagram: Flow Fork -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Fork -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Fork> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Action",
+    "Trigger": "Governance Diagram: Flow Join -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Decision",
+    "Trigger": "Governance Diagram: Flow Join -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Merge",
+    "Trigger": "Governance Diagram: Flow Join -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Database",
+    "Trigger": "Governance Diagram: Flow Join -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-ANN",
+    "Trigger": "Governance Diagram: Flow Join -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Join -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Join> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Decision",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Decision allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Decision> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Action",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Action allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Merge",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Merge allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Merge> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Fork",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Fork allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Fork> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Join",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Join allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Join> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Final",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Final allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Final> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Database",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Database allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Database> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-ANN",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> ANN allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <ANN> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle Phase-Data acquisition",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a flow from <Lifecycle Phase> to <Data acquisition> shall be permitted and modeled explicitly with guards/events as applicable.",
+    "Variables": [
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
+    ],
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
+  },
+  {
+    "Pattern ID": "GUARD-Decision",
+    "Trigger": "Node type Decision present with outgoing flows",
+    "Template": "All outgoing flows from <Decision> shall include guard expressions formatted as <guard_syntax> and be complete and mutually exclusive.",
+    "Variables": [
+      "<guard_syntax>",
+      "<review_checklist_ref>"
+    ],
+    "Notes": "MECE guards; engineering-relevant for deterministic behavior."
+  },
+  {
+    "Pattern ID": "LIMIT-Decision-4",
+    "Trigger": "Node type Decision present",
+    "Template": "A <Decision> shall not have more than 4 outgoing flows.",
+    "Variables": [],
+    "Notes": "Static structural rule enabling automated checks."
+  },
+  {
+    "Pattern ID": "LIMIT-Merge-4",
+    "Trigger": "Node type Merge present",
+    "Template": "A <Merge> shall not have more than 4 outgoing flows.",
+    "Variables": [],
+    "Notes": "Static structural rule enabling automated checks."
+  },
+  {
+    "Pattern ID": "EARS-UBIQ",
+    "Trigger": "Generic (roles identifiable)",
+    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<business_objective>",
+      "<verification_method>",
+      "<record>"
+    ],
+    "Notes": "Operation/engineering-aligned ubiquitous requirement."
+  },
+  {
+    "Pattern ID": "EARS-EVENT",
+    "Trigger": "Event-driven behavior",
+    "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<condition>",
+      "<t_max>",
+      "<verification_method>"
+    ],
+    "Notes": "Suitable for automotive timing/latency requirements."
+  },
+  {
+    "Pattern ID": "EARS-STATE",
+    "Trigger": "State-dependent behavior",
+    "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<state>",
+      "<performance_kpi>"
+    ],
+    "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
+  },
+  {
+    "Pattern ID": "EARS-UNWANTED",
+    "Trigger": "Fault/HAZARD response",
+    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record>.",
+    "Variables": [
+      "<subject>",
+      "<hazard>",
+      "<mitigation_action>",
+      "<t_fault>",
+      "<safe_state>",
+      "<record>"
+    ],
+    "Notes": "Directly useful for ISO 26262/operational safety."
+  },
+  {
+    "Pattern ID": "NFR-METRIC-PERF",
+    "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
+    "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record>.",
+    "Variables": [
+      "<process>",
+      "<metric_name>",
+      "<target_value>",
+      "<window>",
+      "<confidence>",
+      "<record>"
+    ],
+    "Notes": "Performance KPI in engineering terms."
+  },
+  {
+    "Pattern ID": "NFR-COMPLIANCE",
+    "Trigger": "Constraint node via Constrained by / Governed by",
+    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
+    "Variables": [
+      "<subject>",
+      "<standard_or_policy>",
+      "<record>"
+    ],
+    "Notes": "Compliance requirement with auditable trail."
   }
 ]
