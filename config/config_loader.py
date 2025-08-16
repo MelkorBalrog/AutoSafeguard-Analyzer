@@ -182,12 +182,6 @@ def validate_report_template(data: Any) -> dict[str, Any]:
 
     if not isinstance(data, dict):
         raise ValueError("Configuration root must be a JSON object")
-    elements = data.get("elements", {})
-    if not isinstance(elements, dict):
-        raise ValueError("'elements' must be an object")
-    for name, kind in elements.items():
-        if not isinstance(name, str) or not isinstance(kind, str):
-            raise ValueError("elements must map names to string types")
 
     sections = data.get("sections", [])
     if not isinstance(sections, list):
@@ -202,11 +196,6 @@ def validate_report_template(data: Any) -> dict[str, Any]:
         if not isinstance(content, str):
             raise ValueError(f"sections[{idx}]['content'] must be a string")
 
-        for placeholder in re.findall(r"<([^<>]+)>", content):
-            if placeholder not in elements:
-                raise ValueError(
-                    f"sections[{idx}] references unknown element '{placeholder}'"
-                )
     return data
 
 
