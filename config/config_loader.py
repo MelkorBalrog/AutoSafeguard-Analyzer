@@ -51,13 +51,26 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
         "arch_diagram_types",
         "governance_node_types",
         "governance_element_nodes",
-        "governance_element_relations",
         "gate_node_types",
         "guard_nodes",
     ]
     for field in list_fields:
         if field in data:
             _ensure_list_of_strings(data[field], field)
+
+    if "governance_element_relations" in data:
+        ger = data["governance_element_relations"]
+        if isinstance(ger, list):
+            _ensure_list_of_strings(ger, "governance_element_relations")
+        elif isinstance(ger, dict):
+            for group, rels in ger.items():
+                _ensure_list_of_strings(
+                    rels, f"governance_element_relations[{group}]"
+                )
+        else:
+            raise ValueError(
+                "governance_element_relations must be a list or object"
+            )
 
     if "requirement_rules" in data or "relationship_rules" in data:
         rr = data.get("requirement_rules", data.get("relationship_rules", {}))

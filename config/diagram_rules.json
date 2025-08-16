@@ -57,25 +57,30 @@
     "Standard"
   ],
 
-  // Relation labels for the Governance Elements toolbox
-  "governance_element_relations": [
-    "Approves",
-    "Audits",
-    "Authorizes",
-    "Communication Path",
-    "Constrained by",
-    "Consumes",
-    "Curation",
-    "Delivers",
-    "Executes",
-    "Extend",
-    "Generalize",
-    "Monitors",
-    "Performs",
-    "Produces",
-    "Responsible for",
-    "Uses"
-  ],
+  // Relation labels for the Governance Elements toolbox grouped by category
+  "governance_element_relations": {
+    "Authority": [
+      "Approves",
+      "Audits",
+      "Authorizes",
+      "Responsible for"
+    ],
+    "Activity": [
+      "Performs",
+      "Executes",
+      "Produces",
+      "Delivers",
+      "Consumes",
+      "Uses",
+      "Monitors"
+    ],
+    "Structure": [
+      "Communication Path",
+      "Constrained by",
+      "Extend",
+      "Generalize"
+    ]
+  },
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
   "arch_diagram_types": [
@@ -97,19 +102,7 @@
     "Join",
     "System Boundary",
     "Work Product",
-    "Lifecycle Phase",
-    "Business Unit",
-    "Data",
-    "Document",
-    "Guideline",
-    "Metric",
-    "Organization",
-    "Policy",
-    "Principle",
-    "Procedure",
-    "Record",
-    "Role",
-    "Standard"
+    "Lifecycle Phase"
   ],
 
   // FMEDA/Fault tree gate node types
