@@ -36,7 +36,7 @@ class GovernanceDecisionGuardTests(unittest.TestCase):
         self.assertEqual(gdiag.edge_data[("A", "B")]["condition"], "g1")
         reqs = gdiag.generate_requirements()
         texts = [r.text for r in reqs]
-        self.assertIn("If g1, A shall precede 'B'.", texts)
+        self.assertIn("If g1, Organization shall B after 'A'.", texts)
 
 
 if __name__ == "__main__":

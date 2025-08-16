@@ -159,7 +159,7 @@
   // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
     "Acquisition": {"Database": ["Data acquisition"]},
-    "Field data collection": {"Database": ["Data acquisition"]},
+    "Field data collection": {"Database": ["Data acquisition"], "Task": ["Database"]},
     "Field risk evaluation": {"Database": ["Data acquisition"]},
     "Annotation": {"ANN": ["Database"]},
     "Synthesis": {"ANN": ["Database"]},

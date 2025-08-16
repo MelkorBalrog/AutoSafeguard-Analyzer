@@ -22,4 +22,5 @@ def test_requirements_with_non_action_objects():
 
     gov = GovernanceDiagram.from_repository(repo, diag.diag_id)
     reqs = gov.generate_requirements()
-    assert any("Gate" in r and "ANN1" in r for r in reqs)
+    texts = [r.text for r in reqs]
+    assert any("train 'ANN1'" in t for t in texts)

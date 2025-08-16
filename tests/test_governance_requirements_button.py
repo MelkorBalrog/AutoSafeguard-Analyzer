@@ -68,7 +68,7 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert "Gov Requirements" in title
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
-    assert any("Start shall precede 'Finish'." in t for t in texts)
+    assert any("Organization shall Finish after 'Start'." in t for t in texts)
     # Ensure requirement types are organizational
     assert all(row[1] == "organizational" for row in trees[0].rows)
     assert all(row[4] == "draft" for row in trees[0].rows)
@@ -124,9 +124,9 @@ def test_requirements_button_no_change(monkeypatch):
     win.generate_requirements()
     rid = next(iter(global_requirements))
 
-    # Regenerate without changes; requirement should remain unchanged
+    # Regenerate without changes; requirements should remain unchanged
     win.generate_requirements()
-    assert len(global_requirements) == 1
+    assert len(global_requirements) == 3
     assert global_requirements[rid]["status"] == "draft"
     assert global_requirements[rid]["diagram"] == "Gov"
 
@@ -192,6 +192,6 @@ def test_other_diagram_requirements_preserved(monkeypatch):
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov1")
     win.generate_requirements()
 
-    assert len(global_requirements) == 2
+    assert len(global_requirements) == 6
     assert global_requirements[rid1]["status"] == "draft"
     assert global_requirements[rid2]["status"] == "draft"

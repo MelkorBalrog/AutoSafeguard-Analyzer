@@ -82,8 +82,8 @@ def test_lifecycle_requirements_menu(monkeypatch):
     assert "Lifecycle Requirements" in title
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
-    assert any("Alpha shall precede 'Beta'." in t for t in texts)
-    assert not any("Start shall precede 'Finish'." in t for t in texts)
+    assert any("Organization shall Beta after 'Alpha'." in t for t in texts)
+    assert not any("Organization shall Finish after 'Start'." in t for t in texts)
     assert all(row[1] == "organizational" for row in trees[0].rows)
     assert all(row[4] == "draft" for row in trees[0].rows)
     assert len(global_requirements) == len(trees[0].rows)
