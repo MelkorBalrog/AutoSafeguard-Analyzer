@@ -39,6 +39,22 @@
     "Hyperparameter Validation"
   ],
 
+  // Types shown in the Stakeholder toolbox
+  "stakeholder_nodes": [
+    "Stakeholder"
+  ],
+
+  // Relation labels for the Stakeholder toolbox
+  "stakeholder_relations": [],
+
+  // Types shown in the KPI toolbox
+  "kpi_nodes": [
+    "KPI"
+  ],
+
+  // Relation labels for the KPI toolbox
+  "kpi_relations": [],
+
   // Diagram types considered part of the generic "Architecture Diagram" work product
   "arch_diagram_types": [
     "Use Case Diagram",
@@ -176,7 +192,7 @@
   // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
     "Acquisition": {"Database": ["Data acquisition"]},
-    "Field data collection": {"Database": ["Data acquisition"]},
+    "Field data collection": {"Database": ["Data acquisition", "Task"]},
     "Field risk evaluation": {"Database": ["Data acquisition"]},
     "Annotation": {"ANN": ["Database"]},
     "Synthesis": {"ANN": ["Database"]},

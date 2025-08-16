@@ -2055,6 +2055,11 @@ class FaultTreeApp:
             "GSN Explorer",
             "manage_gsn",
         ),
+        "SPI": (
+            "Safety Analysis",
+            "Safety Performance Indicators",
+            "show_safety_performance_indicators",
+        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2177,6 +2182,7 @@ class FaultTreeApp:
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
         "Causal Bayesian Network Analysis": "Quantitative Analysis",
+        "SPI": "Quantitative Analysis",
         "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",

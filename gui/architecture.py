@@ -65,6 +65,14 @@ SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
 SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
 SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
+# Elements available in the Stakeholder toolbox
+STAKEHOLDER_NODES = _CONFIG.get("stakeholder_nodes", [])
+STAKEHOLDER_RELATIONS = _CONFIG.get("stakeholder_relations", [])
+
+# Elements available in the KPI toolbox
+KPI_NODES = _CONFIG.get("kpi_nodes", [])
+KPI_RELATIONS = _CONFIG.get("kpi_relations", [])
+
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -219,6 +227,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
+    global STAKEHOLDER_NODES, STAKEHOLDER_RELATIONS, KPI_NODES, KPI_RELATIONS
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -226,6 +235,10 @@ def reload_config() -> None:
     SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
+    STAKEHOLDER_NODES = _CONFIG.get("stakeholder_nodes", [])
+    STAKEHOLDER_RELATIONS = _CONFIG.get("stakeholder_relations", [])
+    KPI_NODES = _CONFIG.get("kpi_nodes", [])
+    KPI_RELATIONS = _CONFIG.get("kpi_relations", [])
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9963,6 +9976,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
+            "SPI",
             "Scenario Library",
             "ODD",
         ]
@@ -9986,6 +10000,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
+            "SPI": "Safety Analysis",
             "Scenario Library": "Scenario",
             "ODD": "Scenario",
         }
