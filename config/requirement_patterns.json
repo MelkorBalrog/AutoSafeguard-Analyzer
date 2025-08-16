@@ -618,7 +618,7 @@
   {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Template": "Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -631,7 +631,7 @@
   {
     "Pattern ID": "SA-curation-Database-Database-COND",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "When <condition>, Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Template": "When <condition>, Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -645,7 +645,7 @@
   {
     "Pattern ID": "SA-curation-Database-Database-COND-CONST",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "When <condition>, Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "When <condition>, Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -660,7 +660,7 @@
   {
     "Pattern ID": "SA-curation-Database-Database-CONST",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -674,7 +674,7 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Template": "Engineering team shall ingest the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -687,7 +687,7 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database-COND",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "When <condition>, Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Template": "When <condition>, Engineering team shall ingest the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -701,7 +701,7 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database-COND-CONST",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "When <condition>, Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "When <condition>, Engineering team shall ingest the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -716,7 +716,7 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database-CONST",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "Engineering team shall ingest the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
