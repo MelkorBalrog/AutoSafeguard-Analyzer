@@ -11012,6 +11012,7 @@ class ArchitectureManagerDialog(tk.Frame):
         tree_frame.columnconfigure(0, weight=1)
 
         # simple icons to visually distinguish packages, diagrams and objects
+        style = StyleManager.get_instance()
         self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
             "Use Case Diagram": self._create_icon("circle", "blue"),
@@ -11021,14 +11022,33 @@ class ArchitectureManagerDialog(tk.Frame):
             "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
         self.elem_icons = {
-            "Actor": self._create_icon("circle"),
-            "Use Case": self._create_icon("circle"),
-            "Block": self._create_icon("rect"),
-            "Part": self._create_icon("rect"),
-            "Port": self._create_icon("circle"),
+            "Actor": self._create_icon("circle", style.get_color("Actor")),
+            "Use Case": self._create_icon("circle", style.get_color("Use Case")),
+            "Block": self._create_icon("rect", style.get_color("Block")),
+            "Part": self._create_icon("rect", style.get_color("Part")),
+            "Port": self._create_icon("circle", style.get_color("Port")),
+            "Decision": self._create_icon("diamond", style.get_color("Decision")),
+            "Merge": self._create_icon("diamond", style.get_color("Merge")),
+            "Fork": self._create_icon("bar", style.get_color("Fork")),
+            "Join": self._create_icon("bar", style.get_color("Join")),
+            "Database": self._create_icon("cylinder", style.get_color("Database")),
+            "ANN": self._create_icon("triangle", style.get_color("ANN")),
+            "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
+            "Business Unit": self._create_icon("rect", style.get_color("Business Unit")),
+            "Data": self._create_icon("circle", style.get_color("Data")),
+            "Document": self._create_icon("document", style.get_color("Document")),
+            "Guideline": self._create_icon("document", style.get_color("Guideline")),
+            "Metric": self._create_icon("diamond", style.get_color("Metric")),
+            "Organization": self._create_icon("rect", style.get_color("Organization")),
+            "Policy": self._create_icon("document", style.get_color("Policy")),
+            "Principle": self._create_icon("triangle", style.get_color("Principle")),
+            "Procedure": self._create_icon("document", style.get_color("Procedure")),
+            "Record": self._create_icon("circle", style.get_color("Record")),
+            "Role": self._create_icon("circle", style.get_color("Role")),
+            "Standard": self._create_icon("document", style.get_color("Standard")),
         }
-        self.default_diag_icon = self._create_icon("rect")
-        self.default_elem_icon = self._create_icon("rect")
+        self.default_diag_icon = self._create_icon("rect", "gray")
+        self.default_elem_icon = self._create_icon("rect", style.get_color("Existing Element"))
         btns = ttk.Frame(self)
         btns.pack(fill=tk.X, padx=4, pady=4)
         ttk.Button(btns, text="Open", command=self.open).pack(side=tk.LEFT, padx=2)
@@ -11518,6 +11538,32 @@ class ArchitectureManagerDialog(tk.Frame):
             for i in range(4):
                 img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
                 img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "diamond":
+            mid = size // 2
+            for y in range(2, size - 2):
+                span = mid - abs(mid - y)
+                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+        elif shape == "triangle":
+            mid = size // 2
+            height = size - 4
+            for y in range(height):
+                span = (y * mid) // height
+                img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+        elif shape == "cylinder":
+            img.put(c, to=(2, 4, size - 2, size - 4))
+            for x in range(2, size - 2):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+                img.put(c, (x, size - 3))
+        elif shape == "document":
+            img.put(c, to=(2, 2, size - 2, size - 2))
+            fold = "white"
+            for i in range(4):
+                img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
+        elif shape == "bar":
+            img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
         elif shape == "rect":
             for x in range(3, size - 3):
                 img.put(c, (x, 3))
