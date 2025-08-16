@@ -493,6 +493,5 @@ class GSNExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
-        """Proxy to the shared icon factory with the canvas background."""
-        bg = StyleManager.get_instance().canvas_bg
-        return create_icon(shape, color, bg)
+        """Proxy to the shared icon factory."""
+        return create_icon(shape, color)
