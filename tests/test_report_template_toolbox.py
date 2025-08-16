@@ -21,7 +21,6 @@ from AutoML import FaultTreeApp
 from config import validate_report_template
 from gui.report_template_toolbox import layout_report_template
 
-
 def test_report_template_toolbox_single_instance():
     """Opening report template toolbox twice doesn't duplicate editor."""
 

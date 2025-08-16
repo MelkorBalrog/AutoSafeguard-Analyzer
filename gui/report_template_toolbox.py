@@ -50,7 +50,6 @@ def layout_report_template(
     height = y + margin
     return items, height
 
-
 class ElementDialog(simpledialog.Dialog):
     """Dialog for adding or editing a single element placeholder."""
 
@@ -134,7 +133,6 @@ class ElementsDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = self.elements
-
 
 class SectionDialog(simpledialog.Dialog):
     """Dialog for editing a single section."""
@@ -239,7 +237,6 @@ class ReportTemplateEditor(tk.Frame):
         dlg = ElementsDialog(self, self.data.get("elements", {}))
         if dlg.result is not None:
             self.data["elements"] = dlg.result
-            self._render_preview()
 
     def save(self):
         try:
