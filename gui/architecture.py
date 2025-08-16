@@ -3210,13 +3210,21 @@ class SysMLDiagramWindow(tk.Frame):
                     width = max(width, max_button_width(child))
             return width
 
-        button_width = max_button_width(self.toolbox)
-        prop_width = self.prop_view.winfo_reqwidth()
-        content_width = max(button_width, prop_width)
+        # Account for the external padding applied when packing buttons so the
+        # canvas is only as wide as necessary to show them.
+        button_width = max_button_width(self.toolbox) + 4
         scroll_width = self.toolbox_scroll.winfo_reqwidth()
-        self.toolbox_container.configure(width=content_width + scroll_width)
-        self.toolbox_canvas.configure(width=content_width)
-        self.toolbox_canvas.itemconfig(self._toolbox_window, width=content_width)
+
+        self.toolbox_container.configure(width=button_width + scroll_width)
+        self.toolbox_canvas.configure(width=button_width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
+
+        # Shrink the property view to match the button area so it does not force
+        # the toolbox wider than needed.
+        field_width = button_width // 2
+        self.prop_view.configure(width=button_width)
+        self.prop_view.column("field", width=field_width, stretch=False)
+        self.prop_view.column("value", width=button_width - field_width, stretch=False)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
@@ -9860,48 +9868,77 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
 
-        governance_panel = ttk.LabelFrame(self, text="Governance")
-        governance_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
+        if hasattr(self, "tk"):
+            gov_container = ttk.Frame(self)
+            gov_container.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
 
-        work_rel_names = [
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Satisfied by",
-            "Derived from",
-        ]
-        wp_rel = ttk.LabelFrame(governance_panel, text="Work Product Links")
-        wp_rel.pack(fill=tk.X, padx=2, pady=2)
-        for name in work_rel_names:
-            ttk.Button(
-                wp_rel,
-                text=name,
-                command=lambda t=name: self.select_tool(t),
-            ).pack(fill=tk.X, padx=2, pady=2)
+            gov_canvas = tk.Canvas(gov_container, highlightthickness=0)
+            gov_canvas.pack(side=tk.LEFT, fill=tk.Y)
 
-        elem_rel = ttk.LabelFrame(governance_panel, text="Element Relationships")
-        elem_rel.pack(fill=tk.X, padx=2, pady=2)
-        for name in GOV_ELEMENT_RELATIONS:
-            ttk.Button(
-                elem_rel,
-                text=name,
-                command=lambda t=name: self.select_tool(t),
-            ).pack(fill=tk.X, padx=2, pady=2)
+            gov_scroll = ttk.Scrollbar(
+                gov_container, orient=tk.VERTICAL, command=gov_canvas.yview
+            )
+            gov_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+            gov_canvas.configure(yscrollcommand=gov_scroll.set)
 
-        node_cmds = [
-            ("Add Work Product", self.add_work_product),
-            ("Add Generic Work Product", self.add_generic_work_product),
-            ("Add Process Area", self.add_process_area),
-            ("Add Lifecycle Phase", self.add_lifecycle_phase),
-        ]
-        for name, cmd in node_cmds:
-            ttk.Button(governance_panel, text=name, command=cmd).pack(
-                fill=tk.X, padx=2, pady=2
+            governance_panel = ttk.LabelFrame(gov_canvas, text="Governance")
+            gov_window = gov_canvas.create_window(
+                (0, 0), window=governance_panel, anchor="nw"
+            )
+            governance_panel.bind(
+                "<Configure>",
+                lambda e: gov_canvas.configure(scrollregion=gov_canvas.bbox("all")),
+            )
+            gov_canvas.bind(
+                "<Configure>",
+                lambda e: gov_canvas.itemconfig(gov_window, width=e.width),
+            )
+
+            work_rel_names = [
+                "Propagate",
+                "Propagate by Review",
+                "Propagate by Approval",
+                "Used By",
+                "Used after Review",
+                "Used after Approval",
+                "Re-use",
+                "Trace",
+                "Satisfied by",
+                "Derived from",
+            ]
+            wp_rel = ttk.LabelFrame(governance_panel, text="Work Product Links")
+            wp_rel.pack(fill=tk.X, padx=2, pady=2)
+            for name in work_rel_names:
+                ttk.Button(
+                    wp_rel,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+
+            elem_rel = ttk.LabelFrame(
+                governance_panel, text="Element Relationships"
+            )
+            elem_rel.pack(fill=tk.X, padx=2, pady=2)
+            for name in GOV_ELEMENT_RELATIONS:
+                ttk.Button(
+                    elem_rel,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+
+            node_cmds = [
+                ("Add Work Product", self.add_work_product),
+                ("Add Generic Work Product", self.add_generic_work_product),
+                ("Add Process Area", self.add_process_area),
+                ("Add Lifecycle Phase", self.add_lifecycle_phase),
+            ]
+            for name, cmd in node_cmds:
+                ttk.Button(governance_panel, text=name, command=cmd).pack(
+                    fill=tk.X, padx=2, pady=2
+                )
+        else:  # pragma: no cover - headless tests
+            governance_panel = types.SimpleNamespace(
+                pack=lambda *a, **k: None
             )
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
