@@ -118,6 +118,19 @@ _BASE_CONN_TYPES = {
     "Composite Aggregation",
     "Control Action",
     "Feedback",
+    "Approves",
+    "Audits",
+    "Authorizes",
+    "Constrained by",
+    "Consumes",
+    "Curation",
+    "Delivers",
+    "Executes",
+    "Monitors",
+    "Performs",
+    "Produces",
+    "Responsible for",
+    "Uses",
 }
 
 # Ordered list of base connection tools for toolbox composition
@@ -144,6 +157,19 @@ _BASE_CONN_TOOLS = [
     "Composite Aggregation",
     "Control Action",
     "Feedback",
+    "Approves",
+    "Audits",
+    "Authorizes",
+    "Constrained by",
+    "Consumes",
+    "Curation",
+    "Delivers",
+    "Executes",
+    "Monitors",
+    "Performs",
+    "Produces",
+    "Responsible for",
+    "Uses",
 ]
 
 # Connection types that default to forward arrows
@@ -158,6 +184,25 @@ _ARROW_FORWARD_BASE = {
     "Satisfied by",
     "Derived from",
 }
+
+# Connection types added above should use forward arrowheads by default
+_ARROW_FORWARD_BASE.update(
+    {
+        "Approves",
+        "Audits",
+        "Authorizes",
+        "Constrained by",
+        "Consumes",
+        "Curation",
+        "Delivers",
+        "Executes",
+        "Monitors",
+        "Performs",
+        "Produces",
+        "Responsible for",
+        "Uses",
+    }
+)
 
 
 def _all_connection_tools() -> tuple[str, ...]:
@@ -6221,6 +6266,42 @@ class SysMLDiagramWindow(tk.Frame):
                 y + 40 * sy,
                 fill=outline,
             )
+        elif obj.obj_type == "Stakeholder":
+            sx = obj.width / 80.0 * self.zoom
+            sy = obj.height / 40.0 * self.zoom
+            self.canvas.create_oval(
+                x - 10 * sx,
+                y - 30 * sy,
+                x + 10 * sx,
+                y - 10 * sy,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_line(x, y - 10 * sy, x, y + 20 * sy, fill=outline)
+            self.canvas.create_line(x - 15 * sx, y, x + 15 * sx, y, fill=outline)
+            self.canvas.create_line(
+                x,
+                y + 20 * sy,
+                x - 10 * sx,
+                y + 40 * sy,
+                fill=outline,
+            )
+            self.canvas.create_line(
+                x,
+                y + 20 * sy,
+                x + 10 * sx,
+                y + 40 * sy,
+                fill=outline,
+            )
+        elif obj.obj_type == "KPI":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            points = []
+            for i in range(6):
+                angle = math.radians(60 * i + 30)
+                px = x + r * math.cos(angle)
+                py = y + r * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, fill=color, outline=outline)
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
@@ -6803,7 +6884,7 @@ class SysMLDiagramWindow(tk.Frame):
                 label_lines = self._object_label_lines(obj)
             else:
                 label_lines = SysMLDiagramWindow._object_label_lines(self, obj)
-            if obj.obj_type == "Actor":
+            if obj.obj_type in ("Actor", "Stakeholder"):
                 sy = obj.height / 40.0 * self.zoom
                 label_x = x
                 label_y = y + 40 * sy + 10 * self.zoom
@@ -9490,7 +9571,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tool_groups = {
             "Tasks": ["Action"],
-            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge", "Fork", "Join"],
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
@@ -9542,7 +9623,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self.toolbox, "tk"):
             selector = ttk.Combobox(
                 self.toolbox,
-                values=["Governance", "Safety & AI Lifecycle"],
+                values=[
+                    "Governance",
+                    "Safety & AI Lifecycle",
+                    "Stakeholders",
+                    "KPIs",
+                    "Governance Elements",
+                ],
                 state="readonly",
                 textvariable=self.toolbox_var,
             )
@@ -9585,6 +9672,118 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 pack_forget=lambda *a, **k: None,
             )
 
+        # Create Stakeholder toolbox frame
+        if hasattr(self.toolbox, "tk"):
+            self.stakeholder_tools_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.stakeholder_tools_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                self.stakeholder_tools_frame,
+                text="Stakeholder",
+                command=lambda: self.select_tool("Stakeholder"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            s_rel = ttk.LabelFrame(self.stakeholder_tools_frame, text="Relationships")
+            s_rel.pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                s_rel,
+                text="Flow",
+                command=lambda: self.select_tool("Flow"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+        else:
+            self.stakeholder_tools_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
+        # Create KPI toolbox frame
+        if hasattr(self.toolbox, "tk"):
+            self.kpi_tools_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.kpi_tools_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                self.kpi_tools_frame,
+                text="KPI",
+                command=lambda: self.select_tool("KPI"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            k_rel = ttk.LabelFrame(self.kpi_tools_frame, text="Relationships")
+            k_rel.pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                k_rel,
+                text="Flow",
+                command=lambda: self.select_tool("Flow"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+        else:
+            self.kpi_tools_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
+        # Create toolbox for additional governance elements
+        extra_nodes = [
+            "Business Unit",
+            "Data",
+            "Document",
+            "Guideline",
+            "Metric",
+            "Organization",
+            "Policy",
+            "Principle",
+            "Procedure",
+            "Record",
+            "Role",
+            "Standard",
+        ]
+        extra_rels = [
+            "Approves",
+            "Audits",
+            "Authorizes",
+            "Communication Path",
+            "Constrained by",
+            "Consumes",
+            "Curation",
+            "Delivers",
+            "Executes",
+            "Extend",
+            "Generalize",
+            "Monitors",
+            "Performs",
+            "Produces",
+            "Responsible for",
+            "Uses",
+        ]
+        if hasattr(self.toolbox, "tk"):
+            self.gov_elements_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.gov_elements_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            for name in extra_nodes:
+                ttk.Button(
+                    self.gov_elements_frame,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+            ge_rel = ttk.LabelFrame(self.gov_elements_frame, text="Relationships")
+            ge_rel.pack(fill=tk.X, padx=2, pady=2)
+            for name in extra_rels:
+                ttk.Button(
+                    ge_rel,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+        else:
+            self.gov_elements_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
         # Repack toolbox to include selector and default to governance frame
         if hasattr(self, "back_btn"):
             self.back_btn.pack_forget()
@@ -9622,6 +9821,22 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Approves",
+            "Audits",
+            "Authorizes",
+            "Communication Path",
+            "Constrained by",
+            "Consumes",
+            "Curation",
+            "Delivers",
+            "Executes",
+            "Extend",
+            "Generalize",
+            "Monitors",
+            "Performs",
+            "Produces",
+            "Responsible for",
+            "Uses",
         ]
         rel_frame = ttk.LabelFrame(governance_panel, text="Relationships")
         rel_frame.pack(fill=tk.X, padx=2, pady=2)
@@ -9677,28 +9892,29 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def _switch_toolbox(self) -> None:
         choice = self.toolbox_var.get()
         before = self.prop_frame if hasattr(self, "prop_frame") else None
-        if choice == "Governance":
-            if hasattr(self.ai_tools_frame, "pack_forget"):
-                self.ai_tools_frame.pack_forget()
-            if before and hasattr(self.gov_tools_frame, "pack"):
-                self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
-                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
-                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
-            else:
-                if hasattr(self.gov_tools_frame, "pack"):
-                    self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
-                if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
-                    self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
-        else:
-            if hasattr(self.gov_tools_frame, "pack_forget"):
-                self.gov_tools_frame.pack_forget()
-            if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
-                self.gov_rel_frame.pack_forget()
-            if before and hasattr(self.ai_tools_frame, "pack"):
-                self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2, before=before)
-            else:
-                if hasattr(self.ai_tools_frame, "pack"):
-                    self.ai_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+        frames = {
+            "Governance": [self.gov_tools_frame, self.gov_rel_frame],
+            "Safety & AI Lifecycle": [self.ai_tools_frame],
+            "Stakeholders": [getattr(self, "stakeholder_tools_frame", None)],
+            "KPIs": [getattr(self, "kpi_tools_frame", None)],
+            "Governance Elements": [getattr(self, "gov_elements_frame", None)],
+        }
+        for frame in [
+            self.gov_tools_frame,
+            self.gov_rel_frame,
+            self.ai_tools_frame,
+            getattr(self, "stakeholder_tools_frame", None),
+            getattr(self, "kpi_tools_frame", None),
+            getattr(self, "gov_elements_frame", None),
+        ]:
+            if frame and hasattr(frame, "pack_forget"):
+                frame.pack_forget()
+        for frame in frames.get(choice, []):
+            if frame and hasattr(frame, "pack"):
+                if before:
+                    frame.pack(fill=tk.X, padx=2, pady=2, before=before)
+                else:
+                    frame.pack(fill=tk.X, padx=2, pady=2)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
