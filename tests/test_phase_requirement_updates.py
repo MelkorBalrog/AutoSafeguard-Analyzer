@@ -110,3 +110,26 @@ def test_lifecycle_requirements_visible_in_phases(monkeypatch):
     win.generate_phase_requirements("Phase1")
     ids = captured.get("Phase1 Requirements", [])
     assert life_rid in ids
+
+
+def test_delete_obsolete(monkeypatch):
+    win = _setup_window(monkeypatch)
+    global_requirements.clear()
+    global_requirements.update(
+        {
+            "obs": {"status": "obsolete"},
+            "keep": {"status": "draft"},
+        }
+    )
+
+    shown = []
+
+    def _info(*args, **kwargs):
+        shown.append(args)
+
+    monkeypatch.setattr(smt, "messagebox", types.SimpleNamespace(showinfo=_info))
+
+    win.delete_obsolete_requirements()
+    assert "obs" not in global_requirements
+    assert "keep" in global_requirements
+    assert shown  # ensure message displayed
