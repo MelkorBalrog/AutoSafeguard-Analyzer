@@ -74,7 +74,8 @@
     "Incident",
     "Safety Issue",
     "Field Data",
-    "Model"
+    "Model",
+    "Lifecycle Phase"
   ],
 
   // Relation labels for the Governance Elements toolbox
