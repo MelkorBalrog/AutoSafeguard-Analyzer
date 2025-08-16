@@ -1,0 +1,57 @@
+[
+  {
+    "Pattern ID": "SA-acquisition-Database-Data_acquisition",
+    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Template": "Engineering team shall acquire the <Data acquisition> using the <Database>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Template": "Engineering team shall collect field data the <Data acquisition> using the <Database>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-annotation-ANN-Database",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Template": "Engineering team shall annotate the <Database> using the <ANN>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
+    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
+    "Template": "System shall propagate the <Work Product>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Document",
+    "Trigger": "Gov: Role --[Approves]--> Document",
+    "Template": "Role shall approve the <Document>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  }
+]

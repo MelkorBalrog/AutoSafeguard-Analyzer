@@ -4,12 +4,23 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
 from pathlib import Path
-from config import load_diagram_rules
+from config import load_diagram_rules, load_json_with_comments
 
 import networkx as nx
+import re
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
+_PATTERN_FILE = _CONFIG.get("requirement_pattern_file")
+_PATTERN_PATH = (
+    _CONFIG_PATH.parent / _PATTERN_FILE if isinstance(_PATTERN_FILE, str) else None
+)
+try:
+    _REQUIREMENT_PATTERNS = (
+        load_json_with_comments(_PATTERN_PATH) if _PATTERN_PATH else []
+    )
+except FileNotFoundError:
+    _REQUIREMENT_PATTERNS = []
 
 # Element and relationship types associated with AI & safety lifecycle nodes.
 _AI_NODES = set(_CONFIG.get("ai_nodes", []))
@@ -29,9 +40,44 @@ _REQUIREMENT_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
 _NODE_ROLES = _CONFIG.get("node_roles", {})
 
 
+def _pattern_matches(trigger: str, src_type: str, dst_type: str, conn_type: str | None, kind: str) -> bool:
+    """Return True if the pattern *trigger* matches the given edge."""
+    if not trigger:
+        return False
+    trig = trigger.strip()
+    # Relationship pattern: "Gov: Source --[Label]--> Target"
+    rel_match = re.match(r".*?:\s*(.+?)\s*--\[(.+?)\]-->\s*(.+)", trig)
+    if rel_match:
+        src_t, label, dst_t = [s.strip() for s in rel_match.groups()]
+        return (
+            conn_type is not None
+            and label.lower() == (conn_type or "").lower()
+            and src_t == src_type
+            and dst_t == dst_type
+        )
+    # Flow pattern: "...: Flow Src -> Dst" (supports unicode arrow)
+    flow_match = re.match(r".*?:\s*Flow\s+(.+?)\s*[→\-]+>\s*(.+)", trig)
+    if flow_match:
+        src_t, dst_t = [s.strip() for s in flow_match.groups()]
+        return kind == "flow" and src_t == src_type and dst_t == dst_type
+    return False
+
+
+def _fill_template(template: str, src: str, dst: str, src_type: str, dst_type: str) -> str:
+    """Substitute basic placeholders in *template* with edge values."""
+    text = template
+    if src_type == dst_type:
+        text = text.replace(f"<{src_type}>", dst)
+    else:
+        text = text.replace(f"<{src_type}>", src)
+        text = text.replace(f"<{dst_type}>", dst)
+    text = text.replace("<source_id>", src).replace("<target_id>", dst)
+    return text
+
+
 def reload_config() -> None:
     """Reload governance-related configuration."""
-    global _CONFIG, _AI_NODES, _AI_RELATIONS, _REQUIREMENT_RULES, _NODE_ROLES
+    global _CONFIG, _AI_NODES, _AI_RELATIONS, _REQUIREMENT_RULES, _NODE_ROLES, _REQUIREMENT_PATTERNS, _PATTERN_FILE, _PATTERN_PATH
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     _AI_NODES = set(_CONFIG.get("ai_nodes", []))
     _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
@@ -39,6 +85,16 @@ def reload_config() -> None:
         "requirement_rules", _CONFIG.get("relationship_rules", {})
     )
     _NODE_ROLES = _CONFIG.get("node_roles", {})
+    _PATTERN_FILE = _CONFIG.get("requirement_pattern_file")
+    _PATTERN_PATH = (
+        _CONFIG_PATH.parent / _PATTERN_FILE if isinstance(_PATTERN_FILE, str) else None
+    )
+    try:
+        _REQUIREMENT_PATTERNS = (
+            load_json_with_comments(_PATTERN_PATH) if _PATTERN_PATH else []
+        )
+    except FileNotFoundError:
+        _REQUIREMENT_PATTERNS = []
 
 
 @dataclass
@@ -342,18 +398,27 @@ class GovernanceDiagram:
                 if s_role != "subject" and d_role == "subject":
                     subject, obj = obj, subject
 
-            requirements.append(
-                GeneratedRequirement(
-                    action=action,
-                    condition=cond,
-                    subject=subject,
-                    obj=obj,
-                    constraint=constraint,
-                    origin=origin if (origin and kind != "flow") else None,
-                    source=src,
-                    req_type=req_type,
-                )
+            gen_req = GeneratedRequirement(
+                action=action,
+                condition=cond,
+                subject=subject,
+                obj=obj,
+                constraint=constraint,
+                origin=origin if (origin and kind != "flow") else None,
+                source=src,
+                req_type=req_type,
             )
+            requirements.append(gen_req)
+
+            # Apply explicit requirement patterns
+            src_type = self.node_types.get(src, "")
+            dst_type = self.node_types.get(dst, "")
+            for pat in _REQUIREMENT_PATTERNS:
+                trigger = pat.get("Trigger")
+                if _pattern_matches(trigger, src_type, dst_type, conn_type, kind):
+                    tmpl = str(pat.get("Template", ""))
+                    text = _fill_template(tmpl, src, dst, src_type, dst_type)
+                    requirements.append((text, req_type))
 
         # Create explicit requirements for Data acquisition nodes listing their
         # configured compartments as data sources.  Each compartment becomes a
