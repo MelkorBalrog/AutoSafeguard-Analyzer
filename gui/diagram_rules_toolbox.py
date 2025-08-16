@@ -16,26 +16,32 @@ class MultiSelectDialog(simpledialog.Dialog):
         super().__init__(parent, title=title)
 
     def body(self, master):
-        """Create dialog body with a listbox and scrollbar."""
-        # Ensure the dialog window is a fixed size
         self.resizable(False, False)
+        self.geometry("300x250")
 
-        # Use a frame so the listbox and scrollbar can be arranged side-by-side
-        master.grid_columnconfigure(0, weight=1)
-        master.grid_rowconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
+        master.columnconfigure(0, weight=1)
 
-        self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, height=10)
+        frame = ttk.Frame(master)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+
+        yscroll = ttk.Scrollbar(frame, orient="vertical")
+        self.listbox = tk.Listbox(
+            frame,
+            selectmode=tk.MULTIPLE,
+            height=10,
+            yscrollcommand=yscroll.set,
+        )
         for idx, opt in enumerate(self.options):
             self.listbox.insert(tk.END, opt)
             if opt in self.initial:
                 self.listbox.selection_set(idx)
+        self.listbox.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        yscroll.config(command=self.listbox.yview)
+        yscroll.grid(row=0, column=1, sticky="ns")
 
-        # Add a vertical scrollbar for long option lists
-        scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.listbox.yview)
-        self.listbox.configure(yscrollcommand=scrollbar.set)
-
-        self.listbox.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
         return self.listbox
 
     def apply(self):
