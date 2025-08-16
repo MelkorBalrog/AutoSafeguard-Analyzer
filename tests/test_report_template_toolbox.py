@@ -142,3 +142,54 @@ def test_validate_report_template_requirement_elements():
         "sections": [{"title": "Vehicle Reqs", "content": "<req_vehicle>"}],
     }
     assert validate_report_template(cfg) == cfg
+
+
+def test_report_template_editor_add_delete_sections(monkeypatch):
+    import importlib
+    import gui.report_template_toolbox as rtt
+
+    rtt = importlib.reload(rtt)
+
+    class DummyDialog:
+        def __init__(self, parent, section):
+            self.result = {"title": "New", "content": "Content"}
+
+    monkeypatch.setattr(rtt, "SectionDialog", DummyDialog)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = []
+            self.sel = None
+
+        def insert(self, parent, index, iid, text=""):
+            self.items.append((iid, text))
+
+        def delete(self, *iids):
+            if not iids:
+                self.items = []
+            else:
+                self.items = [i for i in self.items if i[0] not in iids]
+
+        def get_children(self, item):
+            return [i[0] for i in self.items]
+
+        def selection_set(self, iid):
+            self.sel = iid
+
+        def focus(self, item=None):
+            if item is None:
+                return self.sel
+            self.sel = item
+
+    def fake_init(self, master=None, app=None, config_path=None):
+        self.data = {"sections": [], "elements": {}}
+        self.tree = DummyTree()
+        self._render_preview = lambda: None
+
+    monkeypatch.setattr(rtt.ReportTemplateEditor, "__init__", fake_init)
+
+    editor = rtt.ReportTemplateEditor()
+    editor._add_section()
+    assert editor.data["sections"] == [{"title": "New", "content": "Content"}]
+    editor._delete_section()
+    assert editor.data["sections"] == []
