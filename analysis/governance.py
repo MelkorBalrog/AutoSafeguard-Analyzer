@@ -125,6 +125,22 @@ class GovernanceDiagram:
         ntype = self.node_types.get(name, "")
         return _NODE_ROLES.get(ntype, "object")
 
+    def _default_action(self, name: str) -> str:
+        """Return a generic verb phrase for a task name.
+
+        Data acquisition nodes previously used the raw node label as the
+        action, which could generate awkward requirements such as
+        "Engineering team shall Data acquisition from …" when the node name
+        itself was "Data acquisition".  This helper normalizes common node
+        types to more natural verbs so generated requirements follow the
+        expected subject–action–object structure.
+        """
+
+        ntype = self.node_types.get(name)
+        if ntype == "Data acquisition":
+            return "acquire data"
+        return name.lower()
+
     def add_task(
         self,
         name: str,
@@ -348,7 +364,7 @@ class GovernanceDiagram:
                 "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
             )
             subject = "Engineering team" if req_type == "AI safety" else "Organization"
-            action = f"{node.lower()} from"
+            action = f"{self._default_action(node)} from"
             for src in sources:
                 requirements.append(
                     GeneratedRequirement(
@@ -369,7 +385,7 @@ class GovernanceDiagram:
             subject = "Engineering team" if req_type == "AI safety" else "Organization"
             requirements.append(
                 GeneratedRequirement(
-                    action=node.lower(),
+                    action=self._default_action(node),
                     subject=subject,
                     req_type=req_type,
                 )
