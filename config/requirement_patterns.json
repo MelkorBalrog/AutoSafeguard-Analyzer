@@ -13,6 +13,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-acquisition-Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall acquire the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-acquisition-Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall acquire the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-acquisition-Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Template": "Engineering team shall acquire the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
     "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -22,6 +65,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -39,6 +125,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-field_data_collection-Database-Task-COND",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Task-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_data_collection-Database-Task-CONST",
+    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
     "Template": "Engineering team shall evaluate field risk the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -48,6 +177,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall evaluate field risk the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Template": "When <condition>, Engineering team shall evaluate field risk the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Template": "Engineering team shall evaluate field risk the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -65,6 +237,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-annotation-ANN-Database-COND",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Template": "When <condition>, Engineering team shall annotate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-annotation-ANN-Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Template": "When <condition>, Engineering team shall annotate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-annotation-ANN-Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Template": "Engineering team shall annotate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-synthesis-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
     "Template": "Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -74,6 +289,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-synthesis-ANN-Database-COND",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Template": "When <condition>, Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-synthesis-ANN-Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Template": "When <condition>, Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-synthesis-ANN-Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Template": "Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -91,6 +349,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-augmentation-ANN-Database-COND",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Template": "When <condition>, Engineering team shall augment the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-augmentation-ANN-Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Template": "When <condition>, Engineering team shall augment the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-augmentation-ANN-Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Template": "Engineering team shall augment the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-labeling-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
     "Template": "Engineering team shall label the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -100,6 +401,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-labeling-ANN-Database-COND",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Template": "When <condition>, Engineering team shall label the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-labeling-ANN-Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Template": "When <condition>, Engineering team shall label the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-labeling-ANN-Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Template": "Engineering team shall label the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -117,6 +461,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-ai_training-Database-ANN-COND",
+    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Template": "When <condition>, Engineering team shall train the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ai_training-Database-ANN-COND-CONST",
+    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Template": "When <condition>, Engineering team shall train the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ai_training-Database-ANN-CONST",
+    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Template": "Engineering team shall train the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-ai_re-training-Database-ANN",
     "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
     "Template": "Engineering team shall retrain the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -126,6 +513,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ai_re-training-Database-ANN-COND",
+    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Template": "When <condition>, Engineering team shall retrain the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ai_re-training-Database-ANN-COND-CONST",
+    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Template": "When <condition>, Engineering team shall retrain the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ai_re-training-Database-ANN-CONST",
+    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Template": "Engineering team shall retrain the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -143,6 +573,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-model_evaluation-ANN-Database-COND",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Template": "When <condition>, Engineering team shall evaluate model the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-model_evaluation-ANN-Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Template": "When <condition>, Engineering team shall evaluate model the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-model_evaluation-ANN-Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Template": "Engineering team shall evaluate model the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
     "Template": "Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>).",
@@ -152,6 +625,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-curation-Database-Database-COND",
+    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Template": "When <condition>, Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-curation-Database-Database-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Template": "When <condition>, Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-curation-Database-Database-CONST",
+    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Template": "Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
@@ -169,6 +685,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-ingestion-Database-Database-COND",
+    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Template": "When <condition>, Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ingestion-Database-Database-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Template": "When <condition>, Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-ingestion-Database-Database-CONST",
+    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Template": "Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
     "Template": "<source_id> (<source_class>) shall propagate the <target_id> (<target_class>).",
@@ -176,6 +735,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall propagate the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -191,6 +787,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
     "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>).",
@@ -198,6 +831,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -213,6 +883,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase-COND",
+    "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall re-use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase-COND-CONST",
+    "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall re-use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase-CONST",
+    "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
+    "Template": "<source_id> (<source_class>) shall re-use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
     "Template": "<source_id> (<source_class>) shall re-use the <target_id> (<target_class>).",
@@ -220,6 +927,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall re-use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall re-use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
+    "Template": "<source_id> (<source_class>) shall re-use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -235,6 +979,43 @@
     "Notes": "Use when a flow connection is present."
   },
   {
+    "Pattern ID": "GOV-flow-Decision-Lifecycle_Phase-COND",
+    "Trigger": "Gov: Decision --[Flow]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Decision-Lifecycle_Phase-COND-CONST",
+    "Trigger": "Gov: Decision --[Flow]--> Lifecycle Phase",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Decision-Lifecycle_Phase-CONST",
+    "Trigger": "Gov: Decision --[Flow]--> Lifecycle Phase",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
     "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
@@ -242,6 +1023,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a flow connection is present."
   },
@@ -257,6 +1075,43 @@
     "Notes": "Use when a flow connection is present."
   },
   {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Action-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Action",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Action-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Action",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Action-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Action",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Merge",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Merge",
     "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
@@ -264,6 +1119,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Merge-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Merge",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Merge-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Merge",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Merge-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Merge",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a flow connection is present."
   },
@@ -279,6 +1171,43 @@
     "Notes": "Use when a flow connection is present."
   },
   {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Fork-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Fork",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Fork-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Fork",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Fork-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Fork",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Join",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Join",
     "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
@@ -286,6 +1215,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Join-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Join",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Join-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Join",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Join-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Join",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a flow connection is present."
   },
@@ -301,6 +1267,43 @@
     "Notes": "Use when a flow connection is present."
   },
   {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Final-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Final",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Final-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Final",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Final-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Final",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Database",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
     "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
@@ -308,6 +1311,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a flow connection is present."
   },
@@ -323,6 +1363,43 @@
     "Notes": "Use when a flow connection is present."
   },
   {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-ANN-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-ANN-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-ANN-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> ANN",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Data_acquisition",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Data acquisition",
     "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
@@ -330,6 +1407,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Data_acquisition-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Data acquisition",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Data_acquisition-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Data acquisition",
+    "Template": "When <condition>, <source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Data_acquisition-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Data acquisition",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a flow connection is present."
   },
@@ -345,6 +1459,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be satisfied by the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be satisfied by the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall be satisfied by the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-derived_from-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
     "Template": "<source_id> (<source_class>) shall be derived from the <target_id> (<target_class>).",
@@ -352,6 +1503,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-derived_from-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be derived from the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-derived_from-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be derived from the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-derived_from-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall be derived from the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -367,6 +1555,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-trace-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Trace]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall trace to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-trace-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Trace]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall trace to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-trace-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Trace]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall trace to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-used_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used By]--> Work Product",
     "Template": "<source_id> (<source_class>) shall be used by the <target_id> (<target_class>).",
@@ -374,6 +1599,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_by-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Used By]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used by the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_by-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Used By]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used by the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_by-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Used By]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall be used by the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -389,6 +1651,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used after review the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used after review the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall be used after review the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
     "Template": "<source_id> (<source_class>) shall be used after approval the <target_id> (<target_class>).",
@@ -396,6 +1695,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product-COND",
+    "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used after approval the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product-COND-CONST",
+    "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be used after approval the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product-CONST",
+    "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
+    "Template": "<source_id> (<source_class>) shall be used after approval the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -411,6 +1747,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-approves-Role-Document-COND",
+    "Trigger": "Gov: Role --[Approves]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Document-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Document-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Document",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-approves-Role-Policy",
     "Trigger": "Gov: Role --[Approves]--> Policy",
     "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
@@ -418,6 +1791,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Policy-COND",
+    "Trigger": "Gov: Role --[Approves]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Policy-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Policy-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Policy",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -433,6 +1843,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-approves-Role-Procedure-COND",
+    "Trigger": "Gov: Role --[Approves]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Procedure-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Procedure-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-approves-Role-Record",
     "Trigger": "Gov: Role --[Approves]--> Record",
     "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
@@ -440,6 +1887,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Record-COND",
+    "Trigger": "Gov: Role --[Approves]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Record-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Record-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Record",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -455,6 +1939,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-audits-Role-Process-COND",
+    "Trigger": "Gov: Role --[Audits]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Process-COND-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Process-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Process",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-audits-Role-Procedure",
     "Trigger": "Gov: Role --[Audits]--> Procedure",
     "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
@@ -462,6 +1983,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Procedure-COND",
+    "Trigger": "Gov: Role --[Audits]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Procedure-COND-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Procedure-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -477,6 +2035,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-audits-Role-Record-COND",
+    "Trigger": "Gov: Role --[Audits]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Record-COND-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Record-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Record",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-authorizes-Organization-Policy",
     "Trigger": "Gov: Organization --[Authorizes]--> Policy",
     "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
@@ -484,6 +2079,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Policy-COND",
+    "Trigger": "Gov: Organization --[Authorizes]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Policy-COND-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Policy-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Policy",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -499,6 +2131,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-authorizes-Organization-Procedure-COND",
+    "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Procedure-COND-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Procedure-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-authorizes-Organization-Process",
     "Trigger": "Gov: Organization --[Authorizes]--> Process",
     "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
@@ -506,6 +2175,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Process-COND",
+    "Trigger": "Gov: Organization --[Authorizes]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Process-COND-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Process-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Process",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -521,6 +2227,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-authorizes-Role-Policy-COND",
+    "Trigger": "Gov: Role --[Authorizes]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Role-Policy-COND-CONST",
+    "Trigger": "Gov: Role --[Authorizes]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Role-Policy-CONST",
+    "Trigger": "Gov: Role --[Authorizes]--> Policy",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-authorizes-Role-Procedure",
     "Trigger": "Gov: Role --[Authorizes]--> Procedure",
     "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
@@ -528,6 +2271,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Role-Procedure-COND",
+    "Trigger": "Gov: Role --[Authorizes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Role-Procedure-COND-CONST",
+    "Trigger": "Gov: Role --[Authorizes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Role-Procedure-CONST",
+    "Trigger": "Gov: Role --[Authorizes]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -543,6 +2323,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-communication_path-Role-Role-COND",
+    "Trigger": "Gov: Role --[Communication Path]--> Role",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Role-COND-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Role",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Role-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Role",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-communication_path-Role-Organization",
     "Trigger": "Gov: Role --[Communication Path]--> Organization",
     "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
@@ -550,6 +2367,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Organization-COND",
+    "Trigger": "Gov: Role --[Communication Path]--> Organization",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Organization-COND-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Organization",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Organization-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Organization",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -565,6 +2419,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-communication_path-Role-Business_Unit-COND",
+    "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Business_Unit-COND-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Role-Business_Unit-CONST",
+    "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-communication_path-Organization-Organization",
     "Trigger": "Gov: Organization --[Communication Path]--> Organization",
     "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
@@ -572,6 +2463,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Organization-Organization-COND",
+    "Trigger": "Gov: Organization --[Communication Path]--> Organization",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Organization-Organization-COND-CONST",
+    "Trigger": "Gov: Organization --[Communication Path]--> Organization",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Organization-Organization-CONST",
+    "Trigger": "Gov: Organization --[Communication Path]--> Organization",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -587,6 +2515,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-communication_path-Organization-Business_Unit-COND",
+    "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Organization-Business_Unit-COND-CONST",
+    "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Organization-Business_Unit-CONST",
+    "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit",
     "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
     "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
@@ -594,6 +2559,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit-COND",
+    "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit-COND-CONST",
+    "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
+    "Template": "When <condition>, <source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit-CONST",
+    "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -609,6 +2611,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-constrained_by-Procedure-Policy-COND",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Policy-COND-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Policy-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-constrained_by-Procedure-Guideline",
     "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
     "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
@@ -616,6 +2655,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Guideline-COND",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Guideline-COND-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Guideline-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -631,6 +2707,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-constrained_by-Procedure-Standard-COND",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Standard-COND-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Standard-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-constrained_by-Procedure-Principle",
     "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
     "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
@@ -638,6 +2751,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Principle-COND",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Principle-COND-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
+    "Template": "When <condition>, <source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrained_by-Procedure-Principle-CONST",
+    "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -653,6 +2803,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-consumes-Process-Data-COND",
+    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-consumes-Process-Data-COND-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-consumes-Process-Data-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-consumes-Process-Record",
     "Trigger": "Gov: Process --[Consumes]--> Record",
     "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
@@ -660,6 +2847,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-consumes-Process-Record-COND",
+    "Trigger": "Gov: Process --[Consumes]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-consumes-Process-Record-COND-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-consumes-Process-Record-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> Record",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -675,6 +2899,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-curation-Process-Data-COND",
+    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall curate the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-curation-Process-Data-COND-CONST",
+    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall curate the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-curation-Process-Data-CONST",
+    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Template": "<source_id> (<source_class>) shall curate the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-delivers-Process-Document",
     "Trigger": "Gov: Process --[Delivers]--> Document",
     "Template": "<source_id> (<source_class>) shall deliver the <target_id> (<target_class>).",
@@ -682,6 +2943,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-delivers-Process-Document-COND",
+    "Trigger": "Gov: Process --[Delivers]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall deliver the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-delivers-Process-Document-COND-CONST",
+    "Trigger": "Gov: Process --[Delivers]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall deliver the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-delivers-Process-Document-CONST",
+    "Trigger": "Gov: Process --[Delivers]--> Document",
+    "Template": "<source_id> (<source_class>) shall deliver the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -697,6 +2995,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-delivers-Process-Record-COND",
+    "Trigger": "Gov: Process --[Delivers]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall deliver the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-delivers-Process-Record-COND-CONST",
+    "Trigger": "Gov: Process --[Delivers]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall deliver the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-delivers-Process-Record-CONST",
+    "Trigger": "Gov: Process --[Delivers]--> Record",
+    "Template": "<source_id> (<source_class>) shall deliver the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-executes-Role-Process",
     "Trigger": "Gov: Role --[Executes]--> Process",
     "Template": "<source_id> (<source_class>) shall execute the <target_id> (<target_class>).",
@@ -704,6 +3039,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-executes-Role-Process-COND",
+    "Trigger": "Gov: Role --[Executes]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall execute the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-executes-Role-Process-COND-CONST",
+    "Trigger": "Gov: Role --[Executes]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall execute the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-executes-Role-Process-CONST",
+    "Trigger": "Gov: Role --[Executes]--> Process",
+    "Template": "<source_id> (<source_class>) shall execute the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -719,6 +3091,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-executes-Role-Procedure-COND",
+    "Trigger": "Gov: Role --[Executes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall execute the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-executes-Role-Procedure-COND-CONST",
+    "Trigger": "Gov: Role --[Executes]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall execute the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-executes-Role-Procedure-CONST",
+    "Trigger": "Gov: Role --[Executes]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall execute the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-extend-Policy-Policy",
     "Trigger": "Gov: Policy --[Extend]--> Policy",
     "Template": "<source_id> (<source_class>) shall extend the <source_id> (<source_class>).",
@@ -726,6 +3135,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-extend-Policy-Policy-COND",
+    "Trigger": "Gov: Policy --[Extend]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall extend the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-extend-Policy-Policy-COND-CONST",
+    "Trigger": "Gov: Policy --[Extend]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall extend the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-extend-Policy-Policy-CONST",
+    "Trigger": "Gov: Policy --[Extend]--> Policy",
+    "Template": "<source_id> (<source_class>) shall extend the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -741,6 +3187,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-extend-Standard-Standard-COND",
+    "Trigger": "Gov: Standard --[Extend]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall extend the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-extend-Standard-Standard-COND-CONST",
+    "Trigger": "Gov: Standard --[Extend]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall extend the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-extend-Standard-Standard-CONST",
+    "Trigger": "Gov: Standard --[Extend]--> Standard",
+    "Template": "<source_id> (<source_class>) shall extend the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-generalize-Policy-Policy",
     "Trigger": "Gov: Policy --[Generalize]--> Policy",
     "Template": "<source_id> (<source_class>) shall generalize the <source_id> (<source_class>).",
@@ -748,6 +3231,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-generalize-Policy-Policy-COND",
+    "Trigger": "Gov: Policy --[Generalize]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall generalize the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-generalize-Policy-Policy-COND-CONST",
+    "Trigger": "Gov: Policy --[Generalize]--> Policy",
+    "Template": "When <condition>, <source_id> (<source_class>) shall generalize the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-generalize-Policy-Policy-CONST",
+    "Trigger": "Gov: Policy --[Generalize]--> Policy",
+    "Template": "<source_id> (<source_class>) shall generalize the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -763,6 +3283,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-generalize-Standard-Standard-COND",
+    "Trigger": "Gov: Standard --[Generalize]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall generalize the <source_id> (<source_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-generalize-Standard-Standard-COND-CONST",
+    "Trigger": "Gov: Standard --[Generalize]--> Standard",
+    "Template": "When <condition>, <source_id> (<source_class>) shall generalize the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-generalize-Standard-Standard-CONST",
+    "Trigger": "Gov: Standard --[Generalize]--> Standard",
+    "Template": "<source_id> (<source_class>) shall generalize the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-monitors-Role-Metric",
     "Trigger": "Gov: Role --[Monitors]--> Metric",
     "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
@@ -770,6 +3327,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Metric-COND",
+    "Trigger": "Gov: Role --[Monitors]--> Metric",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Metric-COND-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Metric",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Metric-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Metric",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -785,6 +3379,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-monitors-Role-Process-COND",
+    "Trigger": "Gov: Role --[Monitors]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Process-COND-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Process-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Process",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-monitors-Role-Activity",
     "Trigger": "Gov: Role --[Monitors]--> Activity",
     "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
@@ -792,6 +3423,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Activity-COND",
+    "Trigger": "Gov: Role --[Monitors]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Activity-COND-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Activity-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Activity",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -807,6 +3475,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-performs-Role-Activity-COND",
+    "Trigger": "Gov: Role --[Performs]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Activity-COND-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Activity-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Activity",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-performs-Role-Task",
     "Trigger": "Gov: Role --[Performs]--> Task",
     "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
@@ -814,6 +3519,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Task-COND",
+    "Trigger": "Gov: Role --[Performs]--> Task",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Task-COND-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Task",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Task-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Task",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -829,6 +3571,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-performs-Role-Procedure-COND",
+    "Trigger": "Gov: Role --[Performs]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Procedure-COND-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Procedure",
+    "Template": "When <condition>, <source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Procedure-CONST",
+    "Trigger": "Gov: Role --[Performs]--> Procedure",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)' constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-produces-Process-Document",
     "Trigger": "Gov: Process --[Produces]--> Document",
     "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
@@ -836,6 +3615,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Document-COND",
+    "Trigger": "Gov: Process --[Produces]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Document-COND-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Document-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Document",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -851,6 +3667,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-produces-Process-Data-COND",
+    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Data-COND-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Data-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-produces-Process-Record",
     "Trigger": "Gov: Process --[Produces]--> Record",
     "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
@@ -858,6 +3711,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Record-COND",
+    "Trigger": "Gov: Process --[Produces]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Record-COND-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-produces-Process-Record-CONST",
+    "Trigger": "Gov: Process --[Produces]--> Record",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -873,6 +3763,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-responsible_for-Role-Process-COND",
+    "Trigger": "Gov: Role --[Responsible for]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Process-COND-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Process",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Process-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Process",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-responsible_for-Role-Activity",
     "Trigger": "Gov: Role --[Responsible for]--> Activity",
     "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
@@ -880,6 +3807,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Activity-COND",
+    "Trigger": "Gov: Role --[Responsible for]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Activity-COND-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Activity",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Activity-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Activity",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -895,6 +3859,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-responsible_for-Role-Task-COND",
+    "Trigger": "Gov: Role --[Responsible for]--> Task",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Task-COND-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Task",
+    "Template": "When <condition>, <source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-responsible_for-Role-Task-CONST",
+    "Trigger": "Gov: Role --[Responsible for]--> Task",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-uses-Role-Document",
     "Trigger": "Gov: Role --[Uses]--> Document",
     "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
@@ -902,6 +3903,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Document-COND",
+    "Trigger": "Gov: Role --[Uses]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Document-COND-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Document",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Document-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Document",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -917,6 +3955,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-uses-Role-Data-COND",
+    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Data-COND-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Data-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-uses-Role-Record",
     "Trigger": "Gov: Role --[Uses]--> Record",
     "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
@@ -924,6 +3999,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Record-COND",
+    "Trigger": "Gov: Role --[Uses]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Record-COND-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Record",
+    "Template": "When <condition>, <source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-uses-Role-Record-CONST",
+    "Trigger": "Gov: Role --[Uses]--> Record",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -939,6 +4051,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-approves-Role-ANN-COND",
+    "Trigger": "Gov: Role --[Approves]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-ANN-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-ANN-CONST",
+    "Trigger": "Gov: Role --[Approves]--> ANN",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-approves-Role-Database",
     "Trigger": "Gov: Role --[Approves]--> Database",
     "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
@@ -946,6 +4095,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Database-COND",
+    "Trigger": "Gov: Role --[Approves]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Database-COND-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall approve the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Database-CONST",
+    "Trigger": "Gov: Role --[Approves]--> Database",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -961,6 +4147,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-audits-Role-ANN-COND",
+    "Trigger": "Gov: Role --[Audits]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-ANN-COND-CONST",
+    "Trigger": "Gov: Role --[Audits]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-ANN-CONST",
+    "Trigger": "Gov: Role --[Audits]--> ANN",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-audits-Role-Database",
     "Trigger": "Gov: Role --[Audits]--> Database",
     "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
@@ -968,6 +4191,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Database-COND",
+    "Trigger": "Gov: Role --[Audits]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Database-COND-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Database-CONST",
+    "Trigger": "Gov: Role --[Audits]--> Database",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -983,6 +4243,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-monitors-Role-ANN-COND",
+    "Trigger": "Gov: Role --[Monitors]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-ANN-COND-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-ANN-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> ANN",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-monitors-Role-Database",
     "Trigger": "Gov: Role --[Monitors]--> Database",
     "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
@@ -990,6 +4287,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Database-COND",
+    "Trigger": "Gov: Role --[Monitors]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Database-COND-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Database-CONST",
+    "Trigger": "Gov: Role --[Monitors]--> Database",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -1005,6 +4339,43 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-authorizes-Organization-ANN-COND",
+    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-ANN-COND-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-ANN-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
     "Pattern ID": "GOV-authorizes-Organization-Database",
     "Trigger": "Gov: Organization --[Authorizes]--> Database",
     "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
@@ -1012,6 +4383,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Database-COND",
+    "Trigger": "Gov: Organization --[Authorizes]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Database-COND-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Database-CONST",
+    "Trigger": "Gov: Organization --[Authorizes]--> Database",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Use when a governance edge is present."
   },
@@ -1027,6 +4435,43 @@
     "Notes": "Governance policy applied to AI models."
   },
   {
+    "Pattern ID": "GOV-constrains-Policy-ANN-COND",
+    "Trigger": "Gov: Policy --[Constrains]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall constrain the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Governance policy applied to AI models."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-ANN-COND-CONST",
+    "Trigger": "Gov: Policy --[Constrains]--> ANN",
+    "Template": "When <condition>, <source_id> (<source_class>) shall constrain the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Governance policy applied to AI models."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-ANN-CONST",
+    "Trigger": "Gov: Policy --[Constrains]--> ANN",
+    "Template": "<source_id> (<source_class>) shall constrain the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Governance policy applied to AI models."
+  },
+  {
     "Pattern ID": "GOV-constrains-Policy-Database",
     "Trigger": "Gov: Policy --[Constrains]--> Database",
     "Template": "<source_id> (<source_class>) shall constrain the <target_id> (<target_class>).",
@@ -1034,6 +4479,43 @@
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
+    ],
+    "Notes": "Governance policy applied to data repositories."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-Database-COND",
+    "Trigger": "Gov: Policy --[Constrains]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall constrain the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Governance policy applied to data repositories."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-Database-COND-CONST",
+    "Trigger": "Gov: Policy --[Constrains]--> Database",
+    "Template": "When <condition>, <source_id> (<source_class>) shall constrain the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Governance policy applied to data repositories."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-Database-CONST",
+    "Trigger": "Gov: Policy --[Constrains]--> Database",
+    "Template": "<source_id> (<source_class>) shall constrain the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
     ],
     "Notes": "Governance policy applied to data repositories."
   },
@@ -1051,6 +4533,49 @@
     "Notes": "Cross-domain compliance requirement."
   },
   {
+    "Pattern ID": "SA-complies-ANN-Policy-COND",
+    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-complies-ANN-Policy-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-complies-ANN-Policy-CONST",
+    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
     "Pattern ID": "SA-complies-Database-Policy",
     "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
     "Template": "Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>).",
@@ -1060,6 +4585,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-complies-Database-Policy-COND",
+    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-complies-Database-Policy-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-complies-Database-Policy-CONST",
+    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Cross-domain compliance requirement."
   },
@@ -1077,6 +4645,49 @@
     "Notes": "Traceability between AI models and standards."
   },
   {
+    "Pattern ID": "SA-traces-ANN-Standard-COND",
+    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
+    "Template": "When <condition>, Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Traceability between AI models and standards."
+  },
+  {
+    "Pattern ID": "SA-traces-ANN-Standard-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
+    "Template": "When <condition>, Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Traceability between AI models and standards."
+  },
+  {
+    "Pattern ID": "SA-traces-ANN-Standard-CONST",
+    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Traceability between AI models and standards."
+  },
+  {
     "Pattern ID": "SA-traces-Database-Standard",
     "Trigger": "Safety&AI: Database --[Trace]--> Standard",
     "Template": "Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>).",
@@ -1086,6 +4697,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Traceability between data repositories and applicable standards."
+  },
+  {
+    "Pattern ID": "SA-traces-Database-Standard-COND",
+    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
+    "Template": "When <condition>, Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Traceability between data repositories and applicable standards."
+  },
+  {
+    "Pattern ID": "SA-traces-Database-Standard-COND-CONST",
+    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
+    "Template": "When <condition>, Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Traceability between data repositories and applicable standards."
+  },
+  {
+    "Pattern ID": "SA-traces-Database-Standard-CONST",
+    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Traceability between data repositories and applicable standards."
   },
@@ -1104,6 +4758,52 @@
     "Notes": "Operation/engineering-aligned ubiquitous requirement."
   },
   {
+    "Pattern ID": "EARS-UBIQ-COND",
+    "Trigger": "Generic (roles identifiable)",
+    "Template": "When <condition>, The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<business_objective>",
+      "<verification_method>",
+      "<record>",
+      "<condition>"
+    ],
+    "Notes": "Operation/engineering-aligned ubiquitous requirement."
+  },
+  {
+    "Pattern ID": "EARS-UBIQ-COND-CONST",
+    "Trigger": "Generic (roles identifiable)",
+    "Template": "When <condition>, The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<business_objective>",
+      "<verification_method>",
+      "<record>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Operation/engineering-aligned ubiquitous requirement."
+  },
+  {
+    "Pattern ID": "EARS-UBIQ-CONST",
+    "Trigger": "Generic (roles identifiable)",
+    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<business_objective>",
+      "<verification_method>",
+      "<record>",
+      "<constraint>"
+    ],
+    "Notes": "Operation/engineering-aligned ubiquitous requirement."
+  },
+  {
     "Pattern ID": "EARS-EVENT",
     "Trigger": "Event-driven behavior",
     "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
@@ -1118,6 +4818,50 @@
     "Notes": "Suitable for automotive timing/latency requirements."
   },
   {
+    "Pattern ID": "EARS-EVENT-COND",
+    "Trigger": "Event-driven behavior",
+    "Template": "When <condition>, When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<condition>",
+      "<t_max>",
+      "<verification_method>"
+    ],
+    "Notes": "Suitable for automotive timing/latency requirements."
+  },
+  {
+    "Pattern ID": "EARS-EVENT-COND-CONST",
+    "Trigger": "Event-driven behavior",
+    "Template": "When <condition>, When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<condition>",
+      "<t_max>",
+      "<verification_method>",
+      "<constraint>"
+    ],
+    "Notes": "Suitable for automotive timing/latency requirements."
+  },
+  {
+    "Pattern ID": "EARS-EVENT-CONST",
+    "Trigger": "Event-driven behavior",
+    "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>, verified by <verification_method> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<condition>",
+      "<t_max>",
+      "<verification_method>",
+      "<constraint>"
+    ],
+    "Notes": "Suitable for automotive timing/latency requirements."
+  },
+  {
     "Pattern ID": "EARS-STATE",
     "Trigger": "State-dependent behavior",
     "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
@@ -1127,6 +4871,49 @@
       "<object>",
       "<state>",
       "<performance_kpi>"
+    ],
+    "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
+  },
+  {
+    "Pattern ID": "EARS-STATE-COND",
+    "Trigger": "State-dependent behavior",
+    "Template": "When <condition>, While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<state>",
+      "<performance_kpi>",
+      "<condition>"
+    ],
+    "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
+  },
+  {
+    "Pattern ID": "EARS-STATE-COND-CONST",
+    "Trigger": "State-dependent behavior",
+    "Template": "When <condition>, While <state>, the <subject> shall <action> <object> and maintain <performance_kpi> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<state>",
+      "<performance_kpi>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
+  },
+  {
+    "Pattern ID": "EARS-STATE-CONST",
+    "Trigger": "State-dependent behavior",
+    "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<state>",
+      "<performance_kpi>",
+      "<constraint>"
     ],
     "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
   },
@@ -1145,6 +4932,52 @@
     "Notes": "Directly useful for ISO 26262/operational safety."
   },
   {
+    "Pattern ID": "EARS-UNWANTED-COND",
+    "Trigger": "Fault/HAZARD response",
+    "Template": "When <condition>, If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record>.",
+    "Variables": [
+      "<subject>",
+      "<hazard>",
+      "<mitigation_action>",
+      "<t_fault>",
+      "<safe_state>",
+      "<record>",
+      "<condition>"
+    ],
+    "Notes": "Directly useful for ISO 26262/operational safety."
+  },
+  {
+    "Pattern ID": "EARS-UNWANTED-COND-CONST",
+    "Trigger": "Fault/HAZARD response",
+    "Template": "When <condition>, If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<hazard>",
+      "<mitigation_action>",
+      "<t_fault>",
+      "<safe_state>",
+      "<record>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Directly useful for ISO 26262/operational safety."
+  },
+  {
+    "Pattern ID": "EARS-UNWANTED-CONST",
+    "Trigger": "Fault/HAZARD response",
+    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<hazard>",
+      "<mitigation_action>",
+      "<t_fault>",
+      "<safe_state>",
+      "<record>",
+      "<constraint>"
+    ],
+    "Notes": "Directly useful for ISO 26262/operational safety."
+  },
+  {
     "Pattern ID": "NFR-METRIC-PERF",
     "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
     "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record>.",
@@ -1155,6 +4988,52 @@
       "<window>",
       "<confidence>",
       "<record>"
+    ],
+    "Notes": "Performance KPI in engineering terms."
+  },
+  {
+    "Pattern ID": "NFR-METRIC-PERF-COND",
+    "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
+    "Template": "When <condition>, The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record>.",
+    "Variables": [
+      "<process>",
+      "<metric_name>",
+      "<target_value>",
+      "<window>",
+      "<confidence>",
+      "<record>",
+      "<condition>"
+    ],
+    "Notes": "Performance KPI in engineering terms."
+  },
+  {
+    "Pattern ID": "NFR-METRIC-PERF-COND-CONST",
+    "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
+    "Template": "When <condition>, The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record> constrained by <constraint>.",
+    "Variables": [
+      "<process>",
+      "<metric_name>",
+      "<target_value>",
+      "<window>",
+      "<confidence>",
+      "<record>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Performance KPI in engineering terms."
+  },
+  {
+    "Pattern ID": "NFR-METRIC-PERF-CONST",
+    "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
+    "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence; measurement recorded in <record> constrained by <constraint>.",
+    "Variables": [
+      "<process>",
+      "<metric_name>",
+      "<target_value>",
+      "<window>",
+      "<confidence>",
+      "<record>",
+      "<constraint>"
     ],
     "Notes": "Performance KPI in engineering terms."
   },
@@ -1170,6 +5049,43 @@
     "Notes": "Compliance requirement with auditable trail."
   },
   {
+    "Pattern ID": "NFR-COMPLIANCE-COND",
+    "Trigger": "Constraint node via Constrained by / Governed by",
+    "Template": "When <condition>, The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
+    "Variables": [
+      "<subject>",
+      "<standard_or_policy>",
+      "<record>",
+      "<condition>"
+    ],
+    "Notes": "Compliance requirement with auditable trail."
+  },
+  {
+    "Pattern ID": "NFR-COMPLIANCE-COND-CONST",
+    "Trigger": "Constraint node via Constrained by / Governed by",
+    "Template": "When <condition>, The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<standard_or_policy>",
+      "<record>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Compliance requirement with auditable trail."
+  },
+  {
+    "Pattern ID": "NFR-COMPLIANCE-CONST",
+    "Trigger": "Constraint node via Constrained by / Governed by",
+    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<subject>",
+      "<standard_or_policy>",
+      "<record>",
+      "<constraint>"
+    ],
+    "Notes": "Compliance requirement with auditable trail."
+  },
+  {
     "Pattern ID": "ORG-establish-Organization-Process",
     "Trigger": "Organization: Organization --[Establish]--> Process",
     "Template": "<organization> shall establish the <process> and record evidence in <record>.",
@@ -1178,6 +5094,46 @@
       "<process>",
       "<record>",
       "<due_date>"
+    ],
+    "Notes": "Organizational process definition requirement."
+  },
+  {
+    "Pattern ID": "ORG-establish-Organization-Process-COND",
+    "Trigger": "Organization: Organization --[Establish]--> Process",
+    "Template": "When <condition>, <organization> shall establish the <process> and record evidence in <record>.",
+    "Variables": [
+      "<organization>",
+      "<process>",
+      "<record>",
+      "<due_date>",
+      "<condition>"
+    ],
+    "Notes": "Organizational process definition requirement."
+  },
+  {
+    "Pattern ID": "ORG-establish-Organization-Process-COND-CONST",
+    "Trigger": "Organization: Organization --[Establish]--> Process",
+    "Template": "When <condition>, <organization> shall establish the <process> and record evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<organization>",
+      "<process>",
+      "<record>",
+      "<due_date>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Organizational process definition requirement."
+  },
+  {
+    "Pattern ID": "ORG-establish-Organization-Process-CONST",
+    "Trigger": "Organization: Organization --[Establish]--> Process",
+    "Template": "<organization> shall establish the <process> and record evidence in <record> constrained by <constraint>.",
+    "Variables": [
+      "<organization>",
+      "<process>",
+      "<record>",
+      "<due_date>",
+      "<constraint>"
     ],
     "Notes": "Organizational process definition requirement."
   },
@@ -1195,6 +5151,49 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
+    "Pattern ID": "SA-monitoring-ANN-Operation-COND",
+    "Trigger": "Safety&AI: ANN --[Monitoring]--> Operation",
+    "Template": "When <condition>, Engineering team shall monitor the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-monitoring-ANN-Operation-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Monitoring]--> Operation",
+    "Template": "When <condition>, Engineering team shall monitor the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "SA-monitoring-ANN-Operation-CONST",
+    "Trigger": "Safety&AI: ANN --[Monitoring]--> Operation",
+    "Template": "Engineering team shall monitor the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
     "Pattern ID": "AVD-implement-Driving_Function-Software_Component",
     "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
     "Template": "Engineering team shall implement the <target_id> (<target_class>) for the <source_id> (<source_class>).",
@@ -1204,6 +5203,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "For autonomous vehicle functionality development."
+  },
+  {
+    "Pattern ID": "AVD-implement-Driving_Function-Software_Component-COND",
+    "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
+    "Template": "When <condition>, Engineering team shall implement the <target_id> (<target_class>) for the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "For autonomous vehicle functionality development."
+  },
+  {
+    "Pattern ID": "AVD-implement-Driving_Function-Software_Component-COND-CONST",
+    "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
+    "Template": "When <condition>, Engineering team shall implement the <target_id> (<target_class>) for the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "For autonomous vehicle functionality development."
+  },
+  {
+    "Pattern ID": "AVD-implement-Driving_Function-Software_Component-CONST",
+    "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
+    "Template": "Engineering team shall implement the <target_id> (<target_class>) for the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "For autonomous vehicle functionality development."
   },
@@ -1221,6 +5263,49 @@
     "Notes": "Validation coverage requirement."
   },
   {
+    "Pattern ID": "VAL-validate-Test_Suite-System-COND",
+    "Trigger": "Validation: Test Suite --[Validate]--> System",
+    "Template": "When <condition>, Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Validation coverage requirement."
+  },
+  {
+    "Pattern ID": "VAL-validate-Test_Suite-System-COND-CONST",
+    "Trigger": "Validation: Test Suite --[Validate]--> System",
+    "Template": "When <condition>, Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Validation coverage requirement."
+  },
+  {
+    "Pattern ID": "VAL-validate-Test_Suite-System-CONST",
+    "Trigger": "Validation: Test Suite --[Validate]--> System",
+    "Template": "Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Validation coverage requirement."
+  },
+  {
     "Pattern ID": "VER-verify-Verification_Plan-Component",
     "Trigger": "Verification: Verification Plan --[Verify]--> Component",
     "Template": "Verification team shall verify the <target_id> (<target_class>) according to the <source_id> (<source_class>).",
@@ -1230,6 +5315,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Verification requirement."
+  },
+  {
+    "Pattern ID": "VER-verify-Verification_Plan-Component-COND",
+    "Trigger": "Verification: Verification Plan --[Verify]--> Component",
+    "Template": "When <condition>, Verification team shall verify the <target_id> (<target_class>) according to the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Verification requirement."
+  },
+  {
+    "Pattern ID": "VER-verify-Verification_Plan-Component-COND-CONST",
+    "Trigger": "Verification: Verification Plan --[Verify]--> Component",
+    "Template": "When <condition>, Verification team shall verify the <target_id> (<target_class>) according to the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Verification requirement."
+  },
+  {
+    "Pattern ID": "VER-verify-Verification_Plan-Component-CONST",
+    "Trigger": "Verification: Verification Plan --[Verify]--> Component",
+    "Template": "Verification team shall verify the <target_id> (<target_class>) according to the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Verification requirement."
   },
@@ -1247,6 +5375,49 @@
     "Notes": "Production requirement."
   },
   {
+    "Pattern ID": "PROD-manufacture-Manufacturing_Process-Vehicle-COND",
+    "Trigger": "Production: Manufacturing Process --[Manufacture]--> Vehicle",
+    "Template": "When <condition>, Manufacturing team shall manufacture the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Production requirement."
+  },
+  {
+    "Pattern ID": "PROD-manufacture-Manufacturing_Process-Vehicle-COND-CONST",
+    "Trigger": "Production: Manufacturing Process --[Manufacture]--> Vehicle",
+    "Template": "When <condition>, Manufacturing team shall manufacture the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Production requirement."
+  },
+  {
+    "Pattern ID": "PROD-manufacture-Manufacturing_Process-Vehicle-CONST",
+    "Trigger": "Production: Manufacturing Process --[Manufacture]--> Vehicle",
+    "Template": "Manufacturing team shall manufacture the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Production requirement."
+  },
+  {
     "Pattern ID": "OP-operate-Fleet-Vehicle",
     "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
     "Template": "Operations team shall operate the <target_id> (<target_class>) within the <source_id> (<source_class>).",
@@ -1256,6 +5427,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Operational requirement."
+  },
+  {
+    "Pattern ID": "OP-operate-Fleet-Vehicle-COND",
+    "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
+    "Template": "When <condition>, Operations team shall operate the <target_id> (<target_class>) within the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Operational requirement."
+  },
+  {
+    "Pattern ID": "OP-operate-Fleet-Vehicle-COND-CONST",
+    "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
+    "Template": "When <condition>, Operations team shall operate the <target_id> (<target_class>) within the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Operational requirement."
+  },
+  {
+    "Pattern ID": "OP-operate-Fleet-Vehicle-CONST",
+    "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
+    "Template": "Operations team shall operate the <target_id> (<target_class>) within the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Operational requirement."
   },
@@ -1273,6 +5487,49 @@
     "Notes": "Periodic inspection requirement."
   },
   {
+    "Pattern ID": "INSP-inspect-Vehicle-Safety_Compliance-COND",
+    "Trigger": "Inspection: Vehicle --[Inspect]--> Safety Compliance",
+    "Template": "When <condition>, Inspection team shall inspect the <source_id> (<source_class>) for <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Periodic inspection requirement."
+  },
+  {
+    "Pattern ID": "INSP-inspect-Vehicle-Safety_Compliance-COND-CONST",
+    "Trigger": "Inspection: Vehicle --[Inspect]--> Safety Compliance",
+    "Template": "When <condition>, Inspection team shall inspect the <source_id> (<source_class>) for <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Periodic inspection requirement."
+  },
+  {
+    "Pattern ID": "INSP-inspect-Vehicle-Safety_Compliance-CONST",
+    "Trigger": "Inspection: Vehicle --[Inspect]--> Safety Compliance",
+    "Template": "Inspection team shall inspect the <source_id> (<source_class>) for <target_id> (<target_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Periodic inspection requirement."
+  },
+  {
     "Pattern ID": "TRI-triage-Incident-Safety_Issue",
     "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
     "Template": "Support team shall triage the <target_id> (<target_class>) from the <source_id> (<source_class>).",
@@ -1286,6 +5543,49 @@
     "Notes": "Incident triage requirement."
   },
   {
+    "Pattern ID": "TRI-triage-Incident-Safety_Issue-COND",
+    "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
+    "Template": "When <condition>, Support team shall triage the <target_id> (<target_class>) from the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Incident triage requirement."
+  },
+  {
+    "Pattern ID": "TRI-triage-Incident-Safety_Issue-COND-CONST",
+    "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
+    "Template": "When <condition>, Support team shall triage the <target_id> (<target_class>) from the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Incident triage requirement."
+  },
+  {
+    "Pattern ID": "TRI-triage-Incident-Safety_Issue-CONST",
+    "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
+    "Template": "Support team shall triage the <target_id> (<target_class>) from the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Incident triage requirement."
+  },
+  {
     "Pattern ID": "IMP-improve-Field_Data-Model",
     "Trigger": "Improvement: Field Data --[Improve]--> Model",
     "Template": "Engineering team shall improve the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -1295,6 +5595,49 @@
       "<target_id>",
       "<target_class>",
       "<acceptance_criteria>"
+    ],
+    "Notes": "Post-deployment improvement requirement."
+  },
+  {
+    "Pattern ID": "IMP-improve-Field_Data-Model-COND",
+    "Trigger": "Improvement: Field Data --[Improve]--> Model",
+    "Template": "When <condition>, Engineering team shall improve the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Post-deployment improvement requirement."
+  },
+  {
+    "Pattern ID": "IMP-improve-Field_Data-Model-COND-CONST",
+    "Trigger": "Improvement: Field Data --[Improve]--> Model",
+    "Template": "When <condition>, Engineering team shall improve the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Post-deployment improvement requirement."
+  },
+  {
+    "Pattern ID": "IMP-improve-Field_Data-Model-CONST",
+    "Trigger": "Improvement: Field Data --[Improve]--> Model",
+    "Template": "Engineering team shall improve the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
     ],
     "Notes": "Post-deployment improvement requirement."
   }

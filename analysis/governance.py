@@ -41,7 +41,7 @@ except FileNotFoundError:  # pragma: no cover - optional file
     _PATTERN_DEFS = []
 
 _TRIGGER_RE = re.compile(r"[^:]+:\s*(.*?)\s*--\[(.*?)\]-->\s*(.*)")
-_PATTERN_MAP: dict[tuple[str, str, str], dict[str, str]] = {}
+_PATTERN_MAP: dict[tuple[str, str, str], list[dict[str, str]]] = {}
 for pat in _PATTERN_DEFS:
     trig = pat.get("Trigger", "")
     tmpl = pat.get("Template", "")
@@ -49,10 +49,8 @@ for pat in _PATTERN_DEFS:
     if not m:
         continue
     src_t, label, dst_t = [g.strip().lower() for g in m.groups()]
-    # Only register patterns that reference the source node in the template
-    # so that generated text includes the actual element names.
-    placeholders = [p.lower() for p in re.findall(r"<([^>]+)>", tmpl)]
-    _PATTERN_MAP[(src_t, label.lower(), dst_t)] = pat
+    key = (src_t, label.lower(), dst_t)
+    _PATTERN_MAP.setdefault(key, []).append(pat)
 
 
 def _apply_pattern(
@@ -62,6 +60,7 @@ def _apply_pattern(
     src_type: str,
     dst_type: str,
     cond: str | None,
+    constraint: str | None,
 ) -> str:
     """Instantiate a pattern template with diagram values."""
 
@@ -77,8 +76,10 @@ def _apply_pattern(
             return dst
         if key == "target_class":
             return dst_type
-        if key == "acceptance_criteria":
+        if key == "acceptance_criteria" or key == "condition":
             return cond or ""
+        if key == "constraint":
+            return constraint or ""
         return ""
 
     result = re.sub(r"<([^>]+)>", repl, template)
@@ -108,8 +109,8 @@ def reload_config() -> None:
         if not m:
             continue
         src_t, label, dst_t = [g.strip().lower() for g in m.groups()]
-        placeholders = [p.lower() for p in re.findall(r"<([^>]+)>", tmpl)]
-        _PATTERN_MAP[(src_t, label.lower(), dst_t)] = pat
+        key = (src_t, label.lower(), dst_t)
+        _PATTERN_MAP.setdefault(key, []).append(pat)
 
 
 @dataclass
@@ -442,12 +443,37 @@ class GovernanceDiagram:
             text_override: str | None = None
             src_type = self.node_types.get(src, "")
             dst_type = self.node_types.get(dst, "")
-            pattern = _PATTERN_MAP.get(
-                (src_type.lower(), (label or conn_type or "").lower(), dst_type.lower())
+            patterns = _PATTERN_MAP.get(
+                (src_type.lower(), (label or conn_type or "").lower(), dst_type.lower()),
+                [],
             )
+            base = cond_pat = cond_const_pat = const_pat = None
+            for pat in patterns:
+                tmpl = pat.get("Template", "")
+                has_cond = "<condition>" in tmpl or "<acceptance_criteria>" in tmpl
+                has_const = "<constraint>" in tmpl
+                if has_cond and has_const and not cond_const_pat:
+                    cond_const_pat = pat
+                elif has_const and not has_cond and not const_pat:
+                    const_pat = pat
+                elif has_cond and not has_const and not cond_pat:
+                    cond_pat = pat
+                elif not has_cond and not has_const and not base:
+                    base = pat
+            pattern = None
+            if cond and constraint and cond_const_pat:
+                pattern = cond_const_pat
+            elif constraint and const_pat:
+                pattern = const_pat
+            elif cond and cond_pat and not base:
+                pattern = cond_pat
+            else:
+                pattern = base or cond_pat or const_pat or cond_const_pat
             if pattern:
-                text_override = _apply_pattern(pattern, src, dst, src_type, dst_type, cond)
-                if cond and "<acceptance_criteria>" not in pattern.get("Template", ""):
+                text_override = _apply_pattern(
+                    pattern, src, dst, src_type, dst_type, cond, constraint
+                )
+                if cond and "<condition>" not in pattern.get("Template", "") and "<acceptance_criteria>" not in pattern.get("Template", ""):
                     text_override = f"If {cond}, {text_override}"
 
             requirements.append(
