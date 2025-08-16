@@ -3456,9 +3456,22 @@ class SysMLDiagramWindow(tk.Frame):
         }
         if name in mapping:
             return mapping[name]
-        if name in {"Flow"} or any(
-            k in name
-            for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
+        relation_names = {
+            "Flow",
+            "Association",
+            "Communication Path",
+            "Generalize",
+            "Include",
+            "Extend",
+            "Generalization",
+            "Aggregation",
+            "Composite Aggregation",
+            "Connector",
+            "Control Action",
+            "Feedback",
+        }
+        if name in relation_names or any(
+            k in name for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
         ):
             return "relation"
         return "rect"
