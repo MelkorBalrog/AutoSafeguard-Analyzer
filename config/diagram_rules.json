@@ -275,7 +275,33 @@
       "Trace": {"Work Product": ["Work Product"]},
       "Used By": {"Work Product": ["Work Product"]},
       "Used after Review": {"Work Product": ["Work Product"]},
-      "Used after Approval": {"Work Product": ["Work Product"]}
+      "Used after Approval": {"Work Product": ["Work Product"]},
+      // Relationships between governance elements
+      "Approves": {"Role": ["Document", "Policy", "Procedure", "Record"]},
+      "Audits": {"Role": ["Process", "Procedure", "Record"]},
+      "Authorizes": {
+        "Organization": ["Policy", "Procedure", "Process"],
+        "Role": ["Policy", "Procedure"]
+      },
+      "Communication Path": {
+        "Role": ["Role", "Organization", "Business Unit"],
+        "Organization": ["Organization", "Business Unit"],
+        "Business Unit": ["Business Unit"]
+      },
+      "Constrained by": {
+        "Procedure": ["Policy", "Guideline", "Standard", "Principle"]
+      },
+      "Consumes": {"Process": ["Data", "Record"]},
+      "Curation": {"Process": ["Data"]},
+      "Delivers": {"Process": ["Document", "Record"]},
+      "Executes": {"Role": ["Process", "Procedure"]},
+      "Extend": {"Policy": ["Policy"], "Standard": ["Standard"]},
+      "Generalize": {"Policy": ["Policy"], "Standard": ["Standard"]},
+      "Monitors": {"Role": ["Metric", "Process", "Activity"]},
+      "Performs": {"Role": ["Activity", "Task", "Procedure"]},
+      "Produces": {"Process": ["Document", "Data", "Record"]},
+      "Responsible for": {"Role": ["Process", "Activity", "Task"]},
+      "Uses": {"Role": ["Document", "Data", "Record"]}
     }
   },
 
