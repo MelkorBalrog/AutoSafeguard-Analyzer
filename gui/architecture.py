@@ -3453,6 +3453,25 @@ class SysMLDiagramWindow(tk.Frame):
             "Record": "circle",
             "Role": "circle",
             "Standard": "document",
+            "Process": "hexagon",
+            "Activity": "rect",
+            "Task": "rect",
+            "Operation": "ellipse",
+            "Driving Function": "triangle",
+            "Software Component": "rect",
+            "Test Suite": "test",
+            "System": "nested",
+            "Verification Plan": "document",
+            "Component": "rect",
+            "Manufacturing Process": "hexagon",
+            "Vehicle": "vehicle",
+            "Fleet": "vehicle",
+            "Safety Compliance": "diamond",
+            "Incident": "star",
+            "Safety Issue": "triangle",
+            "Field Data": "cylinder",
+            "Model": "document",
+            "Lifecycle Phase": "folder",
         }
         if name in mapping:
             return mapping[name]
@@ -3470,6 +3489,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Control Action",
             "Feedback",
         }
+        relation_names.update(GOV_ELEMENT_RELATIONS)
+        relation_names.update(SAFETY_AI_RELATIONS)
         if name in relation_names or any(
             k in name for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
         ):

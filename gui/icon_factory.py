@@ -242,6 +242,77 @@ def create_icon(
             draw_line(h, node_out)
         for p in nodes_left + nodes_mid + [node_out]:
             draw_node(*p)
+    elif shape == "hexagon":
+        mid = size // 2
+        for y in range(3, size - 3):
+            offset = abs(mid - y) // 2
+            start = 3 + offset
+            end = size - 3 - offset
+            img.put(c, to=(start, y, end, y + 1))
+            img.put(outline, (start, y))
+            img.put(outline, (end - 1, y))
+        for x in range(4, size - 4):
+            img.put(outline, (x, 3))
+            img.put(outline, (x, size - 4))
+    elif shape == "test":
+        img.put(c, to=(3, 3, size - 3, size - 3))
+        for x in range(3, size - 3):
+            img.put(outline, (x, 3))
+            img.put(outline, (x, size - 4))
+        for y in range(3, size - 3):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 4, y))
+        mid = size // 2
+        for x in range(4, size - 4):
+            img.put(outline, (x, mid))
+        for y in range(4, size - 4):
+            img.put(outline, (mid, y))
+    elif shape == "vehicle":
+        top = 4
+        bottom = size - 5
+        img.put(c, to=(3, top, size - 3, bottom))
+        for x in range(3, size - 3):
+            img.put(outline, (x, top))
+            img.put(outline, (x, bottom - 1))
+        for y in range(top, bottom):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 4, y))
+        wheel_y = bottom - 1
+        for cx in (5, size - 6):
+            for dx in (-1, 0, 1):
+                for dy in (0, 1):
+                    img.put(outline, (cx + dx, wheel_y + dy))
+    elif shape == "star":
+        points = [
+            (8, 3),
+            (10, 5),
+            (13, 5),
+            (11, 8),
+            (13, 11),
+            (10, 11),
+            (8, 13),
+            (6, 11),
+            (3, 11),
+            (5, 8),
+            (3, 5),
+            (6, 5),
+        ]
+        for y in range(3, 13):
+            xs = []
+            for i in range(len(points)):
+                x1, y1 = points[i]
+                x2, y2 = points[(i + 1) % len(points)]
+                if y1 == y2:
+                    continue
+                if y < min(y1, y2) or y >= max(y1, y2):
+                    continue
+                x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                xs.append(int(x))
+            xs.sort()
+            for j in range(0, len(xs), 2):
+                img.put(c, to=(xs[j], y, xs[j + 1] + 1, y + 1))
+        for x, y in points:
+            img.put(outline, (x, y))
     else:
         img.put(c, to=(2, 2, size - 2, size - 2))
         for x in range(2, size - 2):

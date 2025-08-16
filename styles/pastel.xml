@@ -28,4 +28,65 @@
   <object type="Record" color="#fce5cd" />
   <object type="Role" color="#F4D698" />
   <object type="Standard" color="#a2c4c9" />
+  <object type="Process" color="#e6f2ff" />
+  <object type="Activity" color="#fff2cc" />
+  <object type="Task" color="#d9ead3" />
+  <object type="Operation" color="#ead1dc" />
+  <object type="Driving Function" color="#d0e0e3" />
+  <object type="Software Component" color="#fff2cc" />
+  <object type="Test Suite" color="#f4cccc" />
+  <object type="System" color="#c9daf8" />
+  <object type="Verification Plan" color="#f9cb9c" />
+  <object type="Component" color="#fff2cc" />
+  <object type="Manufacturing Process" color="#b4a7d6" />
+  <object type="Vehicle" color="#a2c4c9" />
+  <object type="Fleet" color="#a4c2f4" />
+  <object type="Safety Compliance" color="#cfe2f3" />
+  <object type="Incident" color="#f4cccc" />
+  <object type="Safety Issue" color="#fce5cd" />
+  <object type="Field Data" color="#e2f0d9" />
+  <object type="Model" color="#d9d2e9" />
+  <object type="Lifecycle Phase" color="#F4D698" />
+  <object type="Annotation" color="#cfe2f3" />
+  <object type="Synthesis" color="#d9ead3" />
+  <object type="Augmentation" color="#fce5cd" />
+  <object type="Acquisition" color="#fff2cc" />
+  <object type="Labeling" color="#e6f2ff" />
+  <object type="Field risk evaluation" color="#f4cccc" />
+  <object type="Field data collection" color="#e2f0d9" />
+  <object type="AI training" color="#f9cb9c" />
+  <object type="AI re-training" color="#c9daf8" />
+  <object type="Curation" color="#b6d7a8" />
+  <object type="Ingestion" color="#ead1dc" />
+  <object type="Model evaluation" color="#a4c2f4" />
+  <object type="Tune" color="#a2c4c9" />
+  <object type="Hyperparameter Validation" color="#d9d2e9" />
+  <object type="Monitoring" color="#cfe2f3" />
+  <object type="Complies with" color="#d9ead3" />
+  <object type="Approves" color="#b6d7a8" />
+  <object type="Audits" color="#f9cb9c" />
+  <object type="Authorizes" color="#cfe2f3" />
+  <object type="Communication Path" color="#a4c2f4" />
+  <object type="Constrained by" color="#ead1dc" />
+  <object type="Consumes" color="#fce5cd" />
+  <object type="Curation" color="#d9d2e9" />
+  <object type="Delivers" color="#fff2cc" />
+  <object type="Executes" color="#c9daf8" />
+  <object type="Extend" color="#e6f2ff" />
+  <object type="Generalize" color="#d9ead3" />
+  <object type="Monitors" color="#f4cccc" />
+  <object type="Performs" color="#e2f0d9" />
+  <object type="Produces" color="#b4a7d6" />
+  <object type="Responsible for" color="#a2c4c9" />
+  <object type="Uses" color="#cfe2f3" />
+  <object type="Constrains" color="#b6d7a8" />
+  <object type="Establish" color="#f9cb9c" />
+  <object type="Implement" color="#cfe2f3" />
+  <object type="Validate" color="#d9ead3" />
+  <object type="Verify" color="#a4c2f4" />
+  <object type="Manufacture" color="#ead1dc" />
+  <object type="Operate" color="#c9daf8" />
+  <object type="Inspect" color="#fce5cd" />
+  <object type="Triage" color="#d9d2e9" />
+  <object type="Improve" color="#fff2cc" />
 </style>
