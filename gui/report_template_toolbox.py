@@ -5,7 +5,6 @@ import json
 from config import load_report_template, validate_report_template
 from gui import messagebox
 
-
 class ElementDialog(simpledialog.Dialog):
     """Dialog for adding or editing a single element placeholder."""
 
@@ -89,7 +88,6 @@ class ElementsDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = self.elements
-
 
 class SectionDialog(simpledialog.Dialog):
     """Dialog for editing a single section."""

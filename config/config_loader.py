@@ -207,7 +207,6 @@ def validate_report_template(data: Any) -> dict[str, Any]:
                 raise ValueError(
                     f"sections[{idx}] references unknown element '{placeholder}'"
                 )
-
     return data
 
 
