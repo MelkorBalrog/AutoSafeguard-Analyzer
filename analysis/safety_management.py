@@ -22,6 +22,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Callable, Optional
 
 from sysml.sysml_repository import SysMLRepository
+from .requirement_rule_generator import regenerate_requirement_patterns
 
 ACTIVE_TOOLBOX: Optional["SafetyManagementToolbox"] = None
 
@@ -1113,6 +1114,7 @@ class SafetyManagementToolbox:
         str
             The repository identifier of the created diagram.
         """
+        was_empty = not self.diagrams
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Governance Diagram", name=name)
         diag.tags.append("safety-management")
@@ -1120,6 +1122,8 @@ class SafetyManagementToolbox:
         # uniqueness. Track the actual diagram name so internal mappings stay
         # consistent with repository contents.
         self.diagrams[diag.name] = diag.diag_id
+        if was_empty:
+            regenerate_requirement_patterns()
         return diag.diag_id
 
     def delete_diagram(self, name: str) -> None:

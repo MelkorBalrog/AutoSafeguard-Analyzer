@@ -263,6 +263,7 @@ from analysis.mechanisms import (
     PAS_8800_MECHANISMS,
 )
 from config import load_diagram_rules, load_report_template
+from analysis.requirement_rule_generator import regenerate_requirement_patterns
 from pathlib import Path
 from collections.abc import Mapping
 import csv
@@ -538,6 +539,8 @@ def _reload_local_config() -> None:
     global _CONFIG, GATE_NODE_TYPES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+    # Regenerate requirement patterns whenever diagram rules change
+    regenerate_requirement_patterns()
 
 ##########################################
 # Global Unique ID Counter for Nodes
@@ -10869,6 +10872,8 @@ class FaultTreeApp:
         """
         # Update the main explorer and propagate model changes
         self.update_views()
+        # Regenerate requirement patterns for any model change
+        regenerate_requirement_patterns()
         # Refresh any secondary windows that may be open
         for attr in dir(self):
             if attr.endswith("_window"):
