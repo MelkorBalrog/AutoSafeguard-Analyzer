@@ -81,7 +81,7 @@ def test_lifecycle_requirements_visible_in_phases(monkeypatch):
     life_rid = next(iter(global_requirements))
     assert global_requirements[life_rid]["phase"] is None
 
-    # Generate phase requirements; lifecycle requirement should not be included
+    # Generate phase requirements; lifecycle requirement should be included
     win.generate_phase_requirements("Phase1")
     ids = captured.get("Phase1 Requirements", [])
-    assert life_rid not in ids
+    assert life_rid in ids

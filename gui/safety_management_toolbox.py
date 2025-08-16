@@ -294,7 +294,7 @@ class SafetyManagementWindow(tk.Frame):
         ids = [
             rid
             for rid, req in global_requirements.items()
-            if req.get("phase") == phase
+            if req.get("phase") in (phase, None)
         ]
         self._display_requirements(f"{name} Requirements", ids)
 
@@ -387,7 +387,7 @@ class SafetyManagementWindow(tk.Frame):
         ids = [
             rid
             for rid, req in global_requirements.items()
-            if req.get("phase") == phase
+            if req.get("phase") in (phase, None)
         ]
         self._display_requirements(f"{phase} Requirements", ids)
 
