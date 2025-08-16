@@ -126,6 +126,19 @@ _BASE_CONN_TYPES = {
     "Composite Aggregation",
     "Control Action",
     "Feedback",
+    "Approves",
+    "Audits",
+    "Authorizes",
+    "Constrained by",
+    "Consumes",
+    "Curation",
+    "Delivers",
+    "Executes",
+    "Monitors",
+    "Performs",
+    "Produces",
+    "Responsible for",
+    "Uses",
 }
 
 # Ordered list of base connection tools for toolbox composition
@@ -152,6 +165,19 @@ _BASE_CONN_TOOLS = [
     "Composite Aggregation",
     "Control Action",
     "Feedback",
+    "Approves",
+    "Audits",
+    "Authorizes",
+    "Constrained by",
+    "Consumes",
+    "Curation",
+    "Delivers",
+    "Executes",
+    "Monitors",
+    "Performs",
+    "Produces",
+    "Responsible for",
+    "Uses",
 ]
 
 # Connection types that default to forward arrows
@@ -166,6 +192,25 @@ _ARROW_FORWARD_BASE = {
     "Satisfied by",
     "Derived from",
 }
+
+# Connection types added above should use forward arrowheads by default
+_ARROW_FORWARD_BASE.update(
+    {
+        "Approves",
+        "Audits",
+        "Authorizes",
+        "Constrained by",
+        "Consumes",
+        "Curation",
+        "Delivers",
+        "Executes",
+        "Monitors",
+        "Performs",
+        "Produces",
+        "Responsible for",
+        "Uses",
+    }
+)
 
 
 def _all_connection_tools() -> tuple[str, ...]:
@@ -9591,7 +9636,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self.toolbox, "tk"):
             selector = ttk.Combobox(
                 self.toolbox,
-                values=["Governance", "Safety & AI Lifecycle", "Stakeholders", "KPIs"],
+                values=[
+                    "Governance",
+                    "Safety & AI Lifecycle",
+                    "Stakeholders",
+                    "KPIs",
+                    "Governance Elements",
+                ],
                 state="readonly",
                 textvariable=self.toolbox_var,
             )
@@ -9686,6 +9737,66 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 pack_forget=lambda *a, **k: None,
             )
 
+        # Create toolbox for additional governance elements
+        extra_nodes = [
+            "Business Unit",
+            "Data",
+            "Document",
+            "Guideline",
+            "Metric",
+            "Organization",
+            "Policy",
+            "Principle",
+            "Procedure",
+            "Record",
+            "Role",
+            "Standard",
+        ]
+        extra_rels = [
+            "Approves",
+            "Audits",
+            "Authorizes",
+            "Communication Path",
+            "Constrained by",
+            "Consumes",
+            "Curation",
+            "Delivers",
+            "Executes",
+            "Extend",
+            "Generalize",
+            "Monitors",
+            "Performs",
+            "Produces",
+            "Responsible for",
+            "Uses",
+        ]
+        if hasattr(self.toolbox, "tk"):
+            self.gov_elements_frame = ttk.Frame(self.toolbox)
+            ttk.Button(
+                self.gov_elements_frame,
+                text="Select",
+                command=lambda: self.select_tool("Select"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            for name in extra_nodes:
+                ttk.Button(
+                    self.gov_elements_frame,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+            ge_rel = ttk.LabelFrame(self.gov_elements_frame, text="Relationships")
+            ge_rel.pack(fill=tk.X, padx=2, pady=2)
+            for name in extra_rels:
+                ttk.Button(
+                    ge_rel,
+                    text=name,
+                    command=lambda t=name: self.select_tool(t),
+                ).pack(fill=tk.X, padx=2, pady=2)
+        else:
+            self.gov_elements_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+            )
+
         # Repack toolbox to include selector and default to governance frame
         if hasattr(self, "back_btn"):
             self.back_btn.pack_forget()
@@ -9723,6 +9834,22 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
+            "Approves",
+            "Audits",
+            "Authorizes",
+            "Communication Path",
+            "Constrained by",
+            "Consumes",
+            "Curation",
+            "Delivers",
+            "Executes",
+            "Extend",
+            "Generalize",
+            "Monitors",
+            "Performs",
+            "Produces",
+            "Responsible for",
+            "Uses",
         ]
         rel_frame = ttk.LabelFrame(governance_panel, text="Relationships")
         rel_frame.pack(fill=tk.X, padx=2, pady=2)
@@ -9783,6 +9910,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Safety & AI Lifecycle": [self.ai_tools_frame],
             "Stakeholders": [getattr(self, "stakeholder_tools_frame", None)],
             "KPIs": [getattr(self, "kpi_tools_frame", None)],
+            "Governance Elements": [getattr(self, "gov_elements_frame", None)],
         }
         for frame in [
             self.gov_tools_frame,
@@ -9790,6 +9918,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.ai_tools_frame,
             getattr(self, "stakeholder_tools_frame", None),
             getattr(self, "kpi_tools_frame", None),
+            getattr(self, "gov_elements_frame", None),
         ]:
             if frame and hasattr(frame, "pack_forget"):
                 frame.pack_forget()

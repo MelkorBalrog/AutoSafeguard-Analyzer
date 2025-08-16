@@ -77,7 +77,19 @@
     "Work Product",
     "Lifecycle Phase",
     "Stakeholder",
-    "KPI"
+    "KPI",
+    "Business Unit",
+    "Data",
+    "Document",
+    "Guideline",
+    "Metric",
+    "Organization",
+    "Policy",
+    "Principle",
+    "Procedure",
+    "Record",
+    "Role",
+    "Standard"
   ],
 
   // FMEDA/Fault tree gate node types
