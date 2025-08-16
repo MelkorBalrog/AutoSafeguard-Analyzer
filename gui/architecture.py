@@ -6301,26 +6301,15 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
             )
         elif obj.obj_type == "Business Unit":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
                 outline=outline,
-                fill="",
-            )
-            bar = min(20 * self.zoom, h)
-            self.canvas.create_rectangle(
-                x - w,
-                y - h,
-                x + w,
-                y - h + bar,
-                outline=outline,
                 fill=color,
             )
         elif obj.obj_type == "Data":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             rh = min(10 * self.zoom, h)
             self.canvas.create_oval(
                 x - w,
@@ -6336,7 +6325,7 @@ class SysMLDiagramWindow(tk.Frame):
                 x + w,
                 y + h - rh,
                 outline=outline,
-                fill="",
+                fill=color,
             )
             self.canvas.create_oval(
                 x - w,
@@ -6344,17 +6333,16 @@ class SysMLDiagramWindow(tk.Frame):
                 x + w,
                 y + h,
                 outline=outline,
-                fill="",
+                fill=color,
             )
         elif obj.obj_type == "Document":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
                 outline=outline,
-                fill="",
+                fill=color,
             )
             fold = 10 * self.zoom
             self.canvas.create_polygon(
@@ -6375,38 +6363,32 @@ class SysMLDiagramWindow(tk.Frame):
                 px = x + r * math.cos(angle)
                 py = y + r * math.sin(angle)
                 points.extend([px, py])
-            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Metric":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             points = [x, y - h, x + w, y, x, y + h, x - w, y]
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Organization":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_oval(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
                 outline=outline,
-                fill="",
+                fill=color,
             )
         elif obj.obj_type == "Policy":
             r = min(obj.width, obj.height) * self.zoom / 2
-            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
             points = []
             for i in range(8):
                 angle = math.radians(45 * i + 22.5)
                 px = x + r * math.cos(angle)
                 py = y + r * math.sin(angle)
                 points.extend([px, py])
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Principle":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             points = [x, y - h, x + w, y + h, x - w, y + h]
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Procedure":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             offset = w * 0.3
             points = [
                 x - w + offset,
@@ -6418,16 +6400,15 @@ class SysMLDiagramWindow(tk.Frame):
                 x - w,
                 y + h,
             ]
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Record":
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
                 outline=outline,
-                fill="",
+                fill=color,
             )
             tab_h = min(15 * self.zoom, h)
             tab_w = w * 0.4
@@ -6441,7 +6422,6 @@ class SysMLDiagramWindow(tk.Frame):
             )
         elif obj.obj_type == "Standard":
             r = min(obj.width, obj.height) * self.zoom / 2
-            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
             points = []
             for i in range(10):
                 angle = math.radians(36 * i - 90)
@@ -6449,7 +6429,7 @@ class SysMLDiagramWindow(tk.Frame):
                 px = x + radius * math.cos(angle)
                 py = y + radius * math.sin(angle)
                 points.extend([px, py])
-            self.canvas.create_polygon(points, outline=outline, fill="")
+            self.canvas.create_polygon(points, outline=outline, fill=color)
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
