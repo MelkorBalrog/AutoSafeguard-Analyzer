@@ -3471,7 +3471,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Standard": "document",
             "Process": "hexagon",
             "Activity": "rect",
-            "Task": "rect",
+            "Task": "trapezoid",
             "Operation": "ellipse",
             "Driving Function": "triangle",
             "Software Component": "rect",
@@ -8673,7 +8673,8 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row = 0
         ttk.Label(gen_frame, text="Name:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=self.obj.properties.get("name", ""))
-        name_state = "readonly" if self.obj.obj_type == "Work Product" else "normal"
+        readonly = self.obj.obj_type == "Work Product" or self.obj.properties.get("name_locked") == "1"
+        name_state = "readonly" if readonly else "normal"
         ttk.Entry(gen_frame, textvariable=self.name_var, state=name_state).grid(
             row=gen_row, column=1, padx=4, pady=4
         )
@@ -9483,7 +9484,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
     def apply(self):
         repo = SysMLRepository.get_instance()
         parent_id = None
-        if self.obj.obj_type != "Work Product":
+        if self.obj.obj_type != "Work Product" and self.obj.properties.get("name_locked") != "1":
             new_name = self.name_var.get()
             if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
                 diag = repo.diagrams.get(self.master.diagram_id)
@@ -10774,7 +10775,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             y,
             width=60.0,
             height=80.0,
-            properties={"name": name},
+            properties={"name": name, "name_locked": "1"},
         )
         self.objects.append(obj)
         self.sort_objects()
@@ -10798,7 +10799,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             y,
             width=200.0,
             height=150.0,
-            properties={"name": name},
+            properties={"name": name, "name_locked": "1"},
         )
         self.objects.insert(0, obj)
         self.sort_objects()
@@ -10854,7 +10855,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             100.0,
             width=120.0,
             height=80.0,
-            properties={"name": name},
+            properties={"name": name, "name_locked": "1"},
         )
         self.objects.append(obj)
         self.sort_objects()
