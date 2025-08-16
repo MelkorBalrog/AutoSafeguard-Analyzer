@@ -246,6 +246,22 @@ class SafetyManagementWindow(tk.Frame):
             )
         tree.pack(fill=tk.BOTH, expand=True)
 
+    @staticmethod
+    def _current_requirement_pairs(phase: str | None) -> list[tuple[str, str]]:
+        """Return existing requirement (text, type) pairs for ``phase``.
+
+        Only non-obsolete requirements are considered to avoid regenerating
+        identical content and marking it obsolete unnecessarily.
+        """
+        return sorted(
+            (
+                req.get("text", ""),
+                req.get("req_type", "organizational"),
+            )
+            for req in global_requirements.values()
+            if req.get("phase") == phase and req.get("status") != "obsolete"
+        )
+
     def generate_requirements(self) -> None:
         """Generate requirements for the selected governance diagram."""
         name = self.diag_var.get()
@@ -277,6 +293,15 @@ class SafetyManagementWindow(tk.Frame):
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
         phase = self.toolbox.module_for_diagram(name)
+        existing = self._current_requirement_pairs(phase)
+        if sorted(reqs) == existing:
+            ids = [
+                rid
+                for rid, req in global_requirements.items()
+                if req.get("phase") in (phase, None)
+            ]
+            self._display_requirements(f"{name} Requirements", ids)
+            return
         # Mark existing requirements for this phase as obsolete before
         # creating new ones to reflect the updated governance model.
         for req in global_requirements.values():
@@ -319,12 +344,7 @@ class SafetyManagementWindow(tk.Frame):
             messagebox.showinfo("Requirements", f"No governance diagrams for phase '{phase}'.")
             return
         repo = SysMLRepository.get_instance()
-        # Mark existing requirements for this phase as obsolete before
-        # generating updated ones.
-        for req in global_requirements.values():
-            if req.get("phase") == phase:
-                req["status"] = "obsolete"
-        ids: list[str] = []
+        pairs_all: list[tuple[str, str]] = []
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
@@ -361,16 +381,30 @@ class SafetyManagementWindow(tk.Frame):
                     "Requirement entries must be strings or (text, type) pairs.",
                 )
                 continue
-            for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype, phase=phase))
-        if not ids and not any(
-            req.get("phase") == phase for req in global_requirements.values()
-        ):
+            pairs_all.extend(pairs)
+        existing = self._current_requirement_pairs(phase)
+        if not pairs_all and not existing:
             messagebox.showinfo(
                 "Requirements",
                 f"No requirements were generated for phase '{phase}'.",
             )
             return
+        if sorted(pairs_all) == existing:
+            ids = [
+                rid
+                for rid, req in global_requirements.items()
+                if req.get("phase") in (phase, None)
+            ]
+            self._display_requirements(f"{phase} Requirements", ids)
+            return
+        # Mark existing requirements for this phase as obsolete before
+        # generating updated ones.
+        for req in global_requirements.values():
+            if req.get("phase") == phase:
+                req["status"] = "obsolete"
+        ids: list[str] = []
+        for text, rtype in pairs_all:
+            ids.append(self._add_requirement(text, rtype, phase=phase))
         ids = [
             rid
             for rid, req in global_requirements.items()
@@ -389,12 +423,7 @@ class SafetyManagementWindow(tk.Frame):
                 "Requirements", "No lifecycle governance diagrams.")
             return
         repo = SysMLRepository.get_instance()
-        # Mark existing lifecycle requirements as obsolete before generating
-        # new ones so the table reflects the latest governance models.
-        for req in global_requirements.values():
-            if req.get("phase") is None:
-                req["status"] = "obsolete"
-        ids: list[str] = []
+        pairs_all: list[tuple[str, str]] = []
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
@@ -431,14 +460,30 @@ class SafetyManagementWindow(tk.Frame):
                     "Requirement entries must be strings or (text, type) pairs.",
                 )
                 continue
-            for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype))
-        if not ids and not any(req.get("phase") is None for req in global_requirements.values()):
+            pairs_all.extend(pairs)
+        existing = self._current_requirement_pairs(None)
+        if not pairs_all and not existing:
             messagebox.showinfo(
                 "Requirements",
                 "No requirements were generated for lifecycle diagrams.",
             )
             return
+        if sorted(pairs_all) == existing:
+            ids = [
+                rid
+                for rid, req in global_requirements.items()
+                if req.get("phase") is None
+            ]
+            self._display_requirements("Lifecycle Requirements", ids)
+            return
+        # Mark existing lifecycle requirements as obsolete before generating
+        # new ones so the table reflects the latest governance models.
+        for req in global_requirements.values():
+            if req.get("phase") is None:
+                req["status"] = "obsolete"
+        ids: list[str] = []
+        for text, rtype in pairs_all:
+            ids.append(self._add_requirement(text, rtype))
         ids = [rid for rid, req in global_requirements.items() if req.get("phase") is None]
         self._display_requirements("Lifecycle Requirements", ids)
 
