@@ -3226,6 +3226,15 @@ class SysMLDiagramWindow(tk.Frame):
         self.prop_view.column("field", width=field_width, stretch=False)
         self.prop_view.column("value", width=button_width - field_width, stretch=False)
 
+    def _fit_governance_toolbox(
+        self, container: tk.Misc, canvas: tk.Canvas, window: int
+    ) -> None:
+        """Match the governance toolbox width to the primary toolbox."""
+        canvas_width = self.toolbox_canvas.winfo_width()
+        container.configure(width=self.toolbox_container.winfo_width())
+        canvas.configure(width=canvas_width)
+        canvas.itemconfig(window, width=canvas_width)
+
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
         if not hasattr(self, "prop_view"):
@@ -9871,6 +9880,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self, "tk"):
             gov_container = ttk.Frame(self)
             gov_container.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
+            gov_container.pack_propagate(False)
 
             gov_canvas = tk.Canvas(gov_container, highlightthickness=0)
             gov_canvas.pack(side=tk.LEFT, fill=tk.Y)
@@ -9892,6 +9902,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             gov_canvas.bind(
                 "<Configure>",
                 lambda e: gov_canvas.itemconfig(gov_window, width=e.width),
+            )
+
+            self.after_idle(
+                lambda: self._fit_governance_toolbox(
+                    gov_container, gov_canvas, gov_window
+                )
             )
 
             work_rel_names = [
