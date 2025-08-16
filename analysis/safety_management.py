@@ -71,6 +71,7 @@ SAFETY_ANALYSIS_WORK_PRODUCTS: set[str] = {
     "Causal Bayesian Network Analysis",
     "Safety & Security Case",
     "GSN Argumentation",
+    "SPI",
     "Scenario Library",
     "ODD",
 }
