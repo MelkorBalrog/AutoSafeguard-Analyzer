@@ -104,7 +104,6 @@ def test_validate_report_template_allows_sysml_diagrams():
     }
     assert validate_report_template(cfg) == cfg
 
-
 def test_layout_report_template_basic():
     data = {
         "elements": {"img": "diagram"},
