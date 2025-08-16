@@ -11,4 +11,16 @@
   <object type="Block" color="#546E7A" />
   <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#00ACC1" />
+  <object type="Business Unit" color="#64B5F6" />
+  <object type="Data" color="#FFB74D" />
+  <object type="Document" color="#FFF176" />
+  <object type="Guideline" color="#E57373" />
+  <object type="Metric" color="#81C784" />
+  <object type="Organization" color="#BA68C8" />
+  <object type="Policy" color="#4FC3F7" />
+  <object type="Principle" color="#F06292" />
+  <object type="Procedure" color="#AED581" />
+  <object type="Record" color="#FFCC80" />
+  <object type="Role" color="#FFD54F" />
+  <object type="Standard" color="#4DB6AC" />
 </style>

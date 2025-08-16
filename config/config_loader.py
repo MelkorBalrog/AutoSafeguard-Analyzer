@@ -50,6 +50,8 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
         "ai_relations",
         "arch_diagram_types",
         "governance_node_types",
+        "governance_element_nodes",
+        "governance_element_relations",
         "gate_node_types",
         "guard_nodes",
     ]

@@ -16,4 +16,16 @@
   <object type="Database" color="#cfe2f3" />
   <object type="ANN" color="#d5e8d4" />
   <object type="Data acquisition" color="#ffe6cc" />
+  <object type="Business Unit" color="#cfe2f3" />
+  <object type="Data" color="#ffe6cc" />
+  <object type="Document" color="#fff2cc" />
+  <object type="Guideline" color="#f8cecc" />
+  <object type="Metric" color="#d5e8d4" />
+  <object type="Organization" color="#e1d5e7" />
+  <object type="Policy" color="#dae8fc" />
+  <object type="Principle" color="#ead1dc" />
+  <object type="Procedure" color="#b6d7a8" />
+  <object type="Record" color="#fce5cd" />
+  <object type="Role" color="#F4D698" />
+  <object type="Standard" color="#a2c4c9" />
 </style>
