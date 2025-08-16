@@ -71,8 +71,12 @@ def _apply_pattern(
         key = match.group(1)
         if key == "source_id" or key == src_type:
             return src
+        if key == "source_class":
+            return src_type
         if key == "target_id" or key == dst_type:
             return dst
+        if key == "target_class":
+            return dst_type
         if key == "acceptance_criteria":
             return cond or ""
         return ""
