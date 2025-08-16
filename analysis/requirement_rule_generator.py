@@ -300,6 +300,7 @@ STATIC_BASE_PATTERNS: List[Dict[str, Any]] = [
     },
 ]
 
+
 # ---------------------------------------------------------------------------
 # Pattern generation from diagram rules
 

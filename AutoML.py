@@ -2760,6 +2760,7 @@ class FaultTreeApp:
             "Diagram Rule Editor": self.open_diagram_rules_toolbox,
             "Requirement Pattern Editor": self.open_requirement_patterns_toolbox,
             "Report Template Editor": self.open_report_template_toolbox,
+            "Report Template Manager": self.open_report_template_manager,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2777,6 +2778,7 @@ class FaultTreeApp:
                 "Diagram Rule Editor", 
                 "Requirement Pattern Editor",
                 "Report Template Editor",
+                "Report Template Manager",
             ],
         }
         self.tool_to_work_product = {}
@@ -17000,6 +17002,31 @@ class FaultTreeApp:
             parent, self, _REPORT_TEMPLATE_PATH
         )
         self.report_template_editor.pack(fill=tk.BOTH, expand=True)
+
+    def open_report_template_manager(self):
+        """Open manager for multiple report templates."""
+        tab_exists = (
+            hasattr(self, "_report_template_mgr_tab")
+            and self._report_template_mgr_tab.winfo_exists()
+        )
+        manager_exists = (
+            hasattr(self, "report_template_manager")
+            and self.report_template_manager.winfo_exists()
+        )
+        if tab_exists:
+            self.doc_nb.select(self._report_template_mgr_tab)
+            if manager_exists:
+                return
+            parent = self._report_template_mgr_tab
+        else:
+            parent = self._report_template_mgr_tab = self._new_tab("Report Templates")
+
+        from gui.report_template_manager import ReportTemplateManager
+
+        self.report_template_manager = ReportTemplateManager(
+            parent, self, _REPORT_TEMPLATE_PATH.parent
+        )
+        self.report_template_manager.pack(fill=tk.BOTH, expand=True)
 
     def reload_config(self) -> None:
         """Reload diagram rule configuration across modules."""
