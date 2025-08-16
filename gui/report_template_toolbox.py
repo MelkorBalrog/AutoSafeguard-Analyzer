@@ -149,6 +149,7 @@ class SectionDialog(simpledialog.Dialog):
         super().__init__(parent, title="Edit Section")
 
     def body(self, master):
+        self._body = master
         tk.Label(master, text="Title:").grid(row=0, column=0, padx=4, pady=4, sticky="e")
         self.title_var = tk.StringVar(value=self.section.get("title", ""))
         ttk.Entry(master, textvariable=self.title_var).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
@@ -162,7 +163,13 @@ class SectionDialog(simpledialog.Dialog):
         ).grid(row=2, column=0, columnspan=2, padx=4, pady=(0, 4), sticky="w")
         master.columnconfigure(1, weight=1)
         master.rowconfigure(1, weight=1)
+        self.after(0, self._make_resizable)
         return master
+
+    def _make_resizable(self):
+        """Allow dialog and contents to expand when resized."""
+        self.resizable(True, True)
+        self._body.pack_configure(expand=True, fill="both")
 
     def apply(self):
         self.result = {
