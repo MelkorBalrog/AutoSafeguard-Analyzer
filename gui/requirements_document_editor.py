@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, font
 import webbrowser
-from typing import Dict, Iterable
+from typing import Dict
 
 try:
     from PIL import Image, ImageTk
@@ -28,21 +28,12 @@ class RequirementsDocumentEditor(tk.Toplevel):  # pragma: no cover - GUI
 
     The editor provides heading styles, font controls and allows inserting
     images and hyperlinks. Content can be persisted into a ``.docx`` file
-    using :mod:`python-docx` for later export. When *requirements* are
-    provided, they are inserted into the document grouped under a heading for
-    ``req_type``.
+    using :mod:`python-docx` for later export.
     """
 
-    def __init__(
-        self,
-        master: tk.Misc | None = None,
-        *,
-        req_type: str | None = None,
-        requirements: Iterable[dict] | None = None,
-    ) -> None:
+    def __init__(self, master: tk.Misc | None = None):
         super().__init__(master)
-        title = f"{req_type.title()} Specification" if req_type else "Requirements Specification"
-        self.title(title)
+        self.title("Requirements Specification")
         self.geometry("900x700")
         self.images: Dict[str, tuple] = {}
         self.hyperlinks: Dict[str, str] = {}
@@ -51,19 +42,6 @@ class RequirementsDocumentEditor(tk.Toplevel):  # pragma: no cover - GUI
         self._create_toolbar()
         self._create_text_widget()
 
-        if req_type and requirements:
-            self._populate_requirements(req_type, requirements)
-
-    # ------------------------------------------------------------------
-    def _populate_requirements(
-        self, req_type: str, requirements: Iterable[dict]
-    ) -> None:
-        """Insert *requirements* grouped under *req_type* heading."""
-        self.text.insert("end", f"{req_type.title()} Requirements\n", ("heading1",))
-        for req in requirements:
-            rid = req.get("id", "")
-            txt = req.get("text", "")
-            self.text.insert("end", f"{rid}: {txt}\n")
     # ------------------------------------------------------------------
     def _create_toolbar(self) -> None:
         bar = ttk.Frame(self)
