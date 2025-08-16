@@ -109,6 +109,26 @@ def test_data_acquisition_compartment_sources():
         in texts
     )
 
-    data_reqs = [r for r in reqs if r.action == "obtain data from"]
+    data_reqs = [r for r in reqs if r.action == "acquire data from"]
     assert all(r.req_type == "AI safety" for r in data_reqs)
+    assert all(r.subject == "Engineering team" for r in data_reqs)
     assert {r.obj for r in data_reqs} == {"Sensor A", "Sensor B"}
+
+
+def test_tasks_create_requirement_actions():
+    diagram = GovernanceDiagram()
+    diagram.add_task("Review Data", node_type="Activity")
+    diagram.add_task("Acquire Data", node_type="Data acquisition")
+
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+
+    assert "Organization shall review data." in texts
+    assert "Engineering team shall acquire data." in texts
+
+    review_req = next(r for r in reqs if r.action == "review data")
+    assert review_req.subject == "Organization"
+    assert review_req.req_type == "organizational"
+    acquire_req = next(r for r in reqs if r.action == "acquire data")
+    assert acquire_req.subject == "Engineering team"
+    assert acquire_req.req_type == "AI safety"

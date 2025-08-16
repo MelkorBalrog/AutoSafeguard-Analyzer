@@ -336,6 +336,7 @@ class GovernanceDiagram:
         # configured compartments as data sources.  Each compartment becomes a
         # separate requirement so that individual data sources remain traceable.
         for node, sources in self.node_sources.items():
+
             req_type = (
                 "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
             )
@@ -351,6 +352,22 @@ class GovernanceDiagram:
                         req_type=req_type,
                     )
                 )
+
+        for node in self.graph.nodes():
+            role = self._role_for(node)
+            if role != "action" and self.node_types.get(node) != "Data acquisition":
+                continue
+            req_type = (
+                "AI safety" if self.node_types.get(node) in _AI_NODES else "organizational"
+            )
+            subject = "Engineering team" if req_type == "AI safety" else "Organization"
+            requirements.append(
+                GeneratedRequirement(
+                    action=node.lower(),
+                    subject=subject,
+                    req_type=req_type,
+                )
+            )
 
         return requirements
 
