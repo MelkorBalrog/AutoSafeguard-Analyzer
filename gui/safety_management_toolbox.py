@@ -236,7 +236,8 @@ class SafetyManagementWindow(tk.Frame):
         for child in frame.winfo_children():
             child.destroy()
         columns = ("ID", "Type", "Text", "Phase", "Status")
-        tree = ttk.Treeview(frame, columns=columns, show="headings")
+        tree_frame = ttk.Frame(frame)
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
         for c in columns:
             tree.heading(c, text=c)
         for rid in ids:
@@ -252,7 +253,15 @@ class SafetyManagementWindow(tk.Frame):
                     req.get("status", ""),
                 ),
             )
-        tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
 
     @staticmethod
     def _current_requirement_pairs(
