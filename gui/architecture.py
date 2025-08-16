@@ -10429,6 +10429,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ttk.Button(
                     wp_rel,
                     text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
@@ -10439,6 +10441,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     ttk.Button(
                         rel_frame,
                         text=name,
+                        image=self._icon_for(name),
+                        compound=tk.LEFT,
                         command=lambda t=name: self.select_tool(t),
                     ).pack(fill=tk.X, padx=2, pady=2)
 
@@ -10451,9 +10455,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             elem_group = ttk.LabelFrame(governance_panel, text="Elements")
             elem_group.pack(fill=tk.X, padx=2, pady=2)
             for name, cmd in node_cmds:
-                ttk.Button(elem_group, text=name, command=cmd).pack(
-                    fill=tk.X, padx=2, pady=2
-                )
+                ttk.Button(
+                    elem_group,
+                    text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
+                    command=cmd,
+                ).pack(fill=tk.X, padx=2, pady=2)
         else:  # pragma: no cover - headless tests
             governance_panel = types.SimpleNamespace(
                 pack=lambda *a, **k: None
