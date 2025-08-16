@@ -3230,8 +3230,17 @@ class SysMLDiagramWindow(tk.Frame):
         self, container: tk.Misc, canvas: tk.Canvas, window: int
     ) -> None:
         """Match the governance toolbox width to the primary toolbox."""
-        canvas_width = self.toolbox_canvas.winfo_width()
-        container.configure(width=self.toolbox_container.winfo_width())
+        # Ensure geometry measurements are up to date
+        self.toolbox_canvas.update_idletasks()
+        self.toolbox_container.update_idletasks()
+
+        canvas_width = self.toolbox_canvas.winfo_width() or self.toolbox_canvas.winfo_reqwidth()
+        container_width = (
+            self.toolbox_container.winfo_width()
+            or self.toolbox_container.winfo_reqwidth()
+        )
+
+        container.configure(width=container_width)
         canvas.configure(width=canvas_width)
         canvas.itemconfig(window, width=canvas_width)
 
@@ -9883,7 +9892,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             gov_container.pack_propagate(False)
 
             gov_canvas = tk.Canvas(gov_container, highlightthickness=0)
-            gov_canvas.pack(side=tk.LEFT, fill=tk.Y)
+            gov_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
             gov_scroll = ttk.Scrollbar(
                 gov_container, orient=tk.VERTICAL, command=gov_canvas.yview
