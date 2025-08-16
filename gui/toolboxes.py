@@ -4113,7 +4113,7 @@ class RequirementsExplorerWindow(tk.Frame):
             phase = getattr(self.app.safety_mgmt_toolbox, "active_module", None)
         for rid, req in global_requirements.items():
             req_phase = req.get("phase")
-            if phase and req_phase not in (phase, None):
+            if phase and req_phase != phase:
                 continue
             if query and query not in req.get("id", "").lower() and query not in req.get("text", "").lower():
                 continue

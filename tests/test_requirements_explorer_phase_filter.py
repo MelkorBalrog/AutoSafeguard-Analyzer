@@ -56,11 +56,11 @@ def test_explorer_filters_by_active_phase():
 
     win = _make_window("P1")
     win.refresh()
-    assert [v[0] for v in win.tree.data] == ["R1", "R2"]
+    assert [v[0] for v in win.tree.data] == ["R1"]
 
     win.app.safety_mgmt_toolbox.active_module = "P2"
     win.refresh()
-    assert [v[0] for v in win.tree.data] == ["R2", "R3"]
+    assert [v[0] for v in win.tree.data] == ["R3"]
 
     win.app.safety_mgmt_toolbox.active_module = None
     win.refresh()
