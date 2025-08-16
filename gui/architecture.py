@@ -10195,7 +10195,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA",
             "FMEA",
             "FMEDA",
-            "SPI",
+            "SPI Work Document",
             "Scenario Library",
             "ODD",
         ]
@@ -10219,7 +10219,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "FTA": "Safety Analysis",
             "FMEA": "Safety Analysis",
             "FMEDA": "Safety Analysis",
-            "SPI": "Safety & Security Management",
+            "SPI Work Document": "Safety & Security Management",
             "Scenario Library": "Scenario",
             "ODD": "Scenario",
         }
@@ -10271,6 +10271,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Risk Assessment",
             "Safety & Security Management",
             "Safety Analysis",
+            "Safety & Security Management",
             "Scenario",
         ]
         dlg = self._SelectDialog(self, "Add Process Area", options)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from gui.architecture import GovernanceDiagramWindow, SysMLObject
+from gui.architecture import GovernanceDiagramWindow
 from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
 
@@ -19,14 +19,10 @@ def test_governance_spi_work_product_enablement(monkeypatch):
     prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
-    area = SysMLObject(
-        1, "System Boundary", 0, 0, properties={"name": "Safety & Security Management"}
-    )
-
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
-    win.objects = [area]
+    win.objects = []
     win.connections = []
     win.zoom = 1.0
     win.sort_objects = lambda: None
@@ -44,16 +40,33 @@ def test_governance_spi_work_product_enablement(monkeypatch):
 
     win.app = DummyApp()
 
-    class DummyDialog:
+    class MissingWpDialog:
         def __init__(self, parent, title, options):
-            captured["options"] = options
-            self.selection = "SPI"
+            captured["initial_wp_options"] = options
+            self.selection = ""
 
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", DummyDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", MissingWpDialog)
+    win.add_work_product()
+    assert "SPI Work Document" not in captured.get("initial_wp_options", [])
 
+    class AreaDialog:
+        def __init__(self, parent, title, options):
+            captured["area_options"] = options
+            self.selection = "Safety & Security Management"
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", AreaDialog)
+    win.add_process_area()
+    assert "Safety & Security Management" in captured["area_options"]
+
+    class WorkProductDialog:
+        def __init__(self, parent, title, options):
+            captured["wp_options"] = options
+            self.selection = "SPI Work Document"
+
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", WorkProductDialog)
     win.add_work_product()
 
-    assert "SPI" in captured["options"]
-    assert enable_calls == ["SPI"]
-    assert any(wp.analysis == "SPI" for wp in toolbox.work_products)
+    assert "SPI Work Document" in captured["wp_options"]
+    assert enable_calls == ["SPI Work Document"]
+    assert any(wp.analysis == "SPI Work Document" for wp in toolbox.work_products)
     _sm.ACTIVE_TOOLBOX = prev_tb
