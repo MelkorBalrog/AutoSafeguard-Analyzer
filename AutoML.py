@@ -17985,7 +17985,9 @@ class FaultTreeApp:
             data.get("safety_mgmt_toolbox", {})
         )
         toolbox = self.safety_mgmt_toolbox
-        toolbox.on_change = self.refresh_tool_enablement
+        toolbox.on_change = self._on_toolbox_change
+        # Refresh menus to expose phases from the loaded toolbox
+        self._refresh_phase_requirements_menu()
         # Ensure the SysML repository knows about the active phase from the
         # loaded toolbox so diagrams and work products filter correctly.
         toolbox.set_active_module(toolbox.active_module)
