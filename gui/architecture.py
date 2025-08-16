@@ -3415,15 +3415,31 @@ class SysMLDiagramWindow(tk.Frame):
         icon = self._icons.get(name)
         if icon is None:
             style = StyleManager.get_instance()
-            color = style.get_color(name)
-            if color == "#FFFFFF":
-                color = "black"
             shape = self._shape_for_tool(name)
+            if shape == "relation":
+                color = "black"
+            else:
+                color = style.get_color(name)
+                if color == "#FFFFFF" and name.startswith("Add "):
+                    base = name[4:]
+                    if base.startswith("Generic "):
+                        base = base[8:]
+                    if base == "Process Area":
+                        base = "Process"
+                    color = style.get_color(base)
+                if color == "#FFFFFF":
+                    color = "black"
             icon = draw_icon(shape, color)
             self._icons[name] = icon
         return icon
 
     def _shape_for_tool(self, name: str) -> str:
+        if name.startswith("Add "):
+            name = name[4:]
+            if name.startswith("Generic "):
+                name = name[8:]
+            if name == "Process Area":
+                name = "System Boundary"
         mapping = {
             "Select": "arrow",
             "Actor": "human",
@@ -3453,6 +3469,26 @@ class SysMLDiagramWindow(tk.Frame):
             "Record": "circle",
             "Role": "circle",
             "Standard": "document",
+            "Process": "hexagon",
+            "Activity": "rect",
+            "Task": "rect",
+            "Operation": "ellipse",
+            "Driving Function": "triangle",
+            "Software Component": "rect",
+            "Test Suite": "test",
+            "System": "nested",
+            "Verification Plan": "document",
+            "Component": "rect",
+            "Manufacturing Process": "hexagon",
+            "Vehicle": "vehicle",
+            "Fleet": "vehicle",
+            "Safety Compliance": "diamond",
+            "Incident": "star",
+            "Safety Issue": "triangle",
+            "Field Data": "cylinder",
+            "Model": "document",
+            "Lifecycle Phase": "folder",
+            "Work Product": "rect",
         }
         if name in mapping:
             return mapping[name]
@@ -3470,6 +3506,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Control Action",
             "Feedback",
         }
+        relation_names.update(GOV_ELEMENT_RELATIONS)
+        relation_names.update(SAFETY_AI_RELATIONS)
         if name in relation_names or any(
             k in name for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
         ):
