@@ -7,6 +7,7 @@ from tkinter import ttk, simpledialog
 from gsn import GSNNode, GSNDiagram, GSNModule
 from gui import format_name_with_phase
 from gui.style_manager import StyleManager
+from gui.icon_factory import create_icon
 
 
 class GSNExplorer(tk.Frame):
@@ -36,7 +37,7 @@ class GSNExplorer(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        # simple icons so different elements are visually distinct
+        # detailed icons to visually distinguish elements
         self.module_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icon = self._create_icon("rect", "#4682b4")
         self.node_icons = {
@@ -492,40 +493,6 @@ class GSNExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
-        """Return a simple 16x16 icon for treeview items."""
-        size = 16
-        img = tk.PhotoImage(width=size, height=size)
-        img.put(StyleManager.get_instance().canvas_bg, to=(0, 0, size - 1, size - 1))
-        c = color
-        if shape == "circle":
-            r = size // 2 - 2
-            cx = cy = size // 2
-            for y in range(size):
-                for x in range(size):
-                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                        img.put(c, (x, y))
-        elif shape == "diamond":
-            mid = size // 2
-            for y in range(2, size - 2):
-                span = mid - abs(mid - y)
-                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
-        elif shape == "rect":
-            for x in range(3, size - 3):
-                img.put(c, (x, 3))
-                img.put(c, (x, size - 4))
-            for y in range(3, size - 3):
-                img.put(c, (3, y))
-                img.put(c, (size - 4, y))
-        elif shape == "folder":
-            for x in range(1, size - 1):
-                img.put(c, (x, 4))
-                img.put(c, (x, size - 2))
-            for y in range(4, size - 1):
-                img.put(c, (1, y))
-                img.put(c, (size - 2, y))
-            for x in range(3, size - 3):
-                img.put(c, (x, 2))
-            img.put(c, to=(1, 3, size - 2, 4))
-        else:
-            img.put(c, to=(2, 2, size - 2, size - 2))
-        return img
+        """Proxy to the shared icon factory with the canvas background."""
+        bg = StyleManager.get_instance().canvas_bg
+        return create_icon(shape, color, bg)

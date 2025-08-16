@@ -10,6 +10,7 @@ from typing import List, Dict
 import re
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
+from gui.icon_factory import create_icon
 
 
 def _strip_phase_suffix(name: str) -> str:
@@ -297,13 +298,5 @@ class SafetyManagementExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _create_icon(self, shape: str, color: str = "black"):
-        """Create a tiny tkinter drawing for treeview icons."""
-        img = tk.PhotoImage(width=16, height=16)
-        if shape == "folder":
-            img.put(color, to=(0, 4, 15, 15))
-            img.put("white", to=(3, 0, 15, 5))
-        elif shape == "rect":
-            img.put(color, to=(1, 1, 15, 15))
-        else:
-            img.put(color, to=(1, 1, 15, 15))
-        return img
+        """Proxy to the shared icon factory."""
+        return create_icon(shape, color)
