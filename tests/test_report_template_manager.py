@@ -66,29 +66,44 @@ def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
     file = tmp_path / "a_template.json"
     file.write_text("{}")
 
+    class DummyTab:
+        def __init__(self):
+            self.children = []
+
+        def winfo_children(self):
+            return self.children
+
+    class DummyApp:
+        def __init__(self):
+            self.titles = []
+            self.tabs = {}
+
+        def _new_tab(self, title):
+            self.titles.append(title)
+            if title not in self.tabs:
+                self.tabs[title] = DummyTab()
+            return self.tabs[title]
+
     class DummyEditor:
-        called = False
+        called = 0
 
         def __init__(self, master, app, path):
-            DummyEditor.called = True
-            self.master = master
-            self.app = app
-            self.path = path
+            DummyEditor.called += 1
+            master.children.append(self)
 
         def pack(self, **kw):
             pass
 
-        def winfo_exists(self):
-            return True
-
     monkeypatch.setattr(rtt, "ReportTemplateEditor", DummyEditor)
-    monkeypatch.setattr(rtm.tk, "Toplevel", lambda _m: object())
+
     mgr = object.__new__(ReportTemplateManager)
     mgr.templates_dir = tmp_path
     mgr.listbox = DummyListbox()
-    mgr.app = None
+    mgr.app = DummyApp()
     ReportTemplateManager._refresh_list(mgr)
     idx = list(mgr.listbox.get(i) for i in range(mgr.listbox.size())).index("a_template.json")
     mgr.listbox.selection_set(idx)
     mgr._edit_template()
-    assert DummyEditor.called
+    mgr._edit_template()
+    assert DummyEditor.called == 1
+    assert mgr.app.titles == [f"Report Template: {file.stem}", f"Report Template: {file.stem}"]
