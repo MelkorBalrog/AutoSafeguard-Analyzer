@@ -10504,13 +10504,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ai_relations = SAFETY_AI_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.ai_tools_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for name in ai_nodes:
                 ttk.Button(
                     self.ai_tools_frame,
