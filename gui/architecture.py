@@ -6336,6 +6336,40 @@ class SysMLDiagramWindow(tk.Frame):
                 color = "#d5e8d4"
             elif obj.obj_type == "Data acquisition":
                 color = "#ffe6cc"
+            elif obj.obj_type == "Process":
+                color = "#e6f2ff"
+            elif obj.obj_type == "Activity":
+                color = "#fff2cc"
+            elif obj.obj_type == "Task":
+                color = "#d9ead3"
+            elif obj.obj_type == "Operation":
+                color = "#ead1dc"
+            elif obj.obj_type == "Driving Function":
+                color = "#d0e0e3"
+            elif obj.obj_type in ("Software Component", "Component"):
+                color = "#fff2cc"
+            elif obj.obj_type == "Test Suite":
+                color = "#f4cccc"
+            elif obj.obj_type == "System":
+                color = "#c9daf8"
+            elif obj.obj_type == "Verification Plan":
+                color = "#f9cb9c"
+            elif obj.obj_type == "Manufacturing Process":
+                color = "#b4a7d6"
+            elif obj.obj_type == "Vehicle":
+                color = "#a2c4c9"
+            elif obj.obj_type == "Fleet":
+                color = "#a4c2f4"
+            elif obj.obj_type == "Safety Compliance":
+                color = "#cfe2f3"
+            elif obj.obj_type == "Incident":
+                color = "#f4cccc"
+            elif obj.obj_type == "Safety Issue":
+                color = "#fce5cd"
+            elif obj.obj_type == "Field Data":
+                color = "#e2f0d9"
+            elif obj.obj_type == "Model":
+                color = "#d9d2e9"
         if obj.obj_type == "Actor":
             sx = obj.width / 80.0 * self.zoom
             sy = obj.height / 40.0 * self.zoom
@@ -6520,6 +6554,264 @@ class SysMLDiagramWindow(tk.Frame):
                 py = y + radius * math.sin(angle)
                 points.extend([px, py])
             self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            points = []
+            for i in range(6):
+                angle = math.radians(60 * i)
+                px = x + r * math.cos(angle)
+                py = y + r * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Activity":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self._create_round_rect(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                radius=12 * self.zoom,
+                outline=outline,
+                fill="",
+            )
+        elif obj.obj_type == "Task":
+            offset = w * 0.3
+            points = [
+                x - w + offset,
+                y - h,
+                x + w - offset,
+                y - h,
+                x + w,
+                y + h,
+                x - w,
+                y + h,
+            ]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Operation":
+            self.canvas.create_oval(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+        elif obj.obj_type == "Driving Function":
+            points = [x - w, y - h, x + w, y, x - w, y + h]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type in ("Software Component", "Component"):
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            side = w * 0.4
+            comp_h = h * 0.4
+            self.canvas.create_rectangle(
+                x - w - side * 0.1,
+                y - h + comp_h * 0.2,
+                x - w + side,
+                y - h + comp_h * 1.2,
+                outline=outline,
+                fill=StyleManager.get_instance().get_canvas_color(),
+            )
+            self.canvas.create_rectangle(
+                x - w - side * 0.1,
+                y + h - comp_h * 1.2,
+                x - w + side,
+                y + h - comp_h * 0.2,
+                outline=outline,
+                fill=StyleManager.get_instance().get_canvas_color(),
+            )
+        elif obj.obj_type == "Test Suite":
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_line(x - w, y, x + w, y, fill=outline)
+            self.canvas.create_line(x, y - h, x, y + h, fill=outline)
+        elif obj.obj_type == "System":
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            pad = 6 * self.zoom
+            self.canvas.create_rectangle(
+                x - w + pad,
+                y - h + pad,
+                x + w - pad,
+                y + h - pad,
+                outline=outline,
+                fill="",
+            )
+        elif obj.obj_type == "Verification Plan":
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            fold = 10 * self.zoom
+            self.canvas.create_polygon(
+                x + w - fold,
+                y - h,
+                x + w,
+                y - h,
+                x + w,
+                y - h + fold,
+                fill=StyleManager.get_instance().get_canvas_color(),
+                outline=outline,
+            )
+        elif obj.obj_type == "Vehicle":
+            body_h = h * 0.6
+            self.canvas.create_rectangle(
+                x - w,
+                y - body_h,
+                x + w,
+                y + body_h,
+                outline=outline,
+                fill=color,
+            )
+            wheel_r = min(w, h) * 0.2
+            self.canvas.create_oval(
+                x - w + wheel_r,
+                y + body_h - wheel_r,
+                x - w + 3 * wheel_r,
+                y + body_h + wheel_r,
+                outline=outline,
+                fill=outline,
+            )
+            self.canvas.create_oval(
+                x + w - 3 * wheel_r,
+                y + body_h - wheel_r,
+                x + w - wheel_r,
+                y + body_h + wheel_r,
+                outline=outline,
+                fill=outline,
+            )
+        elif obj.obj_type == "Fleet":
+            offset = 6 * self.zoom
+            body_h = h * 0.6
+            self.canvas.create_rectangle(
+                x - w + offset,
+                y - body_h - offset,
+                x + w + offset,
+                y + body_h - offset,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_rectangle(
+                x - w,
+                y - body_h,
+                x + w,
+                y + body_h,
+                outline=outline,
+                fill=color,
+            )
+            wheel_r = min(w, h) * 0.2
+            self.canvas.create_oval(
+                x - w + wheel_r,
+                y + body_h - wheel_r,
+                x - w + 3 * wheel_r,
+                y + body_h + wheel_r,
+                outline=outline,
+                fill=outline,
+            )
+            self.canvas.create_oval(
+                x + w - 3 * wheel_r,
+                y + body_h - wheel_r,
+                x + w - wheel_r,
+                y + body_h + wheel_r,
+                outline=outline,
+                fill=outline,
+            )
+        elif obj.obj_type == "Safety Compliance":
+            points = [
+                x,
+                y - h,
+                x + w,
+                y - h / 3,
+                x + w * 0.6,
+                y + h,
+                x - w * 0.6,
+                y + h,
+                x - w,
+                y - h / 3,
+            ]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Incident":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            points = []
+            for i in range(8):
+                angle = math.radians(45 * i)
+                radius = r if i % 2 == 0 else r * 0.5
+                px = x + radius * math.cos(angle)
+                py = y + radius * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Safety Issue":
+            points = [x, y - h, x + w, y + h, x - w, y + h]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Field Data":
+            rh = min(10 * self.zoom, h)
+            self.canvas.create_oval(
+                x - w,
+                y - h,
+                x + w,
+                y - h + 2 * rh,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_rectangle(
+                x - w,
+                y - h + rh,
+                x + w,
+                y + h - rh,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_oval(
+                x - w,
+                y + h - 2 * rh,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+        elif obj.obj_type == "Model":
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            off = w * 0.3
+            self.canvas.create_rectangle(
+                x - w + off,
+                y - h + off,
+                x + w + off,
+                y + h + off,
+                outline=outline,
+                fill=StyleManager.get_instance().get_canvas_color(),
+            )
+            self.canvas.create_line(x + w, y - h, x + w + off, y - h + off, fill=outline)
+            self.canvas.create_line(x + w, y + h, x + w + off, y + h + off, fill=outline)
+            self.canvas.create_line(x - w, y + h, x - w + off, y + h + off, fill=outline)
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
