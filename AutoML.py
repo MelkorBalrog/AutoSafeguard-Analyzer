@@ -16972,11 +16972,16 @@ class FaultTreeApp:
             if hasattr(event.widget, "nametowidget")
             else tab_id
         )
+        # Propagate recent changes and ensure the active tab reflects them
+        self.refresh_all()
         if tab is getattr(self, "_safety_case_tab", None):
             self.refresh_safety_case_table()
-        for child in tab.winfo_children():
+        widgets = [tab, *tab.winfo_children()]
+        for child in widgets:
             if hasattr(child, "refresh_from_repository"):
                 child.refresh_from_repository()
+            elif hasattr(child, "refresh"):
+                child.refresh()
 
         toolbox = getattr(self, "safety_mgmt_toolbox", None)
         if toolbox and getattr(self, "diagram_tabs", None):
