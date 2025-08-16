@@ -15,6 +15,12 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from config import load_diagram_rules
 
 # ---------------------------------------------------------------------------
 # Template variant helpers (adapted from generate_project_compatible_patterns.py)
@@ -175,7 +181,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
     args = ap.parse_args(list(argv) if argv is not None else None)
 
-    cfg = json.loads(args.config.read_text())
+    cfg = load_diagram_rules(args.config)
     pats = generate_patterns_from_config(cfg)
     if args.pretty:
         args.out.write_text(json.dumps(pats, ensure_ascii=False, indent=2) + "\n")
