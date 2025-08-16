@@ -7422,8 +7422,10 @@ class SysMLDiagramWindow(tk.Frame):
             for idx, text in enumerate(compartments):
                 cy = top + idx * step + step / 2
                 self.canvas.create_text(x, cy, text=text, font=self.font)
-            label = obj.properties.get("name", obj.obj_type)
-            self.canvas.create_text(x, bottom + 10 * self.zoom, text=label, font=self.font)
+            diag = self.repo.diagrams.get(self.diagram_id)
+            if not (diag and diag.diag_type == "Governance Diagram"):
+                label = obj.properties.get("name", obj.obj_type)
+                self.canvas.create_text(x, bottom + 10 * self.zoom, text=label, font=self.font)
         elif obj.obj_type in ("Fork", "Join"):
             half = obj.width / 2 * self.zoom
             self.canvas.create_rectangle(
@@ -7439,6 +7441,27 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=color,
                 outline=outline,
             )
+
+        diag = self.repo.diagrams.get(self.diagram_id)
+        if diag and diag.diag_type == "Governance Diagram":
+            stereotype = f"<<{obj.obj_type}>>"
+            self.canvas.create_text(
+                x, y, text=stereotype, anchor="center", font=self.font
+            )
+            name = _format_label(
+                self, obj.properties.get("name", obj.obj_type), obj.phase
+            )
+            bottom = y + h
+            if obj.obj_type in ("Actor", "Stakeholder"):
+                bottom = y + obj.height * self.zoom
+            self.canvas.create_text(
+                x,
+                bottom + 10 * self.zoom,
+                text=name,
+                anchor="n",
+                font=self.font,
+            )
+            return
 
         if obj.obj_type not in (
             "Block",
