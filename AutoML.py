@@ -17065,6 +17065,32 @@ class FaultTreeApp:
             for i in range(4):
                 img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
                 img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+        elif shape == "diamond":
+            mid = size // 2
+            for y in range(2, size - 2):
+                span = mid - abs(mid - y)
+                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+        elif shape == "triangle":
+            mid = size // 2
+            height = size - 4
+            for y in range(height):
+                span = (y * mid) // height
+                img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+        elif shape == "cylinder":
+            img.put(c, to=(2, 4, size - 2, size - 4))
+            for x in range(2, size - 2):
+                img.put(c, (x, 3))
+                img.put(c, (x, size - 4))
+            for x in range(3, size - 3):
+                img.put(c, (x, 2))
+                img.put(c, (x, size - 3))
+        elif shape == "document":
+            img.put(c, to=(2, 2, size - 2, size - 2))
+            fold = "white"
+            for i in range(4):
+                img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
+        elif shape == "bar":
+            img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
         elif shape == "rect":
             for x in range(3, size - 3):
                 img.put(c, (x, 3))

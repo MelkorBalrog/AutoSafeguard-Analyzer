@@ -81,7 +81,10 @@ def _apply_pattern(
             return cond or ""
         return ""
 
-    return re.sub(r"<([^>]+)>", repl, template)
+    result = re.sub(r"<([^>]+)>", repl, template)
+    if src_type == "Role":
+        result = result.replace(f" ({src_type})", "").replace(f" ({dst_type})", "")
+    return result
 
 
 def reload_config() -> None:
