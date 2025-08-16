@@ -10236,10 +10236,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
         if not hasattr(self, "tools_frame"):
             self.tools_frame = self.toolbox
-        btn = getattr(self, "tool_buttons", {}).get("Action")
+
+        tool_buttons = getattr(self, "tool_buttons", None)
+        if tool_buttons and "Select" in tool_buttons:
+            btn = tool_buttons.pop("Select")
+            try:
+                btn.destroy()
+            except Exception:  # pragma: no cover - headless tests
+                pass
+
+        btn = tool_buttons.get("Action") if tool_buttons else None
         if btn:
             btn.configure(text="Task")
-            self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
+            tool_buttons["Task"] = tool_buttons.pop("Action")
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
@@ -10283,13 +10292,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ai_relations = SAFETY_AI_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.ai_tools_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for name in ai_nodes:
                 ttk.Button(
                     self.ai_tools_frame,
@@ -10318,13 +10320,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.gov_elements_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for group, nodes in ge_nodes.items():
                 frame = ttk.LabelFrame(self.gov_elements_frame, text=group)
                 frame.pack(fill=tk.X, padx=2, pady=2)
