@@ -28,7 +28,11 @@ def _setup_window(monkeypatch):
     )
     win.toolbox = toolbox
     win.app = types.SimpleNamespace()
-    win._display_requirements = lambda *args, **kwargs: None
+    win._display_requirements = (
+        lambda *args, **kwargs: types.SimpleNamespace(
+            refresh_table=lambda ids: None
+        )
+    )
     monkeypatch.setattr(smt.SysMLRepository, "get_instance", lambda: object())
     return win
 
@@ -98,7 +102,10 @@ def test_lifecycle_requirements_visible_in_phases(monkeypatch):
     monkeypatch.setattr(smt.GovernanceDiagram, "from_repository", from_repo)
 
     captured = {}
-    win._display_requirements = lambda title, ids: captured.setdefault(title, ids)
+    def display_stub(title, ids):
+        captured.setdefault(title, ids)
+        return types.SimpleNamespace(refresh_table=lambda ids: None)
+    win._display_requirements = display_stub
 
     global_requirements.clear()
     # Generate lifecycle requirement
@@ -133,3 +140,36 @@ def test_delete_obsolete(monkeypatch):
     assert "obs" not in global_requirements
     assert "keep" in global_requirements
     assert shown  # ensure message displayed
+
+
+def test_lifecycle_tab_refresh(monkeypatch):
+    win = _setup_window(monkeypatch)
+    monkeypatch.setattr(
+        smt.GovernanceDiagram,
+        "from_repository",
+        lambda repo, diag_id: DummyGov([("Req", "organizational")]),
+    )
+
+    frames: list[types.SimpleNamespace] = []
+
+    def display_stub(title, ids):
+        frame = types.SimpleNamespace()
+
+        def refresh_table(ids_list):
+            frame.ids = list(ids_list)
+
+        frame.refresh_table = refresh_table
+        frame.refresh_table(ids)
+        frames.append(frame)
+        return frame
+
+    win._display_requirements = display_stub
+
+    global_requirements.clear()
+    win.generate_lifecycle_requirements()
+    frame = frames[0]
+    assert frame.ids  # initial requirement present
+
+    global_requirements.clear()  # simulate deletion
+    frame.refresh_from_repository()
+    assert not frame.ids

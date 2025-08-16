@@ -115,6 +115,12 @@ def test_phase_requirements_menu(monkeypatch):
         def grid(self, *args, **kwargs):
             pass
 
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
+
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)

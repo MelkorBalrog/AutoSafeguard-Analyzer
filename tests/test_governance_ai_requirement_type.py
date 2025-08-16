@@ -101,6 +101,12 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
         def grid(self, *args, **kwargs):
             pass
 
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
+
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
