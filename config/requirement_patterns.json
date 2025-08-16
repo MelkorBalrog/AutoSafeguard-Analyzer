@@ -1,6 +1,6 @@
 [
   {
-    "Pattern ID": "SA-acquisition-Database-Data_acquisition",
+    "Pattern ID": "SA-acquisition-Database-Data acquisition",
     "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
     "Template": "Engineering team shall acquire the <Data acquisition> using the <Database>.",
     "Variables": [
@@ -11,84 +11,210 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
+    "Pattern ID": "SA-field data collection-Database-Data acquisition",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "Engineering team shall collect field data the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall perform field data collection for <Data acquisition> and store results in <Database> with <sampling_plan> and <safety_controls>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Task",
+    "Pattern ID": "SA-field data collection-Database-Task",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "Engineering team shall collect field data the <Task> using the <Database>.",
+    "Template": "Engineering team shall perform field data collection for <Task> and store results in <Database> with <sampling_plan> and <safety_controls>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
-    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition",
+    "Pattern ID": "SA-field risk evaluation-Database-Data acquisition",
     "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
-    "Template": "Engineering team shall evaluate field risk the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall evaluate field risk for <Data acquisition> using evidence from <Database> and record findings in <risk_register>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-annotation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
-    "Template": "Engineering team shall annotate the <Database> using the <ANN>.",
+    "Template": "Engineering team shall annotate <Database> with <label_schema> using <ANN> and achieve inter-annotator agreement \u2265 <kappa>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-synthesis-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
-    "Template": "Engineering team shall synthesize the <Database> using the <ANN>.",
+    "Template": "Engineering team shall synthesize <Database> using <ANN> ensuring distributional parity within \u0394 <parity_delta>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-augmentation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
-    "Template": "Engineering team shall augment the <Database> using the <ANN>.",
+    "Template": "Engineering team shall augment <Database> using <ANN> with documented transforms <transform_list> and bias check <bias_check>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-labeling-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
-    "Template": "Engineering team shall label the <Database> using the <ANN>.",
+    "Template": "Engineering team shall label <Database> using <ANN> with QA sampling rate \u2265 <qa_rate>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
-    "Pattern ID": "SA-ai_training-Database-ANN",
+    "Pattern ID": "SA-ai training-Database-ANN",
     "Trigger": "Safety&AI: Database --[AI training]--> ANN",
     "Template": "Engineering team shall train the <ANN> using the <Database>.",
     "Variables": [
@@ -99,42 +225,156 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
-    "Pattern ID": "SA-ai_re-training-Database-ANN",
+    "Pattern ID": "SA-ai re-training-Database-ANN",
     "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
-    "Template": "Engineering team shall retrain the <ANN> using the <Database>.",
+    "Template": "Engineering team shall retrain <ANN> using <Database> when <drift_condition> is detected, within <t_max>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
-    "Pattern ID": "SA-model_evaluation-ANN-Database",
+    "Pattern ID": "SA-model evaluation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
-    "Template": "Engineering team shall evaluate model the <Database> using the <ANN>.",
+    "Template": "Engineering team shall evaluate model outputs in <Database> using <ANN> against <eval_protocol> and meet <acceptance_thresholds>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "Engineering team shall curate the <Database> using the <Database>.",
+    "Template": "Engineering team shall curate <Database> from <Database> maintaining lineage and versioning in <data_catalog>.",
     "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
     ],
-    "Notes": "Instantiate on detected edge; add measurable criteria."
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
   },
   {
     "Pattern ID": "SA-ingestion-Database-Database",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "Engineering team shall ingest the <Database> using the <Database>.",
+    "Template": "Engineering team shall ingest <Database> from <Database> through <ingestion_pipeline> with SLA <throughput_sla>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<data_quality_kpis>",
+      "<sampling_plan>",
+      "<safety_controls>",
+      "<risk_register>",
+      "<label_schema>",
+      "<kappa>",
+      "<parity_delta>",
+      "<transform_list>",
+      "<bias_check>",
+      "<qa_rate>",
+      "<training_kpi>",
+      "<drift_condition>",
+      "<t_max>",
+      "<eval_protocol>",
+      "<acceptance_thresholds>",
+      "<data_catalog>",
+      "<ingestion_pipeline>",
+      "<throughput_sla>"
+    ],
+    "Notes": "Lifecycle requirement suitable for AI/ML governance in automotive/systems contexts."
+  },
+  {
+    "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
+    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
+    "Template": "Owner shall propagate <Work Product> to dependent work products and update traceability.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
+    ],
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
+  },
+  {
+    "Pattern ID": "GOV-propagate by review-Work_Product-Work_Product",
+    "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
+    "Template": "System shall propagate by review the <target_id>.",
     "Variables": [
       "<source_id>",
       "<target_id>",
@@ -143,806 +383,365 @@
     "Notes": "Instantiate on detected edge; add measurable criteria."
   },
   {
-    "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
-    "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
-    "Template": "System shall propagate the <Work Product>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
-    "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "System shall propagate by review the <Work Product>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
+    "Pattern ID": "GOV-propagate by approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "System shall propagate by approval the <Work Product>.",
+    "Template": "Owner shall propagate <Work Product> after approval by <approval_board>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
     "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase",
     "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
-    "Template": "<Work Product> shall re-use the <Lifecycle Phase>.",
+    "Template": "<Work Product> shall re-use <Lifecycle Phase> where applicable and record justification when not re-used.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
-    "Template": "<Lifecycle Phase> shall re-use the <Lifecycle Phase>.",
+    "Template": "<Lifecycle Phase> shall re-use <Lifecycle Phase> where applicable and record justification when not re-used.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product",
+    "Pattern ID": "GOV-satisfied by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
-    "Template": "System shall be satisfied by the <Work Product>.",
+    "Template": "<Work Product> shall be satisfied by <Work Product> with bidirectional traceability.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-derived_from-Work_Product-Work_Product",
+    "Pattern ID": "GOV-derived from-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
-    "Template": "System shall be derived from the <Work Product>.",
+    "Template": "<Work Product> shall be derived from <Work Product> with change impact analysis.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
     "Pattern ID": "GOV-trace-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Trace]--> Work Product",
-    "Template": "System shall trace to the <Work Product>.",
+    "Template": "<Work Product> shall trace to <Work Product> ensuring coverage \u2265 <coverage_target>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-used_by-Work_Product-Work_Product",
+    "Pattern ID": "GOV-used by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used By]--> Work Product",
-    "Template": "System shall be used by the <Work Product>.",
+    "Template": "<Work Product> shall be used by <Work Product> with controlled access <acl>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product",
+    "Pattern ID": "GOV-used after review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
-    "Template": "System shall be used after review the <Work Product>.",
+    "Template": "<Work Product> shall be used after review by <review_board> with minutes in <record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product",
+    "Pattern ID": "GOV-used after approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
-    "Template": "System shall be used after approval the <Work Product>.",
+    "Template": "<Work Product> shall be used after approval by <approval_board> with evidence in <record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
-      "<evidence_ref>"
+      "<record>",
+      "<milestone>",
+      "<freq>",
+      "<CAPA>",
+      "<entry_criteria>",
+      "<iface>",
+      "<acl>",
+      "<data_stewardship_policy>",
+      "<recipient>",
+      "<acceptance_criteria>",
+      "<work_instructions>",
+      "<threshold_condition>",
+      "<tooling>",
+      "<quality_kpis>",
+      "<kpis>",
+      "<usage_policy>",
+      "<approval_board>",
+      "<coverage_target>",
+      "<review_board>",
+      "<channel>",
+      "<cadence>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Governance/operations requirement mapped to concrete controls and evidence."
   },
   {
-    "Pattern ID": "GOV-approves-Role-Document",
-    "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<Role> shall approve the <Document>.",
+    "Pattern ID": "USE-association-Actor-Use_Case",
+    "Trigger": "Use Case Diagram: Actor --[Association]--> Use Case",
+    "Template": "In Use Case Diagram, the Association between <Actor> and <Use Case> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<model_checker_job>",
+      "<metamodel_version>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
   },
   {
-    "Pattern ID": "GOV-approves-Role-Policy",
-    "Trigger": "Gov: Role --[Approves]--> Policy",
-    "Template": "<Role> shall approve the <Policy>.",
+    "Pattern ID": "BLOCK-association-Block-Block",
+    "Trigger": "Block Diagram: Block --[Association]--> Block",
+    "Template": "In Block Diagram, the Association between <Block> and <Block> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<model_checker_job>",
+      "<metamodel_version>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
   },
   {
-    "Pattern ID": "GOV-approves-Role-Procedure",
-    "Trigger": "Gov: Role --[Approves]--> Procedure",
-    "Template": "<Role> shall approve the <Procedure>.",
+    "Pattern ID": "INTERNAL-connector-Part-Part",
+    "Trigger": "Internal Block Diagram: Part --[Connector]--> Part",
+    "Template": "In Internal Block Diagram, the Connector between <Part> and <Part> shall be modeled per the metamodel, and the model checker shall verify conformance during CI.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<model_checker_job>",
+      "<metamodel_version>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Structural conformance requirement; meaningful for engineering model CI."
   },
   {
-    "Pattern ID": "GOV-approves-Role-Record",
-    "Trigger": "Gov: Role --[Approves]--> Record",
-    "Template": "<Role> shall approve the <Record>.",
+    "Pattern ID": "ACTIVITY-flow-Initial-Action",
+    "Trigger": "Activity Diagram: Flow Initial -> Action allowed",
+    "Template": "In Activity Diagram, a flow from <Initial> to <Action> shall be permitted and modeled explicitly with guards/events as applicable.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<guard_syntax>",
+      "<event>",
+      "<completion_criteria>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Explicitly enumerates allowed flows to enable automated model linting."
   },
   {
-    "Pattern ID": "GOV-audits-Role-Process",
-    "Trigger": "Gov: Role --[Audits]--> Process",
-    "Template": "<Role> shall audit the <Process>.",
+    "Pattern ID": "GUARD-Decision",
+    "Trigger": "Node type Decision present with outgoing flows",
+    "Template": "All outgoing flows from <Decision> shall include guard expressions formatted as <guard_syntax> and be complete and mutually exclusive.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<guard_syntax>",
+      "<review_checklist_ref>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "MECE guards; engineering-relevant for deterministic behavior."
   },
   {
-    "Pattern ID": "GOV-audits-Role-Procedure",
-    "Trigger": "Gov: Role --[Audits]--> Procedure",
-    "Template": "<Role> shall audit the <Procedure>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
+    "Pattern ID": "LIMIT-Decision-4",
+    "Trigger": "Node type Decision present",
+    "Template": "A <Decision> shall not have more than 4 outgoing flows.",
+    "Variables": [],
+    "Notes": "Static structural rule enabling automated checks."
   },
   {
-    "Pattern ID": "GOV-audits-Role-Record",
-    "Trigger": "Gov: Role --[Audits]--> Record",
-    "Template": "<Role> shall audit the <Record>.",
+    "Pattern ID": "EARS-UBIQ",
+    "Trigger": "Generic (roles identifiable)",
+    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<subject>",
+      "<action>",
+      "<object>",
+      "<business_objective>",
+      "<verification_method>",
+      "<record>"
     ],
-    "Notes": "Use when a governance edge is present."
+    "Notes": "Operation/engineering-aligned ubiquitous requirement."
   },
   {
-    "Pattern ID": "GOV-authorizes-Organization-Policy",
-    "Trigger": "Gov: Organization --[Authorizes]--> Policy",
-    "Template": "<Organization> shall authorize the <Policy>.",
+    "Pattern ID": "NFR-COMPLIANCE",
+    "Trigger": "Constraint node via Constrained by / Governed by",
+    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
     "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
+      "<subject>",
+      "<standard_or_policy>",
+      "<record>"
     ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Organization-Procedure",
-    "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
-    "Template": "<Organization> shall authorize the <Procedure>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Organization-Process",
-    "Trigger": "Gov: Organization --[Authorizes]--> Process",
-    "Template": "<Organization> shall authorize the <Process>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Role-Policy",
-    "Trigger": "Gov: Role --[Authorizes]--> Policy",
-    "Template": "<Role> shall authorize the <Policy>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Role-Procedure",
-    "Trigger": "Gov: Role --[Authorizes]--> Procedure",
-    "Template": "<Role> shall authorize the <Procedure>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Role-Role",
-    "Trigger": "Gov: Role --[Communication Path]--> Role",
-    "Template": "<Role> shall communicate with the <Role>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Role-Organization",
-    "Trigger": "Gov: Role --[Communication Path]--> Organization",
-    "Template": "<Role> shall communicate with the <Organization>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Role-Business_Unit",
-    "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
-    "Template": "<Role> shall communicate with the <Business Unit>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Organization-Organization",
-    "Trigger": "Gov: Organization --[Communication Path]--> Organization",
-    "Template": "<Organization> shall communicate with the <Organization>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Organization-Business_Unit",
-    "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
-    "Template": "<Organization> shall communicate with the <Business Unit>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit",
-    "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
-    "Template": "<Business Unit> shall communicate with the <Business Unit>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-constrained_by-Procedure-Policy",
-    "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
-    "Template": "<Procedure> shall comply with the <Policy>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-constrained_by-Procedure-Guideline",
-    "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
-    "Template": "<Procedure> shall comply with the <Guideline>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-constrained_by-Procedure-Standard",
-    "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
-    "Template": "<Procedure> shall comply with the <Standard>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-constrained_by-Procedure-Principle",
-    "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
-    "Template": "<Procedure> shall comply with the <Principle>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-consumes-Process-Data",
-    "Trigger": "Gov: Process --[Consumes]--> Data",
-    "Template": "<Process> shall use the <Data>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-consumes-Process-Record",
-    "Trigger": "Gov: Process --[Consumes]--> Record",
-    "Template": "<Process> shall use the <Record>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-curation-Process-Data",
-    "Trigger": "Gov: Process --[Curation]--> Data",
-    "Template": "<Process> shall curate the <Data>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-delivers-Process-Document",
-    "Trigger": "Gov: Process --[Delivers]--> Document",
-    "Template": "<Process> shall deliver the <Document>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-delivers-Process-Record",
-    "Trigger": "Gov: Process --[Delivers]--> Record",
-    "Template": "<Process> shall deliver the <Record>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-executes-Role-Process",
-    "Trigger": "Gov: Role --[Executes]--> Process",
-    "Template": "<Role> shall execute the <Process>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-executes-Role-Procedure",
-    "Trigger": "Gov: Role --[Executes]--> Procedure",
-    "Template": "<Role> shall execute the <Procedure>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-extend-Policy-Policy",
-    "Trigger": "Gov: Policy --[Extend]--> Policy",
-    "Template": "<Policy> shall extend the <Policy>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-extend-Standard-Standard",
-    "Trigger": "Gov: Standard --[Extend]--> Standard",
-    "Template": "<Standard> shall extend the <Standard>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-generalize-Policy-Policy",
-    "Trigger": "Gov: Policy --[Generalize]--> Policy",
-    "Template": "<Policy> shall generalize the <Policy>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-generalize-Standard-Standard",
-    "Trigger": "Gov: Standard --[Generalize]--> Standard",
-    "Template": "<Standard> shall generalize the <Standard>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-monitors-Role-Metric",
-    "Trigger": "Gov: Role --[Monitors]--> Metric",
-    "Template": "<Role> shall monitor the <Metric>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-monitors-Role-Process",
-    "Trigger": "Gov: Role --[Monitors]--> Process",
-    "Template": "<Role> shall monitor the <Process>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-monitors-Role-Activity",
-    "Trigger": "Gov: Role --[Monitors]--> Activity",
-    "Template": "<Role> shall monitor the <Activity>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-performs-Role-Activity",
-    "Trigger": "Gov: Role --[Performs]--> Activity",
-    "Template": "<Role> shall perform the <Activity>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-performs-Role-Task",
-    "Trigger": "Gov: Role --[Performs]--> Task",
-    "Template": "<Role> shall perform the <Task>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-performs-Role-Procedure",
-    "Trigger": "Gov: Role --[Performs]--> Procedure",
-    "Template": "<Role> shall perform the <Procedure>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-produces-Process-Document",
-    "Trigger": "Gov: Process --[Produces]--> Document",
-    "Template": "<Process> shall produce the <Document>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-produces-Process-Data",
-    "Trigger": "Gov: Process --[Produces]--> Data",
-    "Template": "<Process> shall produce the <Data>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-produces-Process-Record",
-    "Trigger": "Gov: Process --[Produces]--> Record",
-    "Template": "<Process> shall produce the <Record>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-responsible_for-Role-Process",
-    "Trigger": "Gov: Role --[Responsible for]--> Process",
-    "Template": "<Role> shall be responsible for the <Process>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-responsible_for-Role-Activity",
-    "Trigger": "Gov: Role --[Responsible for]--> Activity",
-    "Template": "<Role> shall be responsible for the <Activity>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-responsible_for-Role-Task",
-    "Trigger": "Gov: Role --[Responsible for]--> Task",
-    "Template": "<Role> shall be responsible for the <Task>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-uses-Role-Document",
-    "Trigger": "Gov: Role --[Uses]--> Document",
-    "Template": "<Role> shall use the <Document>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-uses-Role-Data",
-    "Trigger": "Gov: Role --[Uses]--> Data",
-    "Template": "<Role> shall use the <Data>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-uses-Role-Record",
-    "Trigger": "Gov: Role --[Uses]--> Record",
-    "Template": "<Role> shall use the <Record>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-approves-Role-ANN",
-    "Trigger": "Gov: Role --[Approves]--> ANN",
-    "Template": "<source_id> shall approve the <ANN>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-approves-Role-Database",
-    "Trigger": "Gov: Role --[Approves]--> Database",
-    "Template": "<source_id> shall approve the <Database>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-audits-Role-ANN",
-    "Trigger": "Gov: Role --[Audits]--> ANN",
-    "Template": "<source_id> shall audit the <ANN>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-audits-Role-Database",
-    "Trigger": "Gov: Role --[Audits]--> Database",
-    "Template": "<source_id> shall audit the <Database>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-monitors-Role-ANN",
-    "Trigger": "Gov: Role --[Monitors]--> ANN",
-    "Template": "<source_id> shall monitor the <ANN>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-monitors-Role-Database",
-    "Trigger": "Gov: Role --[Monitors]--> Database",
-    "Template": "<source_id> shall monitor the <Database>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Organization-ANN",
-    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
-    "Template": "<source_id> shall authorize the <ANN>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-authorizes-Organization-Database",
-    "Trigger": "Gov: Organization --[Authorizes]--> Database",
-    "Template": "<source_id> shall authorize the <Database>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Use when a governance edge is present."
-  },
-  {
-    "Pattern ID": "GOV-constrains-Policy-ANN",
-    "Trigger": "Gov: Policy --[Constrains]--> ANN",
-    "Template": "<source_id> shall constrain the <ANN>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Governance policy applied to AI models."
-  },
-  {
-    "Pattern ID": "GOV-constrains-Policy-Database",
-    "Trigger": "Gov: Policy --[Constrains]--> Database",
-    "Template": "<source_id> shall constrain the <Database>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Governance policy applied to data repositories."
-  },
-  {
-    "Pattern ID": "SA-complies-ANN-Policy",
-    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
-    "Template": "Engineering team shall ensure the <ANN> complies with the <Policy>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Cross-domain compliance requirement."
-  },
-  {
-    "Pattern ID": "SA-complies-Database-Policy",
-    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
-    "Template": "Engineering team shall ensure the <Database> complies with the <Policy>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Cross-domain compliance requirement."
-  },
-  {
-    "Pattern ID": "SA-traces-ANN-Standard",
-    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
-    "Template": "Engineering team shall trace the <ANN> to the <Standard>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Traceability between AI models and standards."
-  },
-  {
-    "Pattern ID": "SA-traces-Database-Standard",
-    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
-    "Template": "Engineering team shall trace the <Database> to the <Standard>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Traceability between data repositories and applicable standards."
+    "Notes": "Compliance requirement with auditable trail."
   }
 ]
