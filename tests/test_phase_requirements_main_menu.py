@@ -96,3 +96,33 @@ def test_generate_lifecycle_requirements_delegates(monkeypatch):
     FaultTreeApp.generate_lifecycle_requirements(app)
 
     assert events == [False, "lifecycle"]
+
+
+def test_apply_model_data_refreshes_phase_menu(monkeypatch):
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    # Stub required methods and attributes used during model loading
+    app.disable_work_product = lambda name: None
+    app.enable_work_product = lambda name: None
+    app.update_failure_list = lambda: None
+    app.get_all_nodes = lambda te: []
+    app.get_all_fmea_entries = lambda: []
+    app.get_all_basic_events = lambda: []
+    app.load_default_mechanisms = lambda: None
+    app.update_odd_elements = lambda: None
+    app.update_global_requirements_from_nodes = lambda event: None
+    app.refresh_tool_enablement = lambda: None
+    app.odd_libraries = []
+    app.enabled_work_products = set()
+    app.project_properties = {}
+    app.update_views = lambda: None
+
+    calls: list[bool] = []
+    monkeypatch.setattr(
+        FaultTreeApp, "_refresh_phase_requirements_menu", lambda self: calls.append(True)
+    )
+
+    data = {"top_events": [], "safety_mgmt_toolbox": {"modules": [{"name": "P1"}]}}
+    FaultTreeApp.apply_model_data(app, data, ensure_root=False)
+
+    assert calls
+    assert app.safety_mgmt_toolbox.on_change == app._on_toolbox_change
