@@ -7453,7 +7453,7 @@ class SysMLDiagramWindow(tk.Frame):
                 label_lines = self._object_label_lines(obj)
             else:
                 label_lines = SysMLDiagramWindow._object_label_lines(self, obj)
-            if obj.obj_type in ("Actor", "Stakeholder"):
+            if obj.obj_type in ("Actor", "Stakeholder", "Role"):
                 sy = obj.height / 40.0 * self.zoom
                 label_x = x
                 label_y = y + 40 * sy + 10 * self.zoom
