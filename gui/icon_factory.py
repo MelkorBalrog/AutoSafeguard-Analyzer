@@ -1,17 +1,23 @@
 import tkinter as tk
+from typing import Optional
 
-def create_icon(shape: str, color: str = "black", bg: str = "white") -> tk.PhotoImage:
+
+def create_icon(
+    shape: str, color: str = "black", bg: Optional[str] = None
+) -> tk.PhotoImage:
     """Return a small 16x16 PhotoImage for *shape* using *color*.
 
     Icons now have filled interiors and simple outlines so they look like
-    miniature versions of the objects they represent.  The implementation is
-    deliberately lightweight and only uses ``tk.PhotoImage`` drawing
-    primitives so it works in the same environments as the previous icon
-    helpers.
+    miniature versions of the objects they represent. By default the returned
+    image has a transparent background so the icons blend with any widget.
+    The implementation is deliberately lightweight and only uses
+    ``tk.PhotoImage`` drawing primitives so it works in the same environments
+    as the previous icon helpers.
     """
     size = 16
     img = tk.PhotoImage(width=size, height=size)
-    img.put(bg, to=(0, 0, size - 1, size - 1))
+    if bg:
+        img.put(bg, to=(0, 0, size - 1, size - 1))
     c = color
     outline = "black"
     if shape == "circle":
@@ -85,7 +91,7 @@ def create_icon(shape: str, color: str = "black", bg: str = "white") -> tk.Photo
             img.put(outline, (x, size - 3))
     elif shape == "document":
         img.put(c, to=(2, 2, size - 2, size - 2))
-        fold = bg
+        fold = bg or "white"
         for i in range(4):
             img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
         for x in range(2, size - 2):
@@ -161,8 +167,9 @@ def create_icon(shape: str, color: str = "black", bg: str = "white") -> tk.Photo
             img.put(outline, (size - 4 - i, 3 + i))
     elif shape == "disk":
         img.put(c, to=(2, 2, size - 2, size - 2))
-        img.put(bg, to=(size - 6, 2, size - 2, 6))
-        img.put(bg, to=(3, 3, size - 3, 6))
+        if bg:
+            img.put(bg, to=(size - 6, 2, size - 2, 6))
+            img.put(bg, to=(3, 3, size - 3, 6))
         for x in range(2, size - 2):
             img.put(outline, (x, 2))
             img.put(outline, (x, size - 2))

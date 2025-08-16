@@ -253,6 +253,7 @@ from gui.gsn_config_window import GSNElementConfig
 from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
+from gui.icon_factory import create_icon
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -17051,89 +17052,8 @@ class FaultTreeApp:
         return f"\N{LEFT-POINTING DOUBLE ANGLE QUOTATION MARK}{diag.diag_type}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}"
 
     def _create_icon(self, shape: str, color: str) -> tk.PhotoImage:
-        """Return a simple 16x16 PhotoImage for the given shape and color."""
-        size = 16
-        img = tk.PhotoImage(width=size, height=size)
-        img.put("white", to=(0, 0, size - 1, size - 1))
-        c = color
-        outline = "black"
-        if shape == "circle":
-            r = size // 2 - 2
-            cx = cy = size // 2
-            for y in range(size):
-                for x in range(size):
-                    if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                        img.put(c, (x, y))
-        elif shape == "arrow":
-            mid = size // 2
-            for x in range(2, size - 5):
-                img.put(c, (x, mid))
-                img.put(outline, (x, mid))
-            head = size - 5
-            for i in range(5):
-                for y in range(mid - i, mid + i + 1):
-                    img.put(c, (head + i, y))
-                img.put(outline, (head + i, mid - i))
-                img.put(outline, (head + i, mid + i))
-        elif shape == "diamond":
-            mid = size // 2
-            for y in range(2, size - 2):
-                span = mid - abs(mid - y)
-                img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
-        elif shape == "triangle":
-            mid = size // 2
-            height = size - 4
-            for y in range(height):
-                span = (y * mid) // height
-                img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
-        elif shape == "cylinder":
-            img.put(c, to=(2, 4, size - 2, size - 4))
-            for x in range(2, size - 2):
-                img.put(c, (x, 3))
-                img.put(c, (x, size - 4))
-            for x in range(3, size - 3):
-                img.put(c, (x, 2))
-                img.put(c, (x, size - 3))
-        elif shape == "document":
-            img.put(c, to=(2, 2, size - 2, size - 2))
-            fold = "white"
-            for i in range(4):
-                img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
-        elif shape == "bar":
-            img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
-        elif shape == "rect":
-            for x in range(3, size - 3):
-                img.put(c, (x, 3))
-                img.put(c, (x, size - 4))
-            for y in range(3, size - 3):
-                img.put(c, (3, y))
-                img.put(c, (size - 4, y))
-        elif shape == "nested":
-            for x in range(1, size - 1):
-                img.put(c, (x, 1))
-                img.put(c, (x, size - 2))
-            for y in range(1, size - 1):
-                img.put(c, (1, y))
-                img.put(c, (size - 2, y))
-            for x in range(5, size - 5):
-                img.put(c, (x, 5))
-                img.put(c, (x, size - 6))
-            for y in range(5, size - 5):
-                img.put(c, (5, y))
-                img.put(c, (size - 6, y))
-        elif shape == "folder":
-            for x in range(1, size - 1):
-                img.put(c, (x, 4))
-                img.put(c, (x, size - 2))
-            for y in range(4, size - 1):
-                img.put(c, (1, y))
-                img.put(c, (size - 2, y))
-            for x in range(3, size - 3):
-                img.put(c, (x, 2))
-            img.put(c, to=(1, 3, size - 2, 4))
-        else:
-            img.put(c, to=(2, 2, size - 2, size - 2))
-        return img
+        """Delegate icon creation to the shared icon factory."""
+        return create_icon(shape, color)
 
     def open_use_case_diagram(self):
         """Prompt for a diagram name then open a new use case diagram."""
