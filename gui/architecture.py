@@ -67,7 +67,7 @@ SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
 # Elements available in the Governance Elements toolbox
 GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
-GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", {})
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
@@ -232,7 +232,7 @@ def reload_config() -> None:
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
     GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
-    GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+    GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", {})
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9814,14 +9814,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     text=name,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
-            ge_rel = ttk.LabelFrame(self.gov_elements_frame, text="Relationships")
-            ge_rel.pack(fill=tk.X, padx=2, pady=2)
-            for name in ge_rels:
-                ttk.Button(
-                    ge_rel,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
+            if isinstance(ge_rels, dict):
+                for group, rels in ge_rels.items():
+                    ge_rel = ttk.LabelFrame(self.gov_elements_frame, text=group)
+                    ge_rel.pack(fill=tk.X, padx=2, pady=2)
+                    for name in rels:
+                        ttk.Button(
+                            ge_rel,
+                            text=name,
+                            command=lambda t=name: self.select_tool(t),
+                        ).pack(fill=tk.X, padx=2, pady=2)
+            else:
+                ge_rel = ttk.LabelFrame(self.gov_elements_frame, text="Relationships")
+                ge_rel.pack(fill=tk.X, padx=2, pady=2)
+                for name in ge_rels:
+                    ttk.Button(
+                        ge_rel,
+                        text=name,
+                        command=lambda t=name: self.select_tool(t),
+                    ).pack(fill=tk.X, padx=2, pady=2)
         else:
             self.gov_elements_frame = types.SimpleNamespace(
                 pack=lambda *a, **k: None,
