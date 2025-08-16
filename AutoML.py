@@ -8600,6 +8600,7 @@ class FaultTreeApp:
                 items.append(table)
                 items.append(Spacer(1, 12))
             return items
+
         requirement_element_map = {
             "req_vehicle": ("vehicle", "Vehicle"),
             "req_operational": ("operational", "Operational"),
@@ -8722,6 +8723,7 @@ class FaultTreeApp:
                             if line:
                                 story.append(Paragraph(line, styles["Normal"]))
             story.append(Spacer(1, 12))
+
         try:
             doc.build(story)
             json_path = Path(path).with_suffix(".json")

@@ -149,7 +149,6 @@ class SectionDialog(simpledialog.Dialog):
         super().__init__(parent, title="Edit Section")
 
     def body(self, master):
-        self._body = master
         tk.Label(master, text="Title:").grid(row=0, column=0, padx=4, pady=4, sticky="e")
         self.title_var = tk.StringVar(value=self.section.get("title", ""))
         ttk.Entry(master, textvariable=self.title_var).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
@@ -163,13 +162,7 @@ class SectionDialog(simpledialog.Dialog):
         ).grid(row=2, column=0, columnspan=2, padx=4, pady=(0, 4), sticky="w")
         master.columnconfigure(1, weight=1)
         master.rowconfigure(1, weight=1)
-        self.after(0, self._make_resizable)
         return master
-
-    def _make_resizable(self):
-        """Allow dialog and contents to expand when resized."""
-        self.resizable(True, True)
-        self._body.pack_configure(expand=True, fill="both")
 
     def apply(self):
         self.result = {
@@ -200,14 +193,16 @@ class ReportTemplateEditor(tk.Frame):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
-        tree_frame = ttk.Frame(self)
-        tree_frame.grid(row=0, column=0, sticky="nsew")
+        paned = ttk.Panedwindow(self, orient=tk.HORIZONTAL)
+        paned.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+        tree_frame = ttk.Frame(paned)
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        self.tree = ttk.Treeview(tree_frame, columns=("title",), show="headings")
-        self.tree.heading("title", text="Section Title")
-        self.tree.column("title", width=200, stretch=False)
+        self.tree = ttk.Treeview(tree_frame, show="tree headings")
+        self.tree.heading("#0", text="Sections")
+        self.tree.column("#0", width=200, stretch=False)
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.bind("<Double-1>", self._edit_section)
         self.tree.grid(row=0, column=0, sticky="nsew")
@@ -218,20 +213,7 @@ class ReportTemplateEditor(tk.Frame):
         ybar.grid(row=0, column=1, sticky="ns")
         xbar.grid(row=1, column=0, sticky="ew")
 
-        btn_frame = ttk.Frame(tree_frame)
-        btn_frame.grid(row=2, column=0, columnspan=2, sticky="w", padx=2, pady=(4, 0))
-        ttk.Button(btn_frame, text="Add", command=self._add_section).pack(
-            side="left", padx=2
-        )
-        ttk.Button(btn_frame, text="Edit", command=self._edit_section).pack(
-            side="left", padx=2
-        )
-        ttk.Button(btn_frame, text="Delete", command=self._delete_section).pack(
-            side="left", padx=2
-        )
-
-        preview_frame = ttk.Frame(self)
-        preview_frame.grid(row=0, column=1, sticky="nsew")
+        preview_frame = ttk.Frame(paned)
         preview_frame.rowconfigure(0, weight=1)
         preview_frame.columnconfigure(0, weight=1)
 
@@ -243,6 +225,8 @@ class ReportTemplateEditor(tk.Frame):
         ybar2.grid(row=0, column=1, sticky="ns")
         xbar2.grid(row=1, column=0, sticky="ew")
 
+        paned.add(tree_frame, weight=1)
+        paned.add(preview_frame, weight=3)
         elem_btn = ttk.Button(self, text="Elements...", command=self._edit_elements)
         elem_btn.grid(row=1, column=0, sticky="w", padx=4, pady=4)
         btn = ttk.Button(self, text="Save", command=self.save)
@@ -254,19 +238,11 @@ class ReportTemplateEditor(tk.Frame):
     def _populate_tree(self):
         self.tree.delete(*self.tree.get_children(""))
         for idx, sec in enumerate(self.data.get("sections", [])):
-            self.tree.insert("", "end", f"sec|{idx}", values=(sec.get("title", ""),))
+            self.tree.insert("", "end", f"sec|{idx}", text=sec.get("title", ""))
         self._render_preview()
 
     def _on_select(self, _event=None):
         self._render_preview()
-
-    def _add_section(self):
-        dlg = SectionDialog(self, {"title": "", "content": ""})
-        if dlg.result:
-            self.data.setdefault("sections", []).append(dlg.result)
-            self._populate_tree()
-            new_idx = len(self.data["sections"]) - 1
-            self.tree.selection_set(f"sec|{new_idx}")
 
     def _edit_section(self, _event=None):
         item = self.tree.focus()
@@ -279,14 +255,6 @@ class ReportTemplateEditor(tk.Frame):
             self.data["sections"][idx] = dlg.result
             self._populate_tree()
             self.tree.selection_set(item)
-
-    def _delete_section(self):
-        item = self.tree.focus()
-        if not item:
-            return
-        idx = int(item.split("|", 1)[1])
-        del self.data["sections"][idx]
-        self._populate_tree()
 
     def _edit_elements(self):
         dlg = ElementsDialog(self, self.data.get("elements", {}))
