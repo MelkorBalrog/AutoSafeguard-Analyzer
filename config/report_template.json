@@ -14,7 +14,8 @@
     "fmeda_tables": "fmeda_tables",
     "traceability": "traceability",
     "cut_sets": "cut_sets",
-    "common_cause": "common_cause"
+    "common_cause": "common_cause",
+    "sysml_diagrams": "sysml_diagrams"
   },
   "sections": [
     {
@@ -36,6 +37,10 @@
     {
       "title": "Page Diagrams",
       "content": "<page_diagrams>"
+    },
+    {
+      "title": "SysML Diagrams",
+      "content": "<sysml_diagrams>"
     },
     {
       "title": "Failure Tables",

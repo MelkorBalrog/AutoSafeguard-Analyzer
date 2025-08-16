@@ -97,6 +97,13 @@ def test_validate_report_template_ignores_html_tags():
     assert validate_report_template(cfg) == cfg
 
 
+def test_validate_report_template_allows_sysml_diagrams():
+    cfg = {
+        "elements": {"sys": "sysml_diagrams"},
+        "sections": [{"title": "Intro", "content": "<sys>"}],
+    }
+    assert validate_report_template(cfg) == cfg
+
 def test_layout_report_template_basic():
     data = {
         "elements": {"img": "diagram"},
@@ -118,3 +125,12 @@ def test_layout_report_template_ignores_html_tags():
     items, _ = layout_report_template(data)
     names = [i.get("name") for i in items if i["type"] == "element"]
     assert names == ["diag"]
+
+
+def test_layout_report_template_sysml_diagrams_placeholder():
+    data = {
+        "elements": {"sys": "sysml_diagrams"},
+        "sections": [{"title": "Diagrams", "content": "<sys>"}],
+    }
+    items, _ = layout_report_template(data)
+    assert any(i["type"] == "element" and i["name"] == "sys" for i in items)

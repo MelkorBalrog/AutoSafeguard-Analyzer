@@ -8352,6 +8352,30 @@ class FaultTreeApp:
                     items.append(Spacer(1, 12))
             return items
 
+        def _element_sysml_diagrams():
+            items: list = []
+            from sysml.sysml_repository import SysMLRepository
+
+            repo = SysMLRepository.get_instance()
+            diagrams = list(repo.diagrams.values())
+            if diagrams:
+                items.append(Paragraph("SysML Diagrams:", pdf_styles["Heading2"]))
+                items.append(Spacer(1, 12))
+
+            for diag in diagrams:
+                img = self.capture_sysml_diagram(diag)
+                if img is not None:
+                    buf = BytesIO()
+                    img.save(buf, format="PNG")
+                    buf.seek(0)
+                    desired_width, desired_height = scale_image(img)
+                    rl_img = RLImage(buf, width=desired_width, height=desired_height)
+                    items.append(Paragraph(diag.name, pdf_styles["Heading3"]))
+                    items.append(Spacer(1, 12))
+                    items.append(rl_img)
+                    items.append(Spacer(1, 12))
+            return items
+
         def _element_fmea_tables():
             items: list = []
             if self.fmeas:
@@ -8607,6 +8631,8 @@ class FaultTreeApp:
                 return _element_top_events()
             if kind == "page_diagrams":
                 return _element_page_diagrams()
+            if kind == "sysml_diagrams":
+                return _element_sysml_diagrams()
             if kind == "fmea_tables":
                 return _element_fmea_tables()
             if kind == "fmeda_tables":
