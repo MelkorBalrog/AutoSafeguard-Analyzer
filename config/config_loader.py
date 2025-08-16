@@ -177,6 +177,57 @@ def validate_requirement_patterns(data: Any) -> list[dict[str, Any]]:
     return data
 
 
+def validate_report_template(data: Any) -> dict[str, Any]:
+    """Validate PDF report template structure."""
+
+    if not isinstance(data, dict):
+        raise ValueError("Configuration root must be a JSON object")
+    elements = data.get("elements", {})
+    if not isinstance(elements, dict):
+        raise ValueError("'elements' must be an object")
+    for name, kind in elements.items():
+        if not isinstance(name, str) or not isinstance(kind, str):
+            raise ValueError("elements must map names to string types")
+
+    sections = data.get("sections", [])
+    if not isinstance(sections, list):
+        raise ValueError("'sections' must be a list")
+    for idx, sec in enumerate(sections):
+        if not isinstance(sec, dict):
+            raise ValueError(f"sections[{idx}] must be an object")
+        title = sec.get("title")
+        content = sec.get("content")
+        if not isinstance(title, str):
+            raise ValueError(f"sections[{idx}]['title'] must be a string")
+        if not isinstance(content, str):
+            raise ValueError(f"sections[{idx}]['content'] must be a string")
+
+        for placeholder in re.findall(r"<([^<>]+)>", content):
+            name = placeholder.strip().split()[0]
+            if name.startswith("/"):
+                name = name[1:]
+            if name.endswith("/"):
+                name = name[:-1]
+            if name.lower() in {
+                "b",
+                "i",
+                "u",
+                "em",
+                "strong",
+                "p",
+                "br",
+                "span",
+                "div",
+            }:
+                continue
+            if name not in elements:
+                raise ValueError(
+                    f"sections[{idx}] references unknown element '{name}'"
+                )
+
+    return data
+
+
 def _strip_comments(text: str) -> str:
     """Return *text* with // and /* ... */ comments removed.
 
@@ -242,3 +293,9 @@ def load_requirement_patterns(path: str | Path) -> list[dict[str, Any]]:
     """Load and validate the requirement pattern configuration file."""
     data = load_json_with_comments(path)
     return validate_requirement_patterns(data)
+
+
+def load_report_template(path: str | Path) -> dict[str, Any]:
+    """Load and validate the PDF report template configuration file."""
+    data = load_json_with_comments(path)
+    return validate_report_template(data)
