@@ -19,7 +19,7 @@ import pytest
         ("Mission Profile", "Safety Analysis"),
         ("Reliability Analysis", "Safety Analysis"),
         ("Risk Assessment", "Risk Assessment"),
-        ("SPI", "Safety & Security Management"),
+        ("SPI Work Document", "Safety & Security Management"),
     ],
 )
 def test_governance_work_product_enablement(analysis, area_name, monkeypatch):
