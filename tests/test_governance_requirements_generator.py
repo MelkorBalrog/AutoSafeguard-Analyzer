@@ -88,3 +88,17 @@ def test_data_acquisition_compartment_sources():
     data_reqs = [r for r in reqs if r.action == "obtain data from"]
     assert all(r.req_type == "AI safety" for r in data_reqs)
     assert {r.obj for r in data_reqs} == {"Sensor A", "Sensor B"}
+
+
+def test_spi_nodes_treated_as_constraints():
+    diagram = GovernanceDiagram()
+    diagram.add_task("Review Data", node_type="Activity")
+    diagram.add_task("Latency SPI", node_type="SPI")
+    diagram.add_relationship("Review Data", "Latency SPI", label="monitors")
+
+    reqs = diagram.generate_requirements()
+    spi_req = next(r for r in reqs if r.action == "monitor")
+
+    assert spi_req.subject == "Review Data"
+    assert spi_req.obj is None
+    assert spi_req.constraint == "Latency SPI"
