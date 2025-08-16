@@ -81,8 +81,11 @@ class ReportTemplateManager(tk.Frame):
             return
         from gui.report_template_toolbox import ReportTemplateEditor
 
-        top = tk.Toplevel(self)
-        editor = ReportTemplateEditor(top, self.app, path)
+        title = f"Report Template: {path.stem}"
+        tab = self.app._new_tab(title)
+        if tab.winfo_children():
+            return
+        editor = ReportTemplateEditor(tab, self.app, path)
         editor.pack(fill=tk.BOTH, expand=True)
 
     def _delete_template(self):  # pragma: no cover - GUI dialog interaction
