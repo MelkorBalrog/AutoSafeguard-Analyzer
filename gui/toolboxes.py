@@ -41,6 +41,7 @@ from analysis.constants import CHECK_MARK, CROSS_MARK
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
     _work_product_name,
+    draw_icon,
 )
 
 
@@ -643,44 +644,96 @@ class ReliabilityWindow(tk.Frame):
 
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X)
-        load_btn = ttk.Button(btn_frame, text="Load CSV", command=self.load_csv)
+
+        # create small icons so buttons are visually representative
+        self._icons = {
+            "load": self._create_icon("folder", "#4682b4"),
+            "add": self._create_icon("plus", "#2e8b57"),
+            "cfg": self._create_icon("gear", "#8b008b"),
+            "del": self._create_icon("cross", "#b22222"),
+            "calc": self._create_icon("sigma", "#ff8c00"),
+            "save": self._create_icon("disk", "#1e90ff"),
+        }
+
+        load_btn = ttk.Button(
+            btn_frame,
+            text="Load CSV",
+            image=self._icons["load"],
+            compound=tk.LEFT,
+            command=self.load_csv,
+        )
         load_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_btn, "Import components from a CSV Bill of Materials.")
+
         add_btn = ttk.Button(
-            btn_frame, text="Add Component", command=self.add_component
+            btn_frame,
+            text="Add Component",
+            image=self._icons["add"],
+            compound=tk.LEFT,
+            command=self.add_component,
         )
         add_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(add_btn, "Create a new component entry manually.")
+
         cfg_btn = ttk.Button(
-            btn_frame, text="Configure Component", command=self.configure_component
+            btn_frame,
+            text="Configure Component",
+            image=self._icons["cfg"],
+            compound=tk.LEFT,
+            command=self.configure_component,
         )
         cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(cfg_btn, "Edit parameters of the selected component.")
+
         del_comp_btn = ttk.Button(
-            btn_frame, text="Delete Component", command=self.delete_component
+            btn_frame,
+            text="Delete Component",
+            image=self._icons["del"],
+            compound=tk.LEFT,
+            command=self.delete_component,
         )
         del_comp_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_comp_btn, "Remove the selected component from the table.")
+
         calc_btn = ttk.Button(
-            btn_frame, text="Calculate FIT", command=self.calculate_fit
+            btn_frame,
+            text="Calculate FIT",
+            image=self._icons["calc"],
+            compound=tk.LEFT,
+            command=self.calculate_fit,
         )
         calc_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(
             calc_btn,
             "Compute total FIT rate using the selected model and mission profile.",
         )
+
         save_btn = ttk.Button(
-            btn_frame, text="Save Analysis", command=self.save_analysis
+            btn_frame,
+            text="Save Analysis",
+            image=self._icons["save"],
+            compound=tk.LEFT,
+            command=self.save_analysis,
         )
         save_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(save_btn, "Store the current analysis in the project file.")
+
         load_an_btn = ttk.Button(
-            btn_frame, text="Load Analysis", command=self.load_analysis
+            btn_frame,
+            text="Load Analysis",
+            image=self._icons["load"],
+            compound=tk.LEFT,
+            command=self.load_analysis,
         )
         load_an_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_an_btn, "Reload a previously saved reliability analysis.")
+
         del_btn = ttk.Button(
-            btn_frame, text="Delete Analysis", command=self.delete_analysis
+            btn_frame,
+            text="Delete Analysis",
+            image=self._icons["del"],
+            compound=tk.LEFT,
+            command=self.delete_analysis,
         )
         del_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_btn, "Remove the selected analysis from the project.")
@@ -1158,6 +1211,10 @@ class ReliabilityWindow(tk.Frame):
         self.formula_label.config(
             text=f"Total FIT: {ra.total_fit:.2f}  DC: {ra.dc:.2f}  SPFM: {ra.spfm:.2f}  LPFM: {ra.lpfm:.2f}"
         )
+
+    def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
+        """Return a 16x16 icon using the shared draw_icon helper."""
+        return draw_icon(shape, color)
 
 
 class FI2TCWindow(tk.Frame):
