@@ -61,29 +61,42 @@ def _apply_pattern(
     dst_type: str,
     cond: str | None,
     constraint: str | None,
-) -> str:
-    """Instantiate a pattern template with diagram values."""
+) -> tuple[str, list[str]]:
+    """Instantiate a pattern template with diagram values.
+
+    Returns the instantiated text along with any template variables that
+    could not be resolved automatically.  Variables are taken from the
+    pattern's ``Variables`` list and stripped of the surrounding angle
+    brackets so they can be presented to users for manual completion.
+    """
 
     template = pat.get("Template", "")
+    variables = [v.strip("<>") for v in pat.get("Variables", [])]
 
     def repl(match: re.Match[str]) -> str:
         key = match.group(1)
         if key == "source_id" or key == src_type:
+            variables[:] = [v for v in variables if v != key]
             return src
         if key == "source_class":
+            variables[:] = [v for v in variables if v != key]
             return src_type
         if key == "target_id" or key == dst_type:
+            variables[:] = [v for v in variables if v != key]
             return dst
         if key == "target_class":
+            variables[:] = [v for v in variables if v != key]
             return dst_type
-        if key == "acceptance_criteria" or key == "condition":
+        if key == "condition":
+            variables[:] = [v for v in variables if v != key]
             return cond or ""
         if key == "constraint":
+            variables[:] = [v for v in variables if v != key]
             return constraint or ""
         return ""
 
     result = re.sub(r"<([^>]+)>", repl, template)
-    return result
+    return result, variables
 
 
 def reload_config() -> None:
@@ -134,6 +147,7 @@ class GeneratedRequirement:
     source: str | None = None
     req_type: str = "organizational"
     text_override: str | None = None
+    variables: list[str] = field(default_factory=list)
 
     @property
     def text(self) -> str:
@@ -469,11 +483,16 @@ class GovernanceDiagram:
                 pattern = cond_pat
             else:
                 pattern = base or cond_pat or const_pat or cond_const_pat
+            pattern_vars: list[str] = []
             if pattern:
-                text_override = _apply_pattern(
+                text_override, pattern_vars = _apply_pattern(
                     pattern, src, dst, src_type, dst_type, cond, constraint
                 )
-                if cond and "<condition>" not in pattern.get("Template", "") and "<acceptance_criteria>" not in pattern.get("Template", ""):
+                if (
+                    cond
+                    and "<condition>" not in pattern.get("Template", "")
+                    and "<acceptance_criteria>" not in pattern.get("Template", "")
+                ):
                     text_override = f"If {cond}, {text_override}"
 
             requirements.append(
@@ -487,6 +506,7 @@ class GovernanceDiagram:
                     source=src,
                     req_type=req_type,
                     text_override=text_override,
+                    variables=pattern_vars,
                 )
             )
 
