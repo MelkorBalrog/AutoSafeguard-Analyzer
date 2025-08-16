@@ -5,6 +5,30 @@ import json
 from config import load_diagram_rules, validate_diagram_rules
 from gui import messagebox
 
+
+class MultiSelectDialog(simpledialog.Dialog):
+    """Dialog presenting a list of options with multi-selection support."""
+
+    def __init__(self, parent, title: str, options: list[str], initial=None):
+        self.options = sorted(options)
+        self.initial = set(initial or [])
+        self.selected: list[str] | None = None
+        super().__init__(parent, title=title)
+
+    def body(self, master):
+        self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, height=10)
+        for idx, opt in enumerate(self.options):
+            self.listbox.insert(tk.END, opt)
+            if opt in self.initial:
+                self.listbox.selection_set(idx)
+        self.listbox.grid(row=0, column=0, padx=5, pady=5)
+        return self.listbox
+
+    def apply(self):
+        sel = [self.options[i] for i in self.listbox.curselection()]
+        self.selected = sel
+
+
 class DiagramRulesEditor(tk.Frame):
     """Visual editor for diagram rule configuration."""
 
@@ -21,6 +45,8 @@ class DiagramRulesEditor(tk.Frame):
                 "Diagram Rules", f"Failed to load configuration:\n{exc}"
             )
             self.data = {"connection_rules": {}}
+
+        self.all_node_types = self._collect_node_types()
 
         # Make both columns expandable so the tree and canvas resize with window
         self.columnconfigure(0, weight=1)
@@ -133,37 +159,67 @@ class DiagramRulesEditor(tk.Frame):
         else:
             self.canvas.delete("all")
 
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _collect_node_types(self) -> list[str]:
+        """Return all node types referenced in the configuration."""
+        types: set[str] = set()
+        cr = self.data.get("connection_rules", {})
+        for conns in cr.values():
+            for srcs in conns.values():
+                for src, dests in srcs.items():
+                    types.add(src)
+                    types.update(dests)
+        sar = self.data.get("safety_ai_relation_rules", {})
+        for rels in sar.values():
+            for src, dests in rels.items():
+                types.add(src)
+                types.update(dests)
+        for field in (
+            "ai_nodes",
+            "governance_node_types",
+            "gate_node_types",
+            "guard_nodes",
+        ):
+            types.update(self.data.get(field, []))
+        types.update(self.data.get("node_roles", {}).keys())
+        return sorted(types)
+
+    def _diagram_node_types(self, diagram: str) -> list[str]:
+        """Return node types defined for a specific diagram."""
+        rules = self.data.get("connection_rules", {}).get(diagram, {})
+        types: set[str] = set()
+        for srcs in rules.values():
+            for src, dests in srcs.items():
+                types.add(src)
+                types.update(dests)
+        return sorted(types) or self.all_node_types
+
     def _edit_item(self, _event=None):
         item = self.tree.focus()
         if item.startswith("rule|"):
             _, diag, conn, src = item.split("|", 3)
             cur = self.data["connection_rules"][diag][conn][src]
-            initial = ", ".join(cur)
-            new_val = simpledialog.askstring(
-                "Edit Targets",
-                f"Allowed targets for {src}",
-                initialvalue=initial,
-                parent=self,
+            options = self._diagram_node_types(diag)
+            dlg = MultiSelectDialog(
+                self, f"Allowed targets for {src}", options, cur
             )
-            if new_val is None:
+            if dlg.selected is None:
                 return
-            dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
+            dest_list = dlg.selected
             self.data["connection_rules"][diag][conn][src] = dest_list
             self.tree.set(item, "value", ", ".join(dest_list))
             self._draw_rule(diag, conn, src)
         elif item.startswith("sar|"):
             _, rel, src = item.split("|", 2)
             cur = self.data["safety_ai_relation_rules"][rel][src]
-            initial = ", ".join(cur)
-            new_val = simpledialog.askstring(
-                "Edit Targets",
-                f"Allowed targets for {src}",
-                initialvalue=initial,
-                parent=self,
+            dlg = MultiSelectDialog(
+                self, f"Allowed targets for {src}", self.all_node_types, cur
             )
-            if new_val is None:
+            if dlg.selected is None:
                 return
-            dest_list = [s.strip() for s in new_val.split(",") if s.strip()]
+            dest_list = dlg.selected
             self.data["safety_ai_relation_rules"][rel][src] = dest_list
             self.tree.set(item, "value", ", ".join(dest_list))
             self._draw_rule(None, rel, src)
