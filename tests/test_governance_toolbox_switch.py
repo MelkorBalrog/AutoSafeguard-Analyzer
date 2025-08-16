@@ -30,3 +30,8 @@ def test_switch_toolbox_handles_governance_elements():
     GovernanceDiagramWindow._switch_toolbox(win)
     assert win.gov_elements_frame.packed
     assert not win.gov_tools_frame.packed
+
+    win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance")
+    GovernanceDiagramWindow._switch_toolbox(win)
+    assert win.gov_tools_frame.packed
+    assert not win.gov_elements_frame.packed

@@ -5,6 +5,8 @@
     - "ai_relations": ["Label", ...] – relation labels available in the Safety & AI toolbox and treated as Safety & AI links
     - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
     - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
+    - "governance_element_nodes": ["Type", ...] – node types shown in the Governance Elements toolbox
+    - "governance_element_relations": ["Label", ...] – relation labels for the Governance Elements toolbox
     - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types
     - "requirement_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
     - "node_roles": { "Node Type": "subject|action|condition|constraint|object" } – default requirement role per node type
@@ -39,6 +41,42 @@
     "Hyperparameter Validation"
   ],
 
+  // Types shown in the Governance Elements toolbox
+  "governance_element_nodes": [
+    "Business Unit",
+    "Data",
+    "Document",
+    "Guideline",
+    "Metric",
+    "Organization",
+    "Policy",
+    "Principle",
+    "Procedure",
+    "Record",
+    "Role",
+    "Standard"
+  ],
+
+  // Relation labels for the Governance Elements toolbox
+  "governance_element_relations": [
+    "Approves",
+    "Audits",
+    "Authorizes",
+    "Communication Path",
+    "Constrained by",
+    "Consumes",
+    "Curation",
+    "Delivers",
+    "Executes",
+    "Extend",
+    "Generalize",
+    "Monitors",
+    "Performs",
+    "Produces",
+    "Responsible for",
+    "Uses"
+  ],
+
   // Diagram types considered part of the generic "Architecture Diagram" work product
   "arch_diagram_types": [
     "Use Case Diagram",
@@ -60,8 +98,6 @@
     "System Boundary",
     "Work Product",
     "Lifecycle Phase",
-    "Stakeholder",
-    "KPI",
     "Business Unit",
     "Data",
     "Document",
@@ -149,7 +185,6 @@
   "node_roles": {
     "Role": "subject",
     "Actor": "subject",
-    "Stakeholder": "subject",
     "Organization": "subject",
     "Business Unit": "subject",
     "Process": "action",
@@ -168,8 +203,7 @@
     "Database": "object",
     "ANN": "object",
     "Data acquisition": "object",
-    "Metric": "constraint",
-    "KPI": "constraint"
+    "Metric": "constraint"
   },
 
   // Allowed Safety & AI relationships between node types
@@ -222,15 +256,13 @@
     },
     "Governance Diagram": {
       "Flow": {
-        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
-        "Stakeholder": ["Action", "Decision", "Merge", "Fork", "Join", "Lifecycle Phase", "Work Product", "Stakeholder", "KPI"],
-        "KPI": ["Action", "Decision", "Merge", "Fork", "Join", "Lifecycle Phase", "Work Product", "Stakeholder", "KPI"],
+        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
+        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
+        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
+        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
+        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
         "Final": []
       },
       // Relationships between governance work products and phases

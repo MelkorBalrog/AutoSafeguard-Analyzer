@@ -65,6 +65,10 @@ SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
 SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
 SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
+# Elements available in the Governance Elements toolbox
+GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
+GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -219,6 +223,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
+    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -226,6 +231,8 @@ def reload_config() -> None:
     SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
+    GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
+    GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -6266,7 +6273,7 @@ class SysMLDiagramWindow(tk.Frame):
                 y + 40 * sy,
                 fill=outline,
             )
-        elif obj.obj_type == "Stakeholder":
+        elif obj.obj_type == "Role":
             sx = obj.width / 80.0 * self.zoom
             sy = obj.height / 40.0 * self.zoom
             self.canvas.create_oval(
@@ -6293,15 +6300,156 @@ class SysMLDiagramWindow(tk.Frame):
                 y + 40 * sy,
                 fill=outline,
             )
-        elif obj.obj_type == "KPI":
+        elif obj.obj_type == "Business Unit":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            bar = min(20 * self.zoom, h)
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y - h + bar,
+                outline=outline,
+                fill=color,
+            )
+        elif obj.obj_type == "Data":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            rh = min(10 * self.zoom, h)
+            self.canvas.create_oval(
+                x - w,
+                y - h,
+                x + w,
+                y - h + 2 * rh,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_rectangle(
+                x - w,
+                y - h + rh,
+                x + w,
+                y + h - rh,
+                outline=outline,
+                fill="",
+            )
+            self.canvas.create_oval(
+                x - w,
+                y + h - 2 * rh,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+        elif obj.obj_type == "Document":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            fold = 10 * self.zoom
+            self.canvas.create_polygon(
+                x + w - fold,
+                y - h,
+                x + w,
+                y - h,
+                x + w,
+                y - h + fold,
+                fill=StyleManager.get_instance().get_canvas_color(),
+                outline=outline,
+            )
+        elif obj.obj_type == "Guideline":
             r = min(obj.width, obj.height) * self.zoom / 2
             points = []
             for i in range(6):
-                angle = math.radians(60 * i + 30)
+                angle = math.radians(60 * i)
                 px = x + r * math.cos(angle)
                 py = y + r * math.sin(angle)
                 points.extend([px, py])
-            self.canvas.create_polygon(points, fill=color, outline=outline)
+            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
+            self.canvas.create_polygon(points, outline=outline, fill="")
+        elif obj.obj_type == "Metric":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            points = [x, y - h, x + w, y, x, y + h, x - w, y]
+            self.canvas.create_polygon(points, outline=outline, fill="")
+        elif obj.obj_type == "Organization":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_oval(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+        elif obj.obj_type == "Policy":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
+            points = []
+            for i in range(8):
+                angle = math.radians(45 * i + 22.5)
+                px = x + r * math.cos(angle)
+                py = y + r * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, outline=outline, fill="")
+        elif obj.obj_type == "Principle":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            points = [x, y - h, x + w, y + h, x - w, y + h]
+            self.canvas.create_polygon(points, outline=outline, fill="")
+        elif obj.obj_type == "Procedure":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            offset = w * 0.3
+            points = [
+                x - w + offset,
+                y - h,
+                x + w,
+                y - h,
+                x + w - offset,
+                y + h,
+                x - w,
+                y + h,
+            ]
+            self.canvas.create_polygon(points, outline=outline, fill="")
+        elif obj.obj_type == "Record":
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            tab_h = min(15 * self.zoom, h)
+            tab_w = w * 0.4
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x - w + tab_w,
+                y - h + tab_h,
+                outline=outline,
+                fill=StyleManager.get_instance().get_canvas_color(),
+            )
+        elif obj.obj_type == "Standard":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            self._draw_gradient_rect(x - r, y - r, x + r, y + r, color, obj.obj_id)
+            points = []
+            for i in range(10):
+                angle = math.radians(36 * i - 90)
+                radius = r if i % 2 == 0 else r * 0.4
+                px = x + radius * math.cos(angle)
+                py = y + radius * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, outline=outline, fill="")
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
@@ -9671,38 +9819,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
 
         # Create toolbox for additional governance elements
-        extra_nodes = [
-            "Business Unit",
-            "Data",
-            "Document",
-            "Guideline",
-            "Metric",
-            "Organization",
-            "Policy",
-            "Principle",
-            "Procedure",
-            "Record",
-            "Role",
-            "Standard",
-        ]
-        extra_rels = [
-            "Approves",
-            "Audits",
-            "Authorizes",
-            "Communication Path",
-            "Constrained by",
-            "Consumes",
-            "Curation",
-            "Delivers",
-            "Executes",
-            "Extend",
-            "Generalize",
-            "Monitors",
-            "Performs",
-            "Produces",
-            "Responsible for",
-            "Uses",
-        ]
+        ge_nodes = GOV_ELEMENT_NODES
+        ge_rels = GOV_ELEMENT_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
             ttk.Button(
@@ -9710,7 +9828,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 text="Select",
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
-            for name in extra_nodes:
+            for name in ge_nodes:
                 ttk.Button(
                     self.gov_elements_frame,
                     text=name,
@@ -9718,7 +9836,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ).pack(fill=tk.X, padx=2, pady=2)
             ge_rel = ttk.LabelFrame(self.gov_elements_frame, text="Relationships")
             ge_rel.pack(fill=tk.X, padx=2, pady=2)
-            for name in extra_rels:
+            for name in ge_rels:
                 ttk.Button(
                     ge_rel,
                     text=name,
