@@ -216,6 +216,11 @@ class _RequirementDialog(simpledialog.Dialog):
         self.req_type = req_type
         self.type_options = type_options or REQUIREMENT_TYPE_OPTIONS
         self.req = req or {}
+        app = getattr(parent, "app", None)
+        if app and hasattr(app, "safety_mgmt_toolbox"):
+            self.phase = getattr(app.safety_mgmt_toolbox, "active_module", None)
+        else:
+            self.phase = None
         super().__init__(parent, title="Requirement")
 
     def body(self, master):
@@ -293,6 +298,7 @@ class _RequirementDialog(simpledialog.Dialog):
             "status": self.status_var.get().strip(),
             "parent_id": self.parent_var.get().strip(),
         }
+        self.result["phase"] = self.req.get("phase", self.phase)
         if req_type not in (
             "operational",
             "functional modification",

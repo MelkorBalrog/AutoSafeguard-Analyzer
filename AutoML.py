@@ -1392,6 +1392,10 @@ class EditNodeDialog(simpledialog.Dialog):
    
     def add_new_requirement(self,custom_id, req_type, text, asil="QM", cal=CAL_LEVEL_OPTIONS[0]):
         # When a requirement is created, register it in the global registry.
+        phase = None
+        toolbox = getattr(getattr(self, "app", None), "safety_mgmt_toolbox", None)
+        if toolbox is not None:
+            phase = getattr(toolbox, "active_module", None)
         req = {
             "id": custom_id,
             "req_type": req_type,
@@ -1399,6 +1403,7 @@ class EditNodeDialog(simpledialog.Dialog):
             "custom_id": custom_id,
             "status": "draft",
             "parent_id": "",
+            "phase": phase,
         }
         ensure_requirement_defaults(req)
         if req_type not in (
