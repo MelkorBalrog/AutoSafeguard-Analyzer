@@ -218,6 +218,18 @@ class ReportTemplateEditor(tk.Frame):
         ybar.grid(row=0, column=1, sticky="ns")
         xbar.grid(row=1, column=0, sticky="ew")
 
+        btn_frame = ttk.Frame(tree_frame)
+        btn_frame.grid(row=2, column=0, columnspan=2, sticky="w", padx=2, pady=(4, 0))
+        ttk.Button(btn_frame, text="Add", command=self._add_section).pack(
+            side="left", padx=2
+        )
+        ttk.Button(btn_frame, text="Edit", command=self._edit_section).pack(
+            side="left", padx=2
+        )
+        ttk.Button(btn_frame, text="Delete", command=self._delete_section).pack(
+            side="left", padx=2
+        )
+
         preview_frame = ttk.Frame(self)
         preview_frame.grid(row=0, column=1, sticky="nsew")
         preview_frame.rowconfigure(0, weight=1)
@@ -248,6 +260,14 @@ class ReportTemplateEditor(tk.Frame):
     def _on_select(self, _event=None):
         self._render_preview()
 
+    def _add_section(self):
+        dlg = SectionDialog(self, {"title": "", "content": ""})
+        if dlg.result:
+            self.data.setdefault("sections", []).append(dlg.result)
+            self._populate_tree()
+            new_idx = len(self.data["sections"]) - 1
+            self.tree.selection_set(f"sec|{new_idx}")
+
     def _edit_section(self, _event=None):
         item = self.tree.focus()
         if not item:
@@ -259,6 +279,14 @@ class ReportTemplateEditor(tk.Frame):
             self.data["sections"][idx] = dlg.result
             self._populate_tree()
             self.tree.selection_set(item)
+
+    def _delete_section(self):
+        item = self.tree.focus()
+        if not item:
+            return
+        idx = int(item.split("|", 1)[1])
+        del self.data["sections"][idx]
+        self._populate_tree()
 
     def _edit_elements(self):
         dlg = ElementsDialog(self, self.data.get("elements", {}))
