@@ -70,6 +70,87 @@ GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 
 
+def draw_icon(shape: str, color: str = "black") -> tk.PhotoImage:
+    """Return a simple 16x16 PhotoImage representing the given *shape*."""
+    size = 16
+    img = tk.PhotoImage(width=size, height=size)
+    img.put("white", to=(0, 0, size - 1, size - 1))
+    c = color
+    if shape == "circle":
+        r = size // 2 - 2
+        cx = cy = size // 2
+        for y in range(size):
+            for x in range(size):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                    img.put(c, (x, y))
+    elif shape == "arrow":
+        mid = size // 2
+        for x in range(2, mid + 1):
+            img.put(c, to=(x, mid - 1, x + 1, mid + 1))
+        for i in range(4):
+            img.put(c, to=(mid + i, mid - 2 - i, mid + i + 1, mid - i))
+            img.put(c, to=(mid + i, mid + i, mid + i + 1, mid + 2 + i))
+    elif shape == "diamond":
+        mid = size // 2
+        for y in range(2, size - 2):
+            span = mid - abs(mid - y)
+            img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+    elif shape == "triangle":
+        mid = size // 2
+        height = size - 4
+        for y in range(height):
+            span = (y * mid) // height
+            img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+    elif shape == "cylinder":
+        img.put(c, to=(2, 4, size - 2, size - 4))
+        for x in range(2, size - 2):
+            img.put(c, (x, 3))
+            img.put(c, (x, size - 4))
+        for x in range(3, size - 3):
+            img.put(c, (x, 2))
+            img.put(c, (x, size - 3))
+    elif shape == "document":
+        img.put(c, to=(2, 2, size - 2, size - 2))
+        fold = "white"
+        for i in range(4):
+            img.put(fold, to=(size - 6 + i, 2, size - 2, 6 - i))
+    elif shape == "bar":
+        img.put(c, to=(2, size // 2 - 2, size - 2, size // 2 + 2))
+    elif shape == "rect":
+        for x in range(3, size - 3):
+            img.put(c, (x, 3))
+            img.put(c, (x, size - 4))
+        for y in range(3, size - 3):
+            img.put(c, (3, y))
+            img.put(c, (size - 4, y))
+    elif shape == "nested":
+        for x in range(1, size - 1):
+            img.put(c, (x, 1))
+            img.put(c, (x, size - 2))
+        for y in range(1, size - 1):
+            img.put(c, (1, y))
+            img.put(c, (size - 2, y))
+        for x in range(5, size - 5):
+            img.put(c, (x, 5))
+            img.put(c, (x, size - 6))
+        for y in range(5, size - 5):
+            img.put(c, (5, y))
+            img.put(c, (size - 6, y))
+    elif shape == "folder":
+        for x in range(1, size - 1):
+            img.put(c, (x, 4))
+            img.put(c, (x, size - 2))
+        for y in range(4, size - 1):
+            img.put(c, (1, y))
+            img.put(c, (size - 2, y))
+        for x in range(3, size - 3):
+            img.put(c, (x, 2))
+        img.put(c, to=(1, 3, size - 2, 4))
+    else:
+        img.put(c, to=(2, 2, size - 2, size - 2))
+    return img
+
+
 def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
     base = {
         "Entities": [n for n in ["Organization", "Business Unit", "Role"] if n in nodes],
@@ -3200,6 +3281,11 @@ class SysMLDiagramWindow(tk.Frame):
         self.back_btn.pack(fill=tk.X, padx=2, pady=2)
         self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
 
+        # Prepare icon cache for toolbox buttons
+        self._icons: dict[str, tk.PhotoImage] = {}
+        for name in ["Select"] + list(tools) + (relation_tools or []):
+            self._icon_for(name)
+
         # Always provide a select tool at the top of the toolbox
         self.tool_buttons: dict[str, ttk.Button] = {}
         self.tools_frame = ttk.Frame(self.toolbox)
@@ -3207,6 +3293,8 @@ class SysMLDiagramWindow(tk.Frame):
         select_btn = ttk.Button(
             self.tools_frame,
             text="Select",
+            image=self._icon_for("Select"),
+            compound=tk.LEFT,
             command=lambda: self.select_tool("Select"),
         )
         select_btn.pack(fill=tk.X, padx=2, pady=2)
@@ -3230,6 +3318,8 @@ class SysMLDiagramWindow(tk.Frame):
                 btn = ttk.Button(
                     frame,
                     text=tool,
+                    image=self._icon_for(tool),
+                    compound=tk.LEFT,
                     command=lambda t=tool: self.select_tool(t),
                 )
                 btn.pack(fill=tk.X, padx=2, pady=2)
@@ -3242,6 +3332,8 @@ class SysMLDiagramWindow(tk.Frame):
                 ttk.Button(
                     self.rel_frame,
                     text=tool,
+                    image=self._icon_for(tool),
+                    compound=tk.LEFT,
                     command=lambda t=tool: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
@@ -3392,7 +3484,61 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.configure(cursor=cursor)
         self.update_property_view()
 
-    # ------------------------------------------------------------
+    def _icon_for(self, name: str) -> tk.PhotoImage:
+        if not hasattr(self, "_icons"):
+            self._icons = {}
+        icon = self._icons.get(name)
+        if icon is None:
+            style = StyleManager.get_instance()
+            color = style.get_color(name)
+            if color == "#FFFFFF":
+                color = "black"
+            shape = self._shape_for_tool(name)
+            icon = draw_icon(shape, color)
+            self._icons[name] = icon
+        return icon
+
+    def _shape_for_tool(self, name: str) -> str:
+        mapping = {
+            "Select": "arrow",
+            "Actor": "circle",
+            "Use Case": "circle",
+            "Block": "rect",
+            "Part": "rect",
+            "Port": "circle",
+            "Initial": "circle",
+            "Final": "circle",
+            "Decision": "diamond",
+            "Merge": "diamond",
+            "Fork": "bar",
+            "Join": "bar",
+            "ANN": "triangle",
+            "Data acquisition": "arrow",
+            "Database": "cylinder",
+            "System Boundary": "rect",
+            "Business Unit": "rect",
+            "Data": "circle",
+            "Document": "document",
+            "Guideline": "document",
+            "Metric": "diamond",
+            "Organization": "rect",
+            "Policy": "document",
+            "Principle": "triangle",
+            "Procedure": "document",
+            "Record": "circle",
+            "Role": "circle",
+            "Standard": "document",
+        }
+        if name in mapping:
+            return mapping[name]
+        if name in {"Flow"} or any(
+            k in name
+            for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
+        ):
+            return "arrow"
+        return "rect"
+
+        # ------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------
     def validate_connection(
@@ -10217,12 +10363,16 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             ttk.Button(
                 self.ai_tools_frame,
                 text="Select",
+                image=self._icon_for("Select"),
+                compound=tk.LEFT,
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
             for name in ai_nodes:
                 ttk.Button(
                     self.ai_tools_frame,
                     text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
             rel_frame = ttk.LabelFrame(self.ai_tools_frame, text="Relationships")
@@ -10231,6 +10381,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ttk.Button(
                     rel_frame,
                     text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
         else:  # pragma: no cover - headless tests
@@ -10246,6 +10398,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             ttk.Button(
                 self.gov_elements_frame,
                 text="Select",
+                image=self._icon_for("Select"),
+                compound=tk.LEFT,
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
             for group, nodes in ge_nodes.items():
@@ -10255,6 +10409,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     ttk.Button(
                         frame,
                         text=name,
+                        image=self._icon_for(name),
+                        compound=tk.LEFT,
                         command=lambda t=name: self.select_tool(t),
                     ).pack(fill=tk.X, padx=2, pady=2)
         else:
