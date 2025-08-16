@@ -17018,14 +17018,24 @@ class FaultTreeApp:
         self.report_template_manager.pack(fill=tk.BOTH, expand=True)
 
     def reload_config(self) -> None:
-        """Reload diagram rule configuration across modules."""
-        _reload_local_config()
-        from gui import architecture, review_toolbox
-        from analysis import fmeda_utils, governance
+        """Reload diagram rule configuration across all interested modules."""
 
-        for mod in (architecture, review_toolbox, fmeda_utils, governance):
+        import sys
+
+        _reload_local_config()
+
+        for mod in list(sys.modules.values()):
             if hasattr(mod, "reload_config"):
-                mod.reload_config()
+                try:  # pragma: no cover - defensive programming
+                    mod.reload_config()
+                except Exception:
+                    pass
+
+        if hasattr(self, "canvas") and getattr(self.canvas, "winfo_exists", lambda: False)():
+            self.redraw_canvas()
+        pd = getattr(self, "page_diagram", None)
+        if pd and getattr(pd.canvas, "winfo_exists", lambda: False)():
+            pd.redraw_canvas()
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
