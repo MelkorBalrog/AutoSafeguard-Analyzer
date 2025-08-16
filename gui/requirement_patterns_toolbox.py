@@ -1,9 +1,94 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import ttk
 from pathlib import Path
 import json
 from config import load_json_with_comments
 from gui import messagebox
+
+
+class PatternConfig(tk.Toplevel):
+    """Dialog for editing a requirement pattern's fields."""
+
+    def __init__(self, master, pattern: dict):
+        super().__init__(master)
+        self.title("Edit Requirement Pattern")
+        self.pattern = pattern
+        self.result: dict | None = None
+
+        self.columnconfigure(1, weight=1)
+
+        self.pid_var = tk.StringVar(value=pattern.get("Pattern ID", ""))
+        self.trigger_var = tk.StringVar(value=pattern.get("Trigger", ""))
+        self.template_var = tk.StringVar(value=pattern.get("Template", ""))
+        self.vars_var = tk.StringVar(
+            value=", ".join(pattern.get("Variables", []))
+        )
+        self.notes_var = tk.StringVar(value=pattern.get("Notes", ""))
+
+        row = 0
+        tk.Label(self, text="Pattern ID:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.pid_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Trigger:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.trigger_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Template:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.template_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Variables:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.vars_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Notes:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.notes_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        btns = ttk.Frame(self)
+        btns.grid(row=row, column=0, columnspan=2, pady=4)
+        ttk.Button(btns, text="OK", command=self._on_ok).pack(
+            side=tk.LEFT, padx=4
+        )
+        ttk.Button(btns, text="Cancel", command=self.destroy).pack(
+            side=tk.LEFT, padx=4
+        )
+
+        self.transient(master)
+        self.grab_set()
+
+    def _on_ok(self) -> None:
+        self.result = {
+            "Pattern ID": self.pid_var.get().strip(),
+            "Trigger": self.trigger_var.get().strip(),
+            "Template": self.template_var.get().strip(),
+            "Variables": [
+                v.strip() for v in self.vars_var.get().split(",") if v.strip()
+            ],
+            "Notes": self.notes_var.get().strip(),
+        }
+        self.destroy()
 
 class RequirementPatternsEditor(tk.Frame):
     """Visual editor for requirement pattern configuration."""
@@ -65,40 +150,11 @@ class RequirementPatternsEditor(tk.Frame):
             return
         idx = int(item)
         pat = self.data[idx]
-        pid = simpledialog.askstring(
-            "Pattern ID", "Pattern ID", initialvalue=pat.get("Pattern ID", ""), parent=self
-        )
-        if pid is None:
+        dlg = PatternConfig(self, pat)
+        self.wait_window(dlg)
+        if dlg.result is None:
             return
-        trig = simpledialog.askstring(
-            "Trigger", "Trigger", initialvalue=pat.get("Trigger", ""), parent=self
-        )
-        if trig is None:
-            return
-        tmpl = simpledialog.askstring(
-            "Template", "Template", initialvalue=pat.get("Template", ""), parent=self
-        )
-        if tmpl is None:
-            return
-        vars_str = simpledialog.askstring(
-            "Variables", "Comma-separated variables", initialvalue=", ".join(pat.get("Variables", [])), parent=self
-        )
-        if vars_str is None:
-            return
-        notes = simpledialog.askstring(
-            "Notes", "Notes", initialvalue=pat.get("Notes", ""), parent=self
-        )
-        if notes is None:
-            return
-        pat.update(
-            {
-                "Pattern ID": pid.strip(),
-                "Trigger": trig.strip(),
-                "Template": tmpl.strip(),
-                "Variables": [v.strip() for v in vars_str.split(",") if v.strip()],
-                "Notes": notes.strip(),
-            }
-        )
+        pat.update(dlg.result)
         self._populate_tree()
 
     def add_pattern(self):

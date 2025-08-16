@@ -24,9 +24,12 @@ def test_generate_requirements_from_governance_diagram():
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
 
-    assert "Data Steward shall perform 'Review Data'." in texts
+    assert "Data Steward (Role) shall perform 'Review Data (Activity)'." in texts
     assert "Review Data shall produce 'Report'." in texts
-    assert "If data validated, Data Steward shall approve 'Report'." in texts
+    assert (
+        "If data validated, Data Steward (Role) shall approve 'Report (Document)'."
+        in texts
+    )
     assert "Review Data shall comply with 'Policy DP-001'." in texts
     assert "Organization shall review data." in texts
 
