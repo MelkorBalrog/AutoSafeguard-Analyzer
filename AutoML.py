@@ -13917,8 +13917,11 @@ class FaultTreeApp:
 
     def show_safety_goals_matrix(self):
         """Display product goals and derived requirements in a tree view."""
-        win = tk.Toplevel(self.root)
-        win.title("Product Goals Matrix")
+        if hasattr(self, "_sg_matrix_tab") and self._sg_matrix_tab.winfo_exists():
+            self.doc_nb.select(self._sg_matrix_tab)
+            return
+        self._sg_matrix_tab = self._new_tab("Product Goals Matrix")
+        win = self._sg_matrix_tab
         columns = ["ID", "ASIL", "Target PMHF", "CAL", "SafeState", "Text"]
         tree = ttk.Treeview(win, columns=columns, show="tree headings")
         tree.heading("ID", text="Requirement ID")
