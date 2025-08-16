@@ -250,6 +250,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
+from gui.specification_editor import SpecificationEditor
 from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
@@ -2426,6 +2427,10 @@ class FaultTreeApp:
         )
         self.work_product_menus.setdefault("Product Goal Specification", []).append(
             (requirements_menu, requirements_menu.index("end"))
+        )
+        requirements_menu.add_command(
+            label="Specification Document Editor",
+            command=self.show_specification_editor,
         )
         requirements_menu.add_command(
             label="Safety Performance Indicators",
@@ -14272,6 +14277,10 @@ class FaultTreeApp:
             name, typ = target.rsplit(" (", 1)
             return name, typ[:-1]
         return target, ""
+
+    def show_specification_editor(self):
+        """Launch the specification document editor."""
+        SpecificationEditor(self.root)
 
     def get_spi_targets(self) -> list[str]:
         """Return sorted list of SPI options formatted as 'Product Goal (Type)'."""
