@@ -100,7 +100,62 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
     return base
 
 
+def _make_gov_relation_classes(rels: list[str]) -> dict[str, list[str]]:
+    base = {
+        "Authority": [
+            r
+            for r in [
+                "Approves",
+                "Audits",
+                "Authorizes",
+                "Monitors",
+                "Responsible for",
+            ]
+            if r in rels
+        ],
+        "Process": [
+            r
+            for r in [
+                "Executes",
+                "Performs",
+                "Produces",
+                "Delivers",
+                "Uses",
+                "Consumes",
+                "Curation",
+                "Establish",
+                "Implement",
+                "Validate",
+                "Verify",
+                "Manufacture",
+                "Operate",
+                "Inspect",
+                "Triage",
+                "Improve",
+            ]
+            if r in rels
+        ],
+        "Structure": [
+            r
+            for r in [
+                "Communication Path",
+                "Constrained by",
+                "Constrains",
+                "Generalize",
+                "Extend",
+            ]
+            if r in rels
+        ],
+    }
+    known = {r for group in base.values() for r in group}
+    other = [r for r in rels if r not in known]
+    if other:
+        base["Other"] = other
+    return base
+
+
 GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
+GOV_ELEMENT_REL_CLASSES = _make_gov_relation_classes(GOV_ELEMENT_RELATIONS)
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
@@ -287,6 +342,7 @@ def reload_config() -> None:
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
     global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
+    global GOV_ELEMENT_REL_CLASSES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -297,6 +353,7 @@ def reload_config() -> None:
     GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
     GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
+    GOV_ELEMENT_REL_CLASSES = _make_gov_relation_classes(GOV_ELEMENT_RELATIONS)
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
@@ -9868,9 +9925,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 text="Select",
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
+            elem_frame = ttk.LabelFrame(self.ai_tools_frame, text="Elements")
+            elem_frame.pack(fill=tk.X, padx=2, pady=2)
             for name in ai_nodes:
                 ttk.Button(
-                    self.ai_tools_frame,
+                    elem_frame,
                     text=name,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
@@ -9996,7 +10055,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
-            wp_rel = ttk.LabelFrame(governance_panel, text="Work Product Links")
+            relationships = ttk.LabelFrame(governance_panel, text="Relationships")
+            relationships.pack(fill=tk.X, padx=2, pady=2)
+
+            wp_rel = ttk.LabelFrame(relationships, text="Work Product Links")
             wp_rel.pack(fill=tk.X, padx=2, pady=2)
             for name in work_rel_names:
                 ttk.Button(
@@ -10005,16 +10067,17 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
-            elem_rel = ttk.LabelFrame(
-                governance_panel, text="Element Relationships"
-            )
+            elem_rel = ttk.LabelFrame(relationships, text="Element Relationships")
             elem_rel.pack(fill=tk.X, padx=2, pady=2)
-            for name in GOV_ELEMENT_RELATIONS:
-                ttk.Button(
-                    elem_rel,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
+            for group, rels in GOV_ELEMENT_REL_CLASSES.items():
+                frame = ttk.LabelFrame(elem_rel, text=group)
+                frame.pack(fill=tk.X, padx=2, pady=2)
+                for name in rels:
+                    ttk.Button(
+                        frame,
+                        text=name,
+                        command=lambda t=name: self.select_tool(t),
+                    ).pack(fill=tk.X, padx=2, pady=2)
 
             node_cmds = [
                 ("Add Work Product", self.add_work_product),
@@ -10022,8 +10085,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ("Add Process Area", self.add_process_area),
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
+            elem_frame = ttk.LabelFrame(governance_panel, text="Elements")
+            elem_frame.pack(fill=tk.X, padx=2, pady=2)
             for name, cmd in node_cmds:
-                ttk.Button(governance_panel, text=name, command=cmd).pack(
+                ttk.Button(elem_frame, text=name, command=cmd).pack(
                     fill=tk.X, padx=2, pady=2
                 )
         else:  # pragma: no cover - headless tests
