@@ -8,7 +8,6 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
-from gui.requirements_document_editor import RequirementsDocumentEditor
 from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
@@ -4158,14 +4157,8 @@ class RequirementsExplorerWindow(tk.Frame):
         self.tree.pack(fill=tk.BOTH, expand=True)
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
-        ttk.Button(btnf, text="New Specification", command=self.open_spec_editor).pack(
-            side=tk.LEFT, padx=5
-        )
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
-
-    def open_spec_editor(self):  # pragma: no cover - GUI
-        RequirementsDocumentEditor(self)
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
