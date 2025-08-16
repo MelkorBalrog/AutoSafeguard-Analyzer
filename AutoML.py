@@ -528,6 +528,9 @@ _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
 _PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
+_REPORT_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent / "config/report_template.json"
+)
 
 
 def _reload_local_config() -> None:
@@ -2740,6 +2743,7 @@ class FaultTreeApp:
             "Cause & Effect Diagram": self.show_cause_effect_chain,
             "Diagram Rule Editor": self.open_diagram_rules_toolbox,
             "Requirement Pattern Editor": self.open_requirement_patterns_toolbox,
+            "Report Template Editor": self.open_report_template_toolbox,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2754,8 +2758,9 @@ class FaultTreeApp:
                 "Cause & Effect Diagram",
             ],
             "Configuration": [
-                "Diagram Rule Editor",
+                "Diagram Rule Editor", 
                 "Requirement Pattern Editor",
+                "Report Template Editor",
             ],
         }
         self.tool_to_work_product = {}
@@ -16864,6 +16869,30 @@ class FaultTreeApp:
             parent, self, _PATTERN_PATH
         )
         self.requirement_patterns_editor.pack(fill=tk.BOTH, expand=True)
+
+    def open_report_template_toolbox(self):
+        """Open editor for PDF report template configuration."""
+        tab_exists = (
+            hasattr(self, "_report_template_tab") and self._report_template_tab.winfo_exists()
+        )
+        editor_exists = (
+            hasattr(self, "report_template_editor")
+            and self.report_template_editor.winfo_exists()
+        )
+        if tab_exists:
+            self.doc_nb.select(self._report_template_tab)
+            if editor_exists:
+                return
+            parent = self._report_template_tab
+        else:
+            parent = self._report_template_tab = self._new_tab("Report Template")
+
+        from gui.report_template_toolbox import ReportTemplateEditor
+
+        self.report_template_editor = ReportTemplateEditor(
+            parent, self, _REPORT_TEMPLATE_PATH
+        )
+        self.report_template_editor.pack(fill=tk.BOTH, expand=True)
 
     def reload_config(self) -> None:
         """Reload diagram rule configuration across modules."""
