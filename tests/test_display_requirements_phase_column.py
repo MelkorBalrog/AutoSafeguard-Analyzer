@@ -40,10 +40,10 @@ def test_display_requirements_includes_phase(monkeypatch):
 
     global_requirements.clear()
     global_requirements.update({
-        "R1": {"req_type": "org", "text": "Do", "phase": "P1"}
+        "R1": {"req_type": "org", "text": "Do", "phase": "P1", "status": "draft"}
     })
 
     win._display_requirements("Title", ["R1"])
 
-    assert columns_captured[0] == ("ID", "Type", "Text", "Phase")
-    assert inserted[0] == ("R1", "org", "Do", "P1")
+    assert columns_captured[0] == ("ID", "Type", "Text", "Phase", "Status")
+    assert inserted[0] == ("R1", "org", "Do", "P1", "draft")

@@ -44,19 +44,26 @@ def test_phase_requirement_updates_existing(monkeypatch):
     )
     global_requirements.clear()
     win.generate_phase_requirements("Phase1")
-    rid = next(iter(global_requirements))
-    assert global_requirements[rid]["phase"] == "Phase1"
-    assert global_requirements[rid]["req_type"] == "organizational"
+    rids = list(global_requirements.keys())
+    assert len(rids) == 1
+    rid1 = rids[0]
+    assert global_requirements[rid1]["phase"] == "Phase1"
+    assert global_requirements[rid1]["req_type"] == "organizational"
+    assert global_requirements[rid1]["status"] == "draft"
 
-    # Regenerate with a different type; same id should be reused
+    # Regenerate with a different type; old requirement becomes obsolete and a
+    # new one is created
     monkeypatch.setattr(
         smt.GovernanceDiagram,
         "from_repository",
         lambda repo, diag_id: DummyGov([("Req", "product")]),
     )
     win.generate_phase_requirements("Phase1")
-    assert list(global_requirements.keys()) == [rid]
-    assert global_requirements[rid]["req_type"] == "product"
+    assert len(global_requirements) == 2
+    assert global_requirements[rid1]["status"] == "obsolete"
+    new_rid = next(r for r in global_requirements if r != rid1)
+    assert global_requirements[new_rid]["req_type"] == "product"
+    assert global_requirements[new_rid]["status"] == "draft"
 
 
 def test_lifecycle_requirements_visible_in_phases(monkeypatch):
