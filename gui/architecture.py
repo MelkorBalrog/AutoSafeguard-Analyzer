@@ -9936,11 +9936,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         canvas_frame.pack_forget()
 
         if hasattr(self, "tk"):
-            gov_container = ttk.Frame(self)
+            # Measure current toolbox widths so the governance toolbox matches
+            self.toolbox_canvas.update_idletasks()
+            self.toolbox_container.update_idletasks()
+            canvas_width = (
+                self.toolbox_canvas.winfo_width()
+                or self.toolbox_canvas.winfo_reqwidth()
+            )
+            container_width = (
+                self.toolbox_container.winfo_width()
+                or self.toolbox_container.winfo_reqwidth()
+            )
+
+            gov_container = ttk.Frame(self, width=container_width)
             gov_container.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
             gov_container.pack_propagate(False)
 
-            gov_canvas = tk.Canvas(gov_container, highlightthickness=0)
+            gov_canvas = tk.Canvas(
+                gov_container, highlightthickness=0, width=canvas_width
+            )
             gov_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
             gov_scroll = ttk.Scrollbar(
@@ -9962,6 +9976,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 lambda e: gov_canvas.itemconfig(gov_window, width=e.width),
             )
 
+            # Ensure the governance toolbox is visible immediately
+            self._fit_governance_toolbox(gov_container, gov_canvas, gov_window)
             self.after_idle(
                 lambda: self._fit_governance_toolbox(
                     gov_container, gov_canvas, gov_window
