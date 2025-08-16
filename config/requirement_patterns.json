@@ -759,168 +759,157 @@
     "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "GUARD-Decision",
-    "Trigger": "Node type Decision present with outgoing flows",
-    "Template": "All outgoing flows from <Decision> shall include a guard expression formatted as <syntax> and be complete and mutually exclusive.",
+    "Pattern ID": "GOV-approves-Role-ANN",
+    "Trigger": "Gov: Role --[Approves]--> ANN",
+    "Template": "<source_id> shall approve the <ANN>.",
     "Variables": [
-      "<syntax>",
-      "<review_checklist_ref>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "MECE guards; suitable for design-time checks."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "LIMIT-Decision-4",
-    "Trigger": "Node type Decision present",
-    "Template": "A <Decision> shall not have more than 4 outgoing flows.",
-    "Variables": [],
-    "Notes": "Static structural rule."
-  },
-  {
-    "Pattern ID": "LIMIT-Merge-4",
-    "Trigger": "Node type Merge present",
-    "Template": "A <Merge> shall not have more than 4 outgoing flows.",
-    "Variables": [],
-    "Notes": "Static structural rule."
-  },
-  {
-    "Pattern ID": "EARS-UBIQ",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "The <subject> shall <action> <object>.",
+    "Pattern ID": "GOV-approves-Role-Database",
+    "Trigger": "Gov: Role --[Approves]--> Database",
+    "Template": "<source_id> shall approve the <Database>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-EVENT",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>.",
+    "Pattern ID": "GOV-audits-Role-ANN",
+    "Trigger": "Gov: Role --[Audits]--> ANN",
+    "Template": "<source_id> shall audit the <ANN>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-STATE",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "While <state>, the <subject> shall <action> <object>.",
+    "Pattern ID": "GOV-audits-Role-Database",
+    "Trigger": "Gov: Role --[Audits]--> Database",
+    "Template": "<source_id> shall audit the <Database>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-UNWANTED",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>.",
+    "Pattern ID": "GOV-monitors-Role-ANN",
+    "Trigger": "Gov: Role --[Monitors]--> ANN",
+    "Template": "<source_id> shall monitor the <ANN>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-BIND-SUBJECT",
-    "Trigger": "Node role 'subject' detected",
-    "Template": "Bind <subject> from node types: Actor, Business Unit, Organization, Role",
+    "Pattern ID": "GOV-monitors-Role-Database",
+    "Trigger": "Gov: Role --[Monitors]--> Database",
+    "Template": "<source_id> shall monitor the <Database>.",
     "Variables": [
-      "<subject>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Helper entry for model-to-text binding."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-BIND-ACTION",
-    "Trigger": "Node role 'action' detected",
-    "Template": "Bind <action> from node types: Activity, Procedure, Process, Task",
+    "Pattern ID": "GOV-authorizes-Organization-ANN",
+    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
+    "Template": "<source_id> shall authorize the <ANN>.",
     "Variables": [
-      "<action>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Helper entry for model-to-text binding."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-BIND-CONDITION",
-    "Trigger": "Node role 'condition' detected",
-    "Template": "Bind <condition> from node types: Decision",
+    "Pattern ID": "GOV-authorizes-Organization-Database",
+    "Trigger": "Gov: Organization --[Authorizes]--> Database",
+    "Template": "<source_id> shall authorize the <Database>.",
     "Variables": [
-      "<condition>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Helper entry for model-to-text binding."
+    "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "EARS-BIND-CONSTRAINT",
-    "Trigger": "Node role 'constraint' detected",
-    "Template": "Bind <constraint> from node types: Guideline, Metric, Policy, Principle, Standard",
+    "Pattern ID": "GOV-constrains-Policy-ANN",
+    "Trigger": "Gov: Policy --[Constrains]--> ANN",
+    "Template": "<source_id> shall constrain the <ANN>.",
     "Variables": [
-      "<constraint>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Helper entry for model-to-text binding."
+    "Notes": "Governance policy applied to AI models."
   },
   {
-    "Pattern ID": "EARS-BIND-OBJECT",
-    "Trigger": "Node role 'object' detected",
-    "Template": "Bind <object> from node types: ANN, Artifact, Data, Data acquisition, Database, Document, Record",
+    "Pattern ID": "GOV-constrains-Policy-Database",
+    "Trigger": "Gov: Policy --[Constrains]--> Database",
+    "Template": "<source_id> shall constrain the <Database>.",
     "Variables": [
-      "<object>"
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
     ],
-    "Notes": "Helper entry for model-to-text binding."
+    "Notes": "Governance policy applied to data repositories."
   },
   {
-    "Pattern ID": "NFR-METRIC-PERF",
-    "Trigger": "Metric node linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence.",
+    "Pattern ID": "SA-complies-ANN-Policy",
+    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <ANN> complies with the <Policy>.",
     "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>"
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Instantiate when Role --[Monitors]--> Metric is present."
+    "Notes": "Cross-domain compliance requirement."
   },
   {
-    "Pattern ID": "NFR-COMPLIANCE",
-    "Trigger": "Constraint node (Policy/Standard/Guideline/Principle) connected via Constrained by / Governed by",
-    "Template": "The <subject> shall comply with <standard_or_policy> and retain evidence in <record>.",
+    "Pattern ID": "SA-complies-Database-Policy",
+    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <Database> complies with the <Policy>.",
     "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>"
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Compliance requirement with evidence trace."
+    "Notes": "Cross-domain compliance requirement."
+  },
+  {
+    "Pattern ID": "SA-traces-ANN-Standard",
+    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <ANN> to the <Standard>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Traceability between AI models and standards."
+  },
+  {
+    "Pattern ID": "SA-traces-Database-Standard",
+    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <Database> to the <Standard>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Traceability between data repositories and applicable standards."
   }
 ]
