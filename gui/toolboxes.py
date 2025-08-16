@@ -8,6 +8,7 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
+from gui.requirements_document_editor import RequirementsDocumentEditor
 from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
@@ -1302,6 +1303,8 @@ class FI2TCWindow(tk.Frame):
         )
         self.refresh_docs()
         self.refresh()
+        # Automatically open specifications grouped by requirement type
+        self.open_spec_editor()
         if not isinstance(master, tk.Toplevel):
             self.pack(fill=tk.BOTH, expand=True)
 
@@ -4157,8 +4160,24 @@ class RequirementsExplorerWindow(tk.Frame):
         self.tree.pack(fill=tk.BOTH, expand=True)
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
+        ttk.Button(btnf, text="New Specification", command=self.open_spec_editor).pack(
+            side=tk.LEFT, padx=5
+        )
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
+        # Automatically open specifications grouped by requirement type
+        self.open_spec_editor()
+
+    def open_spec_editor(self):  # pragma: no cover - GUI
+        grouped: dict[str, list[dict]] = {}
+        for req in global_requirements.values():
+            rtype = req.get("req_type") or "uncategorized"
+            grouped.setdefault(rtype, []).append(req)
+        if not grouped:
+            messagebox.showinfo("Specification", "No requirements available")
+            return
+        for rtype, reqs in grouped.items():
+            RequirementsDocumentEditor(self, req_type=rtype, requirements=reqs)
 
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
