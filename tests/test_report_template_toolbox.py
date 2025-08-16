@@ -134,3 +134,11 @@ def test_layout_report_template_sysml_diagrams_placeholder():
     }
     items, _ = layout_report_template(data)
     assert any(i["type"] == "element" and i["name"] == "sys" for i in items)
+
+
+def test_validate_report_template_requirement_elements():
+    cfg = {
+        "elements": {"req_vehicle": "req_vehicle"},
+        "sections": [{"title": "Vehicle Reqs", "content": "<req_vehicle>"}],
+    }
+    assert validate_report_template(cfg) == cfg

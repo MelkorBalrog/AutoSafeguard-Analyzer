@@ -11,7 +11,7 @@ from gui import messagebox
 
 
 def layout_report_template(
-    data: dict[str, Any], page_width: int = 595, margin: int = 40, line_height: int = 20
+    data: dict[str, Any], page_width: int = 595, margin: int = 40, line_height: int = 16
 ):
     """Return layout instructions for *data*.
 
@@ -200,16 +200,29 @@ class ReportTemplateEditor(tk.Frame):
 
         self.tree = ttk.Treeview(tree_frame, columns=("title",), show="headings")
         self.tree.heading("title", text="Section Title")
+        self.tree.column("title", width=200, stretch=False)
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.bind("<Double-1>", self._edit_section)
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         ybar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=ybar.set)
+        xbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=ybar.set, xscrollcommand=xbar.set)
         ybar.grid(row=0, column=1, sticky="ns")
+        xbar.grid(row=1, column=0, sticky="ew")
 
-        self.preview = tk.Canvas(self, background="white")
-        self.preview.grid(row=0, column=1, sticky="nsew")
+        preview_frame = ttk.Frame(self)
+        preview_frame.grid(row=0, column=1, sticky="nsew")
+        preview_frame.rowconfigure(0, weight=1)
+        preview_frame.columnconfigure(0, weight=1)
+
+        self.preview = tk.Canvas(preview_frame, background="white")
+        self.preview.grid(row=0, column=0, sticky="nsew")
+        ybar2 = ttk.Scrollbar(preview_frame, orient="vertical", command=self.preview.yview)
+        xbar2 = ttk.Scrollbar(preview_frame, orient="horizontal", command=self.preview.xview)
+        self.preview.configure(yscrollcommand=ybar2.set, xscrollcommand=xbar2.set)
+        ybar2.grid(row=0, column=1, sticky="ns")
+        xbar2.grid(row=1, column=0, sticky="ew")
 
         elem_btn = ttk.Button(self, text="Elements...", command=self._edit_elements)
         elem_btn.grid(row=1, column=0, sticky="w", padx=4, pady=4)
@@ -261,8 +274,8 @@ class ReportTemplateEditor(tk.Frame):
         page_width = 595
         self.preview.config(scrollregion=(0, 0, page_width, height))
         self.preview.create_rectangle(1, 1, page_width - 1, height - 1, outline="#ccc")
-        font = tkFont.Font(family="Arial", size=12)
-        bold = tkFont.Font(family="Arial", size=12, weight="bold")
+        font = tkFont.Font(family="Arial", size=10)
+        bold = tkFont.Font(family="Arial", size=10, weight="bold")
         for item in items:
             if item["type"] == "title":
                 self.preview.create_text(item["x"], item["y"], text=item["text"], anchor="nw", font=bold)

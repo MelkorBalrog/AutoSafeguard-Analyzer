@@ -8600,6 +8600,55 @@ class FaultTreeApp:
                 items.append(table)
                 items.append(Spacer(1, 12))
             return items
+        requirement_element_map = {
+            "req_vehicle": ("vehicle", "Vehicle"),
+            "req_operational": ("operational", "Operational"),
+            "req_functional_safety": ("functional safety", "Functional Safety"),
+            "req_technical_safety": ("technical safety", "Technical Safety"),
+            "req_ai_safety": ("AI safety", "AI Safety"),
+            "req_functional_modification": ("functional modification", "Functional Modification"),
+            "req_cybersecurity": ("cybersecurity", "Cybersecurity"),
+            "req_production": ("production", "Production"),
+            "req_service": ("service", "Service"),
+            "req_product": ("product", "Product"),
+            "req_legal": ("legal", "Legal"),
+            "req_organizational": ("organizational", "Organizational"),
+            "req_spi": ("spi", "Spi"),
+        }
+
+        def _make_requirement_table(req_type: str, title: str):
+            items: list = []
+            reqs = [
+                r for r in global_requirements.values() if r.get("req_type") == req_type
+            ]
+            if reqs:
+                items.append(PageBreak())
+                items.append(Paragraph(f"{title} Requirements", pdf_styles["Heading2"]))
+                items.append(Spacer(1, 12))
+                data = [["ID", "Text", "ASIL", "CAL"]]
+                for r in sorted(reqs, key=lambda x: x.get("id", "")):
+                    data.append(
+                        [
+                            r.get("id", ""),
+                            r.get("text", ""),
+                            r.get("asil", ""),
+                            r.get("cal", ""),
+                        ]
+                    )
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                items.append(table)
+                items.append(Spacer(1, 12))
+            return items
 
         def _build_element(name: str, kind: str | None):
             if kind == "diagram":
@@ -8643,6 +8692,9 @@ class FaultTreeApp:
                 return _element_cut_sets()
             if kind == "common_cause":
                 return _element_common_cause()
+            if name in requirement_element_map:
+                req_type, title = requirement_element_map[name]
+                return _make_requirement_table(req_type, title)
             return [Paragraph(f"[{name}]", styles["Normal"])]
 
         elements = template.get("elements", {})
@@ -8670,7 +8722,6 @@ class FaultTreeApp:
                             if line:
                                 story.append(Paragraph(line, styles["Normal"]))
             story.append(Spacer(1, 12))
-
         try:
             doc.build(story)
             json_path = Path(path).with_suffix(".json")

@@ -15,7 +15,20 @@
     "traceability": "traceability",
     "cut_sets": "cut_sets",
     "common_cause": "common_cause",
-    "sysml_diagrams": "sysml_diagrams"
+    "sysml_diagrams": "sysml_diagrams",
+    "req_vehicle": "req_vehicle",
+    "req_operational": "req_operational",
+    "req_functional_safety": "req_functional_safety",
+    "req_technical_safety": "req_technical_safety",
+    "req_ai_safety": "req_ai_safety",
+    "req_functional_modification": "req_functional_modification",
+    "req_cybersecurity": "req_cybersecurity",
+    "req_production": "req_production",
+    "req_service": "req_service",
+    "req_product": "req_product",
+    "req_legal": "req_legal",
+    "req_organizational": "req_organizational",
+    "req_spi": "req_spi"
   },
   "sections": [
     {
@@ -24,7 +37,7 @@
     },
     {
       "title": "Analyses",
-      "content": "<hazop><fi2tc><tc2fi><risk><cbn>"
+      "content": "<hazop><fi2tc><tc2fi><risk>"
     },
     {
       "title": "Safety Goals Summary",
@@ -49,6 +62,62 @@
     {
       "title": "Traceability",
       "content": "<traceability><cut_sets><common_cause>"
+    },
+    {
+      "title": "Causal Bayesian Networks",
+      "content": "<cbn>"
+    },
+    {
+      "title": "Vehicle Requirements",
+      "content": "<req_vehicle>"
+    },
+    {
+      "title": "Operational Requirements",
+      "content": "<req_operational>"
+    },
+    {
+      "title": "Functional Safety Requirements",
+      "content": "<req_functional_safety>"
+    },
+    {
+      "title": "Technical Safety Requirements",
+      "content": "<req_technical_safety>"
+    },
+    {
+      "title": "AI Safety Requirements",
+      "content": "<req_ai_safety>"
+    },
+    {
+      "title": "Functional Modification Requirements",
+      "content": "<req_functional_modification>"
+    },
+    {
+      "title": "Cybersecurity Requirements",
+      "content": "<req_cybersecurity>"
+    },
+    {
+      "title": "Production Requirements",
+      "content": "<req_production>"
+    },
+    {
+      "title": "Service Requirements",
+      "content": "<req_service>"
+    },
+    {
+      "title": "Product Requirements",
+      "content": "<req_product>"
+    },
+    {
+      "title": "Legal Requirements",
+      "content": "<req_legal>"
+    },
+    {
+      "title": "Organizational Requirements",
+      "content": "<req_organizational>"
+    },
+    {
+      "title": "SPI Requirements",
+      "content": "<req_spi>"
     }
   ]
 }
