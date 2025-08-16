@@ -93,7 +93,7 @@ class GSNDiagramWindow(tk.Frame):
             ("Context", self.add_context),
             ("Module", self.add_module),
         ]
-        node_frame = ttk.Frame(self.toolbox)
+        node_frame = ttk.LabelFrame(self.toolbox, text="Elements (elements)")
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
             ttk.Button(node_frame, text=name, command=cmd).pack(side=tk.LEFT)
@@ -102,7 +102,7 @@ class GSNDiagramWindow(tk.Frame):
             ("Solved By", self.connect_solved_by),
             ("In Context Of", self.connect_in_context),
         ]
-        rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
+        rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships (relationships)")
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:
             ttk.Button(rel_frame, text=name, command=cmd).pack(side=tk.LEFT)
