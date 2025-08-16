@@ -3455,22 +3455,22 @@ class SysMLDiagramWindow(tk.Frame):
             "Standard": "document",
             "Process": "hexagon",
             "Activity": "rect",
-            "Task": "trapezoid",
+            "Task": "rect",
             "Operation": "ellipse",
             "Driving Function": "triangle",
-            "Software Component": "component",
-            "Test Suite": "testsuite",
+            "Software Component": "rect",
+            "Test Suite": "test",
             "System": "nested",
             "Verification Plan": "document",
-            "Component": "component",
+            "Component": "rect",
             "Manufacturing Process": "hexagon",
             "Vehicle": "vehicle",
-            "Fleet": "fleet",
-            "Safety Compliance": "pentagon",
+            "Fleet": "vehicle",
+            "Safety Compliance": "diamond",
             "Incident": "star",
             "Safety Issue": "triangle",
             "Field Data": "cylinder",
-            "Model": "rect",
+            "Model": "document",
             "Lifecycle Phase": "folder",
         }
         if name in mapping:
@@ -3512,6 +3512,8 @@ class SysMLDiagramWindow(tk.Frame):
             "Triage",
             "Improve",
         }
+        relation_names.update(GOV_ELEMENT_RELATIONS)
+        relation_names.update(SAFETY_AI_RELATIONS)
         if name in relation_names or any(
             k in name for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
         ):
