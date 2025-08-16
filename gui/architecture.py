@@ -10451,7 +10451,16 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         btn = tool_buttons.get("Action") if tool_buttons else None
         if btn:
             btn.configure(text="Task")
-            tool_buttons["Task"] = tool_buttons.pop("Action")
+            self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
+        # Ensure legacy control nodes are removed from the toolbox
+        tool_btns = getattr(self, "tool_buttons", {})
+        for legacy in ("Fork", "Join"):
+            extra = tool_btns.pop(legacy, None)
+            if extra:
+                try:
+                    extra.destroy()
+                except Exception:  # pragma: no cover - headless tests
+                    pass
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
