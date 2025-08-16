@@ -292,7 +292,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Document",
     "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -303,7 +303,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Policy",
     "Trigger": "Gov: Role --[Approves]--> Policy",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -314,7 +314,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Procedure",
     "Trigger": "Gov: Role --[Approves]--> Procedure",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -325,7 +325,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Record",
     "Trigger": "Gov: Role --[Approves]--> Record",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -688,7 +688,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Activity",
     "Trigger": "Gov: Role --[Performs]--> Activity",
-    "Template": "<source_id> shall perform '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -699,7 +699,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Task",
     "Trigger": "Gov: Role --[Performs]--> Task",
-    "Template": "<source_id> shall perform '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -710,7 +710,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Procedure",
     "Trigger": "Gov: Role --[Performs]--> Procedure",
-    "Template": "<source_id> shall perform '<target_id>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -820,7 +820,7 @@
   {
     "Pattern ID": "GOV-approves-Role-ANN",
     "Trigger": "Gov: Role --[Approves]--> ANN",
-    "Template": "<source_id> shall approve the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -831,7 +831,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Database",
     "Trigger": "Gov: Role --[Approves]--> Database",
-    "Template": "<source_id> shall approve the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",

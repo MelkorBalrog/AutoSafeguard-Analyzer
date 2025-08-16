@@ -82,8 +82,6 @@ def _apply_pattern(
         return ""
 
     result = re.sub(r"<([^>]+)>", repl, template)
-    if src_type == "Role":
-        result = result.replace(f" ({src_type})", "").replace(f" ({dst_type})", "")
     return result
 
 
