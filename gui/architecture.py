@@ -10546,6 +10546,16 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         name = simpledialog.askstring("Add Work Product", "Enter work product name:")
         if not name:
             return
+        name = name.strip()
+        if not name:
+            return
+        existing = {wp.lower() for wp in getattr(self.app, "WORK_PRODUCT_INFO", {})}
+        if name.lower() in existing:
+            messagebox.showerror(
+                "Duplicate Work Product",
+                f"'{name}' is already a defined work product.",
+            )
+            return
         if not getattr(self, "canvas", None):
             self._place_work_product(name, 100.0, 100.0)
         else:
