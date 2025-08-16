@@ -27,8 +27,11 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
     toolbox.diagrams["AI Gov"] = diag.diag_id
 
     class DummyTab:
+        def __init__(self):
+            self.children = []
+
         def winfo_children(self):
-            return []
+            return list(self.children)
 
     tabs = []
 
@@ -39,10 +42,46 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
 
     trees = []
 
+    class DummyFrame:
+        def __init__(self, master):
+            self.master = master
+            self.children = []
+            master.children.append(self)
+
+        def winfo_children(self):
+            return list(self.children)
+
+        def rowconfigure(self, *args, **kwargs):
+            pass
+
+        def columnconfigure(self, *args, **kwargs):
+            pass
+
+        def pack(self, **kwargs):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
+    class DummyScrollbar:
+        def __init__(self, master, orient=None, command=None):
+            self.master = master
+            master.children.append(self)
+
+        def grid(self, *args, **kwargs):
+            pass
+
+        def set(self, *args):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
             self.rows = []
             trees.append(self)
+            master.children.append(self)
 
         def heading(self, col, text=""):
             pass
@@ -50,9 +89,20 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
         def insert(self, parent, idx, values):
             self.rows.append(values)
 
-        def pack(self, **kwargs):
+        def configure(self, **kwargs):
             pass
 
+        def yview(self, *args):
+            pass
+
+        def xview(self, *args):
+            pass
+
+        def grid(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)

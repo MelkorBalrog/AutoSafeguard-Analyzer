@@ -27,8 +27,11 @@ def test_requirements_button_opens_tab(monkeypatch):
     toolbox.diagrams["Gov"] = diag.diag_id
 
     class DummyTab:
+        def __init__(self):
+            self.children = []
+
         def winfo_children(self):
-            return []
+            return list(self.children)
 
     tabs: list[tuple[str, DummyTab]] = []
 
@@ -39,10 +42,46 @@ def test_requirements_button_opens_tab(monkeypatch):
 
     trees = []
 
+    class DummyFrame:
+        def __init__(self, master):
+            self.master = master
+            self.children = []
+            master.children.append(self)
+
+        def winfo_children(self):
+            return list(self.children)
+
+        def rowconfigure(self, *args, **kwargs):
+            pass
+
+        def columnconfigure(self, *args, **kwargs):
+            pass
+
+        def pack(self, **kwargs):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
+    class DummyScrollbar:
+        def __init__(self, master, orient=None, command=None):
+            self.master = master
+            master.children.append(self)
+
+        def grid(self, *args, **kwargs):
+            pass
+
+        def set(self, *args):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
             self.rows = []
             trees.append(self)
+            master.children.append(self)
 
         def heading(self, col, text=""):
             pass
@@ -50,9 +89,20 @@ def test_requirements_button_opens_tab(monkeypatch):
         def insert(self, parent, idx, values):
             self.rows.append(values)
 
-        def pack(self, **kwargs):
+        def configure(self, **kwargs):
             pass
 
+        def yview(self, *args):
+            pass
+
+        def xview(self, *args):
+            pass
+
+        def grid(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
@@ -94,15 +144,53 @@ def test_requirements_button_no_change(monkeypatch):
     toolbox.diagrams["Gov"] = diag.diag_id
 
     class DummyTab:
+        def __init__(self):
+            self.children = []
+
         def winfo_children(self):
-            return []
+            return list(self.children)
 
     def _new_tab(title):
         return DummyTab()
 
+    class DummyFrame:
+        def __init__(self, master):
+            self.master = master
+            self.children = []
+            master.children.append(self)
+
+        def winfo_children(self):
+            return list(self.children)
+
+        def rowconfigure(self, *args, **kwargs):
+            pass
+
+        def columnconfigure(self, *args, **kwargs):
+            pass
+
+        def pack(self, **kwargs):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
+    class DummyScrollbar:
+        def __init__(self, master, orient=None, command=None):
+            self.master = master
+            master.children.append(self)
+
+        def grid(self, *args, **kwargs):
+            pass
+
+        def set(self, *args):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
-            pass
+            master.children.append(self)
 
         def heading(self, col, text=""):
             pass
@@ -110,9 +198,20 @@ def test_requirements_button_no_change(monkeypatch):
         def insert(self, parent, idx, values):
             pass
 
-        def pack(self, **kwargs):
+        def configure(self, **kwargs):
             pass
 
+        def yview(self, *args):
+            pass
+
+        def xview(self, *args):
+            pass
+
+        def grid(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
@@ -122,13 +221,13 @@ def test_requirements_button_no_change(monkeypatch):
 
     global_requirements.clear()
     win.generate_requirements()
-    rid = next(iter(global_requirements))
+    rids = set(global_requirements)
 
-    # Regenerate without changes; requirement should remain unchanged
+    # Regenerate without changes; requirements should remain unchanged
     win.generate_requirements()
-    assert len(global_requirements) == 1
-    assert global_requirements[rid]["status"] == "draft"
-    assert global_requirements[rid]["diagram"] == "Gov"
+    assert len(global_requirements) == len(rids)
+    assert all(global_requirements[rid]["status"] == "draft" for rid in rids)
+    assert all(global_requirements[rid]["diagram"] == "Gov" for rid in rids)
 
 
 def test_other_diagram_requirements_preserved(monkeypatch):
@@ -154,15 +253,53 @@ def test_other_diagram_requirements_preserved(monkeypatch):
     toolbox.diagrams["Gov2"] = diag2.diag_id
 
     class DummyTab:
+        def __init__(self):
+            self.children = []
+
         def winfo_children(self):
-            return []
+            return list(self.children)
 
     def _new_tab(title):
         return DummyTab()
 
+    class DummyFrame:
+        def __init__(self, master):
+            self.master = master
+            self.children = []
+            master.children.append(self)
+
+        def winfo_children(self):
+            return list(self.children)
+
+        def rowconfigure(self, *args, **kwargs):
+            pass
+
+        def columnconfigure(self, *args, **kwargs):
+            pass
+
+        def pack(self, **kwargs):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
+    class DummyScrollbar:
+        def __init__(self, master, orient=None, command=None):
+            self.master = master
+            master.children.append(self)
+
+        def grid(self, *args, **kwargs):
+            pass
+
+        def set(self, *args):
+            pass
+
+        def destroy(self):
+            self.master.children.remove(self)
+
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
-            pass
+            master.children.append(self)
 
         def heading(self, col, text=""):
             pass
@@ -170,9 +307,20 @@ def test_other_diagram_requirements_preserved(monkeypatch):
         def insert(self, parent, idx, values):
             pass
 
-        def pack(self, **kwargs):
+        def configure(self, **kwargs):
             pass
 
+        def yview(self, *args):
+            pass
+
+        def xview(self, *args):
+            pass
+
+        def grid(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
@@ -182,16 +330,14 @@ def test_other_diagram_requirements_preserved(monkeypatch):
     global_requirements.clear()
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov1")
     win.generate_requirements()
-    rid1 = next(iter(global_requirements))
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov2")
     win.generate_requirements()
-    rid2 = [rid for rid in global_requirements if rid != rid1][0]
+    rids = set(global_requirements)
 
     # Move object in first diagram; requirements unchanged
     diag1.objects[0]["x"] = 10
     win.diag_var = types.SimpleNamespace(get=lambda: "Gov1")
     win.generate_requirements()
 
-    assert len(global_requirements) == 2
-    assert global_requirements[rid1]["status"] == "draft"
-    assert global_requirements[rid2]["status"] == "draft"
+    assert len(global_requirements) == len(rids)
+    assert all(global_requirements[rid]["status"] == "draft" for rid in rids)
