@@ -69,6 +69,21 @@ SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", {})
 
+# Group governance elements into meaningful classes for toolbox organisation
+GOV_ELEMENT_CLASSES = {
+    "Entities": [
+        n
+        for n in ["Organization", "Business Unit", "Role"]
+        if n in GOV_ELEMENT_NODES
+    ],
+    "Artifacts": [n for n in ["Data", "Document", "Record"] if n in GOV_ELEMENT_NODES],
+    "Governance": [
+        n
+        for n in ["Policy", "Principle", "Procedure", "Guideline", "Standard", "Metric"]
+        if n in GOV_ELEMENT_NODES
+    ],
+}
+
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
@@ -9798,9 +9813,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 pack_forget=lambda *a, **k: None,
             )
 
-        # Create toolbox for additional governance elements
-        ge_nodes = GOV_ELEMENT_NODES
-        ge_rels = GOV_ELEMENT_RELATIONS
+        # Create toolbox for additional governance elements grouped by class
+        ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
             ttk.Button(
@@ -9865,7 +9879,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         governance_panel = ttk.LabelFrame(self, text="Governance")
         governance_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
 
-        rel_names = [
+        work_rel_names = [
             "Propagate",
             "Propagate by Review",
             "Propagate by Approval",
@@ -9876,28 +9890,21 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Trace",
             "Satisfied by",
             "Derived from",
-            "Approves",
-            "Audits",
-            "Authorizes",
-            "Communication Path",
-            "Constrained by",
-            "Consumes",
-            "Curation",
-            "Delivers",
-            "Executes",
-            "Extend",
-            "Generalize",
-            "Monitors",
-            "Performs",
-            "Produces",
-            "Responsible for",
-            "Uses",
         ]
-        rel_frame = ttk.LabelFrame(governance_panel, text="Relationships")
-        rel_frame.pack(fill=tk.X, padx=2, pady=2)
-        for name in rel_names:
+        wp_rel = ttk.LabelFrame(governance_panel, text="Work Product Links")
+        wp_rel.pack(fill=tk.X, padx=2, pady=2)
+        for name in work_rel_names:
             ttk.Button(
-                rel_frame,
+                wp_rel,
+                text=name,
+                command=lambda t=name: self.select_tool(t),
+            ).pack(fill=tk.X, padx=2, pady=2)
+
+        elem_rel = ttk.LabelFrame(governance_panel, text="Element Relationships")
+        elem_rel.pack(fill=tk.X, padx=2, pady=2)
+        for name in GOV_ELEMENT_RELATIONS:
+            ttk.Button(
+                elem_rel,
                 text=name,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
