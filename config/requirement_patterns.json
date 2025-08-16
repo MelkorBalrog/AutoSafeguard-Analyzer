@@ -145,7 +145,7 @@
   {
     "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
-    "Template": "System shall propagate the <Work Product>.",
+    "Template": "<source_id> shall propagate the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -156,7 +156,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "System shall propagate by review the <Work Product>.",
+    "Template": "<source_id> shall propagate by review the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -167,7 +167,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "System shall propagate by approval the <Work Product>.",
+    "Template": "<source_id> shall propagate by approval the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -189,7 +189,7 @@
   {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
-    "Template": "<Lifecycle Phase> shall re-use the <Lifecycle Phase>.",
+    "Template": "<source_id> shall re-use the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -200,7 +200,7 @@
   {
     "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
-    "Template": "System shall be satisfied by the <Work Product>.",
+    "Template": "<source_id> shall be satisfied by the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -211,7 +211,7 @@
   {
     "Pattern ID": "GOV-derived_from-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
-    "Template": "System shall be derived from the <Work Product>.",
+    "Template": "<source_id> shall be derived from the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -222,7 +222,7 @@
   {
     "Pattern ID": "GOV-trace-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Trace]--> Work Product",
-    "Template": "System shall trace to the <Work Product>.",
+    "Template": "<source_id> shall trace to the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -233,7 +233,7 @@
   {
     "Pattern ID": "GOV-used_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used By]--> Work Product",
-    "Template": "System shall be used by the <Work Product>.",
+    "Template": "<source_id> shall be used by the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -244,7 +244,7 @@
   {
     "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
-    "Template": "System shall be used after review the <Work Product>.",
+    "Template": "<source_id> shall be used after review the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -255,7 +255,7 @@
   {
     "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
-    "Template": "System shall be used after approval the <Work Product>.",
+    "Template": "<source_id> shall be used after approval the <target_id>.",
     "Variables": [
       "<owner>",
       "<due_date>",
