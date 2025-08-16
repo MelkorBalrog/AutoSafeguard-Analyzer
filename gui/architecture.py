@@ -6234,6 +6234,42 @@ class SysMLDiagramWindow(tk.Frame):
                 y + 40 * sy,
                 fill=outline,
             )
+        elif obj.obj_type == "Stakeholder":
+            sx = obj.width / 80.0 * self.zoom
+            sy = obj.height / 40.0 * self.zoom
+            self.canvas.create_oval(
+                x - 10 * sx,
+                y - 30 * sy,
+                x + 10 * sx,
+                y - 10 * sy,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_line(x, y - 10 * sy, x, y + 20 * sy, fill=outline)
+            self.canvas.create_line(x - 15 * sx, y, x + 15 * sx, y, fill=outline)
+            self.canvas.create_line(
+                x,
+                y + 20 * sy,
+                x - 10 * sx,
+                y + 40 * sy,
+                fill=outline,
+            )
+            self.canvas.create_line(
+                x,
+                y + 20 * sy,
+                x + 10 * sx,
+                y + 40 * sy,
+                fill=outline,
+            )
+        elif obj.obj_type == "KPI":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            points = []
+            for i in range(6):
+                angle = math.radians(60 * i + 30)
+                px = x + r * math.cos(angle)
+                py = y + r * math.sin(angle)
+                points.extend([px, py])
+            self.canvas.create_polygon(points, fill=color, outline=outline)
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
@@ -6816,7 +6852,7 @@ class SysMLDiagramWindow(tk.Frame):
                 label_lines = self._object_label_lines(obj)
             else:
                 label_lines = SysMLDiagramWindow._object_label_lines(self, obj)
-            if obj.obj_type == "Actor":
+            if obj.obj_type in ("Actor", "Stakeholder"):
                 sy = obj.height / 40.0 * self.zoom
                 label_x = x
                 label_y = y + 40 * sy + 10 * self.zoom
@@ -9503,7 +9539,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tool_groups = {
             "Tasks": ["Action"],
-            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge", "Fork", "Join"],
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
@@ -9555,7 +9591,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self.toolbox, "tk"):
             selector = ttk.Combobox(
                 self.toolbox,
-                values=["Governance", "Stakeholder", "KPI", "Safety & AI Lifecycle"],
+                values=["Governance", "Safety & AI Lifecycle", "Stakeholders", "KPIs"],
                 state="readonly",
                 textvariable=self.toolbox_var,
             )
@@ -9599,8 +9635,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
 
         # Create Stakeholder toolbox frame
-        st_nodes = STAKEHOLDER_NODES
-        st_relations = STAKEHOLDER_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.stakeholder_tools_frame = ttk.Frame(self.toolbox)
             ttk.Button(
@@ -9608,29 +9642,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 text="Select",
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
-            for name in st_nodes:
-                ttk.Button(
-                    self.stakeholder_tools_frame,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-            rel_frame = ttk.LabelFrame(self.stakeholder_tools_frame, text="Relationships")
-            rel_frame.pack(fill=tk.X, padx=2, pady=2)
-            for name in st_relations:
-                ttk.Button(
-                    rel_frame,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-        else:  # pragma: no cover - headless tests
+            ttk.Button(
+                self.stakeholder_tools_frame,
+                text="Stakeholder",
+                command=lambda: self.select_tool("Stakeholder"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            s_rel = ttk.LabelFrame(self.stakeholder_tools_frame, text="Relationships")
+            s_rel.pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                s_rel,
+                text="Flow",
+                command=lambda: self.select_tool("Flow"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+        else:
             self.stakeholder_tools_frame = types.SimpleNamespace(
                 pack=lambda *a, **k: None,
                 pack_forget=lambda *a, **k: None,
             )
 
         # Create KPI toolbox frame
-        kpi_nodes = KPI_NODES
-        kpi_relations = KPI_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.kpi_tools_frame = ttk.Frame(self.toolbox)
             ttk.Button(
@@ -9638,21 +9668,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 text="Select",
                 command=lambda: self.select_tool("Select"),
             ).pack(fill=tk.X, padx=2, pady=2)
-            for name in kpi_nodes:
-                ttk.Button(
-                    self.kpi_tools_frame,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-            rel_frame = ttk.LabelFrame(self.kpi_tools_frame, text="Relationships")
-            rel_frame.pack(fill=tk.X, padx=2, pady=2)
-            for name in kpi_relations:
-                ttk.Button(
-                    rel_frame,
-                    text=name,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-        else:  # pragma: no cover - headless tests
+            ttk.Button(
+                self.kpi_tools_frame,
+                text="KPI",
+                command=lambda: self.select_tool("KPI"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+            k_rel = ttk.LabelFrame(self.kpi_tools_frame, text="Relationships")
+            k_rel.pack(fill=tk.X, padx=2, pady=2)
+            ttk.Button(
+                k_rel,
+                text="Flow",
+                command=lambda: self.select_tool("Flow"),
+            ).pack(fill=tk.X, padx=2, pady=2)
+        else:
             self.kpi_tools_frame = types.SimpleNamespace(
                 pack=lambda *a, **k: None,
                 pack_forget=lambda *a, **k: None,
@@ -9751,27 +9779,26 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         choice = self.toolbox_var.get()
         before = self.prop_frame if hasattr(self, "prop_frame") else None
         frames = {
-            "Governance": (self.gov_tools_frame, self.gov_rel_frame),
-            "Safety & AI Lifecycle": (self.ai_tools_frame, None),
-            "Stakeholder": (self.stakeholder_tools_frame, None),
-            "KPI": (self.kpi_tools_frame, None),
+            "Governance": [self.gov_tools_frame, self.gov_rel_frame],
+            "Safety & AI Lifecycle": [self.ai_tools_frame],
+            "Stakeholders": [getattr(self, "stakeholder_tools_frame", None)],
+            "KPIs": [getattr(self, "kpi_tools_frame", None)],
         }
-        for name, (frame, rel) in frames.items():
-            if name == choice:
-                if before and hasattr(frame, "pack"):
+        for frame in [
+            self.gov_tools_frame,
+            self.gov_rel_frame,
+            self.ai_tools_frame,
+            getattr(self, "stakeholder_tools_frame", None),
+            getattr(self, "kpi_tools_frame", None),
+        ]:
+            if frame and hasattr(frame, "pack_forget"):
+                frame.pack_forget()
+        for frame in frames.get(choice, []):
+            if frame and hasattr(frame, "pack"):
+                if before:
                     frame.pack(fill=tk.X, padx=2, pady=2, before=before)
-                    if rel and hasattr(rel, "pack"):
-                        rel.pack(fill=tk.X, padx=2, pady=2, before=before)
                 else:
-                    if hasattr(frame, "pack"):
-                        frame.pack(fill=tk.X, padx=2, pady=2)
-                    if rel and hasattr(rel, "pack"):
-                        rel.pack(fill=tk.X, padx=2, pady=2)
-            else:
-                if hasattr(frame, "pack_forget"):
-                    frame.pack_forget()
-                if rel and hasattr(rel, "pack_forget"):
-                    rel.pack_forget()
+                    frame.pack(fill=tk.X, padx=2, pady=2)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
