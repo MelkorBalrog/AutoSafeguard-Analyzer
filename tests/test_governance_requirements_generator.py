@@ -87,6 +87,14 @@ def test_acquisition_pattern_requirement():
     texts = [r.text for r in reqs]
     assert "Engineering team shall acquire the DAQ1 using the DB1." in texts
 
+def test_propagate_by_review_pattern():
+    diagram = GovernanceDiagram()
+    diagram.add_task("WP1", node_type="Work Product")
+    diagram.add_task("WP2", node_type="Work Product")
+    diagram.add_relationship("WP1", "WP2", conn_type="Propagate by Review")
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+    assert "System shall propagate by review the WP2." in texts
 
 def test_data_acquisition_compartment_sources():
     diagram = GovernanceDiagram()

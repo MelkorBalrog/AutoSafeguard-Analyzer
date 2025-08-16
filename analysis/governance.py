@@ -52,10 +52,6 @@ for pat in _PATTERN_DEFS:
     # Only register patterns that reference the source node in the template
     # so that generated text includes the actual element names.
     placeholders = [p.lower() for p in re.findall(r"<([^>]+)>", tmpl)]
-    if src_t == dst_t or (
-        src_t not in placeholders and "source_id" not in placeholders
-    ):
-        continue
     _PATTERN_MAP[(src_t, label.lower(), dst_t)] = pat
 
 
@@ -108,10 +104,6 @@ def reload_config() -> None:
             continue
         src_t, label, dst_t = [g.strip().lower() for g in m.groups()]
         placeholders = [p.lower() for p in re.findall(r"<([^>]+)>", tmpl)]
-        if src_t == dst_t or (
-            src_t not in placeholders and "source_id" not in placeholders
-        ):
-            continue
         _PATTERN_MAP[(src_t, label.lower(), dst_t)] = pat
 
 
