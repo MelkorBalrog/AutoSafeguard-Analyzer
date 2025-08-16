@@ -66,6 +66,24 @@ def test_phase_requirement_updates_existing(monkeypatch):
     assert global_requirements[new_rid]["status"] == "draft"
 
 
+def test_phase_requirement_no_change(monkeypatch):
+    win = _setup_window(monkeypatch)
+
+    monkeypatch.setattr(
+        smt.GovernanceDiagram,
+        "from_repository",
+        lambda repo, diag_id: DummyGov([("Req", "organizational")]),
+    )
+    global_requirements.clear()
+    win.generate_phase_requirements("Phase1")
+    rid = next(iter(global_requirements))
+
+    # Regenerate without changes; requirement should remain and not become obsolete
+    win.generate_phase_requirements("Phase1")
+    assert len(global_requirements) == 1
+    assert global_requirements[rid]["status"] == "draft"
+
+
 def test_lifecycle_requirements_visible_in_phases(monkeypatch):
     win = _setup_window(monkeypatch)
 

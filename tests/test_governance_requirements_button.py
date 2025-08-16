@@ -74,3 +74,56 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert all(row[4] == "draft" for row in trees[0].rows)
     # Requirements added to global registry
     assert len(global_requirements) == len(trees[0].rows)
+
+
+def test_requirements_button_no_change(monkeypatch):
+    repo = SysMLRepository.reset_instance()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    t1 = repo.create_element("Action", name="Start")
+    t2 = repo.create_element("Action", name="Finish")
+    diag.objects = [
+        {"obj_id": 1, "obj_type": "Action", "x": 0, "y": 0, "element_id": t1.elem_id, "properties": {"name": "Start"}},
+        {"obj_id": 2, "obj_type": "Action", "x": 0, "y": 0, "element_id": t2.elem_id, "properties": {"name": "Finish"}},
+    ]
+    diag.connections = [
+        {"src": 1, "dst": 2, "conn_type": "Flow", "name": "", "properties": {}}
+    ]
+
+    toolbox = SafetyManagementToolbox()
+    toolbox.diagrams["Gov"] = diag.diag_id
+
+    class DummyTab:
+        def winfo_children(self):
+            return []
+
+    def _new_tab(title):
+        return DummyTab()
+
+    class DummyTree:
+        def __init__(self, master, columns, show="headings"):
+            pass
+
+        def heading(self, col, text=""):
+            pass
+
+        def insert(self, parent, idx, values):
+            pass
+
+        def pack(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
+
+    win = SafetyManagementWindow.__new__(SafetyManagementWindow)
+    win.toolbox = toolbox
+    win.app = types.SimpleNamespace(_new_tab=_new_tab)
+    win.diag_var = types.SimpleNamespace(get=lambda: "Gov")
+
+    global_requirements.clear()
+    win.generate_requirements()
+    rid = next(iter(global_requirements))
+
+    # Regenerate without changes; requirement should remain unchanged
+    win.generate_requirements()
+    assert len(global_requirements) == 1
+    assert global_requirements[rid]["status"] == "draft"
