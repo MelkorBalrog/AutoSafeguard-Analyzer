@@ -50,13 +50,18 @@
   // Node types available in the governance toolbox
   "governance_node_types": [
     "Action",
+    "CallBehaviorAction",
     "Initial",
     "Final",
     "Decision",
     "Merge",
+    "Fork",
+    "Join",
     "System Boundary",
     "Work Product",
-    "Lifecycle Phase"
+    "Lifecycle Phase",
+    "Stakeholder",
+    "KPI"
   ],
 
   // FMEDA/Fault tree gate node types
@@ -205,13 +210,15 @@
     },
     "Governance Diagram": {
       "Flow": {
-        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
-        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
-        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition"],
-        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
-        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition"],
+        "Initial": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Action": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Decision": ["Action", "Decision", "Merge", "Fork", "Join", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Merge": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Fork": ["Action", "Decision", "Merge", "Fork", "Join", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Join": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Lifecycle Phase": ["Decision", "Action", "Merge", "Fork", "Join", "Final", "Database", "ANN", "Data acquisition", "Stakeholder", "KPI"],
+        "Stakeholder": ["Action", "Decision", "Merge", "Fork", "Join", "Lifecycle Phase", "Work Product", "Stakeholder", "KPI"],
+        "KPI": ["Action", "Decision", "Merge", "Fork", "Join", "Lifecycle Phase", "Work Product", "Stakeholder", "KPI"],
         "Final": []
       },
       // Relationships between governance work products and phases
