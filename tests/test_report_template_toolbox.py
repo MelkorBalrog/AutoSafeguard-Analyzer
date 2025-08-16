@@ -106,3 +106,15 @@ def test_layout_report_template_basic():
     assert height > 0
     types = [i["type"] for i in items]
     assert "title" in types and "element" in types and "text" in types
+
+
+def test_layout_report_template_ignores_html_tags():
+    data = {
+        "elements": {"diag": "diagram"},
+        "sections": [
+            {"title": "Intro", "content": "<b>Bold</b><br/><diag>"}
+        ],
+    }
+    items, _ = layout_report_template(data)
+    names = [i.get("name") for i in items if i["type"] == "element"]
+    assert names == ["diag"]

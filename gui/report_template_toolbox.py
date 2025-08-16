@@ -25,25 +25,30 @@ def layout_report_template(
     items: list[dict[str, Any]] = []
     y = margin
     elements = data.get("elements", {})
+
+    def _tokenize(text: str):
+        replaced = text
+        for placeholder in elements:
+            replaced = replaced.replace(f"<{placeholder}>", f"[[[{placeholder}]]]")
+        return re.split(r"(\[\[\[[^\]]+\]\]\])", replaced)
+
     for sec in data.get("sections", []):
         title = sec.get("title", "")
         items.append({"type": "title", "text": title, "x": margin, "y": y})
         y += line_height
         content = sec.get("content", "")
-        tokens = re.split(r"(<[^<>]+>)", content)
+        tokens = _tokenize(content)
         for tok in tokens:
             if not tok:
                 continue
-            if tok.startswith("<") and tok.endswith(">"):
-                name = tok[1:-1]
+            if tok.startswith("[[[") and tok.endswith("]]]"):
+                name = tok[3:-3]
                 kind = elements.get(name, "")
-                items.append(
-                    {"type": "element", "name": name, "kind": kind, "x": margin, "y": y}
-                )
+                items.append({"type": "element", "name": name, "kind": kind, "x": margin, "y": y})
                 y += 100
             else:
-                lines = tok.split("\n")
-                for line in lines:
+                text = tok.replace("<br/>", "\n")
+                for line in text.split("\n"):
                     items.append({"type": "text", "text": line, "x": margin, "y": y})
                     y += line_height
         y += line_height

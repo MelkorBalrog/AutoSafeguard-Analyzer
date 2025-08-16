@@ -8621,18 +8621,28 @@ class FaultTreeApp:
 
         elements = template.get("elements", {})
         import re as _re
+
+        def _tokenize(text: str):
+            replaced = text
+            for placeholder in elements:
+                replaced = replaced.replace(f"<{placeholder}>", f"[[[{placeholder}]]]")
+            return _re.split(r"(\[\[\[[^\]]+\]\]\])", replaced)
+
         for sec in template.get("sections", []):
             story.append(Paragraph(sec.get("title", ""), styles["Heading2"]))
-            tokens = _re.split(r"(<[^<>]+>)", sec.get("content", ""))
+            tokens = _tokenize(sec.get("content", ""))
             for tok in tokens:
                 if not tok:
                     continue
-                if tok.startswith("<") and tok.endswith(">"):
-                    name = tok[1:-1]
+                if tok.startswith("[[[") and tok.endswith("]]]"):
+                    name = tok[3:-3]
                     story.extend(_build_element(name, elements.get(name)))
                 else:
-                    for line in tok.split("\n"):
-                        story.append(Paragraph(line, styles["Normal"]))
+                    text = tok.strip()
+                    if text:
+                        for line in text.split("\n"):
+                            if line:
+                                story.append(Paragraph(line, styles["Normal"]))
             story.append(Spacer(1, 12))
 
         try:
