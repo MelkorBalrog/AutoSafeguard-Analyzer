@@ -323,7 +323,10 @@ class GovernanceDiagram:
             if obj is not None:
                 s_role = self._role_for(subject)
                 d_role = self._role_for(obj)
-                if s_role != "subject" and d_role == "subject":
+                if d_role == "constraint":
+                    constraint = obj
+                    obj = None
+                elif s_role != "subject" and d_role == "subject":
                     subject, obj = obj, subject
 
             requirements.append(

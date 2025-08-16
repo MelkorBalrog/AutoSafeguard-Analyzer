@@ -152,7 +152,8 @@
     "ANN": "object",
     "Data acquisition": "object",
     "Metric": "constraint",
-    "KPI": "constraint"
+    "KPI": "constraint",
+    "SPI": "constraint"
   },
 
   // Allowed Safety & AI relationships between node types
