@@ -792,1018 +792,157 @@
     "Notes": "Use when a governance edge is present."
   },
   {
-    "Pattern ID": "USE-association-Actor-Use_Case",
-    "Trigger": "Use Case Diagram: Actor --[Association]--> Use Case",
-    "Template": "The <Actor> shall associate with the <Use Case>.",
+    "Pattern ID": "GOV-approves-Role-ANN",
+    "Trigger": "Gov: Role --[Approves]--> ANN",
+    "Template": "<source_id> shall approve the <ANN>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-approves-Role-Database",
+    "Trigger": "Gov: Role --[Approves]--> Database",
+    "Template": "<source_id> shall approve the <Database>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-ANN",
+    "Trigger": "Gov: Role --[Audits]--> ANN",
+    "Template": "<source_id> shall audit the <ANN>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-audits-Role-Database",
+    "Trigger": "Gov: Role --[Audits]--> Database",
+    "Template": "<source_id> shall audit the <Database>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-ANN",
+    "Trigger": "Gov: Role --[Monitors]--> ANN",
+    "Template": "<source_id> shall monitor the <ANN>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-monitors-Role-Database",
+    "Trigger": "Gov: Role --[Monitors]--> Database",
+    "Template": "<source_id> shall monitor the <Database>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-ANN",
+    "Trigger": "Gov: Organization --[Authorizes]--> ANN",
+    "Template": "<source_id> shall authorize the <ANN>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-authorizes-Organization-Database",
+    "Trigger": "Gov: Organization --[Authorizes]--> Database",
+    "Template": "<source_id> shall authorize the <Database>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-ANN",
+    "Trigger": "Gov: Policy --[Constrains]--> ANN",
+    "Template": "<source_id> shall constrain the <ANN>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Governance policy applied to AI models."
+  },
+  {
+    "Pattern ID": "GOV-constrains-Policy-Database",
+    "Trigger": "Gov: Policy --[Constrains]--> Database",
+    "Template": "<source_id> shall constrain the <Database>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Governance policy applied to data repositories."
+  },
+  {
+    "Pattern ID": "SA-complies-ANN-Policy",
+    "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <ANN> complies with the <Policy>.",
     "Variables": [
       "<source_id>",
-      "<target_id>"
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Structural conformance requirement from connection rules."
+    "Notes": "Cross-domain compliance requirement."
   },
   {
-    "Pattern ID": "USE-association-Use_Case-Actor",
-    "Trigger": "Use Case Diagram: Use Case --[Association]--> Actor",
-    "Template": "The <Use Case> shall associate with the <Actor>.",
+    "Pattern ID": "SA-complies-Database-Policy",
+    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
+    "Template": "Engineering team shall ensure the <Database> complies with the <Policy>.",
     "Variables": [
       "<source_id>",
-      "<target_id>"
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Structural conformance requirement from connection rules."
+    "Notes": "Cross-domain compliance requirement."
   },
   {
-    "Pattern ID": "USE-include-Use_Case-Use_Case",
-    "Trigger": "Use Case Diagram: Use Case --[Include]--> Use Case",
-    "Template": "The <Use Case> shall include the <Use Case>.",
+    "Pattern ID": "SA-traces-ANN-Standard",
+    "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <ANN> to the <Standard>.",
     "Variables": [
       "<source_id>",
-      "<target_id>"
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Structural conformance requirement from connection rules."
+    "Notes": "Traceability between AI models and standards."
   },
   {
-    "Pattern ID": "USE-extend-Use_Case-Use_Case",
-    "Trigger": "Use Case Diagram: Use Case --[Extend]--> Use Case",
-    "Template": "The <Use Case> shall extend the <Use Case>.",
+    "Pattern ID": "SA-traces-Database-Standard",
+    "Trigger": "Safety&AI: Database --[Trace]--> Standard",
+    "Template": "Engineering team shall trace the <Database> to the <Standard>.",
     "Variables": [
       "<source_id>",
-      "<target_id>"
+      "<target_id>",
+      "<acceptance_criteria>"
     ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "USE-generalize-Actor-Actor",
-    "Trigger": "Use Case Diagram: Actor --[Generalize]--> Actor",
-    "Template": "The <Actor> shall generalize the <Actor>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "USE-generalize-Use_Case-Use_Case",
-    "Trigger": "Use Case Diagram: Use Case --[Generalize]--> Use Case",
-    "Template": "The <Use Case> shall generalize the <Use Case>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "USE-communication_path-Actor-Actor",
-    "Trigger": "Use Case Diagram: Actor --[Communication Path]--> Actor",
-    "Template": "The <Actor> shall communicate with the <Actor>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "BLOCK-association-Block-Block",
-    "Trigger": "Block Diagram: Block --[Association]--> Block",
-    "Template": "The <Block> shall associate with the <Block>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "BLOCK-generalization-Block-Block",
-    "Trigger": "Block Diagram: Block --[Generalization]--> Block",
-    "Template": "The <Block> shall generalize the <Block>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "BLOCK-aggregation-Block-Block",
-    "Trigger": "Block Diagram: Block --[Aggregation]--> Block",
-    "Template": "The <Block> shall aggregate the <Block>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "BLOCK-composite_aggregation-Block-Block",
-    "Trigger": "Block Diagram: Block --[Composite Aggregation]--> Block",
-    "Template": "The <Block> shall compose the <Block>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "INTERNAL-connector-Part-Part",
-    "Trigger": "Internal Block Diagram: Part --[Connector]--> Part",
-    "Template": "The <Part> shall connect to the <Part>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "INTERNAL-connector-Part-Port",
-    "Trigger": "Internal Block Diagram: Part --[Connector]--> Port",
-    "Template": "The <Part> shall connect to the <Port>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "INTERNAL-connector-Port-Part",
-    "Trigger": "Internal Block Diagram: Port --[Connector]--> Part",
-    "Template": "The <Port> shall connect to the <Part>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "INTERNAL-connector-Port-Port",
-    "Trigger": "Internal Block Diagram: Port --[Connector]--> Port",
-    "Template": "The <Port> shall connect to the <Port>.",
-    "Variables": [
-      "<source_id>",
-      "<target_id>"
-    ],
-    "Notes": "Structural conformance requirement from connection rules."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-Action",
-    "Trigger": "Activity Diagram: Flow Initial -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Initial -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-Decision",
-    "Trigger": "Activity Diagram: Flow Initial -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-Merge",
-    "Trigger": "Activity Diagram: Flow Initial -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-Fork",
-    "Trigger": "Activity Diagram: Flow Initial -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Initial-Join",
-    "Trigger": "Activity Diagram: Flow Initial -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <Initial> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Action",
-    "Trigger": "Activity Diagram: Flow Action -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Action -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Decision",
-    "Trigger": "Activity Diagram: Flow Action -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Merge",
-    "Trigger": "Activity Diagram: Flow Action -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Fork",
-    "Trigger": "Activity Diagram: Flow Action -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Join",
-    "Trigger": "Activity Diagram: Flow Action -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Action-Final",
-    "Trigger": "Activity Diagram: Flow Action -> Final allowed",
-    "Template": "In Activity Diagram, a Flow from <Action> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Action",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Decision",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Merge",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Fork",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Join",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Final",
-    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Final allowed",
-    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Action",
-    "Trigger": "Activity Diagram: Flow Decision -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Decision -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Decision",
-    "Trigger": "Activity Diagram: Flow Decision -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Merge",
-    "Trigger": "Activity Diagram: Flow Decision -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Fork",
-    "Trigger": "Activity Diagram: Flow Decision -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Join",
-    "Trigger": "Activity Diagram: Flow Decision -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Decision-Final",
-    "Trigger": "Activity Diagram: Flow Decision -> Final allowed",
-    "Template": "In Activity Diagram, a Flow from <Decision> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Merge-Action",
-    "Trigger": "Activity Diagram: Flow Merge -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Merge> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Merge-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Merge -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Merge> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Merge-Decision",
-    "Trigger": "Activity Diagram: Flow Merge -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Merge> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Merge-Fork",
-    "Trigger": "Activity Diagram: Flow Merge -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <Merge> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Merge-Join",
-    "Trigger": "Activity Diagram: Flow Merge -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <Merge> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-Action",
-    "Trigger": "Activity Diagram: Flow Fork -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Fork -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-Decision",
-    "Trigger": "Activity Diagram: Flow Fork -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-Merge",
-    "Trigger": "Activity Diagram: Flow Fork -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-Fork",
-    "Trigger": "Activity Diagram: Flow Fork -> Fork allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Fork-Join",
-    "Trigger": "Activity Diagram: Flow Fork -> Join allowed",
-    "Template": "In Activity Diagram, a Flow from <Fork> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Join-Action",
-    "Trigger": "Activity Diagram: Flow Join -> Action allowed",
-    "Template": "In Activity Diagram, a Flow from <Join> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Join-CallBehaviorAction",
-    "Trigger": "Activity Diagram: Flow Join -> CallBehaviorAction allowed",
-    "Template": "In Activity Diagram, a Flow from <Join> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Join-Decision",
-    "Trigger": "Activity Diagram: Flow Join -> Decision allowed",
-    "Template": "In Activity Diagram, a Flow from <Join> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "ACTIVITY-flow-Join-Merge",
-    "Trigger": "Activity Diagram: Flow Join -> Merge allowed",
-    "Template": "In Activity Diagram, a Flow from <Join> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Action",
-    "Trigger": "Governance Diagram: Flow Initial -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Decision",
-    "Trigger": "Governance Diagram: Flow Initial -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Merge",
-    "Trigger": "Governance Diagram: Flow Initial -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Fork",
-    "Trigger": "Governance Diagram: Flow Initial -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Join",
-    "Trigger": "Governance Diagram: Flow Initial -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Database",
-    "Trigger": "Governance Diagram: Flow Initial -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-ANN",
-    "Trigger": "Governance Diagram: Flow Initial -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Initial-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Initial -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Initial> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Action",
-    "Trigger": "Governance Diagram: Flow Action -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Decision",
-    "Trigger": "Governance Diagram: Flow Action -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Merge",
-    "Trigger": "Governance Diagram: Flow Action -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Fork",
-    "Trigger": "Governance Diagram: Flow Action -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Join",
-    "Trigger": "Governance Diagram: Flow Action -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Final",
-    "Trigger": "Governance Diagram: Flow Action -> Final allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Database",
-    "Trigger": "Governance Diagram: Flow Action -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-ANN",
-    "Trigger": "Governance Diagram: Flow Action -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Action-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Action -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Action> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Action",
-    "Trigger": "Governance Diagram: Flow Decision -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Decision",
-    "Trigger": "Governance Diagram: Flow Decision -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Merge",
-    "Trigger": "Governance Diagram: Flow Decision -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Fork",
-    "Trigger": "Governance Diagram: Flow Decision -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Join",
-    "Trigger": "Governance Diagram: Flow Decision -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Final",
-    "Trigger": "Governance Diagram: Flow Decision -> Final allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Lifecycle_Phase",
-    "Trigger": "Governance Diagram: Flow Decision -> Lifecycle Phase allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Lifecycle Phase> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Database",
-    "Trigger": "Governance Diagram: Flow Decision -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-ANN",
-    "Trigger": "Governance Diagram: Flow Decision -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Decision-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Decision -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Decision> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Action",
-    "Trigger": "Governance Diagram: Flow Merge -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Decision",
-    "Trigger": "Governance Diagram: Flow Merge -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Merge",
-    "Trigger": "Governance Diagram: Flow Merge -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Fork",
-    "Trigger": "Governance Diagram: Flow Merge -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Join",
-    "Trigger": "Governance Diagram: Flow Merge -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Database",
-    "Trigger": "Governance Diagram: Flow Merge -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-ANN",
-    "Trigger": "Governance Diagram: Flow Merge -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Merge-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Merge -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Merge> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Action",
-    "Trigger": "Governance Diagram: Flow Fork -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Decision",
-    "Trigger": "Governance Diagram: Flow Fork -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Merge",
-    "Trigger": "Governance Diagram: Flow Fork -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Fork",
-    "Trigger": "Governance Diagram: Flow Fork -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Join",
-    "Trigger": "Governance Diagram: Flow Fork -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Database",
-    "Trigger": "Governance Diagram: Flow Fork -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-ANN",
-    "Trigger": "Governance Diagram: Flow Fork -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Fork-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Fork -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Fork> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-Action",
-    "Trigger": "Governance Diagram: Flow Join -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-Decision",
-    "Trigger": "Governance Diagram: Flow Join -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-Merge",
-    "Trigger": "Governance Diagram: Flow Join -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-Database",
-    "Trigger": "Governance Diagram: Flow Join -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-ANN",
-    "Trigger": "Governance Diagram: Flow Join -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Join-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Join -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Join> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Decision",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Decision allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Decision> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Action",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Action allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Action> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Merge",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Merge allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Merge> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Fork",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Fork allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Fork> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Join",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Join allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Join> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Final",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Final allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Final> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Database",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Database allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Database> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-ANN",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> ANN allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <ANN> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Data_acquisition",
-    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Data acquisition allowed",
-    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
-    "Variables": [],
-    "Notes": "Enumerates permitted flow pairs for static checks."
-  },
-  {
-    "Pattern ID": "GUARD-Decision",
-    "Trigger": "Node type Decision present with outgoing flows",
-    "Template": "All outgoing flows from <Decision> shall include a guard expression formatted as <syntax> and be complete and mutually exclusive.",
-    "Variables": [
-      "<syntax>",
-      "<review_checklist_ref>"
-    ],
-    "Notes": "MECE guards; suitable for design-time checks."
-  },
-  {
-    "Pattern ID": "LIMIT-Decision-4",
-    "Trigger": "Node type Decision present",
-    "Template": "A <Decision> shall not have more than 4 outgoing flows.",
-    "Variables": [],
-    "Notes": "Static structural rule."
-  },
-  {
-    "Pattern ID": "LIMIT-Merge-4",
-    "Trigger": "Node type Merge present",
-    "Template": "A <Merge> shall not have more than 4 outgoing flows.",
-    "Variables": [],
-    "Notes": "Static structural rule."
-  },
-  {
-    "Pattern ID": "EARS-UBIQ",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "The <subject> shall <action> <object>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
-    ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
-  },
-  {
-    "Pattern ID": "EARS-EVENT",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "When <condition>, the <subject> shall <action> <object> within <t_max>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
-    ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
-  },
-  {
-    "Pattern ID": "EARS-STATE",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "While <state>, the <subject> shall <action> <object>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
-    ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
-  },
-  {
-    "Pattern ID": "EARS-UNWANTED",
-    "Trigger": "Generic (applicable when roles are identifiable)",
-    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<state>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>"
-    ],
-    "Notes": "Use role mapping to bind variables: subject/action/object/condition."
-  },
-  {
-    "Pattern ID": "EARS-BIND-SUBJECT",
-    "Trigger": "Node role 'subject' detected",
-    "Template": "Bind <subject> from node types: Actor, Business Unit, Organization, Role",
-    "Variables": [
-      "<subject>"
-    ],
-    "Notes": "Helper entry for model-to-text binding."
-  },
-  {
-    "Pattern ID": "EARS-BIND-ACTION",
-    "Trigger": "Node role 'action' detected",
-    "Template": "Bind <action> from node types: Activity, Procedure, Process, Task",
-    "Variables": [
-      "<action>"
-    ],
-    "Notes": "Helper entry for model-to-text binding."
-  },
-  {
-    "Pattern ID": "EARS-BIND-CONDITION",
-    "Trigger": "Node role 'condition' detected",
-    "Template": "Bind <condition> from node types: Decision",
-    "Variables": [
-      "<condition>"
-    ],
-    "Notes": "Helper entry for model-to-text binding."
-  },
-  {
-    "Pattern ID": "EARS-BIND-CONSTRAINT",
-    "Trigger": "Node role 'constraint' detected",
-    "Template": "Bind <constraint> from node types: Guideline, Metric, Policy, Principle, Standard",
-    "Variables": [
-      "<constraint>"
-    ],
-    "Notes": "Helper entry for model-to-text binding."
-  },
-  {
-    "Pattern ID": "EARS-BIND-OBJECT",
-    "Trigger": "Node role 'object' detected",
-    "Template": "Bind <object> from node types: ANN, Artifact, Data, Data acquisition, Database, Document, Record",
-    "Variables": [
-      "<object>"
-    ],
-    "Notes": "Helper entry for model-to-text binding."
-  },
-  {
-    "Pattern ID": "NFR-METRIC-PERF",
-    "Trigger": "Metric node linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "The <process> shall achieve <metric_name> \u2264 <target_value> measured over <window> with \u2265 <confidence> confidence.",
-    "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>"
-    ],
-    "Notes": "Instantiate when Role --[Monitors]--> Metric is present."
-  },
-  {
-    "Pattern ID": "NFR-COMPLIANCE",
-    "Trigger": "Constraint node (Policy/Standard/Guideline/Principle) connected via Constrained by / Governed by",
-    "Template": "The <subject> shall comply with <standard_or_policy> and retain evidence in <record>.",
-    "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>"
-    ],
-    "Notes": "Compliance requirement with evidence trace."
+    "Notes": "Traceability between data repositories and applicable standards."
   }
 ]
