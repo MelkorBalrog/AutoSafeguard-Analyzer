@@ -3434,7 +3434,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.element_frames: dict[str, ttk.Frame] = {}
         for name, group_tools in groups.items():
             frame = (
-                ttk.LabelFrame(self.tools_frame, text=name)
+                ttk.LabelFrame(self.tools_frame, text=f"{name} (elements)")
                 if name
                 else ttk.Frame(self.tools_frame)
             )
@@ -3452,7 +3452,9 @@ class SysMLDiagramWindow(tk.Frame):
                 self.tool_buttons[tool] = btn
 
         if relation_tools:
-            self.rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships")
+            self.rel_frame = ttk.LabelFrame(
+                self.toolbox, text="Relationships (relationships)"
+            )
             self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for tool in relation_tools:
                 ttk.Button(
@@ -10512,7 +10514,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
-            rel_frame = ttk.LabelFrame(self.ai_tools_frame, text="Relationships")
+            rel_frame = ttk.LabelFrame(
+                self.ai_tools_frame, text="Relationships (relationships)"
+            )
             rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for name in ai_relations:
                 ttk.Button(
@@ -10533,7 +10537,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
             for group, nodes in ge_nodes.items():
-                frame = ttk.LabelFrame(self.gov_elements_frame, text=group)
+                frame = ttk.LabelFrame(
+                    self.gov_elements_frame, text=f"{group} (elements)"
+                )
                 frame.pack(fill=tk.X, padx=2, pady=2)
                 for name in nodes:
                     ttk.Button(
@@ -10633,9 +10639,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
-            relationships = ttk.LabelFrame(governance_panel, text="Relationships")
+            relationships = ttk.LabelFrame(
+                governance_panel, text="Relationships (relationships)"
+            )
             relationships.pack(fill=tk.X, padx=2, pady=2)
-            wp_rel = ttk.LabelFrame(relationships, text="Work Product Links")
+            wp_rel = ttk.LabelFrame(
+                relationships, text="Work Product Links (relationships)"
+            )
             wp_rel.pack(fill=tk.X, padx=2, pady=2)
             for name in work_rel_names:
                 ttk.Button(
@@ -10647,7 +10657,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ).pack(fill=tk.X, padx=2, pady=2)
 
             for group, names in GOV_ELEMENT_RELATION_GROUPS.items():
-                rel_frame = ttk.LabelFrame(relationships, text=group)
+                rel_frame = ttk.LabelFrame(
+                    relationships, text=f"{group} (relationships)"
+                )
                 rel_frame.pack(fill=tk.X, padx=2, pady=2)
                 for name in names:
                     ttk.Button(
@@ -10664,7 +10676,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ("Add Process Area", self.add_process_area),
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
-            elem_group = ttk.LabelFrame(governance_panel, text="Elements")
+            elem_group = ttk.LabelFrame(
+                governance_panel, text="Elements (elements)"
+            )
             elem_group.pack(fill=tk.X, padx=2, pady=2)
             for name, cmd in node_cmds:
                 ttk.Button(
