@@ -71,6 +71,11 @@ class SafetyManagementWindow(tk.Frame):
             text="Lifecycle Requirements",
             command=self.generate_lifecycle_requirements,
         ).pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Delete Obsolete",
+            command=self.delete_obsolete_requirements,
+        ).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
@@ -516,6 +521,18 @@ class SafetyManagementWindow(tk.Frame):
                 ids.append(self._add_requirement(text, rtype, diagram=name))
         ids = [rid for rid, req in global_requirements.items() if req.get("phase") is None]
         self._display_requirements("Lifecycle Requirements", ids)
+
+    def delete_obsolete_requirements(self) -> None:
+        """Remove all requirements marked as obsolete."""
+        obsolete = [rid for rid, req in global_requirements.items() if req.get("status") == "obsolete"]
+        if not obsolete:
+            messagebox.showinfo("Requirements", "No obsolete requirements to delete.")
+            return
+        for rid in obsolete:
+            del global_requirements[rid]
+        messagebox.showinfo(
+            "Requirements", f"Deleted {len(obsolete)} obsolete requirements."
+        )
 
     @staticmethod
     def _collect_requirements(gov: GovernanceDiagram) -> list[str]:
