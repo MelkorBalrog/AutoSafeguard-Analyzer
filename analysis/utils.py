@@ -1,7 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 """Utility helpers for analysis package."""
 
-from typing import List
+from typing import Any, List, Sequence
 
 
 # Mapping tables from risk assessment ratings to probabilities.
@@ -114,3 +114,33 @@ def derive_validation_target(acceptance_rate: float,
         )
 
     return acceptance_rate / denominator
+
+
+def truncate_to_height(table: Sequence[Sequence[Any]], height: int) -> List[List[Any]]:
+    """Return a copy of ``table`` limited to ``height`` rows.
+
+    The resulting list of lists preserves the column structure of ``table`` but
+    contains at most ``height`` rows.  This helper is handy when a lightweight
+    sample of a larger dataset is required—for example, to create test inputs
+    that mimic the shape of a database while being smaller in size.
+
+    Parameters
+    ----------
+    table:
+        Two-dimensional sequence representing the original dataset.
+    height:
+        Maximum number of rows in the returned dataset.  Values less than or
+        equal to zero yield an empty list.
+
+    Returns
+    -------
+    List[List[Any]]
+        ``table`` truncated to at most ``height`` rows.
+    """
+
+    if height <= 0 or not table:
+        return []
+
+    width = len(table[0])
+    rows = min(len(table), height)
+    return [list(row[:width]) for row in table[:rows]]
