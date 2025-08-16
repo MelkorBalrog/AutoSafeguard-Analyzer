@@ -21,7 +21,10 @@ def test_generate_requirements_error(monkeypatch):
     errors: list[tuple[str, str]] = []
     monkeypatch.setattr(smt.messagebox, "showerror", lambda t, m: errors.append((t, m)))
     called: list[str] = []
-    monkeypatch.setattr(SafetyManagementWindow, "_display_requirements", lambda self, title, ids: called.append(title))
+    def display_stub(self, title, ids):
+        called.append(title)
+        return types.SimpleNamespace(refresh_table=lambda ids: None)
+    monkeypatch.setattr(SafetyManagementWindow, "_display_requirements", display_stub)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
     win.toolbox = toolbox
@@ -45,7 +48,10 @@ def test_generate_phase_requirements_error(monkeypatch):
     errors: list[tuple[str, str]] = []
     monkeypatch.setattr(smt.messagebox, "showerror", lambda t, m: errors.append((t, m)))
     called: list[str] = []
-    monkeypatch.setattr(SafetyManagementWindow, "_display_requirements", lambda self, title, ids: called.append(title))
+    def display_stub(self, title, ids):
+        called.append(title)
+        return types.SimpleNamespace(refresh_table=lambda ids: None)
+    monkeypatch.setattr(SafetyManagementWindow, "_display_requirements", display_stub)
 
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
     win.toolbox = toolbox

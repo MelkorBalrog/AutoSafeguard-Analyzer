@@ -101,6 +101,12 @@ def test_requirements_button_opens_tab(monkeypatch):
         def grid(self, *args, **kwargs):
             pass
 
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
+
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
     monkeypatch.setattr(smt.ttk, "Treeview", DummyTree)
@@ -190,13 +196,14 @@ def test_requirements_button_no_change(monkeypatch):
 
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
+            self.rows = []
             master.children.append(self)
 
         def heading(self, col, text=""):
             pass
 
         def insert(self, parent, idx, values):
-            pass
+            self.rows.append(values)
 
         def configure(self, **kwargs):
             pass
@@ -209,6 +216,12 @@ def test_requirements_button_no_change(monkeypatch):
 
         def grid(self, *args, **kwargs):
             pass
+
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
 
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
@@ -299,13 +312,14 @@ def test_other_diagram_requirements_preserved(monkeypatch):
 
     class DummyTree:
         def __init__(self, master, columns, show="headings"):
+            self.rows = []
             master.children.append(self)
 
         def heading(self, col, text=""):
             pass
 
         def insert(self, parent, idx, values):
-            pass
+            self.rows.append(values)
 
         def configure(self, **kwargs):
             pass
@@ -318,6 +332,12 @@ def test_other_diagram_requirements_preserved(monkeypatch):
 
         def grid(self, *args, **kwargs):
             pass
+
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
 
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)

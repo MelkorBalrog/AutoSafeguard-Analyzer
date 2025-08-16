@@ -33,7 +33,10 @@ def test_generate_phase_requirements_handles_errors(monkeypatch):
     win.app = types.SimpleNamespace(_new_tab=lambda title: None)
 
     displayed = []
-    win._display_requirements = lambda title, ids: displayed.append((title, ids))
+    def display_stub(title, ids):
+        displayed.append((title, ids))
+        return types.SimpleNamespace(refresh_table=lambda ids: None)
+    win._display_requirements = display_stub
 
     errors = []
     monkeypatch.setattr(smt.messagebox, "showerror", lambda t, m: errors.append((t, m)))
