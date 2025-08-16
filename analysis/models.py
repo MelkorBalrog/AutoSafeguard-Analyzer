@@ -577,10 +577,14 @@ def ensure_requirement_defaults(req: dict) -> dict:
     Each requirement now carries a ``traces`` list capturing diagram or
     element identifiers that reference the requirement.  When older
     models are loaded the field may be missing; this helper guarantees the
-    key exists so callers can rely on it.
+    key exists so callers can rely on it.  Requirements may also be
+    associated with a lifecycle ``phase``.  Older models without this
+    information should default to ``None`` so they remain visible
+    globally.
     """
 
     req.setdefault("traces", [])
+    req.setdefault("phase", None)
     return req
 
 # Requirement type options used throughout the GUI when creating or
