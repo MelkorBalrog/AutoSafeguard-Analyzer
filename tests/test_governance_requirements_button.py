@@ -71,5 +71,6 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert any("Start shall precede 'Finish'." in t for t in texts)
     # Ensure requirement types are organizational
     assert all(row[1] == "organizational" for row in trees[0].rows)
+    assert all(row[4] == "draft" for row in trees[0].rows)
     # Requirements added to global registry
     assert len(global_requirements) == len(trees[0].rows)

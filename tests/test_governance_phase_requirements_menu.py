@@ -84,4 +84,5 @@ def test_phase_requirements_menu(monkeypatch):
     assert any("Start shall precede 'Finish'." in t for t in texts)
     assert any("Check shall precede 'Complete'." in t for t in texts)
     assert all(row[1] == "organizational" for row in trees[0].rows)
+    assert all(row[4] == "draft" for row in trees[0].rows)
     assert len(global_requirements) == len(trees[0].rows)
