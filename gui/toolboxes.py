@@ -42,6 +42,7 @@ from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
     _work_product_name,
+    draw_icon,
 )
 
 
@@ -1213,8 +1214,8 @@ class ReliabilityWindow(tk.Frame):
         )
 
     def _create_icon(self, shape: str, color: str = "black") -> tk.PhotoImage:
-        """Proxy to the shared icon factory."""
-        return create_icon(shape, color)
+        """Return a 16x16 icon using the shared draw_icon helper."""
+        return draw_icon(shape, color)
 
 
 class FI2TCWindow(tk.Frame):
