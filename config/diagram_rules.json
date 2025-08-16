@@ -307,5 +307,8 @@
 
   // Node types that require guards on outgoing flows
   // Format: ["Node Type", ...]
-  "guard_nodes": ["Decision"]
+  "guard_nodes": ["Decision"],
+
+  // Optional external file listing requirement pattern definitions
+  "requirement_pattern_file": "requirement_patterns.json"
 }
