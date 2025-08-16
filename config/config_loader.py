@@ -203,9 +203,26 @@ def validate_report_template(data: Any) -> dict[str, Any]:
             raise ValueError(f"sections[{idx}]['content'] must be a string")
 
         for placeholder in re.findall(r"<([^<>]+)>", content):
-            if placeholder not in elements:
+            name = placeholder.strip().split()[0]
+            if name.startswith("/"):
+                name = name[1:]
+            if name.endswith("/"):
+                name = name[:-1]
+            if name.lower() in {
+                "b",
+                "i",
+                "u",
+                "em",
+                "strong",
+                "p",
+                "br",
+                "span",
+                "div",
+            }:
+                continue
+            if name not in elements:
                 raise ValueError(
-                    f"sections[{idx}] references unknown element '{placeholder}'"
+                    f"sections[{idx}] references unknown element '{name}'"
                 )
 
     return data
