@@ -6841,6 +6841,10 @@ class SysMLDiagramWindow(tk.Frame):
             )
             self.canvas.create_line(x - w, y, x + w, y, fill=outline)
             self.canvas.create_line(x, y - h, x, y + h, fill=outline)
+            label = obj.properties.get("name", obj.obj_type)
+            self.canvas.create_text(
+                x, y + h + 10 * self.zoom, text=label, font=self.font
+            )
         elif obj.obj_type == "System":
             self.canvas.create_rectangle(
                 x - w,
@@ -7593,6 +7597,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Database",
             "ANN",
             "Data acquisition",
+            "Test Suite",
         ):
             if hasattr(self, "_object_label_lines"):
                 label_lines = self._object_label_lines(obj)
