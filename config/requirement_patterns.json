@@ -2,10 +2,12 @@
   {
     "Pattern ID": "SA-acquisition-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
-    "Template": "Engineering team shall acquire the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall acquire the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -13,10 +15,12 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "Engineering team shall collect field data the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -24,10 +28,12 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Task",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "Engineering team shall collect field data the <Task> using the <Database>.",
+    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -35,10 +41,12 @@
   {
     "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
-    "Template": "Engineering team shall evaluate field risk the <Data acquisition> using the <Database>.",
+    "Template": "Engineering team shall evaluate field risk the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -46,10 +54,12 @@
   {
     "Pattern ID": "SA-annotation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
-    "Template": "Engineering team shall annotate the <Database> using the <ANN>.",
+    "Template": "Engineering team shall annotate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -57,10 +67,12 @@
   {
     "Pattern ID": "SA-synthesis-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
-    "Template": "Engineering team shall synthesize the <Database> using the <ANN>.",
+    "Template": "Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -68,10 +80,12 @@
   {
     "Pattern ID": "SA-augmentation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
-    "Template": "Engineering team shall augment the <Database> using the <ANN>.",
+    "Template": "Engineering team shall augment the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -79,10 +93,12 @@
   {
     "Pattern ID": "SA-labeling-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
-    "Template": "Engineering team shall label the <Database> using the <ANN>.",
+    "Template": "Engineering team shall label the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -90,10 +106,12 @@
   {
     "Pattern ID": "SA-ai_training-Database-ANN",
     "Trigger": "Safety&AI: Database --[AI training]--> ANN",
-    "Template": "Engineering team shall train the <ANN> using the <Database>.",
+    "Template": "Engineering team shall train the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -101,10 +119,12 @@
   {
     "Pattern ID": "SA-ai_re-training-Database-ANN",
     "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
-    "Template": "Engineering team shall retrain the <ANN> using the <Database>.",
+    "Template": "Engineering team shall retrain the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -112,10 +132,12 @@
   {
     "Pattern ID": "SA-model_evaluation-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
-    "Template": "Engineering team shall evaluate model the <Database> using the <ANN>.",
+    "Template": "Engineering team shall evaluate model the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -123,10 +145,12 @@
   {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
-    "Template": "Engineering team shall curate the <Database> using the <Database>.",
+    "Template": "Engineering team shall curate the <source_id> (<source_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -134,10 +158,12 @@
   {
     "Pattern ID": "SA-ingestion-Database-Database",
     "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
-    "Template": "Engineering team shall ingest the <Database> using the <Database>.",
+    "Template": "Engineering team shall ingest the <source_id> (<source_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Instantiate on detected edge; add measurable criteria."
@@ -145,7 +171,7 @@
   {
     "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
-    "Template": "<source_id> shall propagate the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall propagate the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -156,7 +182,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "<source_id> shall propagate by review the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -167,7 +193,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "<source_id> shall propagate by approval the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -178,7 +204,7 @@
   {
     "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase",
     "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
-    "Template": "<Work Product> shall re-use the <Lifecycle Phase>.",
+    "Template": "<source_id> (<source_class>) shall re-use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -189,7 +215,7 @@
   {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
-    "Template": "<source_id> shall re-use the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall re-use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -200,7 +226,7 @@
   {
     "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
-    "Template": "<source_id> shall be satisfied by the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall be satisfied by the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -211,7 +237,7 @@
   {
     "Pattern ID": "GOV-derived_from-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
-    "Template": "<source_id> shall be derived from the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall be derived from the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -222,7 +248,7 @@
   {
     "Pattern ID": "GOV-trace-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Trace]--> Work Product",
-    "Template": "<source_id> shall trace to the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall trace to the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -233,7 +259,7 @@
   {
     "Pattern ID": "GOV-used_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used By]--> Work Product",
-    "Template": "<source_id> shall be used by the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall be used by the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -244,7 +270,7 @@
   {
     "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
-    "Template": "<source_id> shall be used after review the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall be used after review the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -255,7 +281,7 @@
   {
     "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
-    "Template": "<source_id> shall be used after approval the <target_id>.",
+    "Template": "<source_id> (<source_class>) shall be used after approval the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -266,7 +292,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Document",
     "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<Role> shall approve '<Document>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -277,7 +303,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Policy",
     "Trigger": "Gov: Role --[Approves]--> Policy",
-    "Template": "<Role> shall approve '<Policy>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -288,7 +314,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Procedure",
     "Trigger": "Gov: Role --[Approves]--> Procedure",
-    "Template": "<Role> shall approve '<Procedure>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -299,7 +325,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Record",
     "Trigger": "Gov: Role --[Approves]--> Record",
-    "Template": "<Role> shall approve '<Record>'.",
+    "Template": "<source_id> (<source_class>) shall approve '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -310,7 +336,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Process",
     "Trigger": "Gov: Role --[Audits]--> Process",
-    "Template": "<Role> shall audit the <Process>.",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -321,7 +347,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Procedure",
     "Trigger": "Gov: Role --[Audits]--> Procedure",
-    "Template": "<Role> shall audit the <Procedure>.",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -332,7 +358,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Record",
     "Trigger": "Gov: Role --[Audits]--> Record",
-    "Template": "<Role> shall audit the <Record>.",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -343,7 +369,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Policy",
     "Trigger": "Gov: Organization --[Authorizes]--> Policy",
-    "Template": "<Organization> shall authorize the <Policy>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -354,7 +380,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Procedure",
     "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
-    "Template": "<Organization> shall authorize the <Procedure>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -365,7 +391,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Process",
     "Trigger": "Gov: Organization --[Authorizes]--> Process",
-    "Template": "<Organization> shall authorize the <Process>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -376,7 +402,7 @@
   {
     "Pattern ID": "GOV-authorizes-Role-Policy",
     "Trigger": "Gov: Role --[Authorizes]--> Policy",
-    "Template": "<Role> shall authorize the <Policy>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -387,7 +413,7 @@
   {
     "Pattern ID": "GOV-authorizes-Role-Procedure",
     "Trigger": "Gov: Role --[Authorizes]--> Procedure",
-    "Template": "<Role> shall authorize the <Procedure>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -398,7 +424,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Role",
     "Trigger": "Gov: Role --[Communication Path]--> Role",
-    "Template": "<Role> shall communicate with the <Role>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -409,7 +435,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Organization",
     "Trigger": "Gov: Role --[Communication Path]--> Organization",
-    "Template": "<Role> shall communicate with the <Organization>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -420,7 +446,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Business_Unit",
     "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
-    "Template": "<Role> shall communicate with the <Business Unit>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -431,7 +457,7 @@
   {
     "Pattern ID": "GOV-communication_path-Organization-Organization",
     "Trigger": "Gov: Organization --[Communication Path]--> Organization",
-    "Template": "<Organization> shall communicate with the <Organization>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -442,7 +468,7 @@
   {
     "Pattern ID": "GOV-communication_path-Organization-Business_Unit",
     "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
-    "Template": "<Organization> shall communicate with the <Business Unit>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -453,7 +479,7 @@
   {
     "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit",
     "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
-    "Template": "<Business Unit> shall communicate with the <Business Unit>.",
+    "Template": "<source_id> (<source_class>) shall communicate with the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -464,7 +490,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Policy",
     "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
-    "Template": "<Procedure> shall comply with the <Policy>.",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -475,7 +501,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Guideline",
     "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
-    "Template": "<Procedure> shall comply with the <Guideline>.",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -486,7 +512,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Standard",
     "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
-    "Template": "<Procedure> shall comply with the <Standard>.",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -497,7 +523,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Principle",
     "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
-    "Template": "<Procedure> shall comply with the <Principle>.",
+    "Template": "<source_id> (<source_class>) shall comply with the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -508,7 +534,7 @@
   {
     "Pattern ID": "GOV-consumes-Process-Data",
     "Trigger": "Gov: Process --[Consumes]--> Data",
-    "Template": "<Process> shall use the <Data>.",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -519,7 +545,7 @@
   {
     "Pattern ID": "GOV-consumes-Process-Record",
     "Trigger": "Gov: Process --[Consumes]--> Record",
-    "Template": "<Process> shall use the <Record>.",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -530,7 +556,7 @@
   {
     "Pattern ID": "GOV-curation-Process-Data",
     "Trigger": "Gov: Process --[Curation]--> Data",
-    "Template": "<Process> shall curate the <Data>.",
+    "Template": "<source_id> (<source_class>) shall curate the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -541,7 +567,7 @@
   {
     "Pattern ID": "GOV-delivers-Process-Document",
     "Trigger": "Gov: Process --[Delivers]--> Document",
-    "Template": "<Process> shall deliver the <Document>.",
+    "Template": "<source_id> (<source_class>) shall deliver the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -552,7 +578,7 @@
   {
     "Pattern ID": "GOV-delivers-Process-Record",
     "Trigger": "Gov: Process --[Delivers]--> Record",
-    "Template": "<Process> shall deliver the <Record>.",
+    "Template": "<source_id> (<source_class>) shall deliver the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -563,7 +589,7 @@
   {
     "Pattern ID": "GOV-executes-Role-Process",
     "Trigger": "Gov: Role --[Executes]--> Process",
-    "Template": "<Role> shall execute the <Process>.",
+    "Template": "<source_id> (<source_class>) shall execute the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -574,7 +600,7 @@
   {
     "Pattern ID": "GOV-executes-Role-Procedure",
     "Trigger": "Gov: Role --[Executes]--> Procedure",
-    "Template": "<Role> shall execute the <Procedure>.",
+    "Template": "<source_id> (<source_class>) shall execute the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -585,7 +611,7 @@
   {
     "Pattern ID": "GOV-extend-Policy-Policy",
     "Trigger": "Gov: Policy --[Extend]--> Policy",
-    "Template": "<Policy> shall extend the <Policy>.",
+    "Template": "<source_id> (<source_class>) shall extend the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -596,7 +622,7 @@
   {
     "Pattern ID": "GOV-extend-Standard-Standard",
     "Trigger": "Gov: Standard --[Extend]--> Standard",
-    "Template": "<Standard> shall extend the <Standard>.",
+    "Template": "<source_id> (<source_class>) shall extend the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -607,7 +633,7 @@
   {
     "Pattern ID": "GOV-generalize-Policy-Policy",
     "Trigger": "Gov: Policy --[Generalize]--> Policy",
-    "Template": "<Policy> shall generalize the <Policy>.",
+    "Template": "<source_id> (<source_class>) shall generalize the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -618,7 +644,7 @@
   {
     "Pattern ID": "GOV-generalize-Standard-Standard",
     "Trigger": "Gov: Standard --[Generalize]--> Standard",
-    "Template": "<Standard> shall generalize the <Standard>.",
+    "Template": "<source_id> (<source_class>) shall generalize the <source_id> (<source_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -629,7 +655,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Metric",
     "Trigger": "Gov: Role --[Monitors]--> Metric",
-    "Template": "<Role> shall monitor the <Metric>.",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -640,7 +666,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Process",
     "Trigger": "Gov: Role --[Monitors]--> Process",
-    "Template": "<Role> shall monitor the <Process>.",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -651,7 +677,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Activity",
     "Trigger": "Gov: Role --[Monitors]--> Activity",
-    "Template": "<Role> shall monitor the <Activity>.",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -662,7 +688,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Activity",
     "Trigger": "Gov: Role --[Performs]--> Activity",
-    "Template": "<Role> shall perform '<Activity>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -673,7 +699,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Task",
     "Trigger": "Gov: Role --[Performs]--> Task",
-    "Template": "<Role> shall perform '<Task>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -684,7 +710,7 @@
   {
     "Pattern ID": "GOV-performs-Role-Procedure",
     "Trigger": "Gov: Role --[Performs]--> Procedure",
-    "Template": "<Role> shall perform '<Procedure>'.",
+    "Template": "<source_id> (<source_class>) shall perform '<target_id> (<target_class>)'.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -695,7 +721,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Document",
     "Trigger": "Gov: Process --[Produces]--> Document",
-    "Template": "<Process> shall produce the <Document>.",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -706,7 +732,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Data",
     "Trigger": "Gov: Process --[Produces]--> Data",
-    "Template": "<Process> shall produce the <Data>.",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -717,7 +743,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Record",
     "Trigger": "Gov: Process --[Produces]--> Record",
-    "Template": "<Process> shall produce the <Record>.",
+    "Template": "<source_id> (<source_class>) shall produce the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -728,7 +754,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Process",
     "Trigger": "Gov: Role --[Responsible for]--> Process",
-    "Template": "<Role> shall be responsible for the <Process>.",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -739,7 +765,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Activity",
     "Trigger": "Gov: Role --[Responsible for]--> Activity",
-    "Template": "<Role> shall be responsible for the <Activity>.",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -750,7 +776,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Task",
     "Trigger": "Gov: Role --[Responsible for]--> Task",
-    "Template": "<Role> shall be responsible for the <Task>.",
+    "Template": "<source_id> (<source_class>) shall be responsible for the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -761,7 +787,7 @@
   {
     "Pattern ID": "GOV-uses-Role-Document",
     "Trigger": "Gov: Role --[Uses]--> Document",
-    "Template": "<Role> shall use the <Document>.",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -772,7 +798,7 @@
   {
     "Pattern ID": "GOV-uses-Role-Data",
     "Trigger": "Gov: Role --[Uses]--> Data",
-    "Template": "<Role> shall use the <Data>.",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -783,7 +809,7 @@
   {
     "Pattern ID": "GOV-uses-Role-Record",
     "Trigger": "Gov: Role --[Uses]--> Record",
-    "Template": "<Role> shall use the <Record>.",
+    "Template": "<source_id> (<source_class>) shall use the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -794,7 +820,7 @@
   {
     "Pattern ID": "GOV-approves-Role-ANN",
     "Trigger": "Gov: Role --[Approves]--> ANN",
-    "Template": "<source_id> shall approve the <ANN>.",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -805,7 +831,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Database",
     "Trigger": "Gov: Role --[Approves]--> Database",
-    "Template": "<source_id> shall approve the <Database>.",
+    "Template": "<source_id> (<source_class>) shall approve the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -816,7 +842,7 @@
   {
     "Pattern ID": "GOV-audits-Role-ANN",
     "Trigger": "Gov: Role --[Audits]--> ANN",
-    "Template": "<source_id> shall audit the <ANN>.",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -827,7 +853,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Database",
     "Trigger": "Gov: Role --[Audits]--> Database",
-    "Template": "<source_id> shall audit the <Database>.",
+    "Template": "<source_id> (<source_class>) shall audit the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -838,7 +864,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-ANN",
     "Trigger": "Gov: Role --[Monitors]--> ANN",
-    "Template": "<source_id> shall monitor the <ANN>.",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -849,7 +875,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Database",
     "Trigger": "Gov: Role --[Monitors]--> Database",
-    "Template": "<source_id> shall monitor the <Database>.",
+    "Template": "<source_id> (<source_class>) shall monitor the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -860,7 +886,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-ANN",
     "Trigger": "Gov: Organization --[Authorizes]--> ANN",
-    "Template": "<source_id> shall authorize the <ANN>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -871,7 +897,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Database",
     "Trigger": "Gov: Organization --[Authorizes]--> Database",
-    "Template": "<source_id> shall authorize the <Database>.",
+    "Template": "<source_id> (<source_class>) shall authorize the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -882,7 +908,7 @@
   {
     "Pattern ID": "GOV-constrains-Policy-ANN",
     "Trigger": "Gov: Policy --[Constrains]--> ANN",
-    "Template": "<source_id> shall constrain the <ANN>.",
+    "Template": "<source_id> (<source_class>) shall constrain the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -893,7 +919,7 @@
   {
     "Pattern ID": "GOV-constrains-Policy-Database",
     "Trigger": "Gov: Policy --[Constrains]--> Database",
-    "Template": "<source_id> shall constrain the <Database>.",
+    "Template": "<source_id> (<source_class>) shall constrain the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -904,10 +930,12 @@
   {
     "Pattern ID": "SA-complies-ANN-Policy",
     "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
-    "Template": "Engineering team shall ensure the <ANN> complies with the <Policy>.",
+    "Template": "Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Cross-domain compliance requirement."
@@ -915,10 +943,12 @@
   {
     "Pattern ID": "SA-complies-Database-Policy",
     "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
-    "Template": "Engineering team shall ensure the <Database> complies with the <Policy>.",
+    "Template": "Engineering team shall ensure the <source_id> (<source_class>) complies with the <target_id> (<target_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Cross-domain compliance requirement."
@@ -926,10 +956,12 @@
   {
     "Pattern ID": "SA-traces-ANN-Standard",
     "Trigger": "Safety&AI: ANN --[Trace]--> Standard",
-    "Template": "Engineering team shall trace the <ANN> to the <Standard>.",
+    "Template": "Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Traceability between AI models and standards."
@@ -937,10 +969,12 @@
   {
     "Pattern ID": "SA-traces-Database-Standard",
     "Trigger": "Safety&AI: Database --[Trace]--> Standard",
-    "Template": "Engineering team shall trace the <Database> to the <Standard>.",
+    "Template": "Engineering team shall trace the <source_id> (<source_class>) to the <target_id> (<target_class>).",
     "Variables": [
       "<source_id>",
+      "<source_class>",
       "<target_id>",
+      "<target_class>",
       "<acceptance_criteria>"
     ],
     "Notes": "Traceability between data repositories and applicable standards."
@@ -1024,5 +1058,134 @@
       "<record>"
     ],
     "Notes": "Compliance requirement with auditable trail."
+  },
+  {
+    "Pattern ID": "ORG-establish-Organization-Process",
+    "Trigger": "Organization: Organization --[Establish]--> Process",
+    "Template": "<organization> shall establish the <process> and record evidence in <record>.",
+    "Variables": [
+      "<organization>",
+      "<process>",
+      "<record>",
+      "<due_date>"
+    ],
+    "Notes": "Organizational process definition requirement."
+  },
+  {
+    "Pattern ID": "SA-monitoring-ANN-Operation",
+    "Trigger": "Safety&AI: ANN --[Monitoring]--> Operation",
+    "Template": "Engineering team shall monitor the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "AVD-implement-Driving_Function-Software_Component",
+    "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
+    "Template": "Engineering team shall implement the <target_id> (<target_class>) for the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "For autonomous vehicle functionality development."
+  },
+  {
+    "Pattern ID": "VAL-validate-Test_Suite-System",
+    "Trigger": "Validation: Test Suite --[Validate]--> System",
+    "Template": "Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Validation coverage requirement."
+  },
+  {
+    "Pattern ID": "VER-verify-Verification_Plan-Component",
+    "Trigger": "Verification: Verification Plan --[Verify]--> Component",
+    "Template": "Verification team shall verify the <target_id> (<target_class>) according to the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Verification requirement."
+  },
+  {
+    "Pattern ID": "PROD-manufacture-Manufacturing_Process-Vehicle",
+    "Trigger": "Production: Manufacturing Process --[Manufacture]--> Vehicle",
+    "Template": "Manufacturing team shall manufacture the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Production requirement."
+  },
+  {
+    "Pattern ID": "OP-operate-Fleet-Vehicle",
+    "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
+    "Template": "Operations team shall operate the <target_id> (<target_class>) within the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Operational requirement."
+  },
+  {
+    "Pattern ID": "INSP-inspect-Vehicle-Safety_Compliance",
+    "Trigger": "Inspection: Vehicle --[Inspect]--> Safety Compliance",
+    "Template": "Inspection team shall inspect the <source_id> (<source_class>) for <target_id> (<target_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Periodic inspection requirement."
+  },
+  {
+    "Pattern ID": "TRI-triage-Incident-Safety_Issue",
+    "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
+    "Template": "Support team shall triage the <target_id> (<target_class>) from the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Incident triage requirement."
+  },
+  {
+    "Pattern ID": "IMP-improve-Field_Data-Model",
+    "Trigger": "Improvement: Field Data --[Improve]--> Model",
+    "Template": "Engineering team shall improve the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Post-deployment improvement requirement."
   }
 ]

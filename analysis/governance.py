@@ -71,8 +71,12 @@ def _apply_pattern(
         key = match.group(1)
         if key == "source_id" or key == src_type:
             return src
+        if key == "source_class":
+            return src_type
         if key == "target_id" or key == dst_type:
             return dst
+        if key == "target_class":
+            return dst_type
         if key == "acceptance_criteria":
             return cond or ""
         return ""
@@ -165,6 +169,30 @@ class GeneratedRequirement:
             or (self.origin and item in self.origin)
             or (self.source and item in self.source)
         )
+
+
+def _requirement_complexity(req: GeneratedRequirement | tuple[str, str]) -> int:
+    """Return a simple complexity score for a requirement.
+
+    Generated requirements become more complex as additional components such
+    as conditions, objects or constraints are present.  Tuple requirements are
+    scored by their textual length.  The score is only used for relative
+    comparisons so the exact values are not important.
+    """
+
+    if isinstance(req, GeneratedRequirement):
+        return sum(
+            1
+            for attr in (
+                req.condition,
+                req.obj,
+                req.constraint,
+                req.origin,
+                req.text_override,
+            )
+            if attr
+        )
+    return len(req[0])
 
 
 @dataclass
@@ -470,8 +498,40 @@ class GovernanceDiagram:
                     req_type=req_type,
                 )
             )
+        # When many similar requirements are produced, keep only the most
+        # detailed one for a given subject/action pair.  This avoids clutter
+        # from generic requirements when a more specific alternative exists.
+        grouped: dict[tuple[str | None, str, str | None], GeneratedRequirement | tuple[str, str]] = {}
+        for req in requirements:
+            if isinstance(req, GeneratedRequirement):
+                key = (req.subject, req.action, req.obj)
+            else:
+                key = (req[0], "text", None)
+            existing = grouped.get(key)
+            if not existing or _requirement_complexity(req) > _requirement_complexity(existing):
+                grouped[key] = req
 
-        return requirements
+        # Drop generic requirements with no object when a more specific
+        # requirement with the same subject and action is available.
+        result: list[GeneratedRequirement | tuple[str, str]] = []
+        for key, req in grouped.items():
+            if isinstance(req, GeneratedRequirement) and req.obj is None:
+                subj, act, _ = key
+                if any(
+                    isinstance(other, GeneratedRequirement)
+                    and other.subject == subj
+                    and other.obj is not None
+                    and (
+                        other.action == act
+                        or other.action.startswith(f"{act} ")
+                    )
+                    for other in grouped.values()
+                    if other is not req
+                ):
+                    continue
+            result.append(req)
+
+        return result
 
     @classmethod
     def default_from_work_products(cls, names: List[str]) -> "GovernanceDiagram":

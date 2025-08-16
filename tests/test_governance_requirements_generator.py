@@ -62,7 +62,7 @@ def test_ai_training_and_curation_requirements():
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
     assert (
-        "If completion >= 0.98, Engineering team shall train the ANN1 using the Database1."
+        "If completion >= 0.98, Engineering team shall train the ANN1 (ANN) using the Database1 (Database)."
         in texts
     )
     assert "If completion < 0.98, Engineering team shall curate 'Database1'." in texts
@@ -85,7 +85,7 @@ def test_acquisition_pattern_requirement():
     diagram.add_relationship("DB1", "DAQ1", conn_type="Acquisition")
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "Engineering team shall acquire the DAQ1 using the DB1." in texts
+    assert "Engineering team shall acquire the DAQ1 (Data acquisition) using the DB1 (Database)." in texts
 
 def test_propagate_by_review_pattern():
     diagram = GovernanceDiagram()
@@ -94,7 +94,7 @@ def test_propagate_by_review_pattern():
     diagram.add_relationship("WP1", "WP2", conn_type="Propagate by Review")
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "WP1 shall propagate by review the WP2." in texts
+    assert "WP1 (Work Product) shall propagate by review the WP2 (Work Product)." in texts
 
 def test_data_acquisition_compartment_sources():
     diagram = GovernanceDiagram()
@@ -128,8 +128,8 @@ def test_data_acquisition_node_name_normalized():
     texts = [r.text for r in reqs]
 
     assert "Engineering team shall acquire data from 'Sensor X'." in texts
-    # Ensure the task-level requirement uses the normalized verb
-    assert "Engineering team shall acquire data." in texts
+    # Ensure the raw node name does not appear in generated text
+    assert not any("shall Data acquisition" in t for t in texts)
 
 
 def test_tasks_create_requirement_actions():
