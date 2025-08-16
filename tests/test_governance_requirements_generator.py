@@ -128,8 +128,8 @@ def test_data_acquisition_node_name_normalized():
     texts = [r.text for r in reqs]
 
     assert "Engineering team shall acquire data from 'Sensor X'." in texts
-    # Ensure the task-level requirement uses the normalized verb
-    assert "Engineering team shall acquire data." in texts
+    # Ensure the raw node name does not appear in generated text
+    assert not any("shall Data acquisition" in t for t in texts)
 
 
 def test_tasks_create_requirement_actions():

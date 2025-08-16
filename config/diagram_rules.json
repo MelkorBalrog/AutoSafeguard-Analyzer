@@ -38,7 +38,9 @@
     "Ingestion",
     "Model evaluation",
     "Tune",
-    "Hyperparameter Validation"
+    "Hyperparameter Validation",
+    "Monitoring",
+    "Complies with"
   ],
 
   // Types shown in the Governance Elements toolbox
@@ -54,7 +56,25 @@
     "Procedure",
     "Record",
     "Role",
-    "Standard"
+    "Standard",
+    "Process",
+    "Activity",
+    "Task",
+    "Operation",
+    "Driving Function",
+    "Software Component",
+    "Test Suite",
+    "System",
+    "Verification Plan",
+    "Component",
+    "Manufacturing Process",
+    "Vehicle",
+    "Fleet",
+    "Safety Compliance",
+    "Incident",
+    "Safety Issue",
+    "Field Data",
+    "Model"
   ],
 
   // Relation labels for the Governance Elements toolbox
@@ -74,7 +94,17 @@
     "Performs",
     "Produces",
     "Responsible for",
-    "Uses"
+    "Uses",
+    "Constrains",
+    "Establish",
+    "Implement",
+    "Validate",
+    "Verify",
+    "Manufacture",
+    "Operate",
+    "Inspect",
+    "Triage",
+    "Improve"
   ],
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
@@ -109,7 +139,25 @@
     "Procedure",
     "Record",
     "Role",
-    "Standard"
+    "Standard",
+    "Process",
+    "Activity",
+    "Task",
+    "Operation",
+    "Driving Function",
+    "Software Component",
+    "Test Suite",
+    "System",
+    "Verification Plan",
+    "Component",
+    "Manufacturing Process",
+    "Vehicle",
+    "Fleet",
+    "Safety Compliance",
+    "Incident",
+    "Safety Issue",
+    "Field Data",
+    "Model"
   ],
 
   // FMEDA/Fault tree gate node types
@@ -177,7 +225,19 @@
     "trace": {"action": "trace to"},
     "used by": {"action": "be used by"},
     "used after review": {"action": "be used after review"},
-    "used after approval": {"action": "be used after approval"}
+    "used after approval": {"action": "be used after approval"},
+    "constrains": {"action": "constrain"},
+    "establish": {"action": "establish"},
+    "implement": {"action": "implement"},
+    "validate": {"action": "validate", "subject": "Validation team"},
+    "verify": {"action": "verify", "subject": "Verification team"},
+    "manufacture": {"action": "manufacture", "subject": "Manufacturing team"},
+    "operate": {"action": "operate", "subject": "Operations team"},
+    "inspect": {"action": "inspect", "subject": "Inspection team"},
+    "triage": {"action": "triage", "subject": "Support team"},
+    "improve": {"action": "improve", "subject": "Engineering team"},
+    "monitoring": {"action": "monitor", "subject": "Engineering team"},
+    "complies with": {"action": "comply with", "subject": "Engineering team", "constraint": true}
   },
 
   // Default requirement role per node type
@@ -203,7 +263,22 @@
     "Database": "object",
     "ANN": "object",
     "Data acquisition": "object",
-    "Metric": "constraint"
+    "Metric": "constraint",
+    "Operation": "object",
+    "Driving Function": "object",
+    "Software Component": "object",
+    "Test Suite": "object",
+    "System": "object",
+    "Verification Plan": "object",
+    "Component": "object",
+    "Manufacturing Process": "object",
+    "Vehicle": "object",
+    "Fleet": "object",
+    "Safety Compliance": "object",
+    "Incident": "object",
+    "Safety Issue": "object",
+    "Field Data": "object",
+    "Model": "object"
   },
 
   // Allowed Safety & AI relationships between node types
@@ -220,7 +295,9 @@
     "AI re-training": {"Database": ["ANN"]},
     "Model evaluation": {"ANN": ["Database"]},
     "Curation": {"Database": ["Database"]},
-    "Ingestion": {"Database": ["Database"]}
+    "Ingestion": {"Database": ["Database"]},
+    "Monitoring": {"ANN": ["Operation"]},
+    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]}
   },
 
   // Connection validation rules per diagram type and connection kind

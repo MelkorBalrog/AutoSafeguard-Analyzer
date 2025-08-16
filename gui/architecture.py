@@ -69,20 +69,38 @@ SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 
-# Group governance elements into meaningful classes for toolbox organisation
-GOV_ELEMENT_CLASSES = {
-    "Entities": [
-        n
-        for n in ["Organization", "Business Unit", "Role"]
-        if n in GOV_ELEMENT_NODES
-    ],
-    "Artifacts": [n for n in ["Data", "Document", "Record"] if n in GOV_ELEMENT_NODES],
-    "Governance": [
-        n
-        for n in ["Policy", "Principle", "Procedure", "Guideline", "Standard", "Metric"]
-        if n in GOV_ELEMENT_NODES
-    ],
-}
+
+def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
+    base = {
+        "Entities": [n for n in ["Organization", "Business Unit", "Role"] if n in nodes],
+        "Artifacts": [n for n in ["Data", "Document", "Record"] if n in nodes],
+        "Governance": [
+            n
+            for n in ["Policy", "Principle", "Procedure", "Guideline", "Standard", "Metric"]
+            if n in nodes
+        ],
+    }
+    known = {
+        "Organization",
+        "Business Unit",
+        "Role",
+        "Data",
+        "Document",
+        "Record",
+        "Policy",
+        "Principle",
+        "Procedure",
+        "Guideline",
+        "Standard",
+        "Metric",
+    }
+    other = [n for n in nodes if n not in known]
+    if other:
+        base["Other"] = other
+    return base
+
+
+GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
@@ -150,6 +168,16 @@ _BASE_CONN_TYPES = {
     "Produces",
     "Responsible for",
     "Uses",
+    "Constrains",
+    "Establish",
+    "Implement",
+    "Validate",
+    "Verify",
+    "Manufacture",
+    "Operate",
+    "Inspect",
+    "Triage",
+    "Improve",
 }
 
 # Ordered list of base connection tools for toolbox composition
@@ -189,6 +217,16 @@ _BASE_CONN_TOOLS = [
     "Produces",
     "Responsible for",
     "Uses",
+    "Constrains",
+    "Establish",
+    "Implement",
+    "Validate",
+    "Verify",
+    "Manufacture",
+    "Operate",
+    "Inspect",
+    "Triage",
+    "Improve",
 ]
 
 # Connection types that default to forward arrows
@@ -220,6 +258,16 @@ _ARROW_FORWARD_BASE.update(
         "Produces",
         "Responsible for",
         "Uses",
+        "Constrains",
+        "Establish",
+        "Implement",
+        "Validate",
+        "Verify",
+        "Manufacture",
+        "Operate",
+        "Inspect",
+        "Triage",
+        "Improve",
     }
 )
 
@@ -238,7 +286,7 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
-    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS
+    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -248,6 +296,7 @@ def reload_config() -> None:
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
     GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
     GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+    GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
     GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}

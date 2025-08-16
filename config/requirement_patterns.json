@@ -1024,5 +1024,116 @@
       "<record>"
     ],
     "Notes": "Compliance requirement with auditable trail."
+  },
+  {
+    "Pattern ID": "ORG-establish-Organization-Process",
+    "Trigger": "Organization: Organization --[Establish]--> Process",
+    "Template": "<organization> shall establish the <process> and record evidence in <record>.",
+    "Variables": [
+      "<organization>",
+      "<process>",
+      "<record>",
+      "<due_date>"
+    ],
+    "Notes": "Organizational process definition requirement."
+  },
+  {
+    "Pattern ID": "SA-monitoring-ANN-Operation",
+    "Trigger": "Safety&AI: ANN --[Monitoring]--> Operation",
+    "Template": "Engineering team shall monitor the <Operation> using the <ANN>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Instantiate on detected edge; add measurable criteria."
+  },
+  {
+    "Pattern ID": "AVD-implement-Driving_Function-Software_Component",
+    "Trigger": "AV Dev: Driving Function --[Implement]--> Software Component",
+    "Template": "Engineering team shall implement the <Software Component> for the <Driving Function>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "For autonomous vehicle functionality development."
+  },
+  {
+    "Pattern ID": "VAL-validate-Test_Suite-System",
+    "Trigger": "Validation: Test Suite --[Validate]--> System",
+    "Template": "Validation team shall validate the <System> using the <Test Suite>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Validation coverage requirement."
+  },
+  {
+    "Pattern ID": "VER-verify-Verification_Plan-Component",
+    "Trigger": "Verification: Verification Plan --[Verify]--> Component",
+    "Template": "Verification team shall verify the <Component> according to the <Verification Plan>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Verification requirement."
+  },
+  {
+    "Pattern ID": "PROD-manufacture-Manufacturing_Process-Vehicle",
+    "Trigger": "Production: Manufacturing Process --[Manufacture]--> Vehicle",
+    "Template": "Manufacturing team shall manufacture the <Vehicle> using the <Manufacturing Process>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Production requirement."
+  },
+  {
+    "Pattern ID": "OP-operate-Fleet-Vehicle",
+    "Trigger": "Operation: Fleet --[Operate]--> Vehicle",
+    "Template": "Operations team shall operate the <Vehicle> within the <Fleet>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Operational requirement."
+  },
+  {
+    "Pattern ID": "INSP-inspect-Vehicle-Safety_Compliance",
+    "Trigger": "Inspection: Vehicle --[Inspect]--> Safety Compliance",
+    "Template": "Inspection team shall inspect the <Vehicle> for <Safety Compliance>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Periodic inspection requirement."
+  },
+  {
+    "Pattern ID": "TRI-triage-Incident-Safety_Issue",
+    "Trigger": "Triage: Incident --[Triage]--> Safety Issue",
+    "Template": "Support team shall triage the <Safety Issue> from the <Incident>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Incident triage requirement."
+  },
+  {
+    "Pattern ID": "IMP-improve-Field_Data-Model",
+    "Trigger": "Improvement: Field Data --[Improve]--> Model",
+    "Template": "Engineering team shall improve the <Model> using the <Field Data>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Post-deployment improvement requirement."
   }
 ]
