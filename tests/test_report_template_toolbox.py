@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 import types
-import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -18,7 +17,7 @@ sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
-from config import validate_report_template
+
 
 def test_report_template_toolbox_single_instance():
     """Opening report template toolbox twice doesn't duplicate editor."""
@@ -63,20 +62,3 @@ def test_report_template_toolbox_single_instance():
     app.open_report_template_toolbox()
     app.open_report_template_toolbox()
     assert DummyEditor.created == 1
-
-
-def test_validate_report_template_with_elements():
-    cfg = {
-        "elements": {"diag": "diagram"},
-        "sections": [{"title": "Intro", "content": "See <diag>"}],
-    }
-    assert validate_report_template(cfg) == cfg
-
-
-def test_validate_report_template_unknown_element():
-    cfg = {
-        "elements": {"diag": "diagram"},
-        "sections": [{"title": "Intro", "content": "<missing>"}],
-    }
-    with pytest.raises(ValueError):
-        validate_report_template(cfg)

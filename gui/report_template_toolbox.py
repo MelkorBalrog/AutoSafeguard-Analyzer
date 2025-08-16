@@ -5,89 +5,6 @@ import json
 from config import load_report_template, validate_report_template
 from gui import messagebox
 
-class ElementDialog(simpledialog.Dialog):
-    """Dialog for adding or editing a single element placeholder."""
-
-    def __init__(self, parent, element: dict[str, str]):
-        self.element = element
-        super().__init__(parent, title="Element")
-
-    def body(self, master):
-        tk.Label(master, text="Name:").grid(row=0, column=0, padx=4, pady=4, sticky="e")
-        self.name_var = tk.StringVar(value=self.element.get("name", ""))
-        ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
-        tk.Label(master, text="Type:").grid(row=1, column=0, padx=4, pady=4, sticky="e")
-        self.type_var = tk.StringVar(value=self.element.get("type", ""))
-        ttk.Entry(master, textvariable=self.type_var).grid(row=1, column=1, padx=4, pady=4, sticky="ew")
-        master.columnconfigure(1, weight=1)
-        return master
-
-    def apply(self):
-        self.result = {
-            "name": self.name_var.get().strip(),
-            "type": self.type_var.get().strip(),
-        }
-
-
-class ElementsDialog(simpledialog.Dialog):
-    """Dialog for editing element placeholders."""
-
-    def __init__(self, parent, elements: dict[str, str]):
-        self.elements = dict(elements)
-        super().__init__(parent, title="Edit Elements")
-
-    def body(self, master):
-        self.tree = ttk.Treeview(master, columns=("type",), show="headings")
-        self.tree.heading("type", text="Type")
-        self.tree.grid(row=0, column=0, columnspan=3, sticky="nsew")
-        ybar = ttk.Scrollbar(master, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=ybar.set)
-        ybar.grid(row=0, column=3, sticky="ns")
-
-        btn_add = ttk.Button(master, text="Add", command=self._add)
-        btn_add.grid(row=1, column=0, padx=2, pady=4, sticky="w")
-        btn_edit = ttk.Button(master, text="Edit", command=self._edit)
-        btn_edit.grid(row=1, column=1, padx=2, pady=4, sticky="w")
-        btn_del = ttk.Button(master, text="Delete", command=self._delete)
-        btn_del.grid(row=1, column=2, padx=2, pady=4, sticky="w")
-
-        master.columnconfigure(0, weight=1)
-        master.rowconfigure(0, weight=1)
-        self._populate()
-        return master
-
-    def _populate(self):
-        self.tree.delete(*self.tree.get_children(""))
-        for name, kind in sorted(self.elements.items()):
-            self.tree.insert("", "end", name, values=(kind,))
-
-    def _add(self):
-        dlg = ElementDialog(self, {})
-        if dlg.result:
-            self.elements[dlg.result["name"]] = dlg.result["type"]
-            self._populate()
-
-    def _edit(self):
-        item = self.tree.focus()
-        if not item:
-            return
-        dlg = ElementDialog(
-            self, {"name": item, "type": self.elements.get(item, "")}
-        )
-        if dlg.result:
-            if item in self.elements:
-                del self.elements[item]
-            self.elements[dlg.result["name"]] = dlg.result["type"]
-            self._populate()
-
-    def _delete(self):
-        item = self.tree.focus()
-        if item and item in self.elements:
-            del self.elements[item]
-            self._populate()
-
-    def apply(self):
-        self.result = self.elements
 
 class SectionDialog(simpledialog.Dialog):
     """Dialog for editing a single section."""
@@ -103,10 +20,6 @@ class SectionDialog(simpledialog.Dialog):
         tk.Label(master, text="Content:").grid(row=1, column=0, padx=4, pady=4, sticky="ne")
         self.content_var = tk.StringVar(value=self.section.get("content", ""))
         ttk.Entry(master, textvariable=self.content_var).grid(row=1, column=1, padx=4, pady=4, sticky="ew")
-        tk.Label(
-            master,
-            text="Use <element_name> to insert configured elements.",
-        ).grid(row=2, column=0, columnspan=2, padx=4, pady=(0, 4), sticky="w")
         master.columnconfigure(1, weight=1)
         return master
 
@@ -132,8 +45,7 @@ class ReportTemplateEditor(tk.Frame):
             messagebox.showerror(
                 "Report Template", f"Failed to load configuration:\n{exc}"
             )
-            self.data = {"sections": [], "elements": {}}
-        self.data.setdefault("elements", {})
+            self.data = {"sections": []}
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
@@ -157,8 +69,6 @@ class ReportTemplateEditor(tk.Frame):
         self.preview = tk.Text(self, state="disabled", wrap="word")
         self.preview.grid(row=0, column=1, sticky="nsew")
 
-        elem_btn = ttk.Button(self, text="Elements...", command=self._edit_elements)
-        elem_btn.grid(row=1, column=0, sticky="w", padx=4, pady=4)
         btn = ttk.Button(self, text="Save", command=self.save)
         btn.grid(row=1, column=1, sticky="e", padx=4, pady=4)
 
@@ -192,11 +102,6 @@ class ReportTemplateEditor(tk.Frame):
             self._populate_tree()
             self.tree.selection_set(item)
             self._on_select()
-
-    def _edit_elements(self):
-        dlg = ElementsDialog(self, self.data.get("elements", {}))
-        if dlg.result is not None:
-            self.data["elements"] = dlg.result
 
     def save(self):
         try:
