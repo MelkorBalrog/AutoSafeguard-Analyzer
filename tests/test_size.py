@@ -101,7 +101,7 @@ class EnsureTextFitsTests(unittest.TestCase):
             self.assertEqual(obj.width, 40)
             self.assertEqual(obj.height, 40)
 
-    def test_data_acquisition_sizes_to_text(self):
+    def test_data_acquisition_default_and_resize(self):
         win = DummyWindow()
         obj = SysMLObject(
             1,
@@ -110,12 +110,18 @@ class EnsureTextFitsTests(unittest.TestCase):
             0,
             width=120,
             height=80,
-            properties={"compartments": "abc;de"},
+            properties={"compartments": ""},
         )
         obj.requirements = []
         win.ensure_text_fits(obj)
-        self.assertEqual(obj.width, len("abc") + 8)
-        self.assertEqual(obj.height, 2 + 8)
+        self.assertEqual(obj.width, 120)
+        self.assertEqual(obj.height, 80)
+        obj.properties["compartments"] = "a" * 200 + ";de"
+        win.ensure_text_fits(obj)
+        self.assertGreater(obj.width, 120)
+        obj.properties["compartments"] = ";".join(f"line{i}" for i in range(100))
+        win.ensure_text_fits(obj)
+        self.assertGreater(obj.height, 80)
 
 if __name__ == "__main__":
     unittest.main()
