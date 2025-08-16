@@ -16,12 +16,32 @@ class MultiSelectDialog(simpledialog.Dialog):
         super().__init__(parent, title=title)
 
     def body(self, master):
-        self.listbox = tk.Listbox(master, selectmode=tk.MULTIPLE, height=10)
+        self.resizable(False, False)
+        self.geometry("300x250")
+
+        master.rowconfigure(0, weight=1)
+        master.columnconfigure(0, weight=1)
+
+        frame = ttk.Frame(master)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+
+        yscroll = ttk.Scrollbar(frame, orient="vertical")
+        self.listbox = tk.Listbox(
+            frame,
+            selectmode=tk.MULTIPLE,
+            height=10,
+            yscrollcommand=yscroll.set,
+        )
         for idx, opt in enumerate(self.options):
             self.listbox.insert(tk.END, opt)
             if opt in self.initial:
                 self.listbox.selection_set(idx)
-        self.listbox.grid(row=0, column=0, padx=5, pady=5)
+        self.listbox.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        yscroll.config(command=self.listbox.yview)
+        yscroll.grid(row=0, column=1, sticky="ns")
+
         return self.listbox
 
     def apply(self):
