@@ -13,8 +13,10 @@ def test_switch_toolbox_handles_governance_elements():
     class Frame:
         def __init__(self):
             self.packed = False
+
         def pack(self, *a, **k):
             self.packed = True
+
         def pack_forget(self, *a, **k):
             self.packed = False
 

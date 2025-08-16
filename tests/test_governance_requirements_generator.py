@@ -95,6 +95,22 @@ def test_data_acquisition_compartment_sources():
     assert {r.obj for r in data_reqs} == {"Sensor A", "Sensor B"}
 
 
+def test_data_acquisition_node_name_normalized():
+    diagram = GovernanceDiagram()
+    diagram.add_task(
+        "Data acquisition",
+        node_type="Data acquisition",
+        compartments=["Sensor X"],
+    )
+
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+
+    assert "Engineering team shall acquire data from 'Sensor X'." in texts
+    # Ensure the task-level requirement uses the normalized verb
+    assert "Engineering team shall acquire data." in texts
+
+
 def test_tasks_create_requirement_actions():
     diagram = GovernanceDiagram()
     diagram.add_task("Review Data", node_type="Activity")
