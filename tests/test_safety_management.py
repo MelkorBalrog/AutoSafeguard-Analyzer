@@ -2512,6 +2512,45 @@ def test_focus_governance_diagram_sets_phase_and_hides_functions():
     assert len(changes) == 3
 
 
+def test_tab_focus_triggers_refresh():
+    class DummyChild:
+        def __init__(self):
+            self.called = False
+
+        def refresh_from_repository(self):
+            self.called = True
+
+    class DummyTab:
+        def __init__(self):
+            self.refreshed = False
+            self.child = DummyChild()
+
+        def winfo_children(self):
+            return [self.child]
+
+        def refresh(self):
+            self.refreshed = True
+
+    class DummyNotebook:
+        def __init__(self, tab):
+            self.tab = tab
+
+        def select(self):
+            return self.tab
+
+        def nametowidget(self, widget):
+            return widget
+
+    app = FaultTreeApp.__new__(FaultTreeApp)
+    tab = DummyTab()
+    nb = DummyNotebook(tab)
+    app.refresh_all = types.MethodType(lambda self: None, app)
+    app._safety_case_tab = None
+    app._on_tab_change(types.SimpleNamespace(widget=nb))
+    assert tab.refreshed
+    assert tab.child.called
+
+
 def test_requirement_trace_lookup():
     toolbox = SafetyManagementToolbox()
 

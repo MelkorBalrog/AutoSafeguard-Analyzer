@@ -239,7 +239,7 @@ class SafetyManagementWindow(tk.Frame):
         return rid
 
     # ------------------------------------------------------------------
-    def _display_requirements(self, title: str, ids: list[str]) -> None:
+    def _display_requirements(self, title: str, ids: list[str]) -> ttk.Frame:
         frame = self.app._new_tab(title)
         for child in frame.winfo_children():
             child.destroy()
@@ -248,19 +248,24 @@ class SafetyManagementWindow(tk.Frame):
         tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
         for c in columns:
             tree.heading(c, text=c)
-        for rid in ids:
-            req = global_requirements.get(rid, {})
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    rid,
-                    req.get("req_type", ""),
-                    req.get("text", ""),
-                    req.get("phase") or "",
-                    req.get("status", ""),
-                ),
-            )
+
+        def populate(ids_list: list[str]) -> None:
+            tree.delete(*tree.get_children())
+            for rid in ids_list:
+                req = global_requirements.get(rid, {})
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        rid,
+                        req.get("req_type", ""),
+                        req.get("text", ""),
+                        req.get("phase") or "",
+                        req.get("status", ""),
+                    ),
+                )
+
+        populate(ids)
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
@@ -270,6 +275,8 @@ class SafetyManagementWindow(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
         tree_frame.pack(fill=tk.BOTH, expand=True)
+        frame.refresh_table = populate
+        return frame
 
     @staticmethod
     def _current_requirement_pairs(
@@ -328,14 +335,17 @@ class SafetyManagementWindow(tk.Frame):
             return
         phase = self.toolbox.module_for_diagram(name)
         existing = self._current_requirement_pairs(phase, name)
+        ids_fn = lambda: [
+            rid
+            for rid, req in global_requirements.items()
+            if (req.get("diagram") == name and req.get("phase") == phase)
+            or req.get("phase") is None
+        ]
         if sorted(reqs) == existing:
-            ids = [
-                rid
-                for rid, req in global_requirements.items()
-                if (req.get("diagram") == name and req.get("phase") == phase)
-                or req.get("phase") is None
-            ]
-            self._display_requirements(f"{name} Requirements", ids)
+            frame = self._display_requirements(f"{name} Requirements", ids_fn())
+            frame.refresh_from_repository = (
+                lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+            )
             return
         # Mark existing requirements from this diagram as obsolete before
         # creating new ones to reflect the updated governance model.
@@ -349,13 +359,10 @@ class SafetyManagementWindow(tk.Frame):
                     text, rtype, phase=phase, diagram=name, variables=vars_
                 )
             )
-        ids = [
-            rid
-            for rid, req in global_requirements.items()
-            if (req.get("diagram") == name and req.get("phase") == phase)
-            or req.get("phase") is None
-        ]
-        self._display_requirements(f"{name} Requirements", ids)
+        frame = self._display_requirements(f"{name} Requirements", ids_fn())
+        frame.refresh_from_repository = (
+            lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+        )
 
     def _refresh_phase_menu(self) -> None:
         self.phase_menu.delete(0, tk.END)
@@ -434,13 +441,16 @@ class SafetyManagementWindow(tk.Frame):
                 f"No requirements were generated for phase '{phase}'.",
             )
             return
+        ids_fn = lambda: [
+            rid
+            for rid, req in global_requirements.items()
+            if req.get("phase") in (phase, None)
+        ]
         if sorted(pairs_all) == existing:
-            ids = [
-                rid
-                for rid, req in global_requirements.items()
-                if req.get("phase") in (phase, None)
-            ]
-            self._display_requirements(f"{phase} Requirements", ids)
+            frame = self._display_requirements(f"{phase} Requirements", ids_fn())
+            frame.refresh_from_repository = (
+                lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+            )
             return
         # Mark existing requirements for this phase as obsolete before
         # generating updated ones.
@@ -455,12 +465,10 @@ class SafetyManagementWindow(tk.Frame):
                         text, rtype, phase=phase, diagram=name, variables=vars_
                     )
                 )
-        ids = [
-            rid
-            for rid, req in global_requirements.items()
-            if req.get("phase") in (phase, None)
-        ]
-        self._display_requirements(f"{phase} Requirements", ids)
+        frame = self._display_requirements(f"{phase} Requirements", ids_fn())
+        frame.refresh_from_repository = (
+            lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+        )
 
     def generate_lifecycle_requirements(self) -> None:
         """Generate requirements for diagrams outside of any phase."""
@@ -523,13 +531,14 @@ class SafetyManagementWindow(tk.Frame):
                 "No requirements were generated for lifecycle diagrams.",
             )
             return
+        ids_fn = lambda: [
+            rid for rid, req in global_requirements.items() if req.get("phase") is None
+        ]
         if sorted(pairs_all) == existing:
-            ids = [
-                rid
-                for rid, req in global_requirements.items()
-                if req.get("phase") is None
-            ]
-            self._display_requirements("Lifecycle Requirements", ids)
+            frame = self._display_requirements("Lifecycle Requirements", ids_fn())
+            frame.refresh_from_repository = (
+                lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+            )
             return
         # Mark existing lifecycle requirements as obsolete before generating
         # new ones so the table reflects the latest governance models.
@@ -542,8 +551,10 @@ class SafetyManagementWindow(tk.Frame):
                 ids.append(
                     self._add_requirement(text, rtype, diagram=name, variables=vars_)
                 )
-        ids = [rid for rid, req in global_requirements.items() if req.get("phase") is None]
-        self._display_requirements("Lifecycle Requirements", ids)
+        frame = self._display_requirements("Lifecycle Requirements", ids_fn())
+        frame.refresh_from_repository = (
+            lambda frame=frame, ids_fn=ids_fn: frame.refresh_table(ids_fn())
+        )
 
     def delete_obsolete_requirements(self) -> None:
         """Remove all requirements marked as obsolete."""

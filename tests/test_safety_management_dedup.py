@@ -149,6 +149,12 @@ def test_display_requirements_clears_existing(monkeypatch):
         def grid(self, *args, **kwargs):
             pass
 
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
+
         def destroy(self):
             self.master.children.remove(self)
 

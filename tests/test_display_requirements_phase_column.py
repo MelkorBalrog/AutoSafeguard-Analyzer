@@ -62,12 +62,14 @@ def test_display_requirements_includes_phase(monkeypatch):
         def __init__(self, master, columns, show="headings"):
             columns_captured.append(columns)
             master.children.append(self)
+            self.rows = []
 
         def heading(self, col, text=""):
             pass
 
         def insert(self, parent, idx, values):
             inserted.append(values)
+            self.rows.append(values)
 
         def configure(self, **kwargs):
             pass
@@ -80,6 +82,12 @@ def test_display_requirements_includes_phase(monkeypatch):
 
         def grid(self, *args, **kwargs):
             pass
+
+        def get_children(self):
+            return list(range(len(self.rows)))
+
+        def delete(self, *items):
+            self.rows = []
 
     monkeypatch.setattr(smt.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(smt.ttk, "Scrollbar", DummyScrollbar)
