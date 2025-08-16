@@ -3746,7 +3746,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class}).",
+    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3757,7 +3757,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-COND",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class}).",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3769,7 +3769,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-COND-CONST",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class}) constrained by <constraint>.",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3782,7 +3782,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product-CONST",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class}) constrained by <constraint>.",
+    "Template": "<source_id> (<source_class>) shall propagate by approval the <target_id> (<target_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3794,7 +3794,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class}).",
+    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3805,7 +3805,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-COND",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class}).",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>).",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3817,7 +3817,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-COND-CONST",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class}) constrained by <constraint>.",
+    "Template": "When <condition>, <source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -3830,7 +3830,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product-CONST",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class}) constrained by <constraint>.",
+    "Template": "<source_id> (<source_class>) shall propagate by review the <target_id> (<target_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
       "<due_date>",
