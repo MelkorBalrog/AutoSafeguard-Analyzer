@@ -145,7 +145,7 @@
   {
     "Pattern ID": "GOV-propagate-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate]--> Work Product",
-    "Template": "System shall propagate the <target_id>.",
+    "Template": "System shall propagate the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -156,7 +156,7 @@
   {
     "Pattern ID": "GOV-propagate_by_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Review]--> Work Product",
-    "Template": "System shall propagate by review the <target_id>.",
+    "Template": "System shall propagate by review the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -167,7 +167,7 @@
   {
     "Pattern ID": "GOV-propagate_by_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Propagate by Approval]--> Work Product",
-    "Template": "System shall propagate by approval the <target_id>.",
+    "Template": "System shall propagate by approval the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -178,7 +178,7 @@
   {
     "Pattern ID": "GOV-re-use-Work_Product-Lifecycle_Phase",
     "Trigger": "Gov: Work Product --[Re-use]--> Lifecycle Phase",
-    "Template": "<source_id> shall re-use the <Lifecycle Phase>.",
+    "Template": "<Work Product> shall re-use the <Lifecycle Phase>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -189,7 +189,7 @@
   {
     "Pattern ID": "GOV-re-use-Lifecycle_Phase-Lifecycle_Phase",
     "Trigger": "Gov: Lifecycle Phase --[Re-use]--> Lifecycle Phase",
-    "Template": "System shall re-use the <target_id>.",
+    "Template": "<Lifecycle Phase> shall re-use the <Lifecycle Phase>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -200,7 +200,7 @@
   {
     "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
-    "Template": "System shall be satisfied by the <target_id>.",
+    "Template": "System shall be satisfied by the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -211,7 +211,7 @@
   {
     "Pattern ID": "GOV-derived_from-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Derived from]--> Work Product",
-    "Template": "System shall be derived from the <target_id>.",
+    "Template": "System shall be derived from the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -222,7 +222,7 @@
   {
     "Pattern ID": "GOV-trace-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Trace]--> Work Product",
-    "Template": "System shall trace to the <target_id>.",
+    "Template": "System shall trace to the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -233,7 +233,7 @@
   {
     "Pattern ID": "GOV-used_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used By]--> Work Product",
-    "Template": "System shall be used by the <target_id>.",
+    "Template": "System shall be used by the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -244,7 +244,7 @@
   {
     "Pattern ID": "GOV-used_after_review-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Review]--> Work Product",
-    "Template": "System shall be used after review the <target_id>.",
+    "Template": "System shall be used after review the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -255,7 +255,7 @@
   {
     "Pattern ID": "GOV-used_after_approval-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Used after Approval]--> Work Product",
-    "Template": "System shall be used after approval the <target_id>.",
+    "Template": "System shall be used after approval the <Work Product>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -266,7 +266,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Document",
     "Trigger": "Gov: Role --[Approves]--> Document",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<Role> shall approve the <Document>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -277,7 +277,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Policy",
     "Trigger": "Gov: Role --[Approves]--> Policy",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<Role> shall approve the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -288,7 +288,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Procedure",
     "Trigger": "Gov: Role --[Approves]--> Procedure",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<Role> shall approve the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -299,7 +299,7 @@
   {
     "Pattern ID": "GOV-approves-Role-Record",
     "Trigger": "Gov: Role --[Approves]--> Record",
-    "Template": "<source_id> shall approve '<target_id>'.",
+    "Template": "<Role> shall approve the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -310,7 +310,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Process",
     "Trigger": "Gov: Role --[Audits]--> Process",
-    "Template": "<source_id> shall audit the <Process>.",
+    "Template": "<Role> shall audit the <Process>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -321,7 +321,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Procedure",
     "Trigger": "Gov: Role --[Audits]--> Procedure",
-    "Template": "<source_id> shall audit the <Procedure>.",
+    "Template": "<Role> shall audit the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -332,7 +332,7 @@
   {
     "Pattern ID": "GOV-audits-Role-Record",
     "Trigger": "Gov: Role --[Audits]--> Record",
-    "Template": "<source_id> shall audit the <Record>.",
+    "Template": "<Role> shall audit the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -343,7 +343,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Policy",
     "Trigger": "Gov: Organization --[Authorizes]--> Policy",
-    "Template": "<source_id> shall authorize the <Policy>.",
+    "Template": "<Organization> shall authorize the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -354,7 +354,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Procedure",
     "Trigger": "Gov: Organization --[Authorizes]--> Procedure",
-    "Template": "<source_id> shall authorize the <Procedure>.",
+    "Template": "<Organization> shall authorize the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -365,7 +365,7 @@
   {
     "Pattern ID": "GOV-authorizes-Organization-Process",
     "Trigger": "Gov: Organization --[Authorizes]--> Process",
-    "Template": "<source_id> shall authorize the <Process>.",
+    "Template": "<Organization> shall authorize the <Process>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -376,7 +376,7 @@
   {
     "Pattern ID": "GOV-authorizes-Role-Policy",
     "Trigger": "Gov: Role --[Authorizes]--> Policy",
-    "Template": "<source_id> shall authorize the <Policy>.",
+    "Template": "<Role> shall authorize the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -387,7 +387,7 @@
   {
     "Pattern ID": "GOV-authorizes-Role-Procedure",
     "Trigger": "Gov: Role --[Authorizes]--> Procedure",
-    "Template": "<source_id> shall authorize the <Procedure>.",
+    "Template": "<Role> shall authorize the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -398,7 +398,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Role",
     "Trigger": "Gov: Role --[Communication Path]--> Role",
-    "Template": "<source_id> shall communicate with the <Role>.",
+    "Template": "<Role> shall communicate with the <Role>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -409,7 +409,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Organization",
     "Trigger": "Gov: Role --[Communication Path]--> Organization",
-    "Template": "<source_id> shall communicate with the <Organization>.",
+    "Template": "<Role> shall communicate with the <Organization>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -420,7 +420,7 @@
   {
     "Pattern ID": "GOV-communication_path-Role-Business_Unit",
     "Trigger": "Gov: Role --[Communication Path]--> Business Unit",
-    "Template": "<source_id> shall communicate with the <Business Unit>.",
+    "Template": "<Role> shall communicate with the <Business Unit>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -431,7 +431,7 @@
   {
     "Pattern ID": "GOV-communication_path-Organization-Organization",
     "Trigger": "Gov: Organization --[Communication Path]--> Organization",
-    "Template": "<source_id> shall communicate with the <Organization>.",
+    "Template": "<Organization> shall communicate with the <Organization>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -442,7 +442,7 @@
   {
     "Pattern ID": "GOV-communication_path-Organization-Business_Unit",
     "Trigger": "Gov: Organization --[Communication Path]--> Business Unit",
-    "Template": "<source_id> shall communicate with the <Business Unit>.",
+    "Template": "<Organization> shall communicate with the <Business Unit>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -453,7 +453,7 @@
   {
     "Pattern ID": "GOV-communication_path-Business_Unit-Business_Unit",
     "Trigger": "Gov: Business Unit --[Communication Path]--> Business Unit",
-    "Template": "<source_id> shall communicate with the <Business Unit>.",
+    "Template": "<Business Unit> shall communicate with the <Business Unit>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -464,7 +464,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Policy",
     "Trigger": "Gov: Procedure --[Constrained by]--> Policy",
-    "Template": "<source_id> shall comply with the applicable <Policy>.",
+    "Template": "<Procedure> shall comply with the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -475,7 +475,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Guideline",
     "Trigger": "Gov: Procedure --[Constrained by]--> Guideline",
-    "Template": "<source_id> shall comply with the applicable <Guideline>.",
+    "Template": "<Procedure> shall comply with the <Guideline>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -486,7 +486,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Standard",
     "Trigger": "Gov: Procedure --[Constrained by]--> Standard",
-    "Template": "<source_id> shall comply with the applicable <Standard>.",
+    "Template": "<Procedure> shall comply with the <Standard>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -497,7 +497,7 @@
   {
     "Pattern ID": "GOV-constrained_by-Procedure-Principle",
     "Trigger": "Gov: Procedure --[Constrained by]--> Principle",
-    "Template": "<source_id> shall comply with the applicable <Principle>.",
+    "Template": "<Procedure> shall comply with the <Principle>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -508,7 +508,7 @@
   {
     "Pattern ID": "GOV-consumes-Process-Data",
     "Trigger": "Gov: Process --[Consumes]--> Data",
-    "Template": "<source_id> shall use the <Data>.",
+    "Template": "<Process> shall use the <Data>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -519,7 +519,7 @@
   {
     "Pattern ID": "GOV-consumes-Process-Record",
     "Trigger": "Gov: Process --[Consumes]--> Record",
-    "Template": "<source_id> shall use the <Record>.",
+    "Template": "<Process> shall use the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -530,7 +530,7 @@
   {
     "Pattern ID": "GOV-curation-Process-Data",
     "Trigger": "Gov: Process --[Curation]--> Data",
-    "Template": "Engineering team shall curate the <Data>.",
+    "Template": "<Process> shall curate the <Data>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -541,7 +541,7 @@
   {
     "Pattern ID": "GOV-delivers-Process-Document",
     "Trigger": "Gov: Process --[Delivers]--> Document",
-    "Template": "<source_id> shall deliver the <Document>.",
+    "Template": "<Process> shall deliver the <Document>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -552,7 +552,7 @@
   {
     "Pattern ID": "GOV-delivers-Process-Record",
     "Trigger": "Gov: Process --[Delivers]--> Record",
-    "Template": "<source_id> shall deliver the <Record>.",
+    "Template": "<Process> shall deliver the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -563,7 +563,7 @@
   {
     "Pattern ID": "GOV-executes-Role-Process",
     "Trigger": "Gov: Role --[Executes]--> Process",
-    "Template": "<source_id> shall execute the <Process>.",
+    "Template": "<Role> shall execute the <Process>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -574,7 +574,7 @@
   {
     "Pattern ID": "GOV-executes-Role-Procedure",
     "Trigger": "Gov: Role --[Executes]--> Procedure",
-    "Template": "<source_id> shall execute the <Procedure>.",
+    "Template": "<Role> shall execute the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -585,7 +585,7 @@
   {
     "Pattern ID": "GOV-extend-Policy-Policy",
     "Trigger": "Gov: Policy --[Extend]--> Policy",
-    "Template": "<source_id> shall extend the <Policy>.",
+    "Template": "<Policy> shall extend the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -596,7 +596,7 @@
   {
     "Pattern ID": "GOV-extend-Standard-Standard",
     "Trigger": "Gov: Standard --[Extend]--> Standard",
-    "Template": "<source_id> shall extend the <Standard>.",
+    "Template": "<Standard> shall extend the <Standard>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -607,7 +607,7 @@
   {
     "Pattern ID": "GOV-generalize-Policy-Policy",
     "Trigger": "Gov: Policy --[Generalize]--> Policy",
-    "Template": "<source_id> shall generalize the <Policy>.",
+    "Template": "<Policy> shall generalize the <Policy>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -618,7 +618,7 @@
   {
     "Pattern ID": "GOV-generalize-Standard-Standard",
     "Trigger": "Gov: Standard --[Generalize]--> Standard",
-    "Template": "<source_id> shall generalize the <Standard>.",
+    "Template": "<Standard> shall generalize the <Standard>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -629,7 +629,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Metric",
     "Trigger": "Gov: Role --[Monitors]--> Metric",
-    "Template": "<source_id> shall monitor the <Metric>.",
+    "Template": "<Role> shall monitor the <Metric>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -640,7 +640,7 @@
   {
     "Pattern ID": "GOV-monitors-Role-Process",
     "Trigger": "Gov: Role --[Monitors]--> Process",
-    "Template": "<source_id> shall monitor the <Process>.",
+    "Template": "<Role> shall monitor the <Process>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -651,7 +651,40 @@
   {
     "Pattern ID": "GOV-monitors-Role-Activity",
     "Trigger": "Gov: Role --[Monitors]--> Activity",
-    "Template": "<source_id> shall monitor the <Activity>.",
+    "Template": "<Role> shall monitor the <Activity>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Activity",
+    "Trigger": "Gov: Role --[Performs]--> Activity",
+    "Template": "<Role> shall perform the <Activity>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Task",
+    "Trigger": "Gov: Role --[Performs]--> Task",
+    "Template": "<Role> shall perform the <Task>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "GOV-performs-Role-Procedure",
+    "Trigger": "Gov: Role --[Performs]--> Procedure",
+    "Template": "<Role> shall perform the <Procedure>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -662,7 +695,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Document",
     "Trigger": "Gov: Process --[Produces]--> Document",
-    "Template": "<source_id> shall produce the <Document>.",
+    "Template": "<Process> shall produce the <Document>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -673,7 +706,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Data",
     "Trigger": "Gov: Process --[Produces]--> Data",
-    "Template": "<source_id> shall produce the <Data>.",
+    "Template": "<Process> shall produce the <Data>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -684,7 +717,7 @@
   {
     "Pattern ID": "GOV-produces-Process-Record",
     "Trigger": "Gov: Process --[Produces]--> Record",
-    "Template": "<source_id> shall produce the <Record>.",
+    "Template": "<Process> shall produce the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -695,7 +728,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Process",
     "Trigger": "Gov: Role --[Responsible for]--> Process",
-    "Template": "<source_id> shall be responsible for the <Process>.",
+    "Template": "<Role> shall be responsible for the <Process>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -706,7 +739,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Activity",
     "Trigger": "Gov: Role --[Responsible for]--> Activity",
-    "Template": "<source_id> shall be responsible for the <Activity>.",
+    "Template": "<Role> shall be responsible for the <Activity>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -717,7 +750,7 @@
   {
     "Pattern ID": "GOV-responsible_for-Role-Task",
     "Trigger": "Gov: Role --[Responsible for]--> Task",
-    "Template": "<source_id> shall be responsible for the <Task>.",
+    "Template": "<Role> shall be responsible for the <Task>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -728,7 +761,7 @@
   {
     "Pattern ID": "GOV-uses-Role-Document",
     "Trigger": "Gov: Role --[Uses]--> Document",
-    "Template": "<source_id> shall use the <Document>.",
+    "Template": "<Role> shall use the <Document>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -739,7 +772,7 @@
   {
     "Pattern ID": "GOV-uses-Role-Data",
     "Trigger": "Gov: Role --[Uses]--> Data",
-    "Template": "<source_id> shall use the <Data>.",
+    "Template": "<Role> shall use the <Data>.",
     "Variables": [
       "<owner>",
       "<due_date>",
@@ -750,13 +783,863 @@
   {
     "Pattern ID": "GOV-uses-Role-Record",
     "Trigger": "Gov: Role --[Uses]--> Record",
-    "Template": "<source_id> shall use the <Record>.",
+    "Template": "<Role> shall use the <Record>.",
     "Variables": [
       "<owner>",
       "<due_date>",
       "<evidence_ref>"
     ],
     "Notes": "Use when a governance edge is present."
+  },
+  {
+    "Pattern ID": "USE-association-Actor-Use_Case",
+    "Trigger": "Use Case Diagram: Actor --[Association]--> Use Case",
+    "Template": "The <Actor> shall associate with the <Use Case>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-association-Use_Case-Actor",
+    "Trigger": "Use Case Diagram: Use Case --[Association]--> Actor",
+    "Template": "The <Use Case> shall associate with the <Actor>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-include-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Include]--> Use Case",
+    "Template": "The <Use Case> shall include the <Use Case>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-extend-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Extend]--> Use Case",
+    "Template": "The <Use Case> shall extend the <Use Case>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-generalize-Actor-Actor",
+    "Trigger": "Use Case Diagram: Actor --[Generalize]--> Actor",
+    "Template": "The <Actor> shall generalize the <Actor>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-generalize-Use_Case-Use_Case",
+    "Trigger": "Use Case Diagram: Use Case --[Generalize]--> Use Case",
+    "Template": "The <Use Case> shall generalize the <Use Case>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "USE-communication_path-Actor-Actor",
+    "Trigger": "Use Case Diagram: Actor --[Communication Path]--> Actor",
+    "Template": "The <Actor> shall communicate with the <Actor>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "BLOCK-association-Block-Block",
+    "Trigger": "Block Diagram: Block --[Association]--> Block",
+    "Template": "The <Block> shall associate with the <Block>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "BLOCK-generalization-Block-Block",
+    "Trigger": "Block Diagram: Block --[Generalization]--> Block",
+    "Template": "The <Block> shall generalize the <Block>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "BLOCK-aggregation-Block-Block",
+    "Trigger": "Block Diagram: Block --[Aggregation]--> Block",
+    "Template": "The <Block> shall aggregate the <Block>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "BLOCK-composite_aggregation-Block-Block",
+    "Trigger": "Block Diagram: Block --[Composite Aggregation]--> Block",
+    "Template": "The <Block> shall compose the <Block>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Part-Part",
+    "Trigger": "Internal Block Diagram: Part --[Connector]--> Part",
+    "Template": "The <Part> shall connect to the <Part>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Part-Port",
+    "Trigger": "Internal Block Diagram: Part --[Connector]--> Port",
+    "Template": "The <Part> shall connect to the <Port>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Port-Part",
+    "Trigger": "Internal Block Diagram: Port --[Connector]--> Part",
+    "Template": "The <Port> shall connect to the <Part>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "INTERNAL-connector-Port-Port",
+    "Trigger": "Internal Block Diagram: Port --[Connector]--> Port",
+    "Template": "The <Port> shall connect to the <Port>.",
+    "Variables": [
+      "<source_id>",
+      "<target_id>"
+    ],
+    "Notes": "Structural conformance requirement from connection rules."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Action",
+    "Trigger": "Activity Diagram: Flow Initial -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Initial -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Decision",
+    "Trigger": "Activity Diagram: Flow Initial -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Merge",
+    "Trigger": "Activity Diagram: Flow Initial -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Fork",
+    "Trigger": "Activity Diagram: Flow Initial -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Initial-Join",
+    "Trigger": "Activity Diagram: Flow Initial -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <Initial> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Action",
+    "Trigger": "Activity Diagram: Flow Action -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Action -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Decision",
+    "Trigger": "Activity Diagram: Flow Action -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Merge",
+    "Trigger": "Activity Diagram: Flow Action -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Fork",
+    "Trigger": "Activity Diagram: Flow Action -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Join",
+    "Trigger": "Activity Diagram: Flow Action -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Action-Final",
+    "Trigger": "Activity Diagram: Flow Action -> Final allowed",
+    "Template": "In Activity Diagram, a Flow from <Action> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Action",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Decision",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Merge",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Fork",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Join",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-CallBehaviorAction-Final",
+    "Trigger": "Activity Diagram: Flow CallBehaviorAction -> Final allowed",
+    "Template": "In Activity Diagram, a Flow from <CallBehaviorAction> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Action",
+    "Trigger": "Activity Diagram: Flow Decision -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Decision -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Decision",
+    "Trigger": "Activity Diagram: Flow Decision -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Merge",
+    "Trigger": "Activity Diagram: Flow Decision -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Fork",
+    "Trigger": "Activity Diagram: Flow Decision -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Join",
+    "Trigger": "Activity Diagram: Flow Decision -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Decision-Final",
+    "Trigger": "Activity Diagram: Flow Decision -> Final allowed",
+    "Template": "In Activity Diagram, a Flow from <Decision> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Action",
+    "Trigger": "Activity Diagram: Flow Merge -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Merge> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Merge -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Merge> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Decision",
+    "Trigger": "Activity Diagram: Flow Merge -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Merge> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Fork",
+    "Trigger": "Activity Diagram: Flow Merge -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <Merge> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Merge-Join",
+    "Trigger": "Activity Diagram: Flow Merge -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <Merge> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Action",
+    "Trigger": "Activity Diagram: Flow Fork -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Fork -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Decision",
+    "Trigger": "Activity Diagram: Flow Fork -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Merge",
+    "Trigger": "Activity Diagram: Flow Fork -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Fork",
+    "Trigger": "Activity Diagram: Flow Fork -> Fork allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Fork-Join",
+    "Trigger": "Activity Diagram: Flow Fork -> Join allowed",
+    "Template": "In Activity Diagram, a Flow from <Fork> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Action",
+    "Trigger": "Activity Diagram: Flow Join -> Action allowed",
+    "Template": "In Activity Diagram, a Flow from <Join> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-CallBehaviorAction",
+    "Trigger": "Activity Diagram: Flow Join -> CallBehaviorAction allowed",
+    "Template": "In Activity Diagram, a Flow from <Join> to <CallBehaviorAction> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Decision",
+    "Trigger": "Activity Diagram: Flow Join -> Decision allowed",
+    "Template": "In Activity Diagram, a Flow from <Join> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "ACTIVITY-flow-Join-Merge",
+    "Trigger": "Activity Diagram: Flow Join -> Merge allowed",
+    "Template": "In Activity Diagram, a Flow from <Join> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Action",
+    "Trigger": "Governance Diagram: Flow Initial -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Decision",
+    "Trigger": "Governance Diagram: Flow Initial -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Merge",
+    "Trigger": "Governance Diagram: Flow Initial -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Fork",
+    "Trigger": "Governance Diagram: Flow Initial -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Join",
+    "Trigger": "Governance Diagram: Flow Initial -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Database",
+    "Trigger": "Governance Diagram: Flow Initial -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-ANN",
+    "Trigger": "Governance Diagram: Flow Initial -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Initial-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Initial -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Initial> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Action",
+    "Trigger": "Governance Diagram: Flow Action -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Decision",
+    "Trigger": "Governance Diagram: Flow Action -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Merge",
+    "Trigger": "Governance Diagram: Flow Action -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Fork",
+    "Trigger": "Governance Diagram: Flow Action -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Join",
+    "Trigger": "Governance Diagram: Flow Action -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Final",
+    "Trigger": "Governance Diagram: Flow Action -> Final allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Database",
+    "Trigger": "Governance Diagram: Flow Action -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-ANN",
+    "Trigger": "Governance Diagram: Flow Action -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Action-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Action -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Action> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Action",
+    "Trigger": "Governance Diagram: Flow Decision -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Decision",
+    "Trigger": "Governance Diagram: Flow Decision -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Merge",
+    "Trigger": "Governance Diagram: Flow Decision -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Fork",
+    "Trigger": "Governance Diagram: Flow Decision -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Join",
+    "Trigger": "Governance Diagram: Flow Decision -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Final",
+    "Trigger": "Governance Diagram: Flow Decision -> Final allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Lifecycle_Phase",
+    "Trigger": "Governance Diagram: Flow Decision -> Lifecycle Phase allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Lifecycle Phase> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Database",
+    "Trigger": "Governance Diagram: Flow Decision -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-ANN",
+    "Trigger": "Governance Diagram: Flow Decision -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Decision-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Decision -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Decision> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Action",
+    "Trigger": "Governance Diagram: Flow Merge -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Decision",
+    "Trigger": "Governance Diagram: Flow Merge -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Merge",
+    "Trigger": "Governance Diagram: Flow Merge -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Fork",
+    "Trigger": "Governance Diagram: Flow Merge -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Join",
+    "Trigger": "Governance Diagram: Flow Merge -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Database",
+    "Trigger": "Governance Diagram: Flow Merge -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-ANN",
+    "Trigger": "Governance Diagram: Flow Merge -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Merge-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Merge -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Merge> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Action",
+    "Trigger": "Governance Diagram: Flow Fork -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Decision",
+    "Trigger": "Governance Diagram: Flow Fork -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Merge",
+    "Trigger": "Governance Diagram: Flow Fork -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Fork",
+    "Trigger": "Governance Diagram: Flow Fork -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Join",
+    "Trigger": "Governance Diagram: Flow Fork -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Database",
+    "Trigger": "Governance Diagram: Flow Fork -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-ANN",
+    "Trigger": "Governance Diagram: Flow Fork -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Fork-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Fork -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Fork> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Action",
+    "Trigger": "Governance Diagram: Flow Join -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Decision",
+    "Trigger": "Governance Diagram: Flow Join -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Merge",
+    "Trigger": "Governance Diagram: Flow Join -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Database",
+    "Trigger": "Governance Diagram: Flow Join -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-ANN",
+    "Trigger": "Governance Diagram: Flow Join -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Join-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Join -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Join> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Decision",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Decision allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Decision> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Action",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Action allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Action> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Merge",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Merge allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Merge> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Fork",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Fork allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Fork> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Join",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Join allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Join> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Final",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Final allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Final> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Database",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Database allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Database> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-ANN",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> ANN allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <ANN> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
+  },
+  {
+    "Pattern ID": "GOVERNANCE-flow-Lifecycle_Phase-Data_acquisition",
+    "Trigger": "Governance Diagram: Flow Lifecycle Phase -> Data acquisition allowed",
+    "Template": "In Governance Diagram, a Flow from <Lifecycle Phase> to <Data acquisition> shall be permitted only if modeled per the metamodel.",
+    "Variables": [],
+    "Notes": "Enumerates permitted flow pairs for static checks."
   },
   {
     "Pattern ID": "GUARD-Decision",
