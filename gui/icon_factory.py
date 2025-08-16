@@ -94,12 +94,15 @@ def create_icon(
         # Draw a thin horizontal shaft
         for x in range(2, size - 5):
             img.put(c, (x, mid))
-            img.put(outline, (x, mid))
-        # Add a triangular arrow head
+        # Add a filled triangular arrow head on the right
         head = size - 5
         for i in range(5):
-            img.put(outline, (mid + i, mid - 3 - i))
-            img.put(outline, (mid + i, mid + 3 + i))
+            x = head + i
+            for y in range(mid - i, mid + i + 1):
+                img.put(c, (x, y))
+            img.put(outline, (x, mid - i))
+            img.put(outline, (x, mid + i))
+        img.put(outline, (size - 1, mid))
     elif shape == "relation":
         mid = size // 2
         for x in range(2, size - 4):
