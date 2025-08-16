@@ -44,11 +44,11 @@ def test_generate_requirements_from_governance_diagram():
 
 def test_ai_training_and_curation_requirements():
     diagram = GovernanceDiagram()
-    diagram.add_task("Decision1", node_type="Decision")
-    diagram.add_task("ANN1", node_type="ANN")
     diagram.add_task("Database1", node_type="Database")
+    diagram.add_task("ANN1", node_type="ANN")
+    diagram.add_task("Decision1", node_type="Decision")
     diagram.add_relationship(
-        "Decision1",
+        "Database1",
         "ANN1",
         condition="completion >= 0.98",
         conn_type="AI training",
@@ -61,7 +61,10 @@ def test_ai_training_and_curation_requirements():
     )
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "If completion >= 0.98, Engineering team shall train 'ANN1'." in texts
+    assert (
+        "If completion >= 0.98, Engineering team shall train the ANN1 using the Database1."
+        in texts
+    )
     assert "If completion < 0.98, Engineering team shall curate 'Database1'." in texts
 
     train_req = next(r for r in reqs if r.action == "train")
@@ -73,6 +76,26 @@ def test_ai_training_and_curation_requirements():
     assert curate_req.subject == "Engineering team"
     assert curate_req.obj == "Database1"
     assert curate_req.condition == "completion < 0.98"
+
+
+def test_acquisition_pattern_requirement():
+    diagram = GovernanceDiagram()
+    diagram.add_task("DB1", node_type="Database")
+    diagram.add_task("DAQ1", node_type="Data acquisition")
+    diagram.add_relationship("DB1", "DAQ1", conn_type="Acquisition")
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+    assert "Engineering team shall acquire the DAQ1 using the DB1." in texts
+
+
+def test_propagate_by_review_pattern():
+    diagram = GovernanceDiagram()
+    diagram.add_task("WP1", node_type="Work Product")
+    diagram.add_task("WP2", node_type="Work Product")
+    diagram.add_relationship("WP1", "WP2", conn_type="Propagate by Review")
+    reqs = diagram.generate_requirements()
+    texts = [r.text for r in reqs]
+    assert "System shall propagate by review the WP2." in texts
 
 
 def test_data_acquisition_compartment_sources():

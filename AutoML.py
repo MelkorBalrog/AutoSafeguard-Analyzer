@@ -526,6 +526,7 @@ VALID_SUBTYPES = {
 _CONFIG_PATH = Path(__file__).resolve().parent / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
 GATE_NODE_TYPES = set(_CONFIG.get("gate_node_types", []))
+_PATTERN_PATH = Path(__file__).resolve().parent / "config/requirement_patterns.json"
 
 
 def _reload_local_config() -> None:
@@ -2737,6 +2738,7 @@ class FaultTreeApp:
             "Fault Prioritization": self.open_fault_prioritization_window,
             "Cause & Effect Diagram": self.show_cause_effect_chain,
             "Diagram Rule Editor": self.open_diagram_rules_toolbox,
+            "Requirement Pattern Editor": self.open_requirement_patterns_toolbox,
         }
 
         self.tool_categories: dict[str, list[str]] = {
@@ -2752,6 +2754,7 @@ class FaultTreeApp:
             ],
             "Configuration": [
                 "Diagram Rule Editor",
+                "Requirement Pattern Editor",
             ],
         }
         self.tool_to_work_product = {}
@@ -16836,6 +16839,30 @@ class FaultTreeApp:
 
         self.diagram_rules_editor = DiagramRulesEditor(parent, self, _CONFIG_PATH)
         self.diagram_rules_editor.pack(fill=tk.BOTH, expand=True)
+
+    def open_requirement_patterns_toolbox(self):
+        """Open editor for requirement pattern definitions."""
+        tab_exists = (
+            hasattr(self, "_req_patterns_tab") and self._req_patterns_tab.winfo_exists()
+        )
+        editor_exists = (
+            hasattr(self, "requirement_patterns_editor")
+            and self.requirement_patterns_editor.winfo_exists()
+        )
+        if tab_exists:
+            self.doc_nb.select(self._req_patterns_tab)
+            if editor_exists:
+                return
+            parent = self._req_patterns_tab
+        else:
+            parent = self._req_patterns_tab = self._new_tab("Requirement Patterns")
+
+        from gui.requirement_patterns_toolbox import RequirementPatternsEditor
+
+        self.requirement_patterns_editor = RequirementPatternsEditor(
+            parent, self, _PATTERN_PATH
+        )
+        self.requirement_patterns_editor.pack(fill=tk.BOTH, expand=True)
 
     def reload_config(self) -> None:
         """Reload diagram rule configuration across modules."""
