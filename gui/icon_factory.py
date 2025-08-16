@@ -158,6 +158,113 @@ def create_icon(
         for y in range(4, size - 4):
             img.put(outline, (4, y))
             img.put(outline, (size - 5, y))
+    elif shape == "hexagon":
+        mid = size // 2
+        for y in range(2, size - 2):
+            if y < 4:
+                span = y - 2
+            elif y > size - 5:
+                span = size - 3 - y
+            else:
+                span = mid - 2
+            img.put(c, to=(mid - span, y, mid + span + 1, y + 1))
+            img.put(outline, (mid - span, y))
+            img.put(outline, (mid + span, y))
+    elif shape == "trapezoid":
+        max_offset = 4
+        for y in range(2, size - 2):
+            offset = max_offset * (y - 2) // (size - 4)
+            img.put(c, to=(2 + offset, y, size - 2 - offset, y + 1))
+            img.put(outline, (2 + offset, y))
+            img.put(outline, (size - 3 - offset, y))
+    elif shape == "component":
+        img.put(c, to=(3, 3, size - 3, size - 3))
+        for x in range(3, size - 3):
+            img.put(outline, (x, 3))
+            img.put(outline, (x, size - 4))
+        for y in range(3, size - 3):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 4, y))
+        # side tabs
+        img.put(c, to=(0, 5, 3, 7))
+        img.put(c, to=(0, 9, 3, 11))
+        for x in range(0, 3):
+            img.put(outline, (x, 5))
+            img.put(outline, (x, 6))
+            img.put(outline, (x, 7))
+            img.put(outline, (x, 9))
+            img.put(outline, (x, 10))
+            img.put(outline, (x, 11))
+    elif shape == "testsuite":
+        img.put(c, to=(3, 3, size - 3, size - 3))
+        for x in range(3, size - 3):
+            img.put(outline, (x, 3))
+            img.put(outline, (x, size - 4))
+        for y in range(3, size - 3):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 4, y))
+        mid = size // 2
+        for x in range(3, size - 3):
+            img.put(outline, (x, mid))
+        for y in range(3, size - 3):
+            img.put(outline, (mid, y))
+    elif shape == "vehicle":
+        top = 5
+        bottom = size - 6
+        img.put(c, to=(2, top, size - 2, bottom))
+        for x in range(2, size - 2):
+            img.put(outline, (x, top))
+            img.put(outline, (x, bottom))
+        for y in range(top, bottom):
+            img.put(outline, (2, y))
+            img.put(outline, (size - 3, y))
+        # wheels
+        for dx in range(3):
+            for dy in range(3):
+                img.put(outline, (3 + dx, bottom + dy - 1))
+                img.put(outline, (size - 5 + dx, bottom + dy - 1))
+    elif shape == "fleet":
+        # draw a smaller vehicle in the background
+        for dx, dy in ((-2, -2), (0, 0)):
+            top = 5 + dy
+            bottom = size - 6 + dy
+            img.put(c, to=(2 + dx, top, size - 2 + dx, bottom))
+            for x in range(2 + dx, size - 2 + dx):
+                img.put(outline, (x, top))
+                img.put(outline, (x, bottom))
+            for y in range(top, bottom):
+                img.put(outline, (2 + dx, y))
+                img.put(outline, (size - 3 + dx, y))
+            for wx in range(3):
+                for wy in range(3):
+                    img.put(outline, (3 + dx + wx, bottom + wy - 1))
+                    img.put(outline, (size - 5 + dx + wx, bottom + wy - 1))
+    elif shape == "pentagon":
+        mid = size // 2
+        for y in range(2, size - 2):
+            if y < 6:
+                span = (y - 2) * (mid - 2) // 4
+                left = mid - span
+                right = mid + span + 1
+            else:
+                left = 2
+                right = size - 2
+            img.put(c, to=(left, y, right, y + 1))
+            img.put(outline, (left, y))
+            img.put(outline, (right - 1, y))
+        for x in range(2, size - 2):
+            img.put(outline, (x, size - 3))
+    elif shape == "star":
+        mid = size // 2
+        for i in range(size):
+            img.put(c, (mid, i))
+            img.put(c, (i, mid))
+            img.put(c, (i, i))
+            img.put(c, (i, size - i - 1))
+            img.put(outline, (mid, i))
+            img.put(outline, (i, mid))
+            img.put(outline, (i, i))
+            img.put(outline, (i, size - i - 1))
     elif shape == "plus":
         mid = size // 2
         for x in range(3, size - 3):
