@@ -4,8 +4,6 @@ from .config_loader import (
     validate_diagram_rules,
     load_requirement_patterns,
     validate_requirement_patterns,
-    load_report_template,
-    validate_report_template,
 )
 
 __all__ = [
@@ -14,6 +12,4 @@ __all__ = [
     "validate_diagram_rules",
     "load_requirement_patterns",
     "validate_requirement_patterns",
-    "load_report_template",
-    "validate_report_template",
 ]

@@ -177,28 +177,6 @@ def validate_requirement_patterns(data: Any) -> list[dict[str, Any]]:
     return data
 
 
-def validate_report_template(data: Any) -> dict[str, Any]:
-    """Validate PDF report template structure."""
-
-    if not isinstance(data, dict):
-        raise ValueError("Configuration root must be a JSON object")
-
-    sections = data.get("sections", [])
-    if not isinstance(sections, list):
-        raise ValueError("'sections' must be a list")
-    for idx, sec in enumerate(sections):
-        if not isinstance(sec, dict):
-            raise ValueError(f"sections[{idx}] must be an object")
-        title = sec.get("title")
-        content = sec.get("content")
-        if not isinstance(title, str):
-            raise ValueError(f"sections[{idx}]['title'] must be a string")
-        if not isinstance(content, str):
-            raise ValueError(f"sections[{idx}]['content'] must be a string")
-
-    return data
-
-
 def _strip_comments(text: str) -> str:
     """Return *text* with // and /* ... */ comments removed.
 
@@ -264,9 +242,3 @@ def load_requirement_patterns(path: str | Path) -> list[dict[str, Any]]:
     """Load and validate the requirement pattern configuration file."""
     data = load_json_with_comments(path)
     return validate_requirement_patterns(data)
-
-
-def load_report_template(path: str | Path) -> dict[str, Any]:
-    """Load and validate the PDF report template configuration file."""
-    data = load_json_with_comments(path)
-    return validate_report_template(data)
