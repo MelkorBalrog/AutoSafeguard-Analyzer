@@ -3347,12 +3347,7 @@ class SysMLDiagramWindow(tk.Frame):
         # Shrink the property view to match the button area so it does not force
         # the toolbox wider than needed.
         field_width = button_width // 2
-        # ``ttk.Treeview`` widgets do not accept a ``width`` configuration
-        # option.  Attempting to set it raises a ``TclError``.  The desired
-        # effect here is to limit the property view so it matches the width of
-        # the toolbox buttons.  Configure the surrounding frame instead and set
-        # the column widths explicitly to control the overall size.
-        self.prop_frame.configure(width=button_width)
+        self.prop_view.configure(width=button_width)
         self.prop_view.column("field", width=field_width, stretch=False)
         self.prop_view.column("value", width=button_width - field_width, stretch=False)
 
