@@ -4179,6 +4179,9 @@ class RequirementsExplorerWindow(tk.Frame):
         for rtype, reqs in grouped.items():
             RequirementsDocumentEditor(self, req_type=rtype, requirements=reqs)
 
+    def open_spec_editor(self):  # pragma: no cover - GUI
+        RequirementsDocumentEditor(self)
+
     def refresh(self):
         self.tree.delete(*self.tree.get_children())
         query = self.query_var.get().strip().lower()

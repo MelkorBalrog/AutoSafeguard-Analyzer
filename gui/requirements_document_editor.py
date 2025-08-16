@@ -64,7 +64,6 @@ class RequirementsDocumentEditor(tk.Toplevel):  # pragma: no cover - GUI
             rid = req.get("id", "")
             txt = req.get("text", "")
             self.text.insert("end", f"{rid}: {txt}\n")
-
     # ------------------------------------------------------------------
     def _create_toolbar(self) -> None:
         bar = ttk.Frame(self)
