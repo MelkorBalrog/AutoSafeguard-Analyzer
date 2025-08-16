@@ -2225,7 +2225,7 @@ class FaultTreeApp:
         # application lifecycle.
         self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Use Case Diagram": self._create_icon("ellipse", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
             "Governance Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),

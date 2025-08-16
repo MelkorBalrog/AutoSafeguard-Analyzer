@@ -30,6 +30,37 @@ def create_icon(
                     img.put(c, (x, y))
                 if r * r <= dist <= (r + 1) * (r + 1):
                     img.put(outline, (x, y))
+    elif shape == "ellipse":
+        rx = size // 2 - 2
+        ry = size // 2 - 4
+        cx = cy = size // 2
+        for y in range(size):
+            for x in range(size):
+                norm = ((x - cx) ** 2) / (rx * rx) + ((y - cy) ** 2) / (ry * ry)
+                if norm <= 1:
+                    img.put(c, (x, y))
+                if 1 <= norm <= 1.2:
+                    img.put(outline, (x, y))
+    elif shape == "human":
+        cx = size // 2
+        head_r = 3
+        head_cy = 4
+        for y in range(head_cy - head_r, head_cy + head_r + 1):
+            for x in range(cx - head_r, cx + head_r + 1):
+                dist = (x - cx) ** 2 + (y - head_cy) ** 2
+                if dist <= head_r * head_r:
+                    img.put(c, (x, y))
+                if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
+                    img.put(outline, (x, y))
+        for y in range(head_cy + head_r, size - 3):
+            img.put(c, (cx, y))
+        arm_y = head_cy + head_r + 2
+        for x in range(cx - 4, cx + 5):
+            img.put(c, (x, arm_y))
+        leg_start = size - 4
+        for i in range(4):
+            img.put(c, (cx - i, leg_start + i))
+            img.put(c, (cx + i, leg_start + i))
     elif shape == "diamond":
         mid = size // 2
         for y in range(2, size - 2):
@@ -67,10 +98,15 @@ def create_icon(
         # Add a triangular arrow head
         head = size - 5
         for i in range(5):
-            for y in range(mid - i, mid + i + 1):
-                img.put(c, (head + i, y))
-            img.put(outline, (head + i, mid - i))
-            img.put(outline, (head + i, mid + i))
+            img.put(outline, (mid + i, mid - 3 - i))
+            img.put(outline, (mid + i, mid + 3 + i))
+    elif shape == "relation":
+        mid = size // 2
+        for x in range(2, size - 4):
+            img.put(c, (x, mid))
+        for i in range(4):
+            img.put(c, (size - 4 + i, mid - i))
+            img.put(c, (size - 4 + i, mid + i))
     elif shape == "triangle":
         mid = size // 2
         height = size - 4
@@ -176,6 +212,33 @@ def create_icon(
         for y in range(2, size - 2):
             img.put(outline, (2, y))
             img.put(outline, (size - 2, y))
+    elif shape == "neural":
+        nodes_left = [(4, 4), (4, 12)]
+        nodes_mid = [(8, 4), (8, 12)]
+        node_out = (12, 8)
+
+        def draw_node(x: int, y: int) -> None:
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if dx * dx + dy * dy <= 1:
+                        img.put(outline, (x + dx, y + dy))
+
+        def draw_line(p1, p2) -> None:
+            x1, y1 = p1
+            x2, y2 = p2
+            steps = max(abs(x2 - x1), abs(y2 - y1))
+            for i in range(steps + 1):
+                x = int(round(x1 + (x2 - x1) * i / steps))
+                y = int(round(y1 + (y2 - y1) * i / steps))
+                img.put(outline, (x, y))
+
+        for s in nodes_left:
+            for h in nodes_mid:
+                draw_line(s, h)
+        for h in nodes_mid:
+            draw_line(h, node_out)
+        for p in nodes_left + nodes_mid + [node_out]:
+            draw_node(*p)
     else:
         img.put(c, to=(2, 2, size - 2, size - 2))
         for x in range(2, size - 2):

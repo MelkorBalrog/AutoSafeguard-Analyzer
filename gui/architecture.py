@@ -74,209 +74,6 @@ GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 draw_icon = create_icon
 
 
-def _darken(color: str, factor: float = 0.8) -> str:
-    if color.startswith("#") and len(color) == 7:
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        r = int(r * factor)
-        g = int(g * factor)
-        b = int(b * factor)
-        return f"#{r:02x}{g:02x}{b:02x}"
-    return color
-
-
-def _lighten(color: str, factor: float = 0.3) -> str:
-    if color.startswith("#") and len(color) == 7:
-        r = int(color[1:3], 16)
-        g = int(color[3:5], 16)
-        b = int(color[5:7], 16)
-        r = int(r + (255 - r) * factor)
-        g = int(g + (255 - g) * factor)
-        b = int(b + (255 - b) * factor)
-        return f"#{r:02x}{g:02x}{b:02x}"
-    return color
-
-
-def draw_icon(shape: str, color: str = "black") -> tk.PhotoImage:
-    """Return a 16×16 modern-style icon representing ``shape``."""
-    size = 16
-    img = tk.PhotoImage(width=size, height=size)
-    bg = "white"
-    img.put(bg, to=(0, 0, size - 1, size - 1))
-    fill = _lighten(color, 0.4)
-    stroke = _darken(color, 0.8)
-
-    if shape == "circle":
-        r = size // 2 - 3
-        cx = cy = size // 2
-        for y in range(size):
-            for x in range(size):
-                d = (x - cx) ** 2 + (y - cy) ** 2
-                if d <= r * r:
-                    img.put(fill, (x, y))
-                if r * r - r <= d <= r * r + r:
-                    img.put(stroke, (x, y))
-    elif shape == "arrow":
-        mid = size // 2
-        for x in range(3, size - 5):
-            img.put(stroke, to=(x, mid - 1, x + 1, mid + 2))
-        for i in range(5):
-            img.put(stroke, to=(size - 5 + i, mid - 2 - i, size - 4 + i, mid + 3 + i))
-    elif shape == "diamond":
-        mid = size // 2
-        for y in range(3, size - 3):
-            span = mid - abs(mid - y)
-            img.put(fill, to=(mid - span + 1, y, mid + span, y + 1))
-            img.put(stroke, (mid - span, y))
-            img.put(stroke, (mid + span, y))
-        for i in range(mid - 2):
-            img.put(stroke, (mid - i - 1, 3 + i))
-            img.put(stroke, (mid + i, 3 + i))
-            img.put(stroke, (mid - i - 1, size - 4 - i))
-            img.put(stroke, (mid + i, size - 4 - i))
-    elif shape == "triangle":
-        mid = size // 2
-        height = size - 4
-        for y in range(height):
-            span = (y * (mid - 1)) // height
-            img.put(fill, to=(mid - span + 1, 2 + y, mid + span, 3 + y))
-            img.put(stroke, (mid - span, 2 + y))
-            img.put(stroke, (mid + span, 2 + y))
-        for x in range(2, size - 2):
-            img.put(stroke, (x, size - 2))
-    elif shape == "cylinder":
-        img.put(fill, to=(3, 4, size - 3, size - 4))
-        for x in range(3, size - 3):
-            img.put(stroke, (x, 4))
-            img.put(stroke, (x, size - 4))
-        for x in range(4, size - 4):
-            img.put(stroke, (x, 3))
-            img.put(stroke, (x, size - 3))
-        for y in range(4, size - 4):
-            img.put(stroke, (3, y))
-            img.put(stroke, (size - 4, y))
-    elif shape == "document":
-        img.put(fill, to=(3, 3, size - 3, size - 3))
-        for x in range(3, size - 3):
-            img.put(stroke, (x, 3))
-            img.put(stroke, (x, size - 4))
-        for y in range(3, size - 3):
-            img.put(stroke, (3, y))
-            img.put(stroke, (size - 4, y))
-        fold = _lighten(color, 0.7)
-        img.put(fold, to=(size - 7, 3, size - 3, 7))
-        img.put(stroke, to=(size - 7, 3, size - 3, 7))
-        img.put(stroke, to=(5, 7, size - 5, 8))
-        img.put(stroke, to=(5, 10, size - 5, 11))
-    elif shape == "bar":
-        img.put(stroke, to=(3, size // 2 - 1, size - 3, size // 2 + 2))
-    elif shape == "rect":
-        img.put(fill, to=(3, 3, size - 3, size - 3))
-        for x in range(3, size - 3):
-            img.put(stroke, (x, 3))
-            img.put(stroke, (x, size - 4))
-        for y in range(3, size - 3):
-            img.put(stroke, (3, y))
-            img.put(stroke, (size - 4, y))
-    elif shape == "nested":
-        img.put(fill, to=(1, 1, size - 1, size - 1))
-        for x in range(1, size - 1):
-            img.put(stroke, (x, 1))
-            img.put(stroke, (x, size - 2))
-        for y in range(1, size - 1):
-            img.put(stroke, (1, y))
-            img.put(stroke, (size - 2, y))
-        for x in range(5, size - 5):
-            img.put(stroke, (x, 5))
-            img.put(stroke, (x, size - 6))
-        for y in range(5, size - 5):
-            img.put(stroke, (5, y))
-            img.put(stroke, (size - 6, y))
-    elif shape == "folder":
-        img.put(fill, to=(2, 6, size - 2, size - 2))
-        img.put(fill, to=(2, 4, size // 2, 6))
-        for x in range(2, size - 2):
-            img.put(stroke, (x, 6))
-            img.put(stroke, (x, size - 2))
-        for y in range(6, size - 2):
-            img.put(stroke, (2, y))
-            img.put(stroke, (size - 2, y))
-        for x in range(2, size // 2):
-            img.put(stroke, (x, 4))
-        img.put(stroke, to=(2, 5, size - 2, 6))
-    elif shape == "plus":
-        mid = size // 2
-        for x in range(mid - 1, mid + 2):
-            img.put(stroke, to=(x, 3, x + 1, size - 3))
-        for y in range(mid - 1, mid + 2):
-            img.put(stroke, to=(3, y, size - 3, y + 1))
-    elif shape == "cross":
-        for i in range(3, size - 3):
-            for t in (-1, 0, 1):
-                img.put(stroke, (i + t, i))
-                img.put(stroke, (i + t, size - 1 - i))
-    elif shape == "gear":
-        mid = size // 2
-        r = size // 2 - 4
-        for y in range(size):
-            for x in range(size):
-                d = (x - mid) ** 2 + (y - mid) ** 2
-                if d <= r * r:
-                    img.put(fill, (x, y))
-                if r * r - r <= d <= r * r + r:
-                    img.put(stroke, (x, y))
-        for t in (-r, r):
-            for x in range(mid - 2, mid + 3):
-                img.put(stroke, (x, mid + t))
-            for y in range(mid - 2, mid + 3):
-                img.put(stroke, (mid + t, y))
-    elif shape == "sigma":
-        for x in range(3, size - 3):
-            img.put(stroke, (x, 3))
-            img.put(stroke, (x, size - 4))
-        for i in range(size - 6):
-            img.put(stroke, (3 + i, 3 + i))
-            img.put(stroke, (size - 4 - i, 3 + i))
-    elif shape == "disk":
-        img.put(fill, to=(2, 2, size - 2, size - 2))
-        for x in range(2, size - 2):
-            img.put(stroke, (x, 2))
-            img.put(stroke, (x, size - 3))
-        for y in range(2, size - 2):
-            img.put(stroke, (2, y))
-            img.put(stroke, (size - 3, y))
-        img.put(bg, to=(4, 4, size - 5, 7))
-        img.put(bg, to=(size - 5, 2, size - 2, 5))
-    elif shape == "neural":
-        nodes_left = [(4, 4), (4, 12)]
-        nodes_mid = [(8, 4), (8, 12)]
-        node_out = (12, 8)
-        def draw_node(x: int, y: int) -> None:
-            for dy in (-1, 0, 1):
-                for dx in (-1, 0, 1):
-                    if dx * dx + dy * dy <= 1:
-                        img.put(stroke, (x + dx, y + dy))
-        def draw_line(p1, p2) -> None:
-            x1, y1 = p1
-            x2, y2 = p2
-            steps = max(abs(x2 - x1), abs(y2 - y1))
-            for i in range(steps + 1):
-                x = int(round(x1 + (x2 - x1) * i / steps))
-                y = int(round(y1 + (y2 - y1) * i / steps))
-                img.put(stroke, (x, y))
-        for s in nodes_left:
-            for h in nodes_mid:
-                draw_line(s, h)
-        for h in nodes_mid:
-            draw_line(h, node_out)
-        for p in nodes_left + nodes_mid + [node_out]:
-            draw_node(*p)
-    else:
-        img.put(stroke, to=(2, 2, size - 2, size - 2))
-    return img
-
-
 def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
     base = {
         "Entities": [n for n in ["Organization", "Business Unit", "Role"] if n in nodes],
@@ -3629,8 +3426,8 @@ class SysMLDiagramWindow(tk.Frame):
     def _shape_for_tool(self, name: str) -> str:
         mapping = {
             "Select": "arrow",
-            "Actor": "circle",
-            "Use Case": "circle",
+            "Actor": "human",
+            "Use Case": "ellipse",
             "Block": "rect",
             "Part": "rect",
             "Port": "circle",
@@ -3663,7 +3460,7 @@ class SysMLDiagramWindow(tk.Frame):
             k in name
             for k in ["Propagate", "Used", "Trace", "Satisfied", "Derived", "Re-use"]
         ):
-            return "arrow"
+            return "relation"
         return "rect"
 
         # ------------------------------------------------------------
@@ -11688,15 +11485,15 @@ class ArchitectureManagerDialog(tk.Frame):
         style = StyleManager.get_instance()
         self.pkg_icon = self._create_icon("folder", "#b8860b")
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("circle", "blue"),
+            "Use Case Diagram": self._create_icon("ellipse", "blue"),
             "Activity Diagram": self._create_icon("arrow", "green"),
             "Governance Diagram": self._create_icon("arrow", "green"),
             "Block Diagram": self._create_icon("rect", "orange"),
             "Internal Block Diagram": self._create_icon("nested", "purple"),
         }
         self.elem_icons = {
-            "Actor": self._create_icon("circle", style.get_color("Actor")),
-            "Use Case": self._create_icon("circle", style.get_color("Use Case")),
+            "Actor": self._create_icon("human", style.get_color("Actor")),
+            "Use Case": self._create_icon("ellipse", style.get_color("Use Case")),
             "Block": self._create_icon("rect", style.get_color("Block")),
             "Part": self._create_icon("rect", style.get_color("Part")),
             "Port": self._create_icon("circle", style.get_color("Port")),
