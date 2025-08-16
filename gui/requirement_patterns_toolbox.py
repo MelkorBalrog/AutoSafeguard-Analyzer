@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 import json
-from config import load_json_with_comments
+from config import load_requirement_patterns, validate_requirement_patterns
 from gui import messagebox
 
 
@@ -100,7 +100,7 @@ class RequirementPatternsEditor(tk.Frame):
             config_path or Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
         )
         try:
-            self.data = load_json_with_comments(self.config_path)
+            self.data = load_requirement_patterns(self.config_path)
         except Exception as exc:  # pragma: no cover - GUI fallback
             messagebox.showerror(
                 "Requirement Patterns", f"Failed to load configuration:\n{exc}"
@@ -172,6 +172,13 @@ class RequirementPatternsEditor(tk.Frame):
         self._populate_tree()
 
     def save(self):
+        try:
+            validate_requirement_patterns(self.data)
+        except ValueError as exc:  # pragma: no cover - GUI feedback
+            messagebox.showerror(
+                "Requirement Patterns", f"Invalid configuration:\n{exc}"
+            )
+            return
         try:
             self.config_path.write_text(json.dumps(self.data, indent=2) + "\n")
             if hasattr(self.app, "reload_config"):

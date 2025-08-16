@@ -134,6 +134,49 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
     return data
 
 
+def validate_requirement_patterns(data: Any) -> list[dict[str, Any]]:
+    """Validate requirement pattern configuration structure.
+
+    Parameters
+    ----------
+    data:
+        Parsed JSON object representing the requirement pattern configuration.
+
+    Returns
+    -------
+    list
+        The validated list of pattern dictionaries.
+
+    Raises
+    ------
+    ValueError
+        If the configuration does not follow the expected structure.
+    """
+
+    if not isinstance(data, list):
+        raise ValueError("Configuration root must be a list")
+
+    for idx, pat in enumerate(data):
+        if not isinstance(pat, dict):
+            raise ValueError(f"Pattern at index {idx} must be an object")
+
+        required = ["Pattern ID", "Trigger", "Template", "Variables"]
+        for field in required:
+            if field not in pat:
+                raise ValueError(f"Pattern at index {idx} missing '{field}'")
+        if not isinstance(pat["Pattern ID"], str):
+            raise ValueError(f"Pattern ID at index {idx} must be a string")
+        if not isinstance(pat["Trigger"], str):
+            raise ValueError(f"Trigger at index {idx} must be a string")
+        if not isinstance(pat["Template"], str):
+            raise ValueError(f"Template at index {idx} must be a string")
+        _ensure_list_of_strings(pat["Variables"], f"pattern[{idx}]['Variables']")
+        if "Notes" in pat and not isinstance(pat["Notes"], str):
+            raise ValueError(f"Notes at index {idx} must be a string")
+
+    return data
+
+
 def _strip_comments(text: str) -> str:
     """Return *text* with // and /* ... */ comments removed.
 
@@ -193,3 +236,9 @@ def load_diagram_rules(path: str | Path) -> dict[str, Any]:
     """Load and validate the diagram rules configuration file."""
     data = load_json_with_comments(path)
     return validate_diagram_rules(data)
+
+
+def load_requirement_patterns(path: str | Path) -> list[dict[str, Any]]:
+    """Load and validate the requirement pattern configuration file."""
+    data = load_json_with_comments(path)
+    return validate_requirement_patterns(data)
