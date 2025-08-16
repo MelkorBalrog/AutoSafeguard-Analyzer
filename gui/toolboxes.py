@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
     _work_product_name,

@@ -20,6 +20,7 @@ from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
 from config import load_diagram_rules
 import json
+from gui.icon_factory import create_icon
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -68,6 +69,9 @@ SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 # Elements available in the Governance Elements toolbox
 GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+
+# expose the icon factory under the old name used throughout the module
+draw_icon = create_icon
 
 
 def _darken(color: str, factor: float = 0.8) -> str:
@@ -10408,7 +10412,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tool_groups = {
             "Tasks": ["Action"],
-            "Control Nodes": ["Initial", "Final", "Decision", "Merge", "Fork", "Join"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
@@ -10435,10 +10439,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
         if not hasattr(self, "tools_frame"):
             self.tools_frame = self.toolbox
-        btn = getattr(self, "tool_buttons", {}).get("Action")
+
+        tool_buttons = getattr(self, "tool_buttons", None)
+        if tool_buttons and "Select" in tool_buttons:
+            btn = tool_buttons.pop("Select")
+            try:
+                btn.destroy()
+            except Exception:  # pragma: no cover - headless tests
+                pass
+
+        btn = tool_buttons.get("Action") if tool_buttons else None
         if btn:
             btn.configure(text="Task")
-            self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
+            tool_buttons["Task"] = tool_buttons.pop("Action")
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
@@ -10633,6 +10646,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ttk.Button(
                     wp_rel,
                     text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
@@ -10643,6 +10658,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     ttk.Button(
                         rel_frame,
                         text=name,
+                        image=self._icon_for(name),
+                        compound=tk.LEFT,
                         command=lambda t=name: self.select_tool(t),
                     ).pack(fill=tk.X, padx=2, pady=2)
 
@@ -10655,9 +10672,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             elem_group = ttk.LabelFrame(governance_panel, text="Elements")
             elem_group.pack(fill=tk.X, padx=2, pady=2)
             for name, cmd in node_cmds:
-                ttk.Button(elem_group, text=name, command=cmd).pack(
-                    fill=tk.X, padx=2, pady=2
-                )
+                ttk.Button(
+                    elem_group,
+                    text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
+                    command=cmd,
+                ).pack(fill=tk.X, padx=2, pady=2)
         else:  # pragma: no cover - headless tests
             governance_panel = types.SimpleNamespace(
                 pack=lambda *a, **k: None

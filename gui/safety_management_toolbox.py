@@ -71,6 +71,11 @@ class SafetyManagementWindow(tk.Frame):
             text="Lifecycle Requirements",
             command=self.generate_lifecycle_requirements,
         ).pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Delete Obsolete",
+            command=self.delete_obsolete_requirements,
+        ).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
         self.diagram_frame.pack(fill=tk.BOTH, expand=True)
@@ -197,6 +202,7 @@ class SafetyManagementWindow(tk.Frame):
         req_type: str = "organizational",
         phase: str | None = None,
         diagram: str | None = None,
+        variables: list[str] | None = None,
     ) -> str:
         """Create a new requirement with a unique identifier.
 
@@ -214,6 +220,7 @@ class SafetyManagementWindow(tk.Frame):
             req = app.add_new_requirement(rid, req_type, text)
             req["phase"] = phase
             req["diagram"] = diagram
+            req["variables"] = variables or []
             global_requirements[rid] = req
         else:
             req = {
@@ -225,6 +232,7 @@ class SafetyManagementWindow(tk.Frame):
                 "parent_id": "",
                 "phase": phase,
                 "diagram": diagram,
+                "variables": variables or [],
             }
             ensure_requirement_defaults(req)
             global_requirements[rid] = req
@@ -266,8 +274,8 @@ class SafetyManagementWindow(tk.Frame):
     @staticmethod
     def _current_requirement_pairs(
         phase: str | None, diagram: str | None = None
-    ) -> list[tuple[str, str]]:
-        """Return existing requirement (text, type) pairs.
+    ) -> list[tuple[str, str, tuple[str, ...]]]:
+        """Return existing requirement (text, type, variables) tuples.
 
         Only non-obsolete requirements are considered.  When ``diagram`` is
         provided, only requirements originating from that diagram are returned.
@@ -276,6 +284,7 @@ class SafetyManagementWindow(tk.Frame):
             (
                 req.get("text", "").strip(),
                 req.get("req_type", "organizational"),
+                tuple(req.get("variables", [])),
             )
             for req in global_requirements.values()
             if req.get("phase") == phase
@@ -300,17 +309,20 @@ class SafetyManagementWindow(tk.Frame):
                 "Requirements", f"Failed to generate requirements: {exc}"
             )
             return
-        reqs: list[tuple[str, str]] = []
+        reqs: list[tuple[str, str, list[str]]] = []
         for r in raw_reqs:
             if isinstance(r, tuple):
                 text, rtype = r
+                vars_: list[str] = []
             elif hasattr(r, "text"):
                 text, rtype = r.text, getattr(r, "req_type", "organizational")
+                vars_ = getattr(r, "variables", [])
             else:
                 text, rtype = str(r), "organizational"
+                vars_ = []
             text = text.strip()
             if text:
-                reqs.append((text, rtype))
+                reqs.append((text, rtype, tuple(vars_)))
         if not reqs:
             messagebox.showinfo("Requirements", "No requirements were generated.")
             return
@@ -331,8 +343,12 @@ class SafetyManagementWindow(tk.Frame):
             if req.get("phase") == phase and req.get("diagram") == name:
                 req["status"] = "obsolete"
         ids: list[str] = []
-        for text, rtype in reqs:
-            ids.append(self._add_requirement(text, rtype, phase=phase, diagram=name))
+        for text, rtype, vars_ in reqs:
+            ids.append(
+                self._add_requirement(
+                    text, rtype, phase=phase, diagram=name, variables=vars_
+                )
+            )
         ids = [
             rid
             for rid, req in global_requirements.items()
@@ -368,7 +384,7 @@ class SafetyManagementWindow(tk.Frame):
             messagebox.showinfo("Requirements", f"No governance diagrams for phase '{phase}'.")
             return
         repo = SysMLRepository.get_instance()
-        diag_pairs: dict[str, list[tuple[str, str]]] = {}
+        diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
@@ -382,7 +398,7 @@ class SafetyManagementWindow(tk.Frame):
                     f"Failed to generate requirements for '{name}': {exc}",
                 )
                 continue
-            pairs: list[tuple[str, str]] = []
+            pairs: list[tuple[str, str, list[str]]] = []
             invalid = False
             for r in raw_reqs:
                 if isinstance(r, tuple):
@@ -390,16 +406,19 @@ class SafetyManagementWindow(tk.Frame):
                         invalid = True
                         break
                     text, rtype = r
+                    vars_: list[str] = []
                 elif hasattr(r, "text"):
                     text, rtype = r.text, getattr(r, "req_type", "organizational")
+                    vars_ = getattr(r, "variables", [])
                 elif isinstance(r, str):
                     text, rtype = r, "organizational"
+                    vars_ = []
                 else:
                     invalid = True
                     break
                 text = text.strip()
                 if text:
-                    pairs.append((text, rtype))
+                    pairs.append((text, rtype, tuple(vars_)))
             if invalid:
                 messagebox.showerror(
                     "Requirements",
@@ -430,8 +449,12 @@ class SafetyManagementWindow(tk.Frame):
                 req["status"] = "obsolete"
         ids: list[str] = []
         for name, pairs in diag_pairs.items():
-            for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype, phase=phase, diagram=name))
+            for text, rtype, vars_ in pairs:
+                ids.append(
+                    self._add_requirement(
+                        text, rtype, phase=phase, diagram=name, variables=vars_
+                    )
+                )
         ids = [
             rid
             for rid, req in global_requirements.items()
@@ -450,7 +473,7 @@ class SafetyManagementWindow(tk.Frame):
                 "Requirements", "No lifecycle governance diagrams.")
             return
         repo = SysMLRepository.get_instance()
-        diag_pairs: dict[str, list[tuple[str, str]]] = {}
+        diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
@@ -464,7 +487,7 @@ class SafetyManagementWindow(tk.Frame):
                     f"Failed to generate requirements for '{name}': {exc}",
                 )
                 continue
-            pairs: list[tuple[str, str]] = []
+            pairs: list[tuple[str, str, list[str]]] = []
             invalid = False
             for r in raw_reqs:
                 if isinstance(r, tuple):
@@ -472,16 +495,19 @@ class SafetyManagementWindow(tk.Frame):
                         invalid = True
                         break
                     text, rtype = r
+                    vars_: list[str] = []
                 elif hasattr(r, "text"):
                     text, rtype = r.text, getattr(r, "req_type", "organizational")
+                    vars_ = getattr(r, "variables", [])
                 elif isinstance(r, str):
                     text, rtype = r, "organizational"
+                    vars_ = []
                 else:
                     invalid = True
                     break
                 text = text.strip()
                 if text:
-                    pairs.append((text, rtype))
+                    pairs.append((text, rtype, tuple(vars_)))
             if invalid:
                 messagebox.showerror(
                     "Requirements",
@@ -512,10 +538,24 @@ class SafetyManagementWindow(tk.Frame):
                 req["status"] = "obsolete"
         ids: list[str] = []
         for name, pairs in diag_pairs.items():
-            for text, rtype in pairs:
-                ids.append(self._add_requirement(text, rtype, diagram=name))
+            for text, rtype, vars_ in pairs:
+                ids.append(
+                    self._add_requirement(text, rtype, diagram=name, variables=vars_)
+                )
         ids = [rid for rid, req in global_requirements.items() if req.get("phase") is None]
         self._display_requirements("Lifecycle Requirements", ids)
+
+    def delete_obsolete_requirements(self) -> None:
+        """Remove all requirements marked as obsolete."""
+        obsolete = [rid for rid, req in global_requirements.items() if req.get("status") == "obsolete"]
+        if not obsolete:
+            messagebox.showinfo("Requirements", "No obsolete requirements to delete.")
+            return
+        for rid in obsolete:
+            del global_requirements[rid]
+        messagebox.showinfo(
+            "Requirements", f"Deleted {len(obsolete)} obsolete requirements."
+        )
 
     @staticmethod
     def _collect_requirements(gov: GovernanceDiagram) -> list[str]:
