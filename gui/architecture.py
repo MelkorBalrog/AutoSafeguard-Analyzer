@@ -8673,7 +8673,15 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row = 0
         ttk.Label(gen_frame, text="Name:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=self.obj.properties.get("name", ""))
-        name_state = "readonly" if self.obj.obj_type == "Work Product" else "normal"
+        repo = SysMLRepository.get_instance()
+        diag_id = getattr(self.master, "diagram_id", None)
+        diag = repo.diagrams.get(diag_id) if diag_id else None
+        readonly_types = {"Work Product", "Lifecycle Phase"}
+        if self.obj.obj_type == "System Boundary" and getattr(diag, "diag_type", None) == "Governance Diagram":
+            readonly = True
+        else:
+            readonly = self.obj.obj_type in readonly_types
+        name_state = "readonly" if readonly else "normal"
         ttk.Entry(gen_frame, textvariable=self.name_var, state=name_state).grid(
             row=gen_row, column=1, padx=4, pady=4
         )
@@ -9483,10 +9491,15 @@ class SysMLObjectDialog(simpledialog.Dialog):
     def apply(self):
         repo = SysMLRepository.get_instance()
         parent_id = None
-        if self.obj.obj_type != "Work Product":
+        diag_id = getattr(self.master, "diagram_id", None)
+        diag = repo.diagrams.get(diag_id) if diag_id else None
+        readonly = self.obj.obj_type in {"Work Product", "Lifecycle Phase"}
+        if self.obj.obj_type == "System Boundary" and getattr(diag, "diag_type", None) == "Governance Diagram":
+            readonly = True
+
+        if not readonly:
             new_name = self.name_var.get()
             if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
-                diag = repo.diagrams.get(self.master.diagram_id)
                 if diag and diag.diag_type == "Internal Block Diagram":
                     parent_id = getattr(diag, "father", None) or next(
                         (eid for eid, did in repo.element_diagrams.items() if did == diag.diag_id),
