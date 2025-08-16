@@ -5422,7 +5422,8 @@ class SysMLDiagramWindow(tk.Frame):
             lines = [""]
         text_width = max(self.font.measure(line) for line in lines)
         padding = 8 * self.zoom
-        text_height = self.font.metrics("linespace") * max(len(compartments), 1)
+        total_lines = sum(max(len(comp.splitlines()), 1) for comp in compartments)
+        text_height = self.font.metrics("linespace") * max(total_lines, 1)
         return (text_width + padding) / self.zoom, (text_height + padding) / self.zoom
 
     def _wrap_text_to_width(self, text: str, width_px: float) -> list[str]:
@@ -5623,8 +5624,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = b_w, b_h
         elif obj.obj_type == "Data acquisition":
             min_w, min_h = self._min_data_acquisition_size(obj)
-            obj.width = min_w
-            obj.height = min_h
+            obj.width = max(obj.width, min_w)
+            obj.height = max(obj.height, min_h)
             return
         else:
             label_lines = self._object_label_lines(obj)
