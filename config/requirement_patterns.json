@@ -58,42 +58,27 @@
   {
     "Pattern ID": "EARS-EVENT",
     "Trigger": "Event-driven behavior",
-    "Template": "the <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
+    "Template": "the shall within, verified by.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<verification_method>"
+      "<condition>"
     ],
     "Notes": "Suitable for automotive timing/latency requirements."
   },
   {
     "Pattern ID": "EARS-EVENT-COND",
     "Trigger": "Event-driven behavior",
-    "Template": "When <condition>, The <subject> shall <action> <object> within <t_max>, verified by <verification_method>.",
+    "Template": "When <condition>, The shall within, verified by.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<condition>",
-      "<t_max>",
-      "<verification_method>"
+      "<condition>"
     ],
     "Notes": "Suitable for automotive timing/latency requirements."
   },
   {
     "Pattern ID": "EARS-EVENT-COND-CONST",
     "Trigger": "Event-driven behavior",
-    "Template": "When <condition>, The <subject> shall <action> <object> within <t_max>, verified by <verification_method> constrained by <constraint>.",
+    "Template": "When <condition>, The shall within, verified by constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
       "<condition>",
-      "<t_max>",
-      "<verification_method>",
       "<constraint>"
     ],
     "Notes": "Suitable for automotive timing/latency requirements."
@@ -101,14 +86,9 @@
   {
     "Pattern ID": "EARS-EVENT-CONST",
     "Trigger": "Event-driven behavior",
-    "Template": "the <subject> shall <action> <object> within <t_max>, verified by <verification_method> constrained by <constraint>.",
+    "Template": "the shall within, verified by constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
       "<condition>",
-      "<t_max>",
-      "<verification_method>",
       "<constraint>"
     ],
     "Notes": "Suitable for automotive timing/latency requirements."
@@ -116,26 +96,15 @@
   {
     "Pattern ID": "EARS-STATE",
     "Trigger": "State-dependent behavior",
-    "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<state>",
-      "<performance_kpi>"
-    ],
+    "Template": "While, the shall and maintain.",
+    "Variables": [],
     "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
   },
   {
     "Pattern ID": "EARS-STATE-COND",
     "Trigger": "State-dependent behavior",
-    "Template": "When <condition>, While <state>, the <subject> shall <action> <object> and maintain <performance_kpi>.",
+    "Template": "When <condition>, While, the shall and maintain.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<state>",
-      "<performance_kpi>",
       "<condition>"
     ],
     "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
@@ -143,13 +112,8 @@
   {
     "Pattern ID": "EARS-STATE-COND-CONST",
     "Trigger": "State-dependent behavior",
-    "Template": "When <condition>, While <state>, the <subject> shall <action> <object> and maintain <performance_kpi> constrained by <constraint>.",
+    "Template": "When <condition>, While, the shall and maintain constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<state>",
-      "<performance_kpi>",
       "<condition>",
       "<constraint>"
     ],
@@ -158,13 +122,8 @@
   {
     "Pattern ID": "EARS-STATE-CONST",
     "Trigger": "State-dependent behavior",
-    "Template": "While <state>, the <subject> shall <action> <object> and maintain <performance_kpi> constrained by <constraint>.",
+    "Template": "While, the shall and maintain constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<state>",
-      "<performance_kpi>",
       "<constraint>"
     ],
     "Notes": "Operational modes (e.g., Manual, Automated, Degraded)."
@@ -172,28 +131,15 @@
   {
     "Pattern ID": "EARS-UBIQ",
     "Trigger": "Generic (roles identifiable)",
-    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
-    "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<business_objective>",
-      "<verification_method>",
-      "<record>"
-    ],
+    "Template": "The shall to achieve, verified by and recorded in.",
+    "Variables": [],
     "Notes": "Operation/engineering-aligned ubiquitous requirement."
   },
   {
     "Pattern ID": "EARS-UBIQ-COND",
     "Trigger": "Generic (roles identifiable)",
-    "Template": "When <condition>, The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record>.",
+    "Template": "When <condition>, The shall to achieve, verified by and recorded in.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<business_objective>",
-      "<verification_method>",
-      "<record>",
       "<condition>"
     ],
     "Notes": "Operation/engineering-aligned ubiquitous requirement."
@@ -201,14 +147,8 @@
   {
     "Pattern ID": "EARS-UBIQ-COND-CONST",
     "Trigger": "Generic (roles identifiable)",
-    "Template": "When <condition>, The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record> constrained by <constraint>.",
+    "Template": "When <condition>, The shall to achieve, verified by and recorded in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<business_objective>",
-      "<verification_method>",
-      "<record>",
       "<condition>",
       "<constraint>"
     ],
@@ -217,14 +157,8 @@
   {
     "Pattern ID": "EARS-UBIQ-CONST",
     "Trigger": "Generic (roles identifiable)",
-    "Template": "The <subject> shall <action> <object> to achieve <business_objective>, verified by <verification_method> and recorded in <record> constrained by <constraint>.",
+    "Template": "The shall to achieve, verified by and recorded in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<action>",
-      "<object>",
-      "<business_objective>",
-      "<verification_method>",
-      "<record>",
       "<constraint>"
     ],
     "Notes": "Operation/engineering-aligned ubiquitous requirement."
@@ -232,28 +166,15 @@
   {
     "Pattern ID": "EARS-UNWANTED",
     "Trigger": "Fault/HAZARD response",
-    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record>.",
-    "Variables": [
-      "<subject>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>",
-      "<record>"
-    ],
+    "Template": "If occurs, the shall within and transition to, logging evidence in.",
+    "Variables": [],
     "Notes": "Directly useful for ISO 26262/operational safety."
   },
   {
     "Pattern ID": "EARS-UNWANTED-COND",
     "Trigger": "Fault/HAZARD response",
-    "Template": "When <condition>, If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record>.",
+    "Template": "When <condition>, If occurs, the shall within and transition to, logging evidence in.",
     "Variables": [
-      "<subject>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>",
-      "<record>",
       "<condition>"
     ],
     "Notes": "Directly useful for ISO 26262/operational safety."
@@ -261,14 +182,8 @@
   {
     "Pattern ID": "EARS-UNWANTED-COND-CONST",
     "Trigger": "Fault/HAZARD response",
-    "Template": "When <condition>, If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record> constrained by <constraint>.",
+    "Template": "When <condition>, If occurs, the shall within and transition to, logging evidence in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>",
-      "<record>",
       "<condition>",
       "<constraint>"
     ],
@@ -277,14 +192,8 @@
   {
     "Pattern ID": "EARS-UNWANTED-CONST",
     "Trigger": "Fault/HAZARD response",
-    "Template": "If <hazard> occurs, the <subject> shall <mitigation_action> within <t_fault> and transition to <safe_state>, logging evidence in <record> constrained by <constraint>.",
+    "Template": "If occurs, the shall within and transition to, logging evidence in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<hazard>",
-      "<mitigation_action>",
-      "<t_fault>",
-      "<safe_state>",
-      "<record>",
       "<constraint>"
     ],
     "Notes": "Directly useful for ISO 26262/operational safety."
@@ -4100,22 +4009,15 @@
   {
     "Pattern ID": "NFR-COMPLIANCE",
     "Trigger": "Constraint node via Constrained by / Governed by",
-    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
-    "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>"
-    ],
+    "Template": "The shall comply with and retain objective evidence in.",
+    "Variables": [],
     "Notes": "Compliance requirement with auditable trail."
   },
   {
     "Pattern ID": "NFR-COMPLIANCE-COND",
     "Trigger": "Constraint node via Constrained by / Governed by",
-    "Template": "When <condition>, The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record>.",
+    "Template": "When <condition>, The shall comply with and retain objective evidence in.",
     "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>",
       "<condition>"
     ],
     "Notes": "Compliance requirement with auditable trail."
@@ -4123,11 +4025,8 @@
   {
     "Pattern ID": "NFR-COMPLIANCE-COND-CONST",
     "Trigger": "Constraint node via Constrained by / Governed by",
-    "Template": "When <condition>, The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record> constrained by <constraint>.",
+    "Template": "When <condition>, The shall comply with and retain objective evidence in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>",
       "<condition>",
       "<constraint>"
     ],
@@ -4136,11 +4035,8 @@
   {
     "Pattern ID": "NFR-COMPLIANCE-CONST",
     "Trigger": "Constraint node via Constrained by / Governed by",
-    "Template": "The <subject> shall comply with <standard_or_policy> and retain objective evidence in <record> constrained by <constraint>.",
+    "Template": "The shall comply with and retain objective evidence in constrained by <constraint>.",
     "Variables": [
-      "<subject>",
-      "<standard_or_policy>",
-      "<record>",
       "<constraint>"
     ],
     "Notes": "Compliance requirement with auditable trail."
@@ -4148,28 +4044,15 @@
   {
     "Pattern ID": "NFR-METRIC-PERF",
     "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "The <process> shall achieve <metric_name> ≤ <target_value> measured over <window> with ≥ <confidence> confidence; measurement recorded in <record>.",
-    "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>",
-      "<record>"
-    ],
+    "Template": "The shall achieve ≤ measured over with ≥ confidence; measurement recorded in.",
+    "Variables": [],
     "Notes": "Performance KPI in engineering terms."
   },
   {
     "Pattern ID": "NFR-METRIC-PERF-COND",
     "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "When <condition>, The <process> shall achieve <metric_name> ≤ <target_value> measured over <window> with ≥ <confidence> confidence; measurement recorded in <record>.",
+    "Template": "When <condition>, The shall achieve ≤ measured over with ≥ confidence; measurement recorded in.",
     "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>",
-      "<record>",
       "<condition>"
     ],
     "Notes": "Performance KPI in engineering terms."
@@ -4177,14 +4060,8 @@
   {
     "Pattern ID": "NFR-METRIC-PERF-COND-CONST",
     "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "When <condition>, The <process> shall achieve <metric_name> ≤ <target_value> measured over <window> with ≥ <confidence> confidence; measurement recorded in <record> constrained by <constraint>.",
+    "Template": "When <condition>, The shall achieve ≤ measured over with ≥ confidence; measurement recorded in constrained by <constraint>.",
     "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>",
-      "<record>",
       "<condition>",
       "<constraint>"
     ],
@@ -4193,14 +4070,8 @@
   {
     "Pattern ID": "NFR-METRIC-PERF-CONST",
     "Trigger": "Metric linked to Process/Activity (Monitors/Produces/Uses)",
-    "Template": "The <process> shall achieve <metric_name> ≤ <target_value> measured over <window> with ≥ <confidence> confidence; measurement recorded in <record> constrained by <constraint>.",
+    "Template": "The shall achieve ≤ measured over with ≥ confidence; measurement recorded in constrained by <constraint>.",
     "Variables": [
-      "<process>",
-      "<metric_name>",
-      "<target_value>",
-      "<window>",
-      "<confidence>",
-      "<record>",
       "<constraint>"
     ],
     "Notes": "Performance KPI in engineering terms."
@@ -4264,11 +4135,8 @@
   {
     "Pattern ID": "ORG-establish-Organization-Process",
     "Trigger": "Organization: Organization --[Establish]--> Process",
-    "Template": "<organization> shall establish the <process> and record evidence in <record>.",
+    "Template": "shall establish the and record evidence in.",
     "Variables": [
-      "<organization>",
-      "<process>",
-      "<record>",
       "<due_date>"
     ],
     "Notes": "Organizational process definition requirement."
@@ -4276,11 +4144,8 @@
   {
     "Pattern ID": "ORG-establish-Organization-Process-COND",
     "Trigger": "Organization: Organization --[Establish]--> Process",
-    "Template": "When <condition>, <organization> shall establish the <process> and record evidence in <record>.",
+    "Template": "When <condition>, shall establish the and record evidence in.",
     "Variables": [
-      "<organization>",
-      "<process>",
-      "<record>",
       "<due_date>",
       "<condition>"
     ],
@@ -4289,11 +4154,8 @@
   {
     "Pattern ID": "ORG-establish-Organization-Process-COND-CONST",
     "Trigger": "Organization: Organization --[Establish]--> Process",
-    "Template": "When <condition>, <organization> shall establish the <process> and record evidence in <record> constrained by <constraint>.",
+    "Template": "When <condition>, shall establish the and record evidence in constrained by <constraint>.",
     "Variables": [
-      "<organization>",
-      "<process>",
-      "<record>",
       "<due_date>",
       "<condition>",
       "<constraint>"
@@ -4303,11 +4165,8 @@
   {
     "Pattern ID": "ORG-establish-Organization-Process-CONST",
     "Trigger": "Organization: Organization --[Establish]--> Process",
-    "Template": "<organization> shall establish the <process> and record evidence in <record> constrained by <constraint>.",
+    "Template": "shall establish the and record evidence in constrained by <constraint>.",
     "Variables": [
-      "<organization>",
-      "<process>",
-      "<record>",
       "<due_date>",
       "<constraint>"
     ],
