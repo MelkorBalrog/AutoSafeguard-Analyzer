@@ -227,22 +227,13 @@ class SafetyManagementWindow(tk.Frame):
         frame = self.app._new_tab(title)
         for child in frame.winfo_children():
             child.destroy()
-        columns = ("ID", "Type", "Text", "Phase")
+        columns = ("ID", "Type", "Text")
         tree = ttk.Treeview(frame, columns=columns, show="headings")
         for c in columns:
             tree.heading(c, text=c)
         for rid in ids:
             req = global_requirements.get(rid, {})
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    rid,
-                    req.get("req_type", ""),
-                    req.get("text", ""),
-                    req.get("phase") or "",
-                ),
-            )
+            tree.insert("", "end", values=(rid, req.get("req_type", ""), req.get("text", "")))
         tree.pack(fill=tk.BOTH, expand=True)
 
     def generate_requirements(self) -> None:
