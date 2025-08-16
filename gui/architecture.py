@@ -10286,7 +10286,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def __init__(self, master, app, diagram_id: str | None = None, history=None):
         tool_groups = {
             "Tasks": ["Action"],
-            "Control Nodes": ["Initial", "Final", "Decision", "Merge", "Fork", "Join"],
+            "Control Nodes": ["Initial", "Final", "Decision", "Merge"],
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
@@ -10317,6 +10317,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if btn:
             btn.configure(text="Task")
             self.tool_buttons["Task"] = self.tool_buttons.pop("Action")
+        # Ensure legacy control nodes are removed from the toolbox
+        tool_btns = getattr(self, "tool_buttons", {})
+        for legacy in ("Fork", "Join"):
+            extra = tool_btns.pop(legacy, None)
+            if extra:
+                try:
+                    extra.destroy()
+                except Exception:  # pragma: no cover - headless tests
+                    pass
 
         # ------------------------------------------------------------------
         # Toolbox toggle between Governance and Safety & AI Lifecycle
@@ -10360,13 +10369,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ai_relations = SAFETY_AI_RELATIONS
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.ai_tools_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for name in ai_nodes:
                 ttk.Button(
                     self.ai_tools_frame,
@@ -10395,13 +10397,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
-            ttk.Button(
-                self.gov_elements_frame,
-                text="Select",
-                image=self._icon_for("Select"),
-                compound=tk.LEFT,
-                command=lambda: self.select_tool("Select"),
-            ).pack(fill=tk.X, padx=2, pady=2)
             for group, nodes in ge_nodes.items():
                 frame = ttk.LabelFrame(self.gov_elements_frame, text=group)
                 frame.pack(fill=tk.X, padx=2, pady=2)
