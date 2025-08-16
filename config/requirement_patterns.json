@@ -224,6 +224,116 @@
     "Notes": "Use when a governance edge is present."
   },
   {
+    "Pattern ID": "GOV-flow-Decision-Lifecycle_Phase",
+    "Trigger": "Gov: Decision --[Flow]--> Lifecycle Phase",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Action",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Action",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Merge",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Merge",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Fork",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Fork",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Join",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Join",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Final",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Final",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-ANN",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> ANN",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-Data_acquisition",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Data acquisition",
+    "Template": "<source_id> (<source_class>) shall flow to the <target_id> (<target_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Use when a flow connection is present."
+  },
+  {
     "Pattern ID": "GOV-satisfied_by-Work_Product-Work_Product",
     "Trigger": "Gov: Work Product --[Satisfied by]--> Work Product",
     "Template": "<source_id> (<source_class>) shall be satisfied by the <target_id> (<target_class>).",
