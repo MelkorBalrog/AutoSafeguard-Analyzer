@@ -61,9 +61,11 @@ class ThreatWindow(tk.Frame):
             width = 120 if col in {"asset", "functions", "type"} else 200
             self.tree.column(col, width=width, stretch=True)
         vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=vsb.set)
+        hsb = ttk.Scrollbar(content, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         self.tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
         content.columnconfigure(0, weight=1)
         content.rowconfigure(0, weight=1)
         self.tree.bind("<Double-1>", self.on_double_click)
