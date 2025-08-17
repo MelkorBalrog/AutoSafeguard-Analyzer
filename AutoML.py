@@ -12075,7 +12075,12 @@ class FaultTreeApp:
         win = self._req_tab
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
-        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for col in columns:
             tree.heading(col, text=col)
             if col == "Text":
@@ -12085,7 +12090,11 @@ class FaultTreeApp:
             else:
                 width = 120
             tree.column(col, width=width, anchor="center")
-        tree.pack(fill=tk.BOTH, expand=True)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
 
         def _get_requirement_allocations(rid: str) -> list[str]:
             repo = SysMLRepository.get_instance()
