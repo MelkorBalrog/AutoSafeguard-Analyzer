@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 import json
 import re
+import sys
 import importlib.resources as resources
 
 
@@ -280,9 +281,23 @@ def _strip_comments(text: str) -> str:
 def load_json_with_comments(path: str | Path) -> Any:
     """Load a JSON file allowing // and /* */ comments and trailing commas."""
     p = Path(path)
-    try:
-        text = _strip_comments(p.read_text())
-    except FileNotFoundError:
+    candidates = [p]
+    if getattr(sys, "frozen", False):  # pragma: no cover - only in bundled app
+        exe_dir = Path(sys.executable).resolve().parent
+        candidates.append(exe_dir / p.name)
+        candidates.append(exe_dir / "config" / p.name)
+    cwd = Path.cwd()
+    candidates.append(cwd / p.name)
+    candidates.append(cwd / "config" / p.name)
+
+    text = None
+    for cand in candidates:
+        try:
+            text = _strip_comments(cand.read_text())
+            break
+        except FileNotFoundError:
+            continue
+    if text is None:
         # When running from a bundled executable the configuration files may be
         # packaged as importlib resources.  Attempt to load the file from the
         # corresponding package if it is not found on disk.
