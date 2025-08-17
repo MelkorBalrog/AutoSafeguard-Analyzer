@@ -178,21 +178,34 @@ class ClosableNotebook(ttk.Notebook):
         # exact command name differs across platforms.  Try the known variants
         # and ignore any errors so that platforms without the command still
         # proceed.
+        # ``tk::unsupported::reparent`` expects platform specific arguments.
+        # Some builds use window path names while others require the window
+        # identifier returned by ``winfo_id``.  Try both forms to cover the
+        # common variants and silently continue if the command is unavailable.
+        reparented = False
         for cmd in (
-            "::tk::unsupported::reparent",
-            ("tk", "unsupported", "reparent"),
+            ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::reparent", child._w, target._w),
+            ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "reparent", child._w, target._w),
         ):
             try:
-                if isinstance(cmd, tuple):
-                    child.tk.call(*cmd, child._w, target._w)
-                else:
-                    child.tk.call(cmd, child._w, target._w)
+                child.tk.call(*cmd)
+                reparented = True
                 break
             except tk.TclError:
                 continue
-        child.master = target  # keep Python's widget hierarchy in sync
-        target.add(child, text=text)
-        target.select(child)
+        if reparented:
+            child.master = target  # keep Python's widget hierarchy in sync
+            target.add(child, text=text)
+            target.select(child)
+        else:
+            # If reparenting is unsupported we simply abort the move.
+            # Re-insert the tab into its original notebook so the widget
+            # remains accessible instead of raising a TclError.
+            self.add(child, text=text)
+            self.select(child)
+            return
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
 
