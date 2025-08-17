@@ -243,6 +243,7 @@ from gui.review_toolbox import (
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
+from gui.search_toolbox import SearchToolbox
 from functools import partial
 from gui.safety_management_toolbox import SafetyManagementToolbox
 from gui.gsn_explorer import GSNExplorer
@@ -2383,6 +2384,12 @@ class FaultTreeApp:
         edit_menu.add_command(label="Edit Severity", command=self.edit_severity, accelerator="Ctrl+E")
         edit_menu.add_command(label="Edit Controllability", command=self.edit_controllability)
         edit_menu.add_command(label="Edit Page Flag", command=self.edit_page_flag)
+        search_menu = tk.Menu(menubar, tearoff=0)
+        search_menu.add_command(
+            label="Find...",
+            command=self.open_search_toolbox,
+            accelerator="Ctrl+F",
+        )
         process_menu = tk.Menu(menubar, tearoff=0)
         process_menu.add_command(label="Calc Prototype Assurance Level (PAL)", command=self.calculate_overall, accelerator="Ctrl+R")
         process_menu.add_command(label="Calc PMHF", command=self.calculate_pmfh, accelerator="Ctrl+M")
@@ -2619,6 +2626,7 @@ class FaultTreeApp:
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
         menubar.add_cascade(label="Edit", menu=edit_menu)
+        menubar.add_cascade(label="Search", menu=search_menu)
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
@@ -2664,6 +2672,7 @@ class FaultTreeApp:
         root.bind("<Control-m>", lambda event: self.calculate_pmfh())
         root.bind("<Control-=>", lambda event: self.zoom_in())
         root.bind("<Control-minus>", lambda event: self.zoom_out())
+        root.bind("<Control-f>", lambda event: self.open_search_toolbox())
         root.bind("<Control-u>", lambda event: self.edit_user_name())
         root.bind("<Control-d>", lambda event: self.edit_description())
         root.bind("<Control-l>", lambda event: self.edit_rationale())
@@ -19816,6 +19825,16 @@ class FaultTreeApp:
             self.review_window.pack(fill=tk.BOTH, expand=True)
         self.refresh_all()
         self.set_current_user()
+
+    def open_search_toolbox(self):
+        """Open the search toolbox in a new tab or focus existing one."""
+        if hasattr(self, "_search_tab") and getattr(self._search_tab, "winfo_exists", lambda: 0)():
+            self.doc_nb.select(self._search_tab)
+            return
+        self._search_tab = self._new_tab("Search")
+        self.search_window = SearchToolbox(self._search_tab, self)
+        self.search_window.pack(fill=tk.BOTH, expand=True)
+        self.doc_nb.select(self._search_tab)
 
     def send_review_email(self, review):
         """Send the review summary to all reviewers via configured SMTP."""
