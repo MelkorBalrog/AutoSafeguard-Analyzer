@@ -22,6 +22,7 @@ def test_activity_diagram_requirements():
     reqs = repo.generate_requirements(ad.diag_id)
     texts = [r[0] for r in reqs]
     assert "Start shall precede End." in texts
+    assert {r[1] for r in reqs} == {"vehicle"}
 
 
 def test_call_behavior_action_dependencies():
@@ -58,3 +59,18 @@ def test_call_behavior_action_dependencies():
     assert "Start shall precede CallSub." in texts
     assert "CallSub shall precede End." in texts
     assert "S1 shall precede S2." in texts
+    assert {r[1] for r in reqs} == {"vehicle"}
+
+
+def test_non_activity_diagram_requirement_type():
+    repo = setup_repo()
+    bdd = repo.create_diagram("Block Definition Diagram", name="Struct")
+    b1 = repo.create_element("Block", name="A")
+    b2 = repo.create_element("Block", name="B")
+    bdd.objects = [
+        {"obj_id": 1, "obj_type": "Block", "element_id": b1.elem_id, "properties": {"name": "A"}},
+        {"obj_id": 2, "obj_type": "Block", "element_id": b2.elem_id, "properties": {"name": "B"}},
+    ]
+    bdd.connections = [{"src": 1, "dst": 2, "conn_type": "Association"}]
+    reqs = repo.generate_requirements(bdd.diag_id)
+    assert reqs == [("A shall be connected to B.", "functional")]

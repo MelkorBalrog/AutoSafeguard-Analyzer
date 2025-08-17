@@ -105,11 +105,14 @@ def create_icon(
         img.put(outline, (size - 1, mid))
     elif shape == "relation":
         mid = size // 2
-        for x in range(2, size - 4):
+        # Draw a line with an open arrow head on the left. A previous revision
+        # inadvertently inverted the arrow head so the tip appeared wide instead
+        # of pointed. Draw the head with its tip at x=0.
+        for x in range(4, size - 2):
             img.put(c, (x, mid))
         for i in range(4):
-            img.put(c, (size - 4 + i, mid - i))
-            img.put(c, (size - 4 + i, mid + i))
+            img.put(c, (i, mid - i))
+            img.put(c, (i, mid + i))
     elif shape == "triangle":
         mid = size // 2
         height = size - 4

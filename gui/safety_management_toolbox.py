@@ -13,6 +13,7 @@ from analysis.models import (
 from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox
 from sysml.sysml_repository import SysMLRepository
+from gui.toolboxes import configure_table_style, _wrap_val
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -245,7 +246,14 @@ class SafetyManagementWindow(tk.Frame):
             child.destroy()
         columns = ("ID", "Type", "Text", "Phase", "Status")
         tree_frame = ttk.Frame(frame)
-        tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        style_name = "Requirements.Treeview"
+        try:
+            configure_table_style(style_name, rowheight=80)
+            tree = ttk.Treeview(
+                tree_frame, columns=columns, show="headings", style=style_name
+            )
+        except Exception:
+            tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
         for c in columns:
             tree.heading(c, text=c)
 
@@ -257,11 +265,11 @@ class SafetyManagementWindow(tk.Frame):
                     "",
                     "end",
                     values=(
-                        rid,
-                        req.get("req_type", ""),
-                        req.get("text", ""),
-                        req.get("phase") or "",
-                        req.get("status", ""),
+                        _wrap_val(rid),
+                        _wrap_val(req.get("req_type", "")),
+                        _wrap_val(req.get("text", ""), 60),
+                        _wrap_val(req.get("phase") or ""),
+                        _wrap_val(req.get("status", "")),
                     ),
                 )
 
@@ -401,13 +409,14 @@ class SafetyManagementWindow(tk.Frame):
             messagebox.showinfo("Requirements", f"No governance diagrams for phase '{phase}'.")
             return
         repo = SysMLRepository.get_instance()
+        repo_diagrams = getattr(repo, "diagrams", {})
         diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            diag = repo.diagrams.get(diag_id)
-            if diag and diag.diag_type != "Governance Diagram":
+            diag = repo_diagrams.get(diag_id) if isinstance(repo_diagrams, dict) else None
+            if diag and diag.diag_type != "Governance Diagram" and hasattr(repo, "generate_requirements"):
                 try:
                     raw_reqs = repo.generate_requirements(diag_id)
                 except Exception as exc:  # pragma: no cover - defensive
@@ -502,13 +511,14 @@ class SafetyManagementWindow(tk.Frame):
                 "Requirements", "No lifecycle governance diagrams.")
             return
         repo = SysMLRepository.get_instance()
+        repo_diagrams = getattr(repo, "diagrams", {})
         diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            diag = repo.diagrams.get(diag_id)
-            if diag and diag.diag_type != "Governance Diagram":
+            diag = repo_diagrams.get(diag_id) if isinstance(repo_diagrams, dict) else None
+            if diag and diag.diag_type != "Governance Diagram" and hasattr(repo, "generate_requirements"):
                 try:
                     raw_reqs = repo.generate_requirements(diag_id)
                 except Exception as exc:  # pragma: no cover - defensive

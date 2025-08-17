@@ -2746,7 +2746,6 @@ class FaultTreeApp:
             "Cause & Effect Diagram": self.show_cause_effect_chain,
             "Diagram Rule Editor": self.open_diagram_rules_toolbox,
             "Requirement Pattern Editor": self.open_requirement_patterns_toolbox,
-            "Report Template Editor": self.open_report_template_toolbox,
             "Report Template Manager": self.open_report_template_manager,
         }
 
@@ -2762,9 +2761,8 @@ class FaultTreeApp:
                 "Cause & Effect Diagram",
             ],
             "Configuration": [
-                "Diagram Rule Editor", 
+                "Diagram Rule Editor",
                 "Requirement Pattern Editor",
-                "Report Template Editor",
                 "Report Template Manager",
             ],
         }
@@ -8709,7 +8707,19 @@ class FaultTreeApp:
         def _tokenize(text: str):
             replaced = text
             for placeholder in elements:
-                replaced = replaced.replace(f"<{placeholder}>", f"[[[{placeholder}]]]")
+                replaced = replaced.replace(
+                    f"<{placeholder}>", f"[[[element:{placeholder}]]]"
+                )
+            replaced = _re.sub(
+                r'<img\s+src="([^"]+)"\s*/?>',
+                lambda m: f"[[[img:{m.group(1)}]]]",
+                replaced,
+            )
+            replaced = _re.sub(
+                r'<a\s+href="([^"]+)">([^<]*)</a>',
+                lambda m: f"[[[link:{m.group(1)}|{m.group(2)}]]]",
+                replaced,
+            )
             return _re.split(r"(\[\[\[[^\]]+\]\]\])", replaced)
 
         for sec in template.get("sections", []):
@@ -8719,8 +8729,25 @@ class FaultTreeApp:
                 if not tok:
                     continue
                 if tok.startswith("[[[") and tok.endswith("]]]"):
-                    name = tok[3:-3]
-                    story.extend(_build_element(name, elements.get(name)))
+                    inner = tok[3:-3]
+                    if inner.startswith("element:"):
+                        name = inner.split(":", 1)[1]
+                        story.extend(_build_element(name, elements.get(name)))
+                    elif inner.startswith("img:"):
+                        src = inner.split(":", 1)[1]
+                        try:
+                            story.append(RLImage(src))
+                        except Exception:
+                            story.append(
+                                Paragraph(f"[Missing image: {src}]", styles["Normal"])
+                            )
+                    elif inner.startswith("link:"):
+                        href, text = inner.split(":", 1)[1].split("|", 1)
+                        story.append(
+                            Paragraph(
+                                f'<link href="{href}">{text}</link>', styles["Normal"]
+                            )
+                        )
                 else:
                     text = tok.strip()
                     if text:

@@ -765,12 +765,11 @@ class SysMLRepository:
         Returns
         -------
         list[tuple[str, str]]
-            Generated requirement texts paired with their types.  The function
-            currently emits "functional" requirements describing the
-            predecessor relationship between connected actions in activity
-            diagrams.  For other SysML diagrams a generic "functional"
-            requirement expressing that two elements are connected is
-            produced.
+            Generated requirement texts paired with their types.  Activity
+            diagrams yield "vehicle" requirements describing the predecessor
+            relationship between connected actions.  For other SysML diagrams a
+            generic "functional" requirement expressing that two elements are
+            connected is produced.
         """
 
         if _visited is None:
@@ -813,9 +812,11 @@ class SysMLRepository:
                 continue
             if diag.diag_type == "Activity Diagram":
                 text = f"{src} shall precede {dst}."
+                req_type = "vehicle"
             else:
                 text = f"{src} shall be connected to {dst}."
-            reqs.append((text, "functional"))
+                req_type = "functional"
+            reqs.append((text, req_type))
 
         return reqs
 

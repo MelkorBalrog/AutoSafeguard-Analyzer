@@ -29,7 +29,19 @@ def layout_report_template(
     def _tokenize(text: str):
         replaced = text
         for placeholder in elements:
-            replaced = replaced.replace(f"<{placeholder}>", f"[[[{placeholder}]]]")
+            replaced = replaced.replace(
+                f"<{placeholder}>", f"[[[element:{placeholder}]]]"
+            )
+        replaced = re.sub(
+            r'<img\s+src="([^"]+)"\s*/?>',
+            lambda m: f"[[[img:{m.group(1)}]]]",
+            replaced,
+        )
+        replaced = re.sub(
+            r'<a\s+href="([^"]+)">([^<]*)</a>',
+            lambda m: f"[[[link:{m.group(1)}|{m.group(2)}]]]",
+            replaced,
+        )
         return re.split(r"(\[\[\[[^\]]+\]\]\])", replaced)
 
     for sec in data.get("sections", []):
@@ -42,10 +54,36 @@ def layout_report_template(
             if not tok:
                 continue
             if tok.startswith("[[[") and tok.endswith("]]]"):
-                name = tok[3:-3]
-                kind = elements.get(name, "")
-                items.append({"type": "element", "name": name, "kind": kind, "x": margin, "y": y})
-                y += 100
+                inner = tok[3:-3]
+                if inner.startswith("element:"):
+                    name = inner.split(":", 1)[1]
+                    kind = elements.get(name, "")
+                    items.append(
+                        {
+                            "type": "element",
+                            "name": name,
+                            "kind": kind,
+                            "x": margin,
+                            "y": y,
+                        }
+                    )
+                    y += 100
+                elif inner.startswith("img:"):
+                    src = inner.split(":", 1)[1]
+                    items.append({"type": "image", "src": src, "x": margin, "y": y})
+                    y += 100
+                elif inner.startswith("link:"):
+                    href, text = inner.split(":", 1)[1].split("|", 1)
+                    items.append(
+                        {
+                            "type": "link",
+                            "href": href,
+                            "text": text,
+                            "x": margin,
+                            "y": y,
+                        }
+                    )
+                    y += line_height
             else:
                 text = tok.replace("<br/>", "\n")
                 for line in text.split("\n"):
@@ -158,7 +196,11 @@ class SectionDialog(simpledialog.Dialog):
         self.content_txt.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
         tk.Label(
             master,
-            text="Use <element_name> to insert configured elements.",
+            text=(
+                "Use <element_name> to insert configured elements. "
+                "Use <img src=\"path\"/> for images and "
+                "<a href=\"url\">text</a> for links."
+            ),
         ).grid(row=2, column=0, columnspan=2, padx=4, pady=(0, 4), sticky="w")
         master.columnconfigure(1, weight=1)
         master.rowconfigure(1, weight=1)
@@ -319,3 +361,17 @@ class ReportTemplateEditor(tk.Frame):
                 x, y = item["x"], item["y"]
                 self.preview.create_rectangle(x, y, x + w, y + h, outline="black")
                 self.preview.create_text(x + w / 2, y + h / 2, text=item["name"], font=font)
+            elif item["type"] == "image":
+                w, h = 200, 80
+                x, y = item["x"], item["y"]
+                self.preview.create_rectangle(x, y, x + w, y + h, outline="black")
+                self.preview.create_text(x + w / 2, y + h / 2, text="Image", font=font)
+            elif item["type"] == "link":
+                self.preview.create_text(
+                    item["x"],
+                    item["y"],
+                    text=item["text"],
+                    anchor="nw",
+                    font=font,
+                    fill="blue",
+                )
