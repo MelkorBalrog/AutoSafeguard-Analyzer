@@ -1,7 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
-from gui import messagebox, format_name_with_phase
+from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
 import csv
 import copy
 import textwrap
@@ -3978,8 +3978,10 @@ class HazardExplorerWindow(tk.Toplevel):
 
         columns = ("Assessment", "Malfunction", "Hazard", "Severity")
         configure_table_style("HazExp.Treeview")
+        tree_frame = ttk.Frame(self)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
-            self,
+            tree_frame,
             columns=columns,
             show="headings",
             style="HazExp.Treeview",
@@ -3990,7 +3992,14 @@ class HazardExplorerWindow(tk.Toplevel):
             self.tree.heading(c, text=c)
             width = 200 if c == "Hazard" else 120
             self.tree.column(c, width=width)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.columnconfigure(0, weight=1)
+        tree_frame.rowconfigure(0, weight=1)
         ttk.Button(self, text="Export CSV", command=self.export_csv).pack(pady=5)
         self.refresh()
 
@@ -4137,8 +4146,10 @@ class RequirementsExplorerWindow(tk.Frame):
 
         self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text")
         configure_table_style("ReqExp.Treeview")
+        table_frame = ttk.Frame(self)
+        table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
-            self,
+            table_frame,
             columns=self.columns,
             show="headings",
             style="ReqExp.Treeview",
@@ -4154,7 +4165,7 @@ class RequirementsExplorerWindow(tk.Frame):
             else:
                 width = 100
             self.tree.column(c, width=width)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+        add_treeview_scrollbars(self.tree, table_frame)
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)

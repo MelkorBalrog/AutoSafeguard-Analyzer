@@ -1505,7 +1505,10 @@ industry practice:
 | 4      | 1×10⁻¹    | –        | –        |
 
 Projects with empirical data may substitute more precise values, but these
-approximations provide a justified starting point when none are available.
+approximations provide a justified starting point when none are available. The
+probability associated with each rating can be adjusted under **Project
+Properties → Validation Probabilities** and is persisted in the project's JSON
+file.
 
 These acceptance criteria and validation targets form the baseline for Safety
 Performance Indicators. Observed safety or AI metrics are traced back to these
