@@ -94,8 +94,8 @@ class SearchToolbox(tk.Toplevel):
         self.results.clear()
         self.current_index = -1
 
-        # --- search fault tree / GSN nodes
-        for node in getattr(self.app, "get_all_nodes_in_model", lambda: [])():
+        nodes = getattr(self.app, "get_all_nodes_in_model", lambda: [])()
+        for node in nodes:
             text = f"{node.user_name}\n{getattr(node, 'description', '')}"
             if regex.search(text):
                 label = (
@@ -112,8 +112,8 @@ class SearchToolbox(tk.Toplevel):
                     }
                 )
 
-        # --- search FMEA/FMDA entries
-        for entry in getattr(self.app, "get_all_fmea_entries", lambda: [])():
+        entries = getattr(self.app, "get_all_fmea_entries", lambda: [])()
+        for entry in entries:
             fields = [
                 getattr(entry, "user_name", ""),
                 getattr(entry, "description", ""),
@@ -159,6 +159,8 @@ class SearchToolbox(tk.Toplevel):
         if self.results:
             self.current_index = 0
             self._open_index(0)
+        else:
+            messagebox.showinfo("Search", "No matches found.")
 
     # ------------------------------------------------------------------
     def _open_index(self, index: int) -> None:
