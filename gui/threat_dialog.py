@@ -71,18 +71,24 @@ class ThreatDialog(simpledialog.Dialog):
         )
 
         configure_table_style("Threat.Functions.Treeview")
+        func_frame = ttk.Frame(asset_tab)
+        func_frame.grid(row=2, column=0, sticky="nsew", padx=2)
+        func_frame.columnconfigure(0, weight=1)
+        func_frame.rowconfigure(0, weight=1)
         self.func_tree = ttk.Treeview(
-            asset_tab,
+            func_frame,
             columns=("function",),
             show="headings",
             style="Threat.Functions.Treeview",
         )
         self.func_tree.heading("function", text="Function")
         self.func_tree.column("function", width=680, stretch=True)
-        self.func_tree.grid(row=2, column=0, sticky="nsew", padx=2)
-        fscroll = ttk.Scrollbar(asset_tab, orient="vertical", command=self.func_tree.yview)
-        self.func_tree.configure(yscrollcommand=fscroll.set)
-        fscroll.grid(row=2, column=1, sticky="ns")
+        fscroll_y = ttk.Scrollbar(func_frame, orient="vertical", command=self.func_tree.yview)
+        fscroll_x = ttk.Scrollbar(func_frame, orient="horizontal", command=self.func_tree.xview)
+        self.func_tree.configure(yscrollcommand=fscroll_y.set, xscrollcommand=fscroll_x.set)
+        self.func_tree.grid(row=0, column=0, sticky="nsew")
+        fscroll_y.grid(row=0, column=1, sticky="ns")
+        fscroll_x.grid(row=1, column=0, sticky="ew")
         self.func_tree.bind("<<TreeviewSelect>>", self.on_func_select)
         ttk.Button(asset_tab, text="Remove Function", command=self.remove_function).grid(
             row=3, column=0, sticky="w", padx=2, pady=2
@@ -96,6 +102,8 @@ class ThreatDialog(simpledialog.Dialog):
 
         ds_frame = ttk.Frame(asset_tab)
         ds_frame.grid(row=4, column=0, sticky="nsew")
+        ds_frame.columnconfigure(0, weight=1)
+        ds_frame.rowconfigure(0, weight=1)
         configure_table_style("Threat.Damage.Treeview")
         self.ds_tree = ttk.Treeview(
             ds_frame,
@@ -107,10 +115,12 @@ class ThreatDialog(simpledialog.Dialog):
         self.ds_tree.heading("type", text="Type")
         self.ds_tree.column("scenario", width=560, stretch=True)
         self.ds_tree.column("type", width=120, stretch=True)
-        self.ds_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        ds_scroll = ttk.Scrollbar(ds_frame, orient="vertical", command=self.ds_tree.yview)
-        self.ds_tree.configure(yscrollcommand=ds_scroll.set)
-        ds_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        ds_vsb = ttk.Scrollbar(ds_frame, orient="vertical", command=self.ds_tree.yview)
+        ds_hsb = ttk.Scrollbar(ds_frame, orient="horizontal", command=self.ds_tree.xview)
+        self.ds_tree.configure(yscrollcommand=ds_vsb.set, xscrollcommand=ds_hsb.set)
+        self.ds_tree.grid(row=0, column=0, sticky="nsew")
+        ds_vsb.grid(row=0, column=1, sticky="ns")
+        ds_hsb.grid(row=1, column=0, sticky="ew")
         self.ds_tree.bind("<<TreeviewSelect>>", self.on_ds_select)
 
         ds_edit = ttk.Frame(asset_tab)
@@ -154,8 +164,12 @@ class ThreatDialog(simpledialog.Dialog):
         ta_frame.rowconfigure(0, weight=1)
         ta_frame.rowconfigure(1, weight=1)
         configure_table_style("Threat.Scenarios.Treeview")
+        threat_frame = ttk.Frame(ta_frame)
+        threat_frame.grid(row=0, column=0, sticky="nsew")
+        threat_frame.columnconfigure(0, weight=1)
+        threat_frame.rowconfigure(0, weight=1)
         self.threat_tree = ttk.Treeview(
-            ta_frame,
+            threat_frame,
             columns=("stride", "scenario"),
             show="headings",
             style="Threat.Scenarios.Treeview",
@@ -165,24 +179,32 @@ class ThreatDialog(simpledialog.Dialog):
         self.threat_tree.column("stride", width=120, stretch=True)
         self.threat_tree.column("scenario", width=560, stretch=True)
         self.threat_tree.bind("<<TreeviewSelect>>", self.on_threat_select)
+        tscroll = ttk.Scrollbar(threat_frame, orient="vertical", command=self.threat_tree.yview)
+        th_hsb = ttk.Scrollbar(threat_frame, orient="horizontal", command=self.threat_tree.xview)
+        self.threat_tree.configure(yscrollcommand=tscroll.set, xscrollcommand=th_hsb.set)
         self.threat_tree.grid(row=0, column=0, sticky="nsew")
-        tscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.threat_tree.yview)
-        self.threat_tree.configure(yscrollcommand=tscroll.set)
         tscroll.grid(row=0, column=1, sticky="ns")
+        th_hsb.grid(row=1, column=0, sticky="ew")
 
         configure_table_style("Threat.Paths.Treeview")
+        path_frame = ttk.Frame(ta_frame)
+        path_frame.grid(row=1, column=0, sticky="nsew")
+        path_frame.columnconfigure(0, weight=1)
+        path_frame.rowconfigure(0, weight=1)
         self.path_tree = ttk.Treeview(
-            ta_frame,
+            path_frame,
             columns=("path",),
             show="headings",
             style="Threat.Paths.Treeview",
         )
         self.path_tree.heading("path", text="Attack Path")
         self.path_tree.column("path", width=680, stretch=True)
-        self.path_tree.grid(row=1, column=0, sticky="nsew")
-        pscroll = ttk.Scrollbar(ta_frame, orient="vertical", command=self.path_tree.yview)
-        self.path_tree.configure(yscrollcommand=pscroll.set)
-        pscroll.grid(row=1, column=1, sticky="ns")
+        pscroll = ttk.Scrollbar(path_frame, orient="vertical", command=self.path_tree.yview)
+        phsb = ttk.Scrollbar(path_frame, orient="horizontal", command=self.path_tree.xview)
+        self.path_tree.configure(yscrollcommand=pscroll.set, xscrollcommand=phsb.set)
+        self.path_tree.grid(row=0, column=0, sticky="nsew")
+        pscroll.grid(row=0, column=1, sticky="ns")
+        phsb.grid(row=1, column=0, sticky="ew")
         self.path_tree.bind("<<TreeviewSelect>>", self.on_path_select)
 
         ts_edit = ttk.Frame(threat_tab)

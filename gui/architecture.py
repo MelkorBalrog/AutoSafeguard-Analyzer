@@ -3271,8 +3271,10 @@ class SysMLDiagramWindow(tk.Frame):
 
         self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
         self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        prop_view_frame = ttk.Frame(self.prop_frame)
+        prop_view_frame.pack(fill=tk.BOTH, expand=True)
         self.prop_view = ttk.Treeview(
-            self.prop_frame,
+            prop_view_frame,
             columns=("field", "value"),
             show="headings",
             height=8,
@@ -3281,7 +3283,14 @@ class SysMLDiagramWindow(tk.Frame):
         self.prop_view.heading("value", text="Value")
         self.prop_view.column("field", width=80, anchor="w")
         self.prop_view.column("value", width=120, anchor="w")
-        self.prop_view.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(prop_view_frame, orient="vertical", command=self.prop_view.yview)
+        hsb = ttk.Scrollbar(prop_view_frame, orient="horizontal", command=self.prop_view.xview)
+        self.prop_view.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.prop_view.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        prop_view_frame.columnconfigure(0, weight=1)
+        prop_view_frame.rowconfigure(0, weight=1)
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)

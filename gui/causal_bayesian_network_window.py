@@ -549,12 +549,20 @@ class CausalBayesianNetworkWindow(tk.Frame):
         )
         label = ttk.Label(frame, text=label_text)
         label.pack(side=tk.TOP, fill=tk.X)
-        tree = ttk.Treeview(frame, columns=cols, show="headings", height=0)
+        tree_frame = ttk.Frame(frame)
+        tree_frame.pack(side=tk.TOP, fill=tk.BOTH)
+        tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=0)
         for c in cols:
             tree.heading(c, text=c)
             is_prob = c == prob_col or (parents and c == joint_col)
             tree.column(c, width=80 if is_prob else 60, anchor=tk.CENTER)
-        tree.pack(side=tk.TOP, fill=tk.X)
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.columnconfigure(0, weight=1)
         if not parents:
             info = f"Prior probability that {name} is True"
         else:
