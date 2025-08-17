@@ -250,6 +250,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
+from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
@@ -2383,6 +2384,10 @@ class FaultTreeApp:
         edit_menu.add_command(label="Edit Severity", command=self.edit_severity, accelerator="Ctrl+E")
         edit_menu.add_command(label="Edit Controllability", command=self.edit_controllability)
         edit_menu.add_command(label="Edit Page Flag", command=self.edit_page_flag)
+        search_menu = tk.Menu(menubar, tearoff=0)
+        search_menu.add_command(
+            label="Find...", command=self.open_search_toolbox, accelerator="Ctrl+F"
+        )
         process_menu = tk.Menu(menubar, tearoff=0)
         process_menu.add_command(label="Calc Prototype Assurance Level (PAL)", command=self.calculate_overall, accelerator="Ctrl+R")
         process_menu.add_command(label="Calc PMHF", command=self.calculate_pmfh, accelerator="Ctrl+M")
@@ -2619,6 +2624,7 @@ class FaultTreeApp:
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
         menubar.add_cascade(label="Edit", menu=edit_menu)
+        menubar.add_cascade(label="Search", menu=search_menu)
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
@@ -2660,6 +2666,7 @@ class FaultTreeApp:
         root.bind("<Control-n>", lambda event: self.new_model())
         root.bind("<Control-s>", lambda event: self.save_model())
         root.bind("<Control-o>", lambda event: self.load_model())
+        root.bind("<Control-f>", lambda event: self.open_search_toolbox())
         root.bind("<Control-r>", lambda event: self.calculate_overall())
         root.bind("<Control-m>", lambda event: self.calculate_pmfh())
         root.bind("<Control-=>", lambda event: self.zoom_in())
@@ -13694,6 +13701,9 @@ class FaultTreeApp:
 
         node_map = {}
         comp_items = {}
+        # expose the current FMEA tree and node mapping for external tools
+        self._fmea_tree = tree
+        self._fmea_node_map = node_map
 
         def refresh_tree():
             tree.delete(*tree.get_children())
@@ -17120,6 +17130,13 @@ class FaultTreeApp:
         pd = getattr(self, "page_diagram", None)
         if pd and getattr(pd.canvas, "winfo_exists", lambda: False)():
             pd.redraw_canvas()
+
+    def open_search_toolbox(self):
+        """Open the complex search toolbox window."""
+        if hasattr(self, "search_window") and self.search_window.winfo_exists():
+            self.search_window.lift()
+            return
+        self.search_window = SearchToolbox(self.root, self)
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
