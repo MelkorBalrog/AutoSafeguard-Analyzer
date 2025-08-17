@@ -222,11 +222,12 @@ class ClosableNotebook(ttk.Notebook):
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
         # ``tk::unsupported::reparent`` requires the target widget to be
-        # realised.  Without updating the new notebook window here the tab
-        # ends up detached into an empty toplevel and cannot be re-attached
-        # later.  Ensuring the window exists before moving the tab fixes the
-        # behaviour and mirrors how Tk handles normal drag operations.
-        nb.update_idletasks()
+        # realised.  Simply updating the notebook's idle tasks is not
+        # sufficient on some platforms where the toplevel must be fully
+        # mapped before reparenting succeeds.  Updating the window itself
+        # guarantees the required window id exists so the tab is detached
+        # into a visible notebook instead of an empty toplevel.
+        win.update()
         self._move_tab(tab_id, nb)
 
     def _reset_drag(self) -> None:
