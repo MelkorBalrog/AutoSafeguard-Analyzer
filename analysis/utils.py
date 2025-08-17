@@ -16,6 +16,36 @@ CONTROLLABILITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
 SEVERITY_PROBABILITIES = {1: 1e-3, 2: 1e-2, 3: 1e-1}
 
 
+def update_probability_tables(
+    exposure: dict | None = None,
+    controllability: dict | None = None,
+    severity: dict | None = None,
+) -> None:
+    """Replace default probability mappings with values from *exposure*,
+    *controllability* and *severity*.
+
+    Each argument should be a mapping from rating level to probability. Missing
+    arguments leave the current mapping unchanged. The dictionaries are updated
+    in-place so references held elsewhere remain valid.
+    """
+
+    if exposure is not None:
+        EXPOSURE_PROBABILITIES.clear()
+        EXPOSURE_PROBABILITIES.update(
+            {int(k): float(v) for k, v in dict(exposure).items()}
+        )
+    if controllability is not None:
+        CONTROLLABILITY_PROBABILITIES.clear()
+        CONTROLLABILITY_PROBABILITIES.update(
+            {int(k): float(v) for k, v in dict(controllability).items()}
+        )
+    if severity is not None:
+        SEVERITY_PROBABILITIES.clear()
+        SEVERITY_PROBABILITIES.update(
+            {int(k): float(v) for k, v in dict(severity).items()}
+        )
+
+
 def exposure_to_probability(level: int) -> float:
     """Return ``P(E|HB)`` for the given exposure rating.
 
