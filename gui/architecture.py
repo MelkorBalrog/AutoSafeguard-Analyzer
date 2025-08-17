@@ -381,6 +381,35 @@ def reload_config() -> None:
     }
     NODE_CONNECTION_LIMITS = _CONFIG.get("node_connection_limits", {})
     GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+    _enforce_connection_rules()
+
+
+def _enforce_connection_rules() -> None:
+    """Ensure existing diagram connections comply with current rules."""
+    repo = SysMLRepository.get_instance()
+    for diag in repo.diagrams.values():
+        diag_rules = CONNECTION_RULES.get(diag.diag_type, {})
+        objs = {o.get("obj_id"): o.get("obj_type") for o in getattr(diag, "objects", [])}
+        valid: list[dict] = []
+        remove_ids: set[str] = set()
+        for conn in list(getattr(diag, "connections", [])):
+            src_t = objs.get(conn.get("src"))
+            dst_t = objs.get(conn.get("dst"))
+            ctype = conn.get("conn_type")
+            if diag.diag_type == "Governance Diagram" and ctype != "Flow":
+                src_t = _GOV_TYPE_ALIASES.get(src_t, src_t)
+                dst_t = _GOV_TYPE_ALIASES.get(dst_t, dst_t)
+            allowed = diag_rules.get(ctype, {})
+            if src_t and dst_t and dst_t not in allowed.get(src_t, set()):
+                rel_id = conn.get("element_id")
+                if rel_id:
+                    remove_ids.add(rel_id)
+                continue
+            valid.append(conn)
+        if remove_ids:
+            diag.connections = valid
+            diag.relationships = [r for r in diag.relationships if r not in remove_ids]
+            repo.relationships = [r for r in repo.relationships if r.rel_id not in remove_ids]
 
 
 def _work_product_name(diag_type: str) -> str:

@@ -278,7 +278,7 @@ class SearchToolbox(ttk.Frame):
 
                     self.results.append({"label": label, "open": _open})
 
-        if self.hazards_var.get():
+        if getattr(self, "hazards_var", None) and self.hazards_var.get():
             for hazard in getattr(self.app, "hazards", []):
                 if regex.search(hazard):
                     label = f"Hazard - {hazard}"
@@ -292,7 +292,7 @@ class SearchToolbox(ttk.Frame):
                         }
                     )
 
-        if self.faults_var.get():
+        if getattr(self, "faults_var", None) and self.faults_var.get():
             for fault in getattr(self.app, "faults", []):
                 if regex.search(fault):
                     label = f"Fault - {fault}"
@@ -308,7 +308,7 @@ class SearchToolbox(ttk.Frame):
                         }
                     )
 
-        if self.malfunctions_var.get():
+        if getattr(self, "malfunctions_var", None) and self.malfunctions_var.get():
             malfunc_cb = getattr(
                 self.app,
                 "show_malfunction_editor",
@@ -320,7 +320,7 @@ class SearchToolbox(ttk.Frame):
                     self.results_box.insert(tk.END, label)
                     self.results.append({"label": label, "open": lambda m=mal: malfunc_cb()})
 
-        if self.fail_list_var.get():
+        if getattr(self, "fail_list_var", None) and self.fail_list_var.get():
             for failure in getattr(self.app, "failures", []):
                 if regex.search(failure):
                     label = f"Failure - {failure}"
@@ -336,7 +336,7 @@ class SearchToolbox(ttk.Frame):
                         }
                     )
 
-        if self.trigger_var.get():
+        if getattr(self, "trigger_var", None) and self.trigger_var.get():
             for tc in getattr(self.app, "triggering_conditions", []):
                 if regex.search(tc):
                     label = f"Triggering Condition - {tc}"
@@ -352,7 +352,7 @@ class SearchToolbox(ttk.Frame):
                         }
                     )
 
-        if self.funcins_var.get():
+        if getattr(self, "funcins_var", None) and self.funcins_var.get():
             for fi in getattr(self.app, "functional_insufficiencies", []):
                 if regex.search(fi):
                     label = f"Functional Insufficiency - {fi}"
@@ -373,8 +373,9 @@ class SearchToolbox(ttk.Frame):
         # on ``app`` that returns an iterable of objects.  We attempt to match
         # against common name/description attributes and call the configured
         # opener when a match is selected.
-        for name, fetcher, opener in self.extra_sources:
-            if not self.extra_vars[name].get():
+        for name, fetcher, opener in getattr(self, "extra_sources", []):
+            var = getattr(self, "extra_vars", {}).get(name)
+            if not var or not var.get():
                 continue
             items = getattr(self.app, fetcher, lambda: [])()
             for item in items:
