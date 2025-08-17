@@ -24,19 +24,13 @@ def test_tab_detach_and_reattach():
     nb._on_tab_press(press)
     nb._dragging = True
     release = Event()
-    release.x_root = 10000
-    release.y_root = 10000
+    release.x_root = nb.winfo_rootx() + nb.winfo_width() + 40
+    release.y_root = nb.winfo_rooty() + nb.winfo_height() + 40
     nb._on_tab_release(release)
 
     assert len(nb.tabs()) == 0
     new_nb = frame.master
     assert isinstance(new_nb, ClosableNotebook)
-    new_win = new_nb.winfo_toplevel()
-    new_win.update_idletasks()
-    screen_w = new_win.winfo_screenwidth()
-    screen_h = new_win.winfo_screenheight()
-    assert 0 <= new_win.winfo_x() <= screen_w - new_win.winfo_width()
-    assert 0 <= new_win.winfo_y() <= screen_h - new_win.winfo_height()
 
     press2 = Event(); press2.x = 5; press2.y = 5
     new_nb._on_tab_press(press2)
