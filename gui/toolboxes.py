@@ -1,7 +1,7 @@
 # Author: Miguel Marina <karel.capek.robotics@gmail.com>
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
-from gui import messagebox, format_name_with_phase
+from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
 import csv
 import copy
 import textwrap
@@ -4137,8 +4137,10 @@ class RequirementsExplorerWindow(tk.Frame):
 
         self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text")
         configure_table_style("ReqExp.Treeview")
+        table_frame = ttk.Frame(self)
+        table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
-            self,
+            table_frame,
             columns=self.columns,
             show="headings",
             style="ReqExp.Treeview",
@@ -4154,7 +4156,7 @@ class RequirementsExplorerWindow(tk.Frame):
             else:
                 width = 100
             self.tree.column(c, width=width)
-        self.tree.pack(fill=tk.BOTH, expand=True)
+        add_treeview_scrollbars(self.tree, table_frame)
         btnf = ttk.Frame(self)
         btnf.pack(pady=5)
         ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)

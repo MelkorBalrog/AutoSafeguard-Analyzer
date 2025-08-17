@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui import messagebox
+from gui import messagebox, add_treeview_scrollbars
 from gui.toolboxes import ToolTip, configure_table_style
 from analysis.models import ThreatDoc, ThreatEntry
 from sysml.sysml_repository import SysMLRepository
@@ -60,10 +60,7 @@ class ThreatWindow(tk.Frame):
             self.tree.heading(col, text=headers[col])
             width = 120 if col in {"asset", "functions", "type"} else 200
             self.tree.column(col, width=width, stretch=True)
-        vsb = ttk.Scrollbar(content, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=vsb.set)
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
+        add_treeview_scrollbars(self.tree, content)
         content.columnconfigure(0, weight=1)
         content.rowconfigure(0, weight=1)
         self.tree.bind("<Double-1>", self.on_double_click)
