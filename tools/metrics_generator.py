@@ -3,11 +3,13 @@
 
 This script traverses a target directory and gathers basic metrics such as
 source lines of code and a rudimentary cyclomatic complexity for each
-function.  Results are printed as JSON but may also be written to a file.
+function.  Results are written to a JSON file, ``metrics.json`` by default.
 
 Example usage::
 
-    python tools/metrics_generator.py --path analysis --output metrics.json
+    python tools/metrics_generator.py --path analysis
+
+The output path may be customised with ``--output``.
 """
 from __future__ import annotations
 
@@ -116,15 +118,18 @@ def collect_metrics(root: Path) -> Dict[str, object]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=".", type=Path, help="Directory to analyse")
-    parser.add_argument("--output", type=Path, help="File to write JSON metrics")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("metrics.json"),
+        help="File to write JSON metrics (default: metrics.json)",
+    )
     args = parser.parse_args()
 
     metrics = collect_metrics(args.path)
 
-    if args.output:
-        args.output.write_text(json.dumps(metrics, indent=2))
-    else:
-        print(json.dumps(metrics, indent=2))
+    args.output.write_text(json.dumps(metrics, indent=2))
+    print(f"Metrics written to {args.output}")
 
 
 if __name__ == "__main__":
