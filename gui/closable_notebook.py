@@ -175,4 +175,3 @@ class ClosableNotebook(ttk.Notebook):
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
-
