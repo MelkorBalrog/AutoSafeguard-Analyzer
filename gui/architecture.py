@@ -351,6 +351,66 @@ def _arrow_forward_types() -> set[str]:
     return _ARROW_FORWARD_BASE | SAFETY_AI_RELATION_SET
 
 
+def _enforce_connection_rules() -> None:
+    """Remove existing connections that violate current configuration rules."""
+    repo = SysMLRepository.get_instance()
+    removed: set[str] = set()
+    for diag in repo.diagrams.values():
+        diag_rules = CONNECTION_RULES.get(diag.diag_type, {})
+        obj_map = {}
+        for o in diag.objects:
+            oid = o.get("obj_id") if isinstance(o, dict) else getattr(o, "obj_id", None)
+            obj_type = o.get("obj_type") if isinstance(o, dict) else getattr(o, "obj_type", None)
+            obj_map[oid] = obj_type
+        new_conns = []
+        for conn in diag.connections:
+            src_id = conn.get("src") if isinstance(conn, dict) else getattr(conn, "src", None)
+            dst_id = conn.get("dst") if isinstance(conn, dict) else getattr(conn, "dst", None)
+            src_type = obj_map.get(src_id)
+            dst_type = obj_map.get(dst_id)
+            if not src_type or not dst_type:
+                rel_id = conn.get("element_id") if isinstance(conn, dict) else getattr(conn, "element_id", "")
+                removed.add(rel_id)
+                continue
+            conn_type = conn.get("conn_type") if isinstance(conn, dict) else getattr(conn, "conn_type", None)
+            if diag.diag_type == "Governance Diagram" and conn_type != "Flow":
+                src_type = _GOV_TYPE_ALIASES.get(src_type, src_type)
+                dst_type = _GOV_TYPE_ALIASES.get(dst_type, dst_type)
+            valid = True
+            rules = diag_rules.get(conn_type)
+            if rules is not None:
+                targets = rules.get(src_type)
+                if not targets or dst_type not in targets:
+                    valid = False
+            elif conn_type in SAFETY_AI_RELATION_RULES:
+                if (
+                    src_type not in SAFETY_AI_NODE_TYPES
+                    and src_type not in GOVERNANCE_NODE_TYPES
+                ) or (
+                    dst_type not in SAFETY_AI_NODE_TYPES
+                    and dst_type not in GOVERNANCE_NODE_TYPES
+                ):
+                    valid = False
+                else:
+                    rule = SAFETY_AI_RELATION_RULES.get(conn_type)
+                    if rule and src_type in SAFETY_AI_NODE_TYPES:
+                        targets = rule.get(src_type)
+                        if not targets or dst_type not in targets:
+                            valid = False
+            if valid:
+                new_conns.append(conn)
+            else:
+                rel_id = conn.get("element_id") if isinstance(conn, dict) else getattr(conn, "element_id", "")
+                removed.add(rel_id)
+        if len(new_conns) != len(diag.connections):
+            diag.connections = new_conns
+            if diag.relationships:
+                diag.relationships = [r for r in diag.relationships if r not in removed]
+            repo.touch_diagram(diag.diag_id)
+    if removed:
+        repo.relationships = [r for r in repo.relationships if r.rel_id not in removed]
+
+
 def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
@@ -381,6 +441,7 @@ def reload_config() -> None:
     }
     NODE_CONNECTION_LIMITS = _CONFIG.get("node_connection_limits", {})
     GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+    _enforce_connection_rules()
 
 
 def _work_product_name(diag_type: str) -> str:
@@ -3649,27 +3710,11 @@ class SysMLDiagramWindow(tk.Frame):
                 "Propagate by Review",
                 "Propagate by Approval",
             ):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Propagation links must connect Work Products"
                 src_name = src.properties.get("name")
                 dst_name = dst.properties.get("name")
                 if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
                     return False, f"Propagation from {src_name} to {dst_name} is not allowed"
-            elif conn_type == "Re-use":
-                if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
-                    return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
-            elif conn_type in ("Satisfied by", "Derived from"):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Requirement relations must connect Work Products"
-                from analysis.models import REQUIREMENT_WORK_PRODUCTS
-                req_wps = set(REQUIREMENT_WORK_PRODUCTS)
-                sname = src.properties.get("name")
-                dname = dst.properties.get("name")
-                if sname not in req_wps or dname not in req_wps:
-                    return False, "Requirement relations must connect requirement work products"
             elif conn_type == "Trace":
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Trace links must connect Work Products"
                 from analysis.models import REQUIREMENT_WORK_PRODUCTS
                 req_wps = set(REQUIREMENT_WORK_PRODUCTS)
                 sname = src.properties.get("name")
@@ -3709,8 +3754,6 @@ class SysMLDiagramWindow(tk.Frame):
                 "Used after Review",
                 "Used after Approval",
             ):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 if sname not in UNRESTRICTED_USAGE_SOURCES and (
