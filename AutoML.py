@@ -250,6 +250,7 @@ from gui.safety_management_explorer import SafetyManagementExplorer
 from gui.safety_case_explorer import SafetyCaseExplorer
 from gui.gsn_diagram_window import GSNDiagramWindow
 from gui.gsn_config_window import GSNElementConfig
+from gui.search_toolbox import SearchToolbox
 from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
@@ -2383,6 +2384,10 @@ class FaultTreeApp:
         edit_menu.add_command(label="Edit Severity", command=self.edit_severity, accelerator="Ctrl+E")
         edit_menu.add_command(label="Edit Controllability", command=self.edit_controllability)
         edit_menu.add_command(label="Edit Page Flag", command=self.edit_page_flag)
+        search_menu = tk.Menu(menubar, tearoff=0)
+        search_menu.add_command(
+            label="Find...", command=self.open_search_toolbox, accelerator="Ctrl+F"
+        )
         process_menu = tk.Menu(menubar, tearoff=0)
         process_menu.add_command(label="Calc Prototype Assurance Level (PAL)", command=self.calculate_overall, accelerator="Ctrl+R")
         process_menu.add_command(label="Calc PMHF", command=self.calculate_pmfh, accelerator="Ctrl+M")
@@ -2619,6 +2624,7 @@ class FaultTreeApp:
         # Add menus to the bar in the desired order
         menubar.add_cascade(label="File", menu=file_menu)
         menubar.add_cascade(label="Edit", menu=edit_menu)
+        menubar.add_cascade(label="Search", menu=search_menu)
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
@@ -2660,6 +2666,7 @@ class FaultTreeApp:
         root.bind("<Control-n>", lambda event: self.new_model())
         root.bind("<Control-s>", lambda event: self.save_model())
         root.bind("<Control-o>", lambda event: self.load_model())
+        root.bind("<Control-f>", lambda event: self.open_search_toolbox())
         root.bind("<Control-r>", lambda event: self.calculate_overall())
         root.bind("<Control-m>", lambda event: self.calculate_pmfh())
         root.bind("<Control-=>", lambda event: self.zoom_in())
@@ -13694,6 +13701,9 @@ class FaultTreeApp:
 
         node_map = {}
         comp_items = {}
+        # expose the current FMEA tree and node mapping for external tools
+        self._fmea_tree = tree
+        self._fmea_node_map = node_map
 
         def refresh_tree():
             tree.delete(*tree.get_children())
@@ -14062,21 +14072,60 @@ class FaultTreeApp:
             return
         self._sg_matrix_tab = self._new_tab("Product Goals Matrix")
         win = self._sg_matrix_tab
-        columns = ["ID", "ASIL", "Target PMHF", "CAL", "SafeState", "Text"]
+        columns = [
+            "ID",
+            "ASIL",
+            "Target PMHF",
+            "CAL",
+            "SafeState",
+            "FTTI",
+            "Acc Rate",
+            "On Hours",
+            "Val Target",
+            "Profile",
+            "Val Desc",
+            "Acceptance",
+            "Description",
+            "Text",
+        ]
         tree = ttk.Treeview(win, columns=columns, show="tree headings")
         tree.heading("ID", text="Requirement ID")
         tree.heading("ASIL", text="ASIL")
         tree.heading("Target PMHF", text="Target PMHF (1/h)")
         tree.heading("CAL", text="CAL")
         tree.heading("SafeState", text="Safe State")
+        tree.heading("FTTI", text="FTTI")
+        tree.heading("Acc Rate", text="Acc Rate (1/h)")
+        tree.heading("On Hours", text="On Hours")
+        tree.heading("Val Target", text="Val Target")
+        tree.heading("Profile", text="Profile")
+        tree.heading("Val Desc", text="Val Desc")
+        tree.heading("Acceptance", text="Acceptance")
+        tree.heading("Description", text="Description")
         tree.heading("Text", text="Text")
         tree.column("ID", width=120)
         tree.column("ASIL", width=60)
         tree.column("Target PMHF", width=120)
         tree.column("CAL", width=60)
         tree.column("SafeState", width=100)
+        tree.column("FTTI", width=80)
+        tree.column("Acc Rate", width=100)
+        tree.column("On Hours", width=100)
+        tree.column("Val Target", width=120)
+        tree.column("Profile", width=120)
+        tree.column("Val Desc", width=200)
+        tree.column("Acceptance", width=200)
+        tree.column("Description", width=200)
         tree.column("Text", width=300)
-        tree.pack(fill=tk.BOTH, expand=True)
+
+        vsb = ttk.Scrollbar(win, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(win, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        win.columnconfigure(0, weight=1)
+        win.rowconfigure(0, weight=1)
 
         for te in self.top_events:
             sg_text = te.safety_goal_description or (te.user_name or f"SG {te.unique_id}")
@@ -14085,14 +14134,24 @@ class FaultTreeApp:
             asil = te.safety_goal_asil or "QM"
             target = PMHF_TARGETS.get(asil, 1.0)
             parent_iid = tree.insert(
-                "", "end", text=sg_text,
+                "",
+                "end",
+                text=sg_text,
                 values=[
                     sg_id,
                     te.safety_goal_asil,
                     f"{target:.1e}",
                     cal,
                     te.safe_state,
+                    getattr(te, "ftti", ""),
+                    str(getattr(te, "acceptance_rate", "")),
+                    getattr(te, "operational_hours_on", ""),
+                    getattr(te, "validation_target", ""),
+                    getattr(te, "mission_profile", ""),
+                    getattr(te, "validation_desc", ""),
+                    getattr(te, "acceptance_criteria", ""),
                     sg_text,
+                    "",
                 ],
             )
             reqs = self.collect_requirements_recursive(te)
@@ -14109,6 +14168,14 @@ class FaultTreeApp:
                     values=[
                         req_id,
                         req.get("asil", ""),
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
                         "",
                         "",
                         "",
@@ -17063,6 +17130,13 @@ class FaultTreeApp:
         pd = getattr(self, "page_diagram", None)
         if pd and getattr(pd.canvas, "winfo_exists", lambda: False)():
             pd.redraw_canvas()
+
+    def open_search_toolbox(self):
+        """Open the complex search toolbox window."""
+        if hasattr(self, "search_window") and self.search_window.winfo_exists():
+            self.search_window.lift()
+            return
+        self.search_window = SearchToolbox(self.root, self)
 
     def open_style_editor(self):
         """Open the diagram style editor window."""

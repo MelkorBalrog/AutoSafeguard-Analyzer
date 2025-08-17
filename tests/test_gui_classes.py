@@ -30,5 +30,23 @@ class DoubleClickBindingTests(unittest.TestCase):
         src = inspect.getsource(FaultTreeApp.show_product_goals_editor)
         self.assertIn('bind("<Double-1>"', src)
 
+
+class ProductGoalsMatrixTests(unittest.TestCase):
+    def test_matrix_has_all_columns_and_scrollbars(self):
+        src = inspect.getsource(FaultTreeApp.show_safety_goals_matrix)
+        for col in [
+            'FTTI',
+            'Acc Rate',
+            'On Hours',
+            'Val Target',
+            'Profile',
+            'Val Desc',
+            'Acceptance',
+            'Description',
+        ]:
+            self.assertIn(col, src)
+        self.assertIn('xscrollcommand', src)
+        self.assertIn('yscrollcommand', src)
+
 if __name__ == '__main__':
     unittest.main()

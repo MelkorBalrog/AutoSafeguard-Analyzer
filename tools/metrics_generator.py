@@ -150,7 +150,6 @@ def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
         plt.savefig(out_dir / "metrics_complexity.png")
         plt.close()
 
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=".", type=Path, help="Directory to analyse")
