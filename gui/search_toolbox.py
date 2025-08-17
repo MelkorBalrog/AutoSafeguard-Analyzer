@@ -7,6 +7,35 @@ from tkinter import ttk
 
 from gui import messagebox
 
+# Additional model sections that can be searched.  Each tuple contains a
+# human-readable category name, the name of a method on the ``app`` object
+# returning the elements for that category and a method name used to open a
+# result.  The app does not need to implement every function; missing ones
+# simply yield no results.
+EXTRA_CATEGORIES = [
+    ("SysML Elements", "get_all_sysml_elements", "open_sysml_element"),
+    ("SysML Relationships", "get_all_sysml_relationships", "open_sysml_relationship"),
+    ("GSN Elements", "get_all_gsn_elements", "open_gsn_element"),
+    ("FTA Elements", "get_all_fta_elements", "open_fta_element"),
+    ("Governance Elements", "get_all_governance_elements", "open_governance_element"),
+    ("Hazard Analysis Cells", "get_all_hazard_analysis_cells", "open_hazard_analysis_cell"),
+    ("FI2TC Cells", "get_all_fi2tc_cells", "open_fi2tc_cell"),
+    ("TC2FI Cells", "get_all_tc2fi_cells", "open_tc2fi_cell"),
+    ("STPA Cells", "get_all_stpa_cells", "open_stpa_cell"),
+    ("Risk Assessments", "get_all_risk_assessments", "open_risk_assessment"),
+    ("Threat Analyses", "get_all_threat_analyses", "open_threat_analysis"),
+    ("Product Goals", "get_all_product_goals", "open_product_goal"),
+    ("Requirements", "get_all_requirements", "open_requirement"),
+    ("FMEDA Entries", "get_all_fmeda_entries", "show_fmeda_table"),
+    ("Reliability Analyses", "get_all_reliability_analyses", "open_reliability_analysis"),
+    ("Mission Profiles", "get_all_mission_profiles", "open_mission_profile"),
+    ("ODD Libraries", "get_all_odd_libraries", "open_odd_library"),
+    ("Scenario Libraries", "get_all_scenario_libraries", "open_scenario_library"),
+    ("SPI Metrics", "get_all_spi_metrics", "open_spi_metric"),
+    ("Reviews", "get_all_reviews", "open_review"),
+    ("Fault Prioritization", "get_all_fault_prioritizations", "open_fault_prioritization"),
+]
+
 
 class SearchToolbox(tk.Toplevel):
     """Provide text-based search across model objects.
@@ -75,6 +104,16 @@ class SearchToolbox(tk.Toplevel):
         ttk.Checkbutton(sources, text="Triggering Cond.", variable=self.trigger_var).pack(side=tk.LEFT)
         ttk.Checkbutton(sources, text="Functional Insuff.", variable=self.funcins_var).pack(side=tk.LEFT)
 
+        # Dynamically create toggles for a broad set of additional model
+        # components.  This allows the toolbox to scale with new diagram types
+        # without requiring further code changes.
+        self.extra_sources = EXTRA_CATEGORIES
+        self.extra_vars: dict[str, tk.BooleanVar] = {}
+        for name, _fetch, _open in self.extra_sources:
+            var = tk.BooleanVar(value=True)
+            self.extra_vars[name] = var
+            ttk.Checkbutton(sources, text=name, variable=var).pack(side=tk.LEFT)
+
         self.results_box = tk.Listbox(frame, height=10)
         self.results_box.grid(row=3, column=0, columnspan=5, sticky="nsew", pady=(8, 0))
         self.results_box.bind("<Double-1>", self._open_selected)
@@ -96,6 +135,27 @@ class SearchToolbox(tk.Toplevel):
             visited.add(parent.unique_id)
             parent = parent.parents[0] if parent.parents else None
         return " > ".join(reversed(parts))
+
+    # ------------------------------------------------------------------
+    def _obj_label(self, obj) -> str:
+        """Return a readable label for *obj*."""
+        if isinstance(obj, str):
+            return obj
+        return getattr(obj, "user_name", "") or getattr(obj, "name", "") or str(obj)
+
+    # ------------------------------------------------------------------
+    def _obj_text(self, obj) -> str:
+        """Return concatenated text fields for generic searches."""
+        if isinstance(obj, str):
+            return obj
+        parts = []
+        for attr in ("user_name", "name", "description", "label", "title"):
+            val = getattr(obj, attr, "")
+            if isinstance(val, (list, tuple)):
+                val = " ".join(str(v) for v in val)
+            if val:
+                parts.append(str(val))
+        return "\n".join(parts)
 
     # ------------------------------------------------------------------
     def _run_search(self) -> None:
@@ -288,6 +348,31 @@ class SearchToolbox(tk.Toplevel):
                             )(),
                         }
                     )
+
+        # Generic search for any additional categories defined in
+        # ``EXTRA_CATEGORIES`` above.  Each category simply exposes a function
+        # on ``app`` that returns an iterable of objects.  We attempt to match
+        # against common name/description attributes and call the configured
+        # opener when a match is selected.
+        for name, fetcher, opener in self.extra_sources:
+            if not self.extra_vars[name].get():
+                continue
+            items = getattr(self.app, fetcher, lambda: [])()
+            for item in items:
+                text = self._obj_text(item)
+                if regex.search(text):
+                    prefix = name[:-1] if name.endswith("s") else name
+                    label = f"{prefix} - {self._obj_label(item)}"
+                    self.results_box.insert(tk.END, label)
+
+                    def _open(it=item, meth=opener):
+                        func = getattr(self.app, meth, lambda *_: None)
+                        try:
+                            func(it)
+                        except Exception:  # pragma: no cover - best effort
+                            func()
+
+                    self.results.append({"label": label, "open": _open})
 
         if self.results:
             self.current_index = 0

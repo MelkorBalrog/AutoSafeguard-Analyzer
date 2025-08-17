@@ -75,6 +75,8 @@ class SearchToolboxTests(unittest.TestCase):
         tb.fail_list_var = DummyVar(True)
         tb.trigger_var = DummyVar(True)
         tb.funcins_var = DummyVar(True)
+        tb.extra_sources = search_toolbox.EXTRA_CATEGORIES
+        tb.extra_vars = {name: DummyVar(False) for name, *_ in tb.extra_sources}
         tb.results_box = DummyListbox()
         tb.results = []
         tb.current_index = -1
@@ -145,6 +147,25 @@ class SearchToolboxTests(unittest.TestCase):
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("linkA", tb.results[0]["label"])
+
+    def test_search_extra_category(self):
+        class Obj:
+            def __init__(self):
+                self.name = "ExtraElement"
+
+        class ExtraApp(DummyApp):
+            def get_all_sysml_elements(self):
+                return [Obj()]
+
+        tb = self._make_tb(ExtraApp())
+        tb.extra_vars["SysML Elements"].set(True)
+        tb.nodes_var.set(False)
+        tb.connections_var.set(False)
+        tb.failures_var.set(False)
+        tb.search_var.set("Extra")
+        tb._run_search()
+        self.assertEqual(len(tb.results), 1)
+        self.assertIn("SysML Element - ExtraElement", tb.results[0]["label"])
 
 
 if __name__ == "__main__":
