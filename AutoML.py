@@ -17258,11 +17258,13 @@ class FaultTreeApp:
             pd.redraw_canvas()
 
     def open_search_toolbox(self):
-        """Open the complex search toolbox window."""
-        if hasattr(self, "search_window") and self.search_window.winfo_exists():
-            self.search_window.lift()
+        """Open the search toolbox in a new working-area tab."""
+        if getattr(self, "search_tab", None) and self.search_tab.winfo_exists():
+            self.doc_nb.select(self.search_tab)
             return
-        self.search_window = SearchToolbox(self.root, self)
+        self.search_tab = SearchToolbox(self.doc_nb, self)
+        self.doc_nb.add(self.search_tab, text="Search")
+        self.doc_nb.select(self.search_tab)
 
     def open_style_editor(self):
         """Open the diagram style editor window."""
@@ -17341,6 +17343,10 @@ class FaultTreeApp:
             self.hbar = None
             self.vbar = None
             self.page_diagram = None
+            tab.destroy()
+            return
+        if tab is getattr(self, "search_tab", None):
+            self.search_tab = None
             tab.destroy()
             return
         for child in tab.winfo_children():

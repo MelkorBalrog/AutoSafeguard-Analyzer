@@ -66,20 +66,10 @@ class SearchToolboxTests(unittest.TestCase):
         tb.search_var = DummyVar()
         tb.case_var = DummyVar(False)
         tb.regex_var = DummyVar(False)
-        tb.nodes_var = DummyVar(True)
-        tb.connections_var = DummyVar(True)
-        tb.failures_var = DummyVar(True)
-        tb.hazards_var = DummyVar(True)
-        tb.faults_var = DummyVar(True)
-        tb.malfunctions_var = DummyVar(True)
-        tb.fail_list_var = DummyVar(True)
-        tb.trigger_var = DummyVar(True)
-        tb.funcins_var = DummyVar(True)
-        tb.extra_sources = search_toolbox.EXTRA_CATEGORIES
-        tb.extra_vars = {name: DummyVar(False) for name, *_ in tb.extra_sources}
         tb.results_box = DummyListbox()
         tb.results = []
         tb.current_index = -1
+        tb._init_handlers()
         return tb
 
     def test_notifies_on_no_results(self):
@@ -96,11 +86,7 @@ class SearchToolboxTests(unittest.TestCase):
             hazards = ["Fire", "Collision"]
 
         tb = self._make_tb(HazardApp())
-        tb.nodes_var.set(False)
-        tb.connections_var.set(False)
-        tb.failures_var.set(False)
-        tb.hazards_var.set(True)
-        tb.search_var.set("Fire")
+        tb.search_var.set("hazards: Fire")
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("Hazard - Fire", tb.results[0]["label"])
@@ -110,16 +96,7 @@ class SearchToolboxTests(unittest.TestCase):
             faults = ["Short", "Open"]
 
         tb = self._make_tb(FaultApp())
-        tb.nodes_var.set(False)
-        tb.connections_var.set(False)
-        tb.failures_var.set(False)
-        tb.hazards_var.set(False)
-        tb.faults_var.set(True)
-        tb.malfunctions_var.set(False)
-        tb.fail_list_var.set(False)
-        tb.trigger_var.set(False)
-        tb.funcins_var.set(False)
-        tb.search_var.set("Short")
+        tb.search_var.set("faults: Short")
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("Fault - Short", tb.results[0]["label"])
@@ -139,11 +116,7 @@ class SearchToolboxTests(unittest.TestCase):
                 return self._conns
 
         tb = self._make_tb(ConnApp())
-        tb.nodes_var.set(False)
-        tb.connections_var.set(True)
-        tb.failures_var.set(False)
-        tb.hazards_var.set(False)
-        tb.search_var.set("g1")
+        tb.search_var.set("connections: g1")
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("linkA", tb.results[0]["label"])
@@ -158,11 +131,7 @@ class SearchToolboxTests(unittest.TestCase):
                 return [Obj()]
 
         tb = self._make_tb(ExtraApp())
-        tb.extra_vars["SysML Elements"].set(True)
-        tb.nodes_var.set(False)
-        tb.connections_var.set(False)
-        tb.failures_var.set(False)
-        tb.search_var.set("Extra")
+        tb.search_var.set("sysml: Extra")
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("SysML Element - ExtraElement", tb.results[0]["label"])
