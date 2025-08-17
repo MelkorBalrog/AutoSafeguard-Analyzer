@@ -41,3 +41,24 @@ def test_reload_config_updates_patterns(tmp_path: Path, monkeypatch) -> None:
     governance.reload_config()
     ids = {p["Pattern ID"] for p in governance._PATTERN_DEFS}
     assert "SA-augmentation-ANN-Database" in ids
+
+
+def test_field_data_collection_uses_from() -> None:
+    cfg = {
+        "requirement_rules": {
+            "field data collection": {
+                "action": "collect field data",
+                "subject": "Engineering team",
+            }
+        },
+        "safety_ai_relation_rules": {
+            "Field data collection": {"Database": ["Data acquisition"]}
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "SA-field_data_collection-Database-Data_acquisition"
+    )
+    assert "collect field data from the <target_id>" in tmpl

@@ -149,8 +149,7 @@ def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
         plt.tight_layout()
         plt.savefig(out_dir / "metrics_complexity.png")
         plt.close()
-
-
+        
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=".", type=Path, help="Directory to analyse")
@@ -174,7 +173,6 @@ def main() -> None:
     if args.plots:
         generate_plots(metrics, args.output.parent)
         print("Plots written to metrics_loc.png and metrics_complexity.png")
-
 
 if __name__ == "__main__":
     main()
