@@ -463,45 +463,50 @@ class GovernanceDiagram:
                 if s_role != "subject" and d_role == "subject":
                     subject, obj = obj, subject
             text_override: str | None = None
+            pattern_vars: list[str] = []
             src_type = self.node_types.get(src, "")
             dst_type = self.node_types.get(dst, "")
-            patterns = _PATTERN_MAP.get(
-                (src_type.lower(), (label or conn_type or "").lower(), dst_type.lower()),
-                [],
-            )
-            base = cond_pat = cond_const_pat = const_pat = None
-            for pat in patterns:
-                tmpl = pat.get("Template", "")
-                has_cond = "<condition>" in tmpl or "<acceptance_criteria>" in tmpl
-                has_const = "<constraint>" in tmpl
-                if has_cond and has_const and not cond_const_pat:
-                    cond_const_pat = pat
-                elif has_const and not has_cond and not const_pat:
-                    const_pat = pat
-                elif has_cond and not has_const and not cond_pat:
-                    cond_pat = pat
-                elif not has_cond and not has_const and not base:
-                    base = pat
-            pattern = None
-            if cond and constraint and cond_const_pat:
-                pattern = cond_const_pat
-            elif constraint and const_pat:
-                pattern = const_pat
-            elif cond and cond_pat and not base:
-                pattern = cond_pat
-            else:
-                pattern = base or cond_pat or const_pat or cond_const_pat
-            pattern_vars: list[str] = []
-            if pattern:
-                text_override, pattern_vars = _apply_pattern(
-                    pattern, src, dst, src_type, dst_type, cond, constraint
+            if kind != "flow":
+                patterns = _PATTERN_MAP.get(
+                    (
+                        src_type.lower(),
+                        (label or conn_type or "").lower(),
+                        dst_type.lower(),
+                    ),
+                    [],
                 )
-                if (
-                    cond
-                    and "<condition>" not in pattern.get("Template", "")
-                    and "<acceptance_criteria>" not in pattern.get("Template", "")
-                ):
-                    text_override = f"If {cond}, {text_override}"
+                base = cond_pat = cond_const_pat = const_pat = None
+                for pat in patterns:
+                    tmpl = pat.get("Template", "")
+                    has_cond = "<condition>" in tmpl or "<acceptance_criteria>" in tmpl
+                    has_const = "<constraint>" in tmpl
+                    if has_cond and has_const and not cond_const_pat:
+                        cond_const_pat = pat
+                    elif has_const and not has_cond and not const_pat:
+                        const_pat = pat
+                    elif has_cond and not has_const and not cond_pat:
+                        cond_pat = pat
+                    elif not has_cond and not has_const and not base:
+                        base = pat
+                pattern = None
+                if cond and constraint and cond_const_pat:
+                    pattern = cond_const_pat
+                elif constraint and const_pat:
+                    pattern = const_pat
+                elif cond and cond_pat and not base:
+                    pattern = cond_pat
+                else:
+                    pattern = base or cond_pat or const_pat or cond_const_pat
+                if pattern:
+                    text_override, pattern_vars = _apply_pattern(
+                        pattern, src, dst, src_type, dst_type, cond, constraint
+                    )
+                    if (
+                        cond
+                        and "<condition>" not in pattern.get("Template", "")
+                        and "<acceptance_criteria>" not in pattern.get("Template", "")
+                    ):
+                        text_override = f"If {cond}, {text_override}"
 
             requirements.append(
                 GeneratedRequirement(

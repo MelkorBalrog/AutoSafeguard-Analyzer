@@ -193,6 +193,13 @@ NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {
 # Node types that require guards on outgoing flows
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 
+# Node type aliases used when validating governance diagram connections.
+# Governance tasks are implemented using SysML ``Action`` elements but are
+# presented as "Task" to users.  Mapping aliases before applying connection
+# rules ensures that configuration updates targeting "Task" also affect these
+# underlying "Action" nodes.
+_GOV_TYPE_ALIASES = {"Action": "Task"}
+
 
 # Connection types excluding Safety & AI relations used for membership checks
 _BASE_CONN_TYPES = {
@@ -3554,10 +3561,15 @@ class SysMLDiagramWindow(tk.Frame):
         diag_rules = CONNECTION_RULES.get(diag_type, {})
         conn_rules = diag_rules.get(conn_type)
         if conn_rules:
-            targets = conn_rules.get(src.obj_type, set())
-            if dst.obj_type not in targets:
+            src_type = src.obj_type
+            dst_type = dst.obj_type
+            if diag_type == "Governance Diagram" and conn_type != "Flow":
+                src_type = _GOV_TYPE_ALIASES.get(src_type, src_type)
+                dst_type = _GOV_TYPE_ALIASES.get(dst_type, dst_type)
+            targets = conn_rules.get(src_type, set())
+            if dst_type not in targets:
                 return False, (
-                    f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed"
+                    f"{conn_type} from {src_type} to {dst_type} is not allowed"
                 )
 
         if diag_type == "Block Diagram":
