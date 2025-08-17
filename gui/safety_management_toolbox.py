@@ -300,7 +300,7 @@ class SafetyManagementWindow(tk.Frame):
         )
 
     def generate_requirements(self) -> None:
-        """Generate requirements for the selected governance diagram."""
+        """Generate requirements for the selected diagram."""
         name = self.diag_var.get()
         if not name:
             return
@@ -308,14 +308,24 @@ class SafetyManagementWindow(tk.Frame):
         if not diag_id:
             return
         repo = SysMLRepository.get_instance()
-        gov = GovernanceDiagram.from_repository(repo, diag_id)
-        try:
-            raw_reqs = gov.generate_requirements()
-        except Exception as exc:  # pragma: no cover - defensive
-            messagebox.showerror(
-                "Requirements", f"Failed to generate requirements: {exc}"
-            )
-            return
+        diag = repo.diagrams.get(diag_id)
+        if diag and diag.diag_type != "Governance Diagram":
+            try:
+                raw_reqs = repo.generate_requirements(diag_id)
+            except Exception as exc:  # pragma: no cover - defensive
+                messagebox.showerror(
+                    "Requirements", f"Failed to generate requirements: {exc}"
+                )
+                return
+        else:
+            gov = GovernanceDiagram.from_repository(repo, diag_id)
+            try:
+                raw_reqs = gov.generate_requirements()
+            except Exception as exc:  # pragma: no cover - defensive
+                messagebox.showerror(
+                    "Requirements", f"Failed to generate requirements: {exc}"
+                )
+                return
         reqs: list[tuple[str, str, list[str]]] = []
         for r in raw_reqs:
             if isinstance(r, tuple):
@@ -396,15 +406,26 @@ class SafetyManagementWindow(tk.Frame):
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            gov = GovernanceDiagram.from_repository(repo, diag_id)
-            try:
-                raw_reqs = gov.generate_requirements()
-            except Exception as exc:  # pragma: no cover - defensive
-                messagebox.showerror(
-                    "Requirements",
-                    f"Failed to generate requirements for '{name}': {exc}",
-                )
-                continue
+            diag = repo.diagrams.get(diag_id)
+            if diag and diag.diag_type != "Governance Diagram":
+                try:
+                    raw_reqs = repo.generate_requirements(diag_id)
+                except Exception as exc:  # pragma: no cover - defensive
+                    messagebox.showerror(
+                        "Requirements",
+                        f"Failed to generate requirements for '{name}': {exc}",
+                    )
+                    continue
+            else:
+                gov = GovernanceDiagram.from_repository(repo, diag_id)
+                try:
+                    raw_reqs = gov.generate_requirements()
+                except Exception as exc:  # pragma: no cover - defensive
+                    messagebox.showerror(
+                        "Requirements",
+                        f"Failed to generate requirements for '{name}': {exc}",
+                    )
+                    continue
             pairs: list[tuple[str, str, list[str]]] = []
             invalid = False
             for r in raw_reqs:
@@ -486,15 +507,26 @@ class SafetyManagementWindow(tk.Frame):
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            gov = GovernanceDiagram.from_repository(repo, diag_id)
-            try:
-                raw_reqs = gov.generate_requirements()
-            except Exception as exc:  # pragma: no cover - defensive
-                messagebox.showerror(
-                    "Requirements",
-                    f"Failed to generate requirements for '{name}': {exc}",
-                )
-                continue
+            diag = repo.diagrams.get(diag_id)
+            if diag and diag.diag_type != "Governance Diagram":
+                try:
+                    raw_reqs = repo.generate_requirements(diag_id)
+                except Exception as exc:  # pragma: no cover - defensive
+                    messagebox.showerror(
+                        "Requirements",
+                        f"Failed to generate requirements for '{name}': {exc}",
+                    )
+                    continue
+            else:
+                gov = GovernanceDiagram.from_repository(repo, diag_id)
+                try:
+                    raw_reqs = gov.generate_requirements()
+                except Exception as exc:  # pragma: no cover - defensive
+                    messagebox.showerror(
+                        "Requirements",
+                        f"Failed to generate requirements for '{name}': {exc}",
+                    )
+                    continue
             pairs: list[tuple[str, str, list[str]]] = []
             invalid = False
             for r in raw_reqs:

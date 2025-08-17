@@ -748,3 +748,74 @@ class SysMLRepository:
                         names.append(elem.name)
         return sorted(set(n for n in names if n))
 
+    # ------------------------------------------------------------
+    def generate_requirements(
+        self, diag_id: str, _visited: set[str] | None = None
+    ) -> list[tuple[str, str]]:
+        """Generate simple requirements from SysML diagrams.
+
+        Parameters
+        ----------
+        diag_id:
+            Identifier of the diagram to process.
+        _visited:
+            Internal set used to avoid infinite recursion when activity
+            diagrams reference each other via ``CallBehaviorAction`` objects.
+
+        Returns
+        -------
+        list[tuple[str, str]]
+            Generated requirement texts paired with their types.  The function
+            currently emits "functional" requirements describing the
+            predecessor relationship between connected actions in activity
+            diagrams.  For other SysML diagrams a generic "functional"
+            requirement expressing that two elements are connected is
+            produced.
+        """
+
+        if _visited is None:
+            _visited = set()
+        if diag_id in _visited:
+            return []
+        _visited.add(diag_id)
+
+        diag = self.diagrams.get(diag_id)
+        if not diag:
+            return []
+
+        reqs: list[tuple[str, str]] = []
+
+        # Map object ids to human readable names for requirement text.
+        id_to_name: dict[int, str] = {}
+        for obj in getattr(diag, "objects", []):
+            obj_id = obj.get("obj_id")
+            name = obj.get("properties", {}).get("name") or ""
+            elem_id = obj.get("element_id")
+            if not name and elem_id in self.elements:
+                name = self.elements[elem_id].name
+            if not name:
+                name = str(obj_id)
+            id_to_name[obj_id] = name
+
+            # Recursively include requirements from called activities.
+            if (
+                diag.diag_type == "Activity Diagram"
+                and obj.get("obj_type") == "CallBehaviorAction"
+            ):
+                beh_id = obj.get("properties", {}).get("behavior")
+                if beh_id:
+                    reqs.extend(self.generate_requirements(beh_id, _visited))
+
+        for conn in getattr(diag, "connections", []):
+            src = id_to_name.get(conn.get("src"))
+            dst = id_to_name.get(conn.get("dst"))
+            if not src or not dst:
+                continue
+            if diag.diag_type == "Activity Diagram":
+                text = f"{src} shall precede {dst}."
+            else:
+                text = f"{src} shall be connected to {dst}."
+            reqs.append((text, "functional"))
+
+        return reqs
+
