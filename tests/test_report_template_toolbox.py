@@ -193,3 +193,31 @@ def test_report_template_editor_add_delete_sections(monkeypatch):
     assert editor.data["sections"] == [{"title": "New", "content": "Content"}]
     editor._delete_section()
     assert editor.data["sections"] == []
+
+
+def test_validate_report_template_allows_images_and_links():
+    cfg = {
+        "elements": {},
+        "sections": [
+            {
+                "title": "Intro",
+                "content": '<img src="pic.png"/><a href="http://example.com">Link</a>',
+            }
+        ],
+    }
+    assert validate_report_template(cfg) == cfg
+
+
+def test_layout_report_template_handles_images_and_links():
+    data = {
+        "elements": {},
+        "sections": [
+            {
+                "title": "Intro",
+                "content": 'Start<img src="a.png"/>Mid<a href="http://example.com">Link</a>',
+            }
+        ],
+    }
+    items, _ = layout_report_template(data)
+    types = [i["type"] for i in items]
+    assert "image" in types and "link" in types

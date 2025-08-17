@@ -218,6 +218,8 @@ def validate_report_template(data: Any) -> dict[str, Any]:
                 "br",
                 "span",
                 "div",
+                "img",
+                "a",
             }:
                 continue
             if name not in elements:
