@@ -169,7 +169,7 @@ class ClosableNotebook(ttk.Notebook):
                 self._detach_tab(tab_id, event.x_root, event.y_root)
         self._reset_drag()
 
-    def _move_tab(self, tab_id: str, target: "ClosableNotebook") -> None:
+    def _move_tab(self, tab_id: str, target: "ClosableNotebook") -> bool:
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
@@ -177,17 +177,21 @@ class ClosableNotebook(ttk.Notebook):
         # ``tk::unsupported::reparent`` is available on most Tk builds but the
         # exact command name differs across platforms.  Try the known variants
         # and ignore any errors so that platforms without the command still
-        # proceed.
-        # ``tk::unsupported::reparent`` expects platform specific arguments.
-        # Some builds use window path names while others require the window
-        # identifier returned by ``winfo_id``.  Try both forms to cover the
-        # common variants and silently continue if the command is unavailable.
+        # proceed.  Some Windows builds expose the command as
+        # ``ReparentWindow`` instead.  ``tk::unsupported::reparent`` expects
+        # platform specific arguments, sometimes window path names and other
+        # times the identifier returned by ``winfo_id``.  Try every combination
+        # and silently continue if the command is unavailable.
         reparented = False
         for cmd in (
             ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
             ("::tk::unsupported::reparent", child._w, target._w),
             ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
             ("tk", "unsupported", "reparent", child._w, target._w),
+            ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::ReparentWindow", child._w, target._w),
+            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "ReparentWindow", child._w, target._w),
         ):
             try:
                 child.tk.call(*cmd)
@@ -205,9 +209,10 @@ class ClosableNotebook(ttk.Notebook):
             # remains accessible instead of raising a TclError.
             self.add(child, text=text)
             self.select(child)
-            return
+            return False
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
+        return True
 
     def _detach_tab(self, tab_id: str, x: int, y: int) -> None:
         self.update_idletasks()
@@ -223,7 +228,8 @@ class ClosableNotebook(ttk.Notebook):
         # later.  Ensuring the window exists before moving the tab fixes the
         # behaviour and mirrors how Tk handles normal drag operations.
         nb.update_idletasks()
-        self._move_tab(tab_id, nb)
+        if not self._move_tab(tab_id, nb):
+            win.destroy()
 
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
