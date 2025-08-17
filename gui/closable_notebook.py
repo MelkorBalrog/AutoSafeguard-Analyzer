@@ -173,46 +173,55 @@ class ClosableNotebook(ttk.Notebook):
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
-        # First try to add the child directly.  Modern Tk builds reparent the
-        # window automatically in this case which avoids relying on the
-        # ``tk::unsupported::reparent`` command entirely.
-        try:
+        # Reparent the tab's child widget to the target notebook before adding.
+        # ``tk::unsupported::reparent`` is available on most Tk builds but the
+        # exact command name differs across platforms.  Try the known variants
+        # and ignore any errors so that platforms without the command still
+        # proceed.  Some Windows builds expose the command as
+        # ``ReparentWindow`` instead.  ``tk::unsupported::reparent`` expects
+        # platform specific arguments, sometimes window path names and other
+        # times the identifier returned by ``winfo_id``.  Try every combination
+        # and silently continue if the command is unavailable.
+        reparented = False
+        toplevel = target.winfo_toplevel()
+        # Some Tk builds require the new parent to be the containing toplevel
+        # instead of the widget itself.  Try both the notebook and its
+        # toplevel using window path names and numeric identifiers.
+        for cmd in (
+            ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::reparent", child._w, target._w),
+            ("::tk::unsupported::reparent", child.winfo_id(), toplevel.winfo_id()),
+            ("::tk::unsupported::reparent", child._w, toplevel._w),
+            ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "reparent", child._w, target._w),
+            ("tk", "unsupported", "reparent", child.winfo_id(), toplevel.winfo_id()),
+            ("tk", "unsupported", "reparent", child._w, toplevel._w),
+            ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::ReparentWindow", child._w, target._w),
+            ("::tk::unsupported::ReparentWindow", child.winfo_id(), toplevel.winfo_id()),
+            ("::tk::unsupported::ReparentWindow", child._w, toplevel._w),
+            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "ReparentWindow", child._w, target._w),
+            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), toplevel.winfo_id()),
+            ("tk", "unsupported", "ReparentWindow", child._w, toplevel._w),
+        ):
+            try:
+                child.tk.call(*cmd)
+                reparented = True
+                break
+            except tk.TclError:
+                continue
+        if reparented:
+            child.master = target  # keep Python's widget hierarchy in sync
             target.add(child, text=text)
             target.select(child)
-        except tk.TclError:
-            # If Tk cannot handle the reparent internally fall back to the
-            # platform specific ``reparent`` command.  The command name and
-            # required arguments differ across platforms; try the known
-            # variants and ignore any errors so systems without the command
-            # simply continue.
-            reparented = False
-            for cmd in (
-                ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
-                ("::tk::unsupported::reparent", child._w, target._w),
-                ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
-                ("tk", "unsupported", "reparent", child._w, target._w),
-                ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
-                ("::tk::unsupported::ReparentWindow", child._w, target._w),
-                ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
-                ("tk", "unsupported", "ReparentWindow", child._w, target._w),
-            ):
-                try:
-                    child.tk.call(*cmd)
-                    reparented = True
-                    break
-                except tk.TclError:
-                    continue
-            if reparented:
-                child.master = target  # keep Python's widget hierarchy in sync
-                target.add(child, text=text)
-                target.select(child)
-            else:
-                # If reparenting is unsupported we simply abort the move.
-                # Re-insert the tab into its original notebook so the widget
-                # remains accessible instead of raising a TclError.
-                self.add(child, text=text)
-                self.select(child)
-                return False
+        else:
+            # If reparenting is unsupported we simply abort the move.
+            # Re-insert the tab into its original notebook so the widget
+            # remains accessible instead of raising a TclError.
+            self.add(child, text=text)
+            self.select(child)
+            return False
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
         return True
@@ -226,11 +235,10 @@ class ClosableNotebook(ttk.Notebook):
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
         # ``tk::unsupported::reparent`` requires the target widget to be
-        # realised.  Without updating the new notebook window here the tab
-        # ends up detached into an empty toplevel and cannot be re-attached
-        # later.  Ensuring the window exists before moving the tab fixes the
-        # behaviour and mirrors how Tk handles normal drag operations.
-        nb.update_idletasks()
+        # realised.  Make sure the toplevel and its notebook both exist before
+        # attempting to move the tab so that reparenting commands have a valid
+        # window to target.
+        win.update_idletasks()
         if not self._move_tab(tab_id, nb):
             win.destroy()
 
