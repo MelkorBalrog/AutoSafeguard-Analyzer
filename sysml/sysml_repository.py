@@ -135,8 +135,24 @@ class SysMLRepository:
     # Undo support
     # ------------------------------------------------------------
     def push_undo_state(self) -> None:
-        """Save the current repository state for undo."""
-        self._undo_stack.append(self.to_dict())
+        """Save the current repository state for undo.
+
+        Repeated calls that do not change the repository would otherwise
+        accumulate duplicate snapshots.  This became especially noticeable
+        when dragging objects on a diagram: both the mouse press and the
+        subsequent synchronization wrote the same state to the undo stack,
+        requiring multiple ``undo`` operations to revert a single move.
+        Skipping storage of consecutive identical states keeps the history
+        concise and ensures that each user action corresponds to a single
+        undo step.
+        """
+
+        state = self.to_dict()
+        # Avoid pushing duplicate consecutive states
+        if self._undo_stack and self._undo_stack[-1] == state:
+            return
+
+        self._undo_stack.append(state)
         # limit history to 50 states to avoid excessive memory use
         if len(self._undo_stack) > 50:
             self._undo_stack.pop(0)

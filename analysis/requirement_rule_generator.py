@@ -206,8 +206,8 @@ def gov_template_for_relation(relation_label: str) -> str:
         "constrained by": "shall comply with the <target_id> (<target_class>).",
         "used after review": "shall be used after review the <target_id> (<target_class>).",
         "used after approval": "shall be used after approval the <target_id> (<target_class>).",
-        "propagate by review": "shall propagate by review the <target_id> (<target_class}).",
-        "propagate by approval": "shall propagate by approval the <target_id> (<target_class}).",
+        "propagate by review": "shall propagate by review the <target_id> (<target_class>).",
+        "propagate by approval": "shall propagate by approval the <target_id> (<target_class>).",
     }
     if r in with_prep:
         return tidy_sentence(f"<source_id> (<source_class>) {with_prep[r]}")
