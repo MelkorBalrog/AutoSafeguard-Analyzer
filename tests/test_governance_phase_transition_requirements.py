@@ -26,7 +26,7 @@ def test_phase_transition_requirement_direct_flow():
 
     reqs = diagram.generate_requirements()
     texts = _texts(reqs)
-    assert "P1 shall transition to 'P2'." in texts
+    assert "P1 (Lifecycle Phase) shall transition to 'P2 (Lifecycle Phase)'." in texts
 
 
 def test_phase_transition_requirement_with_reuse_and_condition():
@@ -39,5 +39,5 @@ def test_phase_transition_requirement_with_reuse_and_condition():
     reqs = diagram.generate_requirements()
     texts = _texts(reqs)
     assert (
-        "P1 shall transition to 'P2' reusing outputs from 'P1' only after design approved." in texts
+        "P1 (Lifecycle Phase) shall transition to 'P2 (Lifecycle Phase)' reusing outputs from 'P1 (Lifecycle Phase)' only after design approved." in texts
     )

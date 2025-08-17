@@ -25,9 +25,9 @@ def test_generate_requirements_from_governance_diagram():
     texts = [r.text for r in reqs]
 
     assert "Data Steward (Role) shall perform 'Review Data (Activity)'." in texts
-    assert "Review Data shall produce 'Report'." in texts
+    assert "Review Data (Activity) shall produce 'Report (Document)'." in texts
     assert "If data validated, Data Steward (Role) shall approve 'Report (Document)'." in texts
-    assert "Review Data shall comply with 'Policy DP-001'." in texts
+    assert "Review Data (Activity) shall comply with 'Policy DP-001 (Policy)'." in texts
     assert "Organization shall review data." in texts
 
     perf_req = next(r for r in reqs if r.action == "perform")
@@ -65,7 +65,7 @@ def test_ai_training_and_curation_requirements():
         "If completion >= 0.98, Engineering team shall train the ANN1 (ANN) using the Database1 (Database)."
         in texts
     )
-    assert "If completion < 0.98, Engineering team shall curate 'Database1'." in texts
+    assert "If completion < 0.98, Engineering team shall curate 'Database1 (Database)'." in texts
 
     train_req = next(r for r in reqs if r.action == "train")
     assert train_req.subject == "Engineering team"
