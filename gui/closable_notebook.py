@@ -151,11 +151,23 @@ class ClosableNotebook(ttk.Notebook):
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
-        # Reparent the tab's child widget to the target notebook before adding
-        try:
-            child.tk.call("tk", "unsupported", "reparent", child._w, target._w)
-        except tk.TclError:
-            pass
+        # Reparent the tab's child widget to the target notebook before adding.
+        # ``tk::unsupported::reparent`` is available on most Tk builds but the
+        # exact command name differs across platforms.  Try the known variants
+        # and ignore any errors so that platforms without the command still
+        # proceed.
+        for cmd in (
+            "::tk::unsupported::reparent",
+            ("tk", "unsupported", "reparent"),
+        ):
+            try:
+                if isinstance(cmd, tuple):
+                    child.tk.call(*cmd, child._w, target._w)
+                else:
+                    child.tk.call(cmd, child._w, target._w)
+                break
+            except tk.TclError:
+                continue
         child.master = target  # keep Python's widget hierarchy in sync
         target.add(child, text=text)
         target.select(child)
@@ -171,6 +183,10 @@ class ClosableNotebook(ttk.Notebook):
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
         self._move_tab(tab_id, nb)
+
+    def _reset_drag(self) -> None:
+        self._drag_data = {"tab": None, "x": 0, "y": 0}
+        self._dragging = False
 
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
