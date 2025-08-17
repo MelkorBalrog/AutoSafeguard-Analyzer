@@ -3695,13 +3695,9 @@ class SysMLDiagramWindow(tk.Frame):
                         "Safety & AI relationships must connect Safety & AI and/or Governance elements"
                     )
                 rule = SAFETY_AI_RELATION_RULES.get(conn_type)
-                if (
-                    rule
-                    and src.obj_type in SAFETY_AI_NODE_TYPES
-                    and dst.obj_type in SAFETY_AI_NODE_TYPES
-                ):
-                    targets = rule.get(src.obj_type, set())
-                    if dst.obj_type not in targets:
+                if rule and src.obj_type in SAFETY_AI_NODE_TYPES:
+                    targets = rule.get(src.obj_type)
+                    if not targets or dst.obj_type not in targets:
                         return (
                             False,
                             f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed",

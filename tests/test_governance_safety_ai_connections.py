@@ -46,7 +46,7 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         valid, _ = GovernanceDiagramWindow.validate_connection(win, gobj, aiobj, "Annotation")
         self.assertTrue(valid)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, aiobj, gobj, "Annotation")
-        self.assertTrue(valid)
+        self.assertFalse(valid)
 
     def test_flow_from_governance_to_ai_allowed(self):
         diag, gobj, aiobj = self._make_nodes()
@@ -91,6 +91,31 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
             win, ann, db, "Hyperparameter Validation"
         )
         self.assertTrue(valid)
+
+    def test_field_risk_evaluation_enforces_allowed_targets(self):
+        # Valid connection: Database -> Data acquisition
+        diag, db, da = self._make_ai_pair("Database", "Data acquisition")
+        win = self._window(diag)
+        valid, _ = GovernanceDiagramWindow.validate_connection(
+            win, db, da, "Field risk evaluation"
+        )
+        self.assertTrue(valid)
+
+        # Invalid connection: Database -> Work Product
+        repo = self.repo
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
+        repo.add_element_to_diagram(diag2.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag2.diag_id, e2.elem_id)
+        db_obj = SysMLObject(1, "Database", 0, 0, element_id=e1.elem_id)
+        wp_obj = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id)
+        diag2.objects = [db_obj.__dict__, wp_obj.__dict__]
+        win2 = self._window(diag2)
+        valid, _ = GovernanceDiagramWindow.validate_connection(
+            win2, db_obj, wp_obj, "Field risk evaluation"
+        )
+        self.assertFalse(valid)
 
 
 if __name__ == "__main__":
