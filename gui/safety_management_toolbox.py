@@ -401,13 +401,14 @@ class SafetyManagementWindow(tk.Frame):
             messagebox.showinfo("Requirements", f"No governance diagrams for phase '{phase}'.")
             return
         repo = SysMLRepository.get_instance()
+        repo_diagrams = getattr(repo, "diagrams", {})
         diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            diag = repo.diagrams.get(diag_id)
-            if diag and diag.diag_type != "Governance Diagram":
+            diag = repo_diagrams.get(diag_id) if isinstance(repo_diagrams, dict) else None
+            if diag and diag.diag_type != "Governance Diagram" and hasattr(repo, "generate_requirements"):
                 try:
                     raw_reqs = repo.generate_requirements(diag_id)
                 except Exception as exc:  # pragma: no cover - defensive
@@ -502,13 +503,14 @@ class SafetyManagementWindow(tk.Frame):
                 "Requirements", "No lifecycle governance diagrams.")
             return
         repo = SysMLRepository.get_instance()
+        repo_diagrams = getattr(repo, "diagrams", {})
         diag_pairs: dict[str, list[tuple[str, str, list[str]]]] = {}
         for name in diag_names:
             diag_id = self.toolbox.diagrams.get(name)
             if not diag_id:
                 continue
-            diag = repo.diagrams.get(diag_id)
-            if diag and diag.diag_type != "Governance Diagram":
+            diag = repo_diagrams.get(diag_id) if isinstance(repo_diagrams, dict) else None
+            if diag and diag.diag_type != "Governance Diagram" and hasattr(repo, "generate_requirements"):
                 try:
                     raw_reqs = repo.generate_requirements(diag_id)
                 except Exception as exc:  # pragma: no cover - defensive
