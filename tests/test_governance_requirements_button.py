@@ -124,7 +124,7 @@ def test_requirements_button_opens_tab(monkeypatch):
     assert "Gov Requirements" in title
     assert trees and trees[0].rows
     texts = [row[2] for row in trees[0].rows]
-    assert any("Start shall precede 'Finish'." in t for t in texts)
+    assert any("Start (Action) shall precede 'Finish (Action)'." in t for t in texts)
     # Ensure requirement types are organizational
     assert all(row[1] == "organizational" for row in trees[0].rows)
     assert all(row[4] == "draft" for row in trees[0].rows)

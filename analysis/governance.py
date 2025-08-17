@@ -156,6 +156,10 @@ class GeneratedRequirement:
     req_type: str = "organizational"
     text_override: str | None = None
     variables: list[str] = field(default_factory=list)
+    subject_class: str | None = None
+    obj_class: str | None = None
+    constraint_class: str | None = None
+    origin_class: str | None = None
 
     @property
     def text(self) -> str:
@@ -165,13 +169,24 @@ class GeneratedRequirement:
         if self.condition:
             parts.append(f"If {self.condition},")
         if self.origin:
-            parts.append(f"after '{self.origin}',")
+            origin = self.origin
+            if self.origin_class:
+                origin += f" ({self.origin_class})"
+            parts.append(f"after '{origin}',")
         subject = self.subject or "Task"
+        if self.subject_class:
+            subject += f" ({self.subject_class})"
         main = f"{subject} shall {self.action}"
         if self.obj:
-            main += f" '{self.obj}'"
+            obj = self.obj
+            if self.obj_class:
+                obj += f" ({self.obj_class})"
+            main += f" '{obj}'"
         if self.constraint:
-            main += f" '{self.constraint}'"
+            constraint = self.constraint
+            if self.constraint_class:
+                constraint += f" ({self.constraint_class})"
+            main += f" '{constraint}'"
         main += "."
         parts.append(main)
         return " ".join(parts)
@@ -410,6 +425,9 @@ class GovernanceDiagram:
             ):
                 req_type = "AI safety"
 
+            src_type = self.node_types.get(src, "")
+            dst_type = self.node_types.get(dst, "")
+
             # Express lifecycle phase transitions explicitly.
             if (
                 kind == "flow"
@@ -418,9 +436,11 @@ class GovernanceDiagram:
             ):
                 reuse_edge = self.edge_data.get((dst, src), {})
                 has_reuse = reuse_edge.get("conn_type") == "Re-use"
-                text = f"{src} shall transition to '{dst}'"
+                src_label = f"{src} ({src_type})" if src_type else src
+                dst_label = f"{dst} ({dst_type})" if dst_type else dst
+                text = f"{src_label} shall transition to '{dst_label}'"
                 if has_reuse:
-                    text += f" reusing outputs from '{src}'"
+                    text += f" reusing outputs from '{src_label}'"
                 if cond:
                     text += f" only after {cond}"
                 text += "."
@@ -464,8 +484,13 @@ class GovernanceDiagram:
                     subject, obj = obj, subject
             text_override: str | None = None
             pattern_vars: list[str] = []
-            src_type = self.node_types.get(src, "")
-            dst_type = self.node_types.get(dst, "")
+            # ``src_type`` and ``dst_type`` already computed above.
+            subject_class = self.node_types.get(subject)
+            obj_class = self.node_types.get(obj) if obj is not None else None
+            constraint_class = (
+                self.node_types.get(constraint) if constraint is not None else None
+            )
+            origin_class = self.node_types.get(origin) if origin is not None else None
             if kind != "flow":
                 patterns = _PATTERN_MAP.get(
                     (
@@ -509,18 +534,22 @@ class GovernanceDiagram:
                         text_override = f"If {cond}, {text_override}"
 
             requirements.append(
-                GeneratedRequirement(
-                    action=action,
-                    condition=cond,
-                    subject=subject,
-                    obj=obj,
-                    constraint=constraint,
-                    origin=origin if (origin and kind != "flow") else None,
-                    source=src,
-                    req_type=req_type,
-                    text_override=text_override,
+                    GeneratedRequirement(
+                        action=action,
+                        condition=cond,
+                        subject=subject,
+                        obj=obj,
+                        constraint=constraint,
+                        origin=origin if (origin and kind != "flow") else None,
+                        source=src,
+                        req_type=req_type,
+                        text_override=text_override,
                     variables=pattern_vars,
-                )
+                    subject_class=subject_class,
+                    obj_class=obj_class,
+                    constraint_class=constraint_class,
+                    origin_class=origin_class,
+                    )
             )
 
         # Create explicit requirements for Data acquisition nodes listing their

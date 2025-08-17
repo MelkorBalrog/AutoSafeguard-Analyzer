@@ -18,4 +18,5 @@ def test_label_relationship_between_database_nodes():
 
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "User DB shall sync with 'Analytics DB'." in texts
+    assert "User DB (Action) shall sync with 'Analytics DB (Action)'." in texts
+
