@@ -53,6 +53,15 @@ class SearchToolbox(ttk.Frame):
         self.search_var = tk.StringVar()
         self.case_var = tk.BooleanVar(value=False)
         self.regex_var = tk.BooleanVar(value=False)
+        self.nodes_var = tk.BooleanVar(value=True)
+        self.connections_var = tk.BooleanVar(value=True)
+        self.failures_var = tk.BooleanVar(value=True)
+        self.hazards_var = tk.BooleanVar(value=True)
+        self.faults_var = tk.BooleanVar(value=True)
+        self.malfunctions_var = tk.BooleanVar(value=True)
+        self.fail_list_var = tk.BooleanVar(value=True)
+        self.trigger_var = tk.BooleanVar(value=True)
+        self.funcins_var = tk.BooleanVar(value=True)
         # each result is a mapping with keys: 'label' and 'open'
         self.results: list[dict[str, object]] = []
         self.current_index: int = -1
@@ -230,9 +239,8 @@ class SearchToolbox(ttk.Frame):
                 else:
                     for doc in getattr(self.app, "fmedas", []):
                         if entry in doc.get("entries", []):
-                            doc_name = doc.get("name", "FMEDA")
+                            doc_name = doc.get("name", "FMEA")
                             target_doc = doc
-                            is_fmeda = True
                             break
                 label = (
                     f"{type(entry).__name__} - {entry.user_name or entry.description}"
@@ -250,6 +258,138 @@ class SearchToolbox(ttk.Frame):
                                 tree.focus(iid)
                                 tree.see(iid)
                                 break
+                    label = (
+                        f"{type(entry).__name__} - {entry.user_name or entry.description}"
+                        f" [FMEA: {doc_name or 'Global'}]"
+                    )
+                    self.results_box.insert(tk.END, label)
+
+                    def _open(entry=entry, doc=target_doc, fmeda=is_fmeda):
+                        self.app.show_fmea_table(doc, fmeda=fmeda)
+                        tree = getattr(self.app, "_fmea_tree", None)
+                        node_map = getattr(self.app, "_fmea_node_map", {})
+                        if tree and node_map:
+                            for iid, node in node_map.items():
+                                if node is entry:
+                                    tree.selection_set(iid)
+                                    tree.focus(iid)
+                                    tree.see(iid)
+                                    break
+
+                    self.results.append({"label": label, "open": _open})
+
+        if self.hazards_var.get():
+            for hazard in getattr(self.app, "hazards", []):
+                if regex.search(hazard):
+                    label = f"Hazard - {hazard}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda h=hazard: getattr(
+                                self.app, "show_hazard_list", lambda *_: None
+                            )(),
+                        }
+                    )
+
+        if self.faults_var.get():
+            for fault in getattr(self.app, "faults", []):
+                if regex.search(fault):
+                    label = f"Fault - {fault}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=fault: getattr(
+                                self.app,
+                                "show_fault_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.malfunctions_var.get():
+            malfunc_cb = getattr(
+                self.app,
+                "show_malfunction_editor",
+                getattr(self.app, "show_malfunctions_editor", lambda *_: None),
+            )
+            for mal in getattr(self.app, "malfunctions", []):
+                if regex.search(mal):
+                    label = f"Malfunction - {mal}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append({"label": label, "open": lambda m=mal: malfunc_cb()})
+
+        if self.fail_list_var.get():
+            for failure in getattr(self.app, "failures", []):
+                if regex.search(failure):
+                    label = f"Failure - {failure}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=failure: getattr(
+                                self.app,
+                                "show_failure_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.trigger_var.get():
+            for tc in getattr(self.app, "triggering_conditions", []):
+                if regex.search(tc):
+                    label = f"Triggering Condition - {tc}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda t=tc: getattr(
+                                self.app,
+                                "show_triggering_condition_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.funcins_var.get():
+            for fi in getattr(self.app, "functional_insufficiencies", []):
+                if regex.search(fi):
+                    label = f"Functional Insufficiency - {fi}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=fi: getattr(
+                                self.app,
+                                "show_functional_insufficiency_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        # Generic search for any additional categories defined in
+        # ``EXTRA_CATEGORIES`` above.  Each category simply exposes a function
+        # on ``app`` that returns an iterable of objects.  We attempt to match
+        # against common name/description attributes and call the configured
+        # opener when a match is selected.
+        for name, fetcher, opener in self.extra_sources:
+            if not self.extra_vars[name].get():
+                continue
+            items = getattr(self.app, fetcher, lambda: [])()
+            for item in items:
+                text = self._obj_text(item)
+                if regex.search(text):
+                    prefix = name[:-1] if name.endswith("s") else name
+                    label = f"{prefix} - {self._obj_label(item)}"
+                    self.results_box.insert(tk.END, label)
+
+                    def _open(it=item, meth=opener):
+                        func = getattr(self.app, meth, lambda *_: None)
+                        try:
+                            func(it)
+                        except Exception:  # pragma: no cover - best effort
+                            func()
 
                 self._add_result(label, _open)
 

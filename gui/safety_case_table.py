@@ -72,9 +72,11 @@ class SafetyCaseTable(tk.Frame):
                 width = 200
             self.tree.column(col, width=width, stretch=True, anchor="center")
         vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=vsb.set)
+        hsb = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         self.tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 

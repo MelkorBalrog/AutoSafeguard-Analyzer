@@ -394,6 +394,10 @@ from analysis.utils import (
     exposure_to_probability,
     controllability_to_probability,
     severity_to_probability,
+    update_probability_tables,
+    EXPOSURE_PROBABILITIES,
+    CONTROLLABILITY_PROBABILITIES,
+    SEVERITY_PROBABILITIES,
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
@@ -2245,7 +2249,15 @@ class FaultTreeApp:
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
+            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
+            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
+            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
+        update_probability_tables(
+            self.project_properties["exposure_probabilities"],
+            self.project_properties["controllability_probabilities"],
+            self.project_properties["severity_probabilities"],
+        )
         self.item_definition = {"description": "", "assumptions": ""}
         self.safety_concept = {"functional": "", "technical": "", "cybersecurity": ""}
         self.mission_profiles = []
@@ -4308,7 +4320,7 @@ class FaultTreeApp:
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
         prop_win.title("Project Properties")
-        prop_win.geometry("400x200")
+        prop_win.geometry("420x380")
         dialog_font = tkFont.Font(family="Arial", size=10)
 
         ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(row=0, column=0, padx=10, pady=10, sticky="w")
@@ -4316,24 +4328,121 @@ class FaultTreeApp:
         pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
         pdf_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        # New checkbox to choose between detailed formulas or score results only.
-        # Default to showing detailed formulas.
-        var_detailed = tk.BooleanVar(value=self.project_properties.get("pdf_detailed_formulas", True))
-        chk = tk.Checkbutton(prop_win, text="Show Detailed Formulas in PDF Report", variable=var_detailed, font=dialog_font)
+        # Checkbox to choose between detailed formulas or score results only.
+        var_detailed = tk.BooleanVar(
+            value=self.project_properties.get("pdf_detailed_formulas", True)
+        )
+        chk = tk.Checkbutton(
+            prop_win,
+            text="Show Detailed Formulas in PDF Report",
+            variable=var_detailed,
+            font=dialog_font,
+        )
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
+        # Probability mappings for validation target calculations
+        exp_frame = tk.LabelFrame(
+            prop_win, text="Exposure Probabilities P(E|HB)", font=dialog_font
+        )
+        exp_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        exp_vars = {}
+        for i in range(1, 5):
+            tk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
+                row=0, column=(i - 1) * 2, padx=2, pady=2
+            )
+            var = tk.StringVar(
+                value=str(
+                    self.project_properties.get("exposure_probabilities", {}).get(i, 0.0)
+                )
+            )
+            tk.Entry(
+                exp_frame,
+                textvariable=var,
+                width=8,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(prop_win.register(self.validate_float), "%P"),
+            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
+            exp_vars[i] = var
+
+        ctrl_frame = tk.LabelFrame(
+            prop_win, text="Controllability Probabilities P(C|E)", font=dialog_font
+        )
+        ctrl_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        ctrl_vars = {}
+        for i in range(1, 4):
+            tk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
+                row=0, column=(i - 1) * 2, padx=2, pady=2
+            )
+            var = tk.StringVar(
+                value=str(
+                    self.project_properties.get("controllability_probabilities", {}).get(i, 0.0)
+                )
+            )
+            tk.Entry(
+                ctrl_frame,
+                textvariable=var,
+                width=8,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(prop_win.register(self.validate_float), "%P"),
+            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
+            ctrl_vars[i] = var
+
+        sev_frame = tk.LabelFrame(
+            prop_win, text="Severity Probabilities P(S|C)", font=dialog_font
+        )
+        sev_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        sev_vars = {}
+        for i in range(1, 4):
+            tk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
+                row=0, column=(i - 1) * 2, padx=2, pady=2
+            )
+            var = tk.StringVar(
+                value=str(
+                    self.project_properties.get("severity_probabilities", {}).get(i, 0.0)
+                )
+            )
+            tk.Entry(
+                sev_frame,
+                textvariable=var,
+                width=8,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(prop_win.register(self.validate_float), "%P"),
+            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
+            sev_vars[i] = var
 
         def save_props():
             new_name = pdf_entry.get().strip()
             if new_name:
                 self.project_properties["pdf_report_name"] = new_name
                 self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                messagebox.showinfo("Project Properties", "Project properties updated.")
+                self.project_properties["exposure_probabilities"] = {
+                    lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+                }
+                self.project_properties["controllability_probabilities"] = {
+                    lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+                }
+                self.project_properties["severity_probabilities"] = {
+                    lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+                }
+                update_probability_tables(
+                    self.project_properties["exposure_probabilities"],
+                    self.project_properties["controllability_probabilities"],
+                    self.project_properties["severity_probabilities"],
+                )
+                messagebox.showinfo(
+                    "Project Properties", "Project properties updated."
+                )
             else:
-                messagebox.showwarning("Project Properties", "PDF Report Name cannot be empty.")
+                messagebox.showwarning(
+                    "Project Properties", "PDF Report Name cannot be empty."
+                )
             prop_win.destroy()
 
         save_btn = tk.Button(prop_win, text="Save", command=save_props, font=dialog_font)
-        save_btn.grid(row=4, column=0, columnspan=2, pady=10)
+        save_btn.grid(row=5, column=0, columnspan=2, pady=10)
         prop_win.transient(self.root)
         prop_win.grab_set()
         self.root.wait_window(prop_win)
@@ -9641,7 +9750,15 @@ class FaultTreeApp:
         self.project_properties = {
             "pdf_report_name": "AutoML-Analyzer PDF Report",
             "pdf_detailed_formulas": True,
+            "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
+            "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
+            "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
         }
+        update_probability_tables(
+            self.project_properties["exposure_probabilities"],
+            self.project_properties["controllability_probabilities"],
+            self.project_properties["severity_probabilities"],
+        )
         self.apply_model_data({}, ensure_root=False)
 
         # Remove any undo/redo history from the previous project
@@ -11958,7 +12075,12 @@ class FaultTreeApp:
         win = self._req_tab
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
-        tree = ttk.Treeview(win, columns=columns, show="headings", selectmode="browse")
+        tree_frame = ttk.Frame(win)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         for col in columns:
             tree.heading(col, text=col)
             if col == "Text":
@@ -11968,7 +12090,11 @@ class FaultTreeApp:
             else:
                 width = 120
             tree.column(col, width=width, anchor="center")
-        tree.pack(fill=tk.BOTH, expand=True)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
 
         def _get_requirement_allocations(rid: str) -> list[str]:
             repo = SysMLRepository.get_instance()
@@ -18670,6 +18796,11 @@ class FaultTreeApp:
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
         self.project_properties = data.get("project_properties", self.project_properties)
+        update_probability_tables(
+            self.project_properties.get("exposure_probabilities"),
+            self.project_properties.get("controllability_probabilities"),
+            self.project_properties.get("severity_probabilities"),
+        )
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
