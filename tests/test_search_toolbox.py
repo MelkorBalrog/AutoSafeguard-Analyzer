@@ -66,6 +66,13 @@ class SearchToolboxTests(unittest.TestCase):
         tb.search_var = DummyVar()
         tb.case_var = DummyVar(False)
         tb.regex_var = DummyVar(False)
+        tb.hazards_var = DummyVar(True)
+        tb.faults_var = DummyVar(True)
+        tb.malfunctions_var = DummyVar(True)
+        tb.fail_list_var = DummyVar(True)
+        tb.trigger_var = DummyVar(True)
+        tb.funcins_var = DummyVar(True)
+        tb.extra_sources = []
         tb.results_box = DummyListbox()
         tb.results = []
         tb.current_index = -1
