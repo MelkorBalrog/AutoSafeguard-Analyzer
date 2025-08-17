@@ -76,6 +76,28 @@ class ClosableNotebook(ttk.Notebook):
         self.bind("<B1-Motion>", self._on_motion)
         self.bind("<ButtonRelease-1>", self._on_release, True)
 
+    # ------------------------------------------------------------------
+    # Backwards compatible helpers
+    # ------------------------------------------------------------------
+    #
+    # Older code as well as the unit tests in this repository expect the
+    # notebook to expose ``_on_tab_press`` and ``_on_tab_release`` methods
+    # that behave like the bound event handlers above.  The original file
+    # was refactored to use the shorter ``_on_press``/``_on_release`` names
+    # but the helper methods were accidentally dropped.  Without them the
+    # tests fail with ``AttributeError`` and dragging a tab programmatically
+    # is impossible.  Provide tiny wrappers so the old API continues to
+    # work.
+
+    def _on_tab_press(self, event: tk.Event) -> str | None:  # pragma: no cover - thin wrapper
+        return self._on_press(event)
+
+    def _on_tab_release(self, event: tk.Event) -> None:  # pragma: no cover - thin wrapper
+        self._on_release(event)
+
+    def _on_tab_motion(self, event: tk.Event) -> None:  # pragma: no cover - thin wrapper
+        self._on_motion(event)
+
     def _create_close_image(self, size: int = 10) -> tk.PhotoImage:
         img = tk.PhotoImage(width=size, height=size)
         img.put("white", to=(0, 0, size - 1, size - 1))
@@ -147,7 +169,7 @@ class ClosableNotebook(ttk.Notebook):
                 self._detach_tab(tab_id, event.x_root, event.y_root)
         self._reset_drag()
 
-    def _move_tab(self, tab_id: str, target: "ClosableNotebook") -> None:
+    def _move_tab(self, tab_id: str, target: "ClosableNotebook") -> bool:
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
@@ -155,24 +177,54 @@ class ClosableNotebook(ttk.Notebook):
         # ``tk::unsupported::reparent`` is available on most Tk builds but the
         # exact command name differs across platforms.  Try the known variants
         # and ignore any errors so that platforms without the command still
-        # proceed.
+        # proceed.  Some Windows builds expose the command as
+        # ``ReparentWindow`` instead.  ``tk::unsupported::reparent`` expects
+        # platform specific arguments, sometimes window path names and other
+        # times the identifier returned by ``winfo_id``.  Try every combination
+        # and silently continue if the command is unavailable.
+        reparented = False
+        toplevel = target.winfo_toplevel()
+        # Some Tk builds require the new parent to be the containing toplevel
+        # instead of the widget itself.  Try both the notebook and its
+        # toplevel using window path names and numeric identifiers.
         for cmd in (
-            "::tk::unsupported::reparent",
-            ("tk", "unsupported", "reparent"),
+            ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::reparent", child._w, target._w),
+            ("::tk::unsupported::reparent", child.winfo_id(), toplevel.winfo_id()),
+            ("::tk::unsupported::reparent", child._w, toplevel._w),
+            ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "reparent", child._w, target._w),
+            ("tk", "unsupported", "reparent", child.winfo_id(), toplevel.winfo_id()),
+            ("tk", "unsupported", "reparent", child._w, toplevel._w),
+            ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("::tk::unsupported::ReparentWindow", child._w, target._w),
+            ("::tk::unsupported::ReparentWindow", child.winfo_id(), toplevel.winfo_id()),
+            ("::tk::unsupported::ReparentWindow", child._w, toplevel._w),
+            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
+            ("tk", "unsupported", "ReparentWindow", child._w, target._w),
+            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), toplevel.winfo_id()),
+            ("tk", "unsupported", "ReparentWindow", child._w, toplevel._w),
         ):
             try:
-                if isinstance(cmd, tuple):
-                    child.tk.call(*cmd, child._w, target._w)
-                else:
-                    child.tk.call(cmd, child._w, target._w)
+                child.tk.call(*cmd)
+                reparented = True
                 break
             except tk.TclError:
                 continue
-        child.master = target  # keep Python's widget hierarchy in sync
-        target.add(child, text=text)
-        target.select(child)
+        if reparented:
+            child.master = target  # keep Python's widget hierarchy in sync
+            target.add(child, text=text)
+            target.select(child)
+        else:
+            # If reparenting is unsupported we simply abort the move.
+            # Re-insert the tab into its original notebook so the widget
+            # remains accessible instead of raising a TclError.
+            self.add(child, text=text)
+            self.select(child)
+            return False
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
+        return True
 
     def _detach_tab(self, tab_id: str, x: int, y: int) -> None:
         self.update_idletasks()
@@ -182,11 +234,13 @@ class ClosableNotebook(ttk.Notebook):
         win.geometry(f"{width}x{height}+{x}+{y}")
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
-        self._move_tab(tab_id, nb)
-
-    def _reset_drag(self) -> None:
-        self._drag_data = {"tab": None, "x": 0, "y": 0}
-        self._dragging = False
+        # ``tk::unsupported::reparent`` requires the target widget to be
+        # realised.  Make sure the toplevel and its notebook both exist before
+        # attempting to move the tab so that reparenting commands have a valid
+        # window to target.
+        win.update_idletasks()
+        if not self._move_tab(tab_id, nb):
+            win.destroy()
 
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
