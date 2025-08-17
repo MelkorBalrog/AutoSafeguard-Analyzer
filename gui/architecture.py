@@ -3,7 +3,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
-from gui import messagebox, format_name_with_phase
+from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -3271,10 +3271,10 @@ class SysMLDiagramWindow(tk.Frame):
 
         self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
         self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-        prop_view_frame = ttk.Frame(self.prop_frame)
-        prop_view_frame.pack(fill=tk.BOTH, expand=True)
+        prop_tree_frame = ttk.Frame(self.prop_frame)
+        prop_tree_frame.pack(fill=tk.BOTH, expand=True)
         self.prop_view = ttk.Treeview(
-            prop_view_frame,
+            prop_tree_frame,
             columns=("field", "value"),
             show="headings",
             height=8,
@@ -3283,14 +3283,7 @@ class SysMLDiagramWindow(tk.Frame):
         self.prop_view.heading("value", text="Value")
         self.prop_view.column("field", width=80, anchor="w")
         self.prop_view.column("value", width=120, anchor="w")
-        vsb = ttk.Scrollbar(prop_view_frame, orient="vertical", command=self.prop_view.yview)
-        hsb = ttk.Scrollbar(prop_view_frame, orient="horizontal", command=self.prop_view.xview)
-        self.prop_view.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        self.prop_view.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        prop_view_frame.columnconfigure(0, weight=1)
-        prop_view_frame.rowconfigure(0, weight=1)
+        add_treeview_scrollbars(self.prop_view, prop_tree_frame)
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)

@@ -7,11 +7,34 @@ from tkinter import ttk
 
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
-    """Return ``name`` with ``" (phase)"`` appended when ``phase`` is set."""
+    """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
 
     if phase:
         return f"{name} ({phase})" if name else f"({phase})"
     return name
+
+
+def add_treeview_scrollbars(tree: ttk.Treeview, container: ttk.Widget | None = None) -> None:
+    """Attach both vertical and horizontal scrollbars to ``tree``.
+
+    Parameters
+    ----------
+    tree:
+        The ``ttk.Treeview`` widget to augment.
+    container:
+        Parent widget that should hold the tree and scrollbars. Defaults to
+        ``tree.master``.
+    """
+
+    container = container or tree.master
+    vsb = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
+    hsb = ttk.Scrollbar(container, orient="horizontal", command=tree.xview)
+    tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+    tree.grid(row=0, column=0, sticky="nsew")
+    vsb.grid(row=0, column=1, sticky="ns")
+    hsb.grid(row=1, column=0, sticky="ew")
+    container.rowconfigure(0, weight=1)
+    container.columnconfigure(0, weight=1)
 
 
 # ---------------------------------------------------------------------------
