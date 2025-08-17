@@ -25,6 +25,7 @@ class SearchToolbox(tk.Toplevel):
         self.regex_var = tk.BooleanVar(value=False)
         # each result is a mapping with keys: 'label' and 'open'
         self.results: list[dict[str, object]] = []
+        self.current_index: int = -1
 
         frame = ttk.Frame(self)
         frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
@@ -34,11 +35,18 @@ class SearchToolbox(tk.Toplevel):
         entry.grid(row=0, column=1, sticky="ew")
         entry.focus_set()
 
-        btn = ttk.Button(frame, text="Search", command=self._run_search)
-        btn.grid(row=0, column=2, padx=(4, 0))
+        ttk.Button(frame, text="Find", command=self._run_search).grid(
+            row=0, column=2, padx=(4, 0)
+        )
+        ttk.Button(frame, text="Next", command=self._find_next).grid(
+            row=0, column=3, padx=(4, 0)
+        )
+        ttk.Button(frame, text="Prev", command=self._find_prev).grid(
+            row=0, column=4, padx=(4, 0)
+        )
 
         opts = ttk.Frame(frame)
-        opts.grid(row=1, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        opts.grid(row=1, column=0, columnspan=5, sticky="w", pady=(4, 0))
         ttk.Checkbutton(opts, text="Case sensitive", variable=self.case_var).pack(
             side=tk.LEFT
         )
@@ -47,7 +55,7 @@ class SearchToolbox(tk.Toplevel):
         )
 
         self.results_box = tk.Listbox(frame, height=10)
-        self.results_box.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=(8, 0))
+        self.results_box.grid(row=2, column=0, columnspan=5, sticky="nsew", pady=(8, 0))
         self.results_box.bind("<Double-1>", self._open_selected)
 
         frame.columnconfigure(1, weight=1)
@@ -84,6 +92,7 @@ class SearchToolbox(tk.Toplevel):
 
         self.results_box.delete(0, tk.END)
         self.results.clear()
+        self.current_index = -1
 
         # --- search fault tree / GSN nodes
         for node in getattr(self.app, "get_all_nodes_in_model", lambda: [])():
@@ -147,14 +156,43 @@ class SearchToolbox(tk.Toplevel):
 
                 self.results.append({"label": label, "open": _open})
 
+        if self.results:
+            self.current_index = 0
+            self._open_index(0)
+
     # ------------------------------------------------------------------
-    def _open_selected(self, _event=None) -> None:
-        if not self.results_box.curselection():
-            return
-        result = self.results[self.results_box.curselection()[0]]
+    def _open_index(self, index: int) -> None:
+        self.results_box.select_clear(0, tk.END)
+        self.results_box.selection_set(index)
+        self.results_box.activate(index)
+        self.results_box.see(index)
+        result = self.results[index]
         try:  # pragma: no cover - GUI integration
             open_cb = result.get("open")
             if callable(open_cb):
                 open_cb()
         except Exception:
             pass
+
+    # ------------------------------------------------------------------
+    def _find_next(self) -> None:
+        if not self.results:
+            self._run_search()
+            return
+        self.current_index = (self.current_index + 1) % len(self.results)
+        self._open_index(self.current_index)
+
+    # ------------------------------------------------------------------
+    def _find_prev(self) -> None:
+        if not self.results:
+            self._run_search()
+            return
+        self.current_index = (self.current_index - 1) % len(self.results)
+        self._open_index(self.current_index)
+
+    # ------------------------------------------------------------------
+    def _open_selected(self, _event=None) -> None:
+        if not self.results_box.curselection():
+            return
+        self.current_index = self.results_box.curselection()[0]
+        self._open_index(self.current_index)
