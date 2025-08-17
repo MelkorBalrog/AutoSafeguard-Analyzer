@@ -4924,12 +4924,12 @@ class SysMLDiagramWindow(tk.Frame):
     def show_context_menu(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
+        diag = self.repo.diagrams.get(self.diagram_id)
         conn = self.find_connection(x, y)
         obj = None
         if not conn:
             obj = self.find_object(x, y)
             if not obj:
-                diag = self.repo.diagrams.get(self.diagram_id)
                 if diag and diag.diag_type == "Internal Block Diagram":
                     menu = tk.Menu(self, tearoff=0)
                     menu.add_command(label="Set Father", command=self._set_diagram_father)
@@ -4949,7 +4949,6 @@ class SysMLDiagramWindow(tk.Frame):
             menu.add_command(label="Copy", command=self.copy_selected)
             menu.add_command(label="Cut", command=self.cut_selected)
             menu.add_command(label="Paste", command=self.paste_selected)
-            diag = self.repo.diagrams.get(self.diagram_id)
             if diag and diag.diag_type == "Internal Block Diagram" and obj.obj_type == "Part":
                 menu.add_separator()
                 menu.add_command(
@@ -4960,6 +4959,20 @@ class SysMLDiagramWindow(tk.Frame):
                     label="Remove Part from Model",
                     command=lambda: self.remove_part_model(obj),
                 )
+            if diag and diag.diag_type == "Governance Diagram":
+                menu.add_separator()
+                menu.add_command(
+                    label="Bring to Front", command=lambda o=obj: self.bring_to_front(o)
+                )
+                menu.add_command(
+                    label="Send to Back", command=lambda o=obj: self.send_to_back(o)
+                )
+                menu.add_command(
+                    label="Move Forward", command=lambda o=obj: self.move_forward(o)
+                )
+                menu.add_command(
+                    label="Move Backward", command=lambda o=obj: self.move_backward(o)
+                )
             menu.add_separator()
             menu.add_command(label="Delete", command=self.delete_selected)
         elif conn:
@@ -4967,6 +4980,36 @@ class SysMLDiagramWindow(tk.Frame):
             menu.add_separator()
             menu.add_command(label="Delete", command=self.delete_selected)
         menu.tk_popup(event.x_root, event.y_root)
+
+    def bring_to_front(self, obj: SysMLObject) -> None:
+        """Move ``obj`` to the top of the draw order."""
+        if obj in self.objects:
+            self.objects.remove(obj)
+            self.objects.append(obj)
+            self.redraw()
+
+    def send_to_back(self, obj: SysMLObject) -> None:
+        """Move ``obj`` to the bottom of the draw order."""
+        if obj in self.objects:
+            self.objects.remove(obj)
+            self.objects.insert(0, obj)
+            self.redraw()
+
+    def move_forward(self, obj: SysMLObject) -> None:
+        """Raise ``obj`` one step in the draw order."""
+        if obj in self.objects:
+            idx = self.objects.index(obj)
+            if idx < len(self.objects) - 1:
+                self.objects[idx], self.objects[idx + 1] = self.objects[idx + 1], self.objects[idx]
+                self.redraw()
+
+    def move_backward(self, obj: SysMLObject) -> None:
+        """Lower ``obj`` one step in the draw order."""
+        if obj in self.objects:
+            idx = self.objects.index(obj)
+            if idx > 0:
+                self.objects[idx], self.objects[idx - 1] = self.objects[idx - 1], self.objects[idx]
+                self.redraw()
 
     def _edit_object(self, obj):
         SysMLObjectDialog(self, obj)
