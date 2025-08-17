@@ -3719,15 +3719,6 @@ class SysMLDiagramWindow(tk.Frame):
             elif conn_type == "Re-use":
                 if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
                     return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
-            elif conn_type in ("Satisfied by", "Derived from"):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Requirement relations must connect Work Products"
-                from analysis.models import REQUIREMENT_WORK_PRODUCTS
-                req_wps = set(REQUIREMENT_WORK_PRODUCTS)
-                sname = src.properties.get("name")
-                dname = dst.properties.get("name")
-                if sname not in req_wps or dname not in req_wps:
-                    return False, "Requirement relations must connect requirement work products"
             elif conn_type == "Trace":
                 if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
                     return False, "Trace links must connect Work Products"
