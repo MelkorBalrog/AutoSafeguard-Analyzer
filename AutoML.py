@@ -2746,7 +2746,6 @@ class FaultTreeApp:
             "Cause & Effect Diagram": self.show_cause_effect_chain,
             "Diagram Rule Editor": self.open_diagram_rules_toolbox,
             "Requirement Pattern Editor": self.open_requirement_patterns_toolbox,
-            "Report Template Editor": self.open_report_template_toolbox,
             "Report Template Manager": self.open_report_template_manager,
         }
 
@@ -2762,9 +2761,8 @@ class FaultTreeApp:
                 "Cause & Effect Diagram",
             ],
             "Configuration": [
-                "Diagram Rule Editor", 
+                "Diagram Rule Editor",
                 "Requirement Pattern Editor",
-                "Report Template Editor",
                 "Report Template Manager",
             ],
         }
