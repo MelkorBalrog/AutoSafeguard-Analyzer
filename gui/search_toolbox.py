@@ -23,6 +23,10 @@ class SearchToolbox(tk.Toplevel):
         self.search_var = tk.StringVar()
         self.case_var = tk.BooleanVar(value=False)
         self.regex_var = tk.BooleanVar(value=False)
+        self.nodes_var = tk.BooleanVar(value=True)
+        self.connections_var = tk.BooleanVar(value=True)
+        self.failures_var = tk.BooleanVar(value=True)
+        self.hazards_var = tk.BooleanVar(value=True)
         # each result is a mapping with keys: 'label' and 'open'
         self.results: list[dict[str, object]] = []
         self.current_index: int = -1
@@ -54,12 +58,19 @@ class SearchToolbox(tk.Toplevel):
             side=tk.LEFT
         )
 
+        sources = ttk.Frame(frame)
+        sources.grid(row=2, column=0, columnspan=5, sticky="w", pady=(4, 0))
+        ttk.Checkbutton(sources, text="Nodes", variable=self.nodes_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Connections", variable=self.connections_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Failures", variable=self.failures_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Hazards", variable=self.hazards_var).pack(side=tk.LEFT)
+
         self.results_box = tk.Listbox(frame, height=10)
-        self.results_box.grid(row=2, column=0, columnspan=5, sticky="nsew", pady=(8, 0))
+        self.results_box.grid(row=3, column=0, columnspan=5, sticky="nsew", pady=(8, 0))
         self.results_box.bind("<Double-1>", self._open_selected)
 
         frame.columnconfigure(1, weight=1)
-        frame.rowconfigure(2, weight=1)
+        frame.rowconfigure(3, weight=1)
 
         self.transient(master)
         self.grab_set()
@@ -94,67 +105,103 @@ class SearchToolbox(tk.Toplevel):
         self.results.clear()
         self.current_index = -1
 
-        nodes = getattr(self.app, "get_all_nodes_in_model", lambda: [])()
-        for node in nodes:
-            text = f"{node.user_name}\n{getattr(node, 'description', '')}"
-            if regex.search(text):
-                label = (
-                    f"{type(node).__name__} ({getattr(node, 'node_type', '')}) - "
-                    f"{node.user_name} [{self._node_path(node)}]"
-                )
-                self.results_box.insert(tk.END, label)
-                self.results.append(
-                    {
-                        "label": label,
-                        "open": lambda n=node: self.app.open_page_diagram(
-                            getattr(n, "original", n)
-                        ),
-                    }
-                )
+        if self.nodes_var.get():
+            nodes = getattr(self.app, "get_all_nodes_in_model", lambda: [])()
+            for node in nodes:
+                text = f"{node.user_name}\n{getattr(node, 'description', '')}"
+                if regex.search(text):
+                    label = (
+                        f"{type(node).__name__} ({getattr(node, 'node_type', '')}) - "
+                        f"{node.user_name} [{self._node_path(node)}]"
+                    )
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda n=node: self.app.open_page_diagram(
+                                getattr(n, "original", n)
+                            ),
+                        }
+                    )
 
-        entries = getattr(self.app, "get_all_fmea_entries", lambda: [])()
-        for entry in entries:
-            fields = [
-                getattr(entry, "user_name", ""),
-                getattr(entry, "description", ""),
-                getattr(entry, "fmea_effect", ""),
-                getattr(entry, "fmea_cause", ""),
-            ]
-            if regex.search("\n".join(fields)):
-                doc_name = ""
-                is_fmeda = False
-                target_doc = None
-                for doc in getattr(self.app, "fmeas", []):
-                    if entry in doc.get("entries", []):
-                        doc_name = doc.get("name", "FMEA")
-                        target_doc = doc
-                        break
-                else:
-                    for doc in getattr(self.app, "fmedas", []):
+        if self.connections_var.get():
+            connections = getattr(self.app, "get_all_connections", lambda: [])()
+            for conn in connections:
+                fields = [
+                    getattr(conn, "name", ""),
+                    getattr(conn, "conn_type", ""),
+                    " ".join(getattr(conn, "guard", []) or []),
+                ]
+                if regex.search("\n".join(fields)):
+                    label = f"{type(conn).__name__} - {getattr(conn, 'name', '')}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda c=conn: getattr(
+                                self.app, "open_connection", lambda *_: None
+                            )(c),
+                        }
+                    )
+
+        if self.failures_var.get():
+            entries = getattr(self.app, "get_all_fmea_entries", lambda: [])()
+            for entry in entries:
+                fields = [
+                    getattr(entry, "user_name", ""),
+                    getattr(entry, "description", ""),
+                    getattr(entry, "fmea_effect", ""),
+                    getattr(entry, "fmea_cause", ""),
+                ]
+                if regex.search("\n".join(fields)):
+                    doc_name = ""
+                    is_fmeda = False
+                    target_doc = None
+                    for doc in getattr(self.app, "fmeas", []):
                         if entry in doc.get("entries", []):
-                            doc_name = doc.get("name", "FMEDA")
+                            doc_name = doc.get("name", "FMEA")
                             target_doc = doc
-                            is_fmeda = True
                             break
-                label = (
-                    f"{type(entry).__name__} - {entry.user_name or entry.description}"
-                    f" [FMEA: {doc_name or 'Global'}]"
-                )
-                self.results_box.insert(tk.END, label)
-
-                def _open(entry=entry, doc=target_doc, fmeda=is_fmeda):
-                    self.app.show_fmea_table(doc, fmeda=fmeda)
-                    tree = getattr(self.app, "_fmea_tree", None)
-                    node_map = getattr(self.app, "_fmea_node_map", {})
-                    if tree and node_map:
-                        for iid, node in node_map.items():
-                            if node is entry:
-                                tree.selection_set(iid)
-                                tree.focus(iid)
-                                tree.see(iid)
+                    else:
+                        for doc in getattr(self.app, "fmedas", []):
+                            if entry in doc.get("entries", []):
+                                doc_name = doc.get("name", "FMEDA")
+                                target_doc = doc
+                                is_fmeda = True
                                 break
+                    label = (
+                        f"{type(entry).__name__} - {entry.user_name or entry.description}"
+                        f" [FMEA: {doc_name or 'Global'}]"
+                    )
+                    self.results_box.insert(tk.END, label)
 
-                self.results.append({"label": label, "open": _open})
+                    def _open(entry=entry, doc=target_doc, fmeda=is_fmeda):
+                        self.app.show_fmea_table(doc, fmeda=fmeda)
+                        tree = getattr(self.app, "_fmea_tree", None)
+                        node_map = getattr(self.app, "_fmea_node_map", {})
+                        if tree and node_map:
+                            for iid, node in node_map.items():
+                                if node is entry:
+                                    tree.selection_set(iid)
+                                    tree.focus(iid)
+                                    tree.see(iid)
+                                    break
+
+                    self.results.append({"label": label, "open": _open})
+
+        if self.hazards_var.get():
+            for hazard in getattr(self.app, "hazards", []):
+                if regex.search(hazard):
+                    label = f"Hazard - {hazard}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda h=hazard: getattr(
+                                self.app, "show_hazard_list", lambda *_: None
+                            )(),
+                        }
+                    )
 
         if self.results:
             self.current_index = 0
