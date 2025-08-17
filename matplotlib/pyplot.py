@@ -4,6 +4,23 @@ def figure(*args, **kwargs):
 def title(*args, **kwargs):
     pass
 
+def bar(*args, **kwargs):
+    """Stub for bar chart drawing."""
+    pass
+
+def hist(*args, **kwargs):
+    """Stub for histogram drawing."""
+    pass
+
+def xlabel(*args, **kwargs):
+    pass
+
+def ylabel(*args, **kwargs):
+    pass
+
+def xticks(*args, **kwargs):
+    pass
+
 def savefig(fname, *args, **kwargs):
     """Write a tiny placeholder PNG image.
 

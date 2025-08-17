@@ -17,8 +17,12 @@ import argparse
 import ast
 import json
 from pathlib import Path
+import sys
 from typing import Dict, Iterable, List
 from dataclasses import dataclass
+
+# Ensure repository root is importable for local matplotlib stub
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def _sloc(lines: Iterable[str]) -> int:
@@ -115,6 +119,37 @@ def collect_metrics(root: Path) -> Dict[str, object]:
     }
 
 
+def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
+    """Create simple visualisations of LOC and complexity metrics."""
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # pragma: no cover - fallback if matplotlib missing
+        print(f"Plotting skipped: {exc}")
+        return
+
+    files = metrics.get("files", [])
+    if files:
+        names = [Path(f["file"]).name for f in files]
+        locs = [f["loc"] for f in files]
+        plt.figure()
+        plt.title("Lines of code per file")
+        plt.bar(names, locs)
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(out_dir / "metrics_loc.png")
+        plt.close()
+
+    complexities = [f["complexity"] for r in files for f in r["functions"]]
+    if complexities:
+        plt.figure()
+        plt.title("Function complexity distribution")
+        plt.hist(complexities, bins=range(1, max(complexities) + 2))
+        plt.xlabel("Complexity")
+        plt.ylabel("Frequency")
+        plt.tight_layout()
+        plt.savefig(out_dir / "metrics_complexity.png")
+        plt.close()
+        
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=".", type=Path, help="Directory to analyse")
@@ -124,13 +159,20 @@ def main() -> None:
         default=Path("metrics.json"),
         help="File to write JSON metrics (default: metrics.json)",
     )
+    parser.add_argument(
+        "--plots",
+        action="store_true",
+        help="Generate PNG plots for LOC and complexity",
+    )
     args = parser.parse_args()
 
     metrics = collect_metrics(args.path)
 
     args.output.write_text(json.dumps(metrics, indent=2))
     print(f"Metrics written to {args.output}")
-
+    if args.plots:
+        generate_plots(metrics, args.output.parent)
+        print("Plots written to metrics_loc.png and metrics_complexity.png")
 
 if __name__ == "__main__":
     main()

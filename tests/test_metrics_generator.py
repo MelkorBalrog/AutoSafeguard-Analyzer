@@ -15,12 +15,18 @@ def test_collect_metrics_returns_data():
     assert metrics["total_functions"] >= 0
 
 
-def test_cli_writes_metrics_file(tmp_path):
+def test_cli_writes_metrics_and_plots(tmp_path):
     repo_root = Path(__file__).resolve().parents[1]
     analysis_dir = repo_root / "analysis"
     script = repo_root / "tools" / "metrics_generator.py"
     subprocess.run(
-        ["python", str(script), "--path", str(analysis_dir)],
+        [
+            "python",
+            str(script),
+            "--path",
+            str(analysis_dir),
+            "--plots",
+        ],
         cwd=tmp_path,
         check=True,
     )
@@ -28,3 +34,5 @@ def test_cli_writes_metrics_file(tmp_path):
     assert metrics_path.exists()
     data = json.loads(metrics_path.read_text())
     assert data["total_files"] > 0
+    assert (tmp_path / "metrics_loc.png").exists()
+    assert (tmp_path / "metrics_complexity.png").exists()
