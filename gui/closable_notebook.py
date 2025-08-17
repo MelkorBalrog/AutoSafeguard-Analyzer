@@ -151,14 +151,23 @@ class ClosableNotebook(ttk.Notebook):
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
+        # Reparent the tab's child widget to the target notebook before adding
+        try:
+            child.tk.call("tk", "unsupported", "reparent", child._w, target._w)
+        except tk.TclError:
+            pass
+        child.master = target  # keep Python's widget hierarchy in sync
         target.add(child, text=text)
         target.select(child)
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
 
     def _detach_tab(self, tab_id: str, x: int, y: int) -> None:
+        self.update_idletasks()
+        width = self.winfo_width() or 200
+        height = self.winfo_height() or 200
         win = tk.Toplevel(self)
-        win.geometry(f"+{x}+{y}")
+        win.geometry(f"{width}x{height}+{x}+{y}")
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
         self._move_tab(tab_id, nb)
@@ -166,54 +175,3 @@ class ClosableNotebook(ttk.Notebook):
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
-
-    # --- Drag and detach functionality ---------------------------------
-
-    def _on_tab_press(self, event: tk.Event) -> None:
-        """Record which tab is being clicked for potential dragging."""
-        if "label" in self.identify(event.x, event.y):
-            try:
-                self._drag_tab = self.index(f"@{event.x},{event.y}")
-            except tk.TclError:
-                self._drag_tab = None
-            self._dragging = False
-
-    def _on_tab_motion(self, _event: tk.Event) -> None:
-        if self._drag_tab is not None:
-            self._dragging = True
-
-    def _on_tab_release(self, event: tk.Event) -> None:
-        if self._drag_tab is None or not self._dragging:
-            self._drag_tab = None
-            self._dragging = False
-            return
-
-        tab_id = self.tabs()[self._drag_tab]
-        widget = self.nametowidget(tab_id)
-        text = self.tab(tab_id, "text")
-        target: tk.Widget | None = self.winfo_containing(event.x_root, event.y_root)
-        while target and not isinstance(target, ClosableNotebook):
-            target = target.master
-        if target is self:
-            # Dropped back on the original notebook
-            self._drag_tab = None
-            self._dragging = False
-            return
-
-        self.forget(tab_id)
-        if isinstance(target, ClosableNotebook):
-            target.add(widget, text=text)
-        else:
-            self._create_detached_window(widget, text, event.x_root, event.y_root)
-        self._drag_tab = None
-        self._dragging = False
-
-    def _create_detached_window(self, widget: tk.Widget, text: str, x: int, y: int) -> None:
-        """Create a new window containing the dragged tab."""
-        win = tk.Toplevel(self)
-        nb = ClosableNotebook(win)
-        nb.pack(fill=tk.BOTH, expand=True)
-        nb.add(widget, text=text)
-        win.geometry(f"+{x}+{y}")
-        win.title(text)
-
