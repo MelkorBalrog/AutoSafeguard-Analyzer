@@ -43,6 +43,11 @@ class DummyListbox:
 
 class DummyApp:
     hazards: list[str] = []
+    faults: list[str] = []
+    malfunctions: list[str] = []
+    failures: list[str] = []
+    triggering_conditions: list[str] = []
+    functional_insufficiencies: list[str] = []
 
     def get_all_nodes_in_model(self):
         return []
@@ -65,6 +70,11 @@ class SearchToolboxTests(unittest.TestCase):
         tb.connections_var = DummyVar(True)
         tb.failures_var = DummyVar(True)
         tb.hazards_var = DummyVar(True)
+        tb.faults_var = DummyVar(True)
+        tb.malfunctions_var = DummyVar(True)
+        tb.fail_list_var = DummyVar(True)
+        tb.trigger_var = DummyVar(True)
+        tb.funcins_var = DummyVar(True)
         tb.results_box = DummyListbox()
         tb.results = []
         tb.current_index = -1
@@ -93,6 +103,25 @@ class SearchToolboxTests(unittest.TestCase):
         self.assertEqual(len(tb.results), 1)
         self.assertIn("Hazard - Fire", tb.results[0]["label"])
 
+    def test_search_faults(self):
+        class FaultApp(DummyApp):
+            faults = ["Short", "Open"]
+
+        tb = self._make_tb(FaultApp())
+        tb.nodes_var.set(False)
+        tb.connections_var.set(False)
+        tb.failures_var.set(False)
+        tb.hazards_var.set(False)
+        tb.faults_var.set(True)
+        tb.malfunctions_var.set(False)
+        tb.fail_list_var.set(False)
+        tb.trigger_var.set(False)
+        tb.funcins_var.set(False)
+        tb.search_var.set("Short")
+        tb._run_search()
+        self.assertEqual(len(tb.results), 1)
+        self.assertIn("Fault - Short", tb.results[0]["label"])
+
     def test_search_connection_guard(self):
         class Conn:
             def __init__(self):
@@ -116,6 +145,7 @@ class SearchToolboxTests(unittest.TestCase):
         tb._run_search()
         self.assertEqual(len(tb.results), 1)
         self.assertIn("linkA", tb.results[0]["label"])
+
 
 if __name__ == "__main__":
     unittest.main()

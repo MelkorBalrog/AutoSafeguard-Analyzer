@@ -27,6 +27,11 @@ class SearchToolbox(tk.Toplevel):
         self.connections_var = tk.BooleanVar(value=True)
         self.failures_var = tk.BooleanVar(value=True)
         self.hazards_var = tk.BooleanVar(value=True)
+        self.faults_var = tk.BooleanVar(value=True)
+        self.malfunctions_var = tk.BooleanVar(value=True)
+        self.fail_list_var = tk.BooleanVar(value=True)
+        self.trigger_var = tk.BooleanVar(value=True)
+        self.funcins_var = tk.BooleanVar(value=True)
         # each result is a mapping with keys: 'label' and 'open'
         self.results: list[dict[str, object]] = []
         self.current_index: int = -1
@@ -64,6 +69,11 @@ class SearchToolbox(tk.Toplevel):
         ttk.Checkbutton(sources, text="Connections", variable=self.connections_var).pack(side=tk.LEFT)
         ttk.Checkbutton(sources, text="Failures", variable=self.failures_var).pack(side=tk.LEFT)
         ttk.Checkbutton(sources, text="Hazards", variable=self.hazards_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Faults", variable=self.faults_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Malfunctions", variable=self.malfunctions_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Failures List", variable=self.fail_list_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Triggering Cond.", variable=self.trigger_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(sources, text="Functional Insuff.", variable=self.funcins_var).pack(side=tk.LEFT)
 
         self.results_box = tk.Listbox(frame, height=10)
         self.results_box.grid(row=3, column=0, columnspan=5, sticky="nsew", pady=(8, 0))
@@ -199,6 +209,82 @@ class SearchToolbox(tk.Toplevel):
                             "label": label,
                             "open": lambda h=hazard: getattr(
                                 self.app, "show_hazard_list", lambda *_: None
+                            )(),
+                        }
+                    )
+
+        if self.faults_var.get():
+            for fault in getattr(self.app, "faults", []):
+                if regex.search(fault):
+                    label = f"Fault - {fault}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=fault: getattr(
+                                self.app,
+                                "show_fault_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.malfunctions_var.get():
+            malfunc_cb = getattr(
+                self.app,
+                "show_malfunction_editor",
+                getattr(self.app, "show_malfunctions_editor", lambda *_: None),
+            )
+            for mal in getattr(self.app, "malfunctions", []):
+                if regex.search(mal):
+                    label = f"Malfunction - {mal}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append({"label": label, "open": lambda m=mal: malfunc_cb()})
+
+        if self.fail_list_var.get():
+            for failure in getattr(self.app, "failures", []):
+                if regex.search(failure):
+                    label = f"Failure - {failure}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=failure: getattr(
+                                self.app,
+                                "show_failure_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.trigger_var.get():
+            for tc in getattr(self.app, "triggering_conditions", []):
+                if regex.search(tc):
+                    label = f"Triggering Condition - {tc}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda t=tc: getattr(
+                                self.app,
+                                "show_triggering_condition_list",
+                                lambda *_: None,
+                            )(),
+                        }
+                    )
+
+        if self.funcins_var.get():
+            for fi in getattr(self.app, "functional_insufficiencies", []):
+                if regex.search(fi):
+                    label = f"Functional Insufficiency - {fi}"
+                    self.results_box.insert(tk.END, label)
+                    self.results.append(
+                        {
+                            "label": label,
+                            "open": lambda f=fi: getattr(
+                                self.app,
+                                "show_functional_insufficiency_list",
+                                lambda *_: None,
                             )(),
                         }
                     )
