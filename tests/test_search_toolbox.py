@@ -117,6 +117,5 @@ class SearchToolboxTests(unittest.TestCase):
         self.assertEqual(len(tb.results), 1)
         self.assertIn("linkA", tb.results[0]["label"])
 
-
 if __name__ == "__main__":
     unittest.main()
