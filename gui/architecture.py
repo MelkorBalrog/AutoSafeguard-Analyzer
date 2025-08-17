@@ -3710,18 +3710,11 @@ class SysMLDiagramWindow(tk.Frame):
                 "Propagate by Review",
                 "Propagate by Approval",
             ):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Propagation links must connect Work Products"
                 src_name = src.properties.get("name")
                 dst_name = dst.properties.get("name")
                 if (src_name, dst_name) not in ALLOWED_PROPAGATIONS:
                     return False, f"Propagation from {src_name} to {dst_name} is not allowed"
-            elif conn_type == "Re-use":
-                if src.obj_type not in ("Work Product", "Lifecycle Phase") or dst.obj_type != "Lifecycle Phase":
-                    return False, "Re-use links must originate from a Work Product or Lifecycle Phase and target a Lifecycle Phase"
             elif conn_type == "Trace":
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, "Trace links must connect Work Products"
                 from analysis.models import REQUIREMENT_WORK_PRODUCTS
                 req_wps = set(REQUIREMENT_WORK_PRODUCTS)
                 sname = src.properties.get("name")
@@ -3761,8 +3754,6 @@ class SysMLDiagramWindow(tk.Frame):
                 "Used after Review",
                 "Used after Approval",
             ):
-                if src.obj_type != "Work Product" or dst.obj_type != "Work Product":
-                    return False, f"{conn_type} links must connect Work Products"
                 sname = src.properties.get("name")
                 dname = dst.properties.get("name")
                 if sname not in UNRESTRICTED_USAGE_SOURCES and (
