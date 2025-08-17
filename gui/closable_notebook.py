@@ -173,43 +173,46 @@ class ClosableNotebook(ttk.Notebook):
         text = self.tab(tab_id, "text")
         child = self.nametowidget(tab_id)
         self.forget(tab_id)
-        # Reparent the tab's child widget to the target notebook before adding.
-        # ``tk::unsupported::reparent`` is available on most Tk builds but the
-        # exact command name differs across platforms.  Try the known variants
-        # and ignore any errors so that platforms without the command still
-        # proceed.  Some Windows builds expose the command as
-        # ``ReparentWindow`` instead.  ``tk::unsupported::reparent`` expects
-        # platform specific arguments, sometimes window path names and other
-        # times the identifier returned by ``winfo_id``.  Try every combination
-        # and silently continue if the command is unavailable.
-        reparented = False
-        for cmd in (
-            ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
-            ("::tk::unsupported::reparent", child._w, target._w),
-            ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
-            ("tk", "unsupported", "reparent", child._w, target._w),
-            ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
-            ("::tk::unsupported::ReparentWindow", child._w, target._w),
-            ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
-            ("tk", "unsupported", "ReparentWindow", child._w, target._w),
-        ):
-            try:
-                child.tk.call(*cmd)
-                reparented = True
-                break
-            except tk.TclError:
-                continue
-        if reparented:
-            child.master = target  # keep Python's widget hierarchy in sync
+        # First try to add the child directly.  Modern Tk builds reparent the
+        # window automatically in this case which avoids relying on the
+        # ``tk::unsupported::reparent`` command entirely.
+        try:
             target.add(child, text=text)
             target.select(child)
-        else:
-            # If reparenting is unsupported we simply abort the move.
-            # Re-insert the tab into its original notebook so the widget
-            # remains accessible instead of raising a TclError.
-            self.add(child, text=text)
-            self.select(child)
-            return False
+        except tk.TclError:
+            # If Tk cannot handle the reparent internally fall back to the
+            # platform specific ``reparent`` command.  The command name and
+            # required arguments differ across platforms; try the known
+            # variants and ignore any errors so systems without the command
+            # simply continue.
+            reparented = False
+            for cmd in (
+                ("::tk::unsupported::reparent", child.winfo_id(), target.winfo_id()),
+                ("::tk::unsupported::reparent", child._w, target._w),
+                ("tk", "unsupported", "reparent", child.winfo_id(), target.winfo_id()),
+                ("tk", "unsupported", "reparent", child._w, target._w),
+                ("::tk::unsupported::ReparentWindow", child.winfo_id(), target.winfo_id()),
+                ("::tk::unsupported::ReparentWindow", child._w, target._w),
+                ("tk", "unsupported", "ReparentWindow", child.winfo_id(), target.winfo_id()),
+                ("tk", "unsupported", "ReparentWindow", child._w, target._w),
+            ):
+                try:
+                    child.tk.call(*cmd)
+                    reparented = True
+                    break
+                except tk.TclError:
+                    continue
+            if reparented:
+                child.master = target  # keep Python's widget hierarchy in sync
+                target.add(child, text=text)
+                target.select(child)
+            else:
+                # If reparenting is unsupported we simply abort the move.
+                # Re-insert the tab into its original notebook so the widget
+                # remains accessible instead of raising a TclError.
+                self.add(child, text=text)
+                self.select(child)
+                return False
         if isinstance(self.master, tk.Toplevel) and not self.tabs():
             self.master.destroy()
         return True
