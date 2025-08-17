@@ -13701,6 +13701,9 @@ class FaultTreeApp:
 
         node_map = {}
         comp_items = {}
+        # expose the current FMEA tree and node mapping for external tools
+        self._fmea_tree = tree
+        self._fmea_node_map = node_map
 
         def refresh_tree():
             tree.delete(*tree.get_children())

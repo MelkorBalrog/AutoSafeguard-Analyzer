@@ -1,4 +1,4 @@
-"""Search toolbox for finding nodes within the AutoML model."""
+"""Search toolbox for finding objects within the AutoML model."""
 from __future__ import annotations
 
 import re
@@ -9,7 +9,11 @@ from gui import messagebox
 
 
 class SearchToolbox(tk.Toplevel):
-    """Provide simple text-based search across model nodes."""
+    """Provide text-based search across model objects.
+
+    Results show the object's class and origin.  Double-clicking a match
+    navigates to the corresponding diagram or table entry.
+    """
 
     def __init__(self, master, app):
         super().__init__(master)
@@ -19,7 +23,8 @@ class SearchToolbox(tk.Toplevel):
         self.search_var = tk.StringVar()
         self.case_var = tk.BooleanVar(value=False)
         self.regex_var = tk.BooleanVar(value=False)
-        self.results: list = []
+        # each result is a mapping with keys: 'label' and 'open'
+        self.results: list[dict[str, object]] = []
 
         frame = ttk.Frame(self)
         frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
@@ -51,33 +56,105 @@ class SearchToolbox(tk.Toplevel):
         self.transient(master)
         self.grab_set()
 
+    # ------------------------------------------------------------------
+    def _node_path(self, node) -> str:
+        """Return a simple parent chain for *node*."""
+        parts = [getattr(node, "user_name", "") or getattr(node, "name", "")]
+        parent = node.parents[0] if getattr(node, "parents", None) else None
+        visited = set()
+        while parent and parent.unique_id not in visited:
+            parts.append(getattr(parent, "user_name", "") or getattr(parent, "name", ""))
+            visited.add(parent.unique_id)
+            parent = parent.parents[0] if parent.parents else None
+        return " > ".join(reversed(parts))
+
+    # ------------------------------------------------------------------
     def _run_search(self) -> None:
         pattern = self.search_var.get().strip()
         if not pattern:
             return
         flags = 0 if self.case_var.get() else re.IGNORECASE
         try:
-            regex = re.compile(pattern if self.regex_var.get() else re.escape(pattern), flags)
+            regex = re.compile(
+                pattern if self.regex_var.get() else re.escape(pattern), flags
+            )
         except re.error as exc:  # pragma: no cover - user feedback path
             messagebox.showerror("Search", f"Invalid pattern: {exc}")
             return
 
         self.results_box.delete(0, tk.END)
-        self.results = []
-        root_node = getattr(self.app, "root_node", None)
-        nodes = self.app.get_all_nodes(root_node) if root_node else []
-        for node in nodes:
+        self.results.clear()
+
+        # --- search fault tree / GSN nodes
+        for node in getattr(self.app, "get_all_nodes_in_model", lambda: [])():
             text = f"{node.user_name}\n{getattr(node, 'description', '')}"
             if regex.search(text):
-                self.results_box.insert(tk.END, f"{node.node_type}: {node.user_name}")
-                self.results.append(node)
+                label = (
+                    f"{type(node).__name__} ({getattr(node, 'node_type', '')}) - "
+                    f"{node.user_name} [{self._node_path(node)}]"
+                )
+                self.results_box.insert(tk.END, label)
+                self.results.append(
+                    {
+                        "label": label,
+                        "open": lambda n=node: self.app.open_page_diagram(
+                            getattr(n, "original", n)
+                        ),
+                    }
+                )
 
+        # --- search FMEA/FMDA entries
+        for entry in getattr(self.app, "get_all_fmea_entries", lambda: [])():
+            fields = [
+                getattr(entry, "user_name", ""),
+                getattr(entry, "description", ""),
+                getattr(entry, "fmea_effect", ""),
+                getattr(entry, "fmea_cause", ""),
+            ]
+            if regex.search("\n".join(fields)):
+                doc_name = ""
+                is_fmeda = False
+                target_doc = None
+                for doc in getattr(self.app, "fmeas", []):
+                    if entry in doc.get("entries", []):
+                        doc_name = doc.get("name", "FMEA")
+                        target_doc = doc
+                        break
+                else:
+                    for doc in getattr(self.app, "fmedas", []):
+                        if entry in doc.get("entries", []):
+                            doc_name = doc.get("name", "FMEDA")
+                            target_doc = doc
+                            is_fmeda = True
+                            break
+                label = (
+                    f"{type(entry).__name__} - {entry.user_name or entry.description}"
+                    f" [FMEA: {doc_name or 'Global'}]"
+                )
+                self.results_box.insert(tk.END, label)
+
+                def _open(entry=entry, doc=target_doc, fmeda=is_fmeda):
+                    self.app.show_fmea_table(doc, fmeda=fmeda)
+                    tree = getattr(self.app, "_fmea_tree", None)
+                    node_map = getattr(self.app, "_fmea_node_map", {})
+                    if tree and node_map:
+                        for iid, node in node_map.items():
+                            if node is entry:
+                                tree.selection_set(iid)
+                                tree.focus(iid)
+                                tree.see(iid)
+                                break
+
+                self.results.append({"label": label, "open": _open})
+
+    # ------------------------------------------------------------------
     def _open_selected(self, _event=None) -> None:
         if not self.results_box.curselection():
             return
-        node = self.results[self.results_box.curselection()[0]]
-        self.app.selected_node = node
+        result = self.results[self.results_box.curselection()[0]]
         try:  # pragma: no cover - GUI integration
-            self.app.edit_selected()
+            open_cb = result.get("open")
+            if callable(open_cb):
+                open_cb()
         except Exception:
             pass
