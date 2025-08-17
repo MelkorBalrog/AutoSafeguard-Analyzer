@@ -4914,7 +4914,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Template": "Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4927,7 +4927,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Template": "When <condition>, Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4941,7 +4941,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND-CONST",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "When <condition>, Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4956,7 +4956,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-CONST",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
-    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4970,7 +4970,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Task",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Template": "Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4983,7 +4983,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Task-COND",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Template": "When <condition>, Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -4997,7 +4997,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Task-COND-CONST",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "When <condition>, Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "When <condition>, Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -5012,7 +5012,7 @@
   {
     "Pattern ID": "SA-field_data_collection-Database-Task-CONST",
     "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
-    "Template": "Engineering team shall collect field data the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Template": "Engineering team shall collect field data from the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",

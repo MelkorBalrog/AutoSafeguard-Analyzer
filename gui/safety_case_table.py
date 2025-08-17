@@ -8,6 +8,7 @@ from tkinter import ttk, simpledialog
 from analysis.constants import CHECK_MARK
 from analysis.safety_case import SafetyCase
 from gui import messagebox
+from gui.toolboxes import configure_table_style, _wrap_val
 
 
 try:  # pragma: no cover - fallback if AutoML isn't fully imported yet
@@ -45,7 +46,14 @@ class SafetyCaseTable(tk.Frame):
             "notes",
         )
         self.columns = columns
-        self.tree = ttk.Treeview(self, columns=columns, show="headings")
+        style_name = "SafetyCase.Treeview"
+        try:
+            configure_table_style(style_name, rowheight=80)
+            self.tree = ttk.Treeview(
+                self, columns=columns, show="headings", style=style_name
+            )
+        except Exception:
+            self.tree = ttk.Treeview(self, columns=columns, show="headings")
         headers = {
             "solution": "Solution",
             "description": "Description",
@@ -138,15 +146,17 @@ class SafetyCaseTable(tk.Frame):
                 "",
                 "end",
                 values=(
-                    sol.user_name,
-                    getattr(sol, "description", ""),
-                    getattr(sol, "work_product", ""),
-                    getattr(sol, "evidence_link", ""),
-                    v_target,
-                    prob,
-                    spi_val,
-                    CHECK_MARK if getattr(sol, "evidence_sufficient", False) else "",
-                    getattr(sol, "manager_notes", ""),
+                    _wrap_val(sol.user_name),
+                    _wrap_val(getattr(sol, "description", ""), 40),
+                    _wrap_val(getattr(sol, "work_product", "")),
+                    _wrap_val(getattr(sol, "evidence_link", ""), 40),
+                    _wrap_val(v_target),
+                    _wrap_val(prob),
+                    _wrap_val(spi_val),
+                    _wrap_val(
+                        CHECK_MARK if getattr(sol, "evidence_sufficient", False) else ""
+                    ),
+                    _wrap_val(getattr(sol, "manager_notes", ""), 40),
                 ),
                 tags=(sol.unique_id,),
             )

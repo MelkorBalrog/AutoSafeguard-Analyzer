@@ -166,9 +166,18 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
 
 
 def make_sa_template(subject: str, action: str) -> str:
-    return tidy_sentence(
-        f"{subject} shall {action} the <target_id> (<target_class>) using the <source_id> (<source_class>)."
-    )
+    action_clean = (action or "").strip()
+    if action_clean.lower() == "collect field data":
+        tmpl = (
+            f"{subject} shall {action_clean} from the <target_id> (<target_class>) "
+            f"using the <source_id> (<source_class>)."
+        )
+    else:
+        tmpl = (
+            f"{subject} shall {action_clean} the <target_id> (<target_class>) "
+            f"using the <source_id> (<source_class>)."
+        )
+    return tidy_sentence(tmpl)
 
 
 def make_sa_variables_base() -> List[str]:
