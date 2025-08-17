@@ -3354,7 +3354,6 @@ class SysMLDiagramWindow(tk.Frame):
         # Shrink the property view to match the button area so it does not force
         # the toolbox wider than needed.
         field_width = button_width // 2
-        self.prop_view.configure(width=button_width)
         self.prop_view.column("field", width=field_width, stretch=False)
         self.prop_view.column("value", width=button_width - field_width, stretch=False)
 
