@@ -201,6 +201,10 @@ class ClosableNotebook(ttk.Notebook):
         width = self.winfo_width() or 200
         height = self.winfo_height() or 200
         win = tk.Toplevel(self)
+        screen_w = win.winfo_screenwidth()
+        screen_h = win.winfo_screenheight()
+        x = max(min(x, screen_w - width), 0)
+        y = max(min(y, screen_h - height), 0)
         win.geometry(f"{width}x{height}+{x}+{y}")
         nb = ClosableNotebook(win)
         nb.pack(expand=True, fill="both")
