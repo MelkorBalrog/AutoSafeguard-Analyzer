@@ -10715,12 +10715,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
-            relationships = ttk.LabelFrame(
-                governance_panel, text="Relationships (relationships)"
-            )
-            relationships.pack(fill=tk.X, padx=2, pady=2)
             wp_rel = ttk.LabelFrame(
-                relationships, text="Work Product Links (relationships)"
+                governance_panel, text="Work Product Links (relationships)"
             )
             wp_rel.pack(fill=tk.X, padx=2, pady=2)
             for name in work_rel_names:
@@ -10734,7 +10730,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
             for group, names in GOV_ELEMENT_RELATION_GROUPS.items():
                 rel_frame = ttk.LabelFrame(
-                    relationships, text=f"{group} (relationships)"
+                    governance_panel, text=f"{group} (relationships)"
                 )
                 rel_frame.pack(fill=tk.X, padx=2, pady=2)
                 for name in names:
