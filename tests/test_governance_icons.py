@@ -25,7 +25,7 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Metric") == "chart"
     assert shape(None, "Safety Compliance") == "shield_check"
     assert shape(None, "Process") == "gear"
-    assert shape(None, "Operation") == "wrench"
+    assert shape(None, "Operation") == "gear"
     assert shape(None, "Driving Function") == "steering"
     assert shape(None, "Plan") == "document"
     assert shape(None, "Data") == "cylinder"
