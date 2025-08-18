@@ -243,6 +243,12 @@ _BOTTOM_LABEL_TYPES = {
     "Safety Compliance",
     "Data",
     "Field Data",
+    "Risk Assessment",
+    "Fleet",
+    "Vehicle",
+    "Driving Function",
+    "Manufacturing Process",
+    "Operation",
 }
 
 
