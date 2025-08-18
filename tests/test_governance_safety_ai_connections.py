@@ -44,7 +44,7 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         diag, gobj, aiobj = self._make_nodes()
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, gobj, aiobj, "Annotation")
-        self.assertTrue(valid)
+        self.assertFalse(valid)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, aiobj, gobj, "Annotation")
         self.assertFalse(valid)
 

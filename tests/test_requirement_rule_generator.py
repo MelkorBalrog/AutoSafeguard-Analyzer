@@ -12,10 +12,13 @@ from analysis.requirement_rule_generator import generate_patterns_from_config
 
 def test_generate_patterns_from_config(tmp_path: Path) -> None:
     cfg = {
+        "ai_nodes": ["ANN", "AI Database"],
         "requirement_rules": {
             "annotation": {"action": "annotate", "subject": "Team"}
         },
-        "safety_ai_relation_rules": {"Annotation": {"ANN": ["AI Database"]}},
+        "connection_rules": {
+            "Governance Diagram": {"Annotation": {"ANN": ["AI Database"]}}
+        },
     }
     patterns = generate_patterns_from_config(cfg)
     ids = {p["Pattern ID"] for p in patterns}
@@ -30,10 +33,13 @@ def test_generate_patterns_from_config(tmp_path: Path) -> None:
 
 def test_reload_config_updates_patterns(tmp_path: Path, monkeypatch) -> None:
     cfg = {
+        "ai_nodes": ["ANN", "AI Database"],
         "requirement_rules": {
             "augmentation": {"action": "augment", "subject": "Team"}
         },
-        "safety_ai_relation_rules": {"Augmentation": {"ANN": ["AI Database"]}},
+        "connection_rules": {
+            "Governance Diagram": {"Augmentation": {"ANN": ["AI Database"]}}
+        },
     }
     path = tmp_path / "diagram_rules.json"
     path.write_text(json.dumps(cfg))
@@ -45,14 +51,17 @@ def test_reload_config_updates_patterns(tmp_path: Path, monkeypatch) -> None:
 
 def test_field_data_collection_uses_from() -> None:
     cfg = {
+        "ai_nodes": ["AI Database", "Data acquisition"],
         "requirement_rules": {
             "field data collection": {
                 "action": "collect field data",
                 "subject": "Engineering team",
             }
         },
-        "safety_ai_relation_rules": {
-        "Field data collection": {"AI Database": ["Data acquisition"]}
+        "connection_rules": {
+            "Governance Diagram": {
+                "Field data collection": {"AI Database": ["Data acquisition"]}
+            }
         },
     }
     patterns = generate_patterns_from_config(cfg)
@@ -66,10 +75,11 @@ def test_field_data_collection_uses_from() -> None:
 
 def test_rule_with_multiple_targets() -> None:
     cfg = {
+        "ai_nodes": ["A", "B"],
         "requirement_rules": {
             "multi": {"action": "relate", "subject": "Team", "targets": 2}
         },
-        "safety_ai_relation_rules": {"Multi": {"A": ["B"]}},
+        "connection_rules": {"Governance Diagram": {"Multi": {"A": ["B"]}}},
     }
     patterns = generate_patterns_from_config(cfg)
     tmpl = next(
@@ -82,6 +92,7 @@ def test_rule_with_multiple_targets() -> None:
 
 def test_rule_with_custom_template_and_variables() -> None:
     cfg = {
+        "ai_nodes": ["R", "T"],
         "requirement_rules": {
             "custom": {
                 "action": "combine",
@@ -89,7 +100,7 @@ def test_rule_with_custom_template_and_variables() -> None:
                 "variables": ["<role>", "<tool>"],
             }
         },
-        "safety_ai_relation_rules": {"Custom": {"R": ["T"]}},
+        "connection_rules": {"Governance Diagram": {"Custom": {"R": ["T"]}}},
     }
     patterns = generate_patterns_from_config(cfg)
     base = next(
@@ -102,9 +113,12 @@ def test_rule_with_custom_template_and_variables() -> None:
 
 def test_sequence_rule_generation() -> None:
     cfg = {
-        "safety_ai_relation_rules": {
-            "Rel1": {"A": ["B"]},
-            "Rel2": {"B": ["C"]},
+        "ai_nodes": ["A", "B", "C"],
+        "connection_rules": {
+            "Governance Diagram": {
+                "Rel1": {"A": ["B"]},
+                "Rel2": {"B": ["C"]},
+            }
         },
         "requirement_sequences": {
             "chain": {
@@ -124,32 +138,49 @@ def test_sequence_rule_generation() -> None:
 
 def test_complex_sequences() -> None:
     cfg = {
-        "safety_ai_relation_rules": {
-            "Triage": {"Safety Issue": ["Field Data"]},
-            "Develops": {
-                "Field Data": ["Test Suite"],
-                "Mitigation Plan": ["Test Suite"],
-                "Risk Assessment": ["Test Suite"],
-            },
-            "Constrains": {"Policy": ["Process"]},
-            "Produces": {
-                "Process": ["Document"],
-                "Test Suite": ["Document"],
-                "Report": ["Document"],
-                "Verification Plan": ["Document"],
-            },
-            "Validate": {
-                "Model": ["Test Suite"],
-                "Mitigation Plan": ["Report"],
-                "Test Suite": ["Report"],
-            },
-            "Assesses": {
-                "Hazard": ["Risk Assessment"],
-                "Security Threat": ["Risk Assessment"],
-                "Field Data": ["Risk Assessment"],
-            },
-            "Mitigates": {"Risk Assessment": ["Mitigation Plan"]},
-            "Verify": {"Test Suite": ["Verification Plan"]},
+        "ai_nodes": [
+            "Safety Issue",
+            "Field Data",
+            "Test Suite",
+            "Mitigation Plan",
+            "Risk Assessment",
+            "Policy",
+            "Process",
+            "Document",
+            "Report",
+            "Verification Plan",
+            "Model",
+            "Hazard",
+            "Security Threat",
+        ],
+        "connection_rules": {
+            "Governance Diagram": {
+                "Triage": {"Safety Issue": ["Field Data"]},
+                "Develops": {
+                    "Field Data": ["Test Suite"],
+                    "Mitigation Plan": ["Test Suite"],
+                    "Risk Assessment": ["Test Suite"],
+                },
+                "Constrains": {"Policy": ["Process"]},
+                "Produces": {
+                    "Process": ["Document"],
+                    "Test Suite": ["Document"],
+                    "Report": ["Document"],
+                    "Verification Plan": ["Document"],
+                },
+                "Validate": {
+                    "Model": ["Test Suite"],
+                    "Mitigation Plan": ["Report"],
+                    "Test Suite": ["Report"],
+                },
+                "Assesses": {
+                    "Hazard": ["Risk Assessment"],
+                    "Security Threat": ["Risk Assessment"],
+                    "Field Data": ["Risk Assessment"],
+                },
+                "Mitigates": {"Risk Assessment": ["Mitigation Plan"]},
+                "Verify": {"Test Suite": ["Verification Plan"]},
+            }
         },
         "requirement_sequences": {
             "incident triage": {

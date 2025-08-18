@@ -119,20 +119,6 @@ class DiagramRulesEditor(tk.Frame):
                     dest_text = ", ".join(sorted(dests))
                     self.tree.insert(c_id, "end", item_id, text=src, values=(dest_text,))
 
-        # Safety & AI relation rules
-        ai_root = self.tree.insert(
-            "", "end", "safety_ai_relation_rules", text="safety_ai_relation_rules"
-        )
-        ai_rules = self.data.get("safety_ai_relation_rules", {})
-        if not ai_rules:
-            self.tree.insert(ai_root, "end", "no_ai_rules", text="(no rules defined)")
-        for rel, sources in sorted(ai_rules.items()):
-            r_id = self.tree.insert(ai_root, "end", f"rel|{rel}", text=rel)
-            for src, dests in sorted(sources.items()):
-                item_id = f"sar|{rel}|{src}"
-                dest_text = ", ".join(sorted(dests))
-                self.tree.insert(r_id, "end", item_id, text=src, values=(dest_text,))
-
         # Requirement generation rules
         req_root = self.tree.insert(
             "", "end", "requirement_rules", text="requirement_rules"
@@ -173,9 +159,6 @@ class DiagramRulesEditor(tk.Frame):
         if item.startswith("rule|"):
             _, diag, conn, src = item.split("|", 3)
             self._draw_rule(diag, conn, src)
-        elif item.startswith("sar|"):
-            _, rel, src = item.split("|", 2)
-            self._draw_rule(None, rel, src)
         else:
             self.canvas.delete("all")
 
@@ -191,11 +174,6 @@ class DiagramRulesEditor(tk.Frame):
                 for src, dests in srcs.items():
                     types.add(src)
                     types.update(dests)
-        sar = self.data.get("safety_ai_relation_rules", {})
-        for rels in sar.values():
-            for src, dests in rels.items():
-                types.add(src)
-                types.update(dests)
         for field in (
             "ai_nodes",
             "governance_node_types",
@@ -231,18 +209,6 @@ class DiagramRulesEditor(tk.Frame):
             self.data["connection_rules"][diag][conn][src] = dest_list
             self.tree.set(item, "value", ", ".join(dest_list))
             self._draw_rule(diag, conn, src)
-        elif item.startswith("sar|"):
-            _, rel, src = item.split("|", 2)
-            cur = self.data["safety_ai_relation_rules"][rel][src]
-            dlg = MultiSelectDialog(
-                self, f"Allowed targets for {src}", self.all_node_types, cur
-            )
-            if dlg.selected is None:
-                return
-            dest_list = dlg.selected
-            self.data["safety_ai_relation_rules"][rel][src] = dest_list
-            self.tree.set(item, "value", ", ".join(dest_list))
-            self._draw_rule(None, rel, src)
         elif item.startswith("req|"):
             _, label = item.split("|", 1)
             rule = self.data.setdefault("requirement_rules", {}).get(label, {})
@@ -300,12 +266,8 @@ class DiagramRulesEditor(tk.Frame):
 
     def _draw_rule(self, diagram, connection, source):
         self.canvas.delete("all")
-        if diagram is None:
-            dests = self.data["safety_ai_relation_rules"][connection].get(source, [])
-            title = connection
-        else:
-            dests = self.data["connection_rules"][diagram][connection].get(source, [])
-            title = f"{diagram} - {connection}"
+        dests = self.data["connection_rules"][diagram][connection].get(source, [])
+        title = f"{diagram} - {connection}"
         w = int(self.canvas.winfo_width()) or 400
         h = int(self.canvas.winfo_height()) or 300
         src_x, src_y = 80, h // 2
