@@ -53,15 +53,16 @@ def create_icon(
                     img.put(c, (x, y))
                 if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
                     img.put(outline, (x, y))
+        # Draw limbs in black for better visibility regardless of the head color
         for y in range(head_cy + head_r, size - 3):
-            img.put(c, (cx, y))
+            img.put(outline, (cx, y))
         arm_y = head_cy + head_r + 2
         for x in range(cx - 4, cx + 5):
-            img.put(c, (x, arm_y))
+            img.put(outline, (x, arm_y))
         leg_start = size - 4
         for i in range(4):
-            img.put(c, (cx - i, leg_start + i))
-            img.put(c, (cx + i, leg_start + i))
+            img.put(outline, (cx - i, leg_start + i))
+            img.put(outline, (cx + i, leg_start + i))
     elif shape == "diamond":
         mid = size // 2
         for y in range(2, size - 2):
@@ -440,6 +441,21 @@ def create_icon(
         for y in range(2, size - 2):
             img.put(outline, (2, y))
             img.put(outline, (size - 2, y))
+    elif shape == "action":
+        # Outline rectangle with an internal arrow to hint at behaviour
+        for x in range(2, size - 2):
+            img.put(outline, (x, 2))
+            img.put(outline, (x, size - 2))
+        for y in range(2, size - 2):
+            img.put(outline, (2, y))
+            img.put(outline, (size - 2, y))
+        mid = size // 2
+        for x in range(4, size - 6):
+            img.put(c, (x, mid))
+        head = size - 6
+        for i in range(3):
+            for y in range(mid - i, mid + i + 1):
+                img.put(c, (head + i, y))
     elif shape == "bar":
         top = size // 2 - 2
         img.put(c, to=(2, top, size - 2, top + 4))
@@ -724,10 +740,117 @@ def create_icon(
                 x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
                 xs.append(int(x))
             xs.sort()
-            for j in range(0, len(xs), 2):
-                img.put(c, to=(xs[j], y, xs[j + 1] + 1, y + 1))
+        for j in range(0, len(xs), 2):
+            img.put(c, to=(xs[j], y, xs[j + 1] + 1, y + 1))
         for x, y in points:
             img.put(outline, (x, y))
+    elif shape == "ring":
+        # Draw a circular ring to represent a connection port
+        cx = cy = size // 2
+        outer = size // 2 - 2
+        inner = outer - 3
+        for y in range(size):
+            for x in range(size):
+                dist = (x - cx) ** 2 + (y - cy) ** 2
+                if inner * inner <= dist <= outer * outer:
+                    img.put(c, (x, y))
+                if outer * outer <= dist <= (outer + 1) * (outer + 1):
+                    img.put(outline, (x, y))
+                if inner * inner <= dist <= (inner + 1) * (inner + 1):
+                    img.put(outline, (x, y))
+    elif shape == "usecase_diag":
+        # Stick figure and ellipse to suggest a use case diagram
+        cx = 4
+        head_r = 2
+        head_cy = 4
+        for y in range(head_cy - head_r, head_cy + head_r + 1):
+            for x in range(cx - head_r, cx + head_r + 1):
+                dist = (x - cx) ** 2 + (y - head_cy) ** 2
+                if dist <= head_r * head_r:
+                    img.put(c, (x, y))
+                if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
+                    img.put(outline, (x, y))
+        # Draw stick figure limbs in black for clearer contrast
+        for y in range(head_cy + head_r, size - 3):
+            img.put(outline, (cx, y))
+        arm_y = head_cy + head_r + 1
+        for x in range(cx - 2, cx + 3):
+            img.put(outline, (x, arm_y))
+        leg_start = size - 4
+        for i in range(3):
+            img.put(outline, (cx - i, leg_start + i))
+            img.put(outline, (cx + i, leg_start + i))
+        rx = 4
+        ry = 3
+        ecx = size - 5
+        ecy = size // 2
+        for y in range(ecy - ry, ecy + ry + 1):
+            for x in range(ecx - rx, ecx + rx + 1):
+                norm = ((x - ecx) ** 2) / (rx * rx) + ((y - ecy) ** 2) / (ry * ry)
+                if norm <= 1:
+                    img.put(c, (x, y))
+                if 1 <= norm <= 1.2:
+                    img.put(outline, (x, y))
+    elif shape == "activity_diag":
+        # Simple flow arrow with a diamond decision
+        mid = size // 2
+        for x in range(2, size - 5):
+            img.put(c, (x, mid))
+        head = size - 5
+        for i in range(4):
+            img.put(c, (head + i, mid - i))
+            img.put(c, (head + i, mid + i))
+        dmid = size // 2
+        for i in range(3):
+            img.put(c, (head - 3 + i, dmid - i))
+            img.put(c, (head - 3 + i, dmid + i))
+            img.put(c, (head - 5 + i, dmid))
+    elif shape == "block_diag":
+        for x in range(2, size - 2):
+            img.put(outline, (x, 2))
+            img.put(outline, (x, size - 2))
+        for y in range(2, size - 2):
+            img.put(outline, (2, y))
+            img.put(outline, (size - 2, y))
+        for y in range(4, size - 4, 6):
+            for x in range(4, size - 4, 6):
+                img.put(c, to=(x, y, x + 3, y + 3))
+    elif shape == "ibd_diag":
+        for x in range(2, size - 2):
+            img.put(outline, (x, 2))
+            img.put(outline, (x, size - 2))
+        for y in range(2, size - 2):
+            img.put(outline, (2, y))
+            img.put(outline, (size - 2, y))
+        img.put(c, to=(4, 4, 7, 7))
+        img.put(c, to=(9, 9, 12, 12))
+        for i in range(3):
+            img.put(c, (7 + i, 6))
+            img.put(c, (7 + i, 9))
+    elif shape == "puzzle":
+        # Simple jigsaw puzzle piece for "Part" elements
+        img.put(c, to=(3, 5, size - 3, size - 3))
+        # top tab
+        for y in range(0, 5):
+            for x in range(6, 10):
+                img.put(c, (x, y))
+        # right socket
+        for y in range(7, 11):
+            for x in range(size - 3, size):
+                img.put(bg or "white", (x, y))
+        # outlines
+        for x in range(3, size - 3):
+            img.put(outline, (x, 5))
+            img.put(outline, (x, size - 3))
+        for y in range(5, size - 3):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 3, y))
+        for x in range(6, 10):
+            img.put(outline, (x, 0))
+            img.put(outline, (x, 4))
+        for y in range(7, 11):
+            img.put(outline, (size - 1, y))
+            img.put(outline, (size - 4, y))
     else:
         img.put(c, to=(2, 2, size - 2, size - 2))
         for x in range(2, size - 2):
