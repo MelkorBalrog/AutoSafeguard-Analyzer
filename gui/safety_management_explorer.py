@@ -108,6 +108,11 @@ class SafetyManagementExplorer(tk.Frame):
                 self.item_map[iid] = ("diagram", label)
 
     # ------------------------------------------------------------------
+    def refresh(self):
+        """Refresh the explorer view to reflect the current model state."""
+        self.populate()
+
+    # ------------------------------------------------------------------
     def new_folder(self):
         name = simpledialog.askstring("New Folder", "Name:", parent=self)
         if not name:

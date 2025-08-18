@@ -28,4 +28,3 @@ def test_governance_shapes_and_relations():
         "Safety Plan",
     ]:
         assert style.get_color(element) != "#FFFFFF"
-

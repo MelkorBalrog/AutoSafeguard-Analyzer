@@ -115,6 +115,18 @@ def test_create_case_from_module(monkeypatch):
     assert explorer.library.cases and explorer.library.cases[0].diagram is diag
 
 
+def test_safety_case_explorer_refresh_calls_populate(monkeypatch):
+    called = {}
+
+    def fake_populate(self):
+        called["called"] = True
+
+    monkeypatch.setattr(safety_case_explorer.SafetyCaseExplorer, "populate", fake_populate)
+    explorer = safety_case_explorer.SafetyCaseExplorer.__new__(safety_case_explorer.SafetyCaseExplorer)
+    safety_case_explorer.SafetyCaseExplorer.refresh(explorer)
+    assert called.get("called")
+
+
 def test_safety_case_table_lists_solutions():
     root = GSNNode("G", "Goal")
     sol1 = GSNNode("S1", "Solution", description="d1")
