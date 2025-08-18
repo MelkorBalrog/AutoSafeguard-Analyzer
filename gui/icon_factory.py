@@ -724,10 +724,48 @@ def create_icon(
                 x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
                 xs.append(int(x))
             xs.sort()
-            for j in range(0, len(xs), 2):
-                img.put(c, to=(xs[j], y, xs[j + 1] + 1, y + 1))
+        for j in range(0, len(xs), 2):
+            img.put(c, to=(xs[j], y, xs[j + 1] + 1, y + 1))
         for x, y in points:
             img.put(outline, (x, y))
+    elif shape == "ring":
+        # Draw a circular ring to represent a connection port
+        cx = cy = size // 2
+        outer = size // 2 - 2
+        inner = outer - 3
+        for y in range(size):
+            for x in range(size):
+                dist = (x - cx) ** 2 + (y - cy) ** 2
+                if inner * inner <= dist <= outer * outer:
+                    img.put(c, (x, y))
+                if outer * outer <= dist <= (outer + 1) * (outer + 1):
+                    img.put(outline, (x, y))
+                if inner * inner <= dist <= (inner + 1) * (inner + 1):
+                    img.put(outline, (x, y))
+    elif shape == "puzzle":
+        # Simple jigsaw puzzle piece for "Part" elements
+        img.put(c, to=(3, 5, size - 3, size - 3))
+        # top tab
+        for y in range(0, 5):
+            for x in range(6, 10):
+                img.put(c, (x, y))
+        # right socket
+        for y in range(7, 11):
+            for x in range(size - 3, size):
+                img.put(bg or "white", (x, y))
+        # outlines
+        for x in range(3, size - 3):
+            img.put(outline, (x, 5))
+            img.put(outline, (x, size - 3))
+        for y in range(5, size - 3):
+            img.put(outline, (3, y))
+            img.put(outline, (size - 3, y))
+        for x in range(6, 10):
+            img.put(outline, (x, 0))
+            img.put(outline, (x, 4))
+        for y in range(7, 11):
+            img.put(outline, (size - 1, y))
+            img.put(outline, (size - 4, y))
     else:
         img.put(c, to=(2, 2, size - 2, size - 2))
         for x in range(2, size - 2):

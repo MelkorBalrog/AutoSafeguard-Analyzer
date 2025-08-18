@@ -2232,23 +2232,29 @@ class FaultTreeApp:
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
         # icons used across tree views
-        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        style = StyleManager.get_instance()
+
+        def _color(name: str, fallback: str = "black") -> str:
+            c = style.get_color(name)
+            return fallback if c == "#FFFFFF" else c
+
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
         self.gsn_module_icon = self.pkg_icon
-        self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
+        self.gsn_diagram_icon = self._create_icon("shield", _color("GSN Diagram", "#4682b4"))
         # small icons for diagram types shown in the explorer
         # an icon for packages is also required when building the
         # architecture tree; previously this attribute was missing which
         # resulted in `AttributeError` when refreshing views.  Creating a
         # dedicated package icon here keeps it available throughout the
         # application lifecycle.
-        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("ellipse", "blue"),
-            "Activity Diagram": self._create_icon("arrow", "green"),
-            "Governance Diagram": self._create_icon("arrow", "green"),
-            "Block Diagram": self._create_icon("rect", "orange"),
-            "Internal Block Diagram": self._create_icon("nested", "purple"),
-            "Control Flow Diagram": self._create_icon("arrow", "red"),
+            "Use Case Diagram": self._create_icon("ellipse", _color("Use Case Diagram", "blue")),
+            "Activity Diagram": self._create_icon("arrow", _color("Activity Diagram", "green")),
+            "Governance Diagram": self._create_icon("gear", _color("Governance Diagram", "green")),
+            "Block Diagram": self._create_icon("component", _color("Block Diagram", "orange")),
+            "Internal Block Diagram": self._create_icon("nested", _color("Internal Block Diagram", "purple")),
+            "Control Flow Diagram": self._create_icon("arrow", _color("Control Flow Diagram", "red")),
         }
         self.clipboard_node = None
         self.cut_mode = False
@@ -16708,7 +16714,7 @@ class FaultTreeApp:
         win.grid_columnconfigure(1, weight=1)
 
         if not hasattr(self, "odd_elem_icon"):
-            self.odd_elem_icon = self._create_icon("rect", "#696969")
+            self.odd_elem_icon = self._create_icon("document", "#696969")
 
         def refresh_libs():
             lib_lb.delete(0, tk.END)

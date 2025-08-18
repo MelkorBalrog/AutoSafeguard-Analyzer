@@ -36,6 +36,7 @@ from analysis.safety_case import SafetyCaseLibrary, SafetyCase
 from gui import messagebox, format_name_with_phase
 from gui.safety_case_table import SafetyCaseTable
 from gui.icon_factory import create_icon
+from gui.style_manager import StyleManager
 
 
 class SafetyCaseExplorer(tk.Frame):
@@ -74,8 +75,14 @@ class SafetyCaseExplorer(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        self.case_icon = self._create_icon("folder", "#b8860b")
-        self.solution_icon = self._create_icon("circle", "#1e90ff")
+        style = StyleManager.get_instance()
+
+        def _color(name: str, default: str) -> str:
+            c = style.get_color(name)
+            return default if c == "#FFFFFF" else c
+
+        self.case_icon = self._create_icon("shield", _color("Safety Case", "#b8860b"))
+        self.solution_icon = self._create_icon("shield_check", _color("Solution", "#1e90ff"))
         self.item_map: Dict[str, Tuple[str, object]] = {}
 
         self.tree.bind("<Double-1>", self._on_double_click)
