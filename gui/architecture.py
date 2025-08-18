@@ -3745,7 +3745,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Process Area": "gear",
             "Activity": "rect",
             "Task": "trapezoid",
-            "Operation": "gear",
+            "Operation": "wrench",
             "Driving Function": "steering",
             "Software Component": "component",
             "Test Suite": "test",
@@ -6955,32 +6955,6 @@ class SysMLDiagramWindow(tk.Frame):
             fill=outline,
         )
 
-    def _draw_gear(
-        self, x: float, y: float, r: float, color: str, outline: str
-    ) -> None:
-        """Draw a gear centered at (*x*, *y*) with radius *r*."""
-        pts: list[tuple[float, float]] = []
-        teeth = 8
-        for i in range(teeth * 2):
-            angle = math.radians(360 / (teeth * 2) * i)
-            rad = r if i % 2 == 0 else r * 0.7
-            px = x + rad * math.cos(angle)
-            py = y + rad * math.sin(angle)
-            pts.append((px, py))
-        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-        self.canvas.create_polygon(
-            [coord for pt in pts for coord in pt], outline=outline, fill=""
-        )
-        hole = r * 0.4
-        self.canvas.create_oval(
-            x - hole,
-            y - hole,
-            x + hole,
-            y + hole,
-            outline=outline,
-            fill=StyleManager.get_instance().get_canvas_color(),
-        )
-
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7330,13 +7304,20 @@ class SysMLDiagramWindow(tk.Frame):
                 font=label_font,
                 anchor="s",
             )
-        elif obj.obj_type in (
-            "Process",
-            "Manufacturing Process",
-            "Operation",
-        ):
+        elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
             r = min(w, h)
-            self._draw_gear(x, y, r, color, outline)
+            pts = []
+            teeth = 8
+            for i in range(teeth * 2):
+                angle = math.radians(360 / (teeth * 2) * i)
+                rad = r if i % 2 == 0 else r * 0.7
+                px = x + rad * math.cos(angle)
+                py = y + rad * math.sin(angle)
+                pts.append((px, py))
+            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
+            hole = r * 0.4
+            self.canvas.create_oval(x - hole, y - hole, x + hole, y + hole, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
@@ -7360,6 +7341,19 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
+        elif obj.obj_type == "Operation":
+            # Draw the operation using the exact wrench icon scaled to fit
+            size = int(min(w, h) * 2)
+            scale = max(1, size // 16)
+            img = create_icon("wrench", color).zoom(scale, scale)
+            self.canvas.create_image(
+                x - 8 * scale,
+                y - 8 * scale,
+                anchor="nw",
+                image=img,
+            )
+            # Cache the image to prevent garbage collection
+            self.gradient_cache[obj.obj_id] = img
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
             self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
@@ -12145,7 +12139,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "Process": self._create_icon("gear", _color("Process")),
             "Process Area": self._create_icon("gear", _color("Process Area")),
             "Work Product": self._create_icon("document", _color("Work Product")),
-            "Operation": self._create_icon("gear", _color("Operation")),
+            "Operation": self._create_icon("wrench", _color("Operation")),
             "Driving Function": self._create_icon("steering", _color("Driving Function")),
         }
         self.default_diag_icon = self._create_icon("document", "gray")
