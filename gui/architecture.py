@@ -255,6 +255,17 @@ _BOTTOM_LABEL_TYPES = {
 }
 
 
+# Object types that cannot be resized
+_FIXED_SIZE_TYPES = {
+    "Initial",
+    "Final",
+    "Actor",
+    "Decision",
+    "Merge",
+    "Work Product",
+} | _BOTTOM_LABEL_TYPES
+
+
 # Connection types excluding Safety & AI relations used for membership checks
 _BASE_CONN_TYPES = {
     "Association",
@@ -4556,14 +4567,7 @@ class SysMLDiagramWindow(tk.Frame):
         y = self.canvas.canvasy(event.y)
         if self.resizing_obj:
             obj = self.resizing_obj
-            if obj.obj_type in (
-                "Initial",
-                "Final",
-                "Actor",
-                "Decision",
-                "Merge",
-                "Work Product",
-            ):
+            if obj.obj_type in _FIXED_SIZE_TYPES:
                 return
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
@@ -5276,14 +5280,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def hit_resize_handle(self, obj: SysMLObject, x: float, y: float) -> str | None:
-        if obj.obj_type in (
-            "Initial",
-            "Final",
-            "Actor",
-            "Decision",
-            "Merge",
-            "Work Product",
-        ):
+        if obj.obj_type in _FIXED_SIZE_TYPES:
             return None
         margin = 5
         ox = obj.x * self.zoom
