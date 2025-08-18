@@ -36,7 +36,8 @@ class GovernanceElementStereotypeTests(unittest.TestCase):
         obj = SysMLObject(1, "Action", 0.0, 0.0, element_id=elem.elem_id, properties={"name": "Draft Plan"})
         win = DummyWindow(diag.diag_id)
         lines = win._object_label_lines(obj)
-        self.assertIn("<<task>>", " ".join(lines))
+        self.assertEqual("<<task>>", lines[0])
+        self.assertEqual("Draft Plan", lines[1])
 
     def test_decision_label_includes_stereotype(self):
         repo = SysMLRepository.get_instance()
@@ -45,7 +46,8 @@ class GovernanceElementStereotypeTests(unittest.TestCase):
         obj = SysMLObject(2, "Decision", 0.0, 0.0, element_id=elem.elem_id, properties={"name": "Gate"})
         win = DummyWindow(diag.diag_id)
         lines = win._object_label_lines(obj)
-        self.assertIn("<<decision>>", " ".join(lines))
+        self.assertEqual("<<decision>>", lines[0])
+        self.assertEqual("Gate", lines[1])
 
 
 if __name__ == "__main__":
