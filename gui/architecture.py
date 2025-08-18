@@ -3479,22 +3479,12 @@ class SysMLDiagramWindow(tk.Frame):
 
         # Prepare icon cache for toolbox buttons
         self._icons: dict[str, tk.PhotoImage] = {}
-        for name in ["Select"] + list(tools) + (relation_tools or []):
+        for name in list(tools) + (relation_tools or []):
             self._icon_for(name)
 
-        # Always provide a select tool at the top of the toolbox
         self.tool_buttons: dict[str, ttk.Button] = {}
         self.tools_frame = ttk.Frame(self.toolbox)
         self.tools_frame.pack(fill=tk.X, padx=2, pady=2)
-        select_btn = ttk.Button(
-            self.tools_frame,
-            text="Select",
-            image=self._icon_for("Select"),
-            compound=tk.LEFT,
-            command=lambda: self.select_tool("Select"),
-        )
-        select_btn.pack(fill=tk.X, padx=2, pady=2)
-        self.tool_buttons["Select"] = select_btn
 
         # Group element tools by category when provided
         if tool_groups:
