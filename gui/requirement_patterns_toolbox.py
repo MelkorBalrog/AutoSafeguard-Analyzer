@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 import json
+import textwrap
 from config import (
     load_diagram_rules,
     validate_diagram_rules,
@@ -364,8 +365,13 @@ class RequirementPatternsEditor(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
+        style = ttk.Style()
+        style.configure("Pattern.Treeview", rowheight=80)
         self.tree = ttk.Treeview(
-            tree_frame, columns=("trigger", "template"), show="headings"
+            tree_frame,
+            columns=("trigger", "template"),
+            show="headings",
+            style="Pattern.Treeview",
         )
         self.tree.heading("trigger", text="Trigger")
         self.tree.heading("template", text="Template")
@@ -496,11 +502,15 @@ class RequirementPatternsEditor(tk.Frame):
     # ------------------------------------------------------------------
     # Pattern helpers
     # ------------------------------------------------------------------
+    def _wrap_cell(self, text: str, width: int = 40) -> str:
+        """Wrap cell text so it displays across multiple lines."""
+        return "\n".join(textwrap.wrap(text, width))
+
     def _populate_pattern_tree(self):
         self.tree.delete(*self.tree.get_children(""))
         for idx, pat in enumerate(self.data):
-            trig = pat.get("Trigger", "")
-            tmpl = pat.get("Template", "")
+            trig = self._wrap_cell(pat.get("Trigger", ""))
+            tmpl = self._wrap_cell(pat.get("Template", ""))
             self.tree.insert("", "end", iid=str(idx), values=(trig, tmpl))
 
     def _edit_item(self, _event=None):
