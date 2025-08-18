@@ -103,6 +103,9 @@ def _apply_pattern(
         if key == "constraint":
             variables[:] = [v for v in variables if v != key]
             return constraint or ""
+        m = re.match(r'action \("(.*)"\)', key)
+        if m:
+            return m.group(1)
         return ""
 
     result = re.sub(r"<([^>]+)>", repl, template)

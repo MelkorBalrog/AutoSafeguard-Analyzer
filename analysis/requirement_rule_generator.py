@@ -162,6 +162,11 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
     return f"{prefix}: {src} --[{rel}]--> {tgt}"
 
 
+def format_action(action: str) -> str:
+    act = (action or "").strip().replace('"', r'\"')
+    return f'<action ("{act}")>'
+
+
 # ===== Safety & AI templates =====
 
 
@@ -181,10 +186,11 @@ def make_sa_template(
 ) -> str:
     action_clean = (action or "").strip()
     obj_phrase = _objects_phrase(objects)
+    act = format_action(action_clean)
     if action_clean.lower() == "collect field data":
-        tmpl = f"{subject} shall {action_clean} from {obj_phrase}"
+        tmpl = f"{subject} shall {act} from {obj_phrase}"
     else:
-        tmpl = f"{subject} shall {action_clean} {obj_phrase}"
+        tmpl = f"{subject} shall {act} {obj_phrase}"
     if not subject_is_object0:
         tmpl += " using the <object0_id> (<object0_class>)."
     else:
@@ -207,16 +213,17 @@ def make_sequence_template(
     parts: List[str] = []
     for idx, rel in enumerate(rel_chain):
         rel_l = (rel or "").strip().lower()
+        action = format_action(rel_l)
         obj = f"the <object{idx+1}_id> (<object{idx+1}_class>)"
         if idx == 0:
             if subject_is_object0:
-                parts.append(f"{rel_l} {obj}")
+                parts.append(f"{action} {obj}")
             else:
                 parts.append(
-                    f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
+                    f"{action} {obj} using the <object0_id> (<object0_class>)"
                 )
         else:
-            parts.append(f"{rel_l} {obj}")
+            parts.append(f"{action} {obj}")
     if len(parts) > 1:
         seq = ", ".join(parts[:-1]) + f", and {parts[-1]}"
     else:
@@ -235,42 +242,47 @@ def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
     r = (relation_label or "").strip().lower()
 
     passive = {
-        "satisfied by": "shall be satisfied by the <object1_id> (<object1_class>).",
-        "used by": "shall be used by the <object1_id> (<object1_class>).",
-        "derived from": "shall be derived from the <object1_id> (<object1_class>).",
+        "satisfied by": "be satisfied by",
+        "used by": "be used by",
+        "derived from": "be derived from",
     }
     if r in passive:
+        act = format_action(passive[r])
         return tidy_sentence(
-            f"<object0_id> (<object0_class>) {passive[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
+            f"<object0_id> (<object0_class>) shall {act} {_objects_phrase(targets)}"
         )
 
     with_prep = {
-        "flow": "shall flow to the <object1_id> (<object1_class>).",
-        "trace": "shall trace to the <object1_id> (<object1_class>).",
-        "communication path": "shall communicate with the <object1_id> (<object1_class>).",
-        "constrained by": "shall comply with the <object1_id> (<object1_class>).",
-        "used after review": "shall be used after review the <object1_id> (<object1_class>).",
-        "used after approval": "shall be used after approval the <object1_id> (<object1_class>).",
-        "propagate by review": "shall propagate by review the <object1_id> (<object1_class>).",
-        "propagate by approval": "shall propagate by approval the <object1_id> (<object1_class>).",
+        "flow": "flow to",
+        "trace": "trace to",
+        "communication path": "communicate with",
+        "constrained by": "comply with",
+        "used after review": "be used after review",
+        "used after approval": "be used after approval",
+        "propagate by review": "propagate by review",
+        "propagate by approval": "propagate by approval",
     }
     if r in with_prep:
+        act = format_action(with_prep[r])
         return tidy_sentence(
-            f"<object0_id> (<object0_class>) {with_prep[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
+            f"<object0_id> (<object0_class>) shall {act} {_objects_phrase(targets)}"
         )
 
     quoted = {
-        "approves": "shall approve '<object1_id> (<object1_class>)'.",
-        "performs": "shall perform '<object1_id> (<object1_class>)'.",
+        "approves": "approve",
+        "performs": "perform",
     }
     if r in quoted:
-        phrase = quoted[r]
+        act = format_action(quoted[r])
         if targets > 1:
-            multi = _objects_phrase(targets).replace("the ", "")
-            phrase = phrase.replace("<object1_id> (<object1_class>)", multi)
-        return tidy_sentence(f"<object0_id> (<object0_class>) {phrase}")
+            obj = _objects_phrase(targets).replace("the ", "")
+        else:
+            obj = "'<object1_id> (<object1_class>)'"
+        return tidy_sentence(
+            f"<object0_id> (<object0_class>) shall {act} {obj}"
+        )
     return tidy_sentence(
-        f"<object0_id> (<object0_class>) shall {r} {_objects_phrase(targets)}"
+        f"<object0_id> (<object0_class>) shall {format_action(r)} {_objects_phrase(targets)}"
     )
 
 

@@ -11215,6 +11215,17 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self._switch_toolbox()
 
     def _switch_toolbox(self) -> None:
+        if not hasattr(self, "_toolbox_frames"):
+            self._toolbox_frames = {
+                "Governance": [
+                    getattr(self, "gov_tools_frame", None),
+                    getattr(self, "gov_elements_frame", None),
+                    getattr(self, "gov_rel_frame", None),
+                ],
+                "Safety & AI Lifecycle": [
+                    getattr(self, "ai_tools_frame", None)
+                ],
+            }
         choice = self.toolbox_var.get()
         for frames in self._toolbox_frames.values():
             for frame in frames:
