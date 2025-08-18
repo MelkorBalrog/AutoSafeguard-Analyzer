@@ -165,29 +165,43 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
 # ===== Safety & AI templates =====
 
 
-def make_sa_template(subject: str, action: str) -> str:
+def _targets_phrase(targets: int) -> str:
+    parts = []
+    for i in range(1, targets + 1):
+        if i == 1:
+            parts.append("the <target_id> (<target_class>)")
+        else:
+            parts.append(f"the <target{i}_id> (<target{i}_class>)")
+    if len(parts) == 1:
+        return parts[0]
+    if len(parts) == 2:
+        return f"{parts[0]} and {parts[1]}"
+    return ", ".join(parts[:-1]) + f", and {parts[-1]}"
+
+
+def make_sa_template(subject: str, action: str, targets: int = 1) -> str:
     action_clean = (action or "").strip()
+    tgt_phrase = _targets_phrase(targets)
     if action_clean.lower() == "collect field data":
         tmpl = (
-            f"{subject} shall {action_clean} from the <target_id> (<target_class>) "
+            f"{subject} shall {action_clean} from {tgt_phrase} "
             f"using the <source_id> (<source_class>)."
         )
     else:
         tmpl = (
-            f"{subject} shall {action_clean} the <target_id> (<target_class>) "
+            f"{subject} shall {action_clean} {tgt_phrase} "
             f"using the <source_id> (<source_class>)."
         )
     return tidy_sentence(tmpl)
 
 
-def make_sa_variables_base() -> List[str]:
-    return [
-        "<source_id>",
-        "<source_class>",
-        "<target_id>",
-        "<target_class>",
-        "<acceptance_criteria>",
-    ]
+def make_sa_variables_base(targets: int = 1) -> List[str]:
+    out = ["<source_id>", "<source_class>", "<target_id>", "<target_class>"]
+    for i in range(2, targets + 1):
+        out.append(f"<target{i}_id>")
+        out.append(f"<target{i}_class>")
+    out.append("<acceptance_criteria>")
+    return out
 
 
 # ===== Governance templates =====
@@ -197,7 +211,7 @@ def make_gov_variables_base() -> List[str]:
     return ["<owner>", "<due_date>", "<evidence_ref>"]
 
 
-def gov_template_for_relation(relation_label: str) -> str:
+def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
     r = (relation_label or "").strip().lower()
 
     passive = {
@@ -206,7 +220,9 @@ def gov_template_for_relation(relation_label: str) -> str:
         "derived from": "shall be derived from the <target_id> (<target_class>).",
     }
     if r in passive:
-        return tidy_sentence(f"<source_id> (<source_class>) {passive[r]}")
+        return tidy_sentence(
+            f"<source_id> (<source_class>) {passive[r].replace('the <target_id> (<target_class>)', _targets_phrase(targets))}"
+        )
 
     with_prep = {
         "flow": "shall flow to the <target_id> (<target_class>).",
@@ -219,30 +235,45 @@ def gov_template_for_relation(relation_label: str) -> str:
         "propagate by approval": "shall propagate by approval the <target_id> (<target_class>).",
     }
     if r in with_prep:
-        return tidy_sentence(f"<source_id> (<source_class>) {with_prep[r]}")
+        return tidy_sentence(
+            f"<source_id> (<source_class>) {with_prep[r].replace('the <target_id> (<target_class>)', _targets_phrase(targets))}"
+        )
 
     quoted = {
         "approves": "shall approve '<target_id> (<target_class>)'.",
         "performs": "shall perform '<target_id> (<target_class>)'.",
     }
     if r in quoted:
-        return tidy_sentence(f"<source_id> (<source_class>) {quoted[r]}")
-
+        phrase = quoted[r]
+        if targets > 1:
+            multi = _targets_phrase(targets).replace("the ", "")
+            phrase = phrase.replace("<target_id> (<target_class>)", multi)
+        return tidy_sentence(f"<source_id> (<source_class>) {phrase}")
     return tidy_sentence(
-        f"<source_id> (<source_class>) shall {r} the <target_id> (<target_class>)."
+        f"<source_id> (<source_class>) shall {r} {_targets_phrase(targets)}"
     )
 
 
-def subject_and_action(
+def rule_info(
     requirement_rules: Dict[str, dict],
     relation_label: str,
     default_subject: str,
     default_action: str,
-) -> Tuple[str, str]:
-    rr = requirement_rules.get(relation_label.lower(), {}) if isinstance(requirement_rules, dict) else {}
+    default_targets: int = 1,
+) -> Tuple[str, str, int, str | None, List[str] | None]:
+    rr = (
+        requirement_rules.get(relation_label.lower(), {})
+        if isinstance(requirement_rules, dict)
+        else {}
+    )
     subj = rr.get("subject", default_subject)
     act = rr.get("action", default_action)
-    return subj, act
+    tgt = rr.get("targets", default_targets)
+    template = rr.get("template")
+    variables = rr.get("variables") if isinstance(rr.get("variables"), list) else None
+    if not isinstance(tgt, int) or tgt < 1:
+        tgt = default_targets
+    return subj, act, tgt, template, variables
 
 
 # ============================================================================
@@ -266,13 +297,23 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 continue
             for src_type, tgt_list in (src_map or {}).items():
                 for tgt_type in (tgt_list or []):
-                    subj, act = subject_and_action(
+                    (
+                        subj,
+                        act,
+                        tgt_count,
+                        tmpl_override,
+                        var_override,
+                    ) = rule_info(
                         req_rules, rel_label, "Engineering team", rel_label.lower()
                     )
                     base_id = f"SA-{rel_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                     trigger = make_trigger("Safety&AI", src_type, rel_label, tgt_type)
-                    template = make_sa_template(subj, act)
-                    variables = make_sa_variables_base()
+                    if tmpl_override:
+                        template = tmpl_override
+                        variables = var_override or []
+                    else:
+                        template = make_sa_template(subj, act, tgt_count)
+                        variables = make_sa_variables_base(tgt_count)
                     notes = "Auto-generated from diagram rules (Safety&AI)."
                     for suf, need_cond, need_const in SUFFIXES:
                         pid = base_id + suf
@@ -305,10 +346,23 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 continue
             for src_type, tgt_list in (src_map or {}).items():
                 for tgt_type in (tgt_list or []):
-                    template = gov_template_for_relation(relation_label)
+                    (
+                        _subj,
+                        _act,
+                        tgt_count,
+                        tmpl_override,
+                        var_override,
+                    ) = rule_info(
+                        req_rules, relation_label, "Engineering team", relation_label.lower()
+                    )
+                    if tmpl_override:
+                        template = tmpl_override
+                        variables = var_override or []
+                    else:
+                        template = gov_template_for_relation(relation_label, tgt_count)
+                        variables = make_gov_variables_base()
                     base_id = f"GOV-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                     trigger = make_trigger("Gov", src_type, relation_label, tgt_type)
-                    variables = make_gov_variables_base()
                     notes = "Auto-generated from diagram rules (Governance)."
                     for suf, need_cond, need_const in SUFFIXES:
                         pid = base_id + suf
@@ -331,6 +385,75 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                                 "Notes": notes,
                             }
                         )
+
+    # Sequence rules --------------------------------------------------------
+    seq_rules = rules.get("requirement_sequences", {}) or {}
+    if isinstance(seq_rules, dict) and isinstance(sa_rules, dict):
+        for seq_label, info in seq_rules.items():
+            rel_chain = info.get("relations") or []
+            if not isinstance(rel_chain, list) or len(rel_chain) < 2:
+                continue
+            first_map = sa_rules.get(rel_chain[0], {})
+            if not isinstance(first_map, dict):
+                continue
+            paths = []
+            for src_type, tgt_list in (first_map or {}).items():
+                for tgt in (tgt_list or []):
+                    paths.append([(src_type, tgt)])
+            for rel in rel_chain[1:]:
+                rel_map = sa_rules.get(rel, {})
+                if not isinstance(rel_map, dict):
+                    paths = []
+                    break
+                new_paths = []
+                for path in paths:
+                    last_tgt = path[-1][1]
+                    for nxt in rel_map.get(last_tgt, []):
+                        new_paths.append(path + [(last_tgt, nxt)])
+                paths = new_paths
+            for path in paths:
+                src_type = path[0][0]
+                final_tgt = path[-1][1]
+                tgt_count = len(path)
+                subj = info.get("subject", "Engineering team")
+                act = info.get("action", seq_label)
+                tmpl_override = info.get("template")
+                var_override = info.get("variables")
+                if tmpl_override:
+                    template = tmpl_override
+                    variables = var_override or []
+                else:
+                    template = make_sa_template(subj, act, tgt_count)
+                    variables = make_sa_variables_base(tgt_count)
+                base_id = (
+                    f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
+                )
+                trigger_parts = [src_type]
+                for rel, edge in zip(rel_chain, path):
+                    trigger_parts.append(f"--[{rel}]--> {edge[1]}")
+                trigger = "Sequence: " + " ".join(trigger_parts)
+                notes = "Auto-generated from sequence rules."
+                for suf, need_cond, need_const in SUFFIXES:
+                    pid = base_id + suf
+                    t = (
+                        build_cond_const_template(template)
+                        if (need_cond and need_const)
+                        else build_cond_template(template)
+                        if need_cond
+                        else build_const_template(template)
+                        if need_const
+                        else normalize_base_template(template)
+                    )
+                    vs = ensure_variables(variables, need_cond, need_const)
+                    out.append(
+                        {
+                            "Pattern ID": pid,
+                            "Trigger": trigger,
+                            "Template": t,
+                            "Variables": vs,
+                            "Notes": notes,
+                        }
+                    )
 
     # De-duplicate and sort --------------------------------------------------
     uniq: Dict[str, dict] = {}

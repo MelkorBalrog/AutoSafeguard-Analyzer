@@ -105,7 +105,8 @@
     "Operate",
     "Inspect",
     "Triage",
-    "Improve"
+    "Improve",
+    "Develops"
   ],
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
@@ -239,6 +240,24 @@
     "complies with": {"action": "comply with", "subject": "Engineering team", "constraint": true}
   },
 
+  "requirement_sequences": {
+    "incident triage": {
+      "relations": ["Triage", "Develops"],
+      "subject": "Safety manager",
+      "action": "trigger test development"
+    },
+    "policy compliance": {
+      "relations": ["Constrains", "Produces"],
+      "subject": "Governance team",
+      "action": "enforce policy"
+    },
+    "model validation": {
+      "relations": ["Validate", "Produces"],
+      "subject": "Validation team",
+      "action": "validate models"
+    }
+  },
+
   // Default requirement role per node type
   // Format: "Node Type": "subject|action|condition|constraint|object"
   "node_roles": {
@@ -296,7 +315,12 @@
     "Curation": {"Database": ["Database"]},
     "Ingestion": {"Database": ["Database"]},
     "Monitoring": {"ANN": ["Operation"]},
-    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]}
+    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]},
+    "Triage": {"Safety Issue": ["Field Data"]},
+    "Develops": {"Field Data": ["Test Suite"]},
+    "Constrains": {"Policy": ["Process"]},
+    "Produces": {"Process": ["Document"], "Test Suite": ["Document"]},
+    "Validate": {"Model": ["Test Suite"]}
   },
 
   // Connection validation rules per diagram type and connection kind

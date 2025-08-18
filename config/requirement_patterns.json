@@ -4856,6 +4856,62 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
+    "Pattern ID": "SA-constrains-Policy-Process",
+    "Trigger": "Safety&AI: Policy --[Constrains]--> Process",
+    "Template": "Engineering team shall constrain the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-constrains-Policy-Process-COND",
+    "Trigger": "Safety&AI: Policy --[Constrains]--> Process",
+    "Template": "When <condition>, Engineering team shall constrain the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-constrains-Policy-Process-COND-CONST",
+    "Trigger": "Safety&AI: Policy --[Constrains]--> Process",
+    "Template": "When <condition>, Engineering team shall constrain the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-constrains-Policy-Process-CONST",
+    "Trigger": "Safety&AI: Policy --[Constrains]--> Process",
+    "Template": "Engineering team shall constrain the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
     "Pattern ID": "SA-curation-Database-Database",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
     "Template": "Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -4901,6 +4957,62 @@
     "Pattern ID": "SA-curation-Database-Database-CONST",
     "Trigger": "Safety&AI: Database --[Curation]--> Database",
     "Template": "Engineering team shall curate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-develops-Field_Data-Test_Suite",
+    "Trigger": "Safety&AI: Field Data --[Develops]--> Test Suite",
+    "Template": "Engineering team shall develops the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-develops-Field_Data-Test_Suite-COND",
+    "Trigger": "Safety&AI: Field Data --[Develops]--> Test Suite",
+    "Template": "When <condition>, Engineering team shall develops the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-develops-Field_Data-Test_Suite-COND-CONST",
+    "Trigger": "Safety&AI: Field Data --[Develops]--> Test Suite",
+    "Template": "When <condition>, Engineering team shall develops the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-develops-Field_Data-Test_Suite-CONST",
+    "Trigger": "Safety&AI: Field Data --[Develops]--> Test Suite",
+    "Template": "Engineering team shall develops the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -5304,6 +5416,118 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
+    "Pattern ID": "SA-produces-Process-Document",
+    "Trigger": "Safety&AI: Process --[Produces]--> Document",
+    "Template": "Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Process-Document-COND",
+    "Trigger": "Safety&AI: Process --[Produces]--> Document",
+    "Template": "When <condition>, Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Process-Document-COND-CONST",
+    "Trigger": "Safety&AI: Process --[Produces]--> Document",
+    "Template": "When <condition>, Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Process-Document-CONST",
+    "Trigger": "Safety&AI: Process --[Produces]--> Document",
+    "Template": "Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Test_Suite-Document",
+    "Trigger": "Safety&AI: Test Suite --[Produces]--> Document",
+    "Template": "Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Test_Suite-Document-COND",
+    "Trigger": "Safety&AI: Test Suite --[Produces]--> Document",
+    "Template": "When <condition>, Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Test_Suite-Document-COND-CONST",
+    "Trigger": "Safety&AI: Test Suite --[Produces]--> Document",
+    "Template": "When <condition>, Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-produces-Test_Suite-Document-CONST",
+    "Trigger": "Safety&AI: Test Suite --[Produces]--> Document",
+    "Template": "Engineering team shall produce the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
     "Pattern ID": "SA-synthesis-ANN-Database",
     "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
     "Template": "Engineering team shall synthesize the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -5358,5 +5582,309 @@
       "<constraint>"
     ],
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-triage-Safety_Issue-Field_Data",
+    "Trigger": "Safety&AI: Safety Issue --[Triage]--> Field Data",
+    "Template": "Support team shall triage the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-triage-Safety_Issue-Field_Data-COND",
+    "Trigger": "Safety&AI: Safety Issue --[Triage]--> Field Data",
+    "Template": "When <condition>, Support team shall triage the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-triage-Safety_Issue-Field_Data-COND-CONST",
+    "Trigger": "Safety&AI: Safety Issue --[Triage]--> Field Data",
+    "Template": "When <condition>, Support team shall triage the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-triage-Safety_Issue-Field_Data-CONST",
+    "Trigger": "Safety&AI: Safety Issue --[Triage]--> Field Data",
+    "Template": "Support team shall triage the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-validate-Model-Test_Suite",
+    "Trigger": "Safety&AI: Model --[Validate]--> Test Suite",
+    "Template": "Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-validate-Model-Test_Suite-COND",
+    "Trigger": "Safety&AI: Model --[Validate]--> Test Suite",
+    "Template": "When <condition>, Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-validate-Model-Test_Suite-COND-CONST",
+    "Trigger": "Safety&AI: Model --[Validate]--> Test Suite",
+    "Template": "When <condition>, Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-validate-Model-Test_Suite-CONST",
+    "Trigger": "Safety&AI: Model --[Validate]--> Test Suite",
+    "Template": "Validation team shall validate the <target_id> (<target_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SEQ-incident_triage-Safety_Issue-Test_Suite",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite",
+    "Template": "Safety manager shall trigger test development the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-incident_triage-Safety_Issue-Test_Suite-COND",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite",
+    "Template": "When <condition>, Safety manager shall trigger test development the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-incident_triage-Safety_Issue-Test_Suite-COND-CONST",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite",
+    "Template": "When <condition>, Safety manager shall trigger test development the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-incident_triage-Safety_Issue-Test_Suite-CONST",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite",
+    "Template": "Safety manager shall trigger test development the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-model_validation-Model-Document",
+    "Trigger": "Sequence: Model --[Validate]--> Test Suite --[Produces]--> Document",
+    "Template": "Validation team shall validate models the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-model_validation-Model-Document-COND",
+    "Trigger": "Sequence: Model --[Validate]--> Test Suite --[Produces]--> Document",
+    "Template": "When <condition>, Validation team shall validate models the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-model_validation-Model-Document-COND-CONST",
+    "Trigger": "Sequence: Model --[Validate]--> Test Suite --[Produces]--> Document",
+    "Template": "When <condition>, Validation team shall validate models the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-model_validation-Model-Document-CONST",
+    "Trigger": "Sequence: Model --[Validate]--> Test Suite --[Produces]--> Document",
+    "Template": "Validation team shall validate models the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-policy_compliance-Policy-Document",
+    "Trigger": "Sequence: Policy --[Constrains]--> Process --[Produces]--> Document",
+    "Template": "Governance team shall enforce policy the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-policy_compliance-Policy-Document-COND",
+    "Trigger": "Sequence: Policy --[Constrains]--> Process --[Produces]--> Document",
+    "Template": "When <condition>, Governance team shall enforce policy the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-policy_compliance-Policy-Document-COND-CONST",
+    "Trigger": "Sequence: Policy --[Constrains]--> Process --[Produces]--> Document",
+    "Template": "When <condition>, Governance team shall enforce policy the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-policy_compliance-Policy-Document-CONST",
+    "Trigger": "Sequence: Policy --[Constrains]--> Process --[Produces]--> Document",
+    "Template": "Governance team shall enforce policy the <target_id> (<target_class>) and the <target2_id> (<target2_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
   }
 ]
