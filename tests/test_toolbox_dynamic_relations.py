@@ -41,3 +41,12 @@ def test_irrelevant_relations_filtered():
     # an artifact, so it should not appear in either toolbox.
     assert "Approves" not in defs["Artifacts"]["relations"]
     assert "Approves" not in defs["Entities"]["relations"]
+
+
+def test_cross_category_relations_surface():
+    defs = architecture._toolbox_defs()
+    art_ext = defs["Artifacts"]["externals"]
+    assert "Entities" in art_ext
+    assert "Role" in art_ext["Entities"]["nodes"]
+    assert "Approves" in art_ext["Entities"]["relations"]
+

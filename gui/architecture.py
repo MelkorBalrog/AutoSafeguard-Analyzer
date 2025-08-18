@@ -159,6 +159,15 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
 
 GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
 
+# Map node types to their toolbox group for cross-category relationship lookups
+NODE_TO_GROUP: dict[str, str] = {}
+for group, nodes in GOV_ELEMENT_CLASSES.items():
+    for n in nodes:
+        NODE_TO_GROUP[n] = group
+if SAFETY_AI_NODES:
+    for n in SAFETY_AI_NODES:
+        NODE_TO_GROUP[n] = "Safety & AI Lifecycle"
+
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(
@@ -221,17 +230,68 @@ def _relations_for(nodes: list[str]) -> list[str]:
     return sorted(rels)
 
 
-def _toolbox_defs() -> dict[str, dict[str, list[str]]]:
+def _external_relations_for(nodes: list[str]) -> dict[str, dict[str, list[str]]]:
+    """Return mapping of related toolbox groups for ``nodes``.
+
+    Each key is another toolbox group name and the value lists the external
+    elements and relationships that can connect to ``nodes`` based on the
+    current diagram rules.
+    """
+
+    externals: dict[str, dict[str, set[str]]] = {}
+    node_set = set(nodes)
+
+    def add(group: str, node: str, rel: str) -> None:
+        data = externals.setdefault(group, {"nodes": set(), "relations": set()})
+        data["nodes"].add(node)
+        data["relations"].add(rel)
+
+    gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
+    for rel, srcs in gov_rules.items():
+        for src, dests in srcs.items():
+            src_group = NODE_TO_GROUP.get(src)
+            for dest in dests:
+                dest_group = NODE_TO_GROUP.get(dest)
+                if src in node_set and dest not in node_set and dest_group:
+                    add(dest_group, dest, rel)
+                elif dest in node_set and src not in node_set and src_group:
+                    add(src_group, src, rel)
+
+    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
+        for src, dests in srcs.items():
+            src_group = NODE_TO_GROUP.get(src)
+            for dest in dests:
+                dest_group = NODE_TO_GROUP.get(dest)
+                if src in node_set and dest not in node_set and dest_group:
+                    add(dest_group, dest, rel)
+                elif dest in node_set and src not in node_set and src_group:
+                    add(src_group, src, rel)
+
+    result: dict[str, dict[str, list[str]]] = {}
+    for grp, data in externals.items():
+        result[grp] = {
+            "nodes": sorted(data["nodes"]),
+            "relations": sorted(data["relations"]),
+        }
+    return result
+
+
+def _toolbox_defs() -> dict[str, dict[str, list[str] | dict]]:
     """Return mapping of toolbox name to node/relation lists."""
-    defs: dict[str, dict[str, list[str]]] = {}
+    defs: dict[str, dict[str, list[str] | dict]] = {}
     for group, nodes in GOV_ELEMENT_CLASSES.items():
         if not nodes:
             continue
-        defs[group] = {"nodes": nodes, "relations": _relations_for(nodes)}
+        defs[group] = {
+            "nodes": nodes,
+            "relations": _relations_for(nodes),
+            "externals": _external_relations_for(nodes),
+        }
     if SAFETY_AI_NODES:
         defs["Safety & AI Lifecycle"] = {
             "nodes": SAFETY_AI_NODES,
             "relations": _relations_for(SAFETY_AI_NODES),
+            "externals": _external_relations_for(SAFETY_AI_NODES),
         }
     return defs
 
@@ -10966,6 +11026,33 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                             compound=tk.LEFT,
                             command=lambda t=rel_name: self.select_tool(t),
                         ).pack(fill=tk.X, padx=2, pady=2)
+                for grp, sub in data.get("externals", {}).items():
+                    sub_frame = ttk.LabelFrame(frame, text=f"Related {grp}")
+                    sub_frame.pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("nodes"):
+                        selem = ttk.LabelFrame(sub_frame, text="Elements (elements)")
+                        selem.pack(fill=tk.X, padx=2, pady=2)
+                        for node in sub["nodes"]:
+                            ttk.Button(
+                                selem,
+                                text=node,
+                                image=self._icon_for(node),
+                                compound=tk.LEFT,
+                                command=lambda t=node: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("relations"):
+                        srel = ttk.LabelFrame(
+                            sub_frame, text="Relationships (relationships)"
+                        )
+                        srel.pack(fill=tk.X, padx=2, pady=2)
+                        for rel_name in sub["relations"]:
+                            ttk.Button(
+                                srel,
+                                text=rel_name,
+                                image=self._icon_for(rel_name),
+                                compound=tk.LEFT,
+                                command=lambda t=rel_name: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
             else:  # pragma: no cover - headless tests
                 frame = types.SimpleNamespace(
                     pack=lambda *a, **k: None,
