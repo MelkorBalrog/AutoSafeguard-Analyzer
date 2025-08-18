@@ -9,6 +9,7 @@ from gui import messagebox
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
+from gui.icon_factory import create_icon as draw_icon
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -37,6 +38,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         body.pack(fill=tk.BOTH, expand=True)
 
         self.toolbox = ttk.Frame(body)
+        self._icons = {
+            "Variable": draw_icon("circle", "lightgray"),
+            "Triggering Condition": draw_icon("circle", "lightblue"),
+            "Existing Triggering Condition": draw_icon("circle", "lightblue"),
+            "Functional Insufficiency": draw_icon("circle", "lightyellow"),
+            "Existing Functional Insufficiency": draw_icon("circle", "lightyellow"),
+            "Existing Malfunction": draw_icon("circle", "lightgreen"),
+            "Relationship": draw_icon("relation", "black"),
+        }
         for name in (
             "Variable",
             "Triggering Condition",
@@ -47,7 +57,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Relationship",
         ):
             ttk.Button(
-                self.toolbox, text=name, command=lambda t=name: self.select_tool(t)
+                self.toolbox,
+                text=name,
+                image=self._icons.get(name),
+                compound=tk.LEFT,
+                command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
         # Pack then immediately hide so order relative to the canvas is preserved
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
