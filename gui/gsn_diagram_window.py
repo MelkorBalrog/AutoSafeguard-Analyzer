@@ -16,6 +16,7 @@ from .gsn_config_window import GSNElementConfig
 from .gsn_connection_config import GSNConnectionConfig
 from . import messagebox
 from .style_manager import StyleManager
+from .icon_factory import create_icon
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -67,22 +68,43 @@ class GSNDiagramWindow(tk.Frame):
 
         # toolbox with buttons to add nodes and connectors
         self.toolbox_container = ttk.Frame(self)
-        self.toolbox_container.pack(side=tk.TOP, fill=tk.X)
+        self.toolbox_container.pack(side=tk.LEFT, fill=tk.Y)
         self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
-        self.toolbox_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
         toolbox_scroll = ttk.Scrollbar(
-            self.toolbox_container, orient=tk.HORIZONTAL, command=self.toolbox_canvas.xview
+            self.toolbox_container, orient=tk.VERTICAL, command=self.toolbox_canvas.yview
         )
-        toolbox_scroll.pack(side=tk.BOTTOM, fill=tk.X)
-        self.toolbox_canvas.configure(xscrollcommand=toolbox_scroll.set)
+        toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.toolbox_canvas.configure(yscrollcommand=toolbox_scroll.set)
         self.toolbox = ttk.Frame(self.toolbox_canvas)
         self.toolbox_canvas.create_window((0, 0), window=self.toolbox, anchor="nw")
         self.toolbox.bind(
             "<Configure>",
             lambda e: self.toolbox_canvas.configure(
-                scrollregion=self.toolbox_canvas.bbox("all"), height=e.height
+                scrollregion=self.toolbox_canvas.bbox("all"), width=e.width
             ),
         )
+
+        style = StyleManager.get_instance()
+
+        def _color(name: str, default: str) -> str:
+            c = style.get_color(name)
+            return default if c == "#FFFFFF" else c
+
+        self._icons = {
+            "Goal": create_icon("rect", _color("Goal", "#2e8b57")),
+            "Strategy": create_icon("parallelogram", _color("Strategy", "#8b008b")),
+            "Solution": create_icon("circle", _color("Solution", "#1e90ff")),
+            "Assumption": create_icon("ellipse", _color("Assumption", "#b22222")),
+            "Justification": create_icon("ellipse", _color("Justification", "#ff8c00")),
+            "Context": create_icon("ellipse", _color("Context", "#696969")),
+            "Module": create_icon("folder", _color("Module", "#b8860b")),
+            "Solved By": create_icon("arrow", _color("Solved By", "black")),
+            "In Context Of": create_icon("relation", _color("In Context Of", "black")),
+            "Zoom In": create_icon("plus", "black"),
+            "Zoom Out": create_icon("minus", "black"),
+            "Export CSV": create_icon("disk", "black"),
+        }
 
         node_cmds = [
             ("Goal", self.add_goal),
@@ -96,7 +118,13 @@ class GSNDiagramWindow(tk.Frame):
         node_frame = ttk.LabelFrame(self.toolbox, text="Elements (elements)")
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
-            ttk.Button(node_frame, text=name, command=cmd).pack(side=tk.LEFT)
+            ttk.Button(
+                node_frame,
+                text=name,
+                command=cmd,
+                image=self._icons.get(name),
+                compound=tk.LEFT,
+            ).pack(fill=tk.X, padx=2, pady=2)
 
         rel_cmds = [
             ("Solved By", self.connect_solved_by),
@@ -105,7 +133,13 @@ class GSNDiagramWindow(tk.Frame):
         rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships (relationships)")
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:
-            ttk.Button(rel_frame, text=name, command=cmd).pack(side=tk.LEFT)
+            ttk.Button(
+                rel_frame,
+                text=name,
+                command=cmd,
+                image=self._icons.get(name),
+                compound=tk.LEFT,
+            ).pack(fill=tk.X, padx=2, pady=2)
 
         util_cmds = [
             ("Zoom In", self.zoom_in),
@@ -115,11 +149,17 @@ class GSNDiagramWindow(tk.Frame):
         util_frame = ttk.Frame(self.toolbox)
         util_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in util_cmds:
-            ttk.Button(util_frame, text=name, command=cmd).pack(side=tk.LEFT)
+            ttk.Button(
+                util_frame,
+                text=name,
+                command=cmd,
+                image=self._icons.get(name),
+                compound=tk.LEFT,
+            ).pack(fill=tk.X, padx=2, pady=2)
 
         # drawing canvas with scrollbars so large diagrams remain accessible
         canvas_frame = ttk.Frame(self)
-        canvas_frame.pack(fill=tk.BOTH, expand=True)
+        canvas_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(
             canvas_frame,
             width=800,

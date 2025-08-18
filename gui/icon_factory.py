@@ -78,6 +78,20 @@ def create_icon(
         for y in range(3, size - 3):
             img.put(outline, (3, y))
             img.put(outline, (size - 4, y))
+    elif shape == "parallelogram":
+        offset = size // 4
+        top = 3
+        bottom = size - 3
+        for y in range(top, bottom):
+            t = (y - top) / (bottom - top - 1)
+            x1 = int(3 + offset - offset * t)
+            x2 = int(size - 3 - offset * t)
+            img.put(c, to=(x1, y, x2, y + 1))
+            if y in (top, bottom - 1):
+                for x in range(x1, x2):
+                    img.put(outline, (x, y))
+            img.put(outline, (x1, y))
+            img.put(outline, (x2 - 1, y))
     elif shape == "folder":
         img.put(c, to=(1, 5, size - 2, size - 2))
         img.put(c, to=(1, 3, size // 2, 5))
@@ -604,6 +618,13 @@ def create_icon(
             img.put(outline, (i, mid))
             img.put(outline, (i, i))
             img.put(outline, (i, size - i - 1))
+    elif shape == "minus":
+        mid = size // 2
+        for x in range(3, size - 3):
+            img.put(c, (x, mid))
+        for x in range(3, size - 3):
+            img.put(outline, (x, mid - 1))
+            img.put(outline, (x, mid + 1))
     elif shape == "plus":
         mid = size // 2
         for x in range(3, size - 3):
