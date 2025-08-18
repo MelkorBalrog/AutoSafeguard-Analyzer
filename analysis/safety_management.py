@@ -478,18 +478,30 @@ class SafetyManagementToolbox:
     # ------------------------------------------------------------------
     def diagrams_in_module(self, name: str) -> set[str]:
         """Return all diagram names contained within module *name*."""
+
         mod = self._find_module(name, self.modules)
-        if not mod:
-            return set()
-
         names: set[str] = set()
+        if mod:
+            def _collect(m: GovernanceModule) -> None:
+                names.update(m.diagrams)
+                for sub in m.modules:
+                    _collect(sub)
 
-        def _collect(m: GovernanceModule) -> None:
-            names.update(m.diagrams)
-            for sub in m.modules:
-                _collect(sub)
+            _collect(mod)
 
-        _collect(mod)
+        # Governance diagrams may also declare their lifecycle via the
+        # repository ``phase`` attribute even when they were not explicitly
+        # placed inside a toolbox folder.  Include those diagrams so that work
+        # products drawn on such diagrams still enable their analyses when the
+        # corresponding phase becomes active.
+        repo = SysMLRepository.get_instance()
+        names.update(
+            d.name
+            for d in repo.diagrams.values()
+            if d.diag_type == "Governance Diagram"
+            and "safety-management" in getattr(d, "tags", [])
+            and d.phase == name
+        )
         return names
 
     # ------------------------------------------------------------------
@@ -524,7 +536,15 @@ class SafetyManagementToolbox:
                     return found
             return None
 
-        return _search(self.modules)
+        found = _search(self.modules)
+        if found:
+            return found
+
+        # Fallback to the repository metadata when the diagram has a lifecycle
+        # phase assigned but is not tracked inside the toolbox hierarchy.
+        repo = SysMLRepository.get_instance()
+        diag = next((d for d in repo.diagrams.values() if d.name == diagram), None)
+        return getattr(diag, "phase", None)
 
     def phase_for_document(self, analysis: str, name: str) -> Optional[str]:
         """Return lifecycle phase assigned to ``analysis`` document ``name``."""

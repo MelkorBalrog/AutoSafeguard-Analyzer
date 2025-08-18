@@ -337,6 +337,21 @@ class SysMLRepository:
         if diag and elem_id not in diag.elements:
             if self.diagram_read_only(diag_id):
                 return
+            try:
+                from analysis import safety_management as sm
+
+                toolbox = getattr(sm, "ACTIVE_TOOLBOX", None)
+            except Exception:  # pragma: no cover - optional toolbox
+                toolbox = None
+            if toolbox:
+                src_id = self.element_diagrams.get(elem_id)
+                src = self.diagrams.get(src_id) if src_id else None
+                if src:
+                    allowed = toolbox.analysis_inputs(
+                        diag.diag_type, reviewed=True, approved=True
+                    )
+                    if src.diag_type not in allowed:
+                        return
             self.push_undo_state()
             diag.elements.append(elem_id)
 
