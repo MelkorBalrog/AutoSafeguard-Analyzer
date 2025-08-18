@@ -343,18 +343,33 @@ def create_icon(
         for x,y in points:
             img.put(outline,(x,y))
     elif shape == "wrench":
-        mid=size//2
-        for x in range(mid-1,mid+2):
-            img.put(c,to=(x,mid,x+1,size-2))
-            for y in range(mid,size-2):
-                img.put(outline,(mid-1,y))
-                img.put(outline,(mid+1,y))
-        for y in range(mid-5,mid-1):
-            for x in range(mid-3,mid+3):
-                if x in (mid-3,mid+2) or y in (mid-5,mid-2):
-                    img.put(outline,(x,y))
-                else:
-                    img.put(c,(x,y))
+        mid = size // 2
+        head_cy = 5
+        r = 5
+        for y in range(head_cy - r, head_cy + r + 1):
+            for x in range(mid - r, mid + r + 1):
+                dist = (x - mid) ** 2 + (y - head_cy) ** 2
+                if dist <= r * r:
+                    img.put(c, (x, y))
+                if r * r <= dist <= (r + 1) * (r + 1):
+                    img.put(outline, (x, y))
+        notch_start = mid + r // 2
+        for x in range(notch_start, mid + r + 1):
+            span = x - notch_start
+            for y in range(head_cy - span, head_cy + span + 1):
+                img.put(bg or "white", (x, y))
+            img.put(outline, (x, head_cy - span))
+            img.put(outline, (x, head_cy + span))
+        for x in range(mid - 1, mid + 2):
+            img.put(c, to=(x, head_cy, x + 1, size - 2))
+        for y in range(head_cy, size - 2):
+            img.put(outline, (mid - 1, y))
+            img.put(outline, (mid + 1, y))
+        for x in range(mid - 1, mid + 2):
+            for y in range(size - 4, size - 2):
+                img.put(bg or "white", (x, y))
+                if x in (mid - 1, mid + 1) or y in (size - 4, size - 3):
+                    img.put(outline, (x, y))
     elif shape == "steering":
         mid=size//2
         r=size//2-2
