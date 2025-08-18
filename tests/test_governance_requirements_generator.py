@@ -44,7 +44,7 @@ def test_generate_requirements_from_governance_diagram():
 
 def test_ai_training_and_curation_requirements():
     diagram = GovernanceDiagram()
-    diagram.add_task("Database1", node_type="Database")
+    diagram.add_task("Database1", node_type="AI Database")
     diagram.add_task("ANN1", node_type="ANN")
     diagram.add_task("Decision1", node_type="Decision")
     diagram.add_relationship(
@@ -62,10 +62,10 @@ def test_ai_training_and_curation_requirements():
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
     assert (
-        "If completion >= 0.98, Engineering team shall train the ANN1 (ANN) using the Database1 (Database)."
+        "If completion >= 0.98, Engineering team shall train the ANN1 (ANN) using the Database1 (AI Database)."
         in texts
     )
-    assert "If completion < 0.98, Engineering team shall curate 'Database1 (Database)'." in texts
+    assert "If completion < 0.98, Engineering team shall curate 'Database1 (AI Database)'." in texts
 
     train_req = next(r for r in reqs if r.action == "train")
     assert train_req.subject == "Engineering team"
@@ -80,12 +80,12 @@ def test_ai_training_and_curation_requirements():
 
 def test_acquisition_pattern_requirement():
     diagram = GovernanceDiagram()
-    diagram.add_task("DB1", node_type="Database")
+    diagram.add_task("DB1", node_type="AI Database")
     diagram.add_task("DAQ1", node_type="Data acquisition")
     diagram.add_relationship("DB1", "DAQ1", conn_type="Acquisition")
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
-    assert "Engineering team shall acquire the DAQ1 (Data acquisition) using the DB1 (Database)." in texts
+    assert "Engineering team shall acquire the DAQ1 (Data acquisition) using the DB1 (AI Database)." in texts
 
 def test_propagate_by_review_pattern():
     diagram = GovernanceDiagram()

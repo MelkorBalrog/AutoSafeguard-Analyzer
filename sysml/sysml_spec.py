@@ -89,7 +89,7 @@ SYSML_PROPERTIES['BlockBoundaryUsage'] = list(SYSML_PROPERTIES['BlockUsage'])
 # Additional elements for Safety & AI Lifecycle toolbox
 # ----------------------------------------------------------------------
 for key in (
-    'DatabaseUsage',
+    'AIDatabaseUsage',
     'ANNUsage',
     'DataacquisitionUsage',
 ):

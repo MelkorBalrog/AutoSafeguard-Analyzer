@@ -3606,7 +3606,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Join": "bar",
             "ANN": "neural",
             "Data acquisition": "arrow",
-            "Database": "cylinder",
+            "AI Database": "cylinder",
             "System Boundary": "rect",
             "Business Unit": "department",
             "Data": "cylinder",
@@ -4266,10 +4266,10 @@ class SysMLDiagramWindow(tk.Frame):
             elif t in ("Fork", "Join"):
                 new_obj.width = 60.0
                 new_obj.height = 10.0
-            elif t == "Database":
+            elif t == "AI Database":
                 new_obj.width = 80.0
                 new_obj.height = 60.0
-                new_obj.properties.setdefault("name", "Database")
+                new_obj.properties.setdefault("name", "AI Database")
             elif t == "ANN":
                 new_obj.width = 120.0
                 new_obj.height = 80.0
@@ -6724,7 +6724,7 @@ class SysMLDiagramWindow(tk.Frame):
         color = StyleManager.get_instance().get_color(obj.obj_type)
         outline = StyleManager.get_instance().outline_color
         if color == "#FFFFFF":
-            if obj.obj_type == "Database":
+            if obj.obj_type == "AI Database":
                 color = "#cfe2f3"
             elif obj.obj_type == "ANN":
                 color = "#d5e8d4"
@@ -8000,7 +8000,7 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=color,
                     outline=outline,
                 )
-        elif obj.obj_type == "Database":
+        elif obj.obj_type == "AI Database":
             top = y - h
             bottom = y + h
             oval_h = 10 * self.zoom
@@ -8113,7 +8113,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Block Boundary",
             "Port",
             "Work Product",
-            "Database",
+            "AI Database",
             "ANN",
             "Data acquisition",
             "Test Suite",
@@ -12123,11 +12123,12 @@ class ArchitectureManagerDialog(tk.Frame):
             "Merge": self._create_icon("diamond", style.get_color("Merge")),
             "Fork": self._create_icon("bar", style.get_color("Fork")),
             "Join": self._create_icon("bar", style.get_color("Join")),
-            "Database": self._create_icon("cylinder", style.get_color("Database")),
+            "AI Database": self._create_icon("cylinder", style.get_color("AI Database")),
             "ANN": self._create_icon("neural", style.get_color("ANN")),
             "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
             "Business Unit": self._create_icon("department", style.get_color("Business Unit")),
-            "Data": self._create_icon("circle", style.get_color("Data")),
+            "Data": self._create_icon("cylinder", style.get_color("Data")),
+            "Field Data": self._create_icon("cylinder", style.get_color("Field Data")),
             "Document": self._create_icon("document", style.get_color("Document")),
             "Guideline": self._create_icon("compass", style.get_color("Guideline")),
             "Metric": self._create_icon("chart", style.get_color("Metric")),

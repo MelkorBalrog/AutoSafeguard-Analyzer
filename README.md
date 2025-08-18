@@ -128,7 +128,7 @@ requirement.
 
 When importing governance diagrams from a SysML repository, every diagram object
 is treated as a task regardless of its type. Custom elements such as ANN or
-Database nodes therefore participate in requirement generation:
+AI Database nodes therefore participate in requirement generation:
 
 ```python
 from sysml.sysml_repository import SysMLRepository
@@ -177,7 +177,7 @@ This opens a tab listing the combined requirements for the chosen phase.
 
 When importing governance diagrams from a SysML repository, every diagram object
 is treated as a task regardless of its type. Custom elements such as ANN or
-Database nodes therefore participate in requirement generation:
+AI Database nodes therefore participate in requirement generation:
 
 ```python
 from sysml.sysml_repository import SysMLRepository
