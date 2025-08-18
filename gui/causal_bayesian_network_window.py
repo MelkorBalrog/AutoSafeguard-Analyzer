@@ -36,8 +36,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         body = ttk.Frame(self)
         body.pack(fill=tk.BOTH, expand=True)
 
-        toolbox = ttk.Frame(body)
-        toolbox.pack(side=tk.LEFT, fill=tk.Y)
+        self.toolbox = ttk.Frame(body)
+        self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
         for name in (
             "Variable",
             "Triggering Condition",
@@ -47,9 +47,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Existing Malfunction",
             "Relationship",
         ):
-            ttk.Button(toolbox, text=name, command=lambda t=name: self.select_tool(t)).pack(
-                fill=tk.X, padx=2, pady=2
-            )
+            ttk.Button(
+                self.toolbox, text=name, command=lambda t=name: self.select_tool(t)
+            ).pack(fill=tk.X, padx=2, pady=2)
         self.current_tool = "Select"
 
         canvas_container = ttk.Frame(body)
@@ -108,7 +108,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self.doc_var.set("")
             self.app.active_cbn = None
             self.canvas.delete("all")
-
+        self._update_toolbox_visibility()
     # ------------------------------------------------------------------
     def redraw(self):
         self.canvas.configure(background=StyleManager.get_instance().canvas_bg)
@@ -124,6 +124,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             self.app.active_cbn = None
         self.load_doc()
+        self._update_toolbox_visibility()
+
+    # ------------------------------------------------------------------
+    def _update_toolbox_visibility(self) -> None:
+        if self.doc_var.get():
+            if not self.toolbox.winfo_ismapped():
+                self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+        else:
+            if self.toolbox.winfo_ismapped():
+                self.toolbox.pack_forget()
 
     # ------------------------------------------------------------------
     def new_doc(self) -> None:
