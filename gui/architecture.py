@@ -691,6 +691,8 @@ def _format_label(
                 elem_type = repo.elements[obj.element_id].elem_type
             if elem_type in {"Decision", "Initial", "Final", "Merge"}:
                 return ""
+            if elem_type == "System Boundary":
+                return label
             stereo = _GOV_TYPE_ALIASES.get(elem_type, elem_type).lower()
             label = f"<<{stereo}>>\n{label}".strip()
     return label

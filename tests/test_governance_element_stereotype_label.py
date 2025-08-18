@@ -60,6 +60,14 @@ class GovernanceElementStereotypeTests(unittest.TestCase):
             lines = win._object_label_lines(obj)
             self.assertEqual([], lines)
 
+    def test_system_boundary_label_has_no_stereotype(self):
+        repo = SysMLRepository.get_instance()
+        diag = repo.create_diagram("Governance Diagram")
+        obj = SysMLObject(1, "System Boundary", 0.0, 0.0, properties={"name": "Area"})
+        win = DummyWindow(diag.diag_id)
+        lines = win._object_label_lines(obj)
+        self.assertEqual(["Area"], lines)
+
 
 if __name__ == "__main__":
     unittest.main()
