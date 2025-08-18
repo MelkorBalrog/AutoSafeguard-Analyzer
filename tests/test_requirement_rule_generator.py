@@ -61,7 +61,7 @@ def test_field_data_collection_uses_from() -> None:
         for p in patterns
         if p["Pattern ID"] == "SA-field_data_collection-Database-Data_acquisition"
     )
-    assert "collect field data from the <target_id>" in tmpl
+    assert "collect field data from the <object1_id>" in tmpl
 
 
 def test_rule_with_multiple_targets() -> None:
@@ -77,7 +77,7 @@ def test_rule_with_multiple_targets() -> None:
         for p in patterns
         if p["Pattern ID"] == "SA-multi-A-B"
     )
-    assert "<target2_id>" in tmpl
+    assert "<object2_id>" in tmpl
 
 
 def test_rule_with_custom_template_and_variables() -> None:
@@ -118,7 +118,8 @@ def test_sequence_rule_generation() -> None:
     ids = {p["Pattern ID"] for p in patterns}
     assert "SEQ-chain-A-C" in ids
     tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == "SEQ-chain-A-C")
-    assert "<target2_id>" in tmpl
+    assert "<object2_id>" in tmpl
+    assert "rel1" in tmpl and "rel2" in tmpl
 
 
 def test_complex_sequences() -> None:

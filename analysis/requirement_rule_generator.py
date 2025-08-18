@@ -165,13 +165,10 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
 # ===== Safety & AI templates =====
 
 
-def _targets_phrase(targets: int) -> str:
+def _objects_phrase(objects: int) -> str:
     parts = []
-    for i in range(1, targets + 1):
-        if i == 1:
-            parts.append("the <target_id> (<target_class>)")
-        else:
-            parts.append(f"the <target{i}_id> (<target{i}_class>)")
+    for i in range(1, objects + 1):
+        parts.append(f"the <object{i}_id> (<object{i}_class>)")
     if len(parts) == 1:
         return parts[0]
     if len(parts) == 2:
@@ -179,29 +176,47 @@ def _targets_phrase(targets: int) -> str:
     return ", ".join(parts[:-1]) + f", and {parts[-1]}"
 
 
-def make_sa_template(subject: str, action: str, targets: int = 1) -> str:
+def make_sa_template(subject: str, action: str, objects: int = 1) -> str:
     action_clean = (action or "").strip()
-    tgt_phrase = _targets_phrase(targets)
+    obj_phrase = _objects_phrase(objects)
     if action_clean.lower() == "collect field data":
         tmpl = (
-            f"{subject} shall {action_clean} from {tgt_phrase} "
-            f"using the <source_id> (<source_class>)."
+            f"{subject} shall {action_clean} from {obj_phrase} "
+            f"using the <object0_id> (<object0_class>)."
         )
     else:
         tmpl = (
-            f"{subject} shall {action_clean} {tgt_phrase} "
-            f"using the <source_id> (<source_class>)."
+            f"{subject} shall {action_clean} {obj_phrase} "
+            f"using the <object0_id> (<object0_class>)."
         )
     return tidy_sentence(tmpl)
 
 
-def make_sa_variables_base(targets: int = 1) -> List[str]:
-    out = ["<source_id>", "<source_class>", "<target_id>", "<target_class>"]
-    for i in range(2, targets + 1):
-        out.append(f"<target{i}_id>")
-        out.append(f"<target{i}_class>")
+def make_sa_variables_base(objects: int = 1) -> List[str]:
+    out = ["<object0_id>", "<object0_class>", "<object1_id>", "<object1_class>"]
+    for i in range(2, objects + 1):
+        out.append(f"<object{i}_id>")
+        out.append(f"<object{i}_class>")
     out.append("<acceptance_criteria>")
     return out
+
+
+def make_sequence_template(subject: str, rel_chain: List[str]) -> str:
+    parts: List[str] = []
+    for idx, rel in enumerate(rel_chain):
+        rel_l = (rel or "").strip().lower()
+        obj = f"the <object{idx+1}_id> (<object{idx+1}_class>)"
+        if idx == 0:
+            parts.append(
+                f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
+            )
+        else:
+            parts.append(f"{rel_l} {obj}")
+    if len(parts) > 1:
+        seq = ", ".join(parts[:-1]) + f", and {parts[-1]}"
+    else:
+        seq = parts[0]
+    return tidy_sentence(f"{subject} shall {seq}")
 
 
 # ===== Governance templates =====
@@ -215,42 +230,42 @@ def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
     r = (relation_label or "").strip().lower()
 
     passive = {
-        "satisfied by": "shall be satisfied by the <target_id> (<target_class>).",
-        "used by": "shall be used by the <target_id> (<target_class>).",
-        "derived from": "shall be derived from the <target_id> (<target_class>).",
+        "satisfied by": "shall be satisfied by the <object1_id> (<object1_class>).",
+        "used by": "shall be used by the <object1_id> (<object1_class>).",
+        "derived from": "shall be derived from the <object1_id> (<object1_class>).",
     }
     if r in passive:
         return tidy_sentence(
-            f"<source_id> (<source_class>) {passive[r].replace('the <target_id> (<target_class>)', _targets_phrase(targets))}"
+            f"<object0_id> (<object0_class>) {passive[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
         )
 
     with_prep = {
-        "flow": "shall flow to the <target_id> (<target_class>).",
-        "trace": "shall trace to the <target_id> (<target_class>).",
-        "communication path": "shall communicate with the <target_id> (<target_class>).",
-        "constrained by": "shall comply with the <target_id> (<target_class>).",
-        "used after review": "shall be used after review the <target_id> (<target_class>).",
-        "used after approval": "shall be used after approval the <target_id> (<target_class>).",
-        "propagate by review": "shall propagate by review the <target_id> (<target_class>).",
-        "propagate by approval": "shall propagate by approval the <target_id> (<target_class>).",
+        "flow": "shall flow to the <object1_id> (<object1_class>).",
+        "trace": "shall trace to the <object1_id> (<object1_class>).",
+        "communication path": "shall communicate with the <object1_id> (<object1_class>).",
+        "constrained by": "shall comply with the <object1_id> (<object1_class>).",
+        "used after review": "shall be used after review the <object1_id> (<object1_class>).",
+        "used after approval": "shall be used after approval the <object1_id> (<object1_class>).",
+        "propagate by review": "shall propagate by review the <object1_id> (<object1_class>).",
+        "propagate by approval": "shall propagate by approval the <object1_id> (<object1_class>).",
     }
     if r in with_prep:
         return tidy_sentence(
-            f"<source_id> (<source_class>) {with_prep[r].replace('the <target_id> (<target_class>)', _targets_phrase(targets))}"
+            f"<object0_id> (<object0_class>) {with_prep[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
         )
 
     quoted = {
-        "approves": "shall approve '<target_id> (<target_class>)'.",
-        "performs": "shall perform '<target_id> (<target_class>)'.",
+        "approves": "shall approve '<object1_id> (<object1_class>)'.",
+        "performs": "shall perform '<object1_id> (<object1_class>)'.",
     }
     if r in quoted:
         phrase = quoted[r]
         if targets > 1:
-            multi = _targets_phrase(targets).replace("the ", "")
-            phrase = phrase.replace("<target_id> (<target_class>)", multi)
-        return tidy_sentence(f"<source_id> (<source_class>) {phrase}")
+            multi = _objects_phrase(targets).replace("the ", "")
+            phrase = phrase.replace("<object1_id> (<object1_class>)", multi)
+        return tidy_sentence(f"<object0_id> (<object0_class>) {phrase}")
     return tidy_sentence(
-        f"<source_id> (<source_class>) shall {r} {_targets_phrase(targets)}"
+        f"<object0_id> (<object0_class>) shall {r} {_objects_phrase(targets)}"
     )
 
 
@@ -416,14 +431,13 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
                 subj = info.get("subject", "Engineering team")
-                act = info.get("action", seq_label)
                 tmpl_override = info.get("template")
                 var_override = info.get("variables")
                 if tmpl_override:
                     template = tmpl_override
                     variables = var_override or []
                 else:
-                    template = make_sa_template(subj, act, tgt_count)
+                    template = make_sequence_template(subj, rel_chain)
                     variables = make_sa_variables_base(tgt_count)
                 base_id = (
                     f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
