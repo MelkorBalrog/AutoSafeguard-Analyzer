@@ -9,7 +9,6 @@ from gui.style_manager import StyleManager
 
 def test_governance_shapes_and_relations():
     shape = SysMLDiagramWindow._shape_for_tool
-    assert shape(None, "Process") == "hexagon"
     assert shape(None, "Task") == "trapezoid"
     assert shape(None, "Vehicle") == "vehicle"
     assert shape(None, "Approves") == "relation"
@@ -17,6 +16,17 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Risk Assessment") == "clipboard"
     assert shape(None, "Safety Goal") == "shield"
     assert shape(None, "Security Threat") == "bug"
+    assert shape(None, "Organization") == "building"
+    assert shape(None, "Business Unit") == "department"
+    assert shape(None, "Policy") == "scroll"
+    assert shape(None, "Principle") == "scale"
+    assert shape(None, "Guideline") == "compass"
+    assert shape(None, "Standard") == "ribbon"
+    assert shape(None, "Metric") == "chart"
+    assert shape(None, "Safety Compliance") == "shield_check"
+    assert shape(None, "Process") == "gear"
+    assert shape(None, "Operation") == "wrench"
+    assert shape(None, "Driving Function") == "steering"
     assert shape(None, "Plan") == "document"
     assert shape(None, "Data") == "cylinder"
     assert shape(None, "Field Data") == "cylinder"
@@ -27,6 +37,17 @@ def test_governance_shapes_and_relations():
         "Risk Assessment",
         "Safety Goal",
         "Security Threat",
+        "Organization",
+        "Business Unit",
+        "Policy",
+        "Principle",
+        "Guideline",
+        "Standard",
+        "Metric",
+        "Safety Compliance",
+        "Process",
+        "Operation",
+        "Driving Function",
         "Plan",
         "Data",
         "Field Data",

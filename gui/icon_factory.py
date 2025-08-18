@@ -1,5 +1,6 @@
 import tkinter as tk
 from typing import Optional
+import math
 
 
 def create_icon(
@@ -198,6 +199,184 @@ def create_icon(
         img.put(outline, (mid - 2, head_cy - head_r - 2))
         img.put(outline, (mid + 1, head_cy - head_r - 1))
         img.put(outline, (mid + 2, head_cy - head_r - 2))
+    elif shape == "building":
+        img.put(c, to=(3,3,size-3,size-1))
+        for x in range(3, size-3):
+            img.put(outline, (x,3))
+            img.put(outline, (x,size-2))
+        for y in range(3, size-2):
+            img.put(outline, (3,y))
+            img.put(outline, (size-4,y))
+        for x in range(5, size-5, 4):
+            for y in range(5, size-4, 4):
+                img.put(bg or "white", to=(x,y,x+2,y+2))
+                for i in range(3):
+                    img.put(outline,(x+i,y))
+                    img.put(outline,(x+i,y+2))
+                for j in range(3):
+                    img.put(outline,(x,y+j))
+                    img.put(outline,(x+2,y+j))
+    elif shape == "department":
+        img.put(c, to=(3,5,size-3,size-1))
+        for x in range(3, size-3):
+            img.put(outline,(x,5))
+            img.put(outline,(x,size-2))
+        for y in range(5, size-2):
+            img.put(outline,(3,y))
+            img.put(outline,(size-4,y))
+        pole = size-5
+        for y in range(1,5):
+            img.put(outline,(pole,y))
+        img.put(c, to=(pole,1,size-2,3))
+        for x in range(pole, size-2):
+            img.put(outline,(x,1))
+            img.put(outline,(x,3))
+        img.put(outline,(pole,2))
+        img.put(outline,(size-2,2))
+    elif shape == "scroll":
+        img.put(c, to=(4,3,size-4,size-3))
+        for x in range(4,size-4):
+            img.put(outline,(x,3))
+            img.put(outline,(x,size-3))
+        for y in range(3,size-3):
+            img.put(outline,(4,y))
+            img.put(outline,(size-4,y))
+        for y in range(3,size-3):
+            img.put(c,(2,y)); img.put(c,(size-3,y))
+            img.put(outline,(2,y)); img.put(outline,(size-3,y))
+    elif shape == "scale":
+        mid=size//2
+        for y in range(3,size-3):
+            img.put(outline,(mid,y))
+        arm_y=6
+        for x in range(mid-6,mid+7):
+            img.put(outline,(x,arm_y))
+        for dx in range(4):
+            img.put(outline,(mid-4+dx,arm_y+dx+1))
+            img.put(outline,(mid+4-dx,arm_y+dx+1))
+        for x in range(mid-6,mid-1):
+            for y in range(arm_y+5,arm_y+7):
+                img.put(c,(x,y))
+                img.put(outline,(x,y))
+        for x in range(mid+1,mid+6):
+            for y in range(arm_y+5,arm_y+7):
+                img.put(c,(x,y))
+                img.put(outline,(x,y))
+    elif shape == "compass":
+        mid=size//2
+        r=size//2-2
+        for y in range(size):
+            for x in range(size):
+                d=(x-mid)**2+(y-mid)**2
+                if d<=r*r:
+                    img.put(c,(x,y))
+                if r*r<=d<= (r+1)*(r+1):
+                    img.put(outline,(x,y))
+        for y in range(mid):
+            img.put(outline,(mid,y))
+        for i in range(3):
+            img.put(outline,(mid-i,i))
+            img.put(outline,(mid+i,i))
+    elif shape == "ribbon":
+        mid=size//2
+        r=size//2-3
+        cy=mid-2
+        for y in range(size):
+            for x in range(size):
+                d=(x-mid)**2+(y-cy)**2
+                if d<=r*r:
+                    img.put(c,(x,y))
+                if r*r<=d<= (r+1)*(r+1):
+                    img.put(outline,(x,y))
+        for i in range(3):
+            img.put(c,(mid-r+i,cy+r))
+            img.put(c,(mid+r-i,cy+r))
+            img.put(outline,(mid-r+i,cy+r))
+            img.put(outline,(mid+r-i,cy+r))
+    elif shape == "chart":
+        heights=[8,12,5]
+        for i,h in enumerate(heights):
+            x1=2+i*5
+            for x in range(x1,x1+3):
+                for y in range(size-2-h,size-2):
+                    img.put(c,(x,y))
+                img.put(outline,(x,size-2-h))
+                img.put(outline,(x,size-2))
+            for y in range(size-2-h,size-2):
+                img.put(outline,(x1,y))
+                img.put(outline,(x1+2,y))
+    elif shape == "shield_check":
+        mid=size//2
+        for y in range(2,size-2):
+            span=mid-1 if y<5 else max(mid-(y-4),0)
+            img.put(c,to=(mid-span,y,mid+span+1,y+1))
+            img.put(outline,(mid-span,y))
+            img.put(outline,(mid+span,y))
+        img.put(outline,(mid,size-2))
+        for i in range(3):
+            img.put(outline,(4+i,9+i))
+        for i in range(5):
+            img.put(outline,(7+i,13-i))
+    elif shape == "gear":
+        mid=size//2
+        r1=size//2-1
+        r2=int(r1*0.7)
+        points=[]
+        teeth=8
+        for i in range(teeth*2):
+            ang=math.radians(360/(teeth*2)*i)
+            rad=r1 if i%2==0 else r2
+            x=int(mid+rad*math.cos(ang))
+            y=int(mid+rad*math.sin(ang))
+            points.append((x,y))
+        for y in range(size):
+            xs=[]
+            for i in range(len(points)):
+                x1,y1=points[i]; x2,y2=points[(i+1)%len(points)]
+                if y1==y2 or y<min(y1,y2) or y>=max(y1,y2):
+                    continue
+                x=x1+(y-y1)*(x2-x1)/(y2-y1)
+                xs.append(int(x))
+            xs.sort()
+            for j in range(0,len(xs),2):
+                img.put(c,to=(xs[j],y,xs[j+1]+1,y+1))
+        for x,y in points:
+            img.put(outline,(x,y))
+    elif shape == "wrench":
+        mid=size//2
+        for x in range(mid-1,mid+2):
+            img.put(c,to=(x,mid,x+1,size-2))
+            for y in range(mid,size-2):
+                img.put(outline,(mid-1,y))
+                img.put(outline,(mid+1,y))
+        for y in range(mid-5,mid-1):
+            for x in range(mid-3,mid+3):
+                if x in (mid-3,mid+2) or y in (mid-5,mid-2):
+                    img.put(outline,(x,y))
+                else:
+                    img.put(c,(x,y))
+    elif shape == "steering":
+        mid=size//2
+        r=size//2-2
+        for y in range(size):
+            for x in range(size):
+                d=(x-mid)**2+(y-mid)**2
+                if d<=r*r:
+                    img.put(c,(x,y))
+                if r*r<=d<= (r+1)*(r+1):
+                    img.put(outline,(x,y))
+        inner=int(r*0.4)
+        for y in range(size):
+            for x in range(size):
+                d=(x-mid)**2+(y-mid)**2
+                if d<=inner*inner:
+                    img.put(bg or "white",(x,y))
+                    if inner*inner<=d<= (inner+1)*(inner+1):
+                        img.put(outline,(x,y))
+        for x in range(mid-r,mid+r+1):
+            img.put(outline,(x,mid))
+        for y in range(mid-r,mid+r+1):
+            img.put(outline,(mid,y))
     elif shape == "cylinder":
         img.put(c, to=(2, 4, size - 2, size - 4))
         for x in range(2, size - 2):
