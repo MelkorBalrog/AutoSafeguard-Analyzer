@@ -202,20 +202,20 @@ def _relations_for(nodes: list[str]) -> list[str]:
     gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
     for rel, srcs in gov_rules.items():
         for src, dests in srcs.items():
-            # A relation is relevant when a node in ``node_set`` can be the
-            # source with at least one allowed target, or when a node in
-            # ``node_set`` can be the target for some other source.
-            if src in node_set and dests:
-                rels.add(rel)
-            elif node_set.intersection(dests):
+            # A relation is relevant only when an element in ``node_set`` can
+            # connect to another element in ``node_set`` using that relation.
+            # Previously, relations were surfaced whenever a node could act as
+            # either source *or* target.  This caused connections that required
+            # nodes outside the toolbox to appear.  Filtering to pairs within
+            # the toolbox ensures each displayed relationship is actionable for
+            # the current context.
+            if src in node_set and node_set.intersection(dests):
                 rels.add(rel)
 
     # Apply the same filtering to Safety & AI specific rules.
     for rel, srcs in SAFETY_AI_RELATION_RULES.items():
         for src, dests in srcs.items():
-            if src in node_set and dests:
-                rels.add(rel)
-            elif node_set.intersection(dests):
+            if src in node_set and node_set.intersection(dests):
                 rels.add(rel)
 
     return sorted(rels)
