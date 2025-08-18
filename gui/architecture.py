@@ -3645,9 +3645,12 @@ class SysMLDiagramWindow(tk.Frame):
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
-        if not hasattr(self, "prop_view"):
+        if not getattr(self, "prop_view", None) or not self.prop_view.winfo_exists():
             return
-        self.prop_view.delete(*self.prop_view.get_children())
+        try:
+            self.prop_view.delete(*self.prop_view.get_children())
+        except tk.TclError:
+            return
         obj = self.selected_obj
         if not obj:
             return
