@@ -121,6 +121,10 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
                 raise ValueError(
                     f"requirement_sequences[{label}]['subject'] must be a string"
                 )
+            if "role_subject" in info and not isinstance(info["role_subject"], bool):
+                raise ValueError(
+                    f"requirement_sequences[{label}]['role_subject'] must be a boolean"
+                )
             if "action" in info and not isinstance(info["action"], str):
                 raise ValueError(
                     f"requirement_sequences[{label}]['action'] must be a string"

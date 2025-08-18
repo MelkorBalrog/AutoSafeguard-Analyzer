@@ -27,6 +27,10 @@ def test_generate_patterns_from_config(tmp_path: Path) -> None:
         "SA-annotation-ANN-AI_Database-COND",
         "SA-annotation-ANN-AI_Database-CONST",
         "SA-annotation-ANN-AI_Database-COND-CONST",
+        "SA-annotation-ANN-AI_Database-ROLE",
+        "SA-annotation-ANN-AI_Database-ROLE-COND",
+        "SA-annotation-ANN-AI_Database-ROLE-CONST",
+        "SA-annotation-ANN-AI_Database-ROLE-COND-CONST",
     }
     assert ids == expected
 
@@ -111,6 +115,26 @@ def test_rule_with_custom_template_and_variables() -> None:
     assert "<tool>" in base["Variables"]
 
 
+def test_rule_role_subject_variant() -> None:
+    cfg = {
+        "requirement_rules": {
+            "annotation": {"action": "annotate", "subject": "Team"}
+        },
+        "safety_ai_relation_rules": {"Annotation": {"ANN": ["AI Database"]}},
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SA-annotation-ANN-AI_Database" in ids
+    assert "SA-annotation-ANN-AI_Database-ROLE" in ids
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "SA-annotation-ANN-AI_Database-ROLE"
+    )
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall annotate")
+    assert "using the <object0_id>" not in tmpl
+
+
 def test_sequence_rule_generation() -> None:
     cfg = {
         "ai_nodes": ["A", "B", "C"],
@@ -134,6 +158,26 @@ def test_sequence_rule_generation() -> None:
     tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == "SEQ-chain-A-C")
     assert "<object2_id>" in tmpl
     assert "rel1" in tmpl and "rel2" in tmpl
+
+
+def test_sequence_role_subject() -> None:
+    cfg = {
+        "safety_ai_relation_rules": {
+            "Responsible for": {"Role": ["Process"]},
+            "Produces": {"Process": ["Document"]},
+        },
+        "requirement_sequences": {
+            "accountability": {
+                "relations": ["Responsible for", "Produces"],
+                "role_subject": True,
+            }
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    pid = "SEQ-accountability-Role-Document"
+    tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == pid)
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall responsible for")
+    assert "using the <object0_id>" not in tmpl
 
 
 def test_complex_sequences() -> None:

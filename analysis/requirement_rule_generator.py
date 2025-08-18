@@ -176,24 +176,39 @@ def _objects_phrase(objects: int) -> str:
     return ", ".join(parts[:-1]) + f", and {parts[-1]}"
 
 
-def make_sa_template(subject: str, action: str, objects: int = 1) -> str:
+def make_sa_template(
+    subject: str, action: str, objects: int = 1, subject_is_object0: bool = False
+) -> str:
     action_clean = (action or "").strip()
     obj_phrase = _objects_phrase(objects)
     if action_clean.lower() == "collect field data":
-        tmpl = (
-            f"{subject} shall {action_clean} from {obj_phrase} "
-            f"using the <object0_id> (<object0_class>)."
-        )
+        tmpl = f"{subject} shall {action_clean} from {obj_phrase}"
     else:
-        tmpl = (
-            f"{subject} shall {action_clean} {obj_phrase} "
-            f"using the <object0_id> (<object0_class>)."
-        )
+        tmpl = f"{subject} shall {action_clean} {obj_phrase}"
+    if not subject_is_object0:
+        tmpl += " using the <object0_id> (<object0_class>)."
+    else:
+        tmpl += "."
     return tidy_sentence(tmpl)
 
 
-def make_sa_variables_base(objects: int = 1) -> List[str]:
-    out = ["<object0_id>", "<object0_class>", "<object1_id>", "<object1_class>"]
+def make_sa_variables_base(objects: int = 1, include_subject: bool = False) -> List[str]:
+    """Return variable placeholders for Safety & AI patterns.
+
+    Parameters
+    ----------
+    objects:
+        Number of object placeholders to include beyond the subject/tool.
+    include_subject:
+        When ``True`` the returned list starts with ``<subject_id>`` and
+        ``<subject_class>``.  Otherwise ``<object0_id>``/``<object0_class>`` are
+        used to represent an auxiliary object such as a tool.
+    """
+
+    if include_subject:
+        out = ["<subject_id>", "<subject_class>", "<object1_id>", "<object1_class>"]
+    else:
+        out = ["<object0_id>", "<object0_class>", "<object1_id>", "<object1_class>"]
     for i in range(2, objects + 1):
         out.append(f"<object{i}_id>")
         out.append(f"<object{i}_class>")
@@ -201,15 +216,20 @@ def make_sa_variables_base(objects: int = 1) -> List[str]:
     return out
 
 
-def make_sequence_template(subject: str, rel_chain: List[str]) -> str:
+def make_sequence_template(
+    subject: str, rel_chain: List[str], subject_is_object0: bool = False
+) -> str:
     parts: List[str] = []
     for idx, rel in enumerate(rel_chain):
         rel_l = (rel or "").strip().lower()
         obj = f"the <object{idx+1}_id> (<object{idx+1}_class>)"
         if idx == 0:
-            parts.append(
-                f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
-            )
+            if subject_is_object0:
+                parts.append(f"{rel_l} {obj}")
+            else:
+                parts.append(
+                    f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
+                )
         else:
             parts.append(f"{rel_l} {obj}")
     if len(parts) > 1:
@@ -236,7 +256,7 @@ def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
     }
     if r in passive:
         return tidy_sentence(
-            f"<object0_id> (<object0_class>) {passive[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
+            f"<subject_id> (<subject_class>) {passive[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
         )
 
     with_prep = {
@@ -251,7 +271,7 @@ def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
     }
     if r in with_prep:
         return tidy_sentence(
-            f"<object0_id> (<object0_class>) {with_prep[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
+            f"<subject_id> (<subject_class>) {with_prep[r].replace('the <object1_id> (<object1_class>)', _objects_phrase(targets))}"
         )
 
     quoted = {
@@ -263,9 +283,9 @@ def gov_template_for_relation(relation_label: str, targets: int = 1) -> str:
         if targets > 1:
             multi = _objects_phrase(targets).replace("the ", "")
             phrase = phrase.replace("<object1_id> (<object1_class>)", multi)
-        return tidy_sentence(f"<object0_id> (<object0_class>) {phrase}")
+        return tidy_sentence(f"<subject_id> (<subject_class>) {phrase}")
     return tidy_sentence(
-        f"<object0_id> (<object0_class>) shall {r} {_objects_phrase(targets)}"
+        f"<subject_id> (<subject_class>) shall {r} {_objects_phrase(targets)}"
     )
 
 
@@ -394,15 +414,24 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 src_type = path[0][0]
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
-                subj = info.get("subject", "Engineering team")
+                use_role_subject = info.get("role_subject")
+                subj = (
+                    "<subject_id> (<subject_class>)"
+                    if use_role_subject
+                    else info.get("subject", "Engineering team")
+                )
                 tmpl_override = info.get("template")
                 var_override = info.get("variables")
                 if tmpl_override:
                     template = tmpl_override
                     variables = var_override or []
                 else:
-                    template = make_sequence_template(subj, rel_chain)
-                    variables = make_sa_variables_base(tgt_count)
+                    template = make_sequence_template(
+                        subj, rel_chain, subject_is_object0=bool(use_role_subject)
+                    )
+                    variables = make_sa_variables_base(
+                        tgt_count, include_subject=bool(use_role_subject)
+                    )
                 base_id = (
                     f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
                 )

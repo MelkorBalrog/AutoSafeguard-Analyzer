@@ -81,6 +81,11 @@ _PLAN_TYPES = {
     "Verification Plan",
 }
 
+# Create Safety & AI Lifecycle toolbox frame
+# Create toolbox for additional governance elements
+# Create toolbox for additional governance elements grouped by class
+# Repack toolbox to include selector
+
 
 def _normalize_plan_types(items: list[str]) -> list[str]:
     """Replace specific plan variants with generic 'Plan' and deduplicate."""
@@ -98,6 +103,10 @@ GOV_ELEMENT_NODES = _normalize_plan_types(
     _CONFIG.get("governance_element_nodes", [])
 )
 GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
+
+# Create Safety & AI Lifecycle toolbox frame
+# Create toolbox for additional governance elements grouped by class
+# Repack toolbox to include selector
 
 # expose the icon factory under the old name used throughout the module
 draw_icon = create_icon
@@ -11137,7 +11146,29 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     pack_forget=lambda *a, **k: None,
                     destroy=lambda *a, **k: None,
                 )
-            self._toolbox_frames[name] = [frame]
+            return frame
+
+        gov_frames = [self.tools_frame, action_frame]
+        if getattr(self, "rel_frame", None):
+            gov_frames.append(self.rel_frame)
+        if core_data:
+            gov_frames.append(build_frame("Governance Core", core_data))
+        # Create toolbox for additional governance elements grouped by class
+        for name, data in defs.items():
+            gov_frames.append(build_frame(name, data))
+        # Repack toolbox to include selector
+        self._toolbox_frames["Governance"] = gov_frames
+
+        # Create Safety & AI Lifecycle toolbox frame
+        if ai_data:
+            self._toolbox_frames["Safety & AI Lifecycle"] = [
+                build_frame("Safety & AI Lifecycle", ai_data)
+            ]
+
+        options = sorted(self._toolbox_frames.keys())
+        if "Governance" in options:
+            options.remove("Governance")
+            options = ["Governance"] + options
         self.toolbox_selector.configure(values=options)
         current = self.toolbox_var.get()
         if current not in options:
@@ -11146,11 +11177,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
     def _switch_toolbox(self) -> None:
         choice = self.toolbox_var.get()
-        for frames in self._toolbox_frames.values():
+        frames_map = getattr(
+            self,
+            "_toolbox_frames",
+            {
+                "Governance": [
+                    getattr(self, "gov_tools_frame", None),
+                    getattr(self, "gov_rel_frame", None),
+                    getattr(self, "gov_elements_frame", None),
+                ],
+                "Safety & AI Lifecycle": [
+                    getattr(self, "ai_tools_frame", None)
+                ],
+            },
+        )
+        for frames in frames_map.values():
             for frame in frames:
                 if frame and hasattr(frame, "pack_forget"):
                     frame.pack_forget()
-        for frame in self._toolbox_frames.get(choice, []):
+        for frame in frames_map.get(choice, []):
             if frame and hasattr(frame, "pack"):
                 frame.pack(fill=tk.X, padx=2, pady=2)
 
