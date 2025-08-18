@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, simpledialog
 from itertools import product
+import re
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui import messagebox
@@ -323,12 +324,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
             name = self.drag_node
             old_x, old_y = doc.positions.get(name, (0, 0))
             x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
+            dx, dy = x - old_x, y - old_y
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
             r = self.NODE_RADIUS
-            self.canvas.move(fill_tag, x - old_x, y - old_y)
-            self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
-            self.canvas.coords(text_id, x, y)
+            # Move the gradient fill, node outline and label together
+            self.canvas.move(fill_tag, dx, dy)
+            self.canvas.move(oval_id, dx, dy)
+            self.canvas.move(text_id, dx, dy)
             for line_id, src, dst in self.edges:
                 if src == name or dst == name:
                     x1, y1 = doc.positions[src]
@@ -487,7 +490,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         else:
             color = "lightyellow"
             stereo = None
-        fill_tag = f"fill_{name}"
+        safe_name = re.sub(r"\W", "_", name)
+        fill_tag = f"fill_{safe_name}"
         fill_ids = self.drawing_helper._fill_gradient_circle(
             self.canvas, x, y, r, color, tag=fill_tag
         ) or []
@@ -931,13 +935,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
             doc.network.parents[child] = [new if p == old else p for p in parents]
         doc.positions[new] = doc.positions.pop(old)
         doc.types[new] = doc.types.pop(old)
-        oval_id, text_id, fill_tag = self.nodes.pop(old)
-        self.nodes[new] = (oval_id, text_id, fill_tag)
+        oval_id, text_id, old_fill_tag = self.nodes.pop(old)
+        safe_new = re.sub(r"\W", "_", new)
+        new_fill_tag = f"fill_{safe_new}"
+        self.nodes[new] = (oval_id, text_id, new_fill_tag)
         self.id_to_node[oval_id] = new
         self.id_to_node[text_id] = new
         find_withtag = getattr(self.canvas, "find_withtag", None)
         if find_withtag:
-            for fid in find_withtag(fill_tag):
+            for fid in find_withtag(old_fill_tag):
+                self.canvas.itemconfigure(fid, tags=(new_fill_tag,))
                 self.id_to_node[fid] = new
         kind = doc.types.get(new)
         if kind == "trigger":
