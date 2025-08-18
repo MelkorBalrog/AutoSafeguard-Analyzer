@@ -323,12 +323,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
             name = self.drag_node
             old_x, old_y = doc.positions.get(name, (0, 0))
             x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
+            dx, dy = x - old_x, y - old_y
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
             r = self.NODE_RADIUS
-            self.canvas.move(fill_tag, x - old_x, y - old_y)
-            self.canvas.coords(oval_id, x - r, y - r, x + r, y + r)
-            self.canvas.coords(text_id, x, y)
+            # Move the gradient fill, node outline and label together
+            self.canvas.move(fill_tag, dx, dy)
+            self.canvas.move(oval_id, dx, dy)
+            self.canvas.move(text_id, dx, dy)
             for line_id, src, dst in self.edges:
                 if src == name or dst == name:
                     x1, y1 = doc.positions[src]
