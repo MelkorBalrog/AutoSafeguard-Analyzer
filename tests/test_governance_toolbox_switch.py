@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.architecture import GovernanceDiagramWindow
 
 
-def test_switch_toolbox_handles_governance_elements():
+def test_switch_toolbox_combines_governance_elements():
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
 
     class Frame:
@@ -26,12 +26,13 @@ def test_switch_toolbox_handles_governance_elements():
     win.gov_elements_frame = Frame()
     win.prop_frame = Frame()
 
-    win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance Elements")
-    GovernanceDiagramWindow._switch_toolbox(win)
-    assert win.gov_elements_frame.packed
-    assert not win.gov_tools_frame.packed
-
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance")
     GovernanceDiagramWindow._switch_toolbox(win)
     assert win.gov_tools_frame.packed
+    assert win.gov_elements_frame.packed
+
+    win.toolbox_var = types.SimpleNamespace(get=lambda: "Safety & AI Lifecycle")
+    GovernanceDiagramWindow._switch_toolbox(win)
+    assert win.ai_tools_frame.packed
+    assert not win.gov_tools_frame.packed
     assert not win.gov_elements_frame.packed

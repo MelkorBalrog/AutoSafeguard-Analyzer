@@ -10492,9 +10492,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
-        # Flow relationships are handled in the governance toolbox rather than
-        # the primary toolbox, so ``relation_tools`` is empty here.
-        rel_tools: list[str] = []
+        # Include flow connections in the left-hand governance relationships
+        # toolbox so users can create them alongside other governance tools.
+        rel_tools: list[str] = ["Flow"]
         try:
             super().__init__(
                 master,
@@ -10563,7 +10563,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 values=[
                     "Governance",
                     "Safety & AI Lifecycle",
-                    "Governance Elements",
                 ],
                 state="readonly",
                 textvariable=self.toolbox_var,
@@ -10609,6 +10608,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
 
         # Create toolbox for additional governance elements grouped by class
+        # (merged into the main Governance toolbox)
         ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
@@ -10659,6 +10659,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.gov_tools_frame.pack_forget()
         if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
             self.gov_rel_frame.pack_forget()
+        if getattr(self, "gov_elements_frame", None) and hasattr(
+            self.gov_elements_frame, "pack_forget"
+        ):
+            self.gov_elements_frame.pack_forget()
         if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack_forget"):
             self.prop_frame.pack_forget()
 
@@ -10667,6 +10671,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         selector.lift()
         if hasattr(self.gov_tools_frame, "pack"):
             self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
+        if getattr(self, "gov_elements_frame", None) and hasattr(
+            self.gov_elements_frame, "pack"
+        ):
+            self.gov_elements_frame.pack(fill=tk.X, padx=2, pady=2)
         if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
             self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
         if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack"):
@@ -10738,19 +10746,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
-            relationships = ttk.LabelFrame(
-                governance_panel, text="Relationships (relationships)"
-            )
-            relationships.pack(fill=tk.X, padx=2, pady=2)
-            # Flow relationships are grouped with other governance connections on
-            # the right-hand panel instead of the main toolbox.
-            ttk.Button(
-                relationships,
-                text="Flow",
-                image=self._icon_for("Flow"),
-                compound=tk.LEFT,
-                command=lambda t="Flow": self.select_tool(t),
-            ).pack(fill=tk.X, padx=2, pady=2)
             wp_rel = ttk.LabelFrame(
                 governance_panel, text="Work Product Links (relationships)"
             )
@@ -10817,9 +10812,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         choice = self.toolbox_var.get()
         before = self.prop_frame if hasattr(self, "prop_frame") else None
         frames = {
-            "Governance": [self.gov_tools_frame, self.gov_rel_frame],
+            "Governance": [
+                self.gov_tools_frame,
+                getattr(self, "gov_elements_frame", None),
+                self.gov_rel_frame,
+            ],
             "Safety & AI Lifecycle": [self.ai_tools_frame],
-            "Governance Elements": [getattr(self, "gov_elements_frame", None)],
         }
         for frame in [
             self.gov_tools_frame,
