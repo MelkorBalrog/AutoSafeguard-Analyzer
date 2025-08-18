@@ -481,36 +481,58 @@ def create_icon(
         for y in range(3, size - 3):
             img.put(outline, (mid, y))
     elif shape == "vehicle":
-        top = 5
-        bottom = size - 6
-        img.put(c, to=(2, top, size - 2, bottom))
+        # Draw a small car silhouette with a sloped roof and wheels
+        body_top = size - 6
+        body_bottom = size - 3
+        img.put(c, to=(2, body_top, size - 2, body_bottom))
         for x in range(2, size - 2):
-            img.put(outline, (x, top))
-            img.put(outline, (x, bottom))
-        for y in range(top, bottom):
+            img.put(outline, (x, body_top))
+            img.put(outline, (x, body_bottom - 1))
+        for y in range(body_top, body_bottom):
             img.put(outline, (2, y))
             img.put(outline, (size - 3, y))
-        # wheels
-        for dx in range(3):
-            for dy in range(3):
-                img.put(outline, (3 + dx, bottom + dy - 1))
-                img.put(outline, (size - 5 + dx, bottom + dy - 1))
+        roof_top = body_top - 3
+        for y in range(roof_top, body_top):
+            offset = body_top - y
+            img.put(c, to=(2 + offset, y, size - 2 - offset, y + 1))
+            for x in range(2 + offset, size - 2 - offset):
+                if y == roof_top:
+                    img.put(outline, (x, y))
+            img.put(outline, (2 + offset, y))
+            img.put(outline, (size - 3 - offset, y))
+        wheel_y = body_bottom - 1
+        for cx in (4, size - 5):
+            for dx in (-1, 0, 1):
+                for dy in (0, 1):
+                    if dx * dx + dy * dy <= 1:
+                        img.put(outline, (cx + dx, wheel_y + dy))
     elif shape == "fleet":
-        # draw a smaller vehicle in the background
+        # Draw two overlapping cars to represent a fleet
         for dx, dy in ((-2, -2), (0, 0)):
-            top = 5 + dy
-            bottom = size - 6 + dy
-            img.put(c, to=(2 + dx, top, size - 2 + dx, bottom))
+            body_top = size - 6 + dy
+            body_bottom = size - 3 + dy
+            img.put(c, to=(2 + dx, body_top, size - 2 + dx, body_bottom))
             for x in range(2 + dx, size - 2 + dx):
-                img.put(outline, (x, top))
-                img.put(outline, (x, bottom))
-            for y in range(top, bottom):
+                img.put(outline, (x, body_top))
+                img.put(outline, (x, body_bottom - 1))
+            for y in range(body_top, body_bottom):
                 img.put(outline, (2 + dx, y))
                 img.put(outline, (size - 3 + dx, y))
-            for wx in range(3):
-                for wy in range(3):
-                    img.put(outline, (3 + dx + wx, bottom + wy - 1))
-                    img.put(outline, (size - 5 + dx + wx, bottom + wy - 1))
+            roof_top = body_top - 3
+            for y in range(roof_top, body_top):
+                offset = body_top - y
+                img.put(c, to=(2 + dx + offset, y, size - 2 + dx - offset, y + 1))
+                for x in range(2 + dx + offset, size - 2 + dx - offset):
+                    if y == roof_top:
+                        img.put(outline, (x, y))
+                img.put(outline, (2 + dx + offset, y))
+                img.put(outline, (size - 3 + dx - offset, y))
+            wheel_y = body_bottom - 1
+            for cx in (4 + dx, size - 5 + dx):
+                for dx2 in (-1, 0, 1):
+                    for dy2 in (0, 1):
+                        if dx2 * dx2 + dy2 * dy2 <= 1:
+                            img.put(outline, (cx + dx2, wheel_y + dy2))
     elif shape == "pentagon":
         mid = size // 2
         for y in range(2, size - 2):
@@ -646,21 +668,6 @@ def create_icon(
             img.put(outline, (x, mid))
         for y in range(4, size - 4):
             img.put(outline, (mid, y))
-    elif shape == "vehicle":
-        top = 4
-        bottom = size - 5
-        img.put(c, to=(3, top, size - 3, bottom))
-        for x in range(3, size - 3):
-            img.put(outline, (x, top))
-            img.put(outline, (x, bottom - 1))
-        for y in range(top, bottom):
-            img.put(outline, (3, y))
-            img.put(outline, (size - 4, y))
-        wheel_y = bottom - 1
-        for cx in (5, size - 6):
-            for dx in (-1, 0, 1):
-                for dy in (0, 1):
-                    img.put(outline, (cx + dx, wheel_y + dy))
     elif shape == "star":
         points = [
             (8, 3),
