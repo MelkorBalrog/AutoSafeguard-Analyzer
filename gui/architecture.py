@@ -7641,15 +7641,14 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
             )
         elif obj.obj_type == "Use Case":
-            radius = min(w, h)
-            self.drawing_helper._fill_gradient_circle(
-                self.canvas, x, y, radius, color
+            self.drawing_helper._fill_gradient_oval(
+                self.canvas, x, y, w, h, color
             )
             self.canvas.create_oval(
-                x - radius,
-                y - radius,
-                x + radius,
-                y + radius,
+                x - w,
+                y - h,
+                x + w,
+                y + h,
                 fill="",
                 outline=outline,
             )
