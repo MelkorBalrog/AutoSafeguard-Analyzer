@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import SysMLDiagramWindow
+from gui.style_manager import StyleManager
 
 
 def test_governance_shapes_and_relations():
@@ -18,3 +19,12 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Security Threat") == "cross"
     assert shape(None, "Safety Plan") == "document"
 
+    style = StyleManager.get_instance()
+    for element in [
+        "Hazard",
+        "Risk Assessment",
+        "Safety Goal",
+        "Security Threat",
+        "Safety Plan",
+    ]:
+        assert style.get_color(element) != "#FFFFFF"
