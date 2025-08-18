@@ -6648,18 +6648,6 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-reviews-Report-Safety_Case",
-    "Trigger": "Safety&AI: Report --[Reviews]--> Safety Case",
-    "Template": "Engineering team shall reviews the <target_id> (<target_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
     "Pattern ID": "SA-responsible_for-Role-Activity",
     "Trigger": "Safety&AI: Role --[Responsible for]--> Activity",
     "Template": "Engineering team shall be responsible for the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -6716,18 +6704,6 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-reviews-Audit_Report-Safety_Security_Case",
-    "Trigger": "Safety&AI: Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Engineering team shall reviews the <target_id> (<target_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
     "Pattern ID": "SA-responsible_for-Role-Process",
     "Trigger": "Safety&AI: Role --[Responsible for]--> Process",
     "Template": "Engineering team shall be responsible for the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -6784,19 +6760,19 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-reviews-Audit_Report-Safety_Security_Case-COND",
-    "Trigger": "Safety&AI: Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Engineering team shall reviews the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Pattern ID": "SA-responsible_for-Role-Task",
+    "Trigger": "Safety&AI: Role --[Responsible for]--> Task",
+    "Template": "Engineering team shall be responsible for the <target_id> (<target_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
       "<target_id>",
       "<target_class>",
-      "<acceptance_criteria>",
-      "<condition>"
+      "<acceptance_criteria>"
     ],
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
+  {
     "Pattern ID": "SA-responsible_for-Role-Task-COND",
     "Trigger": "Safety&AI: Role --[Responsible for]--> Task",
     "Template": "When <condition>, Engineering team shall be responsible for the <target_id> (<target_class>) using the <source_id> (<source_class>).",
@@ -6836,6 +6812,33 @@
       "<target_class>",
       "<acceptance_criteria>",
       "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-reviews-Audit_Report-Safety_Security_Case",
+    "Trigger": "Safety&AI: Audit Report --[Reviews]--> Safety & Security Case",
+    "Template": "Engineering team shall reviews the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-reviews-Audit_Report-Safety_Security_Case-COND",
+    "Trigger": "Safety&AI: Audit Report --[Reviews]--> Safety & Security Case",
+    "Template": "When <condition>, Engineering team shall reviews the <target_id> (<target_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<acceptance_criteria>",
+      "<condition>"
     ],
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
@@ -9630,7 +9633,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Decommission_Plan-Document",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9647,7 +9650,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Decommission_Plan-Document-COND",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9665,7 +9668,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Decommission_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9684,7 +9687,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Decommission_Plan-Document-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9702,7 +9705,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Deployment_Plan-Document",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9719,7 +9722,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Deployment_Plan-Document-COND",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9737,7 +9740,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Deployment_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9756,7 +9759,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Deployment_Plan-Document-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9774,7 +9777,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Maintenance_Plan-Document",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9791,7 +9794,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Maintenance_Plan-Document-COND",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9809,7 +9812,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Maintenance_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9828,7 +9831,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Maintenance_Plan-Document-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9846,7 +9849,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Mitigation_Plan-Document",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9863,7 +9866,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Mitigation_Plan-Document-COND",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9881,7 +9884,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Mitigation_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9900,7 +9903,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Mitigation_Plan-Document-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9918,7 +9921,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Safety_Plan-Document",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9935,7 +9938,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Safety_Plan-Document-COND",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -9953,7 +9956,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Safety_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9972,7 +9975,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Safety_Plan-Document-CONST",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -9990,7 +9993,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Security_Plan-Document",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10007,7 +10010,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Security_Plan-Document-COND",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10025,7 +10028,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Security_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10044,7 +10047,7 @@
   },
   {
     "Pattern ID": "SEQ-governance_oversight-Security_Plan-Document-CONST",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Produces]--> Document",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Report --[Produces]--> Document",
     "Template": "Governance board shall evaluate governance performance the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10630,7 +10633,7 @@
   },
   {
     "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10649,7 +10652,7 @@
   },
   {
     "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-COND",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10669,7 +10672,7 @@
   },
   {
     "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-COND-CONST",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10690,7 +10693,7 @@
   },
   {
     "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-CONST",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10710,7 +10713,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Decommission_Plan-Document",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10729,7 +10732,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Decommission_Plan-Document-COND",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10749,7 +10752,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Decommission_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10770,7 +10773,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Decommission_Plan-Document-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10790,7 +10793,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Deployment_Plan-Document",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10809,7 +10812,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Deployment_Plan-Document-COND",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10829,7 +10832,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Deployment_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10850,7 +10853,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Deployment_Plan-Document-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10870,7 +10873,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Maintenance_Plan-Document",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10889,7 +10892,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Maintenance_Plan-Document-COND",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10909,7 +10912,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Maintenance_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10930,7 +10933,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Maintenance_Plan-Document-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -10950,7 +10953,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Mitigation_Plan-Document",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10969,7 +10972,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Mitigation_Plan-Document-COND",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
@@ -10989,7 +10992,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Mitigation_Plan-Document-COND-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -11010,7 +11013,7 @@
   },
   {
     "Pattern ID": "SEQ-lifecycle_governance_review-Mitigation_Plan-Document-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Validation Report --[Produces]--> Document",
+    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
     "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
@@ -11029,9 +11032,9 @@
     "Notes": "Auto-generated from sequence rules."
   },
   {
-    "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
-    "Template": "Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
+    "Pattern ID": "SEQ-lifecycle_governance_review-Safety_Plan-Document",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -11048,9 +11051,9 @@
     "Notes": "Auto-generated from sequence rules."
   },
   {
-    "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-COND",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
-    "Template": "When <condition>, Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
+    "Pattern ID": "SEQ-lifecycle_governance_review-Safety_Plan-Document-COND",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -11068,9 +11071,9 @@
     "Notes": "Auto-generated from sequence rules."
   },
   {
-    "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-COND-CONST",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
-    "Template": "When <condition>, Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Pattern ID": "SEQ-lifecycle_governance_review-Safety_Plan-Document-COND-CONST",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -11089,9 +11092,89 @@
     "Notes": "Auto-generated from sequence rules."
   },
   {
-    "Pattern ID": "SEQ-incident_validation-Safety_Issue-Document-CONST",
-    "Trigger": "Sequence: Safety Issue --[Triage]--> Field Data --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
-    "Template": "Safety manager shall validate incident resolution the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Pattern ID": "SEQ-lifecycle_governance_review-Safety_Plan-Document-CONST",
+    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<target3_id>",
+      "<target3_class>",
+      "<target4_id>",
+      "<target4_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-lifecycle_governance_review-Security_Plan-Document",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<target3_id>",
+      "<target3_class>",
+      "<target4_id>",
+      "<target4_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-lifecycle_governance_review-Security_Plan-Document-COND",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>).",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<target3_id>",
+      "<target3_class>",
+      "<target4_id>",
+      "<target4_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-lifecycle_governance_review-Security_Plan-Document-COND-CONST",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "When <condition>, Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
+    "Variables": [
+      "<source_id>",
+      "<source_class>",
+      "<target_id>",
+      "<target_class>",
+      "<target2_id>",
+      "<target2_class>",
+      "<target3_id>",
+      "<target3_class>",
+      "<target4_id>",
+      "<target4_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from sequence rules."
+  },
+  {
+    "Pattern ID": "SEQ-lifecycle_governance_review-Security_Plan-Document-CONST",
+    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Develops]--> Test Suite --[Validate]--> Report --[Produces]--> Document",
+    "Template": "Lifecycle manager shall review lifecycle governance the <target_id> (<target_class>), the <target2_id> (<target2_class>), the <target3_id> (<target3_class>), and the <target4_id> (<target4_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
     "Variables": [
       "<source_id>",
       "<source_class>",
@@ -13519,438 +13602,6 @@
       "<target3_class>",
       "<target4_id>",
       "<target4_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Decommission_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Decommission_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Decommission_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Decommission_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Decommission Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Deployment_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Deployment_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Deployment_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Deployment_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Deployment Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Maintenance_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Maintenance_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Maintenance_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Maintenance_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Maintenance Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Mitigation_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Mitigation_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Mitigation_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Mitigation_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Mitigation Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Safety_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Safety_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Safety_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Safety_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Safety Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Security_Plan-Safety_Security_Case",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Security_Plan-Safety_Security_Case-COND",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>).",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Security_Plan-Safety_Security_Case-COND-CONST",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "When <condition>, Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from sequence rules."
-  },
-  {
-    "Pattern ID": "SEQ-safety_security_case_review-Security_Plan-Safety_Security_Case-CONST",
-    "Trigger": "Sequence: Security Plan --[Plans]--> Process --[Audits]--> Audit Report --[Reviews]--> Safety & Security Case",
-    "Template": "Safety manager shall review safety & security case the <target_id> (<target_class>), the <target2_id> (<target2_class>), and the <target3_id> (<target3_class>) using the <source_id> (<source_class>) constrained by <constraint>.",
-    "Variables": [
-      "<source_id>",
-      "<source_class>",
-      "<target_id>",
-      "<target_class>",
-      "<target2_id>",
-      "<target2_class>",
-      "<target3_id>",
-      "<target3_class>",
       "<acceptance_criteria>",
       "<constraint>"
     ],
