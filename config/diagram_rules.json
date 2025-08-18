@@ -385,6 +385,21 @@
       "relations": ["Assesses", "Develops", "Verify", "Produces"],
       "subject": "Test team",
       "action": "perform risk-based testing"
+    },
+    "organizational accountability": {
+      "relations": ["Responsible for", "Produces"],
+      "subject": "Governance board",
+      "action": "document responsibilities"
+    },
+    "governance oversight": {
+      "relations": ["Plans", "Audits", "Produces"],
+      "subject": "Governance board",
+      "action": "evaluate governance performance"
+    },
+    "lifecycle governance review": {
+      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "subject": "Lifecycle manager",
+      "action": "review lifecycle governance"
     }
   },
 
@@ -498,6 +513,7 @@
       "Decommission Plan": ["Process"]
     },
     "Verify": {"Test Suite": ["Verification Plan"]},
+    "Responsible for": {"Role": ["Process", "Activity", "Task"]},
     "Audits": {"Process": ["Audit Report"]},
     "Reviews": {"Audit Report": ["Safety Case"]}
   },
