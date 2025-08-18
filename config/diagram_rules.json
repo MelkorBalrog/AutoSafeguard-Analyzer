@@ -79,16 +79,11 @@
     "Hazard",
     "Risk Assessment",
     "Safety Goal",
-    "Safety Plan",
-    "Security Plan",
-    "Mitigation Plan",
+    "Plan",
     "Security Threat",
     "Validation Report",
     "Audit Report",
-    "Safety Case",
-    "Deployment Plan",
-    "Maintenance Plan",
-    "Decommission Plan"
+    "Safety Case"
   ],
 
   // Relation labels for the Governance Elements toolbox
@@ -178,16 +173,11 @@
     "Hazard",
     "Risk Assessment",
     "Safety Goal",
-    "Safety Plan",
-    "Security Plan",
-    "Mitigation Plan",
+    "Plan",
     "Security Threat",
     "Validation Report",
     "Audit Report",
-    "Safety Case",
-    "Deployment Plan",
-    "Maintenance Plan",
-    "Decommission Plan"
+    "Safety Case"
   ],
 
   // FMEDA/Fault tree gate node types
@@ -430,16 +420,11 @@
     "Hazard": "object",
     "Risk Assessment": "object",
     "Safety Goal": "object",
-    "Safety Plan": "object",
-    "Security Plan": "object",
-    "Mitigation Plan": "object",
+    "Plan": "object",
     "Security Threat": "object",
     "Validation Report": "object",
     "Audit Report": "object",
-    "Safety Case": "object",
-    "Deployment Plan": "object",
-    "Maintenance Plan": "object",
-    "Decommission Plan": "object"
+    "Safety Case": "object"
   },
 
   // Allowed Safety & AI relationships between node types
@@ -463,7 +448,7 @@
     "Develops": {
       "Field Data": ["Test Suite"],
       "Process": ["Test Suite"],
-      "Mitigation Plan": ["Test Suite"],
+      "Plan": ["Test Suite"],
       "Risk Assessment": ["Test Suite"],
       "Safety Goal": ["Test Suite"]
     },
@@ -479,24 +464,15 @@
     "Validate": {
       "Model": ["Test Suite"],
       "Test Suite": ["Validation Report"],
-      "Mitigation Plan": ["Validation Report"]
+      "Plan": ["Validation Report"]
     },
     "Assesses": {
       "Hazard": ["Risk Assessment"],
       "Security Threat": ["Risk Assessment"],
       "Field Data": ["Risk Assessment"]
     },
-    "Mitigates": {
-      "Risk Assessment": ["Mitigation Plan", "Safety Goal", "Security Plan"]
-    },
-    "Plans": {
-      "Safety Plan": ["Process"],
-      "Security Plan": ["Process"],
-      "Mitigation Plan": ["Process"],
-      "Deployment Plan": ["Process"],
-      "Maintenance Plan": ["Process"],
-      "Decommission Plan": ["Process"]
-    },
+    "Mitigates": {"Risk Assessment": ["Plan", "Safety Goal"]},
+    "Plans": {"Plan": ["Process"]},
     "Verify": {"Test Suite": ["Verification Plan"]},
     "Audits": {"Process": ["Audit Report"]},
     "Reviews": {"Audit Report": ["Safety Case"]}

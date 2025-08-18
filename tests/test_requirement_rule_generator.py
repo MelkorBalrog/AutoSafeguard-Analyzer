@@ -127,7 +127,7 @@ def test_complex_sequences() -> None:
             "Triage": {"Safety Issue": ["Field Data"]},
             "Develops": {
                 "Field Data": ["Test Suite"],
-                "Mitigation Plan": ["Test Suite"],
+                "Plan": ["Test Suite"],
                 "Risk Assessment": ["Test Suite"],
             },
             "Constrains": {"Policy": ["Process"]},
@@ -139,7 +139,7 @@ def test_complex_sequences() -> None:
             },
             "Validate": {
                 "Model": ["Test Suite"],
-                "Mitigation Plan": ["Validation Report"],
+                "Plan": ["Validation Report"],
                 "Test Suite": ["Validation Report"],
             },
             "Assesses": {
@@ -147,7 +147,7 @@ def test_complex_sequences() -> None:
                 "Security Threat": ["Risk Assessment"],
                 "Field Data": ["Risk Assessment"],
             },
-            "Mitigates": {"Risk Assessment": ["Mitigation Plan"]},
+            "Mitigates": {"Risk Assessment": ["Plan"]},
             "Verify": {"Test Suite": ["Verification Plan"]},
         },
         "requirement_sequences": {

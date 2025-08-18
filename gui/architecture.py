@@ -504,8 +504,9 @@ def _format_label(
     label = name or ""
     if obj is not None:
         repo = getattr(_win, "repo", None)
-        diag = repo.diagrams.get(_win.diagram_id) if repo else None
-        if diag and diag.diag_type == "Governance Diagram":
+        diag_id = getattr(_win, "diagram_id", None)
+        diag = repo.diagrams.get(diag_id) if repo and diag_id else None
+        if diag and diag.diag_type == "Governance Diagram" and obj.obj_type != "Work Product":
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
                 elem_type = repo.elements[obj.element_id].elem_type
@@ -3580,16 +3581,11 @@ class SysMLDiagramWindow(tk.Frame):
             "Hazard": "triangle",
             "Risk Assessment": "diamond",
             "Safety Goal": "pentagon",
-            "Safety Plan": "document",
-            "Security Plan": "document",
-            "Mitigation Plan": "document",
+            "Plan": "document",
             "Security Threat": "cross",
             "Validation Report": "document",
             "Audit Report": "document",
             "Safety Case": "document",
-            "Deployment Plan": "document",
-            "Maintenance Plan": "document",
-            "Decommission Plan": "document",
             "Work Product": "rect",
         }
         if name in mapping:
@@ -6661,7 +6657,7 @@ class SysMLDiagramWindow(tk.Frame):
         h = obj.height * self.zoom / 2
         color = StyleManager.get_instance().get_color(obj.obj_type)
         outline = StyleManager.get_instance().outline_color
-        if color == "#FFFFFF":
+        if color.upper() == "#FFFFFF":
             if obj.obj_type == "Database":
                 color = "#cfe2f3"
             elif obj.obj_type == "ANN":
@@ -6684,8 +6680,12 @@ class SysMLDiagramWindow(tk.Frame):
                 color = "#f4cccc"
             elif obj.obj_type == "System":
                 color = "#c9daf8"
+            elif obj.obj_type == "Work Product":
+                color = "#cfe2f3"
             elif obj.obj_type == "Verification Plan":
                 color = "#f9cb9c"
+            elif obj.obj_type == "Plan":
+                color = "#fff2cc"
             elif obj.obj_type == "Manufacturing Process":
                 color = "#b4a7d6"
             elif obj.obj_type == "Vehicle":
@@ -7164,15 +7164,10 @@ class SysMLDiagramWindow(tk.Frame):
                 pts.extend([px, py])
             self.canvas.create_polygon(pts, outline=outline, fill=color)
         elif obj.obj_type in (
-            "Safety Plan",
-            "Security Plan",
-            "Mitigation Plan",
+            "Plan",
             "Validation Report",
             "Audit Report",
             "Safety Case",
-            "Deployment Plan",
-            "Maintenance Plan",
-            "Decommission Plan",
         ):
             self.canvas.create_rectangle(
                 x - w,
@@ -7304,7 +7299,8 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
-            label = _format_label(self, obj.properties.get("name", ""), obj.phase, obj)
+            raw_name = obj.properties.get("name", "")
+            label = _format_label(self, raw_name, obj.phase, obj)
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
@@ -7322,9 +7318,9 @@ class SysMLDiagramWindow(tk.Frame):
                 "FMEA",
                 "FMEDA",
             }
-            if label in diagram_products:
+            if raw_name in diagram_products:
                 color = "#cfe2f3"
-            elif label in analysis_products:
+            elif raw_name in analysis_products:
                 color = "#d5e8d4"
             else:
                 color = "#ffffff"
