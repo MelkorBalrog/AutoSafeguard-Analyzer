@@ -7339,38 +7339,72 @@ class SysMLDiagramWindow(tk.Frame):
         elif obj.obj_type == "Operation":
             handle_w = w * 0.25
             head_r = w
+            inner_r = head_r * 0.6
             bg = StyleManager.get_instance().get_canvas_color()
-            self.drawing_helper._fill_gradient_circle(self.canvas, x, y, head_r, color)
-            self.canvas.create_oval(x - head_r, y - head_r, x + head_r, y + head_r, outline=outline, fill="")
+            self.drawing_helper._fill_gradient_circle(
+                self.canvas, x, y, head_r, color
+            )
+            self.canvas.create_oval(
+                x - head_r,
+                y - head_r,
+                x + head_r,
+                y + head_r,
+                outline=outline,
+                fill="",
+            )
+            # Hollow out the head for an open-end wrench look
+            self.canvas.create_oval(
+                x - inner_r,
+                y - inner_r,
+                x + inner_r,
+                y + inner_r,
+                outline=outline,
+                fill=bg,
+            )
+            # Carve a wider jaw opening
             notch = [
-                (x + head_r * 0.4, y - head_r * 0.7),
-                (x + head_r, y - head_r * 0.2),
-                (x + head_r, y + head_r * 0.2),
-                (x + head_r * 0.4, y + head_r * 0.7),
+                (x + inner_r, y - inner_r * 0.8),
+                (x + head_r, y - head_r * 0.3),
+                (x + head_r, y + head_r * 0.3),
+                (x + inner_r, y + inner_r * 0.8),
             ]
             self.canvas.create_polygon(notch, fill=bg, outline=bg)
             self.canvas.create_line(
-                x + head_r * 0.4,
-                y - head_r * 0.7,
+                x + inner_r,
+                y - inner_r * 0.8,
                 x + head_r,
-                y - head_r * 0.2,
+                y - head_r * 0.3,
                 fill=outline,
                 width=max(2, self.zoom),
             )
             self.canvas.create_line(
-                x + head_r * 0.4,
-                y + head_r * 0.7,
+                x + inner_r,
+                y + inner_r * 0.8,
                 x + head_r,
-                y + head_r * 0.2,
+                y + head_r * 0.3,
                 fill=outline,
                 width=max(2, self.zoom),
             )
             hx1, hx2 = x - handle_w / 2, x + handle_w / 2
-            hy1, hy2 = y, y + h
+            hy1, hy2 = y + inner_r, y + h
             self._draw_gradient_rect(hx1, hy1, hx2, hy2, color, obj.obj_id)
-            self.canvas.create_rectangle(hx1, hy1, hx2, hy2, outline=outline, fill="")
+            self.canvas.create_rectangle(
+                hx1,
+                hy1,
+                hx2,
+                hy2,
+                outline=outline,
+                fill="",
+            )
             hole_r = handle_w * 0.4
-            self.canvas.create_oval(x - hole_r, hy2 - hole_r * 2, x + hole_r, hy2, outline=outline, fill=bg)
+            self.canvas.create_oval(
+                x - hole_r,
+                hy2 - hole_r * 2,
+                x + hole_r,
+                hy2,
+                outline=outline,
+                fill=bg,
+            )
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
             self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
