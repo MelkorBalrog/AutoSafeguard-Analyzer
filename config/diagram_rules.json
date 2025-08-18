@@ -83,8 +83,7 @@
     "Security Plan",
     "Mitigation Plan",
     "Security Threat",
-    "Validation Report",
-    "Audit Report",
+    "Report",
     "Deployment Plan",
     "Maintenance Plan",
     "Decommission Plan"
@@ -181,9 +180,8 @@
     "Security Plan",
     "Mitigation Plan",
     "Security Threat",
-    "Validation Report",
-    "Audit Report",
     "Safety & Security Case",
+    "Report",
     "Deployment Plan",
     "Maintenance Plan",
     "Decommission Plan"
@@ -384,6 +382,21 @@
       "relations": ["Assesses", "Develops", "Verify", "Produces"],
       "subject": "Test team",
       "action": "perform risk-based testing"
+    },
+    "organizational accountability": {
+      "relations": ["Responsible for", "Produces"],
+      "subject": "Governance board",
+      "action": "document responsibilities"
+    },
+    "governance oversight": {
+      "relations": ["Plans", "Audits", "Produces"],
+      "subject": "Governance board",
+      "action": "evaluate governance performance"
+    },
+    "lifecycle governance review": {
+      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "subject": "Lifecycle manager",
+      "action": "review lifecycle governance"
     }
   },
 
@@ -433,9 +446,8 @@
     "Security Plan": "object",
     "Mitigation Plan": "object",
     "Security Threat": "object",
-    "Validation Report": "object",
-    "Audit Report": "object",
     "Safety & Security Case": "object",
+    "Report": "object",
     "Deployment Plan": "object",
     "Maintenance Plan": "object",
     "Decommission Plan": "object"
@@ -471,14 +483,13 @@
       "Process": ["Document"],
       "Test Suite": ["Document"],
       "Verification Plan": ["Document"],
-      "Validation Report": ["Document"],
-      "Audit Report": ["Document"],
       "Safety & Security Case": ["Document"]
+      "Report": ["Document"],
     },
     "Validate": {
       "Model": ["Test Suite"],
-      "Test Suite": ["Validation Report"],
-      "Mitigation Plan": ["Validation Report"]
+      "Test Suite": ["Report"],
+      "Mitigation Plan": ["Report"]
     },
     "Assesses": {
       "Hazard": ["Risk Assessment"],
@@ -497,8 +508,9 @@
       "Decommission Plan": ["Process"]
     },
     "Verify": {"Test Suite": ["Verification Plan"]},
-    "Audits": {"Process": ["Audit Report"]},
     "Reviews": {"Audit Report": ["Safety & Security Case"]}
+    "Audits": {"Process": ["Report"]},
+    "Responsible for": {"Role": ["Process", "Activity", "Task"]},
   },
 
   // Connection validation rules per diagram type and connection kind

@@ -3585,8 +3585,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Security Plan": "document",
             "Mitigation Plan": "document",
             "Security Threat": "cross",
-            "Validation Report": "document",
-            "Audit Report": "document",
+            "Report": "document",
             "Safety Case": "document",
             "Deployment Plan": "document",
             "Maintenance Plan": "document",
@@ -7168,8 +7167,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Safety Plan",
             "Security Plan",
             "Mitigation Plan",
-            "Validation Report",
-            "Audit Report",
+            "Report",
             "Safety Case",
             "Deployment Plan",
             "Maintenance Plan",
@@ -7358,11 +7356,11 @@ class SysMLDiagramWindow(tk.Frame):
                 y - h + fold,
                 fill=outline,
             )
-            if label:
+            if raw_name:
                 self.canvas.create_text(
                     x,
                     y,
-                    text=label.replace(" ", "\n"),
+                    text=raw_name.replace(" ", "\n"),
                     anchor="center",
                     font=self.font,
                     width=obj.width * self.zoom,
