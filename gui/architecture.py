@@ -6716,6 +6716,56 @@ class SysMLDiagramWindow(tk.Frame):
             fill="black",
         )
 
+    def _draw_car(
+        self,
+        cx: float,
+        cy: float,
+        w: float,
+        h: float,
+        color: str,
+        outline: str,
+    ) -> None:
+        """Draw a simple car silhouette centered at (*cx*, *cy*)."""
+        body_bottom = cy + h * 0.3
+        body_top = cy - h * 0.1
+        roof_rear_y = cy - h * 0.5
+        roof_front_y = cy - h * 0.3
+        roof_front_x = cx - w * 0.6
+        roof_rear_x = cx + w * 0.3
+        pts = [
+            (cx - w, body_bottom),
+            (cx + w, body_bottom),
+            (cx + w, body_top),
+            (roof_rear_x, roof_rear_y),
+            (roof_front_x, roof_front_y),
+            (cx - w, body_top),
+        ]
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [c for pt in pts for c in pt],
+            outline=outline,
+            fill="",
+        )
+        wheel_r = min(w, h) * 0.2
+        wheel_y = body_bottom
+        wheel_offset = w * 0.6
+        self.canvas.create_oval(
+            cx - wheel_offset - wheel_r,
+            wheel_y - wheel_r,
+            cx - wheel_offset + wheel_r,
+            wheel_y + wheel_r,
+            outline=outline,
+            fill=outline,
+        )
+        self.canvas.create_oval(
+            cx + wheel_offset - wheel_r,
+            wheel_y - wheel_r,
+            cx + wheel_offset + wheel_r,
+            wheel_y + wheel_r,
+            outline=outline,
+            fill=outline,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7246,80 +7296,11 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
         elif obj.obj_type == "Vehicle":
-            body_h = h * 0.6
-            self._draw_gradient_rect(
-                x - w, y - body_h, x + w, y + body_h, color, obj.obj_id
-            )
-            self.canvas.create_rectangle(
-                x - w,
-                y - body_h,
-                x + w,
-                y + body_h,
-                outline=outline,
-                fill="",
-            )
-            wheel_r = min(w, h) * 0.2
-            self.canvas.create_oval(
-                x - w + wheel_r,
-                y + body_h - wheel_r,
-                x - w + 3 * wheel_r,
-                y + body_h + wheel_r,
-                outline=outline,
-                fill=outline,
-            )
-            self.canvas.create_oval(
-                x + w - 3 * wheel_r,
-                y + body_h - wheel_r,
-                x + w - wheel_r,
-                y + body_h + wheel_r,
-                outline=outline,
-                fill=outline,
-            )
+            self._draw_car(x, y, w, h, color, outline)
         elif obj.obj_type == "Fleet":
             offset = 6 * self.zoom
-            body_h = h * 0.6
-            self._draw_gradient_rect(
-                x - w + offset,
-                y - body_h - offset,
-                x + w + offset,
-                y + body_h - offset,
-                color,
-                obj.obj_id,
-            )
-            self.canvas.create_rectangle(
-                x - w + offset,
-                y - body_h - offset,
-                x + w + offset,
-                y + body_h - offset,
-                outline=outline,
-                fill="",
-            )
-            self._draw_gradient_rect(x - w, y - body_h, x + w, y + body_h, color, obj.obj_id)
-            self.canvas.create_rectangle(
-                x - w,
-                y - body_h,
-                x + w,
-                y + body_h,
-                outline=outline,
-                fill="",
-            )
-            wheel_r = min(w, h) * 0.2
-            self.canvas.create_oval(
-                x - w + wheel_r,
-                y + body_h - wheel_r,
-                x - w + 3 * wheel_r,
-                y + body_h + wheel_r,
-                outline=outline,
-                fill=outline,
-            )
-            self.canvas.create_oval(
-                x + w - 3 * wheel_r,
-                y + body_h - wheel_r,
-                x + w - wheel_r,
-                y + body_h + wheel_r,
-                outline=outline,
-                fill=outline,
-            )
+            self._draw_car(x - offset, y - offset, w, h, color, outline)
+            self._draw_car(x + offset, y + offset, w, h, color, outline)
         elif obj.obj_type == "Safety Compliance":
             pts = [
                 (x - w * 0.8, y - h * 0.7),
