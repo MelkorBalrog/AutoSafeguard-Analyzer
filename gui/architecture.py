@@ -396,6 +396,11 @@ _BASE_CONN_TYPES = {
     "Inspect",
     "Triage",
     "Improve",
+    "Develops",
+    "Mitigates",
+    "Assesses",
+    "Plans",
+    "Reviews",
 }
 
 # Ordered list of base connection tools for toolbox composition
@@ -444,6 +449,11 @@ _BASE_CONN_TOOLS = [
     "Inspect",
     "Triage",
     "Improve",
+    "Develops",
+    "Mitigates",
+    "Assesses",
+    "Plans",
+    "Reviews",
 ]
 
 # Connection types that default to forward arrows
@@ -485,6 +495,11 @@ _ARROW_FORWARD_BASE.update(
         "Inspect",
         "Triage",
         "Improve",
+        "Develops",
+        "Mitigates",
+        "Assesses",
+        "Plans",
+        "Reviews",
     }
 )
 
