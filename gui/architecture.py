@@ -67,7 +67,32 @@ SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
 SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
 
 # Elements available in the Governance Elements toolbox
-GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
+_PLAN_TYPES = {
+    "Safety Plan",
+    "Security Plan",
+    "Mitigation Plan",
+    "Deployment Plan",
+    "Maintenance Plan",
+    "Decommission Plan",
+    "Verification Plan",
+}
+
+
+def _normalize_plan_types(items: list[str]) -> list[str]:
+    """Replace specific plan variants with generic 'Plan' and deduplicate."""
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for item in items:
+        item = "Plan" if item in _PLAN_TYPES else item
+        if item not in seen:
+            seen.add(item)
+            normalized.append(item)
+    return normalized
+
+
+GOV_ELEMENT_NODES = _normalize_plan_types(
+    _CONFIG.get("governance_element_nodes", [])
+)
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 
 # expose the icon factory under the old name used throughout the module
@@ -115,9 +140,7 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
             ]
             if n in nodes
         ],
-        "Verification": [
-            n for n in ["Test Suite", "Verification Plan"] if n in nodes
-        ],
+        "Verification": [n for n in ["Test Suite", "Plan"] if n in nodes],
         "Events": [n for n in ["Incident", "Safety Issue"] if n in nodes],
     }
     known = {n for vals in base.values() for n in vals}
@@ -167,7 +190,9 @@ GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
-GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
+GOVERNANCE_NODE_TYPES = set(
+    _normalize_plan_types(_CONFIG.get("governance_node_types", []))
+)
 
 # Directed relationship rules for connections between Safety & AI elements.
 # Each entry maps a connection type to allowed source and target element
@@ -423,11 +448,15 @@ def reload_config() -> None:
     SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
-    GOV_ELEMENT_NODES = _CONFIG.get("governance_element_nodes", [])
+    GOV_ELEMENT_NODES = _normalize_plan_types(
+        _CONFIG.get("governance_element_nodes", [])
+    )
     GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
     GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
-    GOVERNANCE_NODE_TYPES = set(_CONFIG.get("governance_node_types", []))
+    GOVERNANCE_NODE_TYPES = set(
+        _normalize_plan_types(_CONFIG.get("governance_node_types", []))
+    )
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
         for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
@@ -3567,7 +3596,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Software Component": "rect",
             "Test Suite": "test",
             "System": "nested",
-            "Verification Plan": "document",
+            "Plan": "document",
             "Component": "rect",
             "Manufacturing Process": "hexagon",
             "Vehicle": "vehicle",
@@ -3581,15 +3610,9 @@ class SysMLDiagramWindow(tk.Frame):
             "Hazard": "triangle",
             "Risk Assessment": "diamond",
             "Safety Goal": "pentagon",
-            "Safety Plan": "document",
-            "Security Plan": "document",
-            "Mitigation Plan": "document",
             "Security Threat": "cross",
             "Report": "document",
             "Safety Case": "document",
-            "Deployment Plan": "document",
-            "Maintenance Plan": "document",
-            "Decommission Plan": "document",
             "Work Product": "rect",
         }
         if name in mapping:
@@ -6684,7 +6707,7 @@ class SysMLDiagramWindow(tk.Frame):
                 color = "#f4cccc"
             elif obj.obj_type == "System":
                 color = "#c9daf8"
-            elif obj.obj_type == "Verification Plan":
+            elif obj.obj_type == "Plan":
                 color = "#f9cb9c"
             elif obj.obj_type == "Manufacturing Process":
                 color = "#b4a7d6"
@@ -6991,7 +7014,7 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
                 fill="",
             )
-        elif obj.obj_type == "Verification Plan":
+        elif obj.obj_type == "Plan":
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
@@ -7164,14 +7187,8 @@ class SysMLDiagramWindow(tk.Frame):
                 pts.extend([px, py])
             self.canvas.create_polygon(pts, outline=outline, fill=color)
         elif obj.obj_type in (
-            "Safety Plan",
-            "Security Plan",
-            "Mitigation Plan",
             "Report",
             "Safety Case",
-            "Deployment Plan",
-            "Maintenance Plan",
-            "Decommission Plan",
         ):
             self.canvas.create_rectangle(
                 x - w,
@@ -10731,7 +10748,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 command=lambda t="Flow": self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
             wp_rel = ttk.LabelFrame(
-                relationships, text="Work Product Links (relationships)"
+                governance_panel, text="Work Product Links (relationships)"
             )
             wp_rel.pack(fill=tk.X, padx=2, pady=2)
             for name in work_rel_names:
@@ -10745,7 +10762,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
             for group, names in GOV_ELEMENT_RELATION_GROUPS.items():
                 rel_frame = ttk.LabelFrame(
-                    relationships, text=f"{group} (relationships)"
+                    governance_panel, text=f"{group} (relationships)"
                 )
                 rel_frame.pack(fill=tk.X, padx=2, pady=2)
                 for name in names:
