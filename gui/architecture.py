@@ -10873,9 +10873,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         if hasattr(self.toolbox, "tk"):
             self.ai_tools_frame = ttk.Frame(self.toolbox)
             for name in ai_nodes:
+                display = "AI Data" if name == "Database" else name
                 ttk.Button(
                     self.ai_tools_frame,
-                    text=name,
+                    text=display,
                     image=self._icon_for(name),
                     compound=tk.LEFT,
                     command=lambda t=name: self.select_tool(t),
@@ -12086,7 +12087,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "ANN": self._create_icon("neural", style.get_color("ANN")),
             "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
             "Business Unit": self._create_icon("department", style.get_color("Business Unit")),
-            "Data": self._create_icon("circle", style.get_color("Data")),
+            "Data": self._create_icon("cylinder", style.get_color("Data")),
             "Document": self._create_icon("document", style.get_color("Document")),
             "Guideline": self._create_icon("compass", style.get_color("Guideline")),
             "Metric": self._create_icon("chart", style.get_color("Metric")),
@@ -12101,6 +12102,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "Process": self._create_icon("gear", style.get_color("Process")),
             "Operation": self._create_icon("wrench", style.get_color("Operation")),
             "Driving Function": self._create_icon("steering", style.get_color("Driving Function")),
+            "Field Data": self._create_icon("cylinder", style.get_color("Field Data")),
         }
         self.default_diag_icon = self._create_icon("rect", "gray")
         self.default_elem_icon = self._create_icon("rect", style.get_color("Existing Element"))
