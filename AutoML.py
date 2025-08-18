@@ -9459,44 +9459,6 @@ class FaultTreeApp:
             for ch in getattr(widget, "winfo_children", lambda: [])():
                 _refresh_children(ch)
 
-        toolbox = getattr(self, "safety_mgmt_toolbox", None)
-        enabled = toolbox.enabled_products() if toolbox else set()
-        repo = SysMLRepository.get_instance()
-        tab_map = {
-            "Threat": "Threat Analysis",
-            "FMEA List": "FMEA",
-            "FMEDA List": "FMEDA",
-            "Causal Bayesian Network": "Causal Bayesian Network Analysis",
-        }
-        if hasattr(self, "doc_nb"):
-            for tab_id in list(self.doc_nb.tabs()):
-                widget = self.doc_nb.nametowidget(tab_id)
-                # Close diagrams not visible in the active phase
-                for did, tab in list(getattr(self, "diagram_tabs", {}).items()):
-                    if tab is widget and not repo.diagram_visible(did):
-                        self.doc_nb._closing_tab = tab_id
-                        self.doc_nb.event_generate("<<NotebookTabClosed>>")
-                        if tab_id in self.doc_nb.tabs():
-                            try:
-                                self.doc_nb.forget(tab_id)
-                            except Exception:
-                                pass
-                        self.diagram_tabs.pop(did, None)
-                        break
-                else:
-                    title = self._tab_titles.get(tab_id, self.doc_nb.tab(tab_id, "text"))
-                    product = tab_map.get(title, title)
-                    if product not in enabled:
-                        self.doc_nb._closing_tab = tab_id
-                        self.doc_nb.event_generate("<<NotebookTabClosed>>")
-                        if tab_id in self.doc_nb.tabs():
-                            try:
-                                self.doc_nb.forget(tab_id)
-                            except Exception:
-                                pass
-                    else:
-                        _refresh_children(widget)
-
         for tab in getattr(self, "diagram_tabs", {}).values():
             _refresh_children(tab)
 
