@@ -12334,19 +12334,16 @@ class ArchitectureManagerDialog(tk.Frame):
 
         # If an application instance is available, open the diagram using
         # the main document notebook so duplicate tabs are avoided.
-        if self.app and hasattr(self.app, "diagram_tabs"):
-            idx = next(
-                (i for i, d in enumerate(self.app.arch_diagrams) if d.diag_id == diag_id),
-                -1,
-            )
-            if idx != -1:
-                self.app.open_arch_window(idx)
-                tab = self.app.diagram_tabs.get(diag_id)
-                if tab and tab.winfo_exists():
-                    for child in tab.winfo_children():
-                        if isinstance(child, SysMLDiagramWindow):
-                            return child
-                return None
+        if self.app and hasattr(self.app, "open_arch_window") and hasattr(
+            self.app, "diagram_tabs"
+        ):
+            self.app.open_arch_window(diag_id)
+            tab = self.app.diagram_tabs.get(diag_id)
+            if tab and tab.winfo_exists():
+                for child in tab.winfo_children():
+                    if isinstance(child, SysMLDiagramWindow):
+                        return child
+            return None
 
         master = self.master if self.master else self
         win = None
