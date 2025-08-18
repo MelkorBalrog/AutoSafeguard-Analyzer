@@ -50,3 +50,25 @@ def test_cross_category_relations_surface():
     assert "Role" in art_ext["Entities"]["nodes"]
     assert "Approves" in art_ext["Entities"]["relations"]
 
+def test_governance_core_relations_and_externals(tmp_path, monkeypatch):
+    defs = architecture._toolbox_defs()
+    core = defs["Governance Core"]
+    assert {"Work Product", "Lifecycle Phase"} <= set(core["nodes"])
+    assert "Re-use" in core["relations"]
+    orig_path = architecture._CONFIG_PATH
+    cfg = load_json_with_comments(orig_path)
+    new_cfg = json.loads(json.dumps(cfg))
+    conns = new_cfg["connection_rules"].setdefault("Governance Diagram", {})
+    conns.setdefault("Reviews", {}).setdefault("Work Product", ["Document"])
+    tmp_file = tmp_path / "diagram_rules.json"
+    tmp_file.write_text(json.dumps(new_cfg))
+    try:
+        monkeypatch.setattr(architecture, "_CONFIG_PATH", tmp_file)
+        architecture.reload_config()
+        updated = architecture._toolbox_defs()
+        ext = updated["Governance Core"]["externals"]["Artifacts"]
+        assert "Document" in ext["nodes"]
+        assert "Reviews" in ext["relations"]
+    finally:
+        monkeypatch.setattr(architecture, "_CONFIG_PATH", orig_path)
+        architecture.reload_config()
