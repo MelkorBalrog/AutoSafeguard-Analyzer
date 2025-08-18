@@ -7069,6 +7069,15 @@ class SysMLDiagramWindow(tk.Frame):
                 x + r, cy + r * 0.2, x + r * 0.2, y + h, x, cy + r * 0.2,
                 fill=color, outline=outline
             )
+            label_font = tkFont.Font(font=self.font)
+            label_font.configure(weight="bold")
+            self.canvas.create_text(
+                x,
+                cy - r - 5 * self.zoom,
+                text="ISO/IEEE/IEC",
+                font=label_font,
+                anchor="s",
+            )
         elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
             r = min(w, h)
             pts = []
