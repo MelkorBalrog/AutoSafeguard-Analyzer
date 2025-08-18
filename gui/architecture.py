@@ -3606,7 +3606,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Database": "cylinder",
             "System Boundary": "rect",
             "Business Unit": "rect",
-            "Data": "circle",
+            "Data": "cylinder",
             "Document": "document",
             "Guideline": "document",
             "Metric": "diamond",
