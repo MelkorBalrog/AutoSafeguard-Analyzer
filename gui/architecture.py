@@ -354,6 +354,7 @@ _FIXED_SIZE_TYPES = {
     "Initial",
     "Final",
     "Actor",
+    "Role",
     "Decision",
     "Merge",
     "Work Product",
@@ -691,6 +692,8 @@ def _format_label(
                 elem_type = repo.elements[obj.element_id].elem_type
             if elem_type in {"Decision", "Initial", "Final", "Merge"}:
                 return ""
+            if elem_type == "System Boundary":
+                return label
             stereo = _GOV_TYPE_ALIASES.get(elem_type, elem_type).lower()
             label = f"<<{stereo}>>\n{label}".strip()
     return label
@@ -6277,6 +6280,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = self._min_data_acquisition_size(obj)
             obj.width = max(obj.width, min_w)
             obj.height = max(obj.height, min_h)
+            return
+        elif obj.obj_type == "Role":
             return
         else:
             label_lines = self._object_label_lines(obj)
