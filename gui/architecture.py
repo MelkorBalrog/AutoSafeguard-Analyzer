@@ -11982,7 +11982,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "ANN": self._create_icon("neural", style.get_color("ANN")),
             "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
             "Business Unit": self._create_icon("rect", style.get_color("Business Unit")),
-            "Data": self._create_icon("circle", style.get_color("Data")),
+            "Data": self._create_icon("cylinder", style.get_color("Data")),
             "Document": self._create_icon("document", style.get_color("Document")),
             "Guideline": self._create_icon("document", style.get_color("Guideline")),
             "Metric": self._create_icon("diamond", style.get_color("Metric")),
