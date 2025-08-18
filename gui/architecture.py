@@ -3528,21 +3528,24 @@ class SysMLDiagramWindow(tk.Frame):
                     command=lambda t=tool: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
-        self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
-        self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-        prop_tree_frame = ttk.Frame(self.prop_frame)
-        prop_tree_frame.pack(fill=tk.BOTH, expand=True)
-        self.prop_view = ttk.Treeview(
-            prop_tree_frame,
-            columns=("field", "value"),
-            show="headings",
-            height=8,
-        )
-        self.prop_view.heading("field", text="Field")
-        self.prop_view.heading("value", text="Value")
-        self.prop_view.column("field", width=80, anchor="w")
-        self.prop_view.column("value", width=120, anchor="w")
-        add_treeview_scrollbars(self.prop_view, prop_tree_frame)
+        if getattr(self.app, "prop_view", None):
+            self.prop_view = self.app.prop_view
+        else:
+            self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
+            self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+            prop_tree_frame = ttk.Frame(self.prop_frame)
+            prop_tree_frame.pack(fill=tk.BOTH, expand=True)
+            self.prop_view = ttk.Treeview(
+                prop_tree_frame,
+                columns=("field", "value"),
+                show="headings",
+                height=8,
+            )
+            self.prop_view.heading("field", text="Field")
+            self.prop_view.heading("value", text="Value")
+            self.prop_view.column("field", width=80, anchor="w")
+            self.prop_view.column("value", width=120, anchor="w")
+            add_treeview_scrollbars(self.prop_view, prop_tree_frame)
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
@@ -3638,6 +3641,9 @@ class SysMLDiagramWindow(tk.Frame):
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
+        if self.app and hasattr(self.app, "show_properties"):
+            self.app.show_properties(obj=self.selected_obj)
+            return
         if not hasattr(self, "prop_view"):
             return
         self.prop_view.delete(*self.prop_view.get_children())
@@ -6051,8 +6057,7 @@ class SysMLDiagramWindow(tk.Frame):
         """Resize a Block so its compartments fit its current state."""
         if obj.obj_type != "Block":  # pragma: no cover - safety check
             return
-        min_w, min_h = self._min_block_size(obj)
-        obj.width = min_w
+        _, min_h = self._min_block_size(obj)
         obj.height = min_h
 
     def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
