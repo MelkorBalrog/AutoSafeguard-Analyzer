@@ -157,7 +157,6 @@ class RuleConfig(tk.Toplevel):
             row=row, column=1, sticky="ew", padx=4, pady=4
         )
         row += 1
-
         tk.Label(self, text="Targets:").grid(
             row=row, column=0, sticky="e", padx=4, pady=4
         )
@@ -335,7 +334,7 @@ class RequirementPatternsEditor(tk.Frame):
 
         self._populate_pattern_tree()
         self._populate_rule_tree()
-
+        
     # ------------------------------------------------------------------
     # Pattern helpers
     # ------------------------------------------------------------------
