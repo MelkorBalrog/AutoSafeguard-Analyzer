@@ -37,19 +37,25 @@ class GSNExplorer(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        # detailed icons to visually distinguish elements
-        self.module_icon = self._create_icon("folder", "#b8860b")
-        self.diagram_icon = self._create_icon("rect", "#4682b4")
+        # Detailed, colour-coded icons to visually distinguish elements
+        style = StyleManager.get_instance()
+
+        def _color(name: str, default: str) -> str:
+            c = style.get_color(name)
+            return default if c == "#FFFFFF" else c
+
+        self.module_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
+        self.diagram_icon = self._create_icon("document", _color("Document", "#4682b4"))
         self.node_icons = {
-            "Goal": self._create_icon("rect", "#2e8b57"),
-            "Strategy": self._create_icon("diamond", "#8b008b"),
-            "Solution": self._create_icon("circle", "#1e90ff"),
-            "Assumption": self._create_icon("rect", "#b22222"),
-            "Justification": self._create_icon("rect", "#ff8c00"),
-            "Context": self._create_icon("rect", "#696969"),
+            "Goal": self._create_icon("shield", _color("Safety Goal", "#2e8b57")),
+            "Strategy": self._create_icon("clipboard", _color("Strategy", "#8b008b")),
+            "Solution": self._create_icon("shield_check", _color("Solution", "#1e90ff")),
+            "Assumption": self._create_icon("triangle", _color("Assumption", "#b22222")),
+            "Justification": self._create_icon("scale", _color("Justification", "#ff8c00")),
+            "Context": self._create_icon("document", _color("Document", "#696969")),
             "Module": self.module_icon,
         }
-        self.default_node_icon = self._create_icon("rect")
+        self.default_node_icon = self._create_icon("document", _color("Existing Element", "gray"))
         self.item_map: dict[str, tuple[str, object]] = {}
 
         btns = ttk.Frame(self)
