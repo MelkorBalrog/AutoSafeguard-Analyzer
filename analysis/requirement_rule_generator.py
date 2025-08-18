@@ -386,6 +386,75 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                             }
                         )
 
+    # Sequence rules --------------------------------------------------------
+    seq_rules = rules.get("requirement_sequences", {}) or {}
+    if isinstance(seq_rules, dict) and isinstance(sa_rules, dict):
+        for seq_label, info in seq_rules.items():
+            rel_chain = info.get("relations") or []
+            if not isinstance(rel_chain, list) or len(rel_chain) < 2:
+                continue
+            first_map = sa_rules.get(rel_chain[0], {})
+            if not isinstance(first_map, dict):
+                continue
+            paths = []
+            for src_type, tgt_list in (first_map or {}).items():
+                for tgt in (tgt_list or []):
+                    paths.append([(src_type, tgt)])
+            for rel in rel_chain[1:]:
+                rel_map = sa_rules.get(rel, {})
+                if not isinstance(rel_map, dict):
+                    paths = []
+                    break
+                new_paths = []
+                for path in paths:
+                    last_tgt = path[-1][1]
+                    for nxt in rel_map.get(last_tgt, []):
+                        new_paths.append(path + [(last_tgt, nxt)])
+                paths = new_paths
+            for path in paths:
+                src_type = path[0][0]
+                final_tgt = path[-1][1]
+                tgt_count = len(path)
+                subj = info.get("subject", "Engineering team")
+                act = info.get("action", seq_label)
+                tmpl_override = info.get("template")
+                var_override = info.get("variables")
+                if tmpl_override:
+                    template = tmpl_override
+                    variables = var_override or []
+                else:
+                    template = make_sa_template(subj, act, tgt_count)
+                    variables = make_sa_variables_base(tgt_count)
+                base_id = (
+                    f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
+                )
+                trigger_parts = [src_type]
+                for rel, edge in zip(rel_chain, path):
+                    trigger_parts.append(f"--[{rel}]--> {edge[1]}")
+                trigger = "Sequence: " + " ".join(trigger_parts)
+                notes = "Auto-generated from sequence rules."
+                for suf, need_cond, need_const in SUFFIXES:
+                    pid = base_id + suf
+                    t = (
+                        build_cond_const_template(template)
+                        if (need_cond and need_const)
+                        else build_cond_template(template)
+                        if need_cond
+                        else build_const_template(template)
+                        if need_const
+                        else normalize_base_template(template)
+                    )
+                    vs = ensure_variables(variables, need_cond, need_const)
+                    out.append(
+                        {
+                            "Pattern ID": pid,
+                            "Trigger": trigger,
+                            "Template": t,
+                            "Variables": vs,
+                            "Notes": notes,
+                        }
+                    )
+
     # De-duplicate and sort --------------------------------------------------
     uniq: Dict[str, dict] = {}
     for rec in out:

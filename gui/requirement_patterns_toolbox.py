@@ -157,6 +157,7 @@ class RuleConfig(tk.Toplevel):
             row=row, column=1, sticky="ew", padx=4, pady=4
         )
         row += 1
+
         tk.Label(self, text="Targets:").grid(
             row=row, column=0, sticky="e", padx=4, pady=4
         )
@@ -206,6 +207,112 @@ class RuleConfig(tk.Toplevel):
         self.result = res
         self.destroy()
 
+
+class SequenceConfig(tk.Toplevel):
+    """Dialog for editing a requirement sequence definition."""
+
+    def __init__(self, master, seq: dict | None = None):
+        super().__init__(master)
+        seq = seq or {}
+        self.title("Edit Sequence Rule")
+        self.result: dict | None = None
+
+        self.columnconfigure(1, weight=1)
+
+        self.label_var = tk.StringVar(value=seq.get("label", ""))
+        self.rels_var = tk.StringVar(
+            value=", ".join(seq.get("relations", []))
+        )
+        self.action_var = tk.StringVar(value=seq.get("action", ""))
+        self.subject_var = tk.StringVar(value=seq.get("subject", ""))
+        self.template_var = tk.StringVar(value=seq.get("template", ""))
+        self.vars_var = tk.StringVar(
+            value=", ".join(seq.get("variables", []))
+        )
+
+        row = 0
+        tk.Label(self, text="Label:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.label_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Relations:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.rels_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Action:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.action_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Subject:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.subject_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Template:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.template_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Variables:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.vars_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        btns = ttk.Frame(self)
+        btns.grid(row=row, column=0, columnspan=2, pady=4)
+        ttk.Button(btns, text="OK", command=self._on_ok).pack(
+            side=tk.LEFT, padx=4
+        )
+        ttk.Button(btns, text="Cancel", command=self.destroy).pack(
+            side=tk.LEFT, padx=4
+        )
+
+        self.transient(master)
+        self.grab_set()
+
+    def _on_ok(self) -> None:
+        label = self.label_var.get().strip()
+        rels = [r.strip() for r in self.rels_var.get().split(",") if r.strip()]
+        if not label or len(rels) < 2:
+            self.destroy()
+            return
+        res = {"label": label, "relations": rels}
+        act = self.action_var.get().strip()
+        if act:
+            res["action"] = act
+        subj = self.subject_var.get().strip()
+        if subj:
+            res["subject"] = subj
+        tmpl = self.template_var.get().strip()
+        if tmpl:
+            res["template"] = tmpl
+            vars_ = [v.strip() for v in self.vars_var.get().split(",") if v.strip()]
+            if vars_:
+                res["variables"] = vars_
+        self.result = res
+        self.destroy()
+
 class RequirementPatternsEditor(tk.Frame):
     """Visual editor for requirement pattern configuration and rules."""
 
@@ -229,12 +336,14 @@ class RequirementPatternsEditor(tk.Frame):
         try:
             self.rules_cfg = load_diagram_rules(self.rules_path)
             self.req_rules = self.rules_cfg.get("requirement_rules", {})
+            self.req_seqs = self.rules_cfg.get("requirement_sequences", {})
         except Exception as exc:  # pragma: no cover - GUI fallback
             messagebox.showerror(
                 "Requirement Rules", f"Failed to load configuration:\n{exc}"
             )
             self.rules_cfg = {}
             self.req_rules = {}
+            self.req_seqs = {}
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -332,9 +441,58 @@ class RequirementPatternsEditor(tk.Frame):
             side=tk.LEFT, padx=2
         )
 
+        # ------------------------------------------------------------------
+        # Sequences tab
+        # ------------------------------------------------------------------
+        seq_frame = ttk.Frame(nb)
+        seq_frame.rowconfigure(0, weight=1)
+        seq_frame.columnconfigure(0, weight=1)
+        nb.add(seq_frame, text="Sequences")
+
+        s_tree_frame = ttk.Frame(seq_frame)
+        s_tree_frame.grid(row=0, column=0, sticky="nsew")
+        s_tree_frame.rowconfigure(0, weight=1)
+        s_tree_frame.columnconfigure(0, weight=1)
+
+        self.seq_tree = ttk.Treeview(
+            s_tree_frame,
+            columns=("label", "relations", "action", "subject", "template"),
+            show="headings",
+        )
+        for col, text in (
+            ("label", "Label"),
+            ("relations", "Relations"),
+            ("action", "Action"),
+            ("subject", "Subject"),
+            ("template", "Template"),
+        ):
+            self.seq_tree.heading(col, text=text)
+            self.seq_tree.column(col, width=120, stretch=True)
+        self.seq_tree.bind("<Double-1>", self._edit_sequence)
+        self.seq_tree.grid(row=0, column=0, sticky="nsew")
+
+        sybar = ttk.Scrollbar(s_tree_frame, orient="vertical", command=self.seq_tree.yview)
+        sxbar = ttk.Scrollbar(s_tree_frame, orient="horizontal", command=self.seq_tree.xview)
+        self.seq_tree.configure(yscrollcommand=sybar.set, xscrollcommand=sxbar.set)
+        sybar.grid(row=0, column=1, sticky="ns")
+        sxbar.grid(row=1, column=0, sticky="ew")
+
+        s_btn = ttk.Frame(seq_frame)
+        s_btn.grid(row=1, column=0, sticky="e", pady=4, padx=4)
+        ttk.Button(s_btn, text="Add", command=self.add_sequence).pack(
+            side=tk.LEFT, padx=2
+        )
+        ttk.Button(s_btn, text="Delete", command=self.delete_sequence).pack(
+            side=tk.LEFT, padx=2
+        )
+        ttk.Button(s_btn, text="Save", command=self.save_rules).pack(
+            side=tk.LEFT, padx=2
+        )
+
         self._populate_pattern_tree()
         self._populate_rule_tree()
-        
+        self._populate_seq_tree()
+
     # ------------------------------------------------------------------
     # Pattern helpers
     # ------------------------------------------------------------------
@@ -456,6 +614,7 @@ class RequirementPatternsEditor(tk.Frame):
 
     def save_rules(self):
         self.rules_cfg["requirement_rules"] = self.req_rules
+        self.rules_cfg["requirement_sequences"] = self.req_seqs
         try:
             validate_diagram_rules(self.rules_cfg)
         except ValueError as exc:  # pragma: no cover - GUI feedback
@@ -475,8 +634,68 @@ class RequirementPatternsEditor(tk.Frame):
             except Exception:
                 pass
             self._populate_pattern_tree()
+            self._populate_seq_tree()
             messagebox.showinfo("Requirement Rules", "Configuration saved")
         except Exception as exc:  # pragma: no cover - GUI feedback
             messagebox.showerror(
                 "Requirement Rules", f"Failed to save configuration:\n{exc}"
             )
+
+    # ------------------------------------------------------------------
+    # Sequence helpers
+    # ------------------------------------------------------------------
+    def _populate_seq_tree(self):
+        self.seq_tree.delete(*self.seq_tree.get_children(""))
+        for label, info in sorted(self.req_seqs.items()):
+            rels = " -> ".join(info.get("relations", []))
+            self.seq_tree.insert(
+                "",
+                "end",
+                iid=label,
+                values=(
+                    label,
+                    rels,
+                    info.get("action", ""),
+                    info.get("subject", ""),
+                    info.get("template", ""),
+                ),
+            )
+
+    def _edit_sequence(self, _event=None):
+        item = self.seq_tree.focus()
+        if not item:
+            return
+        label = self.seq_tree.set(item, "label")
+        info = dict(self.req_seqs.get(label, {}))
+        info["label"] = label
+        dlg = SequenceConfig(self, info)
+        self.wait_window(dlg)
+        if dlg.result is None:
+            return
+        new_label = dlg.result.pop("label")
+        rels = dlg.result.pop("relations", [])
+        if label in self.req_seqs:
+            del self.req_seqs[label]
+        dlg.result["relations"] = rels
+        self.req_seqs[new_label] = dlg.result
+        self._populate_seq_tree()
+
+    def add_sequence(self):
+        dlg = SequenceConfig(self, {})
+        self.wait_window(dlg)
+        if dlg.result is None:
+            return
+        label = dlg.result.pop("label")
+        rels = dlg.result.pop("relations", [])
+        dlg.result["relations"] = rels
+        self.req_seqs[label] = dlg.result
+        self._populate_seq_tree()
+
+    def delete_sequence(self):
+        item = self.seq_tree.focus()
+        if not item:
+            return
+        label = self.seq_tree.set(item, "label")
+        if label in self.req_seqs:
+            del self.req_seqs[label]
+        self._populate_seq_tree()

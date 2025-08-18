@@ -98,3 +98,24 @@ def test_rule_with_custom_template_and_variables() -> None:
     assert base["Template"].startswith("<role> shall use <tool>")
     assert "<role>" in base["Variables"]
     assert "<tool>" in base["Variables"]
+
+
+def test_sequence_rule_generation() -> None:
+    cfg = {
+        "safety_ai_relation_rules": {
+            "Rel1": {"A": ["B"]},
+            "Rel2": {"B": ["C"]},
+        },
+        "requirement_sequences": {
+            "chain": {
+                "relations": ["Rel1", "Rel2"],
+                "subject": "Team",
+                "action": "chain",
+            }
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SEQ-chain-A-C" in ids
+    tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == "SEQ-chain-A-C")
+    assert "<target2_id>" in tmpl

@@ -100,6 +100,42 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
                         f"requirement_rules[{label}]['variables'] must be a list of strings"
                     )
 
+    if "requirement_sequences" in data:
+        rs = data["requirement_sequences"]
+        if not isinstance(rs, dict):
+            raise ValueError("requirement_sequences must be an object")
+        for label, info in rs.items():
+            if not isinstance(info, dict):
+                raise ValueError(
+                    f"requirement_sequences[{label}] must be an object"
+                )
+            rels = info.get("relations")
+            if (
+                not isinstance(rels, list)
+                or len(rels) < 2
+                or any(not isinstance(r, str) for r in rels)
+            ):
+                raise ValueError(
+                    f"requirement_sequences[{label}]['relations'] must be a list of at least two strings"
+                )
+            if "subject" in info and not isinstance(info["subject"], str):
+                raise ValueError(
+                    f"requirement_sequences[{label}]['subject'] must be a string"
+                )
+            if "action" in info and not isinstance(info["action"], str):
+                raise ValueError(
+                    f"requirement_sequences[{label}]['action'] must be a string"
+                )
+            if "template" in info and not isinstance(info["template"], str):
+                raise ValueError(
+                    f"requirement_sequences[{label}]['template'] must be a string"
+                )
+            if "variables" in info:
+                _ensure_list_of_strings(
+                    info["variables"],
+                    f"requirement_sequences[{label}]['variables']",
+                )
+
     if "node_roles" in data:
         nr = data["node_roles"]
         if not isinstance(nr, dict):
