@@ -59,6 +59,7 @@ def test_governance_core_has_add_buttons(monkeypatch):
     win._toolbox_frames = {}
 
     win._rebuild_toolboxes()
+    assert "Governance Core" in win._toolbox_frames
     core_frames = win._toolbox_frames["Governance Core"]
     actions = core_frames[1]
     labels = [child.text for child in getattr(actions, "children", [])]

@@ -17,7 +17,7 @@ def test_toolbox_updates_with_new_relation(tmp_path, monkeypatch):
     conns = new_cfg["connection_rules"].setdefault("Governance Diagram", {})
     # Add a new relation between two artifact types to ensure it surfaces only
     # in the Artifacts toolbox.
-    conns.setdefault("Reviews", {})["Document"] = ["Record"]
+    conns.setdefault("Reviews", {}).setdefault("Document", ["Record"])
     tmp_file = tmp_path / "diagram_rules.json"
     tmp_file.write_text(json.dumps(new_cfg))
     try:
@@ -67,7 +67,7 @@ def test_governance_core_relations_and_externals(tmp_path, monkeypatch):
     cfg = load_json_with_comments(orig_path)
     new_cfg = json.loads(json.dumps(cfg))
     conns = new_cfg["connection_rules"].setdefault("Governance Diagram", {})
-    conns.setdefault("Reviews", {})["Work Product"] = ["Document"]
+    conns.setdefault("Reviews", {}).setdefault("Work Product", ["Document"])
     tmp_file = tmp_path / "diagram_rules.json"
     tmp_file.write_text(json.dumps(new_cfg))
     try:

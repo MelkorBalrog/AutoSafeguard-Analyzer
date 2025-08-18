@@ -20,23 +20,20 @@ def test_switch_toolbox_combines_governance_elements():
         def pack_forget(self, *a, **k):
             self.packed = False
 
-    win.gov_tools_frame = Frame()
-    win.gov_rel_frame = Frame()
-    win.ai_tools_frame = Frame()
-    win.gov_elements_frame = Frame()
-    win.prop_frame = Frame()
+    ent_frame = Frame()
+    ai_frame = Frame()
     win._toolbox_frames = {
-        "Governance": [win.gov_tools_frame, win.gov_elements_frame],
-        "Safety & AI Lifecycle": [win.ai_tools_frame],
+        "Entities": [ent_frame],
+        "Safety & AI Lifecycle": [ai_frame],
     }
 
-    win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance")
+    win.toolbox_var = types.SimpleNamespace(get=lambda: "Entities")
     GovernanceDiagramWindow._switch_toolbox(win)
-    assert win.gov_tools_frame.packed
-    assert win.gov_elements_frame.packed
+    assert ent_frame.packed
+    assert not ai_frame.packed
 
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Safety & AI Lifecycle")
     GovernanceDiagramWindow._switch_toolbox(win)
-    assert win.ai_tools_frame.packed
-    assert not win.gov_tools_frame.packed
-    assert not win.gov_elements_frame.packed
+    assert ai_frame.packed
+    assert not ent_frame.packed
+
