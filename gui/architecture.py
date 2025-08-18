@@ -140,7 +140,7 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
             ]
             if n in nodes
         ],
-        "Verification": [n for n in ["Test Suite", "Plan"] if n in nodes],
+        "Verification": [n for n in ["Test Suite"] if n in nodes],
         "Events": [n for n in ["Incident", "Safety Issue"] if n in nodes],
     }
     known = {n for vals in base.values() for n in vals}
