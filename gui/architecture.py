@@ -6331,114 +6331,122 @@ class SysMLDiagramWindow(tk.Frame):
         self.objects.sort(key=key)
 
     def redraw(self):
-        self.canvas.configure(bg=StyleManager.get_instance().canvas_bg)
-        self.canvas.delete("all")
-        self.gradient_cache.clear()
-        self.compartment_buttons = []
-        self.sort_objects()
-        remove_orphan_ports(self.objects)
-        for obj in list(self.objects):
-            if getattr(obj, "hidden", False):
-                continue
-            if obj.obj_type == "Part":
-                self.sync_ports(obj)
-            if obj.obj_type == "Block Boundary":
-                self.sync_boundary_ports(obj)
-            self.ensure_text_fits(obj)
-            self.draw_object(obj)
-        for conn in self.connections:
-            src = self.get_object(conn.src)
-            dst = self.get_object(conn.dst)
-            if (
-                src
-                and dst
-                and not getattr(src, "hidden", False)
-                and not getattr(dst, "hidden", False)
-            ):
-                if (
-                    conn is self.selected_conn
-                    and self.dragging_endpoint is not None
-                    and self.endpoint_drag_pos
-                ):
+        canvas = getattr(self, "canvas", None)
+        if canvas is None:
+            return
+        try:
+            if not getattr(canvas, "winfo_exists", lambda: True)():
+                return
+            canvas.configure(bg=StyleManager.get_instance().canvas_bg)
+            canvas.delete("all")
+            self.gradient_cache.clear()
+            self.compartment_buttons = []
+            self.sort_objects()
+            remove_orphan_ports(self.objects)
+            for obj in list(self.objects):
+                if getattr(obj, "hidden", False):
                     continue
-                self.draw_connection(src, dst, conn, conn is self.selected_conn)
-        if (
-            self.selected_conn
-            and self.dragging_endpoint is not None
-            and self.endpoint_drag_pos
-        ):
-            other = (
-                self.get_object(self.selected_conn.dst)
-                if self.dragging_endpoint == "src"
-                else self.get_object(self.selected_conn.src)
-            )
-            if other:
-                rel = (
-                    self.selected_conn.dst_pos
+                if obj.obj_type == "Part":
+                    self.sync_ports(obj)
+                if obj.obj_type == "Block Boundary":
+                    self.sync_boundary_ports(obj)
+                self.ensure_text_fits(obj)
+                self.draw_object(obj)
+            for conn in self.connections:
+                src = self.get_object(conn.src)
+                dst = self.get_object(conn.dst)
+                if (
+                    src
+                    and dst
+                    and not getattr(src, "hidden", False)
+                    and not getattr(dst, "hidden", False)
+                ):
+                    if (
+                        conn is self.selected_conn
+                        and self.dragging_endpoint is not None
+                        and self.endpoint_drag_pos
+                    ):
+                        continue
+                    self.draw_connection(src, dst, conn, conn is self.selected_conn)
+            if (
+                self.selected_conn
+                and self.dragging_endpoint is not None
+                and self.endpoint_drag_pos
+            ):
+                other = (
+                    self.get_object(self.selected_conn.dst)
                     if self.dragging_endpoint == "src"
-                    else self.selected_conn.src_pos
+                    else self.get_object(self.selected_conn.src)
                 )
-                sx, sy = self.edge_point(other, *self.endpoint_drag_pos, rel)
-                ex, ey = self.endpoint_drag_pos
-                forward = self.selected_conn.arrow in ("forward", "both")
-                backward = self.selected_conn.arrow in ("backward", "both")
-                if self.dragging_endpoint == "src":
-                    arrow_start = backward
-                    arrow_end = forward
-                else:
-                    arrow_start = backward
-                    arrow_end = forward
-                if arrow_start and arrow_end:
-                    style = tk.BOTH
-                elif arrow_end:
-                    style = tk.LAST
-                elif arrow_start:
-                    style = tk.FIRST
-                else:
-                    style = tk.NONE
+                if other:
+                    rel = (
+                        self.selected_conn.dst_pos
+                        if self.dragging_endpoint == "src"
+                        else self.selected_conn.src_pos
+                    )
+                    sx, sy = self.edge_point(other, *self.endpoint_drag_pos, rel)
+                    ex, ey = self.endpoint_drag_pos
+                    forward = self.selected_conn.arrow in ("forward", "both")
+                    backward = self.selected_conn.arrow in ("backward", "both")
+                    if self.dragging_endpoint == "src":
+                        arrow_start = backward
+                        arrow_end = forward
+                    else:
+                        arrow_start = backward
+                        arrow_end = forward
+                    if arrow_start and arrow_end:
+                        style = tk.BOTH
+                    elif arrow_end:
+                        style = tk.LAST
+                    elif arrow_start:
+                        style = tk.FIRST
+                    else:
+                        style = tk.NONE
+                    self.canvas.create_line(
+                        sx,
+                        sy,
+                        ex,
+                        ey,
+                        dash=(2, 2),
+                        arrow=style,
+                        tags=("connection", "_temp_conn"),
+                    )
+            if (
+                self.start
+                and self.temp_line_end
+                and self.current_tool in _all_connection_tools()
+            ):
+                sx, sy = self.edge_point(self.start, *self.temp_line_end)
+                ex, ey = self.temp_line_end
                 self.canvas.create_line(
                     sx,
                     sy,
                     ex,
                     ey,
                     dash=(2, 2),
-                    arrow=style,
+                    arrow=tk.LAST,
                     tags=("connection", "_temp_conn"),
                 )
-        if (
-            self.start
-            and self.temp_line_end
-            and self.current_tool in _all_connection_tools()
-        ):
-            sx, sy = self.edge_point(self.start, *self.temp_line_end)
-            ex, ey = self.temp_line_end
-            self.canvas.create_line(
-                sx,
-                sy,
-                ex,
-                ey,
-                dash=(2, 2),
-                arrow=tk.LAST,
-                tags=("connection", "_temp_conn"),
-            )
 
-        # Animate the temporary connection line so the dashes appear to move
-        # toward the mouse cursor, providing visual feedback consistent across
-        # all relationship types.
-        find = getattr(self.canvas, "find_withtag", None)
-        if find and find("_temp_conn"):
-            if getattr(self, "_temp_conn_anim", None) is None:
-                self._temp_conn_offset = 0
-                self._animate_temp_connection()
-        else:
-            anim = getattr(self, "_temp_conn_anim", None)
-            if anim:
-                after_cancel = getattr(self.canvas, "after_cancel", None)
-                if after_cancel:
-                    after_cancel(anim)
-                self._temp_conn_anim = None
-        self.canvas.tag_raise("connection")
-        self.canvas.config(scrollregion=self.canvas.bbox("all"))
+            # Animate the temporary connection line so the dashes appear to move
+            # toward the mouse cursor, providing visual feedback consistent across
+            # all relationship types.
+            find = getattr(self.canvas, "find_withtag", None)
+            if find and find("_temp_conn"):
+                if getattr(self, "_temp_conn_anim", None) is None:
+                    self._temp_conn_offset = 0
+                    self._animate_temp_connection()
+            else:
+                anim = getattr(self, "_temp_conn_anim", None)
+                if anim:
+                    after_cancel = getattr(self.canvas, "after_cancel", None)
+                    if after_cancel:
+                        after_cancel(anim)
+                    self._temp_conn_anim = None
+            self.canvas.tag_raise("connection")
+            self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        except tk.TclError:
+            return
 
     def _animate_temp_connection(self):  # pragma: no cover - requires tkinter
         find = getattr(self.canvas, "find_withtag", None)
