@@ -494,8 +494,10 @@ class SysMLRepository:
         elem = self.elements.get(elem_id)
         if not elem:
             return False
-        if self.active_phase is None or elem.phase is None:
+        if self.active_phase is None:
             return True
+        if elem.phase is None:
+            return False
         if elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set()):
             return True
         diag_id = self.element_diagrams.get(elem_id)
@@ -512,8 +514,12 @@ class SysMLRepository:
             return False
         if "safety-management" in getattr(diag, "tags", []):
             return True
-        if self.active_phase is None or diag.phase is None:
+        if self.active_phase is None:
             return True
+        if diag.diag_type == "Governance Diagram" and diag.phase is None:
+            return True
+        if diag.phase is None:
+            return False
         if diag.phase == self.active_phase or diag.phase in getattr(self, "reuse_phases", set()):
             return True
         return diag.diag_type in getattr(self, "reuse_products", set())
@@ -607,8 +613,12 @@ class SysMLRepository:
         diag = self.diagrams.get(diag_id) if diag_id else None
         if diag and ("safety-management" in getattr(diag, "tags", []) or diag.diag_type in getattr(self, "reuse_products", set())):
             return True
-        if self.active_phase is None or obj.get("phase") is None:
+        if self.active_phase is None:
             return True
+        if diag and diag.diag_type == "Governance Diagram" and obj.get("phase") is None:
+            return True
+        if obj.get("phase") is None:
+            return False
         return obj.get("phase") == self.active_phase or obj.get("phase") in getattr(self, "reuse_phases", set())
 
     def connection_visible(self, conn: dict, diag_id: Optional[str] = None) -> bool:
@@ -616,8 +626,12 @@ class SysMLRepository:
         diag = self.diagrams.get(diag_id) if diag_id else None
         if diag and ("safety-management" in getattr(diag, "tags", []) or diag.diag_type in getattr(self, "reuse_products", set())):
             return True
-        if self.active_phase is None or conn.get("phase") is None:
+        if self.active_phase is None:
             return True
+        if diag and diag.diag_type == "Governance Diagram" and conn.get("phase") is None:
+            return True
+        if conn.get("phase") is None:
+            return False
         return conn.get("phase") == self.active_phase or conn.get("phase") in getattr(self, "reuse_phases", set())
 
     def visible_objects(self, diag_id: str) -> list[dict]:

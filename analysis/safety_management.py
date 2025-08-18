@@ -370,7 +370,7 @@ class SafetyManagementToolbox:
             )
             phase = diag.phase if diag else None
         if phase is None:
-            return True
+            return False
         if phase == self.active_module:
             return True
         reuse = self._reuse_map().get(self.active_module, {})
