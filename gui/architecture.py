@@ -4326,8 +4326,21 @@ class SysMLDiagramWindow(tk.Frame):
                 id_map = {}
                 diag = self.repo.diagrams.get(self.diagram_id)
                 allowed = {"Actor", "Block"} if diag and diag.diag_type == "Control Flow Diagram" else None
+                toolbox = getattr(getattr(self, "app", None), "safety_mgmt_toolbox", None)
+                allowed_sources = (
+                    toolbox.analysis_inputs(diag.diag_type)
+                    if toolbox and diag
+                    else None
+                )
                 for eid, el in self.repo.elements.items():
                     if el.elem_type != "Package" and (not allowed or el.elem_type in allowed):
+                        if allowed_sources is not None:
+                            src_id = self.repo.element_diagrams.get(eid)
+                            src_diag = self.repo.diagrams.get(src_id) if src_id else None
+                            if not src_diag or src_diag.diag_type not in allowed_sources:
+                                continue
+                            if not toolbox.document_visible(src_diag.diag_type, src_diag.name):
+                                continue
                         name = el.name or eid
                         names.append(name)
                         id_map[name] = eid
