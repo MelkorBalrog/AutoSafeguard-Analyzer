@@ -8144,7 +8144,10 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
             elif obj.obj_type in _BOTTOM_LABEL_TYPES:
-                label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
+                offset = 10 * self.zoom
+                if obj.obj_type == "Operation":
+                    offset += 10 * self.zoom
+                label_y = y + obj.height / 2 * self.zoom + offset
                 self.canvas.create_text(
                     x,
                     label_y,
