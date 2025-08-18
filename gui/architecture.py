@@ -10589,6 +10589,27 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         ge_nodes = GOV_ELEMENT_CLASSES
         if hasattr(self.toolbox, "tk"):
             self.gov_elements_frame = ttk.Frame(self.toolbox)
+
+            # Migrate basic governance element commands from the right panel
+            node_cmds = [
+                ("Add Work Product", self.add_work_product),
+                ("Add Generic Work Product", self.add_generic_work_product),
+                ("Add Process Area", self.add_process_area),
+                ("Add Lifecycle Phase", self.add_lifecycle_phase),
+            ]
+            elem_group = ttk.LabelFrame(
+                self.gov_elements_frame, text="Elements (elements)"
+            )
+            elem_group.pack(fill=tk.X, padx=2, pady=2)
+            for name, cmd in node_cmds:
+                ttk.Button(
+                    elem_group,
+                    text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
+                    command=cmd,
+                ).pack(fill=tk.X, padx=2, pady=2)
+
             for group, nodes in ge_nodes.items():
                 frame = ttk.LabelFrame(
                     self.gov_elements_frame, text=f"{group} (elements)"
@@ -10659,7 +10680,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             gov_scroll.pack(side=tk.RIGHT, fill=tk.Y)
             gov_canvas.configure(yscrollcommand=gov_scroll.set)
 
-            governance_panel = ttk.LabelFrame(gov_canvas, text="Governance")
+            governance_panel = ttk.LabelFrame(
+                gov_canvas, text="Governance relationships"
+            )
             gov_window = gov_canvas.create_window(
                 (0, 0), window=governance_panel, anchor="nw"
             )
@@ -10722,25 +10745,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                         compound=tk.LEFT,
                         command=lambda t=name: self.select_tool(t),
                     ).pack(fill=tk.X, padx=2, pady=2)
-
-            node_cmds = [
-                ("Add Work Product", self.add_work_product),
-                ("Add Generic Work Product", self.add_generic_work_product),
-                ("Add Process Area", self.add_process_area),
-                ("Add Lifecycle Phase", self.add_lifecycle_phase),
-            ]
-            elem_group = ttk.LabelFrame(
-                governance_panel, text="Elements (elements)"
-            )
-            elem_group.pack(fill=tk.X, padx=2, pady=2)
-            for name, cmd in node_cmds:
-                ttk.Button(
-                    elem_group,
-                    text=name,
-                    image=self._icon_for(name),
-                    compound=tk.LEFT,
-                    command=cmd,
-                ).pack(fill=tk.X, padx=2, pady=2)
         else:  # pragma: no cover - headless tests
             governance_panel = types.SimpleNamespace(
                 pack=lambda *a, **k: None
