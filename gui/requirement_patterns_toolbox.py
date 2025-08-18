@@ -145,7 +145,7 @@ class RuleConfig(tk.Toplevel):
             row=row, column=1, sticky="w", padx=4, pady=4
         )
         row += 1
-
+        
         ttk.Checkbutton(
             self, text="Requires constraint", variable=self.constraint_var
         ).grid(row=row, column=1, sticky="w", padx=4, pady=4)
@@ -287,7 +287,6 @@ class RequirementPatternsEditor(tk.Frame):
             self.rule_tree.column(col, width=120, stretch=True)
         self.rule_tree.bind("<Double-1>", self._edit_rule)
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
-
         rybar = ttk.Scrollbar(r_tree_frame, orient="vertical", command=self.rule_tree.yview)
         rxbar = ttk.Scrollbar(r_tree_frame, orient="horizontal", command=self.rule_tree.xview)
         self.rule_tree.configure(yscrollcommand=rybar.set, xscrollcommand=rxbar.set)
