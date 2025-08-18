@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk, simpledialog
 
 from analysis.constants import CHECK_MARK
@@ -54,6 +55,7 @@ class SafetyCaseTable(tk.Frame):
             )
         except Exception:
             self.tree = ttk.Treeview(self, columns=columns, show="headings")
+        self.style_name = self.tree.cget("style") or style_name
         headers = {
             "solution": "Solution",
             "description": "Description",
@@ -81,6 +83,7 @@ class SafetyCaseTable(tk.Frame):
         self.rowconfigure(0, weight=1)
 
         self.tree.bind("<Double-1>", self._on_double_click)
+        self.tree.bind("<Configure>", self._adjust_text)
 
         self.populate()
 
@@ -162,7 +165,40 @@ class SafetyCaseTable(tk.Frame):
                 ),
                 tags=(sol.unique_id,),
             )
+        self._adjust_text()
 
+    # ------------------------------------------------------------------
+    def _adjust_text(self, event=None):
+        """Re-wrap cell text based on current column widths."""
+        if getattr(self, "_adjusting", False):
+            return
+        self._adjusting = True
+        try:
+            if not hasattr(self.tree, "column"):
+                return
+            try:
+                font = tkfont.nametofont("TkDefaultFont")
+            except Exception:
+                return
+            char_w = font.measure("0") or 1
+            max_lines = 1
+            for col in self.columns:
+                width = self.tree.column(col, width=None)
+                if width <= 0:
+                    continue
+                wrap = max(int(width / char_w), 1)
+                for item in self.tree.get_children():
+                    raw = self.tree.set(item, col).replace("\n", " ")
+                    wrapped = _wrap_val(raw, wrap)
+                    self.tree.set(item, col, wrapped)
+                    lines = wrapped.count("\n") + 1
+                    if lines > max_lines:
+                        max_lines = lines
+            style = ttk.Style()
+            line_h = font.metrics("linespace")
+            style.configure(self.style_name, rowheight=max(line_h * max_lines, 20))
+        finally:
+            self._adjusting = False
     # ------------------------------------------------------------------
     def _on_double_click(self, event):
         row = self.tree.identify_row(event.y)
