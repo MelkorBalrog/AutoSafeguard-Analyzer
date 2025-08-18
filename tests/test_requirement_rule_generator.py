@@ -119,3 +119,37 @@ def test_sequence_rule_generation() -> None:
     assert "SEQ-chain-A-C" in ids
     tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == "SEQ-chain-A-C")
     assert "<target2_id>" in tmpl
+
+
+def test_complex_sequences() -> None:
+    cfg = {
+        "safety_ai_relation_rules": {
+            "Triage": {"Safety Issue": ["Field Data"]},
+            "Develops": {"Field Data": ["Test Suite"]},
+            "Constrains": {"Policy": ["Process"]},
+            "Produces": {"Process": ["Document"], "Test Suite": ["Document"]},
+            "Validate": {"Model": ["Test Suite"]},
+        },
+        "requirement_sequences": {
+            "incident triage": {
+                "relations": ["Triage", "Develops"],
+                "subject": "Safety manager",
+                "action": "trigger test development",
+            },
+            "policy compliance": {
+                "relations": ["Constrains", "Produces"],
+                "subject": "Governance team",
+                "action": "enforce policy",
+            },
+            "model validation": {
+                "relations": ["Validate", "Produces"],
+                "subject": "Validation team",
+                "action": "validate models",
+            },
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SEQ-incident_triage-Safety_Issue-Test_Suite" in ids
+    assert "SEQ-policy_compliance-Policy-Document" in ids
+    assert "SEQ-model_validation-Model-Document" in ids
