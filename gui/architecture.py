@@ -693,6 +693,8 @@ def _format_label(
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
                 elem_type = repo.elements[obj.element_id].elem_type
+            if elem_type in {"Decision", "Initial", "Final", "Merge"}:
+                return ""
             stereo = _GOV_TYPE_ALIASES.get(elem_type, elem_type).lower()
             label = f"<<{stereo}>>\n{label}".strip()
     return label
