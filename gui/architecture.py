@@ -11028,8 +11028,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     # ------------------------------------------------------------------
     def _rebuild_toolboxes(self) -> None:
         defs = _toolbox_defs()
-        ai_data = defs.pop("Safety & AI Lifecycle", None)
-        core_data = defs.pop("Governance Core", None)
+        options = sorted(defs.keys())
+        if "Governance Core" in options:
+            options.remove("Governance Core")
+        options = ["Governance Core"] + options
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
@@ -11039,7 +11041,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 if fr not in (self.tools_frame, getattr(self, "rel_frame", None)) and hasattr(fr, "destroy"):
                     fr.destroy()
         self._toolbox_frames = {}
-
         if hasattr(self.toolbox, "tk"):
             action_frame = ttk.Frame(self.toolbox)
             cmds = [
@@ -11062,17 +11063,70 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 pack_forget=lambda *a, **k: None,
                 destroy=lambda *a, **k: None,
             )
-
-        def build_frame(name: str, data: dict):
-            if not data:
-                return types.SimpleNamespace(
+        core_frames = [self.tools_frame, action_frame, getattr(self, "rel_frame", None)]
+        core_data = defs.pop("Governance Core", None)
+        if core_data:
+            if hasattr(self.toolbox, "tk"):
+                frame = ttk.Frame(self.toolbox)
+                if core_data["nodes"]:
+                    elem = ttk.LabelFrame(frame, text="Elements (elements)")
+                    elem.pack(fill=tk.X, padx=2, pady=2)
+                    for node in core_data["nodes"]:
+                        ttk.Button(
+                            elem,
+                            text=node,
+                            image=self._icon_for(node),
+                            compound=tk.LEFT,
+                            command=lambda t=node: self.select_tool(t),
+                        ).pack(fill=tk.X, padx=2, pady=2)
+                if core_data["relations"]:
+                    rel = ttk.LabelFrame(frame, text="Relationships (relationships)")
+                    rel.pack(fill=tk.X, padx=2, pady=2)
+                    for rel_name in core_data["relations"]:
+                        ttk.Button(
+                            rel,
+                            text=rel_name,
+                            image=self._icon_for(rel_name),
+                            compound=tk.LEFT,
+                            command=lambda t=rel_name: self.select_tool(t),
+                        ).pack(fill=tk.X, padx=2, pady=2)
+                for grp, sub in core_data.get("externals", {}).items():
+                    sub_frame = ttk.LabelFrame(frame, text=f"Related {grp}")
+                    sub_frame.pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("nodes"):
+                        selem = ttk.LabelFrame(sub_frame, text="Elements (elements)")
+                        selem.pack(fill=tk.X, padx=2, pady=2)
+                        for node in sub["nodes"]:
+                            ttk.Button(
+                                selem,
+                                text=node,
+                                image=self._icon_for(node),
+                                compound=tk.LEFT,
+                                command=lambda t=node: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("relations"):
+                        srel = ttk.LabelFrame(sub_frame, text="Relationships (relationships)")
+                        srel.pack(fill=tk.X, padx=2, pady=2)
+                        for rel_name in sub["relations"]:
+                            ttk.Button(
+                                srel,
+                                text=rel_name,
+                                image=self._icon_for(rel_name),
+                                compound=tk.LEFT,
+                                command=lambda t=rel_name: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
+            else:  # pragma: no cover - headless tests
+                frame = types.SimpleNamespace(
                     pack=lambda *a, **k: None,
                     pack_forget=lambda *a, **k: None,
                     destroy=lambda *a, **k: None,
                 )
+            core_frames.append(frame)
+        self._toolbox_frames["Governance Core"] = core_frames
+        for name, data in defs.items():
             if hasattr(self.toolbox, "tk"):
-                frame = ttk.LabelFrame(self.toolbox, text=name)
-                if data.get("nodes"):
+                frame = ttk.Frame(self.toolbox)
+                if data["nodes"]:
                     elem = ttk.LabelFrame(frame, text="Elements (elements)")
                     elem.pack(fill=tk.X, padx=2, pady=2)
                     for node in data["nodes"]:
@@ -11083,7 +11137,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                             compound=tk.LEFT,
                             command=lambda t=node: self.select_tool(t),
                         ).pack(fill=tk.X, padx=2, pady=2)
-                if data.get("relations"):
+                if data["relations"]:
                     rel = ttk.LabelFrame(frame, text="Relationships (relationships)")
                     rel.pack(fill=tk.X, padx=2, pady=2)
                     for rel_name in data["relations"]:
@@ -11109,7 +11163,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                                 command=lambda t=node: self.select_tool(t),
                             ).pack(fill=tk.X, padx=2, pady=2)
                     if sub.get("relations"):
-                        srel = ttk.LabelFrame(sub_frame, text="Relationships (relationships)")
+                        srel = ttk.LabelFrame(
+                            sub_frame, text="Relationships (relationships)"
+                        )
                         srel.pack(fill=tk.X, padx=2, pady=2)
                         for rel_name in sub["relations"]:
                             ttk.Button(
