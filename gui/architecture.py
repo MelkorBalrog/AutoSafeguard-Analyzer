@@ -11954,7 +11954,6 @@ class NewDiagramDialog(simpledialog.Dialog):
                 values=[
                     "Use Case Diagram",
                     "Activity Diagram",
-                    "Governance Diagram",
                     "Block Diagram",
                     "Internal Block Diagram",
                     "Control Flow Diagram",
