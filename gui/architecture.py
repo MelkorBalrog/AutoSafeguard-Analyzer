@@ -3311,6 +3311,9 @@ class SysMLDiagramWindow(tk.Frame):
         self.endpoint_drag_pos: tuple[float, float] | None = None
         self.rc_dragged = False
 
+        # Provide default drawing helper for gradient fills and shapes
+        self.drawing_helper = fta_drawing_helper
+
         self.toolbox_container = ttk.Frame(self)
         self.toolbox_container.pack(side=tk.LEFT, fill=tk.Y)
         self.toolbox_container.pack_propagate(False)
@@ -6344,7 +6347,10 @@ class SysMLDiagramWindow(tk.Frame):
         """Return a left-to-right gradient image from white to *color*."""
         width = max(1, int(width))
         height = max(1, int(height))
-        img = tk.PhotoImage(width=width, height=height)
+        try:
+            img = tk.PhotoImage(width=width, height=height)
+        except RuntimeError:  # pragma: no cover - headless tests
+            return None
         r = int(color[1:3], 16)
         g = int(color[3:5], 16)
         b = int(color[5:7], 16)
@@ -6359,6 +6365,8 @@ class SysMLDiagramWindow(tk.Frame):
     def _draw_gradient_rect(self, x1: float, y1: float, x2: float, y2: float, color: str, obj_id: int) -> None:
         """Draw a gradient rectangle on the canvas and cache the image."""
         img = self._create_gradient_image(abs(int(x2 - x1)), abs(int(y2 - y1)), color)
+        if img is None:
+            return
         self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
         self.gradient_cache[obj_id] = img
 
