@@ -124,6 +124,33 @@ class FTADrawingHelper:
             x += 0.5
         return ids
 
+    def _fill_gradient_oval(
+        self,
+        canvas,
+        cx: float,
+        cy: float,
+        rx: float,
+        ry: float,
+        color: str,
+        tag: str | None = None,
+    ) -> list[int]:
+        """Fill ellipse with gradient from white to *color* and return created line IDs."""
+        left = math.floor(cx - rx)
+        right = math.ceil(cx + rx)
+        if right <= left or rx == 0 or ry == 0:
+            return []
+        ids: list[int] = []
+        x = left
+        while x <= right:
+            ratio = (x - left) / (right - left) if right > left else 1
+            fill = self._interpolate_color(color, ratio)
+            dx = x - cx
+            dy = ry * math.sqrt(max(1 - (dx / rx) ** 2, 0))
+            line_id = canvas.create_line(x, cy - dy, x, cy + dy, fill=fill, tags=tag)
+            ids.append(line_id)
+            x += 0.5
+        return ids
+
     def _fill_gradient_rect(self, canvas, left: float, top: float, right: float, bottom: float, color: str) -> None:
         """Fill rectangle with gradient from white to *color*."""
         if right <= left:
