@@ -393,13 +393,42 @@ def create_icon(
         for y in range(mid-r,mid+r+1):
             img.put(outline,(mid,y))
     elif shape == "cylinder":
-        img.put(c, to=(2, 4, size - 2, size - 4))
-        for x in range(2, size - 2):
-            img.put(outline, (x, 4))
-            img.put(outline, (x, size - 4))
-        for x in range(3, size - 3):
-            img.put(outline, (x, 3))
-            img.put(outline, (x, size - 3))
+        # Represent a database cylinder with elliptical caps and a filled body
+        left, right = 2, size - 2
+        top, bottom = 4, size - 4
+        cx = size // 2
+        rx = (right - left) // 2
+        ry = 2
+
+        # Fill the central body
+        img.put(c, to=(left, top, right, bottom))
+
+        # Fill the top ellipse
+        for y in range(top - ry, top + 1):
+            for x in range(left, right):
+                norm = ((x - cx) ** 2) / (rx * rx) + ((y - top) ** 2) / (ry * ry)
+                if norm <= 1:
+                    img.put(c, (x, y))
+
+        # Fill the bottom ellipse
+        for y in range(bottom, bottom + ry + 1):
+            for x in range(left, right):
+                norm = ((x - cx) ** 2) / (rx * rx) + ((y - bottom) ** 2) / (ry * ry)
+                if norm <= 1:
+                    img.put(c, (x, y))
+
+        # Draw the outlines for the ellipses
+        for x in range(left, right):
+            y = int(ry * math.sqrt(max(0, 1 - ((x - cx) ** 2) / (rx * rx))))
+            img.put(outline, (x, top - y))
+            img.put(outline, (x, top + y))
+            img.put(outline, (x, bottom - y))
+            img.put(outline, (x, bottom + y))
+
+        # Draw the vertical side outlines
+        for y in range(top, bottom):
+            img.put(outline, (left, y))
+            img.put(outline, (right - 1, y))
     elif shape == "document":
         img.put(c, to=(2, 2, size - 2, size - 2))
         fold = bg or "white"

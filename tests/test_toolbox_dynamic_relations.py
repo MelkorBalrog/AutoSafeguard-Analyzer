@@ -49,3 +49,4 @@ def test_cross_category_relations_surface():
     assert "Entities" in art_ext
     assert "Role" in art_ext["Entities"]["nodes"]
     assert "Approves" in art_ext["Entities"]["relations"]
+
