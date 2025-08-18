@@ -37,7 +37,6 @@
   <object type="Software Component" color="#fff2cc" />
   <object type="Test Suite" color="#f4cccc" />
   <object type="System" color="#c9daf8" />
-  <object type="Verification Plan" color="#f9cb9c" />
   <object type="Component" color="#fff2cc" />
   <object type="Manufacturing Process" color="#b4a7d6" />
   <object type="Vehicle" color="#a2c4c9" />
@@ -66,15 +65,10 @@
   <object type="Hazard" color="#f4cccc" />
   <object type="Risk Assessment" color="#f9cb9c" />
   <object type="Safety Goal" color="#d9ead3" />
-  <object type="Safety Plan" color="#fff2cc" />
-  <object type="Security Plan" color="#c9daf8" />
-  <object type="Mitigation Plan" color="#d9d2e9" />
+  <object type="Plan" color="#f9cb9c" />
   <object type="Security Threat" color="#ead1dc" />
   <object type="Report" color="#cfe2f3" />
   <object type="Safety Case" color="#d9ead3" />
-  <object type="Deployment Plan" color="#fff2cc" />
-  <object type="Maintenance Plan" color="#e2f0d9" />
-  <object type="Decommission Plan" color="#f4cccc" />
   <object type="Complies with" color="#d9ead3" />
   <object type="Approves" color="#b6d7a8" />
   <object type="Audits" color="#f9cb9c" />

@@ -17,7 +17,7 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Risk Assessment") == "diamond"
     assert shape(None, "Safety Goal") == "pentagon"
     assert shape(None, "Security Threat") == "cross"
-    assert shape(None, "Safety Plan") == "document"
+    assert shape(None, "Plan") == "document"
 
     style = StyleManager.get_instance()
     for element in [
@@ -25,6 +25,6 @@ def test_governance_shapes_and_relations():
         "Risk Assessment",
         "Safety Goal",
         "Security Threat",
-        "Safety Plan",
+        "Plan",
     ]:
         assert style.get_color(element) != "#FFFFFF"
