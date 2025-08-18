@@ -50,7 +50,6 @@ def test_cross_category_relations_surface():
     assert "Role" in art_ext["Entities"]["nodes"]
     assert "Approves" in art_ext["Entities"]["relations"]
 
-
 def test_governance_core_relations_and_externals(tmp_path, monkeypatch):
     defs = architecture._toolbox_defs()
     core = defs["Governance Core"]
