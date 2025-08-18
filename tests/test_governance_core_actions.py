@@ -55,11 +55,13 @@ def test_governance_core_has_add_buttons(monkeypatch):
     win.rel_frame = DummyFrame(toolbox)
     win._icon_for = lambda name: None
     win.toolbox_selector = types.SimpleNamespace(configure=lambda **k: None)
-    win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance Core", set=lambda v: None)
+    win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance", set=lambda v: None)
     win._toolbox_frames = {}
 
     win._rebuild_toolboxes()
-    core_frames = win._toolbox_frames["Governance Core"]
+    assert "Governance" in win._toolbox_frames
+    assert "Governance Core" not in win._toolbox_frames
+    core_frames = win._toolbox_frames["Governance"]
     actions = core_frames[1]
     labels = [child.text for child in getattr(actions, "children", [])]
     assert {

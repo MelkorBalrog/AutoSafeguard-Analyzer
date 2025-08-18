@@ -32,11 +32,11 @@ def test_switch_toolbox_combines_governance_elements():
 
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance")
     GovernanceDiagramWindow._switch_toolbox(win)
-    assert win.gov_tools_frame.packed
-    assert win.gov_elements_frame.packed
+    assert gov_frame.packed
+    assert not ai_frame.packed
 
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Safety & AI Lifecycle")
     GovernanceDiagramWindow._switch_toolbox(win)
-    assert win.ai_tools_frame.packed
-    assert not win.gov_tools_frame.packed
-    assert not win.gov_elements_frame.packed
+    assert ai_frame.packed
+    assert not gov_frame.packed
+
