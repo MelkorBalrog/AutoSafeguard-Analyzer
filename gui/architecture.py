@@ -504,7 +504,8 @@ def _format_label(
     label = name or ""
     if obj is not None:
         repo = getattr(_win, "repo", None)
-        diag = repo.diagrams.get(_win.diagram_id) if repo else None
+        diag_id = getattr(_win, "diagram_id", None)
+        diag = repo.diagrams.get(diag_id) if repo else None
         if diag and diag.diag_type == "Governance Diagram":
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
@@ -3584,8 +3585,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Security Plan": "document",
             "Mitigation Plan": "document",
             "Security Threat": "cross",
-            "Validation Report": "document",
-            "Audit Report": "document",
+            "Report": "document",
             "Safety Case": "document",
             "Deployment Plan": "document",
             "Maintenance Plan": "document",
@@ -7167,8 +7167,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Safety Plan",
             "Security Plan",
             "Mitigation Plan",
-            "Validation Report",
-            "Audit Report",
+            "Report",
             "Safety Case",
             "Deployment Plan",
             "Maintenance Plan",
@@ -7304,7 +7303,7 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
-            label = _format_label(self, obj.properties.get("name", ""), obj.phase, obj)
+            raw_name = obj.properties.get("name", "")
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
@@ -7322,9 +7321,9 @@ class SysMLDiagramWindow(tk.Frame):
                 "FMEA",
                 "FMEDA",
             }
-            if label in diagram_products:
+            if raw_name in diagram_products:
                 color = "#cfe2f3"
-            elif label in analysis_products:
+            elif raw_name in analysis_products:
                 color = "#d5e8d4"
             else:
                 color = "#ffffff"
@@ -7356,11 +7355,11 @@ class SysMLDiagramWindow(tk.Frame):
                 y - h + fold,
                 fill=outline,
             )
-            if label:
+            if raw_name:
                 self.canvas.create_text(
                     x,
                     y,
-                    text=label.replace(" ", "\n"),
+                    text=raw_name.replace(" ", "\n"),
                     anchor="center",
                     font=self.font,
                     width=obj.width * self.zoom,
