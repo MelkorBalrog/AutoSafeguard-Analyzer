@@ -7337,40 +7337,18 @@ class SysMLDiagramWindow(tk.Frame):
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
         elif obj.obj_type == "Operation":
-            handle_w = w * 0.25
-            head_r = w
-            bg = StyleManager.get_instance().get_canvas_color()
-            self.drawing_helper._fill_gradient_circle(self.canvas, x, y, head_r, color)
-            self.canvas.create_oval(x - head_r, y - head_r, x + head_r, y + head_r, outline=outline, fill="")
-            notch = [
-                (x + head_r * 0.4, y - head_r * 0.7),
-                (x + head_r, y - head_r * 0.2),
-                (x + head_r, y + head_r * 0.2),
-                (x + head_r * 0.4, y + head_r * 0.7),
-            ]
-            self.canvas.create_polygon(notch, fill=bg, outline=bg)
-            self.canvas.create_line(
-                x + head_r * 0.4,
-                y - head_r * 0.7,
-                x + head_r,
-                y - head_r * 0.2,
-                fill=outline,
-                width=max(2, self.zoom),
+            # Draw the operation using the exact wrench icon scaled to fit
+            size = int(min(w, h) * 2)
+            scale = max(1, size // 16)
+            img = create_icon("wrench", color).zoom(scale, scale)
+            self.canvas.create_image(
+                x - 8 * scale,
+                y - 8 * scale,
+                anchor="nw",
+                image=img,
             )
-            self.canvas.create_line(
-                x + head_r * 0.4,
-                y + head_r * 0.7,
-                x + head_r,
-                y + head_r * 0.2,
-                fill=outline,
-                width=max(2, self.zoom),
-            )
-            hx1, hx2 = x - handle_w / 2, x + handle_w / 2
-            hy1, hy2 = y, y + h
-            self._draw_gradient_rect(hx1, hy1, hx2, hy2, color, obj.obj_id)
-            self.canvas.create_rectangle(hx1, hy1, hx2, hy2, outline=outline, fill="")
-            hole_r = handle_w * 0.4
-            self.canvas.create_oval(x - hole_r, hy2 - hole_r * 2, x + hole_r, hy2, outline=outline, fill=bg)
+            # Cache the image to prevent garbage collection
+            self.gradient_cache[obj.obj_id] = img
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
             self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
