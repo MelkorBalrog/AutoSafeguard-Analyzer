@@ -1,4 +1,8 @@
 import unittest
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import SysMLDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
@@ -39,15 +43,22 @@ class GovernanceElementStereotypeTests(unittest.TestCase):
         self.assertEqual("<<task>>", lines[0])
         self.assertEqual("Draft Plan", lines[1])
 
-    def test_decision_label_includes_stereotype(self):
+    def test_gateway_labels_hidden(self):
         repo = SysMLRepository.get_instance()
         diag = repo.create_diagram("Governance Diagram")
-        elem = repo.create_element("Decision", name="Gate")
-        obj = SysMLObject(2, "Decision", 0.0, 0.0, element_id=elem.elem_id, properties={"name": "Gate"})
         win = DummyWindow(diag.diag_id)
-        lines = win._object_label_lines(obj)
-        self.assertEqual("<<decision>>", lines[0])
-        self.assertEqual("Gate", lines[1])
+        for idx, node_type in enumerate(["Decision", "Initial", "Final", "Merge"], start=1):
+            elem = repo.create_element(node_type, name="Gate")
+            obj = SysMLObject(
+                idx,
+                node_type,
+                0.0,
+                0.0,
+                element_id=elem.elem_id,
+                properties={"name": "Gate"},
+            )
+            lines = win._object_label_lines(obj)
+            self.assertEqual([], lines)
 
 
 if __name__ == "__main__":
