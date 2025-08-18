@@ -228,7 +228,7 @@ import sys
 import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
-from gui import messagebox, logger
+from gui import messagebox, logger, add_treeview_scrollbars
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import (
@@ -2740,6 +2740,7 @@ class FaultTreeApp:
         tree_frame.columnconfigure(0, weight=1)
         self.analysis_tree.bind("<Double-1>", self.on_analysis_tree_double_click)
         self.analysis_tree.bind("<Button-3>", self.on_analysis_tree_right_click)
+        self.analysis_tree.bind("<<TreeviewSelect>>", self.on_analysis_tree_select)
         # Maintain backwards compatibility with older code referencing
         # ``self.treeview`` for the main explorer tree.
         self.treeview = self.analysis_tree
@@ -2758,6 +2759,17 @@ class FaultTreeApp:
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
         self.tools_nb.pack(fill=tk.BOTH, expand=True)
+
+        # Properties tab for displaying metadata
+        prop_frame = ttk.Frame(self.tools_nb)
+        self.prop_view = ttk.Treeview(
+            prop_frame, columns=("field", "value"), show="headings"
+        )
+        self.prop_view.heading("field", text="Field")
+        self.prop_view.heading("value", text="Value")
+        add_treeview_scrollbars(self.prop_view, prop_frame)
+        self.tools_nb.add(prop_frame, text="Properties")
+
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
         self.tools_nb.bind("<Motion>", self._on_tool_tab_motion)
@@ -9214,6 +9226,51 @@ class FaultTreeApp:
         menu = tk.Menu(self.analysis_tree, tearoff=0)
         menu.add_command(label="Rename", command=self.rename_selected_tree_item)
         menu.tk_popup(event.x_root, event.y_root)
+
+    def on_analysis_tree_select(self, _event):
+        """Update property view when a tree item is selected."""
+        if not hasattr(self, "prop_view"):
+            return
+        item = self.analysis_tree.focus()
+        if not item:
+            return
+        tags = self.analysis_tree.item(item, "tags")
+        name = self.analysis_tree.item(item, "text")
+        meta = {"Name": name}
+        if tags:
+            meta["Type"] = tags[0]
+            if len(tags) > 1:
+                meta["ID"] = tags[1]
+        self.show_properties(meta=meta)
+
+    def show_properties(self, obj=None, meta=None):
+        """Display metadata for *obj* or *meta* dictionary in the properties tab."""
+        if not hasattr(self, "prop_view"):
+            return
+        self.prop_view.delete(*self.prop_view.get_children())
+        if obj:
+            if not obj:
+                return
+            self.prop_view.insert("", "end", values=("Type", obj.obj_type))
+            name = obj.properties.get("name", "")
+            if name:
+                self.prop_view.insert("", "end", values=("Name", name))
+            for k, v in obj.properties.items():
+                if k == "name":
+                    continue
+                self.prop_view.insert("", "end", values=(k, v))
+            if obj.element_id:
+                elem = SysMLRepository.get_instance().elements.get(obj.element_id)
+                if elem:
+                    self.prop_view.insert("", "end", values=("Author", getattr(elem, "author", "")))
+                    self.prop_view.insert("", "end", values=("Created", getattr(elem, "created", "")))
+                    self.prop_view.insert("", "end", values=("Modified", getattr(elem, "modified", "")))
+                    self.prop_view.insert(
+                        "", "end", values=("ModifiedBy", getattr(elem, "modified_by", ""))
+                    )
+        elif meta:
+            for k, v in meta.items():
+                self.prop_view.insert("", "end", values=(k, v))
 
     def rename_selected_tree_item(self):
         item = self.analysis_tree.focus()
