@@ -1554,6 +1554,18 @@ def test_safety_management_explorer_creates_folders_and_diagrams(monkeypatch):
     assert "Diag" in toolbox.diagrams
 
 
+def test_safety_management_explorer_refresh_calls_populate(monkeypatch):
+    called = {}
+
+    def fake_populate(self):
+        called["called"] = True
+
+    monkeypatch.setattr(SafetyManagementExplorer, "populate", fake_populate)
+    explorer = SafetyManagementExplorer.__new__(SafetyManagementExplorer)
+    SafetyManagementExplorer.refresh(explorer)
+    assert called.get("called")
+
+
 def test_explorer_renames_folders_and_diagrams(monkeypatch):
     SysMLRepository._instance = None
     SysMLRepository.get_instance()

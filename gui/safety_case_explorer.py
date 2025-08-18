@@ -105,6 +105,11 @@ class SafetyCaseExplorer(tk.Frame):
                 self.item_map[sid] = ("solution", sol)
 
     # ------------------------------------------------------------------
+    def refresh(self):
+        """Refresh the explorer view to reflect the current model state."""
+        self.populate()
+
+    # ------------------------------------------------------------------
     def _available_diagrams(self):
         """Return a list of all GSN diagrams available in the application."""
         if not self.app:
