@@ -3688,8 +3688,6 @@ class SysMLDiagramWindow(tk.Frame):
                     base = name[4:]
                     if base.startswith("Generic "):
                         base = base[8:]
-                    if base == "Process Area":
-                        base = "Process"
                     color = style.get_color(base)
                 if color == "#FFFFFF":
                     color = "black"
@@ -3702,18 +3700,18 @@ class SysMLDiagramWindow(tk.Frame):
             name = name[4:]
             if name.startswith("Generic "):
                 name = name[8:]
-            if name == "Process Area":
-                name = "System Boundary"
         name = "AI Database" if name == "Database" else name
         mapping = {
             "Select": "arrow",
             "Actor": "human",
             "Use Case": "ellipse",
-            "Block": "rect",
-            "Part": "rect",
-            "Port": "circle",
+            "Block": "component",
+            "Part": "puzzle",
+            "Port": "ring",
             "Initial": "circle",
             "Final": "circle",
+            "Action": "action",
+            "CallBehaviorAction": "action",
             "Decision": "diamond",
             "Merge": "diamond",
             "Fork": "bar",
@@ -3731,19 +3729,20 @@ class SysMLDiagramWindow(tk.Frame):
             "Policy": "scroll",
             "Principle": "scale",
             "Procedure": "document",
-            "Record": "circle",
-            "Role": "circle",
+            "Record": "document",
+            "Role": "human",
             "Standard": "ribbon",
             "Process": "gear",
+            "Process Area": "gear",
             "Activity": "rect",
             "Task": "trapezoid",
             "Operation": "wrench",
             "Driving Function": "steering",
-            "Software Component": "rect",
+            "Software Component": "component",
             "Test Suite": "test",
             "System": "nested",
             "Plan": "document",
-            "Component": "rect",
+            "Component": "component",
             "Manufacturing Process": "hexagon",
             "Vehicle": "vehicle",
             "Fleet": "vehicle",
@@ -3753,6 +3752,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Field Data": "cylinder",
             "Model": "document",
             "Lifecycle Phase": "folder",
+            "Work Product": "document",
             # Use more descriptive icon shapes for governance elements
             "Hazard": "hazard",
             "Risk Assessment": "clipboard",
@@ -3760,7 +3760,6 @@ class SysMLDiagramWindow(tk.Frame):
             "Security Threat": "bug",
             "Report": "document",
             "Safety Case": "document",
-            "Work Product": "rect",
         }
         if name in mapping:
             return mapping[name]
@@ -12094,49 +12093,60 @@ class ArchitectureManagerDialog(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        # simple icons to visually distinguish packages, diagrams and objects
+        # style-aware icons to visually distinguish packages, diagrams and objects
         style = StyleManager.get_instance()
-        self.pkg_icon = self._create_icon("folder", "#b8860b")
+
+        def _color(name: str, fallback: str = "black") -> str:
+            c = style.get_color(name)
+            return fallback if c == "#FFFFFF" else c
+
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("ellipse", "blue"),
-            "Activity Diagram": self._create_icon("arrow", "green"),
-            "Governance Diagram": self._create_icon("arrow", "green"),
-            "Block Diagram": self._create_icon("rect", "orange"),
-            "Internal Block Diagram": self._create_icon("nested", "purple"),
+            "Use Case Diagram": self._create_icon("usecase_diag", _color("Use Case Diagram", "blue")),
+            "Activity Diagram": self._create_icon("activity_diag", _color("Activity Diagram", "green")),
+            "Governance Diagram": self._create_icon("activity_diag", _color("Governance Diagram", "green")),
+            "Block Diagram": self._create_icon("block_diag", _color("Block Diagram", "orange")),
+            "Internal Block Diagram": self._create_icon("ibd_diag", _color("Internal Block Diagram", "purple")),
         }
         self.elem_icons = {
-            "Actor": self._create_icon("human", style.get_color("Actor")),
-            "Use Case": self._create_icon("ellipse", style.get_color("Use Case")),
-            "Block": self._create_icon("rect", style.get_color("Block")),
-            "Part": self._create_icon("rect", style.get_color("Part")),
-            "Port": self._create_icon("circle", style.get_color("Port")),
-            "Decision": self._create_icon("diamond", style.get_color("Decision")),
-            "Merge": self._create_icon("diamond", style.get_color("Merge")),
-            "Fork": self._create_icon("bar", style.get_color("Fork")),
-            "Join": self._create_icon("bar", style.get_color("Join")),
-            "AI Database": self._create_icon("cylinder", style.get_color("AI Database")),
-            "ANN": self._create_icon("neural", style.get_color("ANN")),
-            "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
-            "Business Unit": self._create_icon("department", style.get_color("Business Unit")),
-            "Data": self._create_icon("cylinder", style.get_color("Data")),
-            "Field Data": self._create_icon("cylinder", style.get_color("Field Data")),
-            "Document": self._create_icon("document", style.get_color("Document")),
-            "Guideline": self._create_icon("compass", style.get_color("Guideline")),
-            "Metric": self._create_icon("chart", style.get_color("Metric")),
-            "Organization": self._create_icon("building", style.get_color("Organization")),
-            "Policy": self._create_icon("scroll", style.get_color("Policy")),
-            "Principle": self._create_icon("scale", style.get_color("Principle")),
-            "Procedure": self._create_icon("document", style.get_color("Procedure")),
-            "Record": self._create_icon("circle", style.get_color("Record")),
-            "Role": self._create_icon("circle", style.get_color("Role")),
-            "Standard": self._create_icon("ribbon", style.get_color("Standard")),
-            "Safety Compliance": self._create_icon("shield_check", style.get_color("Safety Compliance")),
-            "Process": self._create_icon("gear", style.get_color("Process")),
-            "Operation": self._create_icon("wrench", style.get_color("Operation")),
-            "Driving Function": self._create_icon("steering", style.get_color("Driving Function")),
+            "Actor": self._create_icon("human", _color("Actor")),
+            "Use Case": self._create_icon("ellipse", _color("Use Case")),
+            "Block": self._create_icon("component", _color("Block")),
+            "Part": self._create_icon("puzzle", _color("Part")),
+            "Port": self._create_icon("ring", _color("Port")),
+            "Decision": self._create_icon("diamond", _color("Decision")),
+            "Merge": self._create_icon("diamond", _color("Merge")),
+            "Fork": self._create_icon("bar", _color("Fork")),
+            "Join": self._create_icon("bar", _color("Join")),
+            "Initial": self._create_icon("circle", _color("Initial")),
+            "Final": self._create_icon("circle", _color("Final")),
+            "Action": self._create_icon("action", _color("Action")),
+            "CallBehaviorAction": self._create_icon("action", _color("CallBehaviorAction")),
+            "AI Database": self._create_icon("cylinder", _color("AI Database")),
+            "ANN": self._create_icon("neural", _color("ANN")),
+            "Data acquisition": self._create_icon("arrow", _color("Data acquisition")),
+            "Business Unit": self._create_icon("department", _color("Business Unit")),
+            "Data": self._create_icon("cylinder", _color("Data")),
+            "Field Data": self._create_icon("cylinder", _color("Field Data")),
+            "Document": self._create_icon("document", _color("Document")),
+            "Guideline": self._create_icon("compass", _color("Guideline")),
+            "Metric": self._create_icon("chart", _color("Metric")),
+            "Organization": self._create_icon("building", _color("Organization")),
+            "Policy": self._create_icon("scroll", _color("Policy")),
+            "Principle": self._create_icon("scale", _color("Principle")),
+            "Procedure": self._create_icon("document", _color("Procedure")),
+            "Record": self._create_icon("document", _color("Record")),
+            "Role": self._create_icon("human", _color("Role")),
+            "Standard": self._create_icon("ribbon", _color("Standard")),
+            "Safety Compliance": self._create_icon("shield_check", _color("Safety Compliance")),
+            "Process": self._create_icon("gear", _color("Process")),
+            "Process Area": self._create_icon("gear", _color("Process Area")),
+            "Work Product": self._create_icon("document", _color("Work Product")),
+            "Operation": self._create_icon("wrench", _color("Operation")),
+            "Driving Function": self._create_icon("steering", _color("Driving Function")),
         }
-        self.default_diag_icon = self._create_icon("rect", "gray")
-        self.default_elem_icon = self._create_icon("rect", style.get_color("Existing Element"))
+        self.default_diag_icon = self._create_icon("document", "gray")
+        self.default_elem_icon = self._create_icon("rect", _color("Existing Element", "gray"))
         btns = ttk.Frame(self)
         btns.pack(fill=tk.X, padx=4, pady=4)
         ttk.Button(btns, text="Open", command=self.open).pack(side=tk.LEFT, padx=2)
