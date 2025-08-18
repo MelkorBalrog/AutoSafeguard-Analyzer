@@ -4181,6 +4181,7 @@ class SysMLDiagramWindow(tk.Frame):
             hit = self.hit_compartment_toggle(obj, x, y)
             if hit:
                 obj.collapsed[hit] = not obj.collapsed.get(hit, False)
+                self._resize_block_to_content(obj)
                 self._sync_to_repository()
                 self.redraw()
                 return
@@ -6042,6 +6043,14 @@ class SysMLDiagramWindow(tk.Frame):
                 total_lines += 1 + len(lines)
         height_px = total_lines * 20 * self.zoom
         return width_px / self.zoom, height_px / self.zoom
+
+    def _resize_block_to_content(self, obj: SysMLObject) -> None:
+        """Resize a Block so its compartments fit its current state."""
+        if obj.obj_type != "Block":  # pragma: no cover - safety check
+            return
+        min_w, min_h = self._min_block_size(obj)
+        obj.width = min_w
+        obj.height = min_h
 
     def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:
         """Return minimum width and height to display Action text without wrapping."""
