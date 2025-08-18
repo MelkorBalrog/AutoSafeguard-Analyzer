@@ -504,8 +504,13 @@ def _format_label(
     label = name or ""
     if obj is not None:
         repo = getattr(_win, "repo", None)
-        diag = repo.diagrams.get(_win.diagram_id) if repo else None
-        if diag and diag.diag_type == "Governance Diagram":
+        diagram_id = getattr(_win, "diagram_id", None)
+        diag = repo.diagrams.get(diagram_id) if repo and diagram_id else None
+        if (
+            diag
+            and diag.diag_type == "Governance Diagram"
+            and obj.obj_type != "Work Product"
+        ):
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
                 elem_type = repo.elements[obj.element_id].elem_type
@@ -3584,8 +3589,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Security Plan": "document",
             "Mitigation Plan": "document",
             "Security Threat": "cross",
-            "Validation Report": "document",
-            "Audit Report": "document",
+            "Report": "document",
             "Safety Case": "document",
             "Deployment Plan": "document",
             "Maintenance Plan": "document",
@@ -7167,8 +7171,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Safety Plan",
             "Security Plan",
             "Mitigation Plan",
-            "Validation Report",
-            "Audit Report",
+            "Report",
             "Safety Case",
             "Deployment Plan",
             "Maintenance Plan",

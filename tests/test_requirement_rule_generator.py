@@ -134,13 +134,13 @@ def test_complex_sequences() -> None:
             "Produces": {
                 "Process": ["Document"],
                 "Test Suite": ["Document"],
-                "Validation Report": ["Document"],
+                "Report": ["Document"],
                 "Verification Plan": ["Document"],
             },
             "Validate": {
                 "Model": ["Test Suite"],
-                "Mitigation Plan": ["Validation Report"],
-                "Test Suite": ["Validation Report"],
+                "Mitigation Plan": ["Report"],
+                "Test Suite": ["Report"],
             },
             "Assesses": {
                 "Hazard": ["Risk Assessment"],

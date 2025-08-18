@@ -70,8 +70,7 @@
   <object type="Security Plan" color="#c9daf8" />
   <object type="Mitigation Plan" color="#d9d2e9" />
   <object type="Security Threat" color="#ead1dc" />
-  <object type="Validation Report" color="#cfe2f3" />
-  <object type="Audit Report" color="#b4a7d6" />
+  <object type="Report" color="#cfe2f3" />
   <object type="Safety Case" color="#d9ead3" />
   <object type="Deployment Plan" color="#fff2cc" />
   <object type="Maintenance Plan" color="#e2f0d9" />
