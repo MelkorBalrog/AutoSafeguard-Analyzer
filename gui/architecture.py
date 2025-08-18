@@ -228,6 +228,23 @@ GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 # underlying "Action" nodes.
 _GOV_TYPE_ALIASES = {"Action": "Task"}
 
+# Object types whose names are displayed below the shape
+_BOTTOM_LABEL_TYPES = {
+    "Hazard",
+    "Incident",
+    "Safety Issue",
+    "Safety Goal",
+    "Process",
+    "Policy",
+    "Principle",
+    "Guideline",
+    "Standard",
+    "Metric",
+    "Safety Compliance",
+    "Data",
+    "Field Data",
+}
+
 
 # Connection types excluding Safety & AI relations used for membership checks
 _BASE_CONN_TYPES = {
@@ -543,7 +560,7 @@ def _format_label(
             if repo and obj.element_id in repo.elements:
                 elem_type = repo.elements[obj.element_id].elem_type
             stereo = _GOV_TYPE_ALIASES.get(elem_type, elem_type).lower()
-            label = f"<<{stereo}>> {label}".strip()
+            label = f"{label}\n<<{stereo}>>".strip()
     return label
 
 
@@ -6074,14 +6091,15 @@ class SysMLDiagramWindow(tk.Frame):
         if obj.obj_type in ("Action", "CallBehaviorAction") and name:
             max_width = obj.width * self.zoom - 6 * self.zoom
             if max_width > 0:
-                wrapped = self._wrap_text_to_width(name, max_width)
-                lines.extend(wrapped)
+                for part in name.splitlines():
+                    wrapped = self._wrap_text_to_width(part, max_width)
+                    lines.extend(wrapped)
             else:
-                lines.append(name)
+                lines.extend(name.splitlines())
         elif obj.obj_type == "Work Product" and name:
             lines.extend(name.split())
         else:
-            lines.append(name)
+            lines.extend(name.splitlines())
 
         key = obj.obj_type.replace(" ", "")
         if not key.endswith("Usage"):
@@ -7812,6 +7830,15 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
             elif obj.obj_type in ("Initial", "Final"):
+                label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
+                self.canvas.create_text(
+                    x,
+                    label_y,
+                    text="\n".join(label_lines),
+                    anchor="n",
+                    font=self.font,
+                )
+            elif obj.obj_type in _BOTTOM_LABEL_TYPES:
                 label_y = y + obj.height / 2 * self.zoom + 10 * self.zoom
                 self.canvas.create_text(
                     x,
