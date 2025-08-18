@@ -1,15 +1,17 @@
 import tkinter as tk
 import types
+import pytest
 
-from gui.architecture import SysMLDiagramWindow, SysMLObject
+from gui.architecture import SysMLDiagramWindow, SysMLObject, _all_connection_tools
 
 
-def test_temp_connection_line_is_dotted_and_animated():
+@pytest.mark.parametrize("tool", _all_connection_tools())
+def test_temp_connection_line_is_dotted_and_animated(tool):
     win = SysMLDiagramWindow.__new__(SysMLDiagramWindow)
     win.zoom = 1.0
     win.start = SysMLObject(1, "Block", 10, 20)
     win.temp_line_end = (50, 60)
-    win.current_tool = "Association"
+    win.current_tool = tool
     win.selected_conn = None
     win.dragging_endpoint = None
     win.endpoint_drag_pos = None

@@ -6412,21 +6412,7 @@ class SysMLDiagramWindow(tk.Frame):
         if (
             self.start
             and self.temp_line_end
-            and self.current_tool
-            in (
-                "Association",
-                "Include",
-                "Extend",
-                "Flow",
-                "Connector",
-                "Generalization",
-                "Generalize",
-                "Communication Path",
-                "Aggregation",
-                "Composite Aggregation",
-                "Control Action",
-                "Feedback",
-            )
+            and self.current_tool in _all_connection_tools()
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
             ex, ey = self.temp_line_end
