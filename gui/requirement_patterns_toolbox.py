@@ -346,6 +346,8 @@ class RequirementPatternsEditor(tk.Frame):
             self.req_rules = {}
             self.req_seqs = {}
 
+        self._ensure_role_subject_variants()
+
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -457,7 +459,14 @@ class RequirementPatternsEditor(tk.Frame):
 
         self.seq_tree = ttk.Treeview(
             s_tree_frame,
-            columns=("label", "relations", "action", "subject", "template"),
+            columns=(
+                "label",
+                "relations",
+                "action",
+                "subject",
+                "role_subject",
+                "template",
+            ),
             show="headings",
         )
         for col, text in (
@@ -465,6 +474,7 @@ class RequirementPatternsEditor(tk.Frame):
             ("relations", "Relations"),
             ("action", "Action"),
             ("subject", "Subject"),
+            ("role_subject", "Role Subject"),
             ("template", "Template"),
         ):
             self.seq_tree.heading(col, text=text)
@@ -630,6 +640,7 @@ class RequirementPatternsEditor(tk.Frame):
         self._populate_rule_tree()
 
     def save_rules(self):
+        self._ensure_role_subject_variants()
         self.rules_cfg["requirement_rules"] = self.req_rules
         self.rules_cfg["requirement_sequences"] = self.req_seqs
         try:
@@ -661,7 +672,21 @@ class RequirementPatternsEditor(tk.Frame):
     # ------------------------------------------------------------------
     # Sequence helpers
     # ------------------------------------------------------------------
+    def _ensure_role_subject_variants(self) -> None:
+        variants: dict[str, dict] = {}
+        for label, info in list(self.req_seqs.items()):
+            if info.get("role_subject") or label.endswith("_role_subject"):
+                continue
+            if info.get("subject"):
+                role_label = f"{label}_role_subject"
+                variant = dict(info)
+                variant.pop("subject", None)
+                variant["role_subject"] = True
+                variants[role_label] = variant
+        self.req_seqs.update(variants)
+
     def _populate_seq_tree(self):
+        self._ensure_role_subject_variants()
         self.seq_tree.delete(*self.seq_tree.get_children(""))
         for label, info in sorted(self.req_seqs.items()):
             rels = " -> ".join(info.get("relations", []))
@@ -674,6 +699,7 @@ class RequirementPatternsEditor(tk.Frame):
                     rels,
                     info.get("action", ""),
                     info.get("subject", ""),
+                    "Y" if info.get("role_subject") else "",
                     info.get("template", ""),
                 ),
             )
@@ -683,6 +709,8 @@ class RequirementPatternsEditor(tk.Frame):
         if not item:
             return
         label = self.seq_tree.set(item, "label")
+        if label.endswith("_role_subject"):
+            return
         info = dict(self.req_seqs.get(label, {}))
         info["label"] = label
         dlg = SequenceConfig(self, info)
@@ -693,6 +721,7 @@ class RequirementPatternsEditor(tk.Frame):
         rels = dlg.result.pop("relations", [])
         if label in self.req_seqs:
             del self.req_seqs[label]
+            self.req_seqs.pop(f"{label}_role_subject", None)
         dlg.result["relations"] = rels
         self.req_seqs[new_label] = dlg.result
         self._populate_seq_tree()
@@ -705,6 +734,9 @@ class RequirementPatternsEditor(tk.Frame):
         label = dlg.result.pop("label")
         rels = dlg.result.pop("relations", [])
         dlg.result["relations"] = rels
+        if label in self.req_seqs:
+            del self.req_seqs[label]
+        self.req_seqs.pop(f"{label}_role_subject", None)
         self.req_seqs[label] = dlg.result
         self._populate_seq_tree()
 
@@ -715,4 +747,9 @@ class RequirementPatternsEditor(tk.Frame):
         label = self.seq_tree.set(item, "label")
         if label in self.req_seqs:
             del self.req_seqs[label]
+        if label.endswith("_role_subject"):
+            base_label = label[: -len("_role_subject")]
+            self.req_seqs.pop(base_label, None)
+        else:
+            self.req_seqs.pop(f"{label}_role_subject", None)
         self._populate_seq_tree()
