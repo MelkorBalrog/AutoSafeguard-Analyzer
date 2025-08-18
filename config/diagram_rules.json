@@ -483,7 +483,7 @@
       "Process": ["Document"],
       "Test Suite": ["Document"],
       "Verification Plan": ["Document"],
-      "Safety & Security Case": ["Document"]
+      "Safety & Security Case": ["Document"],
       "Report": ["Document"],
     },
     "Validate": {
@@ -507,11 +507,11 @@
       "Maintenance Plan": ["Process"],
       "Decommission Plan": ["Process"]
     },
-    "Verify": {"Test Suite": ["Verification Plan"]},
-    "Reviews": {"Audit Report": ["Safety & Security Case"]}
-    "Audits": {"Process": ["Report"]},
-    "Responsible for": {"Role": ["Process", "Activity", "Task"]},
-  },
+      "Verify": {"Test Suite": ["Verification Plan"]},
+      "Reviews": {"Audit Report": ["Safety & Security Case"]},
+      "Audits": {"Process": ["Report"]},
+      "Responsible for": {"Role": ["Process", "Activity", "Task"]},
+    },
 
   // Connection validation rules per diagram type and connection kind
   // Format: "Diagram Type": {"Connection Kind": {"Source": ["Allowed Target", ...] }}
