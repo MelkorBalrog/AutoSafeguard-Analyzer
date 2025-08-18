@@ -144,7 +144,10 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
         "Events": [n for n in ["Incident", "Safety Issue"] if n in nodes],
     }
     known = {n for vals in base.values() for n in vals}
-    other = [n for n in nodes if n not in known]
+    # Exclude lifecycle phases from the generic "Other" group since a dedicated
+    # toolbox command exists for adding them. Keeping them here would create a
+    # duplicate button in the governance elements toolbox.
+    other = [n for n in nodes if n not in known and n != "Lifecycle Phase"]
     if other:
         base["Other"] = other
     return base
@@ -7791,6 +7794,7 @@ class SysMLDiagramWindow(tk.Frame):
             "ANN",
             "Data acquisition",
             "Test Suite",
+            "Lifecycle Phase",
         ):
             if hasattr(self, "_object_label_lines"):
                 label_lines = self._object_label_lines(obj)
