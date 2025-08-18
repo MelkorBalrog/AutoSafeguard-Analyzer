@@ -17,10 +17,12 @@ class DummyWindow:
 
     ensure_text_fits = SysMLDiagramWindow.ensure_text_fits
     _object_label_lines = SysMLDiagramWindow._object_label_lines
+    _block_compartments = SysMLDiagramWindow._block_compartments
     _min_block_size = SysMLDiagramWindow._min_block_size
     _min_action_size = SysMLDiagramWindow._min_action_size
     _min_data_acquisition_size = SysMLDiagramWindow._min_data_acquisition_size
     _wrap_text_to_width = SysMLDiagramWindow._wrap_text_to_width
+    _resize_block_to_content = SysMLDiagramWindow._resize_block_to_content
 
 class EnsureTextFitsTests(unittest.TestCase):
     def setUp(self):
@@ -122,6 +124,32 @@ class EnsureTextFitsTests(unittest.TestCase):
         obj.properties["compartments"] = ";".join(f"line{i}" for i in range(100))
         win.ensure_text_fits(obj)
         self.assertGreater(obj.height, 80)
+
+    def test_block_resizes_when_compartments_toggle(self):
+        win = DummyWindow()
+        block = SysMLObject(
+            1,
+            "Block",
+            0,
+            0,
+            width=10,
+            height=10,
+            properties={"name": "B", "partProperties": "p1,p2"},
+        )
+        block.requirements = []
+        initial_w = block.width
+        win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
+        expanded_h = block.height
+        block.collapsed["Parts"] = True
+        win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
+        collapsed_h = block.height
+        self.assertLess(collapsed_h, expanded_h)
+        block.collapsed["Parts"] = False
+        win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
+        self.assertGreater(block.height, collapsed_h)
 
 if __name__ == "__main__":
     unittest.main()
