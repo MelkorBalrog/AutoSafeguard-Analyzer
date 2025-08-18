@@ -3605,23 +3605,23 @@ class SysMLDiagramWindow(tk.Frame):
             "Data acquisition": "arrow",
             "Database": "cylinder",
             "System Boundary": "rect",
-            "Business Unit": "rect",
+            "Business Unit": "department",
             "Data": "cylinder",
             "Document": "document",
-            "Guideline": "document",
-            "Metric": "diamond",
-            "Organization": "rect",
-            "Policy": "document",
-            "Principle": "triangle",
+            "Guideline": "compass",
+            "Metric": "chart",
+            "Organization": "building",
+            "Policy": "scroll",
+            "Principle": "scale",
             "Procedure": "document",
             "Record": "circle",
             "Role": "circle",
-            "Standard": "document",
-            "Process": "hexagon",
+            "Standard": "ribbon",
+            "Process": "gear",
             "Activity": "rect",
             "Task": "trapezoid",
-            "Operation": "ellipse",
-            "Driving Function": "triangle",
+            "Operation": "wrench",
+            "Driving Function": "steering",
             "Software Component": "rect",
             "Test Suite": "test",
             "System": "nested",
@@ -3630,16 +3630,17 @@ class SysMLDiagramWindow(tk.Frame):
             "Manufacturing Process": "hexagon",
             "Vehicle": "vehicle",
             "Fleet": "vehicle",
-            "Safety Compliance": "diamond",
+            "Safety Compliance": "shield_check",
             "Incident": "star",
             "Safety Issue": "triangle",
             "Field Data": "cylinder",
             "Model": "document",
             "Lifecycle Phase": "folder",
-            "Hazard": "triangle",
-            "Risk Assessment": "diamond",
-            "Safety Goal": "pentagon",
-            "Security Threat": "cross",
+            # Use more descriptive icon shapes for governance elements
+            "Hazard": "hazard",
+            "Risk Assessment": "clipboard",
+            "Safety Goal": "shield",
+            "Security Threat": "bug",
             "Report": "document",
             "Safety Case": "document",
             "Work Product": "rect",
@@ -6815,13 +6816,48 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
             )
         elif obj.obj_type == "Business Unit":
+            # Building with a small flag on top to denote a unit
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
                 outline=outline,
-                fill=color,
+                fill="",
+            )
+            # simple windows
+            win_w = w * 0.4
+            win_h = h * 0.3
+            for dx in (-w * 0.6, 0):
+                self.canvas.create_rectangle(
+                    x + dx,
+                    y - h * 0.2,
+                    x + dx + win_w,
+                    y + h * 0.1,
+                    fill=StyleManager.get_instance().get_canvas_color(),
+                    outline=outline,
+                )
+            # flag
+            pole_x = x + w * 0.3
+            pole_top = y - h - h * 0.6
+            self.canvas.create_line(
+                pole_x,
+                y - h,
+                pole_x,
+                pole_top,
+                fill=outline,
+                width=max(2, self.zoom),
+            )
+            self.canvas.create_polygon(
+                pole_x,
+                pole_top,
+                pole_x + w * 0.4,
+                pole_top + h * 0.2,
+                pole_x,
+                pole_top + h * 0.4,
+                fill=outline,
+                outline=outline,
             )
         elif obj.obj_type == "Data":
             rh = min(10 * self.zoom, h)
@@ -6871,54 +6907,123 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
         elif obj.obj_type == "Guideline":
-            r = min(obj.width, obj.height) * self.zoom / 2
-            pts = []
-            for i in range(6):
-                angle = math.radians(60 * i)
-                px = x + r * math.cos(angle)
-                py = y + r * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
-        elif obj.obj_type == "Metric":
-            pts = [(x, y - h), (x + w, y), (x, y + h), (x - w, y)]
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
-        elif obj.obj_type == "Organization":
-            radius = min(w, h)
-            self.drawing_helper._fill_gradient_circle(
-                self.canvas, x, y, radius, color
-            )
+            r = min(w, h)
+            self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
             self.canvas.create_oval(
-                x - radius,
-                y - radius,
-                x + radius,
-                y + radius,
+                x - r,
+                y - r,
+                x + r,
+                y + r,
                 outline=outline,
                 fill="",
             )
-        elif obj.obj_type == "Policy":
-            r = min(obj.width, obj.height) * self.zoom / 2
-            pts = []
-            for i in range(8):
-                angle = math.radians(45 * i + 22.5)
-                px = x + r * math.cos(angle)
-                py = y + r * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+            self.canvas.create_line(
+                x,
+                y,
+                x,
+                y - r,
+                fill=outline,
+                width=max(2, self.zoom),
+            )
             self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
+                x,
+                y - r,
+                x + r * 0.3,
+                y - r * 0.3,
+                x - r * 0.3,
+                y - r * 0.3,
+                fill=outline,
+                outline=outline,
+            )
+        elif obj.obj_type == "Metric":
+            # Bar chart with three bars
+            bar_w = w * 0.4
+            spacing = w * 0.1
+            heights = [h * 0.6, h * 0.9, h * 0.4]
+            for i, bh in enumerate(heights):
+                bx1 = x - w + i * (bar_w + spacing)
+                bx2 = bx1 + bar_w
+                by2 = y + h
+                by1 = by2 - bh
+                self._draw_gradient_rect(bx1, by1, bx2, by2, color, obj.obj_id)
+                self.canvas.create_rectangle(
+                    bx1,
+                    by1,
+                    bx2,
+                    by2,
+                    outline=outline,
+                    fill="",
+                )
+        elif obj.obj_type == "Organization":
+            # Office building with windows
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            cols, rows = 3, 2
+            win_w = (2 * w * 0.6) / cols
+            win_h = (2 * h * 0.6) / rows
+            start_x = x - w + w * 0.2
+            start_y = y - h + h * 0.2
+            for i in range(cols):
+                for j in range(rows):
+                    wx1 = start_x + i * win_w
+                    wy1 = start_y + j * win_h
+                    wx2 = wx1 + win_w * 0.7
+                    wy2 = wy1 + win_h * 0.7
+                    self.canvas.create_rectangle(
+                        wx1,
+                        wy1,
+                        wx2,
+                        wy2,
+                        fill=StyleManager.get_instance().get_canvas_color(),
+                        outline=outline,
+                    )
+        elif obj.obj_type == "Policy":
+            # Scroll with rolled ends
+            roll_r = min(w, h) * 0.3
+            body_left = x - w + roll_r
+            body_right = x + w - roll_r
+            self._draw_gradient_rect(body_left, y - h, body_right, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                body_left,
+                y - h,
+                body_right,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            self.canvas.create_oval(
+                x - w,
+                y - h,
+                x - w + 2 * roll_r,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            self.canvas.create_oval(
+                x + w - 2 * roll_r,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
             )
         elif obj.obj_type == "Principle":
-            pts = [(x, y - h), (x + w, y + h), (x - w, y + h)]
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
+            # Scales of justice
+            self.canvas.create_line(x, y - h, x, y + h, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(x - w * 0.8, y - h * 0.3, x + w * 0.8, y - h * 0.3, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(x - w * 0.4, y - h * 0.3, x - w * 0.6, y + h * 0.4, fill=outline)
+            self.canvas.create_line(x - w * 0.4, y - h * 0.3, x - w * 0.2, y + h * 0.4, fill=outline)
+            self.canvas.create_oval(x - w * 0.7, y + h * 0.4, x - w * 0.3, y + h * 0.8, fill=color, outline=outline)
+            self.canvas.create_line(x + w * 0.4, y - h * 0.3, x + w * 0.2, y + h * 0.4, fill=outline)
+            self.canvas.create_line(x + w * 0.4, y - h * 0.3, x + w * 0.6, y + h * 0.4, fill=outline)
+            self.canvas.create_oval(x + w * 0.3, y + h * 0.4, x + w * 0.7, y + h * 0.8, fill=color, outline=outline)
         elif obj.obj_type == "Procedure":
             offset = w * 0.3
             pts = [
@@ -6952,30 +7057,32 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=StyleManager.get_instance().get_canvas_color(),
             )
         elif obj.obj_type == "Standard":
-            r = min(obj.width, obj.height) * self.zoom / 2
-            pts = []
-            for i in range(10):
-                angle = math.radians(36 * i - 90)
-                radius = r if i % 2 == 0 else r * 0.4
-                px = x + radius * math.cos(angle)
-                py = y + radius * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+            r = min(w, h) * 0.6
+            cy = y - h * 0.2
+            self.drawing_helper._fill_gradient_circle(self.canvas, x, cy, r, color)
+            self.canvas.create_oval(x - r, cy - r, x + r, cy + r, outline=outline, fill="")
             self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
+                x - r, cy + r * 0.2, x - r * 0.2, y + h, x, cy + r * 0.2,
+                fill=color, outline=outline
+            )
+            self.canvas.create_polygon(
+                x + r, cy + r * 0.2, x + r * 0.2, y + h, x, cy + r * 0.2,
+                fill=color, outline=outline
             )
         elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
-            r = min(obj.width, obj.height) * self.zoom / 2
+            r = min(w, h)
             pts = []
-            for i in range(6):
-                angle = math.radians(60 * i)
-                px = x + r * math.cos(angle)
-                py = y + r * math.sin(angle)
+            teeth = 8
+            for i in range(teeth * 2):
+                angle = math.radians(360 / (teeth * 2) * i)
+                rad = r if i % 2 == 0 else r * 0.7
+                px = x + rad * math.cos(angle)
+                py = y + rad * math.sin(angle)
                 pts.append((px, py))
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
+            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
+            hole = r * 0.4
+            self.canvas.create_oval(x - hole, y - hole, x + hole, y + hole, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
@@ -7000,24 +7107,19 @@ class SysMLDiagramWindow(tk.Frame):
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
         elif obj.obj_type == "Operation":
-            radius = min(w, h)
-            self.drawing_helper._fill_gradient_circle(
-                self.canvas, x, y, radius, color
-            )
-            self.canvas.create_oval(
-                x - radius,
-                y - radius,
-                x + radius,
-                y + radius,
-                outline=outline,
-                fill="",
-            )
+            handle_w = w * 0.3
+            self._draw_gradient_rect(x - handle_w/2, y, x + handle_w/2, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(x - handle_w/2, y, x + handle_w/2, y + h, outline=outline, fill="")
+            head_r = w
+            self.canvas.create_arc(x - head_r, y - head_r, x + head_r, y + head_r, start=30, extent=300, style=tk.ARC, outline=outline, width=max(2, self.zoom))
         elif obj.obj_type == "Driving Function":
-            pts = [(x - w, y - h), (x + w, y), (x - w, y + h)]
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
+            r = min(w, h)
+            self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
+            self.canvas.create_oval(x - r, y - r, x + r, y + r, outline=outline, fill="")
+            inner = r * 0.4
+            self.canvas.create_oval(x - inner, y - inner, x + inner, y + inner, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
+            self.canvas.create_line(x - r, y, x + r, y, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(x, y - r, x, y + r, fill=outline, width=max(2, self.zoom))
         elif obj.obj_type in ("Software Component", "Component"):
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
@@ -7179,16 +7281,19 @@ class SysMLDiagramWindow(tk.Frame):
             )
         elif obj.obj_type == "Safety Compliance":
             pts = [
-                (x, y - h),
-                (x + w, y - h / 3),
-                (x + w * 0.6, y + h),
-                (x - w * 0.6, y + h),
-                (x - w, y - h / 3),
+                (x - w * 0.8, y - h * 0.7),
+                (x + w * 0.8, y - h * 0.7),
+                (x + w * 0.6, y + h * 0.1),
+                (x, y + h),
+                (x - w * 0.6, y + h * 0.1),
             ]
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
-            )
+            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
+            chk_start = (x - w * 0.4, y)
+            chk_mid = (x - w * 0.1, y + h * 0.3)
+            chk_end = (x + w * 0.5, y - h * 0.2)
+            self.canvas.create_line(*chk_start, *chk_mid, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(*chk_mid, *chk_end, fill=outline, width=max(2, self.zoom))
         elif obj.obj_type == "Incident":
             r = min(obj.width, obj.height) * self.zoom / 2
             pts = []
@@ -7258,25 +7363,67 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_line(x + w, y + h, x + w + off, y + h + off, fill=outline)
             self.canvas.create_line(x - w, y + h, x - w + off, y + h + off, fill=outline)
         elif obj.obj_type == "Hazard":
+            # Warning triangle with exclamation mark
             pts = [(x, y - h), (x + w, y + h), (x - w, y + h)]
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
-        elif obj.obj_type == "Risk Assessment":
-            pts = [(x, y - h), (x + w, y), (x, y + h), (x - w, y)]
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
+            mark_top = y - h * 0.2
+            mark_bottom = y + h * 0.5
+            self.canvas.create_line(
+                x,
+                mark_top,
+                x,
+                mark_bottom,
+                fill=outline,
+                width=max(2, self.zoom),
             )
+            dot_r = max(2, self.zoom * 1.5)
+            self.canvas.create_oval(
+                x - dot_r / 2,
+                mark_bottom + dot_r / 4,
+                x + dot_r / 2,
+                mark_bottom + dot_r * 1.25,
+                fill=outline,
+                outline=outline,
+            )
+        elif obj.obj_type == "Risk Assessment":
+            # Clipboard with a check mark
+            clip_h = min(10 * self.zoom, h * 0.3)
+            board_top = y - h + clip_h
+            self._draw_gradient_rect(x - w, board_top, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                board_top,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            clip_w = w * 0.6
+            self.canvas.create_rectangle(
+                x - clip_w,
+                y - h,
+                x + clip_w,
+                board_top,
+                outline=outline,
+                fill=color,
+            )
+            chk_start = (x - w * 0.6, y)
+            chk_mid = (x - w * 0.2, y + h * 0.4)
+            chk_end = (x + w * 0.6, y - h * 0.2)
+            self.canvas.create_line(*chk_start, *chk_mid, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(*chk_mid, *chk_end, fill=outline, width=max(2, self.zoom))
         elif obj.obj_type == "Safety Goal":
-            r = min(obj.width, obj.height) * self.zoom / 2
-            pts = []
-            for i in range(5):
-                angle = math.radians(72 * i - 90)
-                px = x + r * math.cos(angle)
-                py = y + r * math.sin(angle)
-                pts.append((px, py))
+            # Shield shape
+            pts = [
+                (x - w * 0.8, y - h * 0.7),
+                (x + w * 0.8, y - h * 0.7),
+                (x + w * 0.6, y + h * 0.1),
+                (x, y + h),
+                (x - w * 0.6, y + h * 0.1),
+            ]
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
@@ -7306,8 +7453,46 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
         elif obj.obj_type == "Security Threat":
-            self.canvas.create_line(x - w, y - h, x + w, y + h, fill=outline, width=2)
-            self.canvas.create_line(x - w, y + h, x + w, y - h, fill=outline, width=2)
+            # Simple bug silhouette to represent a threat
+            body_w = w * 0.6
+            body_h = h * 0.6
+            self.canvas.create_oval(
+                x - body_w,
+                y - body_h / 2,
+                x + body_w,
+                y + body_h / 2,
+                fill=color,
+                outline=outline,
+            )
+            head_r = min(w, h) * 0.25
+            self.canvas.create_oval(
+                x - head_r,
+                y - body_h / 2 - head_r * 1.2,
+                x + head_r,
+                y - body_h / 2 + head_r * 0.2,
+                fill=color,
+                outline=outline,
+            )
+            leg_y = [y - body_h / 4, y, y + body_h / 4]
+            leg_len = w * 0.9
+            for ly in leg_y:
+                self.canvas.create_line(x - body_w, ly, x - leg_len, ly, fill=outline)
+                self.canvas.create_line(x + body_w, ly, x + leg_len, ly, fill=outline)
+            # antennae
+            self.canvas.create_line(
+                x - head_r * 0.5,
+                y - body_h / 2 - head_r * 1.2,
+                x - head_r,
+                y - body_h / 2 - head_r * 1.8,
+                fill=outline,
+            )
+            self.canvas.create_line(
+                x + head_r * 0.5,
+                y - body_h / 2 - head_r * 1.2,
+                x + head_r,
+                y - body_h / 2 - head_r * 1.8,
+                fill=outline,
+            )
         elif obj.obj_type == "Use Case":
             radius = min(w, h)
             self.drawing_helper._fill_gradient_circle(
@@ -11900,18 +12085,22 @@ class ArchitectureManagerDialog(tk.Frame):
             "Database": self._create_icon("cylinder", style.get_color("Database")),
             "ANN": self._create_icon("neural", style.get_color("ANN")),
             "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
-            "Business Unit": self._create_icon("rect", style.get_color("Business Unit")),
+            "Business Unit": self._create_icon("department", style.get_color("Business Unit")),
             "Data": self._create_icon("circle", style.get_color("Data")),
             "Document": self._create_icon("document", style.get_color("Document")),
-            "Guideline": self._create_icon("document", style.get_color("Guideline")),
-            "Metric": self._create_icon("diamond", style.get_color("Metric")),
-            "Organization": self._create_icon("rect", style.get_color("Organization")),
-            "Policy": self._create_icon("document", style.get_color("Policy")),
-            "Principle": self._create_icon("triangle", style.get_color("Principle")),
+            "Guideline": self._create_icon("compass", style.get_color("Guideline")),
+            "Metric": self._create_icon("chart", style.get_color("Metric")),
+            "Organization": self._create_icon("building", style.get_color("Organization")),
+            "Policy": self._create_icon("scroll", style.get_color("Policy")),
+            "Principle": self._create_icon("scale", style.get_color("Principle")),
             "Procedure": self._create_icon("document", style.get_color("Procedure")),
             "Record": self._create_icon("circle", style.get_color("Record")),
             "Role": self._create_icon("circle", style.get_color("Role")),
-            "Standard": self._create_icon("document", style.get_color("Standard")),
+            "Standard": self._create_icon("ribbon", style.get_color("Standard")),
+            "Safety Compliance": self._create_icon("shield_check", style.get_color("Safety Compliance")),
+            "Process": self._create_icon("gear", style.get_color("Process")),
+            "Operation": self._create_icon("wrench", style.get_color("Operation")),
+            "Driving Function": self._create_icon("steering", style.get_color("Driving Function")),
         }
         self.default_diag_icon = self._create_icon("rect", "gray")
         self.default_elem_icon = self._create_icon("rect", style.get_color("Existing Element"))
