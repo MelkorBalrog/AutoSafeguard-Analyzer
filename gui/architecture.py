@@ -3636,10 +3636,11 @@ class SysMLDiagramWindow(tk.Frame):
             "Field Data": "cylinder",
             "Model": "document",
             "Lifecycle Phase": "folder",
-            "Hazard": "triangle",
-            "Risk Assessment": "diamond",
-            "Safety Goal": "pentagon",
-            "Security Threat": "cross",
+            # Use more descriptive icon shapes for governance elements
+            "Hazard": "hazard",
+            "Risk Assessment": "clipboard",
+            "Safety Goal": "shield",
+            "Security Threat": "bug",
             "Report": "document",
             "Safety Case": "document",
             "Work Product": "rect",
@@ -7258,25 +7259,67 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_line(x + w, y + h, x + w + off, y + h + off, fill=outline)
             self.canvas.create_line(x - w, y + h, x - w + off, y + h + off, fill=outline)
         elif obj.obj_type == "Hazard":
+            # Warning triangle with exclamation mark
             pts = [(x, y - h), (x + w, y + h), (x - w, y + h)]
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
-        elif obj.obj_type == "Risk Assessment":
-            pts = [(x, y - h), (x + w, y), (x, y + h), (x - w, y)]
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon(
-                [c for pt in pts for c in pt], outline=outline, fill=""
+            mark_top = y - h * 0.2
+            mark_bottom = y + h * 0.5
+            self.canvas.create_line(
+                x,
+                mark_top,
+                x,
+                mark_bottom,
+                fill=outline,
+                width=max(2, self.zoom),
             )
+            dot_r = max(2, self.zoom * 1.5)
+            self.canvas.create_oval(
+                x - dot_r / 2,
+                mark_bottom + dot_r / 4,
+                x + dot_r / 2,
+                mark_bottom + dot_r * 1.25,
+                fill=outline,
+                outline=outline,
+            )
+        elif obj.obj_type == "Risk Assessment":
+            # Clipboard with a check mark
+            clip_h = min(10 * self.zoom, h * 0.3)
+            board_top = y - h + clip_h
+            self._draw_gradient_rect(x - w, board_top, x + w, y + h, color, obj.obj_id)
+            self.canvas.create_rectangle(
+                x - w,
+                board_top,
+                x + w,
+                y + h,
+                outline=outline,
+                fill="",
+            )
+            clip_w = w * 0.6
+            self.canvas.create_rectangle(
+                x - clip_w,
+                y - h,
+                x + clip_w,
+                board_top,
+                outline=outline,
+                fill=color,
+            )
+            chk_start = (x - w * 0.6, y)
+            chk_mid = (x - w * 0.2, y + h * 0.4)
+            chk_end = (x + w * 0.6, y - h * 0.2)
+            self.canvas.create_line(*chk_start, *chk_mid, fill=outline, width=max(2, self.zoom))
+            self.canvas.create_line(*chk_mid, *chk_end, fill=outline, width=max(2, self.zoom))
         elif obj.obj_type == "Safety Goal":
-            r = min(obj.width, obj.height) * self.zoom / 2
-            pts = []
-            for i in range(5):
-                angle = math.radians(72 * i - 90)
-                px = x + r * math.cos(angle)
-                py = y + r * math.sin(angle)
-                pts.append((px, py))
+            # Shield shape
+            pts = [
+                (x - w * 0.8, y - h * 0.7),
+                (x + w * 0.8, y - h * 0.7),
+                (x + w * 0.6, y + h * 0.1),
+                (x, y + h),
+                (x - w * 0.6, y + h * 0.1),
+            ]
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
@@ -7306,8 +7349,46 @@ class SysMLDiagramWindow(tk.Frame):
                 outline=outline,
             )
         elif obj.obj_type == "Security Threat":
-            self.canvas.create_line(x - w, y - h, x + w, y + h, fill=outline, width=2)
-            self.canvas.create_line(x - w, y + h, x + w, y - h, fill=outline, width=2)
+            # Simple bug silhouette to represent a threat
+            body_w = w * 0.6
+            body_h = h * 0.6
+            self.canvas.create_oval(
+                x - body_w,
+                y - body_h / 2,
+                x + body_w,
+                y + body_h / 2,
+                fill=color,
+                outline=outline,
+            )
+            head_r = min(w, h) * 0.25
+            self.canvas.create_oval(
+                x - head_r,
+                y - body_h / 2 - head_r * 1.2,
+                x + head_r,
+                y - body_h / 2 + head_r * 0.2,
+                fill=color,
+                outline=outline,
+            )
+            leg_y = [y - body_h / 4, y, y + body_h / 4]
+            leg_len = w * 0.9
+            for ly in leg_y:
+                self.canvas.create_line(x - body_w, ly, x - leg_len, ly, fill=outline)
+                self.canvas.create_line(x + body_w, ly, x + leg_len, ly, fill=outline)
+            # antennae
+            self.canvas.create_line(
+                x - head_r * 0.5,
+                y - body_h / 2 - head_r * 1.2,
+                x - head_r,
+                y - body_h / 2 - head_r * 1.8,
+                fill=outline,
+            )
+            self.canvas.create_line(
+                x + head_r * 0.5,
+                y - body_h / 2 - head_r * 1.2,
+                x + head_r,
+                y - body_h / 2 - head_r * 1.8,
+                fill=outline,
+            )
         elif obj.obj_type == "Use Case":
             radius = min(w, h)
             self.drawing_helper._fill_gradient_circle(

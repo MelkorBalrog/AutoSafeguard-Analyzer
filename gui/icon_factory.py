@@ -123,6 +123,81 @@ def create_icon(
             img.put(outline, (mid + span, 2 + y))
         for x in range(2, size - 2):
             img.put(outline, (x, height + 2))
+    elif shape == "hazard":
+        mid = size // 2
+        height = size - 4
+        for y in range(height):
+            span = (y * mid) // height
+            img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+            img.put(outline, (mid - span, 2 + y))
+            img.put(outline, (mid + span, 2 + y))
+        for x in range(2, size - 2):
+            img.put(outline, (x, height + 2))
+        for y in range(5, height):
+            img.put(outline, (mid, y))
+        for dy in range(height + 1, height + 3):
+            img.put(outline, (mid, dy))
+    elif shape == "clipboard":
+        img.put(c, to=(2, 4, size - 2, size - 2))
+        for x in range(2, size - 2):
+            img.put(outline, (x, 4))
+            img.put(outline, (x, size - 2))
+        for y in range(4, size - 2):
+            img.put(outline, (2, y))
+            img.put(outline, (size - 2, y))
+        for x in range(4, size - 4):
+            img.put(c, (x, 2))
+            img.put(outline, (x, 2))
+            img.put(outline, (x, 4))
+        img.put(outline, (4, 2))
+        img.put(outline, (size - 5, 2))
+        for i in range(3):
+            img.put(outline, (5 + i, 9 + i))
+        for i in range(5):
+            img.put(outline, (8 + i, 11 - i))
+    elif shape == "shield":
+        mid = size // 2
+        height = size - 4
+        for y in range(height):
+            if y < 4:
+                span = mid - 1
+            else:
+                span = max(mid - (y - 3), 0)
+            img.put(c, to=(mid - span, 2 + y, mid + span + 1, 3 + y))
+            img.put(outline, (mid - span, 2 + y))
+            img.put(outline, (mid + span, 2 + y))
+        img.put(outline, (mid, size - 2))
+    elif shape == "bug":
+        mid = size // 2
+        body_top = 5
+        body_bottom = size - 3
+        rx = size // 2 - 3
+        ry = (body_bottom - body_top) // 2
+        cy = (body_top + body_bottom) // 2
+        for y in range(body_top, body_bottom):
+            for x in range(size):
+                norm = ((x - mid) ** 2) / (rx * rx) + ((y - cy) ** 2) / (ry * ry)
+                if norm <= 1:
+                    img.put(c, (x, y))
+                if 1 <= norm <= 1.2:
+                    img.put(outline, (x, y))
+        head_r = 3
+        head_cy = body_top - head_r + 1
+        for y in range(head_cy - head_r, head_cy + head_r + 1):
+            for x in range(mid - head_r, mid + head_r + 1):
+                dist = (x - mid) ** 2 + (y - head_cy) ** 2
+                if dist <= head_r * head_r:
+                    img.put(c, (x, y))
+                if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
+                    img.put(outline, (x, y))
+        for i, ly in enumerate([cy - 2, cy, cy + 2]):
+            for dx in range(3):
+                img.put(outline, (mid - rx - dx, ly + (dx % 2 - 1)))
+                img.put(outline, (mid + rx + dx, ly + (dx % 2 - 1)))
+        img.put(outline, (mid - 1, head_cy - head_r - 1))
+        img.put(outline, (mid - 2, head_cy - head_r - 2))
+        img.put(outline, (mid + 1, head_cy - head_r - 1))
+        img.put(outline, (mid + 2, head_cy - head_r - 2))
     elif shape == "cylinder":
         img.put(c, to=(2, 4, size - 2, size - 4))
         for x in range(2, size - 2):
