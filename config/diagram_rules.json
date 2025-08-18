@@ -261,6 +261,7 @@
     },
     "incident triage role subject": {
       "relations": [
+        "Responsible for",
         "Triage",
         "Develops"
       ],
@@ -277,6 +278,7 @@
     },
     "policy compliance role subject": {
       "relations": [
+        "Responsible for",
         "Constrains",
         "Produces"
       ],
@@ -293,6 +295,7 @@
     },
     "model validation role subject": {
       "relations": [
+        "Responsible for",
         "Validate",
         "Produces"
       ],
@@ -311,6 +314,7 @@
     },
     "hazard mitigation role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Mitigates",
         "Develops",
@@ -331,6 +335,7 @@
     },
     "safety goal verification role subject": {
       "relations": [
+        "Responsible for",
         "Mitigates",
         "Develops",
         "Verify",
@@ -350,6 +355,7 @@
     },
     "sotif scenario validation role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Develops",
         "Produces"
@@ -369,6 +375,7 @@
     },
     "cybersecurity threat mitigation role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Mitigates",
         "Plans",
@@ -389,6 +396,7 @@
     },
     "incident validation role subject": {
       "relations": [
+        "Responsible for",
         "Triage",
         "Develops",
         "Validate",
@@ -408,6 +416,7 @@
     },
     "product lifecycle safety role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Produces"
@@ -426,6 +435,7 @@
     },
     "post deployment monitoring role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Produces"
@@ -445,6 +455,7 @@
     },
     "decommissioning validation role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Validate",
@@ -464,6 +475,7 @@
     },
     "safety audit role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Audits",
         "Produces"
@@ -482,6 +494,7 @@
     },
     "security audit role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Audits",
         "Produces"
@@ -500,6 +513,7 @@
     },
     "safety & security case review role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Audits",
         "Reviews"
@@ -519,6 +533,7 @@
     },
     "threat analysis validation role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Mitigates",
         "Validate",
@@ -539,6 +554,7 @@
     },
     "functional safety release role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Verify",
@@ -559,6 +575,7 @@
     },
     "cybersecurity release role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Verify",
@@ -580,6 +597,7 @@
     },
     "hazard verification role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Mitigates",
         "Develops",
@@ -602,6 +620,7 @@
     },
     "cybersecurity threat verification role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Mitigates",
         "Develops",
@@ -623,6 +642,7 @@
     },
     "sotif scenario verification role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Develops",
         "Verify",
@@ -643,6 +663,7 @@
     },
     "deployment readiness role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Verify",
@@ -663,6 +684,7 @@
     },
     "maintenance validation role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Validate",
@@ -683,6 +705,7 @@
     },
     "risk-based testing role subject": {
       "relations": [
+        "Responsible for",
         "Assesses",
         "Develops",
         "Verify",
@@ -718,6 +741,7 @@
     },
     "governance oversight role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Audits",
         "Produces"
@@ -737,6 +761,7 @@
     },
     "lifecycle governance review role subject": {
       "relations": [
+        "Responsible for",
         "Plans",
         "Develops",
         "Validate",
@@ -842,7 +867,7 @@
       "Verify": {"Test Suite": ["Plan"]},
       "Reviews": {"Audit Report": ["Safety & Security Case"]},
       "Audits": {"Process": ["Report"]},
-      "Responsible for": {"Role": ["Process", "Activity", "Task"]},
+      "Responsible for": {"Role": ["Process", "Activity", "Task", "Field Data", "Hazard", "Model", "Plan", "Policy", "Risk Assessment", "Safety Issue", "Security Threat", "Test Suite"]},
     },
 
   // Connection validation rules per diagram type and connection kind
