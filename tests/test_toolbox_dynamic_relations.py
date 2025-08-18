@@ -54,8 +54,15 @@ def test_cross_category_relations_surface():
 def test_governance_core_relations_and_externals(tmp_path, monkeypatch):
     defs = architecture._toolbox_defs()
     core = defs["Governance Core"]
-    assert {"Work Product", "Lifecycle Phase"} <= set(core["nodes"])
-    assert "Re-use" in core["relations"]
+    # Governance core toolbox hides Work Product and Lifecycle Phase buttons
+    # but should still expose all relationships between them.
+    assert core["nodes"] == []
+    assert {
+        "Propagate",
+        "Propagate by Review",
+        "Propagate by Approval",
+        "Re-use",
+    } <= set(core["relations"])
     orig_path = architecture._CONFIG_PATH
     cfg = load_json_with_comments(orig_path)
     new_cfg = json.loads(json.dumps(cfg))
