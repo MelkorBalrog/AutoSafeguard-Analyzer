@@ -85,16 +85,16 @@ def _apply_pattern(
 
     def repl(match: re.Match[str]) -> str:
         key = match.group(1)
-        if key == "source_id" or key == src_type:
+        if key in {"source_id", "object0_id"} or key == src_type:
             variables[:] = [v for v in variables if v != key]
             return src
-        if key == "source_class":
+        if key in {"source_class", "object0_class"}:
             variables[:] = [v for v in variables if v != key]
             return src_type
-        if key == "target_id" or key == dst_type:
+        if key in {"target_id", "object1_id"} or key == dst_type:
             variables[:] = [v for v in variables if v != key]
             return dst
-        if key == "target_class":
+        if key in {"target_class", "object1_class"}:
             variables[:] = [v for v in variables if v != key]
             return dst_type
         if key == "condition":
