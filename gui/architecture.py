@@ -10488,7 +10488,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             "Boundary": ["System Boundary"],
         }
         tools = [t for group in tool_groups.values() for t in group]
-        rel_tools = ["Flow"]
+        # Flow relationships are handled in the governance toolbox rather than
+        # the primary toolbox, so ``relation_tools`` is empty here.
+        rel_tools: list[str] = []
         try:
             super().__init__(
                 master,
@@ -10732,6 +10734,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "Satisfied by",
                 "Derived from",
             ]
+            relationships = ttk.LabelFrame(
+                governance_panel, text="Relationships (relationships)"
+            )
+            relationships.pack(fill=tk.X, padx=2, pady=2)
+            # Flow relationships are grouped with other governance connections on
+            # the right-hand panel instead of the main toolbox.
+            ttk.Button(
+                relationships,
+                text="Flow",
+                image=self._icon_for("Flow"),
+                compound=tk.LEFT,
+                command=lambda t="Flow": self.select_tool(t),
+            ).pack(fill=tk.X, padx=2, pady=2)
             wp_rel = ttk.LabelFrame(
                 governance_panel, text="Work Product Links (relationships)"
             )
