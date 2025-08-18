@@ -10755,18 +10755,19 @@ class FaultTreeApp:
                     )
 
             root_pkg = getattr(repo, "root_package", None)
-            if root_pkg is not None:
-                add_pkg(root_pkg.elem_id, arch_root)
-            else:
-                for diag in self.arch_diagrams:
-                    icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
-                    tree.insert(
-                        arch_root,
-                        "end",
-                        text=diag.name or diag.diag_id,
-                        tags=("arch", diag.diag_id),
-                        image=icon,
-                    )
+            if arch_root is not None:
+                if root_pkg is not None:
+                    add_pkg(root_pkg.elem_id, arch_root)
+                else:
+                    for diag in self.arch_diagrams:
+                        icon = getattr(self, "diagram_icons", {}).get(diag.diag_type)
+                        tree.insert(
+                            arch_root,
+                            "end",
+                            text=diag.name or diag.diag_id,
+                            tags=("arch", diag.diag_id),
+                            image=icon,
+                        )
 
             # --- Safety & Security Concept and Requirements Tools ---
             if "Safety & Security Concept" in enabled:
