@@ -53,15 +53,16 @@ def create_icon(
                     img.put(c, (x, y))
                 if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
                     img.put(outline, (x, y))
+        # Draw limbs in black for better visibility regardless of the head color
         for y in range(head_cy + head_r, size - 3):
-            img.put(c, (cx, y))
+            img.put(outline, (cx, y))
         arm_y = head_cy + head_r + 2
         for x in range(cx - 4, cx + 5):
-            img.put(c, (x, arm_y))
+            img.put(outline, (x, arm_y))
         leg_start = size - 4
         for i in range(4):
-            img.put(c, (cx - i, leg_start + i))
-            img.put(c, (cx + i, leg_start + i))
+            img.put(outline, (cx - i, leg_start + i))
+            img.put(outline, (cx + i, leg_start + i))
     elif shape == "diamond":
         mid = size // 2
         for y in range(2, size - 2):
@@ -769,15 +770,16 @@ def create_icon(
                     img.put(c, (x, y))
                 if head_r * head_r <= dist <= (head_r + 1) * (head_r + 1):
                     img.put(outline, (x, y))
+        # Draw stick figure limbs in black for clearer contrast
         for y in range(head_cy + head_r, size - 3):
-            img.put(c, (cx, y))
+            img.put(outline, (cx, y))
         arm_y = head_cy + head_r + 1
         for x in range(cx - 2, cx + 3):
-            img.put(c, (x, arm_y))
+            img.put(outline, (x, arm_y))
         leg_start = size - 4
         for i in range(3):
-            img.put(c, (cx - i, leg_start + i))
-            img.put(c, (cx + i, leg_start + i))
+            img.put(outline, (cx - i, leg_start + i))
+            img.put(outline, (cx + i, leg_start + i))
         rx = 4
         ry = 3
         ecx = size - 5

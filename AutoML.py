@@ -2231,24 +2231,24 @@ class FaultTreeApp:
         self.style.configure(
             "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
         )
-        # icons used across tree views
-        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        # style-aware icons used across tree views
+        style_mgr = StyleManager.get_instance()
+
+        def _color(name: str, fallback: str = "black") -> str:
+            c = style_mgr.get_color(name)
+            return fallback if c == "#FFFFFF" else c
+
+        self.pkg_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
         self.gsn_module_icon = self.pkg_icon
         self.gsn_diagram_icon = self._create_icon("rect", "#4682b4")
-        # small icons for diagram types shown in the explorer
-        # an icon for packages is also required when building the
-        # architecture tree; previously this attribute was missing which
-        # resulted in `AttributeError` when refreshing views.  Creating a
-        # dedicated package icon here keeps it available throughout the
-        # application lifecycle.
-        self.pkg_icon = self._create_icon("folder", "#b8860b")
+        # small icons for diagram types shown in explorers
         self.diagram_icons = {
-            "Use Case Diagram": self._create_icon("ellipse", "blue"),
-            "Activity Diagram": self._create_icon("arrow", "green"),
-            "Governance Diagram": self._create_icon("arrow", "green"),
-            "Block Diagram": self._create_icon("rect", "orange"),
-            "Internal Block Diagram": self._create_icon("nested", "purple"),
-            "Control Flow Diagram": self._create_icon("arrow", "red"),
+            "Use Case Diagram": self._create_icon("usecase_diag", _color("Use Case Diagram", "blue")),
+            "Activity Diagram": self._create_icon("activity_diag", _color("Activity Diagram", "green")),
+            "Governance Diagram": self._create_icon("activity_diag", _color("Governance Diagram", "green")),
+            "Block Diagram": self._create_icon("block_diag", _color("Block Diagram", "orange")),
+            "Internal Block Diagram": self._create_icon("ibd_diag", _color("Internal Block Diagram", "purple")),
+            "Control Flow Diagram": self._create_icon("activity_diag", _color("Control Flow Diagram", "red")),
         }
         self.clipboard_node = None
         self.cut_mode = False
