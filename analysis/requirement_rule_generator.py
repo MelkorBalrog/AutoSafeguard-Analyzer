@@ -323,15 +323,16 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
     rr = rules.get("requirement_rules", {})
     if isinstance(rr, dict):
         req_rules = {k.lower(): v for k, v in rr.items()}
-
-    # Safety & AI -------------------------------------------------------------
-    sa_rules = rules.get("safety_ai_relation_rules", {}) or {}
-    if isinstance(sa_rules, dict):
-        for rel_label, src_map in sa_rules.items():
+    conn_rules = rules.get("connection_rules", {}) or {}
+    gov_root = conn_rules.get("Governance Diagram", {}) or {}
+    ai_nodes = set(rules.get("ai_nodes", []))
+    if isinstance(gov_root, dict):
+        for relation_label, src_map in gov_root.items():
             if not isinstance(src_map, dict):
                 continue
             for src_type, tgt_list in (src_map or {}).items():
                 for tgt_type in (tgt_list or []):
+                    is_ai = src_type in ai_nodes or tgt_type in ai_nodes
                     (
                         subj,
                         act,
@@ -339,84 +340,28 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                         tmpl_override,
                         var_override,
                     ) = rule_info(
-                        req_rules, rel_label, "Engineering team", rel_label.lower()
-                    )
-                    base_id = f"SA-{rel_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
-                    trigger = make_trigger("Safety&AI", src_type, rel_label, tgt_type)
-                    variants = []
-                    if tmpl_override:
-                        variants.append((tmpl_override, var_override or [], base_id))
-                    else:
-                        variants.append(
-                            (
-                                make_sa_template(subj, act, tgt_count),
-                                make_sa_variables_base(tgt_count),
-                                base_id,
-                            )
-                        )
-                        variants.append(
-                            (
-                                make_sa_template(
-                                    "<subject_id> (<subject_class>)",
-                                    act,
-                                    tgt_count,
-                                    subject_is_object0=True,
-                                ),
-                                make_sa_variables_base(tgt_count, include_subject=True),
-                                base_id + "-ROLE",
-                            )
-                        )
-                    notes = "Auto-generated from diagram rules (Safety&AI)."
-                    for template, variables, pid_base in variants:
-                        for suf, need_cond, need_const in SUFFIXES:
-                            pid = pid_base + suf
-                            t = (
-                                build_cond_const_template(template)
-                                if (need_cond and need_const)
-                                else build_cond_template(template)
-                                if need_cond
-                                else build_const_template(template)
-                                if need_const
-                                else normalize_base_template(template)
-                            )
-                            vs = ensure_variables(variables, need_cond, need_const)
-                            out.append(
-                                {
-                                    "Pattern ID": pid,
-                                    "Trigger": trigger,
-                                    "Template": t,
-                                    "Variables": vs,
-                                    "Notes": notes,
-                                }
-                            )
-
-    # Governance -------------------------------------------------------------
-    conn_rules = rules.get("connection_rules", {}) or {}
-    gov_root = conn_rules.get("Governance Diagram", {}) or {}
-    if isinstance(gov_root, dict):
-        for relation_label, src_map in gov_root.items():
-            if not isinstance(src_map, dict):
-                continue
-            for src_type, tgt_list in (src_map or {}).items():
-                for tgt_type in (tgt_list or []):
-                    (
-                        _subj,
-                        _act,
-                        tgt_count,
-                        tmpl_override,
-                        var_override,
-                    ) = rule_info(
                         req_rules, relation_label, "Engineering team", relation_label.lower()
                     )
-                    if tmpl_override:
-                        template = tmpl_override
-                        variables = var_override or []
+                    if is_ai:
+                        base_id = f"SA-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
+                        trigger = make_trigger("Safety&AI", src_type, relation_label, tgt_type)
+                        if tmpl_override:
+                            template = tmpl_override
+                            variables = var_override or []
+                        else:
+                            template = make_sa_template(subj, act, tgt_count)
+                            variables = make_sa_variables_base(tgt_count)
+                        notes = "Auto-generated from diagram rules (Safety&AI)."
                     else:
-                        template = gov_template_for_relation(relation_label, tgt_count)
-                        variables = make_gov_variables_base()
-                    base_id = f"GOV-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
-                    trigger = make_trigger("Gov", src_type, relation_label, tgt_type)
-                    notes = "Auto-generated from diagram rules (Governance)."
+                        if tmpl_override:
+                            template = tmpl_override
+                            variables = var_override or []
+                        else:
+                            template = gov_template_for_relation(relation_label, tgt_count)
+                            variables = make_gov_variables_base()
+                        base_id = f"GOV-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
+                        trigger = make_trigger("Gov", src_type, relation_label, tgt_type)
+                        notes = "Auto-generated from diagram rules (Governance)."
                     for suf, need_cond, need_const in SUFFIXES:
                         pid = base_id + suf
                         t = (
@@ -441,6 +386,7 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
 
     # Sequence rules --------------------------------------------------------
     seq_rules = rules.get("requirement_sequences", {}) or {}
+    sa_rules = gov_root
     if isinstance(seq_rules, dict) and isinstance(sa_rules, dict):
         for seq_label, info in seq_rules.items():
             rel_chain = info.get("relations") or []

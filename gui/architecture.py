@@ -102,7 +102,7 @@ def _normalize_plan_types(items: list[str]) -> list[str]:
 GOV_ELEMENT_NODES = _normalize_plan_types(
     _CONFIG.get("governance_element_nodes", [])
 )
-GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
 
 # Create Safety & AI Lifecycle toolbox frame
 # Create toolbox for additional governance elements grouped by class
@@ -186,15 +186,6 @@ GOV_CORE_NODES = [n for n in ["Work Product", "Lifecycle Phase"] if n in GOVERNA
 for n in GOV_CORE_NODES:
     NODE_TO_GROUP[n] = "Governance Core"
 
-# Directed relationship rules for connections between Safety & AI elements.
-# Each entry maps a connection type to allowed source and target element
-# combinations. Rules are only enforced when both endpoints are Safety & AI
-# nodes.
-SAFETY_AI_RELATION_RULES: dict[str, dict[str, set[str]]] = {
-    conn: {src: set(dests) for src, dests in srcs.items()}
-    for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
-}
-
 # Basic source/target constraints per diagram and connection type
 CONNECTION_RULES: dict[str, dict[str, dict[str, set[str]]]] = {
     diag: {
@@ -233,12 +224,6 @@ def _relations_for(nodes: list[str]) -> list[str]:
             if src in node_set and node_set.intersection(dests):
                 rels.add(rel)
 
-    # Apply the same filtering to Safety & AI specific rules.
-    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
-        for src, dests in srcs.items():
-            if src in node_set and node_set.intersection(dests):
-                rels.add(rel)
-
     return sorted(rels)
 
 
@@ -260,16 +245,6 @@ def _external_relations_for(nodes: list[str]) -> dict[str, dict[str, list[str]]]
 
     gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
     for rel, srcs in gov_rules.items():
-        for src, dests in srcs.items():
-            src_group = NODE_TO_GROUP.get(src)
-            for dest in dests:
-                dest_group = NODE_TO_GROUP.get(dest)
-                if src in node_set and dest not in node_set and dest_group:
-                    add(dest_group, dest, rel)
-                elif dest in node_set and src not in node_set and src_group:
-                    add(src_group, src, rel)
-
-    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
         for src, dests in srcs.items():
             src_group = NODE_TO_GROUP.get(src)
             for dest in dests:
@@ -558,21 +533,6 @@ def _enforce_connection_rules() -> None:
                 targets = rules.get(src_type)
                 if not targets or dst_type not in targets:
                     valid = False
-            elif conn_type in SAFETY_AI_RELATION_RULES:
-                if (
-                    src_type not in SAFETY_AI_NODE_TYPES
-                    and src_type not in GOVERNANCE_NODE_TYPES
-                ) or (
-                    dst_type not in SAFETY_AI_NODE_TYPES
-                    and dst_type not in GOVERNANCE_NODE_TYPES
-                ):
-                    valid = False
-                else:
-                    rule = SAFETY_AI_RELATION_RULES.get(conn_type)
-                    if rule and src_type in SAFETY_AI_NODE_TYPES:
-                        targets = rule.get(src_type)
-                        if not targets or dst_type not in targets:
-                            valid = False
             if valid:
                 new_conns.append(conn)
             else:
@@ -592,7 +552,7 @@ def reload_config() -> None:
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
     global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
-    global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
+    global CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
     global NODE_TO_GROUP, GOV_CORE_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -603,7 +563,7 @@ def reload_config() -> None:
     GOV_ELEMENT_NODES = _normalize_plan_types(
         _CONFIG.get("governance_element_nodes", [])
     )
-    GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+    GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
     GOVERNANCE_NODE_TYPES = set(
         _normalize_plan_types(_CONFIG.get("governance_node_types", []))
@@ -618,10 +578,6 @@ def reload_config() -> None:
     GOV_CORE_NODES = [n for n in ["Work Product", "Lifecycle Phase"] if n in GOVERNANCE_NODE_TYPES]
     for n in GOV_CORE_NODES:
         NODE_TO_GROUP[n] = "Governance Core"
-    SAFETY_AI_RELATION_RULES = {
-        conn: {src: set(dests) for src, dests in srcs.items()}
-        for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
-    }
     CONNECTION_RULES = {
         diag: {
             conn: {src: set(dests) for src, dests in srcs.items()}
@@ -3971,7 +3927,7 @@ class SysMLDiagramWindow(tk.Frame):
                     return False, (
                         "Safety & AI relationships must connect Safety & AI and/or Governance elements"
                     )
-                rule = SAFETY_AI_RELATION_RULES.get(conn_type)
+                rule = CONNECTION_RULES.get("Governance Diagram", {}).get(conn_type)
                 if rule and src.obj_type in SAFETY_AI_NODE_TYPES:
                     targets = rule.get(src.obj_type)
                     if not targets or dst.obj_type not in targets:

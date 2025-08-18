@@ -53,7 +53,6 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
         "arch_diagram_types",
         "governance_node_types",
         "governance_element_nodes",
-        "governance_element_relations",
         "gate_node_types",
         "guard_nodes",
     ]
@@ -149,20 +148,6 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
             if role not in allowed:
                 raise ValueError(
                     f"node_roles[{node}] has invalid role '{role}'"
-                )
-
-    if "safety_ai_relation_rules" in data:
-        sar = data["safety_ai_relation_rules"]
-        if not isinstance(sar, dict):
-            raise ValueError("safety_ai_relation_rules must be an object")
-        for rel, srcs in sar.items():
-            if not isinstance(srcs, dict):
-                raise ValueError(
-                    f"safety_ai_relation_rules[{rel}] must be an object"
-                )
-            for src, dests in srcs.items():
-                _ensure_list_of_strings(
-                    dests, f"safety_ai_relation_rules[{rel}][{src}]"
                 )
 
     if "connection_rules" in data:
@@ -370,7 +355,19 @@ def load_json_with_comments(path: str | Path) -> Any:
 def load_diagram_rules(path: str | Path) -> dict[str, Any]:
     """Load and validate the diagram rules configuration file."""
     data = load_json_with_comments(path)
-    return validate_diagram_rules(data)
+    data = validate_diagram_rules(data)
+
+    gov_rules = data.get("connection_rules", {}).get("Governance Diagram", {})
+
+    ai_nodes = set(data.get("ai_nodes", []))
+    gov_nodes = set(data.get("governance_element_nodes", []))
+    all_nodes = ai_nodes | gov_nodes
+
+    for mapping in gov_rules.values():
+        for node in all_nodes:
+            mapping.setdefault(node, [])
+
+    return data
 
 
 def load_requirement_patterns(path: str | Path) -> list[dict[str, Any]]:

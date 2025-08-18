@@ -1,49 +1,3102 @@
 {
-  /*
-    Configuration format overview:
-    - "ai_nodes": ["Type", ...] – node types available in the Safety & AI toolbox
-    - "ai_relations": ["Label", ...] – relation labels available in the Safety & AI toolbox and treated as Safety & AI links
-    - "arch_diagram_types": ["Type", ...] – diagram types considered part of the generic "Architecture Diagram" work product
-    - "governance_node_types": ["Type", ...] – node types available in the governance toolbox
-    - "governance_element_nodes": ["Type", ...] – node types shown in the Governance Elements toolbox
-    - "governance_element_relations": ["Label", ...] – relation labels for the Governance Elements toolbox
-    - "gate_node_types": ["Type", ...] – FMEDA/Fault tree gate node types
-    - "requirement_rules": { "label": {"action": "verb", "subject": "default subject", "constraint": true|false } }
-    - "node_roles": { "Node Type": "subject|action|condition|constraint|object" } – default requirement role per node type
-    - "safety_ai_relation_rules": { "Relation": { "Source": ["Target", ...] } } – allowed Safety & AI relationships
-    - "connection_rules": { "Diagram": { "Connection": { "Source": ["Target", ...] } } } – per-diagram connection validation rules
-    - "node_connection_limits": { "Node Type": max_connections } – maximum number of outgoing connections
-    - "guard_nodes": ["Node Type", ...] – nodes that require guard expressions on outgoing flows
-  */
-
-  // Types shown in the Safety & AI lifecycle toolbox
   "ai_nodes": [
     "AI Database",
     "ANN",
     "Data acquisition"
   ],
-
-  // Relation labels treated as Safety & AI links
   "ai_relations": [
-    "Annotation",
-    "Synthesis",
-    "Augmentation",
-    "Acquisition",
-    "Labeling",
-    "Field risk evaluation",
-    "Field data collection",
-    "AI training",
     "AI re-training",
+    "AI training",
+    "Acquisition",
+    "Annotation",
+    "Approves",
+    "Assesses",
+    "Audits",
+    "Augmentation",
+    "Authorizes",
+    "Communication Path",
+    "Complies with",
+    "Constrained by",
+    "Constrains",
+    "Consumes",
     "Curation",
-    "Ingestion",
-    "Model evaluation",
-    "Tune",
+    "Delivers",
+    "Develops",
+    "Establish",
+    "Executes",
+    "Extend",
+    "Field data collection",
+    "Field risk evaluation",
+    "Generalize",
     "Hyperparameter Validation",
+    "Implement",
+    "Improve",
+    "Ingestion",
+    "Inspect",
+    "Labeling",
+    "Manufacture",
+    "Mitigates",
+    "Model evaluation",
     "Monitoring",
-    "Complies with"
+    "Monitors",
+    "Operate",
+    "Performs",
+    "Plans",
+    "Produces",
+    "Responsible for",
+    "Reviews",
+    "Synthesis",
+    "Triage",
+    "Tune",
+    "Uses",
+    "Validate",
+    "Verify"
   ],
-
-  // Types shown in the Governance Elements toolbox
+  "arch_diagram_types": [
+    "Use Case Diagram",
+    "Activity Diagram",
+    "Block Diagram",
+    "Internal Block Diagram"
+  ],
+  "connection_rules": {
+    "Activity Diagram": {
+      "Flow": {
+        "Action": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge",
+          "Fork",
+          "Join",
+          "Final"
+        ],
+        "CallBehaviorAction": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge",
+          "Fork",
+          "Join",
+          "Final"
+        ],
+        "Decision": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge",
+          "Fork",
+          "Join",
+          "Final"
+        ],
+        "Final": [],
+        "Fork": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge",
+          "Fork",
+          "Join"
+        ],
+        "Initial": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge",
+          "Fork",
+          "Join"
+        ],
+        "Join": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Merge"
+        ],
+        "Merge": [
+          "Action",
+          "CallBehaviorAction",
+          "Decision",
+          "Fork",
+          "Join"
+        ]
+      }
+    },
+    "Block Diagram": {
+      "Aggregation": {
+        "Block": [
+          "Block"
+        ]
+      },
+      "Association": {
+        "Block": [
+          "Block"
+        ]
+      },
+      "Composite Aggregation": {
+        "Block": [
+          "Block"
+        ]
+      },
+      "Generalization": {
+        "Block": [
+          "Block"
+        ]
+      }
+    },
+    "Governance Diagram": {
+      "Approves": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Document",
+          "Policy",
+          "Procedure",
+          "Record"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Document",
+          "Policy",
+          "Procedure",
+          "Record"
+        ],
+        "ANN": [
+          "Document",
+          "Policy",
+          "Procedure",
+          "Record"
+        ],
+        "Data acquisition": [
+          "Document",
+          "Policy",
+          "Procedure",
+          "Record"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Audits": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Report"
+        ],
+        "Record": [],
+        "Role": [
+          "Procedure",
+          "Process",
+          "Record"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Procedure",
+          "Process",
+          "Record",
+          "Report"
+        ],
+        "ANN": [
+          "Procedure",
+          "Process",
+          "Record",
+          "Report"
+        ],
+        "Data acquisition": [
+          "Procedure",
+          "Process",
+          "Record",
+          "Report"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Authorizes": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [
+          "Policy",
+          "Procedure",
+          "Process"
+        ],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Policy",
+          "Procedure"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Policy",
+          "Procedure",
+          "Process"
+        ],
+        "ANN": [
+          "Policy",
+          "Procedure",
+          "Process"
+        ],
+        "Data acquisition": [
+          "Policy",
+          "Procedure",
+          "Process"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Communication Path": {
+        "Activity": [],
+        "Business Unit": [
+          "Business Unit"
+        ],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [
+          "Business Unit",
+          "Organization"
+        ],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Business Unit",
+          "Organization",
+          "Role"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Business Unit",
+          "Organization",
+          "Role"
+        ],
+        "ANN": [
+          "Business Unit",
+          "Organization",
+          "Role"
+        ],
+        "Data acquisition": [
+          "Business Unit",
+          "Organization",
+          "Role"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Constrained by": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
+        "ANN": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
+        "Data acquisition": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Consumes": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Data",
+          "Record"
+        ],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Data",
+          "Record"
+        ],
+        "ANN": [
+          "Data",
+          "Record"
+        ],
+        "Data acquisition": [
+          "Data",
+          "Record"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Curation": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Data"
+        ],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "AI Database"
+        ],
+        "ANN": [
+          "AI Database",
+          "Data"
+        ],
+        "Data acquisition": [
+          "AI Database",
+          "Data"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Delivers": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Document",
+          "Record"
+        ],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Document",
+          "Record"
+        ],
+        "ANN": [
+          "Document",
+          "Record"
+        ],
+        "Data acquisition": [
+          "Document",
+          "Record"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Derived from": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Executes": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Procedure",
+          "Process"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Procedure",
+          "Process"
+        ],
+        "ANN": [
+          "Procedure",
+          "Process"
+        ],
+        "Data acquisition": [
+          "Procedure",
+          "Process"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Extend": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [
+          "Policy"
+        ],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [
+          "Standard"
+        ],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Policy",
+          "Standard"
+        ],
+        "ANN": [
+          "Policy",
+          "Standard"
+        ],
+        "Data acquisition": [
+          "Policy",
+          "Standard"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Flow": {
+        "Action": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Merge"
+        ],
+        "Decision": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Lifecycle Phase",
+          "Merge"
+        ],
+        "Final": [],
+        "Initial": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Merge"
+        ],
+        "Lifecycle Phase": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Merge"
+        ],
+        "Merge": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Merge"
+        ],
+        "Data acquisition": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Lifecycle Phase",
+          "Merge"
+        ],
+        "AI Database": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Lifecycle Phase",
+          "Merge"
+        ],
+        "ANN": [
+          "AI Database",
+          "ANN",
+          "Action",
+          "Data acquisition",
+          "Decision",
+          "Final",
+          "Lifecycle Phase",
+          "Merge"
+        ],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Policy": [],
+        "Safety Compliance": [],
+        "Data": [],
+        "Role": [],
+        "Procedure": [],
+        "Software Component": [],
+        "Manufacturing Process": [],
+        "Security Threat": [],
+        "Risk Assessment": [],
+        "Report": [],
+        "Guideline": [],
+        "Principle": [],
+        "Safety Goal": [],
+        "Standard": [],
+        "Fleet": [],
+        "Metric": [],
+        "Record": [],
+        "Business Unit": [],
+        "System": [],
+        "Hazard": [],
+        "Incident": [],
+        "Plan": [],
+        "Model": [],
+        "Process": [],
+        "Safety Issue": [],
+        "Field Data": [],
+        "Work Product": [],
+        "CallBehaviorAction": [],
+        "Driving Function": [],
+        "Test Suite": [],
+        "Document": [],
+        "Task": [],
+        "Operation": [],
+        "Vehicle": [],
+        "Organization": [],
+        "Component": []
+      },
+      "Generalize": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [
+          "Policy"
+        ],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [
+          "Standard"
+        ],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Policy",
+          "Standard"
+        ],
+        "ANN": [
+          "Policy",
+          "Standard"
+        ],
+        "Data acquisition": [
+          "Policy",
+          "Standard"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Monitors": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Activity",
+          "Metric",
+          "Process"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Activity",
+          "Metric",
+          "Process"
+        ],
+        "ANN": [
+          "Activity",
+          "Metric",
+          "Process"
+        ],
+        "Data acquisition": [
+          "Activity",
+          "Metric",
+          "Process"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Performs": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Activity",
+          "Procedure",
+          "Task"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Activity",
+          "Procedure",
+          "Task"
+        ],
+        "ANN": [
+          "Activity",
+          "Procedure",
+          "Task"
+        ],
+        "Data acquisition": [
+          "Activity",
+          "Procedure",
+          "Task"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Produces": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [
+          "Document"
+        ],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [
+          "Document"
+        ],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "ANN": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Data acquisition": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Report": [
+          "Document"
+        ],
+        "Risk Assessment": [],
+        "Safety & Security Case": [
+          "Document"
+        ],
+        "System Boundary": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Propagate": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Propagate by Approval": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Propagate by Review": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Re-use": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [
+          "Lifecycle Phase"
+        ],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Lifecycle Phase"
+        ],
+        "AI Database": [
+          "Lifecycle Phase"
+        ],
+        "ANN": [
+          "Lifecycle Phase"
+        ],
+        "Data acquisition": [
+          "Lifecycle Phase"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Responsible for": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Activity",
+          "Process",
+          "Task"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Activity",
+          "Process",
+          "Task"
+        ],
+        "ANN": [
+          "Activity",
+          "Process",
+          "Task"
+        ],
+        "Data acquisition": [
+          "Activity",
+          "Process",
+          "Task"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Satisfied by": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Trace": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Used By": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Used after Approval": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Used after Review": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [
+          "Work Product"
+        ],
+        "AI Database": [
+          "Work Product"
+        ],
+        "ANN": [
+          "Work Product"
+        ],
+        "Data acquisition": [
+          "Work Product"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "Uses": {
+        "Activity": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Role": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "Work Product": [],
+        "AI Database": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "ANN": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Data acquisition": [
+          "Data",
+          "Document",
+          "Record"
+        ],
+        "Report": [],
+        "Risk Assessment": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "CallBehaviorAction": []
+      },
+      "AI re-training": {
+        "AI Database": [
+          "ANN"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "AI training": {
+        "AI Database": [
+          "ANN"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Acquisition": {
+        "AI Database": [
+          "Data acquisition"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Annotation": {
+        "AI Database": [],
+        "ANN": [
+          "AI Database"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Assesses": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [
+          "Risk Assessment"
+        ],
+        "Fleet": [],
+        "Guideline": [],
+        "Hazard": [
+          "Risk Assessment"
+        ],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Security Threat": [
+          "Risk Assessment"
+        ],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Augmentation": {
+        "AI Database": [],
+        "ANN": [
+          "AI Database"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Complies with": {
+        "AI Database": [
+          "Policy"
+        ],
+        "ANN": [
+          "Policy"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Constrains": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [
+          "Process"
+        ],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Develops": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [
+          "Test Suite"
+        ],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [
+          "Test Suite"
+        ],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [
+          "Test Suite"
+        ],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [
+          "Test Suite"
+        ],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Goal": [
+          "Test Suite"
+        ],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Field data collection": {
+        "AI Database": [
+          "Data acquisition",
+          "Task"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Field risk evaluation": {
+        "AI Database": [
+          "Data acquisition"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Ingestion": {
+        "AI Database": [
+          "AI Database"
+        ],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Labeling": {
+        "AI Database": [],
+        "ANN": [
+          "AI Database"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Mitigates": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [
+          "Plan",
+          "Safety Goal"
+        ],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Model evaluation": {
+        "AI Database": [],
+        "ANN": [
+          "AI Database"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Monitoring": {
+        "AI Database": [],
+        "ANN": [
+          "Operation"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Plans": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [
+          "Process"
+        ],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Reviews": {
+        "AI Database": [],
+        "ANN": [],
+        "Audit Report": [
+          "Safety & Security Case"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Synthesis": {
+        "AI Database": [],
+        "ANN": [
+          "AI Database"
+        ],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Triage": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [
+          "Field Data"
+        ],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Validate": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [
+          "Test Suite"
+        ],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [
+          "Report"
+        ],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [
+          "Report"
+        ],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      },
+      "Verify": {
+        "AI Database": [],
+        "ANN": [],
+        "Business Unit": [],
+        "Component": [],
+        "Data": [],
+        "Data acquisition": [],
+        "Document": [],
+        "Driving Function": [],
+        "Field Data": [],
+        "Fleet": [],
+        "Guideline": [],
+        "Incident": [],
+        "Lifecycle Phase": [],
+        "Manufacturing Process": [],
+        "Metric": [],
+        "Model": [],
+        "Operation": [],
+        "Organization": [],
+        "Plan": [],
+        "Policy": [],
+        "Principle": [],
+        "Procedure": [],
+        "Process": [],
+        "Record": [],
+        "Report": [],
+        "Risk Assessment": [],
+        "Role": [],
+        "Safety Compliance": [],
+        "Safety Issue": [],
+        "Software Component": [],
+        "Standard": [],
+        "System": [],
+        "Task": [],
+        "Test Suite": [
+          "Plan"
+        ],
+        "Vehicle": [],
+        "System Boundary": [],
+        "Safety & Security Case": [],
+        "Initial": [],
+        "Decision": [],
+        "Security Threat": [],
+        "Final": [],
+        "Safety Goal": [],
+        "Action": [],
+        "Hazard": [],
+        "Merge": [],
+        "Work Product": [],
+        "CallBehaviorAction": []
+      }
+    },
+    "Internal Block Diagram": {
+      "Connector": {
+        "Part": [
+          "Part",
+          "Port"
+        ],
+        "Port": [
+          "Part",
+          "Port"
+        ]
+      }
+    },
+    "Use Case Diagram": {
+      "Association": {
+        "Actor": [
+          "Use Case"
+        ],
+        "Use Case": [
+          "Actor"
+        ]
+      },
+      "Communication Path": {
+        "Actor": [
+          "Actor"
+        ]
+      },
+      "Extend": {
+        "Use Case": [
+          "Use Case"
+        ]
+      },
+      "Generalize": {
+        "Actor": [
+          "Actor"
+        ],
+        "Use Case": [
+          "Use Case"
+        ]
+      },
+      "Include": {
+        "Use Case": [
+          "Use Case"
+        ]
+      }
+    }
+  },
+  "gate_node_types": [
+    "GATE",
+    "RIGOR LEVEL",
+    "TOP EVENT",
+    "FUNCTIONAL INSUFFICIENCY"
+  ],
   "governance_element_nodes": [
     "Business Unit",
     "Data",
@@ -78,51 +3131,6 @@
     "Risk Assessment",
     "Report"
   ],
-
-  // Relation labels for the Governance Elements toolbox
-  "governance_element_relations": [
-    "Approves",
-    "Audits",
-    "Authorizes",
-    "Communication Path",
-    "Constrained by",
-    "Consumes",
-    "Curation",
-    "Delivers",
-    "Executes",
-    "Extend",
-    "Generalize",
-    "Monitors",
-    "Performs",
-    "Produces",
-    "Responsible for",
-    "Uses",
-    "Constrains",
-    "Establish",
-    "Implement",
-    "Validate",
-    "Verify",
-    "Manufacture",
-    "Operate",
-    "Inspect",
-    "Triage",
-    "Improve",
-    "Develops",
-    "Assesses",
-    "Mitigates",
-    "Plans",
-    "Reviews"
-  ],
-
-  // Diagram types considered part of the generic "Architecture Diagram" work product
-  "arch_diagram_types": [
-    "Use Case Diagram",
-    "Activity Diagram",
-    "Block Diagram",
-    "Internal Block Diagram"
-  ],
-
-  // Node types available in the governance toolbox
   "governance_node_types": [
     "Action",
     "CallBehaviorAction",
@@ -169,1644 +3177,521 @@
     "Safety & Security Case",
     "Report"
   ],
-
-  // FMEDA/Fault tree gate node types
-  "gate_node_types": [
-    "GATE",
-    "RIGOR LEVEL",
-    "TOP EVENT",
-    "FUNCTIONAL INSUFFICIENCY"
+  "guard_nodes": [
+    "Decision"
   ],
-
-  // Natural language mapping for relationship labels
-  // Format: "label": {"action": "verb", "subject": "default subject", "constraint": true|false }
+  "node_connection_limits": {
+    "Decision": 4,
+    "Merge": 4
+  },
+  "node_roles": {
+    "AI Database": "object",
+    "ANN": "object",
+    "Activity": "action",
+    "Actor": "subject",
+    "Artifact": "object",
+    "Business Unit": "subject",
+    "Component": "object",
+    "Data": "object",
+    "Data acquisition": "object",
+    "Decision": "condition",
+    "Document": "object",
+    "Driving Function": "object",
+    "Field Data": "object",
+    "Fleet": "object",
+    "Guideline": "constraint",
+    "Hazard": "object",
+    "Incident": "object",
+    "Manufacturing Process": "object",
+    "Metric": "constraint",
+    "Model": "object",
+    "Operation": "object",
+    "Organization": "subject",
+    "Plan": "object",
+    "Policy": "constraint",
+    "Principle": "constraint",
+    "Procedure": "action",
+    "Process": "action",
+    "Record": "object",
+    "Report": "object",
+    "Risk Assessment": "object",
+    "Role": "subject",
+    "Safety & Security Case": "object",
+    "Safety Compliance": "object",
+    "Safety Goal": "object",
+    "Safety Issue": "object",
+    "Security Threat": "object",
+    "Software Component": "object",
+    "Standard": "constraint",
+    "System": "object",
+    "Task": "action",
+    "Test Suite": "object",
+    "Vehicle": "object"
+  },
   "requirement_rules": {
-    "performs": {"action": "perform"},
-    "executes": {"action": "execute"},
-    "responsible for": {"action": "be responsible for"},
-    "produces": {"action": "produce"},
-    "delivers": {"action": "deliver"},
-    "uses": {"action": "use"},
-    "consumes": {"action": "use"},
-    "monitors": {"action": "monitor"},
-    "audits": {"action": "audit"},
-    "approves": {"action": "approve"},
-    "authorizes": {"action": "authorize"},
-    "governed by": {"action": "comply with", "constraint": true},
-    "constrained by": {"action": "comply with", "constraint": true},
-    "ai training": {"action": "train", "subject": "Engineering team"},
-    "ai re-training": {"action": "retrain", "subject": "Engineering team"},
-    "curation": {"action": "curate", "subject": "Engineering team"},
-    "annotation": {"action": "annotate", "subject": "Engineering team"},
-    "synthesis": {"action": "synthesize", "subject": "Engineering team"},
-    "augmentation": {"action": "augment", "subject": "Engineering team"},
-    "acquisition": {"action": "acquire", "subject": "Engineering team"},
-    "labeling": {"action": "label", "subject": "Engineering team"},
-    "field risk evaluation": {
-      "action": "evaluate field risk",
+    "acquisition": {
+      "action": "acquire",
       "subject": "Engineering team"
+    },
+    "aggregation": {
+      "action": "aggregate"
+    },
+    "ai re-training": {
+      "action": "retrain",
+      "subject": "Engineering team"
+    },
+    "ai training": {
+      "action": "train",
+      "subject": "Engineering team"
+    },
+    "annotation": {
+      "action": "annotate",
+      "subject": "Engineering team"
+    },
+    "approves": {
+      "action": "approve"
+    },
+    "association": {
+      "action": "associate with"
+    },
+    "audits": {
+      "action": "audit"
+    },
+    "augmentation": {
+      "action": "augment",
+      "subject": "Engineering team"
+    },
+    "authorizes": {
+      "action": "authorize"
+    },
+    "assesses": {
+      "action": "assess"
+    },
+    "communication path": {
+      "action": "communicate with"
+    },
+    "complies with": {
+      "action": "comply with",
+      "constraint": true,
+      "subject": "Engineering team"
+    },
+    "composite aggregation": {
+      "action": "compose"
+    },
+    "connector": {
+      "action": "connect to"
+    },
+    "constrained by": {
+      "action": "comply with",
+      "constraint": true
+    },
+    "constrains": {
+      "action": "constrain"
+    },
+    "consumes": {
+      "action": "use"
+    },
+    "curation": {
+      "action": "curate",
+      "subject": "Engineering team"
+    },
+    "delivers": {
+      "action": "deliver"
+    },
+    "develops": {
+      "action": "develop"
+    },
+    "derived from": {
+      "action": "be derived from"
+    },
+    "establish": {
+      "action": "establish"
+    },
+    "executes": {
+      "action": "execute"
+    },
+    "extend": {
+      "action": "extend"
     },
     "field data collection": {
       "action": "collect field data",
       "subject": "Engineering team"
     },
-    "ingestion": {"action": "ingest", "subject": "Engineering team"},
-    "model evaluation": {"action": "evaluate model", "subject": "Engineering team"},
-    "tune": {"action": "tune", "subject": "Engineering team"},
+    "field risk evaluation": {
+      "action": "evaluate field risk",
+      "subject": "Engineering team"
+    },
+    "generalization": {
+      "action": "generalize"
+    },
+    "generalize": {
+      "action": "generalize"
+    },
+    "governed by": {
+      "action": "comply with",
+      "constraint": true
+    },
     "hyperparameter validation": {
       "action": "validate hyperparameters",
       "subject": "Engineering team"
     },
-    "association": {"action": "associate with"},
-    "communication path": {"action": "communicate with"},
-    "include": {"action": "include"},
-    "extend": {"action": "extend"},
-    "generalize": {"action": "generalize"},
-    "generalization": {"action": "generalize"},
-    "aggregation": {"action": "aggregate"},
-    "composite aggregation": {"action": "compose"},
-    "connector": {"action": "connect to"},
-    "propagate": {"action": "propagate"},
-    "propagate by review": {"action": "propagate by review"},
-    "propagate by approval": {"action": "propagate by approval"},
-    "re-use": {"action": "re-use"},
-    "satisfied by": {"action": "be satisfied by"},
-    "derived from": {"action": "be derived from"},
-    "trace": {"action": "trace to"},
-    "used by": {"action": "be used by"},
-    "used after review": {"action": "be used after review"},
-    "used after approval": {"action": "be used after approval"},
-    "constrains": {"action": "constrain"},
-    "establish": {"action": "establish"},
-    "implement": {"action": "implement"},
-    "validate": {"action": "validate", "subject": "Validation team"},
-    "verify": {"action": "verify", "subject": "Verification team"},
-    "manufacture": {"action": "manufacture", "subject": "Manufacturing team"},
-    "operate": {"action": "operate", "subject": "Operations team"},
-    "inspect": {"action": "inspect", "subject": "Inspection team"},
-    "triage": {"action": "triage", "subject": "Support team"},
-    "improve": {"action": "improve", "subject": "Engineering team"},
-    "monitoring": {"action": "monitor", "subject": "Engineering team"},
-    "complies with": {"action": "comply with", "subject": "Engineering team", "constraint": true}
+    "implement": {
+      "action": "implement"
+    },
+    "improve": {
+      "action": "improve",
+      "subject": "Engineering team"
+    },
+    "include": {
+      "action": "include"
+    },
+    "ingestion": {
+      "action": "ingest",
+      "subject": "Engineering team"
+    },
+    "inspect": {
+      "action": "inspect",
+      "subject": "Inspection team"
+    },
+    "labeling": {
+      "action": "label",
+      "subject": "Engineering team"
+    },
+    "manufacture": {
+      "action": "manufacture",
+      "subject": "Manufacturing team"
+    },
+    "mitigates": {
+      "action": "mitigate"
+    },
+    "model evaluation": {
+      "action": "evaluate model",
+      "subject": "Engineering team"
+    },
+    "monitoring": {
+      "action": "monitor",
+      "subject": "Engineering team"
+    },
+    "monitors": {
+      "action": "monitor"
+    },
+    "operate": {
+      "action": "operate",
+      "subject": "Operations team"
+    },
+    "performs": {
+      "action": "perform"
+    },
+    "plans": {
+      "action": "plan"
+    },
+    "produces": {
+      "action": "produce"
+    },
+    "propagate": {
+      "action": "propagate"
+    },
+    "propagate by approval": {
+      "action": "propagate by approval"
+    },
+    "propagate by review": {
+      "action": "propagate by review"
+    },
+    "re-use": {
+      "action": "re-use"
+    },
+    "responsible for": {
+      "action": "be responsible for"
+    },
+    "reviews": {
+      "action": "review"
+    },
+    "satisfied by": {
+      "action": "be satisfied by"
+    },
+    "synthesis": {
+      "action": "synthesize",
+      "subject": "Engineering team"
+    },
+    "trace": {
+      "action": "trace to"
+    },
+    "triage": {
+      "action": "triage",
+      "subject": "Support team"
+    },
+    "tune": {
+      "action": "tune",
+      "subject": "Engineering team"
+    },
+    "used after approval": {
+      "action": "be used after approval"
+    },
+    "used after review": {
+      "action": "be used after review"
+    },
+    "used by": {
+      "action": "be used by"
+    },
+    "uses": {
+      "action": "use"
+    },
+    "validate": {
+      "action": "validate",
+      "subject": "Validation team"
+    },
+    "verify": {
+      "action": "verify",
+      "subject": "Verification team"
+    }
   },
-
   "requirement_sequences": {
-    "incident triage": {
+    "cybersecurity release": {
+      "action": "verify cybersecurity release",
       "relations": [
-        "Triage",
-        "Develops"
-      ],
-      "subject": "Safety manager",
-      "action": "trigger test development"
-    },
-    "incident triage role subject": {
-      "relations": [
-        "Responsible for",
-        "Triage",
-        "Develops"
-      ],
-      "action": "trigger test development",
-      "role_subject": true
-    },
-    "policy compliance": {
-      "relations": [
-        "Constrains",
-        "Produces"
-      ],
-      "subject": "Governance team",
-      "action": "enforce policy"
-    },
-    "policy compliance role subject": {
-      "relations": [
-        "Responsible for",
-        "Constrains",
-        "Produces"
-      ],
-      "action": "enforce policy",
-      "role_subject": true
-    },
-    "model validation": {
-      "relations": [
-        "Validate",
-        "Produces"
-      ],
-      "subject": "Validation team",
-      "action": "validate models"
-    },
-    "model validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Validate",
-        "Produces"
-      ],
-      "action": "validate models",
-      "role_subject": true
-    },
-    "hazard mitigation": {
-      "relations": [
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Produces"
-      ],
-      "subject": "Safety engineer",
-      "action": "develop hazard mitigation tests"
-    },
-    "hazard mitigation role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Produces"
-      ],
-      "action": "develop hazard mitigation tests",
-      "role_subject": true
-    },
-    "safety goal verification": {
-      "relations": [
-        "Mitigates",
+        "Plans",
         "Develops",
         "Verify",
         "Produces"
       ],
-      "subject": "Safety engineer",
-      "action": "verify safety goals"
-    },
-    "safety goal verification role subject": {
-      "relations": [
-        "Responsible for",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "action": "verify safety goals",
-      "role_subject": true
-    },
-    "sotif scenario validation": {
-      "relations": [
-        "Assesses",
-        "Develops",
-        "Produces"
-      ],
-      "subject": "Validation team",
-      "action": "validate scenarios"
-    },
-    "sotif scenario validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Develops",
-        "Produces"
-      ],
-      "action": "validate scenarios",
-      "role_subject": true
+      "subject": "Security manager"
     },
     "cybersecurity threat mitigation": {
-      "relations": [
-        "Assesses",
-        "Mitigates",
-        "Plans",
-        "Produces"
-      ],
-      "subject": "Cybersecurity team",
-      "action": "plan cybersecurity mitigation"
-    },
-    "cybersecurity threat mitigation role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Mitigates",
-        "Plans",
-        "Produces"
-      ],
       "action": "plan cybersecurity mitigation",
-      "role_subject": true
-    },
-    "incident validation": {
-      "relations": [
-        "Triage",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "subject": "Safety manager",
-      "action": "validate incident resolution"
-    },
-    "incident validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Triage",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "action": "validate incident resolution",
-      "role_subject": true
-    },
-    "product lifecycle safety": {
-      "relations": [
-        "Plans",
-        "Develops",
-        "Produces"
-      ],
-      "subject": "Safety manager",
-      "action": "manage lifecycle safety"
-    },
-    "product lifecycle safety role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Produces"
-      ],
-      "action": "manage lifecycle safety",
-      "role_subject": true
-    },
-    "post deployment monitoring": {
-      "relations": [
-        "Plans",
-        "Develops",
-        "Produces"
-      ],
-      "subject": "Operations team",
-      "action": "monitor deployed system"
-    },
-    "post deployment monitoring role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Produces"
-      ],
-      "action": "monitor deployed system",
-      "role_subject": true
-    },
-    "decommissioning validation": {
-      "relations": [
-        "Plans",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "subject": "Safety manager",
-      "action": "validate decommissioning"
-    },
-    "decommissioning validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "action": "validate decommissioning",
-      "role_subject": true
-    },
-    "safety audit": {
-      "relations": [
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
-      "subject": "Auditor",
-      "action": "audit safety processes"
-    },
-    "safety audit role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
-      "action": "audit safety processes",
-      "role_subject": true
-    },
-    "security audit": {
-      "relations": [
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
-      "subject": "Security auditor",
-      "action": "audit security processes"
-    },
-    "security audit role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
-      "action": "audit security processes",
-      "role_subject": true
-    },
-    "safety & security case review": {
-      "relations": [
-        "Plans",
-        "Audits",
-        "Reviews"
-      ],
-      "subject": "Safety manager",
-      "action": "review safety & security case"
-    },
-    "safety & security case review role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Audits",
-        "Reviews"
-      ],
-      "action": "review safety & security case",
-      "role_subject": true
-    },
-    "threat analysis validation": {
       "relations": [
         "Assesses",
         "Mitigates",
-        "Validate",
-        "Produces"
-      ],
-      "subject": "Cybersecurity team",
-      "action": "validate threat mitigations"
-    },
-    "threat analysis validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Mitigates",
-        "Validate",
-        "Produces"
-      ],
-      "action": "validate threat mitigations",
-      "role_subject": true
-    },
-    "functional safety release": {
-      "relations": [
         "Plans",
-        "Develops",
-        "Verify",
         "Produces"
       ],
-      "subject": "Release manager",
-      "action": "verify safety release"
-    },
-    "functional safety release role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "action": "verify safety release",
-      "role_subject": true
-    },
-    "cybersecurity release": {
-      "relations": [
-        "Plans",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "subject": "Security manager",
-      "action": "verify cybersecurity release"
-    },
-    "cybersecurity release role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "action": "verify cybersecurity release",
-      "role_subject": true
-    },
-    "hazard verification": {
-      "relations": [
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "subject": "Safety engineer",
-      "action": "verify hazard mitigations"
-    },
-    "hazard verification role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "action": "verify hazard mitigations",
-      "role_subject": true
+      "subject": "Cybersecurity team"
     },
     "cybersecurity threat verification": {
-      "relations": [
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "subject": "Cybersecurity team",
-      "action": "verify threat mitigations"
-    },
-    "cybersecurity threat verification role subject": {
-      "relations": [
-        "Responsible for",
-        "Assesses",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
       "action": "verify threat mitigations",
-      "role_subject": true
-    },
-    "sotif scenario verification": {
       "relations": [
         "Assesses",
+        "Mitigates",
         "Develops",
         "Verify",
         "Produces"
       ],
-      "subject": "Validation team",
-      "action": "verify scenarios"
+      "subject": "Cybersecurity team"
     },
-    "sotif scenario verification role subject": {
+    "decommissioning validation": {
+      "action": "validate decommissioning",
       "relations": [
-        "Responsible for",
-        "Assesses",
+        "Plans",
         "Develops",
-        "Verify",
+        "Validate",
         "Produces"
       ],
-      "action": "verify scenarios",
-      "role_subject": true
+      "subject": "Safety manager"
     },
     "deployment readiness": {
-      "relations": [
-        "Plans",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "subject": "Deployment manager",
-      "action": "verify deployment readiness"
-    },
-    "deployment readiness role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
       "action": "verify deployment readiness",
-      "role_subject": true
-    },
-    "maintenance validation": {
       "relations": [
         "Plans",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "subject": "Operations team",
-      "action": "validate maintenance"
-    },
-    "maintenance validation role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Develops",
-        "Validate",
-        "Produces"
-      ],
-      "action": "validate maintenance",
-      "role_subject": true
-    },
-    "risk-based testing": {
-      "relations": [
-        "Assesses",
         "Develops",
         "Verify",
         "Produces"
       ],
-      "subject": "Test team",
-      "action": "perform risk-based testing"
+      "subject": "Deployment manager"
     },
-    "risk-based testing role subject": {
+    "functional safety release": {
+      "action": "verify safety release",
       "relations": [
-        "Responsible for",
-        "Assesses",
+        "Plans",
         "Develops",
         "Verify",
         "Produces"
       ],
-      "action": "perform risk-based testing",
-      "role_subject": true
-    },
-    "organizational accountability": {
-      "relations": [
-        "Responsible for",
-        "Produces"
-      ],
-      "subject": "Governance board",
-      "action": "document responsibilities"
-    },
-    "organizational accountability role subject": {
-      "relations": [
-        "Responsible for",
-        "Produces"
-      ],
-      "role_subject": true,
-      "action": "document responsibilities"
+      "subject": "Release manager"
     },
     "governance oversight": {
-      "relations": [
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
-      "subject": "Governance board",
-      "action": "evaluate governance performance"
-    },
-    "governance oversight role subject": {
-      "relations": [
-        "Responsible for",
-        "Plans",
-        "Audits",
-        "Produces"
-      ],
       "action": "evaluate governance performance",
-      "role_subject": true
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "subject": "Governance board"
+    },
+    "hazard mitigation": {
+      "action": "develop hazard mitigation tests",
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Safety engineer"
+    },
+    "hazard verification": {
+      "action": "verify hazard mitigations",
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Safety engineer"
+    },
+    "incident triage": {
+      "action": "trigger test development",
+      "relations": [
+        "Triage",
+        "Develops"
+      ],
+      "subject": "Safety manager"
+    },
+    "incident validation": {
+      "action": "validate incident resolution",
+      "relations": [
+        "Triage",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "subject": "Safety manager"
     },
     "lifecycle governance review": {
+      "action": "review lifecycle governance",
       "relations": [
         "Plans",
         "Develops",
         "Validate",
         "Produces"
       ],
-      "subject": "Lifecycle manager",
-      "action": "review lifecycle governance"
+      "subject": "Lifecycle manager"
     },
-    "lifecycle governance review role subject": {
+    "maintenance validation": {
+      "action": "validate maintenance",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "subject": "Operations team"
+    },
+    "model validation": {
+      "action": "validate models",
+      "relations": [
+        "Validate",
+        "Produces"
+      ],
+      "subject": "Validation team"
+    },
+    "organizational accountability": {
+      "action": "document responsibilities",
       "relations": [
         "Responsible for",
+        "Produces"
+      ],
+      "subject": "Governance board"
+    },
+    "policy compliance": {
+      "action": "enforce policy",
+      "relations": [
+        "Constrains",
+        "Produces"
+      ],
+      "subject": "Governance team"
+    },
+    "post deployment monitoring": {
+      "action": "monitor deployed system",
+      "relations": [
         "Plans",
         "Develops",
+        "Produces"
+      ],
+      "subject": "Operations team"
+    },
+    "product lifecycle safety": {
+      "action": "manage lifecycle safety",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Safety manager"
+    },
+    "risk-based testing": {
+      "action": "perform risk-based testing",
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Test team"
+    },
+    "safety & security case review": {
+      "action": "review safety & security case",
+      "relations": [
+        "Plans",
+        "Audits",
+        "Reviews"
+      ],
+      "subject": "Safety manager"
+    },
+    "safety audit": {
+      "action": "audit safety processes",
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "subject": "Auditor"
+    },
+    "safety goal verification": {
+      "action": "verify safety goals",
+      "relations": [
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Safety engineer"
+    },
+    "security audit": {
+      "action": "audit security processes",
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "subject": "Security auditor"
+    },
+    "sotif scenario validation": {
+      "action": "validate scenarios",
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Validation team"
+    },
+    "sotif scenario verification": {
+      "action": "verify scenarios",
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Validation team"
+    },
+    "threat analysis validation": {
+      "action": "validate threat mitigations",
+      "relations": [
+        "Assesses",
+        "Mitigates",
         "Validate",
         "Produces"
       ],
-      "action": "review lifecycle governance",
-      "role_subject": true
+      "subject": "Cybersecurity team"
     }
-  },
-
-  // Default requirement role per node type
-  // Format: "Node Type": "subject|action|condition|constraint|object"
-  "node_roles": {
-    "Role": "subject",
-    "Actor": "subject",
-    "Organization": "subject",
-    "Business Unit": "subject",
-    "Process": "action",
-    "Procedure": "action",
-    "Activity": "action",
-    "Task": "action",
-    "Decision": "condition",
-    "Policy": "constraint",
-    "Principle": "constraint",
-    "Standard": "constraint",
-    "Guideline": "constraint",
-    "Document": "object",
-    "Artifact": "object",
-    "Data": "object",
-    "Record": "object",
-    "AI Database": "object",
-    "ANN": "object",
-    "Data acquisition": "object",
-    "Metric": "constraint",
-    "Operation": "object",
-    "Driving Function": "object",
-    "Software Component": "object",
-    "Test Suite": "object",
-    "System": "object",
-    "Plan": "object",
-    "Component": "object",
-    "Manufacturing Process": "object",
-    "Vehicle": "object",
-    "Fleet": "object",
-    "Safety Compliance": "object",
-    "Incident": "object",
-    "Safety Issue": "object",
-    "Field Data": "object",
-    "Model": "object",
-    "Hazard": "object",
-    "Risk Assessment": "object",
-    "Safety Goal": "object",
-    "Security Threat": "object",
-    "Safety & Security Case": "object",
-    "Report": "object"
-  },
-
-  // Allowed Safety & AI relationships between node types
-  // Format: "Relation": {"Source": ["Allowed Target", ...] }
-  "safety_ai_relation_rules": {
-    "Acquisition": {"AI Database": ["Data acquisition"]},
-    "Field data collection": {"AI Database": ["Data acquisition", "Task"]},
-    "Field risk evaluation": {"AI Database": ["Data acquisition"]},
-    "Annotation": {"ANN": ["AI Database"]},
-    "Synthesis": {"ANN": ["AI Database"]},
-    "Augmentation": {"ANN": ["AI Database"]},
-    "Labeling": {"ANN": ["AI Database"]},
-    "AI training": {"AI Database": ["ANN"]},
-    "AI re-training": {"AI Database": ["ANN"]},
-    "Model evaluation": {"ANN": ["AI Database"]},
-    "Curation": {"AI Database": ["AI Database"]},
-    "Ingestion": {"AI Database": ["AI Database"]},
-    "Monitoring": {"ANN": ["Operation"]},
-    "Complies with": {"ANN": ["Policy"], "AI Database": ["Policy"]},
-    "Triage": {"Safety Issue": ["Field Data"]},
-    "Develops": {
-      "Field Data": ["Test Suite"],
-      "Process": ["Test Suite"],
-      "Plan": ["Test Suite"],
-      "Risk Assessment": ["Test Suite"],
-      "Safety Goal": ["Test Suite"]
-    },
-    "Constrains": {"Policy": ["Process"]},
-    "Produces": {
-      "Process": ["Document"],
-      "Test Suite": ["Document"],
-      "Plan": ["Document"],
-      "Safety & Security Case": ["Document"],
-      "Report": ["Document"],
-    },
-    "Validate": {
-      "Model": ["Test Suite"],
-      "Test Suite": ["Report"],
-      "Plan": ["Report"]
-    },
-    "Assesses": {
-      "Hazard": ["Risk Assessment"],
-      "Security Threat": ["Risk Assessment"],
-      "Field Data": ["Risk Assessment"]
-    },
-    "Mitigates": {"Risk Assessment": ["Plan", "Safety Goal"]},
-    "Plans": {"Plan": ["Process"]},
-      "Verify": {"Test Suite": ["Plan"]},
-      "Reviews": {"Audit Report": ["Safety & Security Case"]},
-      "Audits": {"Process": ["Report"]},
-      "Responsible for": {"Role": ["Process", "Activity", "Task", "Field Data", "Hazard", "Model", "Plan", "Policy", "Risk Assessment", "Safety Issue", "Security Threat", "Test Suite"]},
-    },
-
-  // Connection validation rules per diagram type and connection kind
-  // Format: "Diagram Type": {"Connection Kind": {"Source": ["Allowed Target", ...] }}
-  "connection_rules": {
-    "Use Case Diagram": {
-      "Association": {"Actor": ["Use Case"], "Use Case": ["Actor"]},
-      "Include": {"Use Case": ["Use Case"]},
-      "Extend": {"Use Case": ["Use Case"]},
-      "Generalize": {"Actor": ["Actor"], "Use Case": ["Use Case"]},
-      "Communication Path": {"Actor": ["Actor"]}
-    },
-    "Block Diagram": {
-      "Association": {"Block": ["Block"]},
-      "Generalization": {"Block": ["Block"]},
-      "Aggregation": {"Block": ["Block"]},
-      "Composite Aggregation": {"Block": ["Block"]}
-    },
-    "Internal Block Diagram": {
-      "Connector": {"Part": ["Part", "Port"], "Port": ["Part", "Port"]}
-    },
-    "Activity Diagram": {
-      "Flow": {
-        "Initial": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join"],
-        "Action": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
-        "CallBehaviorAction": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
-        "Decision": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join", "Final"],
-        "Merge": ["Action", "CallBehaviorAction", "Decision", "Fork", "Join"],
-        "Fork": ["Action", "CallBehaviorAction", "Decision", "Merge", "Fork", "Join"],
-        "Join": ["Action", "CallBehaviorAction", "Decision", "Merge"],
-        "Final": []
-      }
-    },
-    "Governance Diagram": {
-      "Flow": {
-        "Initial": ["Action", "Decision", "Merge", "AI Database", "ANN", "Data acquisition"],
-        "Action": ["Action", "Decision", "Merge", "Final", "AI Database", "ANN", "Data acquisition"],
-        "Decision": ["Action", "Decision", "Merge", "Final", "Lifecycle Phase", "AI Database", "ANN", "Data acquisition"],
-        "Merge": ["Action", "Decision", "Merge", "AI Database", "ANN", "Data acquisition"],
-        "Lifecycle Phase": ["Decision", "Action", "Merge", "Final", "AI Database", "ANN", "Data acquisition"],
-        "Final": []
-      },
-      // Relationships between governance work products and phases
-      "Propagate": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Propagate by Review": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Propagate by Approval": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Re-use": {
-        "Work Product": ["Lifecycle Phase"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": ["Lifecycle Phase"]
-      },
-      "Satisfied by": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Derived from": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Trace": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Used By": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Used after Review": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Used after Approval": {
-        "Work Product": ["Work Product"],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      // Relationships between governance elements
-      "Approves": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Document", "Policy", "Procedure", "Record"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Audits": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Process", "Procedure", "Record"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Authorizes": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": ["Policy", "Procedure", "Process"],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Policy", "Procedure"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Communication Path": {
-        "Work Product": [],
-        "Business Unit": ["Business Unit"],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": ["Organization", "Business Unit"],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Role", "Organization", "Business Unit"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Constrained by": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": ["Policy", "Guideline", "Standard", "Principle"],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Consumes": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": ["Data", "Record"],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Curation": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": ["Data"],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Delivers": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": ["Document", "Record"],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Executes": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Process", "Procedure"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Extend": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": ["Policy"],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": ["Standard"],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Generalize": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": ["Policy"],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": ["Standard"],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Monitors": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Metric", "Process", "Activity"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Performs": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Activity", "Task", "Procedure"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Produces": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": [],
-        "Standard": [],
-        "Process": ["Document", "Data", "Record"],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Responsible for": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Process", "Activity", "Task"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      },
-      "Uses": {
-        "Work Product": [],
-        "Business Unit": [],
-        "Data": [],
-        "Document": [],
-        "Guideline": [],
-        "Metric": [],
-        "Organization": [],
-        "Policy": [],
-        "Principle": [],
-        "Procedure": [],
-        "Record": [],
-        "Role": ["Document", "Data", "Record"],
-        "Standard": [],
-        "Process": [],
-        "Activity": [],
-        "Task": [],
-        "Operation": [],
-        "Driving Function": [],
-        "Software Component": [],
-        "Test Suite": [],
-        "System": [],
-        "Plan": [],
-        "Component": [],
-        "Manufacturing Process": [],
-        "Vehicle": [],
-        "Fleet": [],
-        "Safety Compliance": [],
-        "Incident": [],
-        "Safety Issue": [],
-        "Field Data": [],
-        "Model": [],
-        "Lifecycle Phase": []
-      }
-    }
-  },
-
-  // Maximum number of connections allowed per node type
-  // Format: "Node Type": max_connections
-  "node_connection_limits": {
-    "Decision": 4,
-    "Merge": 4
-  },
-
-  // Node types that require guards on outgoing flows
-  // Format: ["Node Type", ...]
-  "guard_nodes": ["Decision"]
+  }
 }
