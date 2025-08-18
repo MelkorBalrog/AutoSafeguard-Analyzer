@@ -11181,7 +11181,29 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     pack_forget=lambda *a, **k: None,
                     destroy=lambda *a, **k: None,
                 )
-            self._toolbox_frames[name] = [frame]
+            return frame
+
+        gov_frames = [self.tools_frame, action_frame]
+        if getattr(self, "rel_frame", None):
+            gov_frames.append(self.rel_frame)
+        if core_data:
+            gov_frames.append(build_frame("Governance Core", core_data))
+        # Create toolbox for additional governance elements grouped by class
+        for name, data in defs.items():
+            gov_frames.append(build_frame(name, data))
+        # Repack toolbox to include selector
+        self._toolbox_frames["Governance"] = gov_frames
+
+        # Create Safety & AI Lifecycle toolbox frame
+        if ai_data:
+            self._toolbox_frames["Safety & AI Lifecycle"] = [
+                build_frame("Safety & AI Lifecycle", ai_data)
+            ]
+
+        options = sorted(self._toolbox_frames.keys())
+        if "Governance" in options:
+            options.remove("Governance")
+            options = ["Governance"] + options
         self.toolbox_selector.configure(values=options)
         current = self.toolbox_var.get()
         if current not in options:
