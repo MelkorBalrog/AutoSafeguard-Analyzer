@@ -83,8 +83,7 @@
     "Security Plan",
     "Mitigation Plan",
     "Security Threat",
-    "Validation Report",
-    "Audit Report",
+    "Report",
     "Safety Case",
     "Deployment Plan",
     "Maintenance Plan",
@@ -182,8 +181,7 @@
     "Security Plan",
     "Mitigation Plan",
     "Security Threat",
-    "Validation Report",
-    "Audit Report",
+    "Report",
     "Safety Case",
     "Deployment Plan",
     "Maintenance Plan",
@@ -434,8 +432,7 @@
     "Security Plan": "object",
     "Mitigation Plan": "object",
     "Security Threat": "object",
-    "Validation Report": "object",
-    "Audit Report": "object",
+    "Report": "object",
     "Safety Case": "object",
     "Deployment Plan": "object",
     "Maintenance Plan": "object",
@@ -472,14 +469,13 @@
       "Process": ["Document"],
       "Test Suite": ["Document"],
       "Verification Plan": ["Document"],
-      "Validation Report": ["Document"],
-      "Audit Report": ["Document"],
+      "Report": ["Document"],
       "Safety Case": ["Document"]
     },
     "Validate": {
       "Model": ["Test Suite"],
-      "Test Suite": ["Validation Report"],
-      "Mitigation Plan": ["Validation Report"]
+      "Test Suite": ["Report"],
+      "Mitigation Plan": ["Report"]
     },
     "Assesses": {
       "Hazard": ["Risk Assessment"],
@@ -498,8 +494,8 @@
       "Decommission Plan": ["Process"]
     },
     "Verify": {"Test Suite": ["Verification Plan"]},
-    "Audits": {"Process": ["Audit Report"]},
-    "Reviews": {"Audit Report": ["Safety Case"]}
+    "Audits": {"Process": ["Report"]},
+    "Reviews": {"Report": ["Safety Case"]}
   },
 
   // Connection validation rules per diagram type and connection kind
