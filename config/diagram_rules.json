@@ -252,134 +252,523 @@
 
   "requirement_sequences": {
     "incident triage": {
-      "relations": ["Triage", "Develops"],
+      "relations": [
+        "Triage",
+        "Develops"
+      ],
       "subject": "Safety manager",
       "action": "trigger test development"
     },
+    "incident triage role subject": {
+      "relations": [
+        "Responsible for",
+        "Triage",
+        "Develops"
+      ],
+      "action": "trigger test development",
+      "role_subject": true
+    },
     "policy compliance": {
-      "relations": ["Constrains", "Produces"],
+      "relations": [
+        "Constrains",
+        "Produces"
+      ],
       "subject": "Governance team",
       "action": "enforce policy"
     },
+    "policy compliance role subject": {
+      "relations": [
+        "Responsible for",
+        "Constrains",
+        "Produces"
+      ],
+      "action": "enforce policy",
+      "role_subject": true
+    },
     "model validation": {
-      "relations": ["Validate", "Produces"],
+      "relations": [
+        "Validate",
+        "Produces"
+      ],
       "subject": "Validation team",
       "action": "validate models"
     },
+    "model validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Validate",
+        "Produces"
+      ],
+      "action": "validate models",
+      "role_subject": true
+    },
     "hazard mitigation": {
-      "relations": ["Assesses", "Mitigates", "Develops", "Produces"],
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Produces"
+      ],
       "subject": "Safety engineer",
       "action": "develop hazard mitigation tests"
     },
+    "hazard mitigation role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Produces"
+      ],
+      "action": "develop hazard mitigation tests",
+      "role_subject": true
+    },
     "safety goal verification": {
-      "relations": ["Mitigates", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Safety engineer",
       "action": "verify safety goals"
     },
+    "safety goal verification role subject": {
+      "relations": [
+        "Responsible for",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify safety goals",
+      "role_subject": true
+    },
     "sotif scenario validation": {
-      "relations": ["Assesses", "Develops", "Produces"],
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Produces"
+      ],
       "subject": "Validation team",
       "action": "validate scenarios"
     },
+    "sotif scenario validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Develops",
+        "Produces"
+      ],
+      "action": "validate scenarios",
+      "role_subject": true
+    },
     "cybersecurity threat mitigation": {
-      "relations": ["Assesses", "Mitigates", "Plans", "Produces"],
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Plans",
+        "Produces"
+      ],
       "subject": "Cybersecurity team",
       "action": "plan cybersecurity mitigation"
     },
+    "cybersecurity threat mitigation role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Mitigates",
+        "Plans",
+        "Produces"
+      ],
+      "action": "plan cybersecurity mitigation",
+      "role_subject": true
+    },
     "incident validation": {
-      "relations": ["Triage", "Develops", "Validate", "Produces"],
+      "relations": [
+        "Triage",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
       "subject": "Safety manager",
       "action": "validate incident resolution"
     },
+    "incident validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Triage",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "action": "validate incident resolution",
+      "role_subject": true
+    },
     "product lifecycle safety": {
-      "relations": ["Plans", "Develops", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
       "subject": "Safety manager",
       "action": "manage lifecycle safety"
     },
+    "product lifecycle safety role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "action": "manage lifecycle safety",
+      "role_subject": true
+    },
     "post deployment monitoring": {
-      "relations": ["Plans", "Develops", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
       "subject": "Operations team",
       "action": "monitor deployed system"
     },
+    "post deployment monitoring role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "action": "monitor deployed system",
+      "role_subject": true
+    },
     "decommissioning validation": {
-      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
       "subject": "Safety manager",
       "action": "validate decommissioning"
     },
+    "decommissioning validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "action": "validate decommissioning",
+      "role_subject": true
+    },
     "safety audit": {
-      "relations": ["Plans", "Audits", "Produces"],
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
       "subject": "Auditor",
       "action": "audit safety processes"
     },
+    "safety audit role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "action": "audit safety processes",
+      "role_subject": true
+    },
     "security audit": {
-      "relations": ["Plans", "Audits", "Produces"],
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
       "subject": "Security auditor",
       "action": "audit security processes"
     },
+    "security audit role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "action": "audit security processes",
+      "role_subject": true
+    },
     "safety & security case review": {
-      "relations": ["Plans", "Audits", "Reviews"],
+      "relations": [
+        "Plans",
+        "Audits",
+        "Reviews"
+      ],
       "subject": "Safety manager",
       "action": "review safety & security case"
     },
+    "safety & security case review role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Audits",
+        "Reviews"
+      ],
+      "action": "review safety & security case",
+      "role_subject": true
+    },
     "threat analysis validation": {
-      "relations": ["Assesses", "Mitigates", "Validate", "Produces"],
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Validate",
+        "Produces"
+      ],
       "subject": "Cybersecurity team",
       "action": "validate threat mitigations"
     },
+    "threat analysis validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Mitigates",
+        "Validate",
+        "Produces"
+      ],
+      "action": "validate threat mitigations",
+      "role_subject": true
+    },
     "functional safety release": {
-      "relations": ["Plans", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Release manager",
       "action": "verify safety release"
     },
+    "functional safety release role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify safety release",
+      "role_subject": true
+    },
     "cybersecurity release": {
-      "relations": ["Plans", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Security manager",
       "action": "verify cybersecurity release"
     },
+    "cybersecurity release role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify cybersecurity release",
+      "role_subject": true
+    },
     "hazard verification": {
-      "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Safety engineer",
       "action": "verify hazard mitigations"
     },
+    "hazard verification role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify hazard mitigations",
+      "role_subject": true
+    },
     "cybersecurity threat verification": {
-      "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Cybersecurity team",
       "action": "verify threat mitigations"
     },
+    "cybersecurity threat verification role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify threat mitigations",
+      "role_subject": true
+    },
     "sotif scenario verification": {
-      "relations": ["Assesses", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Validation team",
       "action": "verify scenarios"
     },
+    "sotif scenario verification role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify scenarios",
+      "role_subject": true
+    },
     "deployment readiness": {
-      "relations": ["Plans", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Deployment manager",
       "action": "verify deployment readiness"
     },
+    "deployment readiness role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "verify deployment readiness",
+      "role_subject": true
+    },
     "maintenance validation": {
-      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
       "subject": "Operations team",
       "action": "validate maintenance"
     },
+    "maintenance validation role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "action": "validate maintenance",
+      "role_subject": true
+    },
     "risk-based testing": {
-      "relations": ["Assesses", "Develops", "Verify", "Produces"],
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
       "subject": "Test team",
       "action": "perform risk-based testing"
     },
+    "risk-based testing role subject": {
+      "relations": [
+        "Responsible for",
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "action": "perform risk-based testing",
+      "role_subject": true
+    },
     "organizational accountability": {
-      "relations": ["Responsible for", "Produces"],
+      "relations": [
+        "Responsible for",
+        "Produces"
+      ],
       "subject": "Governance board",
       "action": "document responsibilities"
     },
+    "organizational accountability role subject": {
+      "relations": [
+        "Responsible for",
+        "Produces"
+      ],
+      "role_subject": true,
+      "action": "document responsibilities"
+    },
     "governance oversight": {
-      "relations": ["Plans", "Audits", "Produces"],
+      "relations": [
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
       "subject": "Governance board",
       "action": "evaluate governance performance"
     },
+    "governance oversight role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Audits",
+        "Produces"
+      ],
+      "action": "evaluate governance performance",
+      "role_subject": true
+    },
     "lifecycle governance review": {
-      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "relations": [
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
       "subject": "Lifecycle manager",
       "action": "review lifecycle governance"
+    },
+    "lifecycle governance review role subject": {
+      "relations": [
+        "Responsible for",
+        "Plans",
+        "Develops",
+        "Validate",
+        "Produces"
+      ],
+      "action": "review lifecycle governance",
+      "role_subject": true
     }
   },
 
@@ -478,7 +867,7 @@
       "Verify": {"Test Suite": ["Plan"]},
       "Reviews": {"Audit Report": ["Safety & Security Case"]},
       "Audits": {"Process": ["Report"]},
-      "Responsible for": {"Role": ["Process", "Activity", "Task"]},
+      "Responsible for": {"Role": ["Process", "Activity", "Task", "Field Data", "Hazard", "Model", "Plan", "Policy", "Risk Assessment", "Safety Issue", "Security Threat", "Test Suite"]},
     },
 
   // Connection validation rules per diagram type and connection kind

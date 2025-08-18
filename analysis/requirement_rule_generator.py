@@ -176,19 +176,19 @@ def _objects_phrase(objects: int) -> str:
     return ", ".join(parts[:-1]) + f", and {parts[-1]}"
 
 
-def make_sa_template(subject: str, action: str, objects: int = 1) -> str:
+def make_sa_template(
+    subject: str, action: str, objects: int = 1, subject_is_object0: bool = False
+) -> str:
     action_clean = (action or "").strip()
     obj_phrase = _objects_phrase(objects)
     if action_clean.lower() == "collect field data":
-        tmpl = (
-            f"{subject} shall {action_clean} from {obj_phrase} "
-            f"using the <object0_id> (<object0_class>)."
-        )
+        tmpl = f"{subject} shall {action_clean} from {obj_phrase}"
     else:
-        tmpl = (
-            f"{subject} shall {action_clean} {obj_phrase} "
-            f"using the <object0_id> (<object0_class>)."
-        )
+        tmpl = f"{subject} shall {action_clean} {obj_phrase}"
+    if not subject_is_object0:
+        tmpl += " using the <object0_id> (<object0_class>)."
+    else:
+        tmpl += "."
     return tidy_sentence(tmpl)
 
 
@@ -201,15 +201,20 @@ def make_sa_variables_base(objects: int = 1) -> List[str]:
     return out
 
 
-def make_sequence_template(subject: str, rel_chain: List[str]) -> str:
+def make_sequence_template(
+    subject: str, rel_chain: List[str], subject_is_object0: bool = False
+) -> str:
     parts: List[str] = []
     for idx, rel in enumerate(rel_chain):
         rel_l = (rel or "").strip().lower()
         obj = f"the <object{idx+1}_id> (<object{idx+1}_class>)"
         if idx == 0:
-            parts.append(
-                f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
-            )
+            if subject_is_object0:
+                parts.append(f"{rel_l} {obj}")
+            else:
+                parts.append(
+                    f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
+                )
         else:
             parts.append(f"{rel_l} {obj}")
     if len(parts) > 1:
@@ -323,34 +328,52 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                     )
                     base_id = f"SA-{rel_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                     trigger = make_trigger("Safety&AI", src_type, rel_label, tgt_type)
+                    variants = []
                     if tmpl_override:
-                        template = tmpl_override
-                        variables = var_override or []
+                        variants.append((tmpl_override, var_override or [], base_id))
                     else:
-                        template = make_sa_template(subj, act, tgt_count)
-                        variables = make_sa_variables_base(tgt_count)
+                        variants.append(
+                            (
+                                make_sa_template(subj, act, tgt_count),
+                                make_sa_variables_base(tgt_count),
+                                base_id,
+                            )
+                        )
+                        variants.append(
+                            (
+                                make_sa_template(
+                                    "<object0_id> (<object0_class>)",
+                                    act,
+                                    tgt_count,
+                                    subject_is_object0=True,
+                                ),
+                                make_sa_variables_base(tgt_count),
+                                base_id + "-ROLE",
+                            )
+                        )
                     notes = "Auto-generated from diagram rules (Safety&AI)."
-                    for suf, need_cond, need_const in SUFFIXES:
-                        pid = base_id + suf
-                        t = (
-                            build_cond_const_template(template)
-                            if (need_cond and need_const)
-                            else build_cond_template(template)
-                            if need_cond
-                            else build_const_template(template)
-                            if need_const
-                            else normalize_base_template(template)
-                        )
-                        vs = ensure_variables(variables, need_cond, need_const)
-                        out.append(
-                            {
-                                "Pattern ID": pid,
-                                "Trigger": trigger,
-                                "Template": t,
-                                "Variables": vs,
-                                "Notes": notes,
-                            }
-                        )
+                    for template, variables, pid_base in variants:
+                        for suf, need_cond, need_const in SUFFIXES:
+                            pid = pid_base + suf
+                            t = (
+                                build_cond_const_template(template)
+                                if (need_cond and need_const)
+                                else build_cond_template(template)
+                                if need_cond
+                                else build_const_template(template)
+                                if need_const
+                                else normalize_base_template(template)
+                            )
+                            vs = ensure_variables(variables, need_cond, need_const)
+                            out.append(
+                                {
+                                    "Pattern ID": pid,
+                                    "Trigger": trigger,
+                                    "Template": t,
+                                    "Variables": vs,
+                                    "Notes": notes,
+                                }
+                            )
 
     # Governance -------------------------------------------------------------
     conn_rules = rules.get("connection_rules", {}) or {}
@@ -430,14 +453,21 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 src_type = path[0][0]
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
-                subj = info.get("subject", "Engineering team")
+                use_role_subject = info.get("role_subject")
+                subj = (
+                    "<object0_id> (<object0_class>)"
+                    if use_role_subject
+                    else info.get("subject", "Engineering team")
+                )
                 tmpl_override = info.get("template")
                 var_override = info.get("variables")
                 if tmpl_override:
                     template = tmpl_override
                     variables = var_override or []
                 else:
-                    template = make_sequence_template(subj, rel_chain)
+                    template = make_sequence_template(
+                        subj, rel_chain, subject_is_object0=bool(use_role_subject)
+                    )
                     variables = make_sa_variables_base(tgt_count)
                 base_id = (
                     f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
