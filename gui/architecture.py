@@ -269,6 +269,17 @@ _BOTTOM_LABEL_TYPES = {
 }
 
 
+# Object types that cannot be resized
+_FIXED_SIZE_TYPES = {
+    "Initial",
+    "Final",
+    "Actor",
+    "Decision",
+    "Merge",
+    "Work Product",
+} | _BOTTOM_LABEL_TYPES
+
+
 # Connection types excluding Safety & AI relations used for membership checks
 _BASE_CONN_TYPES = {
     "Association",
@@ -4575,14 +4586,7 @@ class SysMLDiagramWindow(tk.Frame):
         y = self.canvas.canvasy(event.y)
         if self.resizing_obj:
             obj = self.resizing_obj
-            if obj.obj_type in (
-                "Initial",
-                "Final",
-                "Actor",
-                "Decision",
-                "Merge",
-                "Work Product",
-            ):
+            if obj.obj_type in _FIXED_SIZE_TYPES:
                 return
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
@@ -5295,14 +5299,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def hit_resize_handle(self, obj: SysMLObject, x: float, y: float) -> str | None:
-        if obj.obj_type in (
-            "Initial",
-            "Final",
-            "Actor",
-            "Decision",
-            "Merge",
-            "Work Product",
-        ):
+        if obj.obj_type in _FIXED_SIZE_TYPES:
             return None
         margin = 5
         ox = obj.x * self.zoom
@@ -6399,6 +6396,38 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
         self.gradient_cache[obj_id] = img
 
+    def _draw_cylinder(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        color: str,
+        outline: str,
+        obj_id: int,
+    ) -> None:
+        """Draw a cylinder shape matching the AI database icon."""
+
+        oval_h = min(10 * self.zoom, (y2 - y1) / 2)
+        self._draw_gradient_rect(x1, y1, x2, y2, color, obj_id)
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline=outline, fill="")
+        self.canvas.create_oval(
+            x1,
+            y1 - oval_h,
+            x2,
+            y1 + oval_h,
+            fill=color,
+            outline=outline,
+        )
+        self.canvas.create_oval(
+            x1,
+            y2 - oval_h,
+            x2,
+            y2 + oval_h,
+            fill=color,
+            outline=outline,
+        )
+
 
     def _draw_open_arrow(
         self,
@@ -6931,32 +6960,16 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
                 outline=outline,
             )
-        elif obj.obj_type == "Data":
-            rh = min(10 * self.zoom, h)
-            self.canvas.create_oval(
-                x - w,
-                y - h,
-                x + w,
-                y - h + 2 * rh,
-                outline=outline,
-                fill=color,
-            )
-            self.canvas.create_rectangle(
-                x - w,
-                y - h + rh,
-                x + w,
-                y + h - rh,
-                outline=outline,
-                fill=color,
-            )
-            self.canvas.create_oval(
-                x - w,
-                y + h - 2 * rh,
-                x + w,
-                y + h,
-                outline=outline,
-                fill=color,
-            )
+        elif obj.obj_type in ("Data", "Field Data", "AI Database"):
+            self._draw_cylinder(x - w, y - h, x + w, y + h, color, outline, obj.obj_id)
+            if obj.obj_type == "AI Database":
+                label = obj.properties.get("name", obj.obj_type)
+                self.canvas.create_text(
+                    x,
+                    y + h + 20 * self.zoom,
+                    text=label,
+                    font=self.font,
+                )
         elif obj.obj_type == "Document":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
@@ -7353,33 +7366,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
-            )
-        elif obj.obj_type == "Field Data":
-            rh = min(10 * self.zoom, h)
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
-            self.canvas.create_oval(
-                x - w,
-                y - h,
-                x + w,
-                y - h + 2 * rh,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_rectangle(
-                x - w,
-                y - h + rh,
-                x + w,
-                y + h - rh,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_oval(
-                x - w,
-                y + h - 2 * rh,
-                x + w,
-                y + h,
-                outline=outline,
-                fill="",
             )
         elif obj.obj_type == "Model":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
@@ -8000,37 +7986,6 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=color,
                     outline=outline,
                 )
-        elif obj.obj_type == "AI Database":
-            top = y - h
-            bottom = y + h
-            oval_h = 10 * self.zoom
-            self._draw_gradient_rect(x - w, top, x + w, bottom, color, obj.obj_id)
-            self.canvas.create_rectangle(
-                x - w,
-                top,
-                x + w,
-                bottom,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_oval(
-                x - w,
-                top - oval_h,
-                x + w,
-                top + oval_h,
-                fill=color,
-                outline=outline,
-            )
-            self.canvas.create_oval(
-                x - w,
-                bottom - oval_h,
-                x + w,
-                bottom + oval_h,
-                fill=color,
-                outline=outline,
-            )
-            label = obj.properties.get("name", obj.obj_type)
-            self.canvas.create_text(x, bottom + 20 * self.zoom, text=label, font=self.font)
         elif obj.obj_type == "ANN":
             # Draw three layers of neurons connected
             layers = [3, 6, 2]
