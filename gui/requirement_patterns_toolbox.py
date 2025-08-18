@@ -514,8 +514,8 @@ class RequirementPatternsEditor(tk.Frame):
             base_h = int(base)
         except Exception:
             base_h = 20
-        style.configure("PatternTree", rowheight=base_h * max_lines)
-        self.tree.configure(style="PatternTree")
+        style.configure("PatternTree.Treeview", rowheight=base_h * max_lines)
+        self.tree.configure(style="PatternTree.Treeview")
 
         for idx, trig, tmpl in wrapped:
             self.tree.insert("", "end", iid=str(idx), values=(trig, tmpl))
