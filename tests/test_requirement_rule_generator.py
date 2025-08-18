@@ -125,10 +125,12 @@ def test_complex_sequences() -> None:
     cfg = {
         "safety_ai_relation_rules": {
             "Triage": {"Safety Issue": ["Field Data"]},
-            "Develops": {"Field Data": ["Test Suite"]},
+            "Develops": {"Field Data": ["Test Suite"], "Mitigation Plan": ["Test Suite"]},
             "Constrains": {"Policy": ["Process"]},
-            "Produces": {"Process": ["Document"], "Test Suite": ["Document"]},
-            "Validate": {"Model": ["Test Suite"]},
+            "Produces": {"Process": ["Document"], "Test Suite": ["Document"], "Validation Report": ["Document"]},
+            "Validate": {"Model": ["Test Suite"], "Mitigation Plan": ["Validation Report"]},
+            "Assesses": {"Hazard": ["Risk Assessment"]},
+            "Mitigates": {"Risk Assessment": ["Mitigation Plan"]},
         },
         "requirement_sequences": {
             "incident triage": {
@@ -146,6 +148,11 @@ def test_complex_sequences() -> None:
                 "subject": "Validation team",
                 "action": "validate models",
             },
+            "hazard mitigation": {
+                "relations": ["Assesses", "Mitigates", "Develops", "Produces"],
+                "subject": "Safety engineer",
+                "action": "develop hazard mitigation tests",
+            },
         },
     }
     patterns = generate_patterns_from_config(cfg)
@@ -153,3 +160,4 @@ def test_complex_sequences() -> None:
     assert "SEQ-incident_triage-Safety_Issue-Test_Suite" in ids
     assert "SEQ-policy_compliance-Policy-Document" in ids
     assert "SEQ-model_validation-Model-Document" in ids
+    assert "SEQ-hazard_mitigation-Hazard-Document" in ids
