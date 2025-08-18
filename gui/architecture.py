@@ -11,6 +11,7 @@ except Exception:  # pragma: no cover - fallback for minimal installs
 import math
 import re
 import types
+import weakref
 from pathlib import Path
 from dataclasses import dataclass, field, asdict, replace
 from typing import Dict, List, Tuple
@@ -54,6 +55,9 @@ CONNECTION_SELECT_RADIUS = 15
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
+
+# Track open Architecture windows so toolbox layouts can refresh when rules change
+ARCH_WINDOWS: set[weakref.ReferenceType] = set()
 
 # Diagram types that belong to the generic "Architecture Diagram" work product
 ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
@@ -144,58 +148,34 @@ def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
         "Events": [n for n in ["Incident", "Safety Issue"] if n in nodes],
     }
     known = {n for vals in base.values() for n in vals}
-    # Exclude lifecycle phases from the generic "Other" group since a dedicated
-    # toolbox command exists for adding them. Keeping them here would create a
-    # duplicate button in the governance elements toolbox.
+    # Exclude lifecycle phases from the generic management group since a
+    # dedicated toolbox command exists for adding them. Keeping them here would
+    # create a duplicate button in the governance elements toolbox.
     other = [n for n in nodes if n not in known and n != "Lifecycle Phase"]
     if other:
-        base["Other"] = other
-    return base
-
-
-def _make_gov_relation_groups(rels: list[str]) -> dict[str, list[str]]:
-    base = {
-        "Authority": [
-            n
-            for n in ["Approves", "Audits", "Authorizes", "Monitors", "Responsible for"]
-            if n in rels
-        ],
-        "Flow": [
-            n
-            for n in ["Communication Path", "Delivers", "Produces", "Consumes", "Uses"]
-            if n in rels
-        ],
-        "Execution": [
-            n
-            for n in ["Executes", "Performs", "Implement", "Operate", "Manufacture"]
-            if n in rels
-        ],
-        "Quality": [
-            n
-            for n in ["Validate", "Verify", "Inspect", "Triage", "Improve"]
-            if n in rels
-        ],
-        "Structure": [
-            n
-            for n in ["Constrained by", "Constrains", "Extend", "Generalize", "Establish"]
-            if n in rels
-        ],
-    }
-    known = {n for vals in base.values() for n in vals}
-    other = [n for n in rels if n not in known]
-    if other:
-        base["Other"] = other
+        base["Safety & Security Mgmt"] = other
     return base
 
 
 GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
-GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
+
+# Map node types to their toolbox group for cross-category relationship lookups
+NODE_TO_GROUP: dict[str, str] = {}
+for group, nodes in GOV_ELEMENT_CLASSES.items():
+    for n in nodes:
+        NODE_TO_GROUP[n] = group
+if SAFETY_AI_NODES:
+    for n in SAFETY_AI_NODES:
+        NODE_TO_GROUP[n] = "Safety & AI Lifecycle"
 
 # Elements from the governance toolbox that may participate in
 # Safety & AI relationships
 GOVERNANCE_NODE_TYPES = set(
     _normalize_plan_types(_CONFIG.get("governance_node_types", []))
 )
+GOV_CORE_NODES = [n for n in ["Work Product", "Lifecycle Phase"] if n in GOVERNANCE_NODE_TYPES]
+for n in GOV_CORE_NODES:
+    NODE_TO_GROUP[n] = "Governance Core"
 
 # Directed relationship rules for connections between Safety & AI elements.
 # Each entry maps a connection type to allowed source and target element
@@ -220,6 +200,113 @@ NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {
 
 # Node types that require guards on outgoing flows
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+
+
+def _relations_for(nodes: list[str]) -> list[str]:
+    """Return connection labels relevant to ``nodes`` based on diagram rules."""
+
+    rels: set[str] = set()
+    node_set = set(nodes)
+
+    # Only consider relationships defined for Governance diagrams.  Iterating
+    # over all diagram rules caused every connection label to appear in each
+    # toolbox even when a node had no valid targets for that relation.
+    gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
+    for rel, srcs in gov_rules.items():
+        for src, dests in srcs.items():
+            # A relation is relevant only when an element in ``node_set`` can
+            # connect to another element in ``node_set`` using that relation.
+            # Previously, relations were surfaced whenever a node could act as
+            # either source *or* target.  This caused connections that required
+            # nodes outside the toolbox to appear.  Filtering to pairs within
+            # the toolbox ensures each displayed relationship is actionable for
+            # the current context.
+            if src in node_set and node_set.intersection(dests):
+                rels.add(rel)
+
+    # Apply the same filtering to Safety & AI specific rules.
+    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
+        for src, dests in srcs.items():
+            if src in node_set and node_set.intersection(dests):
+                rels.add(rel)
+
+    return sorted(rels)
+
+
+def _external_relations_for(nodes: list[str]) -> dict[str, dict[str, list[str]]]:
+    """Return mapping of related toolbox groups for ``nodes``.
+
+    Each key is another toolbox group name and the value lists the external
+    elements and relationships that can connect to ``nodes`` based on the
+    current diagram rules.
+    """
+
+    externals: dict[str, dict[str, set[str]]] = {}
+    node_set = set(nodes)
+
+    def add(group: str, node: str, rel: str) -> None:
+        data = externals.setdefault(group, {"nodes": set(), "relations": set()})
+        data["nodes"].add(node)
+        data["relations"].add(rel)
+
+    gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
+    for rel, srcs in gov_rules.items():
+        for src, dests in srcs.items():
+            src_group = NODE_TO_GROUP.get(src)
+            for dest in dests:
+                dest_group = NODE_TO_GROUP.get(dest)
+                if src in node_set and dest not in node_set and dest_group:
+                    add(dest_group, dest, rel)
+                elif dest in node_set and src not in node_set and src_group:
+                    add(src_group, src, rel)
+
+    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
+        for src, dests in srcs.items():
+            src_group = NODE_TO_GROUP.get(src)
+            for dest in dests:
+                dest_group = NODE_TO_GROUP.get(dest)
+                if src in node_set and dest not in node_set and dest_group:
+                    add(dest_group, dest, rel)
+                elif dest in node_set and src not in node_set and src_group:
+                    add(src_group, src, rel)
+
+    result: dict[str, dict[str, list[str]]] = {}
+    for grp, data in externals.items():
+        result[grp] = {
+            "nodes": sorted(data["nodes"]),
+            "relations": sorted(data["relations"]),
+        }
+    return result
+
+
+def _toolbox_defs() -> dict[str, dict[str, list[str] | dict]]:
+    """Return mapping of toolbox name to node/relation lists."""
+    defs: dict[str, dict[str, list[str] | dict]] = {}
+    for group, nodes in GOV_ELEMENT_CLASSES.items():
+        if not nodes:
+            continue
+        defs[group] = {
+            "nodes": nodes,
+            "relations": _relations_for(nodes),
+            "externals": _external_relations_for(nodes),
+        }
+    if SAFETY_AI_NODES:
+        defs["Safety & AI Lifecycle"] = {
+            "nodes": SAFETY_AI_NODES,
+            "relations": _relations_for(SAFETY_AI_NODES),
+            "externals": _external_relations_for(SAFETY_AI_NODES),
+        }
+    if GOV_CORE_NODES:
+        # Governance core elements like Work Products and Lifecycle Phases are
+        # inserted via dedicated actions rather than direct toolbox buttons.
+        # Still derive their relationships so users can connect existing
+        # boundary elements.
+        defs["Governance Core"] = {
+            "nodes": [],
+            "relations": _relations_for(GOV_CORE_NODES),
+            "externals": _external_relations_for(GOV_CORE_NODES),
+        }
+    return defs
 
 # Node type aliases used when validating governance diagram connections.
 # Governance tasks are implemented using SysML ``Action`` elements but are
@@ -469,8 +556,9 @@ def reload_config() -> None:
     """Reload diagram rule configuration at runtime."""
     global _CONFIG, ARCH_DIAGRAM_TYPES, SAFETY_AI_NODES, SAFETY_AI_NODE_TYPES
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
-    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES, GOV_ELEMENT_RELATION_GROUPS
+    global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
+    global NODE_TO_GROUP, GOV_CORE_NODES
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
     SAFETY_AI_NODES = _CONFIG.get("ai_nodes", [])
@@ -482,10 +570,19 @@ def reload_config() -> None:
     )
     GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
-    GOV_ELEMENT_RELATION_GROUPS = _make_gov_relation_groups(GOV_ELEMENT_RELATIONS)
     GOVERNANCE_NODE_TYPES = set(
         _normalize_plan_types(_CONFIG.get("governance_node_types", []))
     )
+    NODE_TO_GROUP = {}
+    for group, nodes in GOV_ELEMENT_CLASSES.items():
+        for n in nodes:
+            NODE_TO_GROUP[n] = group
+    if SAFETY_AI_NODES:
+        for n in SAFETY_AI_NODES:
+            NODE_TO_GROUP[n] = "Safety & AI Lifecycle"
+    GOV_CORE_NODES = [n for n in ["Work Product", "Lifecycle Phase"] if n in GOVERNANCE_NODE_TYPES]
+    for n in GOV_CORE_NODES:
+        NODE_TO_GROUP[n] = "Governance Core"
     SAFETY_AI_RELATION_RULES = {
         conn: {src: set(dests) for src, dests in srcs.items()}
         for conn, srcs in _CONFIG.get("safety_ai_relation_rules", {}).items()
@@ -500,6 +597,12 @@ def reload_config() -> None:
     NODE_CONNECTION_LIMITS = _CONFIG.get("node_connection_limits", {})
     GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
     _enforce_connection_rules()
+    for ref in list(ARCH_WINDOWS):
+        win = ref()
+        if win:
+            win._rebuild_toolboxes()
+        else:
+            ARCH_WINDOWS.discard(ref)
 
 
 def _work_product_name(diag_type: str) -> str:
@@ -10857,242 +10960,41 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     pass
 
         # ------------------------------------------------------------------
-        # Toolbox toggle between Governance and Safety & AI Lifecycle
+        # Toolbox selector built from diagram rules
         # ------------------------------------------------------------------
+        self._toolbox_frames: dict[str, list] = {}
         try:
-            self.toolbox_var = tk.StringVar(value="Governance")
+            self.toolbox_var = tk.StringVar()
         except Exception:  # pragma: no cover - headless tests
             class _Var:
-                def __init__(self, value):
-                    self._value = value
+                def __init__(self):
+                    self._v = ""
 
                 def get(self):
-                    return self._value
+                    return self._v
 
                 def set(self, v):
-                    self._value = v
+                    self._v = v
 
-            self.toolbox_var = _Var("Governance")
+            self.toolbox_var = _Var()
         if hasattr(self.toolbox, "tk"):
-            selector = ttk.Combobox(
-                self.toolbox,
-                values=[
-                    "Governance",
-                    "Safety & AI Lifecycle",
-                ],
-                state="readonly",
-                textvariable=self.toolbox_var,
+            self.toolbox_selector = ttk.Combobox(
+                self.toolbox, state="readonly", textvariable=self.toolbox_var
             )
-            selector.pack(fill=tk.X, padx=2, pady=2)
-            selector.bind("<<ComboboxSelected>>", lambda e: self._switch_toolbox())
+            self.toolbox_selector.pack(fill=tk.X, padx=2, pady=2)
+            self.toolbox_selector.bind("<<ComboboxSelected>>", lambda e: self._switch_toolbox())
         else:  # pragma: no cover - headless tests
-            selector = types.SimpleNamespace(pack=lambda *a, **k: None, bind=lambda *a, **k: None, lift=lambda: None)
-
-        # Store original governance tool frame and relationship frame
-        self.gov_tools_frame = self.tools_frame
-        self.gov_rel_frame = getattr(self, "rel_frame", None)
-
-        # Create Safety & AI Lifecycle toolbox frame
-        ai_nodes = SAFETY_AI_NODES
-        ai_relations = SAFETY_AI_RELATIONS
-        if hasattr(self.toolbox, "tk"):
-            self.ai_tools_frame = ttk.Frame(self.toolbox)
-            for name in ai_nodes:
-                display = "AI Database" if name == "Database" else name
-                ttk.Button(
-                    self.ai_tools_frame,
-                    text=display,
-                    image=self._icon_for(name),
-                    compound=tk.LEFT,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-            rel_frame = ttk.LabelFrame(
-                self.ai_tools_frame, text="Relationships (relationships)"
-            )
-            rel_frame.pack(fill=tk.X, padx=2, pady=2)
-            for name in ai_relations:
-                ttk.Button(
-                    rel_frame,
-                    text=name,
-                    image=self._icon_for(name),
-                    compound=tk.LEFT,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-        else:  # pragma: no cover - headless tests
-            self.ai_tools_frame = types.SimpleNamespace(
+            self.toolbox_selector = types.SimpleNamespace(
                 pack=lambda *a, **k: None,
-                pack_forget=lambda *a, **k: None,
+                bind=lambda *a, **k: None,
+                configure=lambda *a, **k: None,
             )
 
-        # Create toolbox for additional governance elements grouped by class
-        # (merged into the main Governance toolbox)
-        ge_nodes = GOV_ELEMENT_CLASSES
-        if hasattr(self.toolbox, "tk"):
-            self.gov_elements_frame = ttk.Frame(self.toolbox)
-
-            # Migrate basic governance element commands from the right panel
-            node_cmds = [
-                ("Add Work Product", self.add_work_product),
-                ("Add Generic Work Product", self.add_generic_work_product),
-                ("Add Process Area", self.add_process_area),
-                ("Add Lifecycle Phase", self.add_lifecycle_phase),
-            ]
-            elem_group = ttk.LabelFrame(
-                self.gov_elements_frame, text="Elements (elements)"
-            )
-            elem_group.pack(fill=tk.X, padx=2, pady=2)
-            for name, cmd in node_cmds:
-                ttk.Button(
-                    elem_group,
-                    text=name,
-                    image=self._icon_for(name),
-                    compound=tk.LEFT,
-                    command=cmd,
-                ).pack(fill=tk.X, padx=2, pady=2)
-
-            for group, nodes in ge_nodes.items():
-                frame = ttk.LabelFrame(
-                    self.gov_elements_frame, text=f"{group} (elements)"
-                )
-                frame.pack(fill=tk.X, padx=2, pady=2)
-                for name in nodes:
-                    ttk.Button(
-                        frame,
-                        text=name,
-                        image=self._icon_for(name),
-                        compound=tk.LEFT,
-                        command=lambda t=name: self.select_tool(t),
-                    ).pack(fill=tk.X, padx=2, pady=2)
-        else:
-            self.gov_elements_frame = types.SimpleNamespace(
-                pack=lambda *a, **k: None,
-                pack_forget=lambda *a, **k: None,
-            )
-
-        # Repack toolbox to include selector and default to governance frame
-        if hasattr(self, "back_btn"):
-            self.back_btn.pack_forget()
-        if hasattr(self.gov_tools_frame, "pack_forget"):
-            self.gov_tools_frame.pack_forget()
-        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack_forget"):
-            self.gov_rel_frame.pack_forget()
-        if getattr(self, "gov_elements_frame", None) and hasattr(
-            self.gov_elements_frame, "pack_forget"
-        ):
-            self.gov_elements_frame.pack_forget()
-        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack_forget"):
-            self.prop_frame.pack_forget()
-
-        if hasattr(self, "back_btn"):
-            self.back_btn.pack(fill=tk.X, padx=2, pady=2)
-        selector.lift()
-        if hasattr(self.gov_tools_frame, "pack"):
-            self.gov_tools_frame.pack(fill=tk.X, padx=2, pady=2)
-        if getattr(self, "gov_elements_frame", None) and hasattr(
-            self.gov_elements_frame, "pack"
-        ):
-            self.gov_elements_frame.pack(fill=tk.X, padx=2, pady=2)
-        if self.gov_rel_frame and hasattr(self.gov_rel_frame, "pack"):
-            self.gov_rel_frame.pack(fill=tk.X, padx=2, pady=2)
-        if hasattr(self, "prop_frame") and hasattr(self.prop_frame, "pack"):
-            self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        self._rebuild_toolboxes()
+        ARCH_WINDOWS.add(weakref.ref(self))
 
         canvas_frame = self.canvas.master
         canvas_frame.pack_forget()
-
-        if hasattr(self, "tk"):
-            # Measure current toolbox widths so the governance toolbox matches
-            self.toolbox_canvas.update_idletasks()
-            self.toolbox_container.update_idletasks()
-            canvas_width = (
-                self.toolbox_canvas.winfo_width()
-                or self.toolbox_canvas.winfo_reqwidth()
-            )
-            container_width = (
-                self.toolbox_container.winfo_width()
-                or self.toolbox_container.winfo_reqwidth()
-            )
-
-            gov_container = ttk.Frame(self, width=container_width)
-            gov_container.pack(side=tk.RIGHT, fill=tk.Y, padx=2, pady=2)
-            gov_container.pack_propagate(False)
-
-            gov_canvas = tk.Canvas(
-                gov_container, highlightthickness=0, width=canvas_width
-            )
-            gov_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-            gov_scroll = ttk.Scrollbar(
-                gov_container, orient=tk.VERTICAL, command=gov_canvas.yview
-            )
-            gov_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-            gov_canvas.configure(yscrollcommand=gov_scroll.set)
-
-            governance_panel = ttk.LabelFrame(
-                gov_canvas, text="Governance relationships"
-            )
-            gov_window = gov_canvas.create_window(
-                (0, 0), window=governance_panel, anchor="nw"
-            )
-            governance_panel.bind(
-                "<Configure>",
-                lambda e: gov_canvas.configure(scrollregion=gov_canvas.bbox("all")),
-            )
-            gov_canvas.bind(
-                "<Configure>",
-                lambda e: gov_canvas.itemconfig(gov_window, width=e.width),
-            )
-
-            # Ensure the governance toolbox is visible immediately
-            self._fit_governance_toolbox(gov_container, gov_canvas, gov_window)
-            self.after_idle(
-                lambda: self._fit_governance_toolbox(
-                    gov_container, gov_canvas, gov_window
-                )
-            )
-
-            work_rel_names = [
-                "Propagate",
-                "Propagate by Review",
-                "Propagate by Approval",
-                "Used By",
-                "Used after Review",
-                "Used after Approval",
-                "Re-use",
-                "Trace",
-                "Satisfied by",
-                "Derived from",
-            ]
-            wp_rel = ttk.LabelFrame(
-                governance_panel, text="Work Product Links (relationships)"
-            )
-            wp_rel.pack(fill=tk.X, padx=2, pady=2)
-            for name in work_rel_names:
-                ttk.Button(
-                    wp_rel,
-                    text=name,
-                    image=self._icon_for(name),
-                    compound=tk.LEFT,
-                    command=lambda t=name: self.select_tool(t),
-                ).pack(fill=tk.X, padx=2, pady=2)
-
-            for group, names in GOV_ELEMENT_RELATION_GROUPS.items():
-                rel_frame = ttk.LabelFrame(
-                    governance_panel, text=f"{group} (relationships)"
-                )
-                rel_frame.pack(fill=tk.X, padx=2, pady=2)
-                for name in names:
-                    ttk.Button(
-                        rel_frame,
-                        text=name,
-                        image=self._icon_for(name),
-                        compound=tk.LEFT,
-                        command=lambda t=name: self.select_tool(t),
-                    ).pack(fill=tk.X, padx=2, pady=2)
-        else:  # pragma: no cover - headless tests
-            governance_panel = types.SimpleNamespace(
-                pack=lambda *a, **k: None
-            )
 
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self._activate_parent_phase()
@@ -11123,33 +11025,146 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         toolbox.activate_phase(phase, app)
 
     # ------------------------------------------------------------------
-    # Toolbox switching logic
+    # Dynamic toolbox construction
     # ------------------------------------------------------------------
+    def _rebuild_toolboxes(self) -> None:
+        defs = _toolbox_defs()
+        ai_data = defs.pop("Safety & AI Lifecycle", None)
+        if hasattr(self.tools_frame, "pack_forget"):
+            self.tools_frame.pack_forget()
+        if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
+            self.rel_frame.pack_forget()
+        for frames in getattr(self, "_toolbox_frames", {}).values():
+            for fr in frames:
+                if fr not in (self.tools_frame, getattr(self, "rel_frame", None)) and hasattr(fr, "destroy"):
+                    fr.destroy()
+        self._toolbox_frames = {}
+
+        if hasattr(self.toolbox, "tk"):
+            action_frame = ttk.Frame(self.toolbox)
+            cmds = [
+                ("Add Work Product", self.add_work_product),
+                ("Add Generic Work Product", self.add_generic_work_product),
+                ("Add Process Area", self.add_process_area),
+                ("Add Lifecycle Phase", self.add_lifecycle_phase),
+            ]
+            for name, cmd in cmds:
+                ttk.Button(
+                    action_frame,
+                    text=name,
+                    image=self._icon_for(name),
+                    compound=tk.LEFT,
+                    command=cmd,
+                ).pack(fill=tk.X, padx=2, pady=2)
+        else:  # pragma: no cover - headless tests
+            action_frame = types.SimpleNamespace(
+                pack=lambda *a, **k: None,
+                pack_forget=lambda *a, **k: None,
+                destroy=lambda *a, **k: None,
+            )
+
+        def build_frame(name: str, data: dict):
+            if not data:
+                return types.SimpleNamespace(
+                    pack=lambda *a, **k: None,
+                    pack_forget=lambda *a, **k: None,
+                    destroy=lambda *a, **k: None,
+                )
+            if hasattr(self.toolbox, "tk"):
+                frame = ttk.LabelFrame(self.toolbox, text=name)
+                if data.get("nodes"):
+                    elem = ttk.LabelFrame(frame, text="Elements (elements)")
+                    elem.pack(fill=tk.X, padx=2, pady=2)
+                    for node in data["nodes"]:
+                        ttk.Button(
+                            elem,
+                            text=node,
+                            image=self._icon_for(node),
+                            compound=tk.LEFT,
+                            command=lambda t=node: self.select_tool(t),
+                        ).pack(fill=tk.X, padx=2, pady=2)
+                if data.get("relations"):
+                    rel = ttk.LabelFrame(frame, text="Relationships (relationships)")
+                    rel.pack(fill=tk.X, padx=2, pady=2)
+                    for rel_name in data["relations"]:
+                        ttk.Button(
+                            rel,
+                            text=rel_name,
+                            image=self._icon_for(rel_name),
+                            compound=tk.LEFT,
+                            command=lambda t=rel_name: self.select_tool(t),
+                        ).pack(fill=tk.X, padx=2, pady=2)
+                for grp, sub in data.get("externals", {}).items():
+                    sub_frame = ttk.LabelFrame(frame, text=f"Related {grp}")
+                    sub_frame.pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("nodes"):
+                        selem = ttk.LabelFrame(sub_frame, text="Elements (elements)")
+                        selem.pack(fill=tk.X, padx=2, pady=2)
+                        for node in sub["nodes"]:
+                            ttk.Button(
+                                selem,
+                                text=node,
+                                image=self._icon_for(node),
+                                compound=tk.LEFT,
+                                command=lambda t=node: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
+                    if sub.get("relations"):
+                        srel = ttk.LabelFrame(sub_frame, text="Relationships (relationships)")
+                        srel.pack(fill=tk.X, padx=2, pady=2)
+                        for rel_name in sub["relations"]:
+                            ttk.Button(
+                                srel,
+                                text=rel_name,
+                                image=self._icon_for(rel_name),
+                                compound=tk.LEFT,
+                                command=lambda t=rel_name: self.select_tool(t),
+                            ).pack(fill=tk.X, padx=2, pady=2)
+            else:  # pragma: no cover - headless tests
+                frame = types.SimpleNamespace(
+                    pack=lambda *a, **k: None,
+                    pack_forget=lambda *a, **k: None,
+                    destroy=lambda *a, **k: None,
+                )
+            return frame
+
+        # Build a toolbox entry for each category.  All options include the
+        # shared selection/connection tools.  Governance Core also exposes
+        # its action buttons for adding work products, generic work products,
+        # process areas, and lifecycle phases.
+        for name, data in defs.items():
+            frames = [self.tools_frame]
+            if name == "Governance Core":
+                frames.append(action_frame)
+                if getattr(self, "rel_frame", None):
+                    frames.append(self.rel_frame)
+            frames.append(build_frame(name, data))
+            self._toolbox_frames[name] = frames
+
+        if ai_data:
+            self._toolbox_frames["Safety & AI Lifecycle"] = [
+                self.tools_frame,
+                build_frame("Safety & AI Lifecycle", ai_data),
+            ]
+
+        options = sorted(self._toolbox_frames.keys())
+        if "Governance Core" in options:
+            options.remove("Governance Core")
+            options = ["Governance Core"] + options
+        self.toolbox_selector.configure(values=options)
+        current = self.toolbox_var.get()
+        if current not in options:
+            self.toolbox_var.set(options[0] if options else "")
+        self._switch_toolbox()
+
     def _switch_toolbox(self) -> None:
         choice = self.toolbox_var.get()
-        before = self.prop_frame if hasattr(self, "prop_frame") else None
-        frames = {
-            "Governance": [
-                self.gov_tools_frame,
-                getattr(self, "gov_elements_frame", None),
-                self.gov_rel_frame,
-            ],
-            "Safety & AI Lifecycle": [self.ai_tools_frame],
-        }
-        for frame in [
-            self.gov_tools_frame,
-            self.gov_rel_frame,
-            self.ai_tools_frame,
-            getattr(self, "gov_elements_frame", None),
-        ]:
-            if frame and hasattr(frame, "pack_forget"):
-                frame.pack_forget()
-        for frame in frames.get(choice, []):
+        for frames in self._toolbox_frames.values():
+            for frame in frames:
+                if frame and hasattr(frame, "pack_forget"):
+                    frame.pack_forget()
+        for frame in self._toolbox_frames.get(choice, []):
             if frame and hasattr(frame, "pack"):
-                if before:
-                    frame.pack(fill=tk.X, padx=2, pady=2, before=before)
-                else:
-                    frame.pack(fill=tk.X, padx=2, pady=2)
+                frame.pack(fill=tk.X, padx=2, pady=2)
 
     class _SelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
         def __init__(self, parent, title: str, options: list[str]):
