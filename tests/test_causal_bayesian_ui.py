@@ -225,6 +225,21 @@ def test_fill_moves_with_node():
     assert ("fill_A", 10, 15) in win.canvas.moves
 
 
+def test_fill_tag_sanitizes_name():
+    win, doc = _setup_window()
+    cbn_mod = __import__("gui.causal_bayesian_network_window", fromlist=["simpledialog"])
+    orig = cbn_mod.simpledialog.askstring
+    try:
+        cbn_mod.simpledialog.askstring = lambda *a, **k: "Node 1"
+        win.select_tool("Variable")
+        win.on_click(types.SimpleNamespace(x=0, y=0))
+    finally:
+        cbn_mod.simpledialog.askstring = orig
+    assert "Node 1" in doc.network.nodes
+    _, _, tag = win.nodes["Node 1"]
+    assert tag == "fill_Node_1"
+
+
 def test_node_selectable_from_fill_area():
     win, doc = _setup_window_real()
     captured = []
