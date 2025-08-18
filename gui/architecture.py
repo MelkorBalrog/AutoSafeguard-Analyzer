@@ -6051,8 +6051,7 @@ class SysMLDiagramWindow(tk.Frame):
         """Resize a Block so its compartments fit its current state."""
         if obj.obj_type != "Block":  # pragma: no cover - safety check
             return
-        min_w, min_h = self._min_block_size(obj)
-        obj.width = min_w
+        _, min_h = self._min_block_size(obj)
         obj.height = min_h
 
     def _min_action_size(self, obj: SysMLObject) -> tuple[float, float]:

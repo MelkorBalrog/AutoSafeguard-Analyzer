@@ -368,10 +368,12 @@ class RequirementPatternsEditor(tk.Frame):
         tree_frame.columnconfigure(0, weight=1)
 
         self.tree = ttk.Treeview(
-            tree_frame, columns=("trigger", "template"), show="headings"
+            tree_frame, columns=("idx", "trigger", "template"), show="headings"
         )
+        self.tree.heading("idx", text="#")
         self.tree.heading("trigger", text="Trigger")
         self.tree.heading("template", text="Template")
+        self.tree.column("idx", width=30, stretch=False, anchor="center")
         self.tree.column("trigger", width=250, stretch=True)
         self.tree.column("template", width=250, stretch=True)
         self.tree.bind("<Double-1>", self._edit_item)
@@ -410,10 +412,11 @@ class RequirementPatternsEditor(tk.Frame):
 
         self.rule_tree = ttk.Treeview(
             r_tree_frame,
-            columns=("label", "action", "subject", "template", "targets", "constraint"),
+            columns=("idx", "label", "action", "subject", "template", "targets", "constraint"),
             show="headings",
         )
         for col, text in (
+            ("idx", "#"),
             ("label", "Label"),
             ("action", "Action"),
             ("subject", "Subject"),
@@ -422,7 +425,10 @@ class RequirementPatternsEditor(tk.Frame):
             ("constraint", "Constraint"),
         ):
             self.rule_tree.heading(col, text=text)
-            self.rule_tree.column(col, width=120, stretch=True)
+            if col == "idx":
+                self.rule_tree.column(col, width=30, stretch=False, anchor="center")
+            else:
+                self.rule_tree.column(col, width=120, stretch=True)
         self.rule_tree.bind("<Double-1>", self._edit_rule)
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
 
@@ -460,6 +466,7 @@ class RequirementPatternsEditor(tk.Frame):
         self.seq_tree = ttk.Treeview(
             s_tree_frame,
             columns=(
+                "idx",
                 "label",
                 "relations",
                 "action",
@@ -470,6 +477,7 @@ class RequirementPatternsEditor(tk.Frame):
             show="headings",
         )
         for col, text in (
+            ("idx", "#"),
             ("label", "Label"),
             ("relations", "Relations"),
             ("action", "Action"),
@@ -478,7 +486,10 @@ class RequirementPatternsEditor(tk.Frame):
             ("template", "Template"),
         ):
             self.seq_tree.heading(col, text=text)
-            self.seq_tree.column(col, width=120, stretch=True)
+            if col == "idx":
+                self.seq_tree.column(col, width=30, stretch=False, anchor="center")
+            else:
+                self.seq_tree.column(col, width=120, stretch=True)
         self.seq_tree.bind("<Double-1>", self._edit_sequence)
         self.seq_tree.grid(row=0, column=0, sticky="nsew")
 
@@ -528,7 +539,7 @@ class RequirementPatternsEditor(tk.Frame):
         self.tree.configure(style="PatternTree.Treeview")
 
         for idx, trig, tmpl in wrapped:
-            self.tree.insert("", "end", iid=str(idx), values=(trig, tmpl))
+            self.tree.insert("", "end", iid=str(idx), values=(idx + 1, trig, tmpl))
 
     def _edit_item(self, _event=None):
         item = self.tree.focus()
@@ -583,12 +594,13 @@ class RequirementPatternsEditor(tk.Frame):
     # ------------------------------------------------------------------
     def _populate_rule_tree(self):
         self.rule_tree.delete(*self.rule_tree.get_children(""))
-        for label, info in sorted(self.req_rules.items()):
+        for idx, (label, info) in enumerate(sorted(self.req_rules.items()), 1):
             self.rule_tree.insert(
                 "",
                 "end",
                 iid=label,
                 values=(
+                    idx,
                     label,
                     info.get("action", ""),
                     info.get("subject", ""),
@@ -688,13 +700,14 @@ class RequirementPatternsEditor(tk.Frame):
     def _populate_seq_tree(self):
         self._ensure_role_subject_variants()
         self.seq_tree.delete(*self.seq_tree.get_children(""))
-        for label, info in sorted(self.req_seqs.items()):
+        for idx, (label, info) in enumerate(sorted(self.req_seqs.items()), 1):
             rels = " -> ".join(info.get("relations", []))
             self.seq_tree.insert(
                 "",
                 "end",
                 iid=label,
                 values=(
+                    idx,
                     label,
                     rels,
                     info.get("action", ""),
