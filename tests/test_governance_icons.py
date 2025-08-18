@@ -12,4 +12,9 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Task") == "trapezoid"
     assert shape(None, "Vehicle") == "vehicle"
     assert shape(None, "Approves") == "relation"
+    assert shape(None, "Hazard") == "triangle"
+    assert shape(None, "Risk Assessment") == "diamond"
+    assert shape(None, "Safety Goal") == "pentagon"
+    assert shape(None, "Security Threat") == "cross"
+    assert shape(None, "Safety Plan") == "document"
 

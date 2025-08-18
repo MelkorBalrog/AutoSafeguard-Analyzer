@@ -3557,6 +3557,19 @@ class SysMLDiagramWindow(tk.Frame):
             "Field Data": "cylinder",
             "Model": "document",
             "Lifecycle Phase": "folder",
+            "Hazard": "triangle",
+            "Risk Assessment": "diamond",
+            "Safety Goal": "pentagon",
+            "Safety Plan": "document",
+            "Security Plan": "document",
+            "Mitigation Plan": "document",
+            "Security Threat": "cross",
+            "Validation Report": "document",
+            "Audit Report": "document",
+            "Safety Case": "document",
+            "Deployment Plan": "document",
+            "Maintenance Plan": "document",
+            "Decommission Plan": "document",
             "Work Product": "rect",
         }
         if name in mapping:
@@ -7115,6 +7128,54 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_line(x + w, y - h, x + w + off, y - h + off, fill=outline)
             self.canvas.create_line(x + w, y + h, x + w + off, y + h + off, fill=outline)
             self.canvas.create_line(x - w, y + h, x - w + off, y + h + off, fill=outline)
+        elif obj.obj_type == "Hazard":
+            points = [x, y - h, x + w, y + h, x - w, y + h]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Risk Assessment":
+            points = [x, y - h, x + w, y, x, y + h, x - w, y]
+            self.canvas.create_polygon(points, outline=outline, fill=color)
+        elif obj.obj_type == "Safety Goal":
+            r = min(obj.width, obj.height) * self.zoom / 2
+            pts = []
+            for i in range(5):
+                angle = math.radians(72 * i - 90)
+                px = x + r * math.cos(angle)
+                py = y + r * math.sin(angle)
+                pts.extend([px, py])
+            self.canvas.create_polygon(pts, outline=outline, fill=color)
+        elif obj.obj_type in (
+            "Safety Plan",
+            "Security Plan",
+            "Mitigation Plan",
+            "Validation Report",
+            "Audit Report",
+            "Safety Case",
+            "Deployment Plan",
+            "Maintenance Plan",
+            "Decommission Plan",
+        ):
+            self.canvas.create_rectangle(
+                x - w,
+                y - h,
+                x + w,
+                y + h,
+                outline=outline,
+                fill=color,
+            )
+            fold = 10 * self.zoom
+            self.canvas.create_polygon(
+                x + w - fold,
+                y - h,
+                x + w,
+                y - h,
+                x + w,
+                y - h + fold,
+                fill=StyleManager.get_instance().get_canvas_color(),
+                outline=outline,
+            )
+        elif obj.obj_type == "Security Threat":
+            self.canvas.create_line(x - w, y - h, x + w, y + h, fill=outline, width=2)
+            self.canvas.create_line(x - w, y + h, x + w, y - h, fill=outline, width=2)
         elif obj.obj_type == "Use Case":
             self.canvas.create_oval(
                 x - w,
