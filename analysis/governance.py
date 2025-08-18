@@ -38,6 +38,14 @@ _NODE_ROLES = _CONFIG.get("node_roles", {})
 _PATTERN_PATH = Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
 try:
     _PATTERN_DEFS = load_json_with_comments(_PATTERN_PATH)
+    # ``load_json_with_comments`` returns ``Any`` so guard against invalid
+    # structures here.  The optional ``requirement_patterns.json`` file is
+    # expected to contain a list of pattern definitions but some deployments
+    # ship an empty object or the wrong file altogether.  Converting unexpected
+    # data to an empty list avoids ``AttributeError`` when calling ``extend``
+    # below while still allowing automatically generated patterns to work.
+    if not isinstance(_PATTERN_DEFS, list):
+        _PATTERN_DEFS = []
 except FileNotFoundError:  # pragma: no cover - optional file
     _PATTERN_DEFS = []
 
@@ -117,6 +125,11 @@ def reload_config() -> None:
 
     try:
         _PATTERN_DEFS = load_json_with_comments(_PATTERN_PATH)
+        # See module-level load above for rationale; ensure we always work
+        # with a list even if a stray configuration file provides a different
+        # structure.
+        if not isinstance(_PATTERN_DEFS, list):
+            _PATTERN_DEFS = []
     except FileNotFoundError:  # pragma: no cover - optional file
         _PATTERN_DEFS = []
 
