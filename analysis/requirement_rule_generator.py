@@ -343,15 +343,50 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                         req_rules, relation_label, "Engineering team", relation_label.lower()
                     )
                     if is_ai:
-                        base_id = f"SA-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                         trigger = make_trigger("Safety&AI", src_type, relation_label, tgt_type)
-                        if tmpl_override:
-                            template = tmpl_override
-                            variables = var_override or []
-                        else:
-                            template = make_sa_template(subj, act, tgt_count)
-                            variables = make_sa_variables_base(tgt_count)
                         notes = "Auto-generated from diagram rules (Safety&AI)."
+                        ai_variants = [
+                            ("", subj, False),
+                            ("-ROLE", "<subject_id> (<subject_class>)", True),
+                        ]
+                        for role_suf, subj_text, include_subject in ai_variants:
+                            if tmpl_override:
+                                template = tmpl_override
+                                variables = var_override or []
+                            else:
+                                template = make_sa_template(
+                                    subj_text, act, tgt_count, subject_is_object0=include_subject
+                                )
+                                variables = make_sa_variables_base(
+                                    tgt_count, include_subject=include_subject
+                                )
+                            base_id = (
+                                f"SA-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}{role_suf}"
+                            )
+                            for suf, need_cond, need_const in SUFFIXES:
+                                pid = base_id + suf
+                                t = (
+                                    build_cond_const_template(template)
+                                    if (need_cond and need_const)
+                                    else build_cond_template(template)
+                                    if need_cond
+                                    else build_const_template(template)
+                                    if need_const
+                                    else normalize_base_template(template)
+                                )
+                                vs = ensure_variables(
+                                    variables, need_cond, need_const
+                                )
+                                out.append(
+                                    {
+                                        "Pattern ID": pid,
+                                        "Trigger": trigger,
+                                        "Template": t,
+                                        "Variables": vs,
+                                        "Notes": notes,
+                                    }
+                                )
+                        continue
                     else:
                         if tmpl_override:
                             template = tmpl_override
@@ -414,32 +449,65 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 src_type = path[0][0]
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
-                use_role_subject = info.get("role_subject")
-                subj = (
-                    "<subject_id> (<subject_class>)"
-                    if use_role_subject
-                    else info.get("subject", "Engineering team")
-                )
+
                 tmpl_override = info.get("template")
                 var_override = info.get("variables")
+
+                # Text-subject variant ------------------------------------------------
                 if tmpl_override:
                     template = tmpl_override
                     variables = var_override or []
                 else:
                     template = make_sequence_template(
-                        subj, rel_chain, subject_is_object0=bool(use_role_subject)
+                        info.get("subject", "Engineering team"), rel_chain
                     )
-                    variables = make_sa_variables_base(
-                        tgt_count, include_subject=bool(use_role_subject)
-                    )
-                base_id = (
-                    f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
-                )
+                    variables = make_sa_variables_base(tgt_count)
+                base_id = f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"
                 trigger_parts = [src_type]
                 for rel, edge in zip(rel_chain, path):
                     trigger_parts.append(f"--[{rel}]--> {edge[1]}")
                 trigger = "Sequence: " + " ".join(trigger_parts)
                 notes = "Auto-generated from sequence rules."
+                for suf, need_cond, need_const in SUFFIXES:
+                    pid = base_id + suf
+                    t = (
+                        build_cond_const_template(template)
+                        if (need_cond and need_const)
+                        else build_cond_template(template)
+                        if need_cond
+                        else build_const_template(template)
+                        if need_const
+                        else normalize_base_template(template)
+                    )
+                    vs = ensure_variables(variables, need_cond, need_const)
+                    out.append(
+                        {
+                            "Pattern ID": pid,
+                            "Trigger": trigger,
+                            "Template": t,
+                            "Variables": vs,
+                            "Notes": notes,
+                        }
+                    )
+
+                # Role-subject variant -----------------------------------------------
+                if tmpl_override:
+                    template = tmpl_override
+                    variables = var_override or []
+                else:
+                    template = make_sequence_template(
+                        "<subject_id> (<subject_class>)", rel_chain, subject_is_object0=True
+                    )
+                    variables = make_sa_variables_base(
+                        tgt_count, include_subject=True
+                    )
+                base_id = (
+                    f"SEQ-{id_token(seq_label + '_role_subject')}-Role-{id_token(final_tgt)}"
+                )
+                trigger_parts = ["Role", f"--[Role]--> {src_type}"]
+                for rel, edge in zip(rel_chain, path):
+                    trigger_parts.append(f"--[{rel}]--> {edge[1]}")
+                trigger = "Sequence: " + " ".join(trigger_parts)
                 for suf, need_cond, need_const in SUFFIXES:
                     pid = base_id + suf
                     t = (

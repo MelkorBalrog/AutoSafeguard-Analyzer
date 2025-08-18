@@ -117,10 +117,13 @@ def test_rule_with_custom_template_and_variables() -> None:
 
 def test_rule_role_subject_variant() -> None:
     cfg = {
+        "ai_nodes": ["ANN", "AI Database"],
         "requirement_rules": {
             "annotation": {"action": "annotate", "subject": "Team"}
         },
-        "safety_ai_relation_rules": {"Annotation": {"ANN": ["AI Database"]}},
+        "connection_rules": {
+            "Governance Diagram": {"Annotation": {"ANN": ["AI Database"]}}
+        },
     }
     patterns = generate_patterns_from_config(cfg)
     ids = {p["Pattern ID"] for p in patterns}
@@ -160,23 +163,40 @@ def test_sequence_rule_generation() -> None:
     assert "rel1" in tmpl and "rel2" in tmpl
 
 
-def test_sequence_role_subject() -> None:
+def test_sequence_role_subject_variants() -> None:
     cfg = {
-        "safety_ai_relation_rules": {
-            "Responsible for": {"Role": ["Process"]},
-            "Produces": {"Process": ["Document"]},
+        "connection_rules": {
+            "Governance Diagram": {
+                "Role": {"Role": ["Process"]},
+                "Plans": {"Process": ["Task"]},
+                "Produces": {"Task": ["Document"]},
+            }
         },
         "requirement_sequences": {
-            "accountability": {
-                "relations": ["Responsible for", "Produces"],
-                "role_subject": True,
+            "planning": {
+                "relations": ["Plans", "Produces"],
+                "subject": "Manager",
             }
         },
     }
     patterns = generate_patterns_from_config(cfg)
-    pid = "SEQ-accountability-Role-Document"
-    tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == pid)
-    assert tmpl.startswith("<subject_id> (<subject_class>) shall responsible for")
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SEQ-planning-Process-Document" in ids
+    assert "SEQ-planning_role_subject-Role-Document" in ids
+    trig = next(
+        p["Trigger"]
+        for p in patterns
+        if p["Pattern ID"] == "SEQ-planning_role_subject-Role-Document"
+    )
+    assert trig.startswith(
+        "Sequence: Role --[Role]--> Process --[Plans]--> Task --[Produces]--> Document"
+    )
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "SEQ-planning_role_subject-Role-Document"
+    )
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall plans")
     assert "using the <object0_id>" not in tmpl
 
 
