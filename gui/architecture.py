@@ -504,7 +504,8 @@ def _format_label(
     label = name or ""
     if obj is not None:
         repo = getattr(_win, "repo", None)
-        diag = repo.diagrams.get(_win.diagram_id) if repo else None
+        diag_id = getattr(_win, "diagram_id", None)
+        diag = repo.diagrams.get(diag_id) if repo and diag_id is not None else None
         if diag and diag.diag_type == "Governance Diagram":
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
@@ -7304,7 +7305,8 @@ class SysMLDiagramWindow(tk.Frame):
                     font=self.font,
                 )
         elif obj.obj_type == "Work Product":
-            label = _format_label(self, obj.properties.get("name", ""), obj.phase, obj)
+            raw_name = obj.properties.get("name", "")
+            label = _format_label(self, raw_name, obj.phase)
             diagram_products = {
                 "Architecture Diagram",
                 "Safety & Security Concept",
@@ -7322,9 +7324,9 @@ class SysMLDiagramWindow(tk.Frame):
                 "FMEA",
                 "FMEDA",
             }
-            if label in diagram_products:
+            if raw_name in diagram_products:
                 color = "#cfe2f3"
-            elif label in analysis_products:
+            elif raw_name in analysis_products:
                 color = "#d5e8d4"
             else:
                 color = "#ffffff"
