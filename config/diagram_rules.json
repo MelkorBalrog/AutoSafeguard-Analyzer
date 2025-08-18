@@ -84,7 +84,6 @@
     "Mitigation Plan",
     "Security Threat",
     "Report",
-    "Safety Case",
     "Deployment Plan",
     "Maintenance Plan",
     "Decommission Plan"
@@ -181,8 +180,8 @@
     "Security Plan",
     "Mitigation Plan",
     "Security Threat",
+    "Safety & Security Case",
     "Report",
-    "Safety Case",
     "Deployment Plan",
     "Maintenance Plan",
     "Decommission Plan"
@@ -334,10 +333,10 @@
       "subject": "Security auditor",
       "action": "audit security processes"
     },
-    "safety case review": {
+    "safety & security case review": {
       "relations": ["Plans", "Audits", "Reviews"],
       "subject": "Safety manager",
-      "action": "review safety case"
+      "action": "review safety & security case"
     },
     "threat analysis validation": {
       "relations": ["Assesses", "Mitigates", "Validate", "Produces"],
@@ -447,8 +446,8 @@
     "Security Plan": "object",
     "Mitigation Plan": "object",
     "Security Threat": "object",
+    "Safety & Security Case": "object",
     "Report": "object",
-    "Safety Case": "object",
     "Deployment Plan": "object",
     "Maintenance Plan": "object",
     "Decommission Plan": "object"
@@ -484,8 +483,8 @@
       "Process": ["Document"],
       "Test Suite": ["Document"],
       "Verification Plan": ["Document"],
+      "Safety & Security Case": ["Document"]
       "Report": ["Document"],
-      "Safety Case": ["Document"]
     },
     "Validate": {
       "Model": ["Test Suite"],
@@ -509,8 +508,8 @@
       "Decommission Plan": ["Process"]
     },
     "Verify": {"Test Suite": ["Verification Plan"]},
+    "Reviews": {"Audit Report": ["Safety & Security Case"]}
     "Audits": {"Process": ["Report"]},
-    "Reviews": {"Report": ["Safety Case"]}
     "Responsible for": {"Role": ["Process", "Activity", "Task"]},
   },
 
