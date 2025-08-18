@@ -18,6 +18,15 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Safety Goal") == "pentagon"
     assert shape(None, "Security Threat") == "cross"
     assert shape(None, "Plan") == "document"
+    for variant in [
+        "Safety Plan",
+        "Security Plan",
+        "Mitigation Plan",
+        "Deployment Plan",
+        "Maintenance Plan",
+        "Decommission Plan",
+    ]:
+        assert shape(None, variant) == "document"
 
     style = StyleManager.get_instance()
     for element in [

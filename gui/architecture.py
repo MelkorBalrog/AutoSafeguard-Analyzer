@@ -3554,18 +3554,18 @@ class SysMLDiagramWindow(tk.Frame):
         icon = self._icons.get(name)
         if icon is None:
             style = StyleManager.get_instance()
-            shape = self._shape_for_tool(name)
+            base = name[4:] if name.startswith("Add ") else name
+            if base.startswith("Generic "):
+                base = base[8:]
+            if base == "Process Area":
+                base = "Process"
+            if base in _PLAN_TYPES:
+                base = "Plan"
+            shape = self._shape_for_tool(base)
             if shape == "relation":
                 color = "black"
             else:
-                color = style.get_color(name)
-                if color == "#FFFFFF" and name.startswith("Add "):
-                    base = name[4:]
-                    if base.startswith("Generic "):
-                        base = base[8:]
-                    if base == "Process Area":
-                        base = "Process"
-                    color = style.get_color(base)
+                color = style.get_color(base)
                 if color == "#FFFFFF":
                     color = "black"
             icon = draw_icon(shape, color)
@@ -3579,6 +3579,8 @@ class SysMLDiagramWindow(tk.Frame):
                 name = name[8:]
             if name == "Process Area":
                 name = "System Boundary"
+        if name in _PLAN_TYPES:
+            name = "Plan"
         mapping = {
             "Select": "arrow",
             "Actor": "human",
