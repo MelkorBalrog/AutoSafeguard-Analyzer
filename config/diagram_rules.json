@@ -105,7 +105,8 @@
     "Operate",
     "Inspect",
     "Triage",
-    "Improve"
+    "Improve",
+    "Develops"
   ],
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
@@ -156,7 +157,20 @@
     "Incident",
     "Safety Issue",
     "Field Data",
-    "Model"
+    "Model",
+    "Hazard",
+    "Risk Assessment",
+    "Safety Goal",
+    "Safety Plan",
+    "Security Plan",
+    "Mitigation Plan",
+    "Security Threat",
+    "Validation Report",
+    "Audit Report",
+    "Safety Case",
+    "Deployment Plan",
+    "Maintenance Plan",
+    "Decommission Plan"
   ],
 
   // FMEDA/Fault tree gate node types
@@ -239,6 +253,104 @@
     "complies with": {"action": "comply with", "subject": "Engineering team", "constraint": true}
   },
 
+  "requirement_sequences": {
+    "incident triage": {
+      "relations": ["Triage", "Develops"],
+      "subject": "Safety manager",
+      "action": "trigger test development"
+    },
+    "policy compliance": {
+      "relations": ["Constrains", "Produces"],
+      "subject": "Governance team",
+      "action": "enforce policy"
+    },
+    "model validation": {
+      "relations": ["Validate", "Produces"],
+      "subject": "Validation team",
+      "action": "validate models"
+    },
+    "hazard mitigation": {
+      "relations": ["Assesses", "Mitigates", "Develops", "Produces"],
+      "subject": "Safety engineer",
+      "action": "develop hazard mitigation tests"
+    },
+    "safety goal verification": {
+      "relations": ["Mitigates", "Develops", "Verifies", "Produces"],
+      "subject": "Safety engineer",
+      "action": "verify safety goals"
+    },
+    "sotif scenario validation": {
+      "relations": ["Assesses", "Develops", "Produces"],
+      "subject": "Validation team",
+      "action": "validate scenarios"
+    },
+    "cybersecurity threat mitigation": {
+      "relations": ["Assesses", "Mitigates", "Plans", "Produces"],
+      "subject": "Cybersecurity team",
+      "action": "plan cybersecurity mitigation"
+    },
+    "product lifecycle safety": {
+      "relations": ["Plans", "Develops", "Produces"],
+      "subject": "Safety manager",
+      "action": "manage lifecycle safety"
+    },
+    "post deployment monitoring": {
+      "relations": ["Plans", "Develops", "Produces"],
+      "subject": "Operations team",
+      "action": "monitor deployed system"
+    },
+    "decommissioning validation": {
+      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "subject": "Safety manager",
+      "action": "validate decommissioning"
+    },
+    "safety audit": {
+      "relations": ["Plans", "Audits", "Produces"],
+      "subject": "Auditor",
+      "action": "audit safety processes"
+    },
+    "security audit": {
+      "relations": ["Plans", "Audits", "Produces"],
+      "subject": "Security auditor",
+      "action": "audit security processes"
+    },
+    "safety case review": {
+      "relations": ["Plans", "Audits", "Reviews"],
+      "subject": "Safety manager",
+      "action": "review safety case"
+    },
+    "threat analysis validation": {
+      "relations": ["Assesses", "Mitigates", "Validate", "Produces"],
+      "subject": "Cybersecurity team",
+      "action": "validate threat mitigations"
+    },
+    "functional safety release": {
+      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "subject": "Release manager",
+      "action": "verify safety release"
+    },
+    "cybersecurity release": {
+      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "subject": "Security manager",
+      "action": "verify cybersecurity release"
+    },
+    "deployment readiness": {
+      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "subject": "Deployment manager",
+      "action": "verify deployment readiness"
+    },
+    "maintenance validation": {
+      "relations": ["Plans", "Develops", "Validate", "Produces"],
+      "subject": "Operations team",
+      "action": "validate maintenance"
+    },
+    "risk-based testing": {
+      "relations": ["Assesses", "Develops", "Verifies", "Produces"],
+      "subject": "Test team",
+      "action": "perform risk-based testing"
+    }
+  },
+
   // Default requirement role per node type
   // Format: "Node Type": "subject|action|condition|constraint|object"
   "node_roles": {
@@ -277,7 +389,20 @@
     "Incident": "object",
     "Safety Issue": "object",
     "Field Data": "object",
-    "Model": "object"
+    "Model": "object",
+    "Hazard": "object",
+    "Risk Assessment": "object",
+    "Safety Goal": "object",
+    "Safety Plan": "object",
+    "Security Plan": "object",
+    "Mitigation Plan": "object",
+    "Security Threat": "object",
+    "Validation Report": "object",
+    "Audit Report": "object",
+    "Safety Case": "object",
+    "Deployment Plan": "object",
+    "Maintenance Plan": "object",
+    "Decommission Plan": "object"
   },
 
   // Allowed Safety & AI relationships between node types
@@ -296,7 +421,48 @@
     "Curation": {"Database": ["Database"]},
     "Ingestion": {"Database": ["Database"]},
     "Monitoring": {"ANN": ["Operation"]},
-    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]}
+    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]},
+    "Triage": {"Safety Issue": ["Field Data"]},
+    "Develops": {
+      "Field Data": ["Test Suite"],
+      "Process": ["Test Suite"],
+      "Mitigation Plan": ["Test Suite"],
+      "Risk Assessment": ["Test Suite"],
+      "Safety Goal": ["Test Suite"]
+    },
+    "Constrains": {"Policy": ["Process"]},
+    "Produces": {
+      "Process": ["Document"],
+      "Test Suite": ["Document"],
+      "Verification Plan": ["Document"],
+      "Validation Report": ["Document"],
+      "Audit Report": ["Document"],
+      "Safety Case": ["Document"]
+    },
+    "Validate": {
+      "Model": ["Test Suite"],
+      "Test Suite": ["Validation Report"],
+      "Mitigation Plan": ["Validation Report"]
+    },
+    "Assesses": {
+      "Hazard": ["Risk Assessment"],
+      "Security Threat": ["Risk Assessment"],
+      "Field Data": ["Risk Assessment"]
+    },
+    "Mitigates": {
+      "Risk Assessment": ["Mitigation Plan", "Safety Goal", "Security Plan"]
+    },
+    "Plans": {
+      "Safety Plan": ["Process"],
+      "Security Plan": ["Process"],
+      "Mitigation Plan": ["Process"],
+      "Deployment Plan": ["Process"],
+      "Maintenance Plan": ["Process"],
+      "Decommission Plan": ["Process"]
+    },
+    "Verifies": {"Test Suite": ["Verification Plan"]},
+    "Audits": {"Process": ["Audit Report"]},
+    "Reviews": {"Audit Report": ["Safety Case"]}
   },
 
   // Connection validation rules per diagram type and connection kind
