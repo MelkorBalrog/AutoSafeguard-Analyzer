@@ -11,7 +11,6 @@ import re
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from gui.icon_factory import create_icon
-from gui.style_manager import StyleManager
 
 
 def _strip_phase_suffix(name: str) -> str:
@@ -58,14 +57,8 @@ class SafetyManagementExplorer(tk.Frame):
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
 
-        style = StyleManager.get_instance()
-
-        def _color(name: str, default: str) -> str:
-            c = style.get_color(name)
-            return default if c == "#FFFFFF" else c
-
-        self.folder_icon = self._create_icon("folder", _color("Lifecycle Phase", "#b8860b"))
-        self.diagram_icon = self._create_icon("document", _color("Document", "#4682b4"))
+        self.folder_icon = self._create_icon("folder", "#b8860b")
+        self.diagram_icon = self._create_icon("rect", "#4682b4")
         self.item_map: Dict[str, tuple[str, object]] = {}
         self.root_iid = ""
 
