@@ -1,6 +1,6 @@
-import types
 import sys
 from pathlib import Path
+import types
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -25,6 +25,10 @@ def test_switch_toolbox_combines_governance_elements():
     win.ai_tools_frame = Frame()
     win.gov_elements_frame = Frame()
     win.prop_frame = Frame()
+    win._toolbox_frames = {
+        "Governance": [win.gov_tools_frame, win.gov_elements_frame],
+        "Safety & AI Lifecycle": [win.ai_tools_frame],
+    }
 
     win.toolbox_var = types.SimpleNamespace(get=lambda: "Governance")
     GovernanceDiagramWindow._switch_toolbox(win)

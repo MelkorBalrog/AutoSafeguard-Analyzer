@@ -97,7 +97,7 @@ def _normalize_plan_types(items: list[str]) -> list[str]:
 GOV_ELEMENT_NODES = _normalize_plan_types(
     _CONFIG.get("governance_element_nodes", [])
 )
-GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
 
 # expose the icon factory under the old name used throughout the module
 draw_icon = create_icon
@@ -594,7 +594,7 @@ def reload_config() -> None:
     GOV_ELEMENT_NODES = _normalize_plan_types(
         _CONFIG.get("governance_element_nodes", [])
     )
-    GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
+    GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
     GOVERNANCE_NODE_TYPES = set(
         _normalize_plan_types(_CONFIG.get("governance_node_types", []))

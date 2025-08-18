@@ -53,7 +53,6 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
         "arch_diagram_types",
         "governance_node_types",
         "governance_element_nodes",
-        "governance_element_relations",
         "gate_node_types",
         "guard_nodes",
     ]
@@ -366,7 +365,33 @@ def load_json_with_comments(path: str | Path) -> Any:
 def load_diagram_rules(path: str | Path) -> dict[str, Any]:
     """Load and validate the diagram rules configuration file."""
     data = load_json_with_comments(path)
-    return validate_diagram_rules(data)
+    data = validate_diagram_rules(data)
+
+    # Merge governance diagram rules with safety & AI relation rules
+    safety_rules = data.setdefault("safety_ai_relation_rules", {})
+    gov_rules = data.get("connection_rules", {}).get("Governance Diagram", {})
+
+    ai_nodes = set(data.get("ai_nodes", []))
+    gov_nodes = set(data.get("governance_element_nodes", []))
+    all_nodes = ai_nodes | gov_nodes
+
+    for rel, mapping in gov_rules.items():
+        if rel == "Flow":
+            continue
+        merged = safety_rules.setdefault(rel, {})
+        for src, targets in mapping.items():
+            dest_list = merged.setdefault(src, [])
+            for tgt in targets:
+                if tgt not in dest_list:
+                    dest_list.append(tgt)
+        for node in all_nodes:
+            mapping.setdefault(node, [])
+
+    for mapping in safety_rules.values():
+        for node in all_nodes:
+            mapping.setdefault(node, [])
+
+    return data
 
 
 def load_requirement_patterns(path: str | Path) -> list[dict[str, Any]]:
