@@ -371,6 +371,11 @@
       "subject": "Governance board",
       "action": "document responsibilities"
     },
+    "organizational accountability role subject": {
+      "relations": ["Responsible for", "Produces"],
+      "role_subject": true,
+      "action": "document responsibilities"
+    },
     "governance oversight": {
       "relations": ["Plans", "Audits", "Produces"],
       "subject": "Governance board",

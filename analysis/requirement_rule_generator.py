@@ -201,15 +201,20 @@ def make_sa_variables_base(objects: int = 1) -> List[str]:
     return out
 
 
-def make_sequence_template(subject: str, rel_chain: List[str]) -> str:
+def make_sequence_template(
+    subject: str, rel_chain: List[str], subject_is_object0: bool = False
+) -> str:
     parts: List[str] = []
     for idx, rel in enumerate(rel_chain):
         rel_l = (rel or "").strip().lower()
         obj = f"the <object{idx+1}_id> (<object{idx+1}_class>)"
         if idx == 0:
-            parts.append(
-                f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
-            )
+            if subject_is_object0:
+                parts.append(f"{rel_l} {obj}")
+            else:
+                parts.append(
+                    f"{rel_l} {obj} using the <object0_id> (<object0_class>)"
+                )
         else:
             parts.append(f"{rel_l} {obj}")
     if len(parts) > 1:
@@ -430,14 +435,21 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 src_type = path[0][0]
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
-                subj = info.get("subject", "Engineering team")
+                use_role_subject = info.get("role_subject")
+                subj = (
+                    "<object0_id> (<object0_class>)"
+                    if use_role_subject
+                    else info.get("subject", "Engineering team")
+                )
                 tmpl_override = info.get("template")
                 var_override = info.get("variables")
                 if tmpl_override:
                     template = tmpl_override
                     variables = var_override or []
                 else:
-                    template = make_sequence_template(subj, rel_chain)
+                    template = make_sequence_template(
+                        subj, rel_chain, subject_is_object0=bool(use_role_subject)
+                    )
                     variables = make_sa_variables_base(tgt_count)
                 base_id = (
                     f"SEQ-{id_token(seq_label)}-{id_token(src_type)}-{id_token(final_tgt)}"

@@ -122,6 +122,26 @@ def test_sequence_rule_generation() -> None:
     assert "rel1" in tmpl and "rel2" in tmpl
 
 
+def test_sequence_role_subject() -> None:
+    cfg = {
+        "safety_ai_relation_rules": {
+            "Responsible for": {"Role": ["Process"]},
+            "Produces": {"Process": ["Document"]},
+        },
+        "requirement_sequences": {
+            "accountability": {
+                "relations": ["Responsible for", "Produces"],
+                "role_subject": True,
+            }
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    pid = "SEQ-accountability-Role-Document"
+    tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == pid)
+    assert tmpl.startswith("<object0_id> (<object0_class>) shall responsible for")
+    assert "using the <object0_id>" not in tmpl
+
+
 def test_complex_sequences() -> None:
     cfg = {
         "safety_ai_relation_rules": {
