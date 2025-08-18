@@ -3476,7 +3476,15 @@ class SysMLDiagramWindow(tk.Frame):
             ),
         )
 
-        self.back_btn = ttk.Button(self.toolbox, text="Go Back", command=self.go_back)
+        # Group tools and properties into separate tabs
+        self.toolbox_nb = ttk.Notebook(self.toolbox)
+        self.toolbox_nb.pack(fill=tk.BOTH, expand=True)
+        self.tools_tab = ttk.Frame(self.toolbox_nb)
+        self.prop_tab = ttk.Frame(self.toolbox_nb)
+        self.toolbox_nb.add(self.tools_tab, text="Tools")
+        self.toolbox_nb.add(self.prop_tab, text="Properties")
+
+        self.back_btn = ttk.Button(self.tools_tab, text="Go Back", command=self.go_back)
         self.back_btn.pack(fill=tk.X, padx=2, pady=2)
         self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
 
@@ -3486,7 +3494,7 @@ class SysMLDiagramWindow(tk.Frame):
             self._icon_for(name)
 
         self.tool_buttons: dict[str, ttk.Button] = {}
-        self.tools_frame = ttk.Frame(self.toolbox)
+        self.tools_frame = ttk.Frame(self.tools_tab)
         self.tools_frame.pack(fill=tk.X, padx=2, pady=2)
 
         # Group element tools by category when provided
@@ -3516,7 +3524,7 @@ class SysMLDiagramWindow(tk.Frame):
 
         if relation_tools:
             self.rel_frame = ttk.LabelFrame(
-                self.toolbox, text="Relationships (relationships)"
+                self.tools_tab, text="Relationships (relationships)"
             )
             self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for tool in relation_tools:
@@ -3528,10 +3536,8 @@ class SysMLDiagramWindow(tk.Frame):
                     command=lambda t=tool: self.select_tool(t),
                 ).pack(fill=tk.X, padx=2, pady=2)
 
-        self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
-        self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
-        prop_tree_frame = ttk.Frame(self.prop_frame)
-        prop_tree_frame.pack(fill=tk.BOTH, expand=True)
+        prop_tree_frame = ttk.Frame(self.prop_tab)
+        prop_tree_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
         self.prop_view = ttk.Treeview(
             prop_tree_frame,
             columns=("field", "value"),
@@ -3591,32 +3597,21 @@ class SysMLDiagramWindow(tk.Frame):
             self.pack(fill=tk.BOTH, expand=True)
 
     def _fit_toolbox(self) -> None:
-        """Resize the toolbox to the smallest width that shows all button text."""
+        """Resize the toolbox to the smallest width that shows all content."""
         self.toolbox.update_idletasks()
 
-        def max_button_width(widget: tk.Misc) -> int:
-            width = 0
+        def max_widget_width(widget: tk.Misc) -> int:
+            width = widget.winfo_reqwidth()
             for child in widget.winfo_children():
-                if isinstance(child, ttk.Button):
-                    width = max(width, child.winfo_reqwidth())
-                else:
-                    width = max(width, max_button_width(child))
+                width = max(width, max_widget_width(child))
             return width
 
-        # Account for the external padding applied when packing buttons so the
-        # canvas is only as wide as necessary to show them.
-        button_width = max_button_width(self.toolbox) + 4
+        content_width = max_widget_width(self.toolbox)
         scroll_width = self.toolbox_scroll.winfo_reqwidth()
 
-        self.toolbox_container.configure(width=button_width + scroll_width)
-        self.toolbox_canvas.configure(width=button_width)
-        self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
-
-        # Shrink the property view to match the button area so it does not force
-        # the toolbox wider than needed.
-        field_width = button_width // 2
-        self.prop_view.column("field", width=field_width, stretch=False)
-        self.prop_view.column("value", width=button_width - field_width, stretch=False)
+        self.toolbox_container.configure(width=content_width + scroll_width)
+        self.toolbox_canvas.configure(width=content_width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=content_width)
 
     def _fit_governance_toolbox(
         self, container: tk.Misc, canvas: tk.Canvas, window: int
