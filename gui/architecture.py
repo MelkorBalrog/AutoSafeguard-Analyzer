@@ -354,6 +354,7 @@ _FIXED_SIZE_TYPES = {
     "Initial",
     "Final",
     "Actor",
+    "Role",
     "Decision",
     "Merge",
     "Work Product",
@@ -6269,6 +6270,8 @@ class SysMLDiagramWindow(tk.Frame):
             min_w, min_h = self._min_data_acquisition_size(obj)
             obj.width = max(obj.width, min_w)
             obj.height = max(obj.height, min_h)
+            return
+        elif obj.obj_type == "Role":
             return
         else:
             label_lines = self._object_label_lines(obj)

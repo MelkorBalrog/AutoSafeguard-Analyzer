@@ -101,6 +101,22 @@ class EnsureTextFitsTests(unittest.TestCase):
             self.assertEqual(obj.width, 40)
             self.assertEqual(obj.height, 40)
 
+    def test_role_size_remains_fixed(self):
+        win = DummyWindow()
+        role = SysMLObject(
+            1,
+            "Role",
+            0,
+            0,
+            width=80,
+            height=40,
+            properties={"name": "VeryLongRoleName"},
+        )
+        role.requirements = []
+        win.ensure_text_fits(role)
+        self.assertEqual(role.width, 80)
+        self.assertEqual(role.height, 40)
+
     def test_data_acquisition_default_and_resize(self):
         win = DummyWindow()
         obj = SysMLObject(
