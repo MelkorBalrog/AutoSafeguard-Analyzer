@@ -81,6 +81,11 @@ _PLAN_TYPES = {
     "Verification Plan",
 }
 
+# Create Safety & AI Lifecycle toolbox frame
+# Create toolbox for additional governance elements
+# Create toolbox for additional governance elements grouped by class
+# Repack toolbox to include selector
+
 
 def _normalize_plan_types(items: list[str]) -> list[str]:
     """Replace specific plan variants with generic 'Plan' and deduplicate."""
@@ -11216,11 +11221,25 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
     def _switch_toolbox(self) -> None:
         choice = self.toolbox_var.get()
-        for frames in self._toolbox_frames.values():
+        frames_map = getattr(
+            self,
+            "_toolbox_frames",
+            {
+                "Governance": [
+                    getattr(self, "gov_tools_frame", None),
+                    getattr(self, "gov_rel_frame", None),
+                    getattr(self, "gov_elements_frame", None),
+                ],
+                "Safety & AI Lifecycle": [
+                    getattr(self, "ai_tools_frame", None)
+                ],
+            },
+        )
+        for frames in frames_map.values():
             for frame in frames:
                 if frame and hasattr(frame, "pack_forget"):
                     frame.pack_forget()
-        for frame in self._toolbox_frames.get(choice, []):
+        for frame in frames_map.get(choice, []):
             if frame and hasattr(frame, "pack"):
                 frame.pack(fill=tk.X, padx=2, pady=2)
 

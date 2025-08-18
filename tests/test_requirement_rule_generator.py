@@ -120,7 +120,7 @@ def test_rule_role_subject_variant() -> None:
         for p in patterns
         if p["Pattern ID"] == "SA-annotation-ANN-AI_Database-ROLE"
     )
-    assert tmpl.startswith("<object0_id> (<object0_class>) shall annotate")
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall annotate")
     assert "using the <object0_id>" not in tmpl
 
 
@@ -162,7 +162,7 @@ def test_sequence_role_subject() -> None:
     patterns = generate_patterns_from_config(cfg)
     pid = "SEQ-accountability-Role-Document"
     tmpl = next(p["Template"] for p in patterns if p["Pattern ID"] == pid)
-    assert tmpl.startswith("<object0_id> (<object0_class>) shall responsible for")
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall responsible for")
     assert "using the <object0_id>" not in tmpl
 
 
