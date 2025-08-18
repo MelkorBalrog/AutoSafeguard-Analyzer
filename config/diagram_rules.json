@@ -46,7 +46,7 @@
   // Types shown in the Governance Elements toolbox
   "governance_element_nodes": [
     "Business Unit",
-    "Data",
+    "AI Data",
     "Document",
     "Guideline",
     "Metric",
@@ -134,7 +134,7 @@
     "Work Product",
     "Lifecycle Phase",
     "Business Unit",
-    "Data",
+    "AI Data",
     "Document",
     "Guideline",
     "Metric",
@@ -401,7 +401,7 @@
     "Guideline": "constraint",
     "Document": "object",
     "Artifact": "object",
-    "Data": "object",
+    "AI Data": "object",
     "Record": "object",
     "Database": "object",
     "ANN": "object",
@@ -525,7 +525,7 @@
       "Propagate": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -559,7 +559,7 @@
       "Propagate by Review": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -593,7 +593,7 @@
       "Propagate by Approval": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -627,7 +627,7 @@
       "Re-use": {
         "Work Product": ["Lifecycle Phase"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -661,7 +661,7 @@
       "Satisfied by": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -695,7 +695,7 @@
       "Derived from": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -729,7 +729,7 @@
       "Trace": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -763,7 +763,7 @@
       "Used By": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -797,7 +797,7 @@
       "Used after Review": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -831,7 +831,7 @@
       "Used after Approval": {
         "Work Product": ["Work Product"],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -866,7 +866,7 @@
       "Approves": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -900,7 +900,7 @@
       "Audits": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -934,7 +934,7 @@
       "Authorizes": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -968,7 +968,7 @@
       "Communication Path": {
         "Work Product": [],
         "Business Unit": ["Business Unit"],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1002,7 +1002,7 @@
       "Constrained by": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1036,7 +1036,7 @@
       "Consumes": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1047,7 +1047,7 @@
         "Record": [],
         "Role": [],
         "Standard": [],
-        "Process": ["Data", "Record"],
+        "Process": ["AI Data", "Record"],
         "Activity": [],
         "Task": [],
         "Operation": [],
@@ -1070,7 +1070,7 @@
       "Curation": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1081,7 +1081,7 @@
         "Record": [],
         "Role": [],
         "Standard": [],
-        "Process": ["Data"],
+        "Process": ["AI Data"],
         "Activity": [],
         "Task": [],
         "Operation": [],
@@ -1104,7 +1104,7 @@
       "Delivers": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1138,7 +1138,7 @@
       "Executes": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1172,7 +1172,7 @@
       "Extend": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1206,7 +1206,7 @@
       "Generalize": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1240,7 +1240,7 @@
       "Monitors": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1274,7 +1274,7 @@
       "Performs": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1308,7 +1308,7 @@
       "Produces": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1319,7 +1319,7 @@
         "Record": [],
         "Role": [],
         "Standard": [],
-        "Process": ["Document", "Data", "Record"],
+        "Process": ["Document", "AI Data", "Record"],
         "Activity": [],
         "Task": [],
         "Operation": [],
@@ -1342,7 +1342,7 @@
       "Responsible for": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1376,7 +1376,7 @@
       "Uses": {
         "Work Product": [],
         "Business Unit": [],
-        "Data": [],
+        "AI Data": [],
         "Document": [],
         "Guideline": [],
         "Metric": [],
@@ -1385,7 +1385,7 @@
         "Principle": [],
         "Procedure": [],
         "Record": [],
-        "Role": ["Document", "Data", "Record"],
+        "Role": ["Document", "AI Data", "Record"],
         "Standard": [],
         "Process": [],
         "Activity": [],
