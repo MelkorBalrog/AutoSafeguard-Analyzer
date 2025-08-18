@@ -99,6 +99,10 @@ GOV_ELEMENT_NODES = _normalize_plan_types(
 )
 GOV_ELEMENT_RELATIONS = _CONFIG.get("governance_element_relations", [])
 
+# Create Safety & AI Lifecycle toolbox frame
+# Create toolbox for additional governance elements grouped by class
+# Repack toolbox to include selector
+
 # expose the icon factory under the old name used throughout the module
 draw_icon = create_icon
 

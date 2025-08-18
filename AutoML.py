@@ -2042,6 +2042,13 @@ class DecompositionDialog(simpledialog.Dialog):
 # Main Application (Parent Diagram)
 ##########################################
 class FaultTreeApp:
+    """Main application window for AutoML Analyzer."""
+
+    #: Maximum number of characters displayed for a notebook tab title. Longer
+    #: titles are truncated with an ellipsis to avoid giant tabs that overflow
+    #: the working area.
+    MAX_TAB_TEXT_LENGTH = 20
+
     WORK_PRODUCT_INFO = {
         "Architecture Diagram": (
             "System Design (Item Definition)",
@@ -2806,6 +2813,10 @@ class FaultTreeApp:
         self.doc_nb = ClosableNotebook(self.doc_frame)
         self.doc_nb.bind("<<NotebookTabClosed>>", self._on_tab_close)
         self.doc_nb.bind("<<NotebookTabChanged>>", self._on_tab_change)
+        # Mapping of tab identifiers to their full, untruncated titles.  The
+        # displayed text may be shortened to keep tabs a reasonable size but we
+        # keep the originals here for features like duplicate detection.
+        self._tab_titles: dict[str, str] = {}
         self._tab_left_btn = ttk.Button(
             self.doc_frame, text="<", width=2, command=self._select_prev_tab
         )
@@ -17335,6 +17346,8 @@ class FaultTreeApp:
 
     def _on_tab_close(self, event):
         tab_id = self.doc_nb._closing_tab
+        if hasattr(self, "_tab_titles"):
+            self._tab_titles.pop(tab_id, None)
         tab = self.doc_nb.nametowidget(tab_id)
         if tab is getattr(self, "canvas_tab", None):
             self.canvas_tab = None
@@ -17425,20 +17438,34 @@ class FaultTreeApp:
             self.doc_nb.select(tabs[index + 1])
 
     def _new_tab(self, title: str) -> ttk.Frame:
-        """Create or select a tab in the document notebook.
+        """Create or select a tab in the document notebook."""
 
-        If a tab with the given title already exists, it will be selected and
-        returned instead of creating a duplicate tab. Otherwise a new tab is
-        created and selected.
-        """
+        if not hasattr(self, "_tab_titles"):
+            # Some unit tests instantiate the app without running ``__init__``.
+            # Ensure the attribute exists so tests continue to work.
+            self._tab_titles = {}
+
+        # If a tab with the given full title already exists, select and return
+        # it instead of creating a duplicate tab.
         for tab_id in self.doc_nb.tabs():
-            if self.doc_nb.tab(tab_id, "text") == title:
+            if self._tab_titles.get(tab_id, self.doc_nb.tab(tab_id, "text")) == title:
                 self.doc_nb.select(tab_id)
                 return self.doc_nb.nametowidget(tab_id)
+
         tab = ttk.Frame(self.doc_nb)
-        self.doc_nb.add(tab, text=title)
-        self.doc_nb.select(tab)
+        display = self._truncate_tab_title(title)
+        self.doc_nb.add(tab, text=display)
+        tab_id = self.doc_nb.tabs()[-1]
+        self._tab_titles[tab_id] = title
+        self.doc_nb.select(tab_id)
         return tab
+
+    def _truncate_tab_title(self, title: str) -> str:
+        """Return a shortened title suitable for display in a tab."""
+        if len(title) <= self.MAX_TAB_TEXT_LENGTH:
+            return title
+        # Reserve one character for the ellipsis.
+        return title[: self.MAX_TAB_TEXT_LENGTH - 1] + "\N{HORIZONTAL ELLIPSIS}"
 
     def _format_diag_title(self, diag) -> str:
         """Return SysML style title for a diagram tab."""
