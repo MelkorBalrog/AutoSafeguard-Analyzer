@@ -5,6 +5,7 @@ from gsn import GSNNode, GSNDiagram, GSNModule
 from analysis.safety_case import SafetyCaseLibrary
 import gui.safety_case_explorer as safety_case_explorer
 from gui import messagebox
+from gui.safety_case_table import SafetyCaseTable
 
 class DummyTree:
     def __init__(self):
@@ -140,4 +141,4 @@ def test_safety_case_table_lists_solutions():
     table.case = case
     table.tree = DummyTable()
     SafetyCaseTable.populate(table)
-    assert table.tree.items and table.tree.items[0][0] == "S1"
+    assert table.tree.items and table.tree.items[0][1] == "S1"

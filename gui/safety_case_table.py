@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import math
 import tkinter as tk
-import tkinter.font as tkfont
-from tkinter import ttk, simpledialog
+from tkinter import simpledialog
 
 from analysis.constants import CHECK_MARK
 from analysis.safety_case import SafetyCase
 from gui import messagebox
-from gui.toolboxes import configure_table_style, _wrap_val
+from gui.toolboxes import _wrap_val
+from gui.table_controller import TableController
 
 
 try:  # pragma: no cover - fallback if AutoML isn't fully imported yet
@@ -47,15 +47,6 @@ class SafetyCaseTable(tk.Frame):
             "notes",
         )
         self.columns = columns
-        style_name = "SafetyCase.Treeview"
-        try:
-            configure_table_style(style_name, rowheight=80)
-            self.tree = ttk.Treeview(
-                self, columns=columns, show="headings", style=style_name
-            )
-        except Exception:
-            self.tree = ttk.Treeview(self, columns=columns, show="headings")
-        self.style_name = self.tree.cget("style") or style_name
         headers = {
             "solution": "Solution",
             "description": "Description",
@@ -67,23 +58,23 @@ class SafetyCaseTable(tk.Frame):
             "evidence_ok": "Evidence OK",
             "notes": "Notes",
         }
-        for col in columns:
-            self.tree.heading(col, text=headers[col])
-            width = 120
-            if col in ("description", "evidence_link", "notes"):
-                width = 200
-            self.tree.column(col, width=width, stretch=True, anchor="center")
-        vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
+        widths = {col: 120 for col in columns}
+        for col in ("description", "evidence_link", "notes"):
+            widths[col] = 200
+        wraps = {c: 40 for c in ("description", "evidence_link", "notes")}
+        self.controller = TableController(
+            self,
+            columns=columns,
+            headers=headers,
+            style_name="SafetyCase.Treeview",
+            column_widths=widths,
+            wraplengths=wraps,
+            rowheight=80,
+        )
+        self.controller.pack(fill=tk.BOTH, expand=True)
+        self.tree = self.controller.tree
 
-        self.tree.bind("<Double-1>", self._on_double_click)
-        self.tree.bind("<Configure>", self._adjust_text)
+        self.tree.bind("<Double-1>", self._on_double_click, add="+")
 
         self.populate()
 
@@ -108,7 +99,7 @@ class SafetyCaseTable(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         self._node_lookup = {}
         app = getattr(self, "app", None)
-        for sol in self.case.solutions:
+        for row_idx, sol in enumerate(self.case.solutions, start=1):
             self._node_lookup[sol.unique_id] = sol
             v_target = ""
             prob = ""
@@ -151,6 +142,7 @@ class SafetyCaseTable(tk.Frame):
                 "",
                 "end",
                 values=(
+                    row_idx,
                     _wrap_val(sol.user_name),
                     _wrap_val(getattr(sol, "description", ""), 40),
                     _wrap_val(getattr(sol, "work_product", "")),
@@ -169,36 +161,8 @@ class SafetyCaseTable(tk.Frame):
 
     # ------------------------------------------------------------------
     def _adjust_text(self, event=None):
-        """Re-wrap cell text based on current column widths."""
-        if getattr(self, "_adjusting", False):
-            return
-        self._adjusting = True
-        try:
-            if not hasattr(self.tree, "column"):
-                return
-            try:
-                font = tkfont.nametofont("TkDefaultFont")
-            except Exception:
-                return
-            char_w = font.measure("0") or 1
-            max_lines = 1
-            for col in self.columns:
-                width = self.tree.column(col, width=None)
-                if width <= 0:
-                    continue
-                wrap = max(int(width / char_w), 1)
-                for item in self.tree.get_children():
-                    raw = self.tree.set(item, col).replace("\n", " ")
-                    wrapped = _wrap_val(raw, wrap)
-                    self.tree.set(item, col, wrapped)
-                    lines = wrapped.count("\n") + 1
-                    if lines > max_lines:
-                        max_lines = lines
-            style = ttk.Style()
-            line_h = font.metrics("linespace")
-            style.configure(self.style_name, rowheight=max(line_h * max_lines, 20))
-        finally:
-            self._adjusting = False
+        if hasattr(self, "controller"):
+            self.controller.adjust_text()
     # ------------------------------------------------------------------
     def _on_double_click(self, event):
         row = self.tree.identify_row(event.y)
@@ -206,7 +170,9 @@ class SafetyCaseTable(tk.Frame):
         if not row or not col:
             return
         idx = int(col[1:]) - 1
-        col_name = self.columns[idx]
+        if idx == 0:
+            return
+        col_name = self.columns[idx - 1]
         tags = self.tree.item(row, "tags")
         if not tags:
             return

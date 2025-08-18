@@ -1,9 +1,10 @@
 # Author: ChatGPT
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import simpledialog, ttk
 
-from gui import messagebox, add_treeview_scrollbars
-from gui.toolboxes import ToolTip, configure_table_style
+from gui import messagebox
+from gui.toolboxes import ToolTip
+from gui.table_controller import TableController
 from analysis.models import ThreatDoc, ThreatEntry
 from sysml.sysml_repository import SysMLRepository
 from gui.architecture import format_diagram_name
@@ -40,14 +41,6 @@ class ThreatWindow(tk.Frame):
         columns = ("asset", "functions", "damage", "type", "threat", "path")
         content = ttk.Frame(self)
         content.pack(fill=tk.BOTH, expand=True)
-        configure_table_style("Threat.Treeview")
-        self.tree = ttk.Treeview(
-            content,
-            columns=columns,
-            show="headings",
-            style="Threat.Treeview",
-            height=8,
-        )
         headers = {
             "asset": "Asset",
             "functions": "Functions",
@@ -56,14 +49,18 @@ class ThreatWindow(tk.Frame):
             "threat": "Threat Scenario (STRIDE)",
             "path": "Attack Paths",
         }
-        for col in columns:
-            self.tree.heading(col, text=headers[col])
-            width = 120 if col in {"asset", "functions", "type"} else 200
-            self.tree.column(col, width=width, stretch=True)
-        add_treeview_scrollbars(self.tree, content)
-        content.columnconfigure(0, weight=1)
-        content.rowconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", self.on_double_click)
+        widths = {col: (120 if col in {"asset", "functions", "type"} else 200) for col in columns}
+        self.table = TableController(
+            content,
+            columns=columns,
+            headers=headers,
+            style_name="Threat.Treeview",
+            column_widths=widths,
+            rowheight=80,
+        )
+        self.table.pack(fill=tk.BOTH, expand=True)
+        self.tree = self.table.tree
+        self.tree.bind("<Double-1>", self.on_double_click, add="+")
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
@@ -337,6 +334,7 @@ class ThreatWindow(tk.Frame):
                 "end",
                 iid=str(idx),
                 values=(
+                    idx + 1,
                     entry.asset,
                     "; ".join(funcs),
                     damages,
@@ -345,6 +343,7 @@ class ThreatWindow(tk.Frame):
                     paths,
                 ),
             )
+        self.table.adjust_text()
 
     def on_double_click(self, *_):
         self.edit_row()
