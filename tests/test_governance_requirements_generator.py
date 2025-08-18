@@ -11,7 +11,7 @@ from analysis.governance import GovernanceDiagram
 def test_generate_requirements_from_governance_diagram():
     diagram = GovernanceDiagram()
     diagram.add_task("Data Steward", node_type="Role")
-    diagram.add_task("Review Data", node_type="Activity")
+    diagram.add_task("Review Data", node_type="Task")
     diagram.add_task("Report", node_type="Document")
     diagram.add_task("Policy DP-001", node_type="Policy")
     diagram.add_relationship("Data Steward", "Review Data", label="performs")
@@ -24,10 +24,10 @@ def test_generate_requirements_from_governance_diagram():
     reqs = diagram.generate_requirements()
     texts = [r.text for r in reqs]
 
-    assert "Data Steward (Role) shall perform 'Review Data (Activity)'." in texts
-    assert "Review Data (Activity) shall produce 'Report (Document)'." in texts
+    assert "Data Steward (Role) shall perform 'Review Data (Task)'." in texts
+    assert "Review Data (Task) shall produce 'Report (Document)'." in texts
     assert "If data validated, Data Steward (Role) shall approve 'Report (Document)'." in texts
-    assert "Review Data (Activity) shall comply with 'Policy DP-001 (Policy)'." in texts
+    assert "Review Data (Task) shall comply with 'Policy DP-001 (Policy)'." in texts
     assert "Organization shall review data." in texts
 
     perf_req = next(r for r in reqs if r.action == "perform")
@@ -134,7 +134,7 @@ def test_data_acquisition_node_name_normalized():
 
 def test_tasks_create_requirement_actions():
     diagram = GovernanceDiagram()
-    diagram.add_task("Review Data", node_type="Activity")
+    diagram.add_task("Review Data", node_type="Task")
     diagram.add_task("Acquire Data", node_type="Data acquisition")
 
     reqs = diagram.generate_requirements()
