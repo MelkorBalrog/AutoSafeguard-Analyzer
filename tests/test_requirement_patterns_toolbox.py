@@ -1,5 +1,4 @@
 import sys
-import sys
 from pathlib import Path
 import types
 
@@ -17,6 +16,9 @@ sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
 from AutoML import FaultTreeApp
+import tkinter as tk
+import pytest
+from gui.requirement_patterns_toolbox import RequirementPatternsEditor
 
 
 def test_requirement_patterns_toolbox_single_instance():
@@ -62,3 +64,21 @@ def test_requirement_patterns_toolbox_single_instance():
     app.open_requirement_patterns_toolbox()
     app.open_requirement_patterns_toolbox()
     assert DummyEditor.created == 1
+
+
+def test_pattern_tree_wraps_text(tmp_path):
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+
+    cfg = tmp_path / "patterns.json"
+    cfg.write_text("[]")
+
+    editor = RequirementPatternsEditor(root, object(), cfg)
+    editor.data = [{"Trigger": "A " * 30, "Template": "B " * 30}]
+    editor._populate_pattern_tree()
+    vals = editor.tree.item(editor.tree.get_children()[0], "values")
+    assert "\n" in vals[0]
+    assert "\n" in vals[1]
+    root.destroy()

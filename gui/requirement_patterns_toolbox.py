@@ -498,9 +498,25 @@ class RequirementPatternsEditor(tk.Frame):
     # ------------------------------------------------------------------
     def _populate_pattern_tree(self):
         self.tree.delete(*self.tree.get_children(""))
+        wrapped: list[tuple[int, str, str]] = []
+        max_lines = 1
         for idx, pat in enumerate(self.data):
-            trig = pat.get("Trigger", "")
-            tmpl = pat.get("Template", "")
+            trig = textwrap.fill(pat.get("Trigger", ""), 40)
+            tmpl = textwrap.fill(pat.get("Template", ""), 40)
+            lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
+            max_lines = max(max_lines, lines)
+            wrapped.append((idx, trig, tmpl))
+
+        style = ttk.Style(self.tree)
+        base = style.lookup("Treeview", "rowheight") or 20
+        try:
+            base_h = int(base)
+        except Exception:
+            base_h = 20
+        style.configure("PatternTree.Treeview", rowheight=base_h * max_lines)
+        self.tree.configure(style="PatternTree.Treeview")
+
+        for idx, trig, tmpl in wrapped:
             self.tree.insert("", "end", iid=str(idx), values=(trig, tmpl))
 
     def _edit_item(self, _event=None):
