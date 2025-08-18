@@ -342,6 +342,17 @@ _BOTTOM_LABEL_TYPES = {
 }
 
 
+# Object types that cannot be resized
+_FIXED_SIZE_TYPES = {
+    "Initial",
+    "Final",
+    "Actor",
+    "Decision",
+    "Merge",
+    "Work Product",
+} | _BOTTOM_LABEL_TYPES
+
+
 # Connection types excluding Safety & AI relations used for membership checks
 _BASE_CONN_TYPES = {
     "Association",
@@ -389,6 +400,11 @@ _BASE_CONN_TYPES = {
     "Inspect",
     "Triage",
     "Improve",
+    "Develops",
+    "Mitigates",
+    "Assesses",
+    "Plans",
+    "Reviews",
 }
 
 # Ordered list of base connection tools for toolbox composition
@@ -437,6 +453,11 @@ _BASE_CONN_TOOLS = [
     "Inspect",
     "Triage",
     "Improve",
+    "Develops",
+    "Mitigates",
+    "Assesses",
+    "Plans",
+    "Reviews",
 ]
 
 # Connection types that default to forward arrows
@@ -478,6 +499,11 @@ _ARROW_FORWARD_BASE.update(
         "Inspect",
         "Triage",
         "Improve",
+        "Develops",
+        "Mitigates",
+        "Assesses",
+        "Plans",
+        "Reviews",
     }
 )
 
@@ -671,6 +697,8 @@ def _format_label(
             elem_type = obj.obj_type
             if repo and obj.element_id in repo.elements:
                 elem_type = repo.elements[obj.element_id].elem_type
+            if elem_type in {"Decision", "Initial", "Final", "Merge"}:
+                return ""
             stereo = _GOV_TYPE_ALIASES.get(elem_type, elem_type).lower()
             label = f"<<{stereo}>>\n{label}".strip()
     return label
@@ -3694,6 +3722,7 @@ class SysMLDiagramWindow(tk.Frame):
                 name = name[8:]
             if name == "Process Area":
                 name = "System Boundary"
+        name = "AI Database" if name == "Database" else name
         mapping = {
             "Select": "arrow",
             "Actor": "human",
@@ -4659,14 +4688,7 @@ class SysMLDiagramWindow(tk.Frame):
         y = self.canvas.canvasy(event.y)
         if self.resizing_obj:
             obj = self.resizing_obj
-            if obj.obj_type in (
-                "Initial",
-                "Final",
-                "Actor",
-                "Decision",
-                "Merge",
-                "Work Product",
-            ):
+            if obj.obj_type in _FIXED_SIZE_TYPES:
                 return
             min_w, min_h = (10.0, 10.0)
             if obj.obj_type == "Block":
@@ -5379,14 +5401,7 @@ class SysMLDiagramWindow(tk.Frame):
         return None
 
     def hit_resize_handle(self, obj: SysMLObject, x: float, y: float) -> str | None:
-        if obj.obj_type in (
-            "Initial",
-            "Final",
-            "Actor",
-            "Decision",
-            "Merge",
-            "Work Product",
-        ):
+        if obj.obj_type in _FIXED_SIZE_TYPES:
             return None
         margin = 5
         ox = obj.x * self.zoom
@@ -6396,34 +6411,60 @@ class SysMLDiagramWindow(tk.Frame):
                     ey,
                     dash=(2, 2),
                     arrow=style,
-                    tags="connection",
+                    tags=("connection", "_temp_conn"),
                 )
         if (
             self.start
             and self.temp_line_end
-            and self.current_tool
-            in (
-                "Association",
-                "Include",
-                "Extend",
-                "Flow",
-                "Connector",
-                "Generalization",
-                "Generalize",
-                "Communication Path",
-                "Aggregation",
-                "Composite Aggregation",
-                "Control Action",
-                "Feedback",
-            )
+            and self.current_tool in _all_connection_tools()
         ):
             sx, sy = self.edge_point(self.start, *self.temp_line_end)
             ex, ey = self.temp_line_end
             self.canvas.create_line(
-                sx, sy, ex, ey, dash=(2, 2), arrow=tk.LAST, tags="connection"
+                sx,
+                sy,
+                ex,
+                ey,
+                dash=(2, 2),
+                arrow=tk.LAST,
+                tags=("connection", "_temp_conn"),
             )
+
+        # Animate the temporary connection line so the dashes appear to move
+        # toward the mouse cursor, providing visual feedback consistent across
+        # all relationship types.
+        find = getattr(self.canvas, "find_withtag", None)
+        if find and find("_temp_conn"):
+            if getattr(self, "_temp_conn_anim", None) is None:
+                self._temp_conn_offset = 0
+                self._animate_temp_connection()
+        else:
+            anim = getattr(self, "_temp_conn_anim", None)
+            if anim:
+                after_cancel = getattr(self.canvas, "after_cancel", None)
+                if after_cancel:
+                    after_cancel(anim)
+                self._temp_conn_anim = None
         self.canvas.tag_raise("connection")
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
+
+    def _animate_temp_connection(self):  # pragma: no cover - requires tkinter
+        find = getattr(self.canvas, "find_withtag", None)
+        configure = getattr(self.canvas, "itemconfigure", None)
+        if not (find and configure):
+            self._temp_conn_anim = None
+            return
+        line = find("_temp_conn")
+        if line:
+            offset = getattr(self, "_temp_conn_offset", 0)
+            offset = (offset + 2) % 8
+            self._temp_conn_offset = offset
+            configure(line[0], dashoffset=offset)
+            after = getattr(self.canvas, "after", None)
+            if after:
+                self._temp_conn_anim = after(100, self._animate_temp_connection)
+        else:
+            self._temp_conn_anim = None
 
     def _create_round_rect(self, x1, y1, x2, y2, radius=10, **kwargs):
         """Draw a rectangle with rounded corners on the canvas."""
@@ -6482,6 +6523,38 @@ class SysMLDiagramWindow(tk.Frame):
             return
         self.canvas.create_image(min(x1, x2), min(y1, y2), anchor="nw", image=img)
         self.gradient_cache[obj_id] = img
+
+    def _draw_cylinder(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        color: str,
+        outline: str,
+        obj_id: int,
+    ) -> None:
+        """Draw a cylinder shape matching the AI database icon."""
+
+        oval_h = min(10 * self.zoom, (y2 - y1) / 2)
+        self._draw_gradient_rect(x1, y1, x2, y2, color, obj_id)
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline=outline, fill="")
+        self.canvas.create_oval(
+            x1,
+            y1 - oval_h,
+            x2,
+            y1 + oval_h,
+            fill=color,
+            outline=outline,
+        )
+        self.canvas.create_oval(
+            x1,
+            y2 - oval_h,
+            x2,
+            y2 + oval_h,
+            fill=color,
+            outline=outline,
+        )
 
 
     def _draw_open_arrow(
@@ -7015,32 +7088,16 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
                 outline=outline,
             )
-        elif obj.obj_type == "Data":
-            rh = min(10 * self.zoom, h)
-            self.canvas.create_oval(
-                x - w,
-                y - h,
-                x + w,
-                y - h + 2 * rh,
-                outline=outline,
-                fill=color,
-            )
-            self.canvas.create_rectangle(
-                x - w,
-                y - h + rh,
-                x + w,
-                y + h - rh,
-                outline=outline,
-                fill=color,
-            )
-            self.canvas.create_oval(
-                x - w,
-                y + h - 2 * rh,
-                x + w,
-                y + h,
-                outline=outline,
-                fill=color,
-            )
+        elif obj.obj_type in ("Data", "Field Data", "AI Database"):
+            self._draw_cylinder(x - w, y - h, x + w, y + h, color, outline, obj.obj_id)
+            if obj.obj_type == "AI Database":
+                label = obj.properties.get("name", obj.obj_type)
+                self.canvas.create_text(
+                    x,
+                    y + h + 20 * self.zoom,
+                    text=label,
+                    font=self.font,
+                )
         elif obj.obj_type == "Document":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self.canvas.create_rectangle(
@@ -7437,33 +7494,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
-            )
-        elif obj.obj_type == "Field Data":
-            rh = min(10 * self.zoom, h)
-            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
-            self.canvas.create_oval(
-                x - w,
-                y - h,
-                x + w,
-                y - h + 2 * rh,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_rectangle(
-                x - w,
-                y - h + rh,
-                x + w,
-                y + h - rh,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_oval(
-                x - w,
-                y + h - 2 * rh,
-                x + w,
-                y + h,
-                outline=outline,
-                fill="",
             )
         elif obj.obj_type == "Model":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
@@ -8084,37 +8114,6 @@ class SysMLDiagramWindow(tk.Frame):
                     fill=color,
                     outline=outline,
                 )
-        elif obj.obj_type == "AI Database":
-            top = y - h
-            bottom = y + h
-            oval_h = 10 * self.zoom
-            self._draw_gradient_rect(x - w, top, x + w, bottom, color, obj.obj_id)
-            self.canvas.create_rectangle(
-                x - w,
-                top,
-                x + w,
-                bottom,
-                outline=outline,
-                fill="",
-            )
-            self.canvas.create_oval(
-                x - w,
-                top - oval_h,
-                x + w,
-                top + oval_h,
-                fill=color,
-                outline=outline,
-            )
-            self.canvas.create_oval(
-                x - w,
-                bottom - oval_h,
-                x + w,
-                bottom + oval_h,
-                fill=color,
-                outline=outline,
-            )
-            label = obj.properties.get("name", obj.obj_type)
-            self.canvas.create_text(x, bottom + 20 * self.zoom, text=label, font=self.font)
         elif obj.obj_type == "ANN":
             # Draw three layers of neurons connected
             layers = [3, 6, 2]
