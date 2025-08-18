@@ -37,7 +37,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         body.pack(fill=tk.BOTH, expand=True)
 
         self.toolbox = ttk.Frame(body)
-        self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
         for name in (
             "Variable",
             "Triggering Condition",
