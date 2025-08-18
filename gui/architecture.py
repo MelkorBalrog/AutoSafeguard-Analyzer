@@ -6331,8 +6331,13 @@ class SysMLDiagramWindow(tk.Frame):
         self.objects.sort(key=key)
 
     def redraw(self):
-        self.canvas.configure(bg=StyleManager.get_instance().canvas_bg)
-        self.canvas.delete("all")
+        canvas = getattr(self, "canvas", None)
+        if canvas is None:
+            return
+        if not getattr(canvas, "winfo_exists", lambda: True)():
+            return
+        canvas.configure(bg=StyleManager.get_instance().canvas_bg)
+        canvas.delete("all")
         self.gradient_cache.clear()
         self.compartment_buttons = []
         self.sort_objects()
