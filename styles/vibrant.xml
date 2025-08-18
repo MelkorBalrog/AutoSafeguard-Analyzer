@@ -12,7 +12,7 @@
   <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#00ACC1" />
   <object type="Business Unit" color="#64B5F6" />
-  <object type="Data" color="#FFB74D" />
+  <object type="AI Data" color="#FFB74D" />
   <object type="Document" color="#FFF176" />
   <object type="Guideline" color="#E57373" />
   <object type="Metric" color="#81C784" />

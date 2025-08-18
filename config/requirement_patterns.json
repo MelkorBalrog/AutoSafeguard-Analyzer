@@ -1056,8 +1056,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-consumes-Process-Data",
-    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Pattern ID": "GOV-consumes-Process-AI_Data",
+    "Trigger": "Gov: Process --[Consumes]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall consumes the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -1067,8 +1067,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-consumes-Process-Data-COND",
-    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Pattern ID": "GOV-consumes-Process-AI_Data-COND",
+    "Trigger": "Gov: Process --[Consumes]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall consumes the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -1079,8 +1079,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-consumes-Process-Data-COND-CONST",
-    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Pattern ID": "GOV-consumes-Process-AI_Data-COND-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall consumes the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -1092,8 +1092,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-consumes-Process-Data-CONST",
-    "Trigger": "Gov: Process --[Consumes]--> Data",
+    "Pattern ID": "GOV-consumes-Process-AI_Data-CONST",
+    "Trigger": "Gov: Process --[Consumes]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall consumes the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -1152,8 +1152,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-curation-Process-Data",
-    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Pattern ID": "GOV-curation-Process-AI_Data",
+    "Trigger": "Gov: Process --[Curation]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall curation the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -1163,8 +1163,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-curation-Process-Data-COND",
-    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Pattern ID": "GOV-curation-Process-AI_Data-COND",
+    "Trigger": "Gov: Process --[Curation]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall curation the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -1175,8 +1175,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-curation-Process-Data-COND-CONST",
-    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Pattern ID": "GOV-curation-Process-AI_Data-COND-CONST",
+    "Trigger": "Gov: Process --[Curation]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall curation the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -1188,8 +1188,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-curation-Process-Data-CONST",
-    "Trigger": "Gov: Process --[Curation]--> Data",
+    "Pattern ID": "GOV-curation-Process-AI_Data-CONST",
+    "Trigger": "Gov: Process --[Curation]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall curation the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -3552,8 +3552,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-produces-Process-Data",
-    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Pattern ID": "GOV-produces-Process-AI_Data",
+    "Trigger": "Gov: Process --[Produces]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall produces the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -3563,8 +3563,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-produces-Process-Data-COND",
-    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Pattern ID": "GOV-produces-Process-AI_Data-COND",
+    "Trigger": "Gov: Process --[Produces]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall produces the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -3575,8 +3575,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-produces-Process-Data-COND-CONST",
-    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Pattern ID": "GOV-produces-Process-AI_Data-COND-CONST",
+    "Trigger": "Gov: Process --[Produces]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall produces the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -3588,8 +3588,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-produces-Process-Data-CONST",
-    "Trigger": "Gov: Process --[Produces]--> Data",
+    "Pattern ID": "GOV-produces-Process-AI_Data-CONST",
+    "Trigger": "Gov: Process --[Produces]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall produces the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -4320,8 +4320,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-uses-Role-Data",
-    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Pattern ID": "GOV-uses-Role-AI_Data",
+    "Trigger": "Gov: Role --[Uses]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall uses the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -4331,8 +4331,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-uses-Role-Data-COND",
-    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Pattern ID": "GOV-uses-Role-AI_Data-COND",
+    "Trigger": "Gov: Role --[Uses]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall uses the <object1_id> (<object1_class>).",
     "Variables": [
       "<owner>",
@@ -4343,8 +4343,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-uses-Role-Data-COND-CONST",
-    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Pattern ID": "GOV-uses-Role-AI_Data-COND-CONST",
+    "Trigger": "Gov: Role --[Uses]--> AI Data",
     "Template": "When <condition>, <object0_id> (<object0_class>) shall uses the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -4356,8 +4356,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-uses-Role-Data-CONST",
-    "Trigger": "Gov: Role --[Uses]--> Data",
+    "Pattern ID": "GOV-uses-Role-AI_Data-CONST",
+    "Trigger": "Gov: Role --[Uses]--> AI Data",
     "Template": "<object0_id> (<object0_class>) shall uses the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",

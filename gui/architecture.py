@@ -102,7 +102,7 @@ draw_icon = create_icon
 def _make_gov_element_classes(nodes: list[str]) -> dict[str, list[str]]:
     base = {
         "Entities": [n for n in ["Organization", "Business Unit", "Role"] if n in nodes],
-        "Artifacts": [n for n in ["Data", "Document", "Record", "Field Data"] if n in nodes],
+        "Artifacts": [n for n in ["AI Data", "Document", "Record", "Field Data"] if n in nodes],
         "Governance": [
             n
             for n in [
@@ -241,7 +241,7 @@ _BOTTOM_LABEL_TYPES = {
     "Standard",
     "Metric",
     "Safety Compliance",
-    "Data",
+    "AI Data",
     "Field Data",
     "Risk Assessment",
     "Fleet",
@@ -3606,7 +3606,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Database": "cylinder",
             "System Boundary": "rect",
             "Business Unit": "department",
-            "Data": "cylinder",
+            "AI Data": "cylinder",
             "Document": "document",
             "Guideline": "compass",
             "Metric": "chart",
@@ -6859,7 +6859,7 @@ class SysMLDiagramWindow(tk.Frame):
                 fill=outline,
                 outline=outline,
             )
-        elif obj.obj_type == "Data":
+        elif obj.obj_type == "AI Data":
             rh = min(10 * self.zoom, h)
             self.canvas.create_oval(
                 x - w,
@@ -12086,7 +12086,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "ANN": self._create_icon("neural", style.get_color("ANN")),
             "Data acquisition": self._create_icon("arrow", style.get_color("Data acquisition")),
             "Business Unit": self._create_icon("department", style.get_color("Business Unit")),
-            "Data": self._create_icon("circle", style.get_color("Data")),
+            "AI Data": self._create_icon("cylinder", style.get_color("AI Data")),
             "Document": self._create_icon("document", style.get_color("Document")),
             "Guideline": self._create_icon("compass", style.get_color("Guideline")),
             "Metric": self._create_icon("chart", style.get_color("Metric")),

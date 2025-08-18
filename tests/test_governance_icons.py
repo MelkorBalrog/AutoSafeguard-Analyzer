@@ -28,7 +28,7 @@ def test_governance_shapes_and_relations():
     assert shape(None, "Operation") == "wrench"
     assert shape(None, "Driving Function") == "steering"
     assert shape(None, "Plan") == "document"
-    assert shape(None, "Data") == "cylinder"
+    assert shape(None, "AI Data") == "cylinder"
     assert shape(None, "Field Data") == "cylinder"
 
     style = StyleManager.get_instance()
@@ -49,7 +49,7 @@ def test_governance_shapes_and_relations():
         "Operation",
         "Driving Function",
         "Plan",
-        "Data",
+        "AI Data",
         "Field Data",
     ]:
         assert style.get_color(element) != "#FFFFFF"
