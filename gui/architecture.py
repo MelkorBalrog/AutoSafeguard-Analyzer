@@ -11132,10 +11132,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             gov_frames.append(self.rel_frame)
         if core_data:
             gov_frames.append(build_frame("Governance Core", core_data))
+        # Create toolbox for additional governance elements grouped by class
         for name, data in defs.items():
             gov_frames.append(build_frame(name, data))
+        # Repack toolbox to include selector
         self._toolbox_frames["Governance"] = gov_frames
 
+        # Create Safety & AI Lifecycle toolbox frame
         if ai_data:
             self._toolbox_frames["Safety & AI Lifecycle"] = [
                 build_frame("Safety & AI Lifecycle", ai_data)
