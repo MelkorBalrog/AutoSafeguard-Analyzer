@@ -16,7 +16,7 @@ def test_ai_elements_generate_ai_safety_requirements(monkeypatch):
     e1 = repo.create_element("Block", name="DB")
     e2 = repo.create_element("Block", name="NN")
     diag.objects = [
-        {"obj_id": 1, "obj_type": "Database", "x": 0, "y": 0, "element_id": e1.elem_id, "properties": {"name": "DB"}},
+        {"obj_id": 1, "obj_type": "AI Database", "x": 0, "y": 0, "element_id": e1.elem_id, "properties": {"name": "DB"}},
         {"obj_id": 2, "obj_type": "ANN", "x": 100, "y": 0, "element_id": e2.elem_id, "properties": {"name": "NN"}},
     ]
     diag.connections = [

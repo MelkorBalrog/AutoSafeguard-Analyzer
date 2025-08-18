@@ -1536,6 +1536,54 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
+    "Pattern ID": "GOV-flow-Action-AI_Database",
+    "Trigger": "Gov: Action --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Action-AI_Database-COND",
+    "Trigger": "Gov: Action --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Action-AI_Database-COND-CONST",
+    "Trigger": "Gov: Action --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Action-AI_Database-CONST",
+    "Trigger": "Gov: Action --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
     "Pattern ID": "GOV-flow-Action-ANN",
     "Trigger": "Gov: Action --[Flow]--> ANN",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -1670,54 +1718,6 @@
   {
     "Pattern ID": "GOV-flow-Action-Data_acquisition-CONST",
     "Trigger": "Gov: Action --[Flow]--> Data acquisition",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Action-Database",
-    "Trigger": "Gov: Action --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Action-Database-COND",
-    "Trigger": "Gov: Action --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Action-Database-COND-CONST",
-    "Trigger": "Gov: Action --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Action-Database-CONST",
-    "Trigger": "Gov: Action --[Flow]--> Database",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -1872,6 +1872,54 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
+    "Pattern ID": "GOV-flow-Decision-AI_Database",
+    "Trigger": "Gov: Decision --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Decision-AI_Database-COND",
+    "Trigger": "Gov: Decision --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Decision-AI_Database-COND-CONST",
+    "Trigger": "Gov: Decision --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Decision-AI_Database-CONST",
+    "Trigger": "Gov: Decision --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
     "Pattern ID": "GOV-flow-Decision-ANN",
     "Trigger": "Gov: Decision --[Flow]--> ANN",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -2006,54 +2054,6 @@
   {
     "Pattern ID": "GOV-flow-Decision-Data_acquisition-CONST",
     "Trigger": "Gov: Decision --[Flow]--> Data acquisition",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Decision-Database",
-    "Trigger": "Gov: Decision --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Decision-Database-COND",
-    "Trigger": "Gov: Decision --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Decision-Database-COND-CONST",
-    "Trigger": "Gov: Decision --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Decision-Database-CONST",
-    "Trigger": "Gov: Decision --[Flow]--> Database",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -2256,6 +2256,54 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
+    "Pattern ID": "GOV-flow-Initial-AI_Database",
+    "Trigger": "Gov: Initial --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Initial-AI_Database-COND",
+    "Trigger": "Gov: Initial --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Initial-AI_Database-COND-CONST",
+    "Trigger": "Gov: Initial --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Initial-AI_Database-CONST",
+    "Trigger": "Gov: Initial --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
     "Pattern ID": "GOV-flow-Initial-ANN",
     "Trigger": "Gov: Initial --[Flow]--> ANN",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -2400,54 +2448,6 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-flow-Initial-Database",
-    "Trigger": "Gov: Initial --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Initial-Database-COND",
-    "Trigger": "Gov: Initial --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Initial-Database-COND-CONST",
-    "Trigger": "Gov: Initial --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Initial-Database-CONST",
-    "Trigger": "Gov: Initial --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
     "Pattern ID": "GOV-flow-Initial-Decision",
     "Trigger": "Gov: Initial --[Flow]--> Decision",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -2534,6 +2534,54 @@
   {
     "Pattern ID": "GOV-flow-Initial-Merge-CONST",
     "Trigger": "Gov: Initial --[Flow]--> Merge",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-AI_Database",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-AI_Database-COND",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-AI_Database-COND-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Lifecycle_Phase-AI_Database-CONST",
+    "Trigger": "Gov: Lifecycle Phase --[Flow]--> AI Database",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -2688,54 +2736,6 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database",
-    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-COND",
-    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-COND-CONST",
-    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Lifecycle_Phase-Database-CONST",
-    "Trigger": "Gov: Lifecycle Phase --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
     "Pattern ID": "GOV-flow-Lifecycle_Phase-Decision",
     "Trigger": "Gov: Lifecycle Phase --[Flow]--> Decision",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -2880,6 +2880,54 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
+    "Pattern ID": "GOV-flow-Merge-AI_Database",
+    "Trigger": "Gov: Merge --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Merge-AI_Database-COND",
+    "Trigger": "Gov: Merge --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Merge-AI_Database-COND-CONST",
+    "Trigger": "Gov: Merge --[Flow]--> AI Database",
+    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
+    "Pattern ID": "GOV-flow-Merge-AI_Database-CONST",
+    "Trigger": "Gov: Merge --[Flow]--> AI Database",
+    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
+    "Variables": [
+      "<owner>",
+      "<due_date>",
+      "<evidence_ref>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Governance)."
+  },
+  {
     "Pattern ID": "GOV-flow-Merge-ANN",
     "Trigger": "Gov: Merge --[Flow]--> ANN",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
@@ -3014,54 +3062,6 @@
   {
     "Pattern ID": "GOV-flow-Merge-Data_acquisition-CONST",
     "Trigger": "Gov: Merge --[Flow]--> Data acquisition",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Merge-Database",
-    "Trigger": "Gov: Merge --[Flow]--> Database",
-    "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Merge-Database-COND",
-    "Trigger": "Gov: Merge --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>).",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Merge-Database-COND-CONST",
-    "Trigger": "Gov: Merge --[Flow]--> Database",
-    "Template": "When <condition>, <object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
-    "Variables": [
-      "<owner>",
-      "<due_date>",
-      "<evidence_ref>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Governance)."
-  },
-  {
-    "Pattern ID": "GOV-flow-Merge-Database-CONST",
-    "Trigger": "Gov: Merge --[Flow]--> Database",
     "Template": "<object0_id> (<object0_class>) shall flow to the <object1_id> (<object1_class>) constrained by <constraint>.",
     "Variables": [
       "<owner>",
@@ -4464,8 +4464,8 @@
     "Notes": "Auto-generated from diagram rules (Governance)."
   },
   {
-    "Pattern ID": "SA-acquisition-Database-Data_acquisition",
-    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Pattern ID": "SA-acquisition-AI_Database-Data_acquisition",
+    "Trigger": "Safety&AI: AI Database --[Acquisition]--> Data acquisition",
     "Template": "Engineering team shall acquire the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4477,8 +4477,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-acquisition-Database-Data_acquisition-COND",
-    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Pattern ID": "SA-acquisition-AI_Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: AI Database --[Acquisition]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall acquire the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4491,8 +4491,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-acquisition-Database-Data_acquisition-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Pattern ID": "SA-acquisition-AI_Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Acquisition]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall acquire the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4506,8 +4506,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-acquisition-Database-Data_acquisition-CONST",
-    "Trigger": "Safety&AI: Database --[Acquisition]--> Data acquisition",
+    "Pattern ID": "SA-acquisition-AI_Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: AI Database --[Acquisition]--> Data acquisition",
     "Template": "Engineering team shall acquire the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4520,8 +4520,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_re-training-Database-ANN",
-    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Pattern ID": "SA-ai_re-training-AI_Database-ANN",
+    "Trigger": "Safety&AI: AI Database --[AI re-training]--> ANN",
     "Template": "Engineering team shall retrain the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4533,8 +4533,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_re-training-Database-ANN-COND",
-    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Pattern ID": "SA-ai_re-training-AI_Database-ANN-COND",
+    "Trigger": "Safety&AI: AI Database --[AI re-training]--> ANN",
     "Template": "When <condition>, Engineering team shall retrain the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4547,8 +4547,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_re-training-Database-ANN-COND-CONST",
-    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Pattern ID": "SA-ai_re-training-AI_Database-ANN-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[AI re-training]--> ANN",
     "Template": "When <condition>, Engineering team shall retrain the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4562,8 +4562,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_re-training-Database-ANN-CONST",
-    "Trigger": "Safety&AI: Database --[AI re-training]--> ANN",
+    "Pattern ID": "SA-ai_re-training-AI_Database-ANN-CONST",
+    "Trigger": "Safety&AI: AI Database --[AI re-training]--> ANN",
     "Template": "Engineering team shall retrain the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4576,8 +4576,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_training-Database-ANN",
-    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Pattern ID": "SA-ai_training-AI_Database-ANN",
+    "Trigger": "Safety&AI: AI Database --[AI training]--> ANN",
     "Template": "Engineering team shall train the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4589,8 +4589,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_training-Database-ANN-COND",
-    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Pattern ID": "SA-ai_training-AI_Database-ANN-COND",
+    "Trigger": "Safety&AI: AI Database --[AI training]--> ANN",
     "Template": "When <condition>, Engineering team shall train the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4603,8 +4603,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_training-Database-ANN-COND-CONST",
-    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Pattern ID": "SA-ai_training-AI_Database-ANN-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[AI training]--> ANN",
     "Template": "When <condition>, Engineering team shall train the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4618,8 +4618,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ai_training-Database-ANN-CONST",
-    "Trigger": "Safety&AI: Database --[AI training]--> ANN",
+    "Pattern ID": "SA-ai_training-AI_Database-ANN-CONST",
+    "Trigger": "Safety&AI: AI Database --[AI training]--> ANN",
     "Template": "Engineering team shall train the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4632,8 +4632,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-annotation-ANN-Database",
-    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Pattern ID": "SA-annotation-ANN-AI_Database",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> AI Database",
     "Template": "Engineering team shall annotate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4645,8 +4645,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-annotation-ANN-Database-COND",
-    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Pattern ID": "SA-annotation-ANN-AI_Database-COND",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> AI Database",
     "Template": "When <condition>, Engineering team shall annotate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4659,8 +4659,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-annotation-ANN-Database-COND-CONST",
-    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Pattern ID": "SA-annotation-ANN-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> AI Database",
     "Template": "When <condition>, Engineering team shall annotate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4674,8 +4674,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-annotation-ANN-Database-CONST",
-    "Trigger": "Safety&AI: ANN --[Annotation]--> Database",
+    "Pattern ID": "SA-annotation-ANN-AI_Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Annotation]--> AI Database",
     "Template": "Engineering team shall annotate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4912,8 +4912,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-augmentation-ANN-Database",
-    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Pattern ID": "SA-augmentation-ANN-AI_Database",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> AI Database",
     "Template": "Engineering team shall augment the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4925,8 +4925,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-augmentation-ANN-Database-COND",
-    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Pattern ID": "SA-augmentation-ANN-AI_Database-COND",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> AI Database",
     "Template": "When <condition>, Engineering team shall augment the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -4939,8 +4939,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-augmentation-ANN-Database-COND-CONST",
-    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Pattern ID": "SA-augmentation-ANN-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> AI Database",
     "Template": "When <condition>, Engineering team shall augment the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -4954,9 +4954,65 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-augmentation-ANN-Database-CONST",
-    "Trigger": "Safety&AI: ANN --[Augmentation]--> Database",
+    "Pattern ID": "SA-augmentation-ANN-AI_Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Augmentation]--> AI Database",
     "Template": "Engineering team shall augment the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
+    "Variables": [
+      "<object0_id>",
+      "<object0_class>",
+      "<object1_id>",
+      "<object1_class>",
+      "<acceptance_criteria>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-complies_with-AI_Database-Policy",
+    "Trigger": "Safety&AI: AI Database --[Complies with]--> Policy",
+    "Template": "Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
+    "Variables": [
+      "<object0_id>",
+      "<object0_class>",
+      "<object1_id>",
+      "<object1_class>",
+      "<acceptance_criteria>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-complies_with-AI_Database-Policy-COND",
+    "Trigger": "Safety&AI: AI Database --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
+    "Variables": [
+      "<object0_id>",
+      "<object0_class>",
+      "<object1_id>",
+      "<object1_class>",
+      "<acceptance_criteria>",
+      "<condition>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-complies_with-AI_Database-Policy-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Complies with]--> Policy",
+    "Template": "When <condition>, Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
+    "Variables": [
+      "<object0_id>",
+      "<object0_class>",
+      "<object1_id>",
+      "<object1_class>",
+      "<acceptance_criteria>",
+      "<condition>",
+      "<constraint>"
+    ],
+    "Notes": "Auto-generated from diagram rules (Safety&AI)."
+  },
+  {
+    "Pattern ID": "SA-complies_with-AI_Database-Policy-CONST",
+    "Trigger": "Safety&AI: AI Database --[Complies with]--> Policy",
+    "Template": "Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
       "<object0_class>",
@@ -5012,62 +5068,6 @@
   {
     "Pattern ID": "SA-complies_with-ANN-Policy-CONST",
     "Trigger": "Safety&AI: ANN --[Complies with]--> Policy",
-    "Template": "Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
-    "Variables": [
-      "<object0_id>",
-      "<object0_class>",
-      "<object1_id>",
-      "<object1_class>",
-      "<acceptance_criteria>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
-  {
-    "Pattern ID": "SA-complies_with-Database-Policy",
-    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
-    "Template": "Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
-    "Variables": [
-      "<object0_id>",
-      "<object0_class>",
-      "<object1_id>",
-      "<object1_class>",
-      "<acceptance_criteria>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
-  {
-    "Pattern ID": "SA-complies_with-Database-Policy-COND",
-    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
-    "Template": "When <condition>, Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
-    "Variables": [
-      "<object0_id>",
-      "<object0_class>",
-      "<object1_id>",
-      "<object1_class>",
-      "<acceptance_criteria>",
-      "<condition>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
-  {
-    "Pattern ID": "SA-complies_with-Database-Policy-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
-    "Template": "When <condition>, Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
-    "Variables": [
-      "<object0_id>",
-      "<object0_class>",
-      "<object1_id>",
-      "<object1_class>",
-      "<acceptance_criteria>",
-      "<condition>",
-      "<constraint>"
-    ],
-    "Notes": "Auto-generated from diagram rules (Safety&AI)."
-  },
-  {
-    "Pattern ID": "SA-complies_with-Database-Policy-CONST",
-    "Trigger": "Safety&AI: Database --[Complies with]--> Policy",
     "Template": "Engineering team shall comply with the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5136,8 +5136,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-curation-Database-Database",
-    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Pattern ID": "SA-curation-AI_Database-AI_Database",
+    "Trigger": "Safety&AI: AI Database --[Curation]--> AI Database",
     "Template": "Engineering team shall curate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5149,8 +5149,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-curation-Database-Database-COND",
-    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Pattern ID": "SA-curation-AI_Database-AI_Database-COND",
+    "Trigger": "Safety&AI: AI Database --[Curation]--> AI Database",
     "Template": "When <condition>, Engineering team shall curate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5163,8 +5163,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-curation-Database-Database-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Pattern ID": "SA-curation-AI_Database-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Curation]--> AI Database",
     "Template": "When <condition>, Engineering team shall curate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5178,8 +5178,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-curation-Database-Database-CONST",
-    "Trigger": "Safety&AI: Database --[Curation]--> Database",
+    "Pattern ID": "SA-curation-AI_Database-AI_Database-CONST",
+    "Trigger": "Safety&AI: AI Database --[Curation]--> AI Database",
     "Template": "Engineering team shall curate the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5472,8 +5472,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Data_acquisition",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Data acquisition",
     "Template": "Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5485,8 +5485,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5499,8 +5499,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5514,8 +5514,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Data_acquisition-CONST",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Data acquisition",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Data acquisition",
     "Template": "Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5528,8 +5528,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Task",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Task",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Task",
     "Template": "Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5541,8 +5541,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Task-COND",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Task-COND",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Task",
     "Template": "When <condition>, Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5555,8 +5555,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Task-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Task-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Task",
     "Template": "When <condition>, Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5570,8 +5570,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_data_collection-Database-Task-CONST",
-    "Trigger": "Safety&AI: Database --[Field data collection]--> Task",
+    "Pattern ID": "SA-field_data_collection-AI_Database-Task-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field data collection]--> Task",
     "Template": "Engineering team shall collect field data from the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5584,8 +5584,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition",
-    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Pattern ID": "SA-field_risk_evaluation-AI_Database-Data_acquisition",
+    "Trigger": "Safety&AI: AI Database --[Field risk evaluation]--> Data acquisition",
     "Template": "Engineering team shall evaluate field risk the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5597,8 +5597,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-COND",
-    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Pattern ID": "SA-field_risk_evaluation-AI_Database-Data_acquisition-COND",
+    "Trigger": "Safety&AI: AI Database --[Field risk evaluation]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall evaluate field risk the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5611,8 +5611,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Pattern ID": "SA-field_risk_evaluation-AI_Database-Data_acquisition-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field risk evaluation]--> Data acquisition",
     "Template": "When <condition>, Engineering team shall evaluate field risk the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5626,8 +5626,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-field_risk_evaluation-Database-Data_acquisition-CONST",
-    "Trigger": "Safety&AI: Database --[Field risk evaluation]--> Data acquisition",
+    "Pattern ID": "SA-field_risk_evaluation-AI_Database-Data_acquisition-CONST",
+    "Trigger": "Safety&AI: AI Database --[Field risk evaluation]--> Data acquisition",
     "Template": "Engineering team shall evaluate field risk the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5640,8 +5640,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ingestion-Database-Database",
-    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Pattern ID": "SA-ingestion-AI_Database-AI_Database",
+    "Trigger": "Safety&AI: AI Database --[Ingestion]--> AI Database",
     "Template": "Engineering team shall ingest the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5653,8 +5653,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ingestion-Database-Database-COND",
-    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Pattern ID": "SA-ingestion-AI_Database-AI_Database-COND",
+    "Trigger": "Safety&AI: AI Database --[Ingestion]--> AI Database",
     "Template": "When <condition>, Engineering team shall ingest the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5667,8 +5667,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ingestion-Database-Database-COND-CONST",
-    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Pattern ID": "SA-ingestion-AI_Database-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: AI Database --[Ingestion]--> AI Database",
     "Template": "When <condition>, Engineering team shall ingest the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5682,8 +5682,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-ingestion-Database-Database-CONST",
-    "Trigger": "Safety&AI: Database --[Ingestion]--> Database",
+    "Pattern ID": "SA-ingestion-AI_Database-AI_Database-CONST",
+    "Trigger": "Safety&AI: AI Database --[Ingestion]--> AI Database",
     "Template": "Engineering team shall ingest the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5696,8 +5696,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-labeling-ANN-Database",
-    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Pattern ID": "SA-labeling-ANN-AI_Database",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> AI Database",
     "Template": "Engineering team shall label the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5709,8 +5709,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-labeling-ANN-Database-COND",
-    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Pattern ID": "SA-labeling-ANN-AI_Database-COND",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> AI Database",
     "Template": "When <condition>, Engineering team shall label the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5723,8 +5723,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-labeling-ANN-Database-COND-CONST",
-    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Pattern ID": "SA-labeling-ANN-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> AI Database",
     "Template": "When <condition>, Engineering team shall label the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5738,8 +5738,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-labeling-ANN-Database-CONST",
-    "Trigger": "Safety&AI: ANN --[Labeling]--> Database",
+    "Pattern ID": "SA-labeling-ANN-AI_Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Labeling]--> AI Database",
     "Template": "Engineering team shall label the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5864,8 +5864,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-model_evaluation-ANN-Database",
-    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Pattern ID": "SA-model_evaluation-ANN-AI_Database",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> AI Database",
     "Template": "Engineering team shall evaluate model the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5877,8 +5877,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-model_evaluation-ANN-Database-COND",
-    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Pattern ID": "SA-model_evaluation-ANN-AI_Database-COND",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> AI Database",
     "Template": "When <condition>, Engineering team shall evaluate model the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -5891,8 +5891,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-model_evaluation-ANN-Database-COND-CONST",
-    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Pattern ID": "SA-model_evaluation-ANN-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> AI Database",
     "Template": "When <condition>, Engineering team shall evaluate model the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -5906,8 +5906,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-model_evaluation-ANN-Database-CONST",
-    "Trigger": "Safety&AI: ANN --[Model evaluation]--> Database",
+    "Pattern ID": "SA-model_evaluation-ANN-AI_Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Model evaluation]--> AI Database",
     "Template": "Engineering team shall evaluate model the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -6536,8 +6536,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-synthesis-ANN-Database",
-    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Pattern ID": "SA-synthesis-ANN-AI_Database",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> AI Database",
     "Template": "Engineering team shall synthesize the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -6549,8 +6549,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-synthesis-ANN-Database-COND",
-    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Pattern ID": "SA-synthesis-ANN-AI_Database-COND",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> AI Database",
     "Template": "When <condition>, Engineering team shall synthesize the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>).",
     "Variables": [
       "<object0_id>",
@@ -6563,8 +6563,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-synthesis-ANN-Database-COND-CONST",
-    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Pattern ID": "SA-synthesis-ANN-AI_Database-COND-CONST",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> AI Database",
     "Template": "When <condition>, Engineering team shall synthesize the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",
@@ -6578,8 +6578,8 @@
     "Notes": "Auto-generated from diagram rules (Safety&AI)."
   },
   {
-    "Pattern ID": "SA-synthesis-ANN-Database-CONST",
-    "Trigger": "Safety&AI: ANN --[Synthesis]--> Database",
+    "Pattern ID": "SA-synthesis-ANN-AI_Database-CONST",
+    "Trigger": "Safety&AI: ANN --[Synthesis]--> AI Database",
     "Template": "Engineering team shall synthesize the <object1_id> (<object1_class>) using the <object0_id> (<object0_class>) constrained by <constraint>.",
     "Variables": [
       "<object0_id>",

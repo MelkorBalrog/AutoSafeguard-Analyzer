@@ -15,15 +15,15 @@ def test_generate_patterns_from_config(tmp_path: Path) -> None:
         "requirement_rules": {
             "annotation": {"action": "annotate", "subject": "Team"}
         },
-        "safety_ai_relation_rules": {"Annotation": {"ANN": ["Database"]}},
+        "safety_ai_relation_rules": {"Annotation": {"ANN": ["AI Database"]}},
     }
     patterns = generate_patterns_from_config(cfg)
     ids = {p["Pattern ID"] for p in patterns}
     expected = {
-        "SA-annotation-ANN-Database",
-        "SA-annotation-ANN-Database-COND",
-        "SA-annotation-ANN-Database-CONST",
-        "SA-annotation-ANN-Database-COND-CONST",
+        "SA-annotation-ANN-AI_Database",
+        "SA-annotation-ANN-AI_Database-COND",
+        "SA-annotation-ANN-AI_Database-CONST",
+        "SA-annotation-ANN-AI_Database-COND-CONST",
     }
     assert ids == expected
 
@@ -33,14 +33,14 @@ def test_reload_config_updates_patterns(tmp_path: Path, monkeypatch) -> None:
         "requirement_rules": {
             "augmentation": {"action": "augment", "subject": "Team"}
         },
-        "safety_ai_relation_rules": {"Augmentation": {"ANN": ["Database"]}},
+        "safety_ai_relation_rules": {"Augmentation": {"ANN": ["AI Database"]}},
     }
     path = tmp_path / "diagram_rules.json"
     path.write_text(json.dumps(cfg))
     monkeypatch.setattr(governance, "_CONFIG_PATH", path)
     governance.reload_config()
     ids = {p["Pattern ID"] for p in governance._PATTERN_DEFS}
-    assert "SA-augmentation-ANN-Database" in ids
+    assert "SA-augmentation-ANN-AI_Database" in ids
 
 
 def test_field_data_collection_uses_from() -> None:
@@ -52,14 +52,14 @@ def test_field_data_collection_uses_from() -> None:
             }
         },
         "safety_ai_relation_rules": {
-            "Field data collection": {"Database": ["Data acquisition"]}
+        "Field data collection": {"AI Database": ["Data acquisition"]}
         },
     }
     patterns = generate_patterns_from_config(cfg)
     tmpl = next(
         p["Template"]
         for p in patterns
-        if p["Pattern ID"] == "SA-field_data_collection-Database-Data_acquisition"
+        if p["Pattern ID"] == "SA-field_data_collection-AI_Database-Data_acquisition"
     )
     assert "collect field data from the <object1_id>" in tmpl
 

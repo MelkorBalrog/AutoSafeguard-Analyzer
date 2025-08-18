@@ -13,7 +13,7 @@
   <object type="Block" color="#B0C4DE" />
   <object type="Decision" color="#C8E6C9" />
   <object type="Merge" color="#FFFFFF" />
-  <object type="Database" color="#cfe2f3" />
+  <object type="AI Database" color="#cfe2f3" />
   <object type="ANN" color="#d5e8d4" />
   <object type="Data acquisition" color="#ffe6cc" />
   <object type="Business Unit" color="#cfe2f3" />

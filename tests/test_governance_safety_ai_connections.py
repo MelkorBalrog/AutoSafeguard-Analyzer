@@ -24,7 +24,7 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
         repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
         gobj = SysMLObject(1, "Action", 0, 0, element_id=e1.elem_id)
-        aiobj = SysMLObject(2, "Database", 0, 100, element_id=e2.elem_id)
+        aiobj = SysMLObject(2, "AI Database", 0, 100, element_id=e2.elem_id)
         diag.objects = [gobj.__dict__, aiobj.__dict__]
         return diag, gobj, aiobj
 
@@ -55,27 +55,27 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         self.assertTrue(valid)
 
     def test_ai_training_direction(self):
-        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        diag, db, ann = self._make_ai_pair("AI Database", "ANN")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "AI training")
         self.assertTrue(valid)
-        diag, ann, db = self._make_ai_pair("ANN", "Database")
+        diag, ann, db = self._make_ai_pair("ANN", "AI Database")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, ann, db, "AI training")
         self.assertFalse(valid)
 
     def test_model_evaluation_direction(self):
-        diag, ann, db = self._make_ai_pair("ANN", "Database")
+        diag, ann, db = self._make_ai_pair("ANN", "AI Database")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, ann, db, "Model evaluation")
         self.assertTrue(valid)
-        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        diag, db, ann = self._make_ai_pair("AI Database", "ANN")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Model evaluation")
         self.assertFalse(valid)
 
     def test_tune_connection(self):
-        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        diag, db, ann = self._make_ai_pair("AI Database", "ANN")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Tune")
         self.assertTrue(valid)
@@ -83,7 +83,7 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         self.assertTrue(valid)
 
     def test_hyperparameter_validation_connection(self):
-        diag, db, ann = self._make_ai_pair("Database", "ANN")
+        diag, db, ann = self._make_ai_pair("AI Database", "ANN")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(win, db, ann, "Hyperparameter Validation")
         self.assertTrue(valid)
@@ -93,22 +93,22 @@ class GovernanceSafetyAIConnectionTests(unittest.TestCase):
         self.assertTrue(valid)
 
     def test_field_risk_evaluation_enforces_allowed_targets(self):
-        # Valid connection: Database -> Data acquisition
-        diag, db, da = self._make_ai_pair("Database", "Data acquisition")
+        # Valid connection: AI Database -> Data acquisition
+        diag, db, da = self._make_ai_pair("AI Database", "Data acquisition")
         win = self._window(diag)
         valid, _ = GovernanceDiagramWindow.validate_connection(
             win, db, da, "Field risk evaluation"
         )
         self.assertTrue(valid)
 
-        # Invalid connection: Database -> Work Product
+        # Invalid connection: AI Database -> Work Product
         repo = self.repo
         e1 = repo.create_element("Block", name="E1")
         e2 = repo.create_element("Block", name="E2")
         diag2 = repo.create_diagram("Governance Diagram", name="Gov2")
         repo.add_element_to_diagram(diag2.diag_id, e1.elem_id)
         repo.add_element_to_diagram(diag2.diag_id, e2.elem_id)
-        db_obj = SysMLObject(1, "Database", 0, 0, element_id=e1.elem_id)
+        db_obj = SysMLObject(1, "AI Database", 0, 0, element_id=e1.elem_id)
         wp_obj = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id)
         diag2.objects = [db_obj.__dict__, wp_obj.__dict__]
         win2 = self._window(diag2)

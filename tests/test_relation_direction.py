@@ -11,8 +11,8 @@ def _safety_ai_rules():
 
 def test_data_acquisition_relation_direction():
     rules = _safety_ai_rules()
-    expected = {"Database": ["Data acquisition"]}
+    expected = {"AI Database": ["Data acquisition"]}
     assert rules.get("Acquisition") == expected
     assert rules.get("Field risk evaluation") == expected
-    expected_collect = {"Database": ["Data acquisition", "Task"]}
+    expected_collect = {"AI Database": ["Data acquisition", "Task"]}
     assert rules.get("Field data collection") == expected_collect

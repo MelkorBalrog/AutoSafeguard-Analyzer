@@ -18,7 +18,7 @@
 
   // Types shown in the Safety & AI lifecycle toolbox
   "ai_nodes": [
-    "Database",
+    "AI Database",
     "ANN",
     "Data acquisition"
   ],
@@ -403,7 +403,7 @@
     "Artifact": "object",
     "Data": "object",
     "Record": "object",
-    "Database": "object",
+    "AI Database": "object",
     "ANN": "object",
     "Data acquisition": "object",
     "Metric": "constraint",
@@ -433,20 +433,20 @@
   // Allowed Safety & AI relationships between node types
   // Format: "Relation": {"Source": ["Allowed Target", ...] }
   "safety_ai_relation_rules": {
-    "Acquisition": {"Database": ["Data acquisition"]},
-    "Field data collection": {"Database": ["Data acquisition", "Task"]},
-    "Field risk evaluation": {"Database": ["Data acquisition"]},
-    "Annotation": {"ANN": ["Database"]},
-    "Synthesis": {"ANN": ["Database"]},
-    "Augmentation": {"ANN": ["Database"]},
-    "Labeling": {"ANN": ["Database"]},
-    "AI training": {"Database": ["ANN"]},
-    "AI re-training": {"Database": ["ANN"]},
-    "Model evaluation": {"ANN": ["Database"]},
-    "Curation": {"Database": ["Database"]},
-    "Ingestion": {"Database": ["Database"]},
+    "Acquisition": {"AI Database": ["Data acquisition"]},
+    "Field data collection": {"AI Database": ["Data acquisition", "Task"]},
+    "Field risk evaluation": {"AI Database": ["Data acquisition"]},
+    "Annotation": {"ANN": ["AI Database"]},
+    "Synthesis": {"ANN": ["AI Database"]},
+    "Augmentation": {"ANN": ["AI Database"]},
+    "Labeling": {"ANN": ["AI Database"]},
+    "AI training": {"AI Database": ["ANN"]},
+    "AI re-training": {"AI Database": ["ANN"]},
+    "Model evaluation": {"ANN": ["AI Database"]},
+    "Curation": {"AI Database": ["AI Database"]},
+    "Ingestion": {"AI Database": ["AI Database"]},
     "Monitoring": {"ANN": ["Operation"]},
-    "Complies with": {"ANN": ["Policy"], "Database": ["Policy"]},
+    "Complies with": {"ANN": ["Policy"], "AI Database": ["Policy"]},
     "Triage": {"Safety Issue": ["Field Data"]},
     "Develops": {
       "Field Data": ["Test Suite"],
@@ -514,11 +514,11 @@
     },
     "Governance Diagram": {
       "Flow": {
-        "Initial": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
-        "Action": ["Action", "Decision", "Merge", "Final", "Database", "ANN", "Data acquisition"],
-        "Decision": ["Action", "Decision", "Merge", "Final", "Lifecycle Phase", "Database", "ANN", "Data acquisition"],
-        "Merge": ["Action", "Decision", "Merge", "Database", "ANN", "Data acquisition"],
-        "Lifecycle Phase": ["Decision", "Action", "Merge", "Final", "Database", "ANN", "Data acquisition"],
+        "Initial": ["Action", "Decision", "Merge", "AI Database", "ANN", "Data acquisition"],
+        "Action": ["Action", "Decision", "Merge", "Final", "AI Database", "ANN", "Data acquisition"],
+        "Decision": ["Action", "Decision", "Merge", "Final", "Lifecycle Phase", "AI Database", "ANN", "Data acquisition"],
+        "Merge": ["Action", "Decision", "Merge", "AI Database", "ANN", "Data acquisition"],
+        "Lifecycle Phase": ["Decision", "Action", "Merge", "Final", "AI Database", "ANN", "Data acquisition"],
         "Final": []
       },
       // Relationships between governance work products and phases
