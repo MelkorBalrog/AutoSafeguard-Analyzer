@@ -3739,7 +3739,7 @@ class SysMLDiagramWindow(tk.Frame):
             "Process Area": "gear",
             "Activity": "rect",
             "Task": "trapezoid",
-            "Operation": "wrench",
+            "Operation": "gear",
             "Driving Function": "steering",
             "Software Component": "component",
             "Test Suite": "test",
@@ -12156,7 +12156,7 @@ class ArchitectureManagerDialog(tk.Frame):
             "Process": self._create_icon("gear", _color("Process")),
             "Process Area": self._create_icon("gear", _color("Process Area")),
             "Work Product": self._create_icon("document", _color("Work Product")),
-            "Operation": self._create_icon("wrench", _color("Operation")),
+            "Operation": self._create_icon("gear", _color("Operation")),
             "Driving Function": self._create_icon("steering", _color("Driving Function")),
         }
         self.default_diag_icon = self._create_icon("document", "gray")
