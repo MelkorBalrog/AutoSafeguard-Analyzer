@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 import json
-import textwrap
 from config import (
     load_diagram_rules,
     validate_diagram_rules,

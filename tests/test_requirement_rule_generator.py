@@ -125,12 +125,30 @@ def test_complex_sequences() -> None:
     cfg = {
         "safety_ai_relation_rules": {
             "Triage": {"Safety Issue": ["Field Data"]},
-            "Develops": {"Field Data": ["Test Suite"], "Mitigation Plan": ["Test Suite"]},
+            "Develops": {
+                "Field Data": ["Test Suite"],
+                "Mitigation Plan": ["Test Suite"],
+                "Risk Assessment": ["Test Suite"],
+            },
             "Constrains": {"Policy": ["Process"]},
-            "Produces": {"Process": ["Document"], "Test Suite": ["Document"], "Validation Report": ["Document"]},
-            "Validate": {"Model": ["Test Suite"], "Mitigation Plan": ["Validation Report"]},
-            "Assesses": {"Hazard": ["Risk Assessment"]},
+            "Produces": {
+                "Process": ["Document"],
+                "Test Suite": ["Document"],
+                "Validation Report": ["Document"],
+                "Verification Plan": ["Document"],
+            },
+            "Validate": {
+                "Model": ["Test Suite"],
+                "Mitigation Plan": ["Validation Report"],
+                "Test Suite": ["Validation Report"],
+            },
+            "Assesses": {
+                "Hazard": ["Risk Assessment"],
+                "Security Threat": ["Risk Assessment"],
+                "Field Data": ["Risk Assessment"],
+            },
             "Mitigates": {"Risk Assessment": ["Mitigation Plan"]},
+            "Verify": {"Test Suite": ["Verification Plan"]},
         },
         "requirement_sequences": {
             "incident triage": {
@@ -153,6 +171,26 @@ def test_complex_sequences() -> None:
                 "subject": "Safety engineer",
                 "action": "develop hazard mitigation tests",
             },
+            "incident validation": {
+                "relations": ["Triage", "Develops", "Validate", "Produces"],
+                "subject": "Safety manager",
+                "action": "validate incident resolution",
+            },
+            "hazard verification": {
+                "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+                "subject": "Safety engineer",
+                "action": "verify hazard mitigations",
+            },
+            "cybersecurity threat verification": {
+                "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+                "subject": "Cybersecurity team",
+                "action": "verify threat mitigations",
+            },
+            "sotif scenario verification": {
+                "relations": ["Assesses", "Develops", "Verify", "Produces"],
+                "subject": "Validation team",
+                "action": "verify scenarios",
+            },
         },
     }
     patterns = generate_patterns_from_config(cfg)
@@ -161,3 +199,7 @@ def test_complex_sequences() -> None:
     assert "SEQ-policy_compliance-Policy-Document" in ids
     assert "SEQ-model_validation-Model-Document" in ids
     assert "SEQ-hazard_mitigation-Hazard-Document" in ids
+    assert "SEQ-incident_validation-Safety_Issue-Document" in ids
+    assert "SEQ-hazard_verification-Hazard-Document" in ids
+    assert "SEQ-cybersecurity_threat_verification-Security_Threat-Document" in ids
+    assert "SEQ-sotif_scenario_verification-Hazard-Document" in ids

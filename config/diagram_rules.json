@@ -75,7 +75,20 @@
     "Safety Issue",
     "Field Data",
     "Model",
-    "Lifecycle Phase"
+    "Lifecycle Phase",
+    "Hazard",
+    "Risk Assessment",
+    "Safety Goal",
+    "Safety Plan",
+    "Security Plan",
+    "Mitigation Plan",
+    "Security Threat",
+    "Validation Report",
+    "Audit Report",
+    "Safety Case",
+    "Deployment Plan",
+    "Maintenance Plan",
+    "Decommission Plan"
   ],
 
   // Relation labels for the Governance Elements toolbox
@@ -106,7 +119,11 @@
     "Inspect",
     "Triage",
     "Improve",
-    "Develops"
+    "Develops",
+    "Assesses",
+    "Mitigates",
+    "Plans",
+    "Reviews"
   ],
 
   // Diagram types considered part of the generic "Architecture Diagram" work product
@@ -275,7 +292,7 @@
       "action": "develop hazard mitigation tests"
     },
     "safety goal verification": {
-      "relations": ["Mitigates", "Develops", "Verifies", "Produces"],
+      "relations": ["Mitigates", "Develops", "Verify", "Produces"],
       "subject": "Safety engineer",
       "action": "verify safety goals"
     },
@@ -288,6 +305,11 @@
       "relations": ["Assesses", "Mitigates", "Plans", "Produces"],
       "subject": "Cybersecurity team",
       "action": "plan cybersecurity mitigation"
+    },
+    "incident validation": {
+      "relations": ["Triage", "Develops", "Validate", "Produces"],
+      "subject": "Safety manager",
+      "action": "validate incident resolution"
     },
     "product lifecycle safety": {
       "relations": ["Plans", "Develops", "Produces"],
@@ -325,17 +347,32 @@
       "action": "validate threat mitigations"
     },
     "functional safety release": {
-      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "relations": ["Plans", "Develops", "Verify", "Produces"],
       "subject": "Release manager",
       "action": "verify safety release"
     },
     "cybersecurity release": {
-      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "relations": ["Plans", "Develops", "Verify", "Produces"],
       "subject": "Security manager",
       "action": "verify cybersecurity release"
     },
+    "hazard verification": {
+      "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+      "subject": "Safety engineer",
+      "action": "verify hazard mitigations"
+    },
+    "cybersecurity threat verification": {
+      "relations": ["Assesses", "Mitigates", "Develops", "Verify", "Produces"],
+      "subject": "Cybersecurity team",
+      "action": "verify threat mitigations"
+    },
+    "sotif scenario verification": {
+      "relations": ["Assesses", "Develops", "Verify", "Produces"],
+      "subject": "Validation team",
+      "action": "verify scenarios"
+    },
     "deployment readiness": {
-      "relations": ["Plans", "Develops", "Verifies", "Produces"],
+      "relations": ["Plans", "Develops", "Verify", "Produces"],
       "subject": "Deployment manager",
       "action": "verify deployment readiness"
     },
@@ -345,7 +382,7 @@
       "action": "validate maintenance"
     },
     "risk-based testing": {
-      "relations": ["Assesses", "Develops", "Verifies", "Produces"],
+      "relations": ["Assesses", "Develops", "Verify", "Produces"],
       "subject": "Test team",
       "action": "perform risk-based testing"
     }
@@ -460,7 +497,7 @@
       "Maintenance Plan": ["Process"],
       "Decommission Plan": ["Process"]
     },
-    "Verifies": {"Test Suite": ["Verification Plan"]},
+    "Verify": {"Test Suite": ["Verification Plan"]},
     "Audits": {"Process": ["Audit Report"]},
     "Reviews": {"Audit Report": ["Safety Case"]}
   },
