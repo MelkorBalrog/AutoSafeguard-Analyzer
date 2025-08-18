@@ -260,14 +260,20 @@ def rule_info(
     default_subject: str,
     default_action: str,
     default_targets: int = 1,
-) -> Tuple[str, str, int]:
-    rr = requirement_rules.get(relation_label.lower(), {}) if isinstance(requirement_rules, dict) else {}
+) -> Tuple[str, str, int, str | None, List[str] | None]:
+    rr = (
+        requirement_rules.get(relation_label.lower(), {})
+        if isinstance(requirement_rules, dict)
+        else {}
+    )
     subj = rr.get("subject", default_subject)
     act = rr.get("action", default_action)
     tgt = rr.get("targets", default_targets)
+    template = rr.get("template")
+    variables = rr.get("variables") if isinstance(rr.get("variables"), list) else None
     if not isinstance(tgt, int) or tgt < 1:
         tgt = default_targets
-    return subj, act, tgt
+    return subj, act, tgt, template, variables
 
 
 # ============================================================================
@@ -291,13 +297,23 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 continue
             for src_type, tgt_list in (src_map or {}).items():
                 for tgt_type in (tgt_list or []):
-                    subj, act, tgt_count = rule_info(
+                    (
+                        subj,
+                        act,
+                        tgt_count,
+                        tmpl_override,
+                        var_override,
+                    ) = rule_info(
                         req_rules, rel_label, "Engineering team", rel_label.lower()
                     )
                     base_id = f"SA-{rel_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                     trigger = make_trigger("Safety&AI", src_type, rel_label, tgt_type)
-                    template = make_sa_template(subj, act, tgt_count)
-                    variables = make_sa_variables_base(tgt_count)
+                    if tmpl_override:
+                        template = tmpl_override
+                        variables = var_override or []
+                    else:
+                        template = make_sa_template(subj, act, tgt_count)
+                        variables = make_sa_variables_base(tgt_count)
                     notes = "Auto-generated from diagram rules (Safety&AI)."
                     for suf, need_cond, need_const in SUFFIXES:
                         pid = base_id + suf
@@ -330,13 +346,23 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 continue
             for src_type, tgt_list in (src_map or {}).items():
                 for tgt_type in (tgt_list or []):
-                    _, _, tgt_count = rule_info(
+                    (
+                        _subj,
+                        _act,
+                        tgt_count,
+                        tmpl_override,
+                        var_override,
+                    ) = rule_info(
                         req_rules, relation_label, "Engineering team", relation_label.lower()
                     )
-                    template = gov_template_for_relation(relation_label, tgt_count)
+                    if tmpl_override:
+                        template = tmpl_override
+                        variables = var_override or []
+                    else:
+                        template = gov_template_for_relation(relation_label, tgt_count)
+                        variables = make_gov_variables_base()
                     base_id = f"GOV-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-{id_token(tgt_type)}"
                     trigger = make_trigger("Gov", src_type, relation_label, tgt_type)
-                    variables = make_gov_variables_base()
                     notes = "Auto-generated from diagram rules (Governance)."
                     for suf, need_cond, need_const in SUFFIXES:
                         pid = base_id + suf

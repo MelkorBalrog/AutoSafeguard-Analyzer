@@ -111,6 +111,10 @@ class RuleConfig(tk.Toplevel):
         self.action_var = tk.StringVar(value=rule.get("action", ""))
         self.subject_var = tk.StringVar(value=rule.get("subject", ""))
         self.targets_var = tk.IntVar(value=rule.get("targets", 1))
+        self.template_var = tk.StringVar(value=rule.get("template", ""))
+        self.vars_var = tk.StringVar(
+            value=", ".join(rule.get("variables", []))
+        )
         self.constraint_var = tk.BooleanVar(value=rule.get("constraint", False))
 
         row = 0
@@ -138,6 +142,21 @@ class RuleConfig(tk.Toplevel):
         )
         row += 1
 
+        tk.Label(self, text="Template:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.template_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
+
+        tk.Label(self, text="Variables:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Entry(self, textvariable=self.vars_var).grid(
+            row=row, column=1, sticky="ew", padx=4, pady=4
+        )
+        row += 1
         tk.Label(self, text="Targets:").grid(
             row=row, column=0, sticky="e", padx=4, pady=4
         )
@@ -145,7 +164,7 @@ class RuleConfig(tk.Toplevel):
             row=row, column=1, sticky="w", padx=4, pady=4
         )
         row += 1
-        
+
         ttk.Checkbutton(
             self, text="Requires constraint", variable=self.constraint_var
         ).grid(row=row, column=1, sticky="w", padx=4, pady=4)
@@ -173,6 +192,12 @@ class RuleConfig(tk.Toplevel):
         subj = self.subject_var.get().strip()
         if subj:
             res["subject"] = subj
+        tmpl = self.template_var.get().strip()
+        if tmpl:
+            res["template"] = tmpl
+            vars_ = [v.strip() for v in self.vars_var.get().split(",") if v.strip()]
+            if vars_:
+                res["variables"] = vars_
         tgt = self.targets_var.get()
         if tgt > 1:
             res["targets"] = tgt
@@ -273,13 +298,14 @@ class RequirementPatternsEditor(tk.Frame):
 
         self.rule_tree = ttk.Treeview(
             r_tree_frame,
-            columns=("label", "action", "subject", "targets", "constraint"),
+            columns=("label", "action", "subject", "template", "targets", "constraint"),
             show="headings",
         )
         for col, text in (
             ("label", "Label"),
             ("action", "Action"),
             ("subject", "Subject"),
+            ("template", "Template"),
             ("targets", "Targets"),
             ("constraint", "Constraint"),
         ):
@@ -287,6 +313,7 @@ class RequirementPatternsEditor(tk.Frame):
             self.rule_tree.column(col, width=120, stretch=True)
         self.rule_tree.bind("<Double-1>", self._edit_rule)
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
+
         rybar = ttk.Scrollbar(r_tree_frame, orient="vertical", command=self.rule_tree.yview)
         rxbar = ttk.Scrollbar(r_tree_frame, orient="horizontal", command=self.rule_tree.xview)
         self.rule_tree.configure(yscrollcommand=rybar.set, xscrollcommand=rxbar.set)
@@ -307,7 +334,7 @@ class RequirementPatternsEditor(tk.Frame):
 
         self._populate_pattern_tree()
         self._populate_rule_tree()
-
+        
     # ------------------------------------------------------------------
     # Pattern helpers
     # ------------------------------------------------------------------
@@ -380,6 +407,7 @@ class RequirementPatternsEditor(tk.Frame):
                     label,
                     info.get("action", ""),
                     info.get("subject", ""),
+                    info.get("template", ""),
                     info.get("targets", 1),
                     "yes" if info.get("constraint") else "",
                 ),

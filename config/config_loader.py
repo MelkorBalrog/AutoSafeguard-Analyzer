@@ -87,6 +87,18 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
                     raise ValueError(
                         f"requirement_rules[{label}]['targets'] must be a positive integer"
                     )
+            if "template" in info and not isinstance(info["template"], str):
+                raise ValueError(
+                    f"requirement_rules[{label}]['template'] must be a string"
+                )
+            if "variables" in info:
+                vars_ = info["variables"]
+                if not isinstance(vars_, list) or any(
+                    not isinstance(v, str) for v in vars_
+                ):
+                    raise ValueError(
+                        f"requirement_rules[{label}]['variables'] must be a list of strings"
+                    )
 
     if "node_roles" in data:
         nr = data["node_roles"]

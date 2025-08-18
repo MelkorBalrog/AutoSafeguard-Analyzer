@@ -78,3 +78,23 @@ def test_rule_with_multiple_targets() -> None:
         if p["Pattern ID"] == "SA-multi-A-B"
     )
     assert "<target2_id>" in tmpl
+
+
+def test_rule_with_custom_template_and_variables() -> None:
+    cfg = {
+        "requirement_rules": {
+            "custom": {
+                "action": "combine",
+                "template": "<role> shall use <tool> with <condition>",
+                "variables": ["<role>", "<tool>"],
+            }
+        },
+        "safety_ai_relation_rules": {"Custom": {"R": ["T"]}},
+    }
+    patterns = generate_patterns_from_config(cfg)
+    base = next(
+        p for p in patterns if p["Pattern ID"] == "SA-custom-R-T"
+    )
+    assert base["Template"].startswith("<role> shall use <tool>")
+    assert "<role>" in base["Variables"]
+    assert "<tool>" in base["Variables"]
