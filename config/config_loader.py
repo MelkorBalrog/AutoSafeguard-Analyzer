@@ -81,6 +81,12 @@ def validate_diagram_rules(data: Any) -> dict[str, Any]:
                 raise ValueError(
                     f"requirement_rules[{label}]['constraint'] must be a boolean"
                 )
+            if "targets" in info:
+                tgt = info["targets"]
+                if not isinstance(tgt, int) or tgt < 1:
+                    raise ValueError(
+                        f"requirement_rules[{label}]['targets'] must be a positive integer"
+                    )
 
     if "node_roles" in data:
         nr = data["node_roles"]

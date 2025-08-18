@@ -110,6 +110,7 @@ class RuleConfig(tk.Toplevel):
         self.label_var = tk.StringVar(value=rule.get("label", ""))
         self.action_var = tk.StringVar(value=rule.get("action", ""))
         self.subject_var = tk.StringVar(value=rule.get("subject", ""))
+        self.targets_var = tk.IntVar(value=rule.get("targets", 1))
         self.constraint_var = tk.BooleanVar(value=rule.get("constraint", False))
 
         row = 0
@@ -137,6 +138,14 @@ class RuleConfig(tk.Toplevel):
         )
         row += 1
 
+        tk.Label(self, text="Targets:").grid(
+            row=row, column=0, sticky="e", padx=4, pady=4
+        )
+        ttk.Spinbox(self, from_=1, to=10, textvariable=self.targets_var, width=5).grid(
+            row=row, column=1, sticky="w", padx=4, pady=4
+        )
+        row += 1
+        
         ttk.Checkbutton(
             self, text="Requires constraint", variable=self.constraint_var
         ).grid(row=row, column=1, sticky="w", padx=4, pady=4)
@@ -164,6 +173,9 @@ class RuleConfig(tk.Toplevel):
         subj = self.subject_var.get().strip()
         if subj:
             res["subject"] = subj
+        tgt = self.targets_var.get()
+        if tgt > 1:
+            res["targets"] = tgt
         if self.constraint_var.get():
             res["constraint"] = True
         self.result = res
@@ -261,20 +273,20 @@ class RequirementPatternsEditor(tk.Frame):
 
         self.rule_tree = ttk.Treeview(
             r_tree_frame,
-            columns=("label", "action", "subject", "constraint"),
+            columns=("label", "action", "subject", "targets", "constraint"),
             show="headings",
         )
         for col, text in (
             ("label", "Label"),
             ("action", "Action"),
             ("subject", "Subject"),
+            ("targets", "Targets"),
             ("constraint", "Constraint"),
         ):
             self.rule_tree.heading(col, text=text)
-            self.rule_tree.column(col, width=150, stretch=True)
+            self.rule_tree.column(col, width=120, stretch=True)
         self.rule_tree.bind("<Double-1>", self._edit_rule)
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
-
         rybar = ttk.Scrollbar(r_tree_frame, orient="vertical", command=self.rule_tree.yview)
         rxbar = ttk.Scrollbar(r_tree_frame, orient="horizontal", command=self.rule_tree.xview)
         self.rule_tree.configure(yscrollcommand=rybar.set, xscrollcommand=rxbar.set)
@@ -368,6 +380,7 @@ class RequirementPatternsEditor(tk.Frame):
                     label,
                     info.get("action", ""),
                     info.get("subject", ""),
+                    info.get("targets", 1),
                     "yes" if info.get("constraint") else "",
                 ),
             )
@@ -384,8 +397,11 @@ class RequirementPatternsEditor(tk.Frame):
         if dlg.result is None:
             return
         new_label = dlg.result.pop("label")
+        tgt = dlg.result.pop("targets", 1)
         if label in self.req_rules:
             del self.req_rules[label]
+        if tgt > 1:
+            dlg.result["targets"] = tgt
         self.req_rules[new_label] = dlg.result
         self._populate_rule_tree()
 
@@ -395,6 +411,9 @@ class RequirementPatternsEditor(tk.Frame):
         if dlg.result is None:
             return
         label = dlg.result.pop("label")
+        tgt = dlg.result.pop("targets", 1)
+        if tgt > 1:
+            dlg.result["targets"] = tgt
         self.req_rules[label] = dlg.result
         self._populate_rule_tree()
 

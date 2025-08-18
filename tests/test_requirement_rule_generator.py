@@ -62,3 +62,19 @@ def test_field_data_collection_uses_from() -> None:
         if p["Pattern ID"] == "SA-field_data_collection-Database-Data_acquisition"
     )
     assert "collect field data from the <target_id>" in tmpl
+
+
+def test_rule_with_multiple_targets() -> None:
+    cfg = {
+        "requirement_rules": {
+            "multi": {"action": "relate", "subject": "Team", "targets": 2}
+        },
+        "safety_ai_relation_rules": {"Multi": {"A": ["B"]}},
+    }
+    patterns = generate_patterns_from_config(cfg)
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "SA-multi-A-B"
+    )
+    assert "<target2_id>" in tmpl
