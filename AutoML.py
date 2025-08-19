@@ -2363,22 +2363,17 @@ class AutoMLApp:
         # Mac-like capsule buttons
         def _build_pill(top: str, bottom: str) -> tk.PhotoImage:
             img = tk.PhotoImage(width=40, height=20)
-            # ``PhotoImage.put`` only accepts RGB colors. Supplying an
-            # 8‑digit hex value (including an alpha channel) raises a
-            # ``TclError`` on some Tk builds, particularly on Windows
-            # where transparency is not parsed in this manner.  To create
-            # a fully transparent background we instead specify an RGB
-            # color and use the ``alpha`` parameter.  Older Tk releases do
-            # not understand the ``alpha`` option, so fall back to
-            # flagging the color as transparent when necessary.
+            # ``PhotoImage.put`` only accepts RGB colors. Some Tk builds
+            # (notably older Windows releases) mis-handle 8‑digit hex
+            # values used for transparency and instead raise a
+            # ``TclError``.  To keep the routine portable we fill the
+            # image with a solid RGB color and, where supported, mark that
+            # color as transparent.
+            img.put("#000000", to=(0, 0, 40, 20))
             try:
-                img.put("#000000", to=(0, 0, 40, 20), alpha=0)
-            except tk.TclError:
-                img.put("#000000", to=(0, 0, 40, 20))
-                try:
-                    img.transparency_set(0, 0, 0)
-                except Exception:
-                    pass
+                img.transparency_set(0, 0, 0)
+            except Exception:
+                pass
             radius = 10
             t_r = int(top[1:3], 16)
             t_g = int(top[3:5], 16)
