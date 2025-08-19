@@ -2915,8 +2915,10 @@ class AutoMLApp:
         root.bind_all("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
         self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
-        self.log_frame = logger.init_log_window(root)
-        self.log_frame.pack(side=tk.BOTTOM, fill=tk.BOTH)
+        # Initialise the log window with a minimal height so it no longer
+        # consumes a significant portion of the main application window.
+        self.log_frame = logger.init_log_window(root, height=3)
+        self.log_frame.pack(side=tk.BOTTOM, fill=tk.X)
         self.toggle_log_button = ttk.Button(
             root, text="Hide Logs", command=self.toggle_logs
         )
@@ -10378,8 +10380,10 @@ class AutoMLApp:
             self.log_frame.pack_forget()
             self.toggle_log_button.config(text="Show Logs")
         else:
+            # When re-showing the log window, keep it constrained to its natural
+            # height by filling only horizontally.
             self.log_frame.pack(
-                side=tk.BOTTOM, fill=tk.BOTH, before=self.toggle_log_button
+                side=tk.BOTTOM, fill=tk.X, before=self.toggle_log_button
             )
             self.toggle_log_button.config(text="Hide Logs")
 
