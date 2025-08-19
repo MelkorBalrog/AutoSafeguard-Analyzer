@@ -5,7 +5,15 @@ import math
 class SplashScreen(tk.Toplevel):
     """Simple splash screen with rotating cube and gear."""
 
-    def __init__(self, master, duration: int = 3000):
+    def __init__(
+        self,
+        master,
+        version: str = "Unknown",
+        author: str = "Your Name",
+        email: str = "email@example.com",
+        linkedin: str = "https://www.linkedin.com/in/yourprofile",
+        duration: int = 3000,
+    ):
         super().__init__(master)
         self.duration = duration
         self.overrideredirect(True)
@@ -49,13 +57,25 @@ class SplashScreen(tk.Toplevel):
             (4, 5), (5, 6), (6, 7), (7, 4),
             (0, 4), (1, 5), (2, 6), (3, 7),
         ]
-        # Text at bottom
+        # Text at bottom center
         self.canvas.create_text(
             self.canvas_size / 2,
             self.canvas_size - 40,
             text="Automotive Modeling Language\nby\nKarel Capek Robotics",
             justify="center",
             font=("Helvetica", 12),
+            fill="white",
+        )
+
+        # Version and author info at bottom right
+        info_text = f"v{version}\n{author}\n{email}\n{linkedin}"
+        self.canvas.create_text(
+            self.canvas_size - 10,
+            self.canvas_size - 10,
+            text=info_text,
+            anchor="se",
+            justify="right",
+            font=("Helvetica", 9),
             fill="white",
         )
         # Start animation
