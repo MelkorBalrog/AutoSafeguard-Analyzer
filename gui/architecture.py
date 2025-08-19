@@ -684,6 +684,13 @@ def _format_label(
 
     label = name or ""
     if obj is not None:
+        # Boundary shapes should never display a stereotype prefix even on
+        # governance diagrams.  Showing stereotypes like ``<<block>>`` or
+        # ``<<system>>`` above a boundary adds noise without providing useful
+        # information, so we short‑circuit here and return the plain name.
+        if obj.obj_type in {"System Boundary", "Block Boundary"}:
+            return label
+
         repo = getattr(_win, "repo", None)
         diag_id = getattr(_win, "diagram_id", None)
         diag = repo.diagrams.get(diag_id) if repo and diag_id is not None else None
