@@ -5253,7 +5253,9 @@ class SysMLDiagramWindow(tk.Frame):
                 text = _gov_connection_text(obj.obj_type)
                 if text:
                     self._conn_tip.text = text
-                    self._conn_tip.show()
+                    x_root = getattr(event, "x_root", event.x)
+                    y_root = getattr(event, "y_root", event.y)
+                    self._conn_tip.show(x_root, y_root)
                     self._conn_tip_obj = obj
                 else:
                     self._conn_tip.hide()
