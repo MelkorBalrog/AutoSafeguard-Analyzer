@@ -67,6 +67,7 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
+        self._shine_items: list[int] = []
         self._text_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
@@ -99,11 +100,26 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        highlight = _lighten(color, 1.4)
+        self._shine_items = [
+            self.create_oval(
+                1,
+                1,
+                w - 1,
+                h // 2,
+                outline="",
+                fill=highlight,
+                stipple="gray25",
+            )
+        ]
         self._text_item = self.create_text(w // 2, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
+        highlight = _lighten(color, 1.4)
+        for item in self._shine_items:
+            self.itemconfigure(item, fill=highlight)
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
@@ -131,13 +147,7 @@ class CapsuleButton(tk.Canvas):
     def configure(self, **kwargs) -> None:  # pragma: no cover - thin wrapper
         """Allow dynamic configuration similar to standard Tk buttons."""
         text = kwargs.pop("text", None)
-        if text is not None:
-            self._text = text
-            if self._text_item is not None:
-                self.itemconfigure(self._text_item, text=self._text)
         command = kwargs.pop("command", None)
-        if command is not None:
-            self._command = command
         bg = kwargs.pop("bg", None)
         hover_bg = kwargs.pop("hover_bg", None)
         width = kwargs.get("width")
@@ -145,24 +155,49 @@ class CapsuleButton(tk.Canvas):
         state = kwargs.pop("state", None)
         kwargs.pop("style", None)
         super().configure(**kwargs)
-        if state is not None:
-            if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
-                self.state(["disabled"])
-            else:
-                self.state(["!disabled"])
-        if bg is not None:
-            self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.2)
-            self._set_color(self._normal_color)
-        if hover_bg is not None and bg is None:
-            self._hover_color = hover_bg
-        if width is not None or height is not None or text is not None:
-            self._draw_button()
+        self._update_command(command)
+        self._update_text(text)
+        self._update_colors(bg, hover_bg)
+        self._update_geometry(width, height, text)
+        self._update_state(state)
         # Always re-apply the current state so that disabled buttons retain
         # their disabled appearance even after reconfiguration.
         self._apply_state()
 
     config = configure
+
+    def _update_command(self, command: Optional[Callable[[], None]]) -> None:
+        if command is not None:
+            self._command = command
+
+    def _update_text(self, text: Optional[str]) -> None:
+        if text is None:
+            return
+        self._text = text
+        if self._text_item is not None:
+            self.itemconfigure(self._text_item, text=self._text)
+
+    def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
+        if bg is not None:
+            self._normal_color = bg
+            self._hover_color = hover_bg or _lighten(bg, 1.2)
+            self._set_color(self._normal_color)
+        elif hover_bg is not None:
+            self._hover_color = hover_bg
+
+    def _update_geometry(
+        self, width: Optional[int], height: Optional[int], text: Optional[str]
+    ) -> None:
+        if width is not None or height is not None or text is not None:
+            self._draw_button()
+
+    def _update_state(self, state: Optional[str]) -> None:
+        if state is None:
+            return
+        if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
+            self.state(["disabled"])
+        else:
+            self.state(["!disabled"])
 
     def state(self, states: list[str] | tuple[str, ...] | None = None) -> list[str]:
         """Mimic the ``ttk.Widget.state`` method for simple disabled handling."""
