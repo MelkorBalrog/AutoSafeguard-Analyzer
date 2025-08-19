@@ -55,6 +55,7 @@ def test_row_dialog_populates_control_actions(monkeypatch):
     monkeypatch.setattr("gui.stpa_window.ttk.Label", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.ttk.Frame", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.ttk.Button", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.stpa_window.TranslucidButton", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.tk.Entry", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.tk.Listbox", lambda *a, **k: DummyWidget())
 
@@ -138,6 +139,7 @@ def test_row_dialog_control_action_tooltip(monkeypatch):
     monkeypatch.setattr("gui.stpa_window.ttk.Label", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.ttk.Frame", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.ttk.Button", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr("gui.stpa_window.TranslucidButton", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.tk.Entry", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.tk.Listbox", lambda *a, **k: DummyWidget())
     monkeypatch.setattr("gui.stpa_window.ToolTip", DummyToolTip)

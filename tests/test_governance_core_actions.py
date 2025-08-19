@@ -46,6 +46,7 @@ def test_governance_core_has_add_buttons(monkeypatch):
     monkeypatch.setattr(architecture.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(architecture.ttk, "LabelFrame", DummyFrame)
     monkeypatch.setattr(architecture.ttk, "Button", DummyButton)
+    monkeypatch.setattr(architecture, "TranslucidButton", DummyButton)
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     toolbox = DummyFrame()
@@ -71,7 +72,11 @@ def test_governance_core_has_add_buttons(monkeypatch):
     } <= set(labels)
     assert "Add Process Area" not in labels
 
-    rel_sections = [child for child in getattr(core_frames[-1], "children", []) if getattr(child, "text", "") == "Relationships (relationships)"]
+    rel_sections = [
+        child
+        for child in getattr(core_frames[-1], "children", [])
+        if getattr(child, "text", "") == "Relationships"
+    ]
     assert len(rel_sections) == 1
     rel_labels = [child.text for child in getattr(rel_sections[0], "children", [])]
     assert len(rel_labels) == len(set(rel_labels))

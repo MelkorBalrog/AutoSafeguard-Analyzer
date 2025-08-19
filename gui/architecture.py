@@ -3,7 +3,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
-from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
+from gui import messagebox, format_name_with_phase, add_treeview_scrollbars, TranslucidButton
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -3656,7 +3656,7 @@ class SysMLDiagramWindow(tk.Frame):
         # Prepare icon cache for toolbox buttons
         self._icons: dict[str, tk.PhotoImage] = {}
         self._icons["Back"] = create_icon("arrow", size=self.icon_size)
-        self.back_btn = ttk.Button(
+        self.back_btn = TranslucidButton(
             self.toolbox,
             text="Go Back",
             image=self._icons["Back"],
@@ -3689,7 +3689,7 @@ class SysMLDiagramWindow(tk.Frame):
             frame.pack(fill=tk.X, padx=2, pady=2)
             self.element_frames[name] = frame
             for tool in group_tools:
-                btn = ttk.Button(
+                btn = TranslucidButton(
                     frame,
                     text=tool,
                     image=self._icon_for(tool),
@@ -3702,11 +3702,11 @@ class SysMLDiagramWindow(tk.Frame):
         if relation_tools:
             self.rel_frame = _labelframe(
                 self.toolbox,
-                text="Relationships (relationships)",
+                text="Relationships",
             )
             self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for tool in relation_tools:
-                ttk.Button(
+                TranslucidButton(
                     self.rel_frame,
                     text=tool,
                     image=self._icon_for(tool),
@@ -11714,11 +11714,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 if data.get("nodes"):
                     elem = _labelframe(
                         frame,
-                        text="Elements (elements)",
+                        text="Elements",
                     )
                     elem.pack(fill=tk.X, padx=2, pady=2)
                     for node in data["nodes"]:
-                        ttk.Button(
+                        TranslucidButton(
                             elem,
                             text=node,
                             image=self._icon_for(node),
@@ -11728,11 +11728,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 if data.get("relations"):
                     rel = _labelframe(
                         frame,
-                        text="Relationships (relationships)",
+                        text="Relationships",
                     )
                     rel.pack(fill=tk.X, padx=2, pady=2)
                     for rel_name in data["relations"]:
-                        ttk.Button(
+                        TranslucidButton(
                             rel,
                             text=rel_name,
                             image=self._icon_for(rel_name),
@@ -11748,11 +11748,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     if sub.get("nodes"):
                         selem = _labelframe(
                             sub_frame,
-                            text="Elements (elements)",
+                            text="Elements",
                         )
                         selem.pack(fill=tk.X, padx=2, pady=2)
                         for node in sub["nodes"]:
-                            ttk.Button(
+                            TranslucidButton(
                                 selem,
                                 text=node,
                                 image=self._icon_for(node),
@@ -11762,11 +11762,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     if sub.get("relations"):
                         srel = _labelframe(
                             sub_frame,
-                            text="Relationships (relationships)",
+                            text="Relationships",
                         )
                         srel.pack(fill=tk.X, padx=2, pady=2)
                         for rel_name in sub["relations"]:
-                            ttk.Button(
+                            TranslucidButton(
                                 srel,
                                 text=rel_name,
                                 image=self._icon_for(rel_name),

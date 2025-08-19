@@ -18,6 +18,7 @@ from . import messagebox
 from .style_manager import StyleManager
 from .icon_factory import create_icon
 from .button_utils import set_uniform_button_width
+from . import TranslucidButton
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -130,17 +131,17 @@ class GSNDiagramWindow(tk.Frame):
         try:
             node_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Elements (elements)",
+                text="Elements",
                 style="Toolbox.TLabelframe",
             )
         except TypeError:
             node_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Elements (elements)",
+                text="Elements",
             )
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
-            ttk.Button(
+            TranslucidButton(
                 node_frame,
                 text=name,
                 command=cmd,
@@ -155,17 +156,17 @@ class GSNDiagramWindow(tk.Frame):
         try:
             rel_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Relationships (relationships)",
+                text="Relationships",
                 style="Toolbox.TLabelframe",
             )
         except TypeError:
             rel_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Relationships (relationships)",
+                text="Relationships",
             )
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:
-            ttk.Button(
+            TranslucidButton(
                 rel_frame,
                 text=name,
                 command=cmd,
@@ -181,7 +182,7 @@ class GSNDiagramWindow(tk.Frame):
         util_frame = ttk.Frame(self.toolbox)
         util_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in util_cmds:
-            ttk.Button(
+            TranslucidButton(
                 util_frame,
                 text=name,
                 command=cmd,
