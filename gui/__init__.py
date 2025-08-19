@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from tkinter import ttk
 
+from .capsule_button import CapsuleButton  # noqa: F401
+
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
