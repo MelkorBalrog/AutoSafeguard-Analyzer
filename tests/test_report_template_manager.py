@@ -35,19 +35,27 @@ class DummyListbox:
 def test_report_template_manager_lists_templates(tmp_path):
     builtin = tmp_path / "builtin"
     builtin.mkdir()
+    (builtin / "report_template.json").write_text("{}")
+    nested = builtin / "nested"
+    nested.mkdir()
+    (nested / "nested_template.json").write_text("{}")
+
     user = tmp_path / "user"
     user.mkdir()
-    (builtin / "report_template.json").write_text("{}")
     (user / "custom_template.json").write_text("{}")
+    deep = user / "deep"
+    deep.mkdir()
+    (deep / "deep_template.json").write_text("{}")
+
     (builtin / "diagram_rules.json").write_text("{}")
+
     mgr = object.__new__(ReportTemplateManager)
     mgr.builtin_dir = builtin
     mgr.user_dir = user
     mgr.listbox = DummyListbox()
     ReportTemplateManager._refresh_list(mgr)
     names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
-    assert "report_template.json" in names
-    assert "custom_template.json" in names
+    assert {"report_template.json", "custom_template.json", "nested_template.json", "deep_template.json"} <= set(names)
     assert "diagram_rules.json" not in names
 
 
@@ -69,6 +77,28 @@ def test_report_template_manager_add_delete(tmp_path, monkeypatch):
     monkeypatch.setattr(rtm.messagebox, "askyesno", lambda *a, **k: True)
     mgr._delete_template()
     assert not new_path.exists()
+
+
+def test_report_template_manager_load(tmp_path, monkeypatch):
+    builtin = tmp_path / "builtin"
+    builtin.mkdir()
+    user = tmp_path / "user"
+    user.mkdir()
+    external = tmp_path / "external_template.json"
+    external.write_text("{}")
+
+    mgr = object.__new__(ReportTemplateManager)
+    mgr.builtin_dir = builtin
+    mgr.user_dir = user
+    mgr.listbox = DummyListbox()
+    ReportTemplateManager._refresh_list(mgr)
+
+    monkeypatch.setattr(rtm.filedialog, "askopenfilename", lambda **kw: str(external))
+    mgr._load_template()
+
+    assert (user / external.name).exists()
+    names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
+    assert external.name in names
 
 
 def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
@@ -127,7 +157,8 @@ def test_report_template_manager_meipass_default(monkeypatch, tmp_path):
 
     cfg_dir = tmp_path / "config"
     cfg_dir.mkdir()
-    (cfg_dir / "report_template.json").write_text("{}")
+    (cfg_dir / "nested_template.json").write_text("{}")
+    (tmp_path / "top_template.json").write_text("{}")
     monkeypatch.setattr(sys, "_MEIPASS", tmp_path, raising=False)
     mgr = object.__new__(ReportTemplateManager)
     mgr.builtin_dir = ReportTemplateManager._default_templates_dir()
@@ -136,4 +167,5 @@ def test_report_template_manager_meipass_default(monkeypatch, tmp_path):
     mgr.listbox = DummyListbox()
     ReportTemplateManager._refresh_list(mgr)
     names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
-    assert "report_template.json" in names
+    assert "nested_template.json" in names
+    assert "top_template.json" in names
