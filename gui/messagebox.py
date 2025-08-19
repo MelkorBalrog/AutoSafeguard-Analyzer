@@ -65,6 +65,15 @@ def _create_dialog(
     dialog.transient(root)
     dialog.grab_set()
 
+    # Ensure dialog appears above all other windows and is centered on screen
+    dialog.attributes("-topmost", True)
+    dialog.update_idletasks()
+    width, height = 300, 150
+    x = int(dialog.winfo_screenwidth() / 2 - width / 2)
+    y = int(dialog.winfo_screenheight() / 2 - height / 2)
+    dialog.geometry(f"{width}x{height}+{x}+{y}")
+    dialog.lift()
+
     frame = ttk.Frame(dialog, padding=10)
     frame.pack(fill="both", expand=True)
     ttk.Label(frame, text=message or "").pack(pady=(0, 10))
