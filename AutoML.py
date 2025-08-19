@@ -2773,7 +2773,10 @@ class FaultTreeApp:
         self.prop_view.column("field", width=120, anchor="w", stretch=False)
         self.prop_view.column("value", width=200, anchor="w", stretch=True)
         add_treeview_scrollbars(self.prop_view, prop_frame)
-        prop_frame.bind("<Configure>", self._resize_prop_columns)
+        # Resize value column whenever the treeview width changes so it always
+        # fills the available space inside the tab.
+        self.prop_view.bind("<Configure>", self._resize_prop_columns)
+        prop_frame.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
 
         # Tooltip helper for tabs (text may be clipped)
@@ -9782,11 +9785,15 @@ class FaultTreeApp:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
 
-    def _resize_prop_columns(self, event):
-        """Resize property view columns so value fills available space."""
+    def _resize_prop_columns(self, event=None):
+        """Resize property view columns so the value column fills the tab."""
         try:
+            # Determine the current width of the treeview widget. When invoked
+            # via ``after`` there is no event, so query the widget directly.
+            self.prop_view.update_idletasks()
+            tree_width = event.width if event else self.prop_view.winfo_width()
             field_width = self.prop_view.column("field")["width"]
-            new_width = max(event.width - field_width - 20, 50)
+            new_width = max(tree_width - field_width, 20)
             self.prop_view.column("value", width=new_width)
         except Exception:
             pass

@@ -3650,7 +3650,9 @@ class SysMLDiagramWindow(tk.Frame):
             self.prop_view.column("field", width=80, anchor="w", stretch=False)
             self.prop_view.column("value", width=180, anchor="w", stretch=True)
             add_treeview_scrollbars(self.prop_view, prop_tree_frame)
-            prop_tree_frame.bind("<Configure>", self._resize_prop_columns)
+            # Keep value column in sync with the Properties tab width.
+            self.prop_view.bind("<Configure>", self._resize_prop_columns)
+            prop_tree_frame.after(0, self._resize_prop_columns)
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
@@ -3750,11 +3752,13 @@ class SysMLDiagramWindow(tk.Frame):
         canvas.configure(width=canvas_width)
         canvas.itemconfig(window, width=canvas_width)
 
-    def _resize_prop_columns(self, event) -> None:
-        """Adjust property view columns to fill the available space."""
+    def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
+        """Adjust property view columns so the value column fills the tab."""
         try:
+            self.prop_view.update_idletasks()
+            tree_width = event.width if event else self.prop_view.winfo_width()
             field_width = self.prop_view.column("field")["width"]
-            new_width = max(event.width - field_width - 20, 50)
+            new_width = max(tree_width - field_width, 20)
             self.prop_view.column("value", width=new_width)
         except Exception:
             pass
