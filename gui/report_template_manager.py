@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 from pathlib import Path
 import json
+import sys
 
 from gui import messagebox
 
@@ -14,12 +15,17 @@ class ReportTemplateManager(tk.Frame):
     contains ``"template"``.
     """
 
+    @staticmethod
+    def _default_templates_dir() -> Path:
+        """Return directory containing bundled report templates."""
+
+        base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+        return base / "config"
+
     def __init__(self, master, app, templates_dir: Path | None = None):
         super().__init__(master)
         self.app = app
-        self.templates_dir = Path(
-            templates_dir or Path(__file__).resolve().parents[1] / "config"
-        )
+        self.templates_dir = Path(templates_dir or self._default_templates_dir())
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
