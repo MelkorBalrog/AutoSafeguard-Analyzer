@@ -8256,14 +8256,57 @@ class SysMLDiagramWindow(tk.Frame):
                 color = "#d5e8d4"
             else:
                 color = "#ffffff"
+            radius = 8 * self.zoom
+            self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
+            bg = StyleManager.get_instance().get_canvas_color()
+            self.canvas.create_arc(
+                x - w,
+                y - h,
+                x - w + 2 * radius,
+                y - h + 2 * radius,
+                start=90,
+                extent=90,
+                fill=bg,
+                outline="",
+            )
+            self.canvas.create_arc(
+                x + w - 2 * radius,
+                y - h,
+                x + w,
+                y - h + 2 * radius,
+                start=0,
+                extent=90,
+                fill=bg,
+                outline="",
+            )
+            self.canvas.create_arc(
+                x + w - 2 * radius,
+                y + h - 2 * radius,
+                x + w,
+                y + h,
+                start=270,
+                extent=90,
+                fill=bg,
+                outline="",
+            )
+            self.canvas.create_arc(
+                x - w,
+                y + h - 2 * radius,
+                x - w + 2 * radius,
+                y + h,
+                start=180,
+                extent=90,
+                fill=bg,
+                outline="",
+            )
             self._create_round_rect(
                 x - w,
                 y - h,
                 x + w,
                 y + h,
-                radius=8 * self.zoom,
+                radius=radius,
                 outline=outline,
-                fill=color,
+                fill="",
             )
             fold = 10 * self.zoom
             fold_color = "#fdfdfd"
