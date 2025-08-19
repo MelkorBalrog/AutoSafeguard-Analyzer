@@ -256,6 +256,7 @@ from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
+from gui.mac_button_style import apply_mac_button_style
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -449,6 +450,10 @@ def get_version() -> str:
 
 VERSION = get_version()
 
+# Contact information for splash screen
+AUTHOR = "Miguel Marina"
+AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
+AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
 
 class UserInfoDialog(simpledialog.Dialog):
     """Prompt for the user's name and email."""
@@ -2923,6 +2928,7 @@ class AutoMLApp:
         nb_container = ttk.Frame(self.tools_group)
         nb_container.pack(fill=tk.BOTH, expand=True)
         style = ttk.Style()
+        apply_mac_button_style(style)
         # Create a custom notebook style so that a layout is available.  Without a
         # ``TNotebook`` suffix in the style name, ttk cannot find the default
         # layout which led to ``_tkinter.TclError: Layout ToolsNotebook not
@@ -13999,6 +14005,7 @@ class AutoMLApp:
             style.theme_use("clam")
         except tk.TclError:
             pass
+        apply_mac_button_style(style)
         style.configure(
             "FMEA.Treeview",
             font=("Segoe UI", 10),
@@ -17699,10 +17706,12 @@ class AutoMLApp:
                     child.redraw()
 
     def show_hazard_explorer(self):
-        if hasattr(self, "_haz_exp_window") and self._haz_exp_window.winfo_exists():
-            self._haz_exp_window.lift()
-            return
-        self._haz_exp_window = HazardExplorerWindow(self)
+        if hasattr(self, "_haz_exp_tab") and self._haz_exp_tab.winfo_exists():
+            self.doc_nb.select(self._haz_exp_tab)
+        else:
+            self._haz_exp_tab = self._new_tab("Hazard Explorer")
+            self._haz_exp_window = HazardExplorerWindow(self._haz_exp_tab, self)
+            self._haz_exp_window.pack(fill=tk.BOTH, expand=True)
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
@@ -22034,7 +22043,13 @@ def main():
     # Hide the main window while prompting for user info
     root.withdraw()
     # Show initialization splash screen
-    SplashScreen(root).wait_window()
+    SplashScreen(
+        root,
+        version=VERSION,
+        author=AUTHOR,
+        email=AUTHOR_EMAIL,
+        linkedin=AUTHOR_LINKEDIN,
+    ).wait_window()
     users = load_all_users()
     last_name, last_email = load_user_config()
     if users:

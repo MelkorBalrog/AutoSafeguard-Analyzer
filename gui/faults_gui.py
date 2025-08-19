@@ -479,6 +479,22 @@ class FaultsWindow(QMainWindow):
         # to remain fully visible when the user resizes it.
         self.setMinimumSize(1200, 700)
 
+        self.setStyleSheet(
+            """
+            QPushButton {
+                border-radius: 10px;
+                padding: 4px 12px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                            stop:0 #f5f5f5, stop:1 #d0d0d0);
+                border: 1px solid #888888;
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                            stop:0 #d0d0d0, stop:1 #a0a0a0);
+            }
+            """
+        )
+
         # thresholds
         self.sev_hi = SEVERITY_HI_TH
         self.sev_med = SEVERITY_MED_TH

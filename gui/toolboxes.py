@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from gui.mac_button_style import apply_mac_button_style
 from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
@@ -86,6 +87,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style.theme_use("clam")
     except tk.TclError:
         pass
+    apply_mac_button_style(style)
     border_opts = {"bordercolor": "black", "borderwidth": 1, "relief": "solid"}
     style.configure(
         style_name,
@@ -3968,13 +3970,18 @@ class TC2FIWindow(tk.Frame):
         self.app.update_views()
 
 
-class HazardExplorerWindow(tk.Toplevel):
+class HazardExplorerWindow(tk.Frame):
     """Read-only list of hazards per risk assessment."""
 
-    def __init__(self, app):
-        super().__init__(app.root)
+    def __init__(self, master, app=None):
+        if app is None and hasattr(master, "root"):
+            app = master
+            master = tk.Toplevel(app.root)
+        super().__init__(master)
         self.app = app
-        self.title("Hazard Explorer")
+        if isinstance(master, tk.Toplevel):
+            master.title("Hazard Explorer")
+            self.pack(fill=tk.BOTH, expand=True)
 
         columns = ("Assessment", "Malfunction", "Hazard", "Severity")
         configure_table_style("HazExp.Treeview")

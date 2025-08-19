@@ -261,7 +261,7 @@ The **Risk Assessment** view builds on the safety relevant malfunctions from a s
 
 If a cyber risk entry is selected, its damage scenario and CAL are stored with the row for traceability to cybersecurity goals. The calculated ASIL from each row is propagated to the referenced safety goal so that inherited ASIL levels appear consistently in all analyses and documentation, including FTA top level events.
 
-The **Hazard Explorer** window lists all hazards from every risk assessment in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
+ The **Hazard Explorer** tab lists all hazards from every risk assessment in a read-only table for quick review or CSV export. A **Requirements Explorer** window lets you query global requirements with filters for text, type, ASIL and status.
 
 ## Causal Bayesian Network Analysis
 
