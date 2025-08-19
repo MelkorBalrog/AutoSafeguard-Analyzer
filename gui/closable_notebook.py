@@ -72,6 +72,15 @@ class ClosableNotebook(ttk.Notebook):
         self.protected: set[str] = set()
         self._drag_data: dict[str, int | None] = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
+        # ``_root_bindings`` store identifiers for bindings that temporarily
+        # attach to the containing toplevel while a drag operation is active.
+        # This ensures that we still receive ``<B1-Motion>`` and
+        # ``<ButtonRelease-1>`` events even when the pointer is dragged outside
+        # of the notebook's visible area.
+        self._root: tk.Misc | None = None
+        self._root_motion: str | None = None
+        self._root_release: str | None = None
+
         self.bind("<ButtonPress-1>", self._on_press, True)
         self.bind("<B1-Motion>", self._on_motion)
         self.bind("<ButtonRelease-1>", self._on_release, True)
@@ -119,7 +128,18 @@ class ClosableNotebook(ttk.Notebook):
             self.state(["pressed"])
             self._active = index
             return "break"
+
         self._drag_data = {"tab": index, "x": event.x_root, "y": event.y_root}
+        # While the mouse button is held down we want to continue receiving
+        # motion and release events even if the pointer leaves the notebook's
+        # area.  Temporarily bind to the toplevel that contains this notebook
+        # so those events are forwarded to the handlers below.  The bindings
+        # are removed again in ``_reset_drag`` once the drag operation ends.
+        self._root = self.winfo_toplevel()
+        self._root_motion = self._root.bind("<B1-Motion>", self._on_motion, add="+")
+        self._root_release = self._root.bind(
+            "<ButtonRelease-1>", self._on_release, add="+"
+        )
         return None
 
     def _on_motion(self, event: tk.Event) -> None:
@@ -252,3 +272,17 @@ class ClosableNotebook(ttk.Notebook):
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
+        if self._root is not None:
+            if self._root_motion:
+                try:
+                    self._root.unbind("<B1-Motion>", self._root_motion)
+                except tk.TclError:
+                    pass
+            if self._root_release:
+                try:
+                    self._root.unbind("<ButtonRelease-1>", self._root_release)
+                except tk.TclError:
+                    pass
+            self._root = None
+            self._root_motion = None
+            self._root_release = None

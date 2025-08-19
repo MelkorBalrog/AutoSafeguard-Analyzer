@@ -4141,7 +4141,7 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
         conn_tools = _all_connection_tools()
@@ -5346,7 +5346,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.temp_line_end = (x, y)
             self.redraw()
             return
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             diag = self.repo.diagrams.get(self.diagram_id)
             obj = self.find_object(x, y)
             if (
@@ -11530,10 +11530,27 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
     def add_work_product(self):  # pragma: no cover - requires tkinter
         if not getattr(self, "canvas", None):
-            area_name = self._select_process_area()
-            if not area_name:
-                return
-            area = self._place_process_area(area_name, 100.0, 100.0)
+            objs = getattr(self, "objects", [])
+            areas = [o for o in objs if o.obj_type == "System Boundary"]
+            existing = {a.properties.get("name", ""): a for a in areas}
+            if len(areas) == 1:
+                # Give the user a chance to select a different area; if they
+                # cancel the dialog we automatically use the existing one.
+                area_name = self._select_process_area()
+                if not area_name:
+                    area = areas[0]
+                    area_name = area.properties.get("name", "")
+                else:
+                    area = existing.get(area_name)
+                    if area is None:
+                        area = self._place_process_area(area_name, 100.0, 100.0)
+            else:
+                area_name = self._select_process_area()
+                if not area_name:
+                    return
+                area = existing.get(area_name)
+                if area is None:
+                    area = self._place_process_area(area_name, 100.0, 100.0)
             wp_name = self._select_work_product_for_area(area_name)
             if not wp_name:
                 return
@@ -11652,14 +11669,15 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         right = area.x + area.width / 2 - obj.width / 2
         top = area.y - area.height / 2 + obj.height / 2
         bottom = area.y + area.height / 2 - obj.height / 2
-        if "parent" not in obj.properties and obj.properties.get("boundary"):
+        if left <= obj.x <= right and top <= obj.y <= bottom:
+            obj.properties["px"] = str(obj.x - area.x)
+            obj.properties["py"] = str(obj.y - area.y)
+        else:
+            # Outside the boundary: snap back to centre and reset offset
             obj.x = area.x
             obj.y = area.y
-        else:
-            obj.x = min(max(obj.x, left), right)
-            obj.y = min(max(obj.y, top), bottom)
-        obj.properties["px"] = str(obj.x - area.x)
-        obj.properties["py"] = str(obj.y - area.y)
+            obj.properties["px"] = "0"
+            obj.properties["py"] = "0"
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         pending_click = getattr(self, "_pending_wp_click", False)
