@@ -2049,6 +2049,11 @@ class AutoMLApp:
     #: the working area.
     MAX_TAB_TEXT_LENGTH = 20
 
+    #: Maximum characters shown for tool notebook tab titles. Tool tabs use
+    #: a fixed width so they remain readable but long names are capped at this
+    #: length and truncated with an ellipsis.
+    MAX_TOOL_TAB_TEXT_LENGTH = 20
+
     WORK_PRODUCT_INFO = {
         "Architecture Diagram": (
             "System Design (Item Definition)",
@@ -2748,7 +2753,6 @@ class AutoMLApp:
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_nb = ttk.Notebook(self.tools_group)
         top = ttk.Frame(self.tools_group)
         top.pack(side=tk.TOP, fill=tk.X)
         ttk.Label(top, text="Lifecycle Phase:").pack(side=tk.LEFT)
@@ -2758,7 +2762,22 @@ class AutoMLApp:
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
-        self.tools_nb.pack(fill=tk.BOTH, expand=True)
+
+        # Container holding navigation buttons and the tools notebook
+        nb_container = ttk.Frame(self.tools_group)
+        nb_container.pack(fill=tk.BOTH, expand=True)
+        style = ttk.Style()
+        style.configure("ToolsNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20)
+        self.tools_left_btn = ttk.Button(
+            nb_container, text="<", width=2, command=self._select_prev_tool_tab
+        )
+        self.tools_right_btn = ttk.Button(
+            nb_container, text=">", width=2, command=self._select_next_tool_tab
+        )
+        self.tools_left_btn.pack(side=tk.LEFT, fill=tk.Y)
+        self.tools_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tools_nb = ttk.Notebook(nb_container, style="ToolsNotebook")
+        self.tools_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Properties tab for displaying metadata
         prop_frame = ttk.Frame(self.tools_nb)
@@ -2828,6 +2847,7 @@ class AutoMLApp:
             "Cause & Effect Diagram", set()
         ).add("FTA")
         self.tool_listboxes: dict[str, tk.Listbox] = {}
+        self._tool_tab_titles: dict[str, str] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
 
@@ -9581,7 +9601,12 @@ class AutoMLApp:
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
-        self.tools_nb.add(frame, text=cat)
+        display = cat
+        if len(display) > self.MAX_TOOL_TAB_TEXT_LENGTH:
+            display = display[: self.MAX_TOOL_TAB_TEXT_LENGTH - 1] + "\N{HORIZONTAL ELLIPSIS}"
+        self.tools_nb.add(frame, text=display)
+        tab_id = self.tools_nb.tabs()[-1]
+        self._tool_tab_titles[tab_id] = cat
         lb = tk.Listbox(frame, height=10)
         vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
         lb.configure(yscrollcommand=vsb.set)
@@ -9780,7 +9805,8 @@ class AutoMLApp:
         except tk.TclError:
             self._tools_tip.hide()
             return
-        text = self.tools_nb.tab(idx, "text")
+        tab_id = self.tools_nb.tabs()[idx]
+        text = self._tool_tab_titles.get(tab_id, self.tools_nb.tab(tab_id, "text"))
         bbox = self.tools_nb.bbox(idx)
         if not bbox:
             self._tools_tip.hide()
@@ -17538,6 +17564,32 @@ class AutoMLApp:
                             if hasattr(self, "lifecycle_var") and hasattr(self.lifecycle_var, "set"):
                                 self.lifecycle_var.set(module or "")
                     break
+
+    def _select_prev_tool_tab(self) -> None:
+        """Select the tool tab to the left of the current tab."""
+        tabs = self.tools_nb.tabs()
+        if not tabs:
+            return
+        current = self.tools_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index > 0:
+            self.tools_nb.select(tabs[index - 1])
+
+    def _select_next_tool_tab(self) -> None:
+        """Select the tool tab to the right of the current tab."""
+        tabs = self.tools_nb.tabs()
+        if not tabs:
+            return
+        current = self.tools_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index < len(tabs) - 1:
+            self.tools_nb.select(tabs[index + 1])
 
     def _select_prev_tab(self) -> None:
         """Select the tab to the left of the current tab."""
