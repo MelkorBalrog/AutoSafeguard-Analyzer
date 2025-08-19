@@ -436,10 +436,20 @@ def format_requirement(req, include_id=True):
     return " ".join(parts)
 
 
+from pathlib import Path
+
+
 def get_version() -> str:
-    """Read the tool version from the first line of README.md."""
+    """Read the tool version from the first line of README.md.
+
+    The README is located alongside this file so we resolve the path relative
+    to ``__file__``.  This avoids returning ``"Unknown"`` when the current
+    working directory is different (e.g. when launching from another folder or
+    from an installed package).
+    """
     try:
-        with open("README.md", "r", encoding="utf-8") as f:
+        readme = Path(__file__).resolve().parent / "README.md"
+        with readme.open("r", encoding="utf-8") as f:
             first_line = f.readline().strip()
             if first_line.lower().startswith("version:"):
                 return first_line.split(":", 1)[1].strip()
