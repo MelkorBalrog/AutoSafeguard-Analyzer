@@ -125,7 +125,7 @@ def show_log():
         # Ensure the toggle button remains visible when other panels
         # (such as a pinned explorer) might overlap it by raising it
         # to the top of the stacking order.
-        _toggle_button.tkraise()
+        _raise_widget(_toggle_button)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
         _auto_hide_id = None
@@ -158,7 +158,7 @@ def hide_log(animate=False):
         log_frame.configure(height=_default_height)
         if _toggle_button:
             _toggle_button.config(text="Show Logs")
-            _toggle_button.tkraise()
+            _raise_widget(_toggle_button)
 
 
 def toggle_log():
@@ -174,11 +174,18 @@ def show_temporarily(duration=3000):
     global _auto_hide_id
     if not log_frame:
         return
-    if not log_frame.winfo_manager():
-        show_log()
-        if _auto_hide_id:
-            log_frame.after_cancel(_auto_hide_id)
-        _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
+    show_log()
+    if _auto_hide_id:
+        log_frame.after_cancel(_auto_hide_id)
+    _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
+
+
+def _raise_widget(widget):
+    """Safely raise *widget* above its siblings if possible."""
+    try:
+        widget.tk.call("raise", widget._w)
+    except Exception:
+        pass
 
 
 def _update_line_numbers() -> None:
