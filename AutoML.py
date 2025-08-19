@@ -256,7 +256,6 @@ from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
-from gui.gradient_theme import install_gradient_theme, apply_gradient
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -17576,8 +17575,7 @@ class AutoMLApp:
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
         tab_id = event.widget.select()
-        if hasattr(self, "_doc_all_tabs"):
-            self._make_doc_tab_visible(tab_id)
+        self._make_doc_tab_visible(tab_id)
         tab = (
             event.widget.nametowidget(tab_id)
             if hasattr(event.widget, "nametowidget")
@@ -21817,8 +21815,6 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
-    install_gradient_theme()
-    apply_gradient(root)
     # Prevent the main window from being resized so small that
     # widgets and toolbars become unusable.
     root.minsize(1200, 700)
