@@ -49,11 +49,11 @@ def apply_purplish_button_style(style: ttk.Style | None = None) -> ttk.Style:
 
 
 def apply_translucid_button_style(style: ttk.Style | None = None) -> ttk.Style:
-    """Style buttons with a subtle, translucent look for toolboxes."""
+    """Style the default ``ttk.Button`` with a subtle, translucent look."""
 
     style = style or ttk.Style()
     style.configure(
-        "Translucid.TButton",
+        "TButton",
         padding=(10, 5),
         relief="flat",
         borderwidth=1,
@@ -61,7 +61,7 @@ def apply_translucid_button_style(style: ttk.Style | None = None) -> ttk.Style:
         background="#ffffff",
     )
     style.map(
-        "Translucid.TButton",
+        "TButton",
         background=[("active", "#f0f0f0"), ("pressed", "#e0e0e0")],
         relief=[("pressed", "sunken"), ("!pressed", "flat")],
     )

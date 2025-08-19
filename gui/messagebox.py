@@ -53,8 +53,12 @@ def _create_dialog(
 ) -> object:
     """Create a simple ``ttk`` dialog returning the associated button value."""
 
-    root = tk._default_root or tk.Tk()
-    root.withdraw()
+    root = tk._default_root
+    temp_root = False
+    if root is None:
+        root = tk.Tk()
+        root.withdraw()
+        temp_root = True
 
     dialog = tk.Toplevel(root)
     dialog.title(title or "")
@@ -82,6 +86,8 @@ def _create_dialog(
 
     dialog.protocol("WM_DELETE_WINDOW", lambda: _set(None))
     dialog.wait_window()
+    if temp_root:
+        root.destroy()
     return result
 
 

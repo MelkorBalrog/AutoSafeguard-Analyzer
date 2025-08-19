@@ -79,7 +79,59 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     )
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.tk, "_default_root", None)
-    monkeypatch.setattr(mb.tk, "Tk", lambda: type("Root", (), {"withdraw": lambda self: None})())
+    monkeypatch.setattr(
+        mb.tk,
+        "Tk",
+        lambda: type("Root", (), {"withdraw": lambda self: None, "destroy": lambda self: None})(),
+    )
 
     mb._create_dialog("Title", "Message", [("OK", True)])
     assert styles == ["Purple.TButton"]
+
+
+def test_create_dialog_keeps_existing_root(monkeypatch):
+    class DummyRoot:
+        def __init__(self):
+            self.withdrawn = False
+
+        def withdraw(self):
+            self.withdrawn = True
+
+    dummy_root = DummyRoot()
+    monkeypatch.setattr(mb.tk, "_default_root", dummy_root)
+    monkeypatch.setattr(mb, "apply_purplish_button_style", lambda *a, **k: None)
+    monkeypatch.setattr(
+        mb.ttk,
+        "Style",
+        lambda *a, **k: type("S", (), {"configure": lambda *a, **k: None, "map": lambda *a, **k: None})(),
+    )
+
+    class DummyDialog:
+        def __init__(self, root):
+            self.protocol = lambda *a, **k: None
+
+        def title(self, *a, **k):
+            pass
+
+        def resizable(self, *a, **k):
+            pass
+
+        def transient(self, *a, **k):
+            pass
+
+        def grab_set(self):
+            pass
+
+        def destroy(self):
+            pass
+
+        def wait_window(self):
+            pass
+
+    monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
+    monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: type("F", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: type("L", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr(mb.ttk, "Button", lambda *a, **k: type("B", (), {"pack": lambda *a, **k: None})())
+
+    mb._create_dialog("Title", "Message", [("OK", True)])
+    assert dummy_root.withdrawn is False

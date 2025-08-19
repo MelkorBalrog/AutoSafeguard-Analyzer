@@ -28,7 +28,7 @@ def test_apply_purplish_button_style_configures_background():
 def test_apply_translucid_button_style_sets_flat_relief():
     style = DummyStyle()
     apply_translucid_button_style(style)
-    assert style.configured["Translucid.TButton"]["relief"] == "flat"
+    assert style.configured["TButton"]["relief"] == "flat"
 
 
 def test_configure_table_style_uses_translucid(monkeypatch):
