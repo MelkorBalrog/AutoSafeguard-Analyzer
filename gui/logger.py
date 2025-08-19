@@ -2,8 +2,15 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkfont
 
+# Widgets and controls associated with the log area
 log_widget = None
 _line_widget = None
+log_frame = None
+_toggle_button = None
+
+# Internal state tracking
+_default_height = 0
+_auto_hide_id = None
 
 # Mapping of log levels to the tag name that will be used for colouring
 _LEVEL_TAGS = {
@@ -14,7 +21,7 @@ _LEVEL_TAGS = {
 
 
 def init_log_window(root, height=7, dark_mode: bool = True):
-    """Create and return a styled log window packed in *root*.
+    """Create and return an un-packed styled log window in *root*.
 
     Parameters
     ----------
@@ -27,12 +34,14 @@ def init_log_window(root, height=7, dark_mode: bool = True):
         SynapseX assembly editor style. Otherwise a light theme is used.
     """
 
-    global log_widget, _line_widget
+    global log_widget, _line_widget, log_frame, _default_height
     frame = ttk.Frame(root)
     frame.pack_propagate(False)
     font = tkfont.Font(root=root, family="Consolas", size=11)
     line_height = font.metrics("linespace")
-    frame.configure(height=line_height * height)
+    _default_height = line_height * height
+    frame.configure(height=_default_height)
+    log_frame = frame
 
     # Choose colours based on the requested theme
     if dark_mode:
@@ -88,6 +97,78 @@ def init_log_window(root, height=7, dark_mode: bool = True):
     log_widget.tag_configure("info", foreground=info)
     _update_line_numbers()
     return frame
+
+
+def set_toggle_button(button):
+    """Register the toggle button that controls log visibility."""
+    global _toggle_button
+    _toggle_button = button
+
+
+def show_log():
+    """Display the log frame and update the toggle button text."""
+    global _auto_hide_id
+    if not log_frame or log_frame.winfo_manager():
+        if log_frame and _auto_hide_id:
+            log_frame.after_cancel(_auto_hide_id)
+            _auto_hide_id = None
+        return
+    log_frame.configure(height=_default_height)
+    log_frame.pack(side=tk.BOTTOM, fill=tk.X, before=_toggle_button)
+    if _toggle_button:
+        _toggle_button.config(text="Hide Logs")
+    if _auto_hide_id:
+        log_frame.after_cancel(_auto_hide_id)
+        _auto_hide_id = None
+
+
+def _animate_hide(height):
+    """Recursively shrink the log frame height until hidden."""
+    if height <= 0:
+        log_frame.pack_forget()
+        log_frame.configure(height=_default_height)
+        if _toggle_button:
+            _toggle_button.config(text="Show Logs")
+        return
+    log_frame.configure(height=height)
+    log_frame.after(15, lambda: _animate_hide(height - max(_default_height // 10, 1)))
+
+
+def hide_log(animate=False):
+    """Hide the log frame, optionally with a slide-down animation."""
+    global _auto_hide_id
+    if not log_frame or not log_frame.winfo_manager():
+        return
+    if _auto_hide_id:
+        log_frame.after_cancel(_auto_hide_id)
+        _auto_hide_id = None
+    if animate:
+        _animate_hide(log_frame.winfo_height())
+    else:
+        log_frame.pack_forget()
+        log_frame.configure(height=_default_height)
+        if _toggle_button:
+            _toggle_button.config(text="Show Logs")
+
+
+def toggle_log():
+    """Toggle the visibility of the log frame."""
+    if log_frame and log_frame.winfo_manager():
+        hide_log()
+    else:
+        show_log()
+
+
+def show_temporarily(duration=3000):
+    """Show the logs briefly before hiding them with animation."""
+    global _auto_hide_id
+    if not log_frame:
+        return
+    if not log_frame.winfo_manager():
+        show_log()
+        if _auto_hide_id:
+            log_frame.after_cancel(_auto_hide_id)
+        _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
 
 
 def _update_line_numbers() -> None:
