@@ -40,6 +40,13 @@ from analysis.safety_management import (
     UNRESTRICTED_USAGE_SOURCES,
 )
 
+def _labelframe(master, *, text: str):
+    """Create a themed ``ttk.LabelFrame`` and fall back when style unsupported."""
+    try:
+        return ttk.LabelFrame(master, text=text, style="Toolbox.TLabelframe")
+    except TypeError:
+        return ttk.LabelFrame(master, text=text)
+
 # ---------------------------------------------------------------------------
 # Appearance customization
 # ---------------------------------------------------------------------------
@@ -3635,11 +3642,13 @@ class SysMLDiagramWindow(tk.Frame):
             groups = {"": tools}
         self.element_frames: dict[str, ttk.Frame] = {}
         for name, group_tools in groups.items():
-            frame = (
-                ttk.LabelFrame(self.tools_frame, text=f"{name} (elements)")
-                if name
-                else ttk.Frame(self.tools_frame)
-            )
+            if name:
+                frame = _labelframe(
+                    self.tools_frame,
+                    text=f"{name} (elements)",
+                )
+            else:
+                frame = ttk.Frame(self.tools_frame)
             frame.pack(fill=tk.X, padx=2, pady=2)
             self.element_frames[name] = frame
             for tool in group_tools:
@@ -3654,8 +3663,9 @@ class SysMLDiagramWindow(tk.Frame):
                 self.tool_buttons[tool] = btn
 
         if relation_tools:
-            self.rel_frame = ttk.LabelFrame(
-                self.toolbox, text="Relationships (relationships)"
+            self.rel_frame = _labelframe(
+                self.toolbox,
+                text="Relationships (relationships)",
             )
             self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for tool in relation_tools:
@@ -3670,7 +3680,10 @@ class SysMLDiagramWindow(tk.Frame):
         if getattr(self.app, "prop_view", None):
             self.prop_view = self.app.prop_view
         else:
-            self.prop_frame = ttk.LabelFrame(self.toolbox, text="Properties")
+            self.prop_frame = _labelframe(
+                self.toolbox,
+                text="Properties",
+            )
             self.prop_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
             prop_tree_frame = ttk.Frame(self.prop_frame)
             prop_tree_frame.pack(fill=tk.BOTH, expand=True)
@@ -11612,9 +11625,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     destroy=lambda *a, **k: None,
                 )
             if hasattr(self.toolbox, "tk"):
-                frame = ttk.LabelFrame(self.toolbox, text=name)
+                frame = _labelframe(self.toolbox, text=name)
                 if data.get("nodes"):
-                    elem = ttk.LabelFrame(frame, text="Elements (elements)")
+                    elem = _labelframe(
+                        frame,
+                        text="Elements (elements)",
+                    )
                     elem.pack(fill=tk.X, padx=2, pady=2)
                     for node in data["nodes"]:
                         ttk.Button(
@@ -11625,7 +11641,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                             command=lambda t=node: self.select_tool(t),
                         ).pack(fill=tk.X, padx=2, pady=2)
                 if data.get("relations"):
-                    rel = ttk.LabelFrame(frame, text="Relationships (relationships)")
+                    rel = _labelframe(
+                        frame,
+                        text="Relationships (relationships)",
+                    )
                     rel.pack(fill=tk.X, padx=2, pady=2)
                     for rel_name in data["relations"]:
                         ttk.Button(
@@ -11636,10 +11655,16 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                             command=lambda t=rel_name: self.select_tool(t),
                         ).pack(fill=tk.X, padx=2, pady=2)
                 for grp, sub in data.get("externals", {}).items():
-                    sub_frame = ttk.LabelFrame(frame, text=f"Related {grp}")
+                    sub_frame = _labelframe(
+                        frame,
+                        text=f"Related {grp}",
+                    )
                     sub_frame.pack(fill=tk.X, padx=2, pady=2)
                     if sub.get("nodes"):
-                        selem = ttk.LabelFrame(sub_frame, text="Elements (elements)")
+                        selem = _labelframe(
+                            sub_frame,
+                            text="Elements (elements)",
+                        )
                         selem.pack(fill=tk.X, padx=2, pady=2)
                         for node in sub["nodes"]:
                             ttk.Button(
@@ -11650,7 +11675,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                                 command=lambda t=node: self.select_tool(t),
                             ).pack(fill=tk.X, padx=2, pady=2)
                     if sub.get("relations"):
-                        srel = ttk.LabelFrame(sub_frame, text="Relationships (relationships)")
+                        srel = _labelframe(
+                            sub_frame,
+                            text="Relationships (relationships)",
+                        )
                         srel.pack(fill=tk.X, padx=2, pady=2)
                         for rel_name in sub["relations"]:
                             ttk.Button(

@@ -2238,7 +2238,6 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        apply_mac_button_style(self.style)
         self.style.configure(
             "Treeview",
             font=("Arial", 10),
@@ -2409,28 +2408,23 @@ class AutoMLApp:
             border=10,
             sticky="nsew",
         )
-        self.style.layout(
+        self.style.map(
             "TButton",
-            [
-                (
-                    "RoundedButton",
-                    {
-                        "sticky": "nsew",
-                        "children": [
-                            (
-                                "Button.padding",
-                                {
-                                    "sticky": "nsew",
-                                    "children": [("Button.label", {"sticky": "nsew"})],
-                                },
-                            )
-                        ],
-                    },
-                )
-            ],
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
         )
-        self.style.configure("TButton", padding=(12, 6), foreground="black")
-        self.style.map("TButton", foreground=[("disabled", "#a3a3a3")])
+        # Navigation buttons used to scroll document tabs
+        self.style.configure(
+            "Nav.TButton",
+            background="#e7edf5",
+            borderwidth=2,
+            relief="raised",
+            lightcolor="#ffffff",
+            darkcolor="#7a8a99",
+        )
+        self.style.map(
+            "Nav.TButton",
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        )
         # Increase notebook tab font/size so titles are fully visible
         self.style.configure(
             "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
@@ -4643,8 +4637,10 @@ class AutoMLApp:
         prop_win.geometry("420x380")
         dialog_font = tkFont.Font(family="Arial", size=10)
 
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        pdf_entry = tk.Entry(prop_win, width=40, font=dialog_font)
+        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
+            row=0, column=0, padx=10, pady=10, sticky="w"
+        )
+        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
         pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
         pdf_entry.grid(row=0, column=1, padx=10, pady=10)
 
@@ -4652,22 +4648,29 @@ class AutoMLApp:
         var_detailed = tk.BooleanVar(
             value=self.project_properties.get("pdf_detailed_formulas", True)
         )
-        chk = tk.Checkbutton(
+        chk = ttk.Checkbutton(
             prop_win,
             text="Show Detailed Formulas in PDF Report",
             variable=var_detailed,
-            font=dialog_font,
         )
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
         # Probability mappings for validation target calculations
-        exp_frame = tk.LabelFrame(
-            prop_win, text="Exposure Probabilities P(E|HB)", font=dialog_font
-        )
+        try:
+            exp_frame = ttk.LabelFrame(
+                prop_win,
+                text="Exposure Probabilities P(E|HB)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            exp_frame = ttk.LabelFrame(
+                prop_win,
+                text="Exposure Probabilities P(E|HB)",
+            )
         exp_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         exp_vars = {}
         for i in range(1, 5):
-            tk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4675,7 +4678,7 @@ class AutoMLApp:
                     self.project_properties.get("exposure_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 exp_frame,
                 textvariable=var,
                 width=8,
@@ -4685,13 +4688,21 @@ class AutoMLApp:
             ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
             exp_vars[i] = var
 
-        ctrl_frame = tk.LabelFrame(
-            prop_win, text="Controllability Probabilities P(C|E)", font=dialog_font
-        )
+        try:
+            ctrl_frame = ttk.LabelFrame(
+                prop_win,
+                text="Controllability Probabilities P(C|E)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            ctrl_frame = ttk.LabelFrame(
+                prop_win,
+                text="Controllability Probabilities P(C|E)",
+            )
         ctrl_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         ctrl_vars = {}
         for i in range(1, 4):
-            tk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4699,7 +4710,7 @@ class AutoMLApp:
                     self.project_properties.get("controllability_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 ctrl_frame,
                 textvariable=var,
                 width=8,
@@ -4709,13 +4720,21 @@ class AutoMLApp:
             ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
             ctrl_vars[i] = var
 
-        sev_frame = tk.LabelFrame(
-            prop_win, text="Severity Probabilities P(S|C)", font=dialog_font
-        )
+        try:
+            sev_frame = ttk.LabelFrame(
+                prop_win,
+                text="Severity Probabilities P(S|C)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            sev_frame = ttk.LabelFrame(
+                prop_win,
+                text="Severity Probabilities P(S|C)",
+            )
         sev_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         sev_vars = {}
         for i in range(1, 4):
-            tk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4723,7 +4742,7 @@ class AutoMLApp:
                     self.project_properties.get("severity_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 sev_frame,
                 textvariable=var,
                 width=8,
