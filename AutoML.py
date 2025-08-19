@@ -256,6 +256,7 @@ from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
+from gui.mac_button_style import apply_mac_button_style
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -2237,6 +2238,7 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
+        apply_mac_button_style(self.style)
         self.style.configure(
             "Treeview",
             font=("Arial", 10),
@@ -2283,7 +2285,22 @@ class AutoMLApp:
             troughcolor="#e2e6eb",
             bordercolor="#888888",
             arrowcolor="#555555",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
         )
+        # Apply the scrollbar styling to both orientations
+        for orient in ("Horizontal.TScrollbar", "Vertical.TScrollbar"):
+            self.style.configure(orient,
+                                background="#c0d4eb",
+                                troughcolor="#e2e6eb",
+                                bordercolor="#888888",
+                                arrowcolor="#555555",
+                                lightcolor="#eaf2fb",
+                                darkcolor="#5a6d84",
+                                borderwidth=2,
+                                relief="raised")
         # Toolbox/LabelFrame titles
         self.style.configure(
             "Toolbox.TLabelframe",
@@ -2291,22 +2308,16 @@ class AutoMLApp:
             bordercolor="#888888",
             lightcolor="#fffef7",
             darkcolor="#bfae6a",
-            borderwidth=2,
+            borderwidth=1,
             relief="raised",
         )
         self.style.configure(
             "Toolbox.TLabelframe.Label",
-            background="#f8e27c",
+            background="#fef9e7",
             foreground="black",
             font=("Segoe UI", 10, "bold"),
             padding=(4, 0, 0, 0),
             anchor="w",
-            relief="raised",
-            borderwidth=1,
-        )
-        self.style.map(
-            "Toolbox.TLabelframe.Label",
-            background=[("active", "#e0c95c"), ("!active", "#f8e27c")],
         )
         # Notebook (ribbon-like) title bars with beveled edges
         self.style.configure(
@@ -2956,6 +2967,7 @@ class AutoMLApp:
         nb_container = ttk.Frame(self.tools_group)
         nb_container.pack(fill=tk.BOTH, expand=True)
         style = ttk.Style()
+        apply_mac_button_style(style)
         # Create a custom notebook style so that a layout is available.  Without a
         # ``TNotebook`` suffix in the style name, ttk cannot find the default
         # layout which led to ``_tkinter.TclError: Layout ToolsNotebook not
@@ -3100,10 +3112,18 @@ class AutoMLApp:
 
         self.doc_nb.select = _wrapped_select
         self._tab_left_btn = ttk.Button(
-            self.doc_frame, text="<", width=2, command=self._select_prev_tab
+            self.doc_frame,
+            text="<",
+            width=2,
+            command=self._select_prev_tab,
+            style="Nav.TButton",
         )
         self._tab_right_btn = ttk.Button(
-            self.doc_frame, text=">", width=2, command=self._select_next_tab
+            self.doc_frame,
+            text=">",
+            width=2,
+            command=self._select_next_tab,
+            style="Nav.TButton",
         )
         self._tab_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self._tab_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -12278,7 +12298,7 @@ class AutoMLApp:
         # Show allocation and safety goal traceability below the table
         frame = tk.Frame(win)
         frame.pack(fill=tk.BOTH, expand=True)
-        vbar = tk.Scrollbar(frame, orient="vertical")
+        vbar = ttk.Scrollbar(frame, orient="vertical")
         text = tk.Text(frame, wrap="word", yscrollcommand=vbar.set, height=8)
         text.tag_configure("added", foreground="blue")
         text.tag_configure("removed", foreground="red")
@@ -13999,6 +14019,7 @@ class AutoMLApp:
             style.theme_use("clam")
         except tk.TclError:
             pass
+        apply_mac_button_style(style)
         style.configure(
             "FMEA.Treeview",
             font=("Segoe UI", 10),
