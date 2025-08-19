@@ -103,6 +103,7 @@ class CapsuleButton(tk.Canvas):
         self.bind("<Leave>", self._on_leave)
         self.bind("<ButtonPress-1>", self._on_press)
         self.bind("<ButtonRelease-1>", self._on_release)
+        self.bind("<Motion>", self._on_motion)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
 
@@ -263,6 +264,16 @@ class CapsuleButton(tk.Canvas):
             else:
                 self.itemconfigure(item, outline=color)
 
+    def _on_motion(self, event: tk.Event) -> None:
+        if "disabled" in self._state:
+            return
+        w, h = int(self["width"]), int(self["height"])
+        inside = 0 <= event.x < w and 0 <= event.y < h
+        if inside and self._current_color == self._normal_color:
+            self._set_color(self._hover_color)
+        elif not inside and self._current_color != self._normal_color:
+            self._set_color(self._normal_color)
+
     def _on_enter(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
             self._set_color(self._hover_color)
@@ -278,7 +289,9 @@ class CapsuleButton(tk.Canvas):
     def _on_release(self, event: tk.Event) -> None:
         if "disabled" in self._state:
             return
-        if self.winfo_containing(event.x_root, event.y_root) == self:
+        w, h = int(self["width"]), int(self["height"])
+        inside = 0 <= event.x < w and 0 <= event.y < h
+        if inside:
             self._set_color(self._hover_color)
             if self._command:
                 self._command()
