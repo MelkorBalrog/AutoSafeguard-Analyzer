@@ -1700,7 +1700,9 @@
         "Driving Function": [],
         "Field Data": [],
         "Fleet": [],
-        "Guideline": [],
+        "Guideline": [
+          "Lifecycle Phase"
+        ],
         "Incident": [],
         "Lifecycle Phase": [],
         "Manufacturing Process": [],
@@ -1709,8 +1711,12 @@
         "Operation": [],
         "Organization": [],
         "Plan": [],
-        "Policy": [],
-        "Principle": [],
+        "Policy": [
+          "Lifecycle Phase"
+        ],
+        "Principle": [
+          "Lifecycle Phase"
+        ],
         "Procedure": [],
         "Process": [],
         "Record": [],
@@ -1718,7 +1724,9 @@
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
-        "Standard": [],
+        "Standard": [
+          "Lifecycle Phase"
+        ],
         "System": [],
         "Task": [],
         "Test Suite": [],
