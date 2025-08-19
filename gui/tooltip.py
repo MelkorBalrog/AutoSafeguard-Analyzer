@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 
 class ToolTip:
     """Simple tooltip for Tkinter widgets.
@@ -35,17 +36,37 @@ class ToolTip:
             tw.wm_attributes("-topmost", True)
         except tk.TclError:
             pass
-        tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(
+
+        lines = self.text.split("\n")
+        max_len = max((len(line) for line in lines), default=1)
+        width = min(max_len, 80)
+        height = min(len(lines), 20)
+        need_h = max_len > width
+        need_v = len(lines) > height
+
+        text = tk.Text(
             tw,
-            text=self.text,
+            width=width,
+            height=height,
             background="#ffffe0",
             relief="solid",
             borderwidth=1,
-            justify="left",
-            wraplength=300,
+            wrap="none",
         )
-        label.pack(ipadx=1)
+        vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
+        hbar = ttk.Scrollbar(tw, orient="horizontal", command=text.xview)
+        if need_v:
+            text.configure(yscrollcommand=vbar.set)
+            vbar.grid(row=0, column=1, sticky="ns")
+        if need_h:
+            text.configure(xscrollcommand=hbar.set)
+            hbar.grid(row=1, column=0, sticky="ew")
+        text.insert("1.0", self.text)
+        text.configure(state="disabled")
+        text.grid(row=0, column=0, sticky="nsew")
+        tw.grid_columnconfigure(0, weight=1)
+        tw.grid_rowconfigure(0, weight=1)
+        tw.wm_geometry(f"+{x}+{y}")
 
     def show(self, x: int | None = None, y: int | None = None):
         """Show the tooltip immediately."""

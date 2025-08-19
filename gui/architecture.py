@@ -320,11 +320,22 @@ def _gov_connection_text(node_type: str) -> str:
     """Return tooltip text listing governance connections for ``node_type``."""
     node_type = _GOV_TYPE_ALIASES.get(node_type, node_type)
     rules = CONNECTION_RULES.get("Governance Diagram", {})
-    lines: list[str] = []
-    for rel in sorted(rules):
-        targets = rules[rel].get(node_type)
+    outgoing: dict[str, list[str]] = {}
+    incoming: dict[str, list[str]] = {}
+    for rel, srcs in rules.items():
+        targets = srcs.get(node_type)
         if targets:
-            lines.append(f"{rel}: {', '.join(sorted(targets))}")
+            outgoing[rel] = sorted(targets)
+        for src, dests in srcs.items():
+            if node_type in dests:
+                incoming.setdefault(rel, []).append(src)
+    if not outgoing and not incoming:
+        return ""
+    lines = ["To Others | From Others"]
+    for rel in sorted(set(outgoing) | set(incoming)):
+        outs = ", ".join(outgoing.get(rel, []))
+        ins = ", ".join(sorted(incoming.get(rel, [])))
+        lines.append(f"{rel}: {outs} | {ins}")
     return "\n".join(lines)
 
 # Node type aliases used when validating governance diagram connections.
@@ -5244,7 +5255,9 @@ class SysMLDiagramWindow(tk.Frame):
                 text = _gov_connection_text(obj.obj_type)
                 if text:
                     self._conn_tip.text = text
-                    self._conn_tip.show()
+                    x_root = getattr(event, "x_root", event.x)
+                    y_root = getattr(event, "y_root", event.y)
+                    self._conn_tip.show(x_root, y_root)
                     self._conn_tip_obj = obj
                 else:
                     self._conn_tip.hide()
