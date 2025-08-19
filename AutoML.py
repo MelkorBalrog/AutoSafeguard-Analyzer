@@ -2239,6 +2239,7 @@ class AutoMLApp:
         self.top_events = []
         self.selected_node = None
         self.clone_offset_counter = {}
+        self._loaded_model_paths = []
         self.root.title("AutoML-Analyzer")
         self.version = VERSION
         self.zoom = 1.0
@@ -18871,6 +18872,12 @@ class AutoMLApp:
                 return
             if result:
                 self.save_model()
+        for path in getattr(self, "_loaded_model_paths", []):
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError:
+                pass
         self.root.destroy()
 
     def show_about(self):
@@ -19809,6 +19816,7 @@ class AutoMLApp:
 
         self.apply_model_data(data)
         self.set_last_saved_state()
+        self._loaded_model_paths.append(path)
         return
 
         repo_data = data.get("sysml_repository")
