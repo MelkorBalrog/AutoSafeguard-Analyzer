@@ -4141,6 +4141,9 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         conn_tools = _all_connection_tools()
         prefer = self.current_tool in conn_tools
         t = self.current_tool
@@ -4641,6 +4644,9 @@ class SysMLDiagramWindow(tk.Frame):
                     self.update_property_view()
 
     def on_left_drag(self, event):
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -5024,6 +5030,9 @@ class SysMLDiagramWindow(tk.Frame):
             self._connect_objects(source, new_obj, conn_type)
 
     def on_left_release(self, event):
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
