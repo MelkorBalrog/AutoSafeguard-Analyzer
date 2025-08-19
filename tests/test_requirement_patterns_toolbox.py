@@ -79,6 +79,7 @@ def test_pattern_tree_wraps_text(tmp_path):
     editor.data = [{"Trigger": "A " * 30, "Template": "B " * 30}]
     editor._populate_pattern_tree()
     vals = editor.tree.item(editor.tree.get_children()[0], "values")
-    assert "\n" in vals[0]
+    assert vals[0] == "1"
     assert "\n" in vals[1]
+    assert "\n" in vals[2]
     root.destroy()
