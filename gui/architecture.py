@@ -7037,19 +7037,43 @@ class SysMLDiagramWindow(tk.Frame):
         drawn using polygon primitives to avoid overlapping shapes.
         """
         size = 16
-        scale = (2 * r) / size
         mid = size / 2
+        bg = StyleManager.get_instance().get_canvas_color()
+
+        # --- Gear ring -------------------------------------------------
+        pts: list[tuple[float, float]] = []
+        teeth = 8
+        for i in range(teeth * 2):
+            angle = math.radians(360 / (teeth * 2) * i)
+            rad = r if i % 2 == 0 else r * 0.82
+            px = x + rad * math.cos(angle)
+            py = y + rad * math.sin(angle)
+            pts.append((px, py))
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [coord for pt in pts for coord in pt], outline=outline, fill=""
+        )
+        hole_r = r * 0.62
+        self.canvas.create_oval(
+            x - hole_r,
+            y - hole_r,
+            x + hole_r,
+            y + hole_r,
+            outline="",
+            fill=bg,
+        )
+
+        # --- Wrench inside the gear -----------------------------------
+        wr = hole_r * 0.95
+        scale = (2 * wr) / size
         head_cy = 5
         head_r = 5
         inner = head_r - 2
         notch_start = mid + 1
 
-        bg = StyleManager.get_instance().get_canvas_color()
-
         def _pt(px: float, py: float) -> tuple[float, float]:
-            return x - r + px * scale, y - r + py * scale
+            return x - wr + px * scale, y - wr + py * scale
 
-        # Single polygon describing the outer contour (squared head + handle)
         outer = [
             _pt(mid - 1, size - 2),  # bottom-left of handle
             _pt(mid - 1, head_cy + head_r),
@@ -7062,13 +7086,6 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(mid + 1, head_cy + head_r),
             _pt(mid + 1, size - 2),
         ]
-        self.canvas.create_polygon(
-            [coord for pt in outer for coord in pt],
-            fill=color,
-            outline=outline,
-        )
-
-        # Inner opening
         hole = [
             _pt(mid - inner, head_cy + inner),
             _pt(mid - inner, head_cy - inner),
@@ -7077,10 +7094,23 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(notch_start, head_cy + 1),
             _pt(mid + inner, head_cy + inner),
         ]
+        theta = -math.pi / 4
+        ct, st = math.cos(theta), math.sin(theta)
+
+        def _rot(pt: tuple[float, float]) -> tuple[float, float]:
+            px, py = pt
+            dx, dy = px - x, py - y
+            return x + dx * ct - dy * st, y + dx * st + dy * ct
+
+        outer = [_rot(p) for p in outer]
+        hole = [_rot(p) for p in hole]
+
+        self.drawing_helper._fill_gradient_polygon(self.canvas, outer, color)
         self.canvas.create_polygon(
-            [coord for pt in hole for coord in pt],
-            fill=bg,
-            outline=outline,
+            [coord for pt in outer for coord in pt], outline=outline, fill=""
+        )
+        self.canvas.create_polygon(
+            [coord for pt in hole for coord in pt], fill=bg, outline=""
         )
 
     def draw_object(self, obj: SysMLObject):

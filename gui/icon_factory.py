@@ -21,6 +21,20 @@ def create_icon(
         img.put(bg, to=(0, 0, size - 1, size - 1))
     c = color
     outline = "black"
+    try:
+        tr = int(c[1:3], 16)
+        tg = int(c[3:5], 16)
+        tb = int(c[5:7], 16)
+    except (ValueError, IndexError):  # pragma: no cover - defensive
+        tr = tg = tb = 0
+
+    def _grad(x: int) -> str:
+        """Return white → color gradient value for column *x*."""
+        ratio = x / (size - 1)
+        nr = int(255 * (1 - ratio) + tr * ratio)
+        ng = int(255 * (1 - ratio) + tg * ratio)
+        nb = int(255 * (1 - ratio) + tb * ratio)
+        return f"#{nr:02x}{ng:02x}{nb:02x}"
     if shape == "circle":
         r = size // 2 - 3
         cx = cy = size // 2
@@ -359,50 +373,109 @@ def create_icon(
             img.put(outline,(x,y))
     elif shape == "wrench":
         mid = size // 2
+        bgc = bg or "white"
+        # --- Gear ring -------------------------------------------------
+        r_out = size // 2 - 1
+        r_root = int(r_out * 0.82)
+        pts = []
+        teeth = 8
+        for i in range(teeth * 2):
+            ang = math.radians(360 / (teeth * 2) * i)
+            rad = r_out if i % 2 == 0 else r_root
+            x = mid + rad * math.cos(ang)
+            y = mid + rad * math.sin(ang)
+            pts.append((x, y))
+        for y in range(size):
+            xs = []
+            for i in range(len(pts)):
+                x1, y1 = pts[i]
+                x2, y2 = pts[(i + 1) % len(pts)]
+                if y1 == y2 or y < min(y1, y2) or y >= max(y1, y2):
+                    continue
+                x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                xs.append(int(x))
+            xs.sort()
+            for j in range(0, len(xs), 2):
+                for x in range(xs[j], xs[j + 1] + 1):
+                    img.put(_grad(x), (x, y))
+        for x, y in pts:
+            img.put(outline, (int(round(x)), int(round(y))))
+        hole = int(r_out * 0.62)
+        for y in range(mid - hole, mid + hole + 1):
+            for x in range(mid - hole, mid + hole + 1):
+                if (x - mid) ** 2 + (y - mid) ** 2 <= hole * hole:
+                    img.put(bgc, (x, y))
+        # --- Wrench inside the gear ------------------------------------
+        wr = hole * 0.95
+        sf = wr / (size / 2)
         head_cy = 5
-        r = 5
-        # Draw the outer head
-        for y in range(head_cy - r, head_cy + r + 1):
-            for x in range(mid - r, mid + r + 1):
-                dist = (x - mid) ** 2 + (y - head_cy) ** 2
-                if dist <= r * r:
-                    img.put(c, (x, y))
-                if r * r <= dist <= (r + 1) * (r + 1):
-                    img.put(outline, (x, y))
-        # Hollow out the head for an open-end look
-        inner = r - 2
-        for y in range(head_cy - inner, head_cy + inner + 1):
-            for x in range(mid - inner, mid + inner + 1):
-                dist = (x - mid) ** 2 + (y - head_cy) ** 2
-                if dist <= inner * inner:
-                    img.put(bg or "white", (x, y))
-                if inner * inner <= dist <= (inner + 1) * (inner + 1):
-                    img.put(outline, (x, y))
-        # Carve out a larger jaw opening for clearer wrench shape
+        head_r = 5
+        inner = head_r - 2
         notch_start = mid + 1
-        for x in range(notch_start, mid + r + 1):
-            span = x - notch_start + 1
-            y_top = head_cy - span
-            y_bottom = head_cy + span
-            for y in range(y_top, y_bottom + 1):
-                img.put(bg or "white", (x, y))
-            if y_top >= head_cy - r:
-                img.put(outline, (x, y_top))
-            if y_bottom <= head_cy + r:
-                img.put(outline, (x, y_bottom))
-        # Draw the handle
-        handle_start = head_cy + inner
-        for x in range(mid - 1, mid + 2):
-            img.put(c, to=(x, handle_start, x + 1, size - 2))
-        for y in range(handle_start, size - 2):
-            img.put(outline, (mid - 1, y))
-            img.put(outline, (mid + 1, y))
-        # Add a small cap at the end of the handle
-        for x in range(mid - 1, mid + 2):
-            for y in range(size - 4, size - 2):
-                img.put(bg or "white", (x, y))
-                if x in (mid - 1, mid + 1) or y in (size - 4, size - 3):
-                    img.put(outline, (x, y))
+
+        def _wpt(px: float, py: float) -> tuple[float, float]:
+            return (px - mid) * sf + mid, (py - mid) * sf + mid
+
+        outer = [
+            _wpt(mid - 1, size - 2),
+            _wpt(mid - 1, head_cy + head_r),
+            _wpt(mid - head_r, head_cy + head_r),
+            _wpt(mid - head_r, head_cy - head_r),
+            _wpt(mid + head_r, head_cy - head_r),
+            _wpt(notch_start, head_cy - 1),
+            _wpt(notch_start, head_cy + 1),
+            _wpt(mid + head_r, head_cy + head_r),
+            _wpt(mid + 1, head_cy + head_r),
+            _wpt(mid + 1, size - 2),
+        ]
+        hole_pts = [
+            _wpt(mid - inner, head_cy + inner),
+            _wpt(mid - inner, head_cy - inner),
+            _wpt(mid + inner, head_cy - inner),
+            _wpt(notch_start, head_cy - 1),
+            _wpt(notch_start, head_cy + 1),
+            _wpt(mid + inner, head_cy + inner),
+        ]
+        theta = -math.pi / 4
+        ct, st = math.cos(theta), math.sin(theta)
+
+        def _rot(pt: tuple[float, float]) -> tuple[float, float]:
+            px, py = pt
+            dx, dy = px - mid, py - mid
+            return mid + dx * ct - dy * st, mid + dx * st + dy * ct
+
+        outer = [_rot(p) for p in outer]
+        hole_pts = [_rot(p) for p in hole_pts]
+
+        for y in range(size):
+            xs = []
+            for i in range(len(outer)):
+                x1, y1 = outer[i]
+                x2, y2 = outer[(i + 1) % len(outer)]
+                if y1 == y2 or y < min(y1, y2) or y >= max(y1, y2):
+                    continue
+                x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                xs.append(int(x))
+            xs.sort()
+            for j in range(0, len(xs), 2):
+                for x in range(xs[j], xs[j + 1] + 1):
+                    img.put(_grad(x), (x, y))
+        for x, y in outer:
+            img.put(outline, (int(round(x)), int(round(y))))
+
+        for y in range(size):
+            xs = []
+            for i in range(len(hole_pts)):
+                x1, y1 = hole_pts[i]
+                x2, y2 = hole_pts[(i + 1) % len(hole_pts)]
+                if y1 == y2 or y < min(y1, y2) or y >= max(y1, y2):
+                    continue
+                x = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                xs.append(int(x))
+            xs.sort()
+            for j in range(0, len(xs), 2):
+                for x in range(xs[j], xs[j + 1] + 1):
+                    img.put(bgc, (x, y))
     elif shape == "steering":
         mid=size//2
         r=size//2-2
