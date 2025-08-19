@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font as tkfont
 
 class ToolTip:
     """Simple tooltip for Tkinter widgets.
@@ -58,6 +58,12 @@ class ToolTip:
         need_h = max_len > width
         need_v = len(lines) > height
 
+        try:
+            fixed_font = tkfont.nametofont("TkFixedFont").copy()
+            fixed_font.configure(size=8)
+        except tk.TclError:  # pragma: no cover - platform specific
+            fixed_font = tkfont.Font(family="Courier", size=8)
+
         text = tk.Text(
             tw,
             width=width,
@@ -67,7 +73,7 @@ class ToolTip:
             borderwidth=1,
             wrap="none",
             # Use a fixed-width font so table-like tooltip content stays aligned
-            font=("TkFixedFont", 8),
+            font=fixed_font,
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
         hbar = ttk.Scrollbar(tw, orient="horizontal", command=text.xview)
