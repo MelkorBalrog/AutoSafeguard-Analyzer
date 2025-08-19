@@ -228,7 +228,7 @@ import sys
 import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
-from gui import messagebox, logger, add_treeview_scrollbars
+from gui import messagebox, logger, add_treeview_scrollbars, apply_gradient_theme
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import (
@@ -17660,7 +17660,7 @@ class AutoMLApp:
                 self._tab_right_btn.state(["!disabled"])
 
     def _make_doc_tab_visible(self, tab_id: str) -> None:
-        if tab_id not in self._doc_all_tabs:
+        if not hasattr(self, "_doc_all_tabs") or tab_id not in self._doc_all_tabs:
             return
         index = self._doc_all_tabs.index(tab_id)
         if index < self._doc_tab_offset:
@@ -21815,6 +21815,7 @@ class PageDiagram:
 
 def main():
     root = tk.Tk()
+    apply_gradient_theme(root)
     # Prevent the main window from being resized so small that
     # widgets and toolbars become unusable.
     root.minsize(1200, 700)
