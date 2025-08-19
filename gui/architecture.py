@@ -12663,6 +12663,7 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         super().__init__(master, title="Diagram Properties")
 
     def body(self, master):
+        self.resizable(False, False)
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=2)
         self.name_var = tk.StringVar(value=self.diagram.name)
         ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=4, pady=2)
@@ -12672,17 +12673,26 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         ttk.Label(master, text="Color:").grid(row=2, column=0, sticky="e", padx=4, pady=2)
         self.color_var = tk.StringVar(value=getattr(self.diagram, "color", "#FFFFFF"))
         ttk.Entry(master, textvariable=self.color_var).grid(row=2, column=1, padx=4, pady=2)
-        if self.diagram.diag_type == "Internal Block Diagram":
+        row = 3
+        if self.diagram.diag_type == "Governance Diagram":
+            app = getattr(self.master, "app", None)
+            toolbox = getattr(app, "safety_mgmt_toolbox", None)
+            frozen = toolbox.diagram_frozen(self.diagram.name) if toolbox else False
+            self.freeze_var = tk.BooleanVar(value=frozen)
+            ttk.Checkbutton(master, text="Frozen", variable=self.freeze_var).grid(
+                row=row, column=0, columnspan=2, sticky="w", padx=4, pady=2
+            )
+        elif self.diagram.diag_type == "Internal Block Diagram":
             repo = SysMLRepository.get_instance()
             blocks = [e for e in repo.elements.values() if e.elem_type == "Block"]
             idmap = {b.name or b.elem_id: b.elem_id for b in blocks}
-            ttk.Label(master, text="Father:").grid(row=3, column=0, sticky="e", padx=4, pady=2)
+            ttk.Label(master, text="Father:").grid(row=row, column=0, sticky="e", padx=4, pady=2)
             self.father_map = idmap
             cur_id = getattr(self.diagram, "father", "")
             cur_name = next((n for n, i in idmap.items() if i == cur_id), "")
             self.father_var = tk.StringVar(value=cur_name)
             ttk.Combobox(master, textvariable=self.father_var, values=list(idmap.keys())).grid(
-                row=3, column=1, padx=4, pady=2
+                row=row, column=1, padx=4, pady=2
             )
         else:
             self.father_map = {}
@@ -12692,7 +12702,12 @@ class DiagramPropertiesDialog(simpledialog.Dialog):
         self.diagram.name = self.name_var.get()
         self.diagram.description = self.desc_var.get()
         self.diagram.color = self.color_var.get()
-        if self.diagram.diag_type == "Internal Block Diagram":
+        if self.diagram.diag_type == "Governance Diagram":
+            app = getattr(self.master, "app", None)
+            toolbox = getattr(app, "safety_mgmt_toolbox", None)
+            if toolbox and hasattr(self, "freeze_var"):
+                toolbox.set_diagram_frozen(self.diagram.name, bool(self.freeze_var.get()))
+        elif self.diagram.diag_type == "Internal Block Diagram":
             father_id = self.father_map.get(self.father_var.get())
             repo = SysMLRepository.get_instance()
             self.added_parts = set_ibd_father(
@@ -12709,6 +12724,7 @@ class PackagePropertiesDialog(simpledialog.Dialog):
         super().__init__(master, title="Package Properties")
 
     def body(self, master):
+        self.resizable(False, False)
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=2)
         self.name_var = tk.StringVar(value=self.package.name)
         ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=4, pady=2)
@@ -12725,6 +12741,7 @@ class ElementPropertiesDialog(simpledialog.Dialog):
         super().__init__(master, title=f"{element.elem_type} Properties")
 
     def body(self, master):
+        self.resizable(False, False)
         ttk.Label(master, text="Name:").grid(row=0, column=0, sticky="e", padx=4, pady=2)
         self.name_var = tk.StringVar(value=self.element.name)
         ttk.Entry(master, textvariable=self.name_var).grid(row=0, column=1, padx=4, pady=2)
