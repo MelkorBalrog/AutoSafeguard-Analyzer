@@ -19,7 +19,7 @@ from typing import Dict, List, Tuple
 from sysml.sysml_repository import SysMLRepository, SysMLDiagram, SysMLElement
 from gui.style_manager import StyleManager
 from gui.drawing_helper import fta_drawing_helper
-from config import load_diagram_rules
+from config import load_diagram_rules, load_json_with_comments
 import json
 from gui.icon_factory import create_icon
 
@@ -55,6 +55,27 @@ CONNECTION_SELECT_RADIUS = 15
 
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config/diagram_rules.json"
 _CONFIG = load_diagram_rules(_CONFIG_PATH)
+
+_REQ_PATTERN_PATH = (
+    Path(__file__).resolve().parents[1] / "config/requirement_patterns.json"
+)
+
+
+def _load_requirement_relations(path: Path = _REQ_PATTERN_PATH) -> list[str]:
+    """Return unique relationship labels referenced by requirement patterns."""
+
+    try:
+        patterns = load_json_with_comments(path)
+    except Exception:  # pragma: no cover - fallback if file missing
+        return []
+    rels: set[str] = set()
+    for item in patterns:
+        trig = item.get("Trigger", "")
+        rels.update(re.findall(r"\[(.+?)\]", trig))
+    return sorted(rels)
+
+
+REQ_PATTERN_RELATIONS = _load_requirement_relations()
 
 # Track open Architecture windows so toolbox layouts can refresh when rules change
 ARCH_WINDOWS: set[weakref.ReferenceType] = set()
@@ -102,7 +123,9 @@ def _normalize_plan_types(items: list[str]) -> list[str]:
 GOV_ELEMENT_NODES = _normalize_plan_types(
     _CONFIG.get("governance_element_nodes", [])
 )
-GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
+GOV_ELEMENT_RELATIONS = sorted(
+    set(SAFETY_AI_RELATIONS) | set(REQ_PATTERN_RELATIONS)
+)
 
 # Process areas available in governance diagrams
 PROCESS_AREA_OPTIONS = [
@@ -491,6 +514,8 @@ _BASE_CONN_TYPES = {
     "Reviews",
 }
 
+_BASE_CONN_TYPES.update(REQ_PATTERN_RELATIONS)
+
 # Ordered list of base connection tools for toolbox composition
 _BASE_CONN_TOOLS = [
     "Association",
@@ -609,10 +634,16 @@ _ARROW_FORWARD_BASE.update(
     }
 )
 
+_ARROW_FORWARD_BASE.update(REQ_PATTERN_RELATIONS)
+
 
 def _all_connection_tools() -> tuple[str, ...]:
     """Return all connection tools including Safety & AI relations."""
-    return tuple(_BASE_CONN_TOOLS + SAFETY_AI_RELATIONS)
+    rels = list(_BASE_CONN_TOOLS)
+    for r in GOV_ELEMENT_RELATIONS:
+        if r not in rels:
+            rels.append(r)
+    return tuple(rels)
 
 
 def _arrow_forward_types() -> set[str]:
@@ -671,17 +702,23 @@ def reload_config() -> None:
     global SAFETY_AI_RELATIONS, SAFETY_AI_RELATION_SET, GOVERNANCE_NODE_TYPES
     global GOV_ELEMENT_NODES, GOV_ELEMENT_RELATIONS, GOV_ELEMENT_CLASSES
     global SAFETY_AI_RELATION_RULES, CONNECTION_RULES, NODE_CONNECTION_LIMITS, GUARD_NODES
-    global NODE_TO_GROUP, GOV_CORE_NODES
+    global NODE_TO_GROUP, GOV_CORE_NODES, REQ_PATTERN_RELATIONS, _BASE_CONN_TYPES
+    global _ARROW_FORWARD_BASE
     _CONFIG = load_diagram_rules(_CONFIG_PATH)
     ARCH_DIAGRAM_TYPES = set(_CONFIG.get("arch_diagram_types", []))
     SAFETY_AI_NODES = _CONFIG.get("ai_nodes", [])
     SAFETY_AI_NODE_TYPES = set(SAFETY_AI_NODES)
     SAFETY_AI_RELATIONS = _CONFIG.get("ai_relations", [])
     SAFETY_AI_RELATION_SET = set(SAFETY_AI_RELATIONS)
+    REQ_PATTERN_RELATIONS = _load_requirement_relations()
     GOV_ELEMENT_NODES = _normalize_plan_types(
         _CONFIG.get("governance_element_nodes", [])
     )
-    GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
+    GOV_ELEMENT_RELATIONS = sorted(
+        set(SAFETY_AI_RELATIONS) | set(REQ_PATTERN_RELATIONS)
+    )
+    _BASE_CONN_TYPES.update(REQ_PATTERN_RELATIONS)
+    _ARROW_FORWARD_BASE.update(REQ_PATTERN_RELATIONS)
     GOV_ELEMENT_CLASSES = _make_gov_element_classes(GOV_ELEMENT_NODES)
     GOVERNANCE_NODE_TYPES = set(
         _normalize_plan_types(_CONFIG.get("governance_node_types", []))
