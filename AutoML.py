@@ -231,7 +231,6 @@ from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger, add_treeview_scrollbars
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
-from gui.gradient_theme import apply_gradient_theme
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -2234,7 +2233,6 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        apply_gradient_theme(self.style)
         self.style.configure("Treeview", font=("Arial", 10))
         # Increase notebook tab font/size so titles are fully visible
         self.style.configure(
@@ -13800,7 +13798,6 @@ class AutoMLApp:
             style.theme_use("clam")
         except tk.TclError:
             pass
-        apply_gradient_theme(style)
         style.configure(
             "FMEA.Treeview",
             font=("Segoe UI", 10),
@@ -17663,7 +17660,7 @@ class AutoMLApp:
                 self._tab_right_btn.state(["!disabled"])
 
     def _make_doc_tab_visible(self, tab_id: str) -> None:
-        if not hasattr(self, "_doc_all_tabs") or tab_id not in self._doc_all_tabs:
+        if tab_id not in self._doc_all_tabs:
             return
         index = self._doc_all_tabs.index(tab_id)
         if index < self._doc_tab_offset:
