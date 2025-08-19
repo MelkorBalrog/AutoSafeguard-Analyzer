@@ -31,11 +31,13 @@ class ToolTip:
             y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
-        # Ensure the tooltip stays above other windows
+        # Ensure the tooltip stays above other windows and use a transparent background
         try:
             tw.wm_attributes("-topmost", True)
+            tw.wm_attributes("-transparentcolor", "#ffffe0")
         except tk.TclError:
             pass
+        tw.configure(background="#ffffe0")
 
         lines = self.text.split("\n")
         max_len = max((len(line) for line in lines), default=1)
@@ -49,8 +51,8 @@ class ToolTip:
             width=width,
             height=height,
             background="#ffffe0",
-            relief="solid",
-            borderwidth=1,
+            relief="flat",
+            borderwidth=0,
             wrap="none",
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
