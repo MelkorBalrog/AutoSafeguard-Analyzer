@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_text_shadow_exists():
+def test_text_shade_exists():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -16,11 +16,11 @@ def test_text_shadow_exists():
     btn = CapsuleButton(root, text="Test")
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_text_shadow_item", None) is not None
+    assert getattr(btn, "_text_shade_item", None) is not None
     root.destroy()
 
 
-def test_icon_shadow_exists():
+def test_icon_shade_exists():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -29,5 +29,5 @@ def test_icon_shadow_exists():
     btn = CapsuleButton(root, image=img)
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_icon_shadow_item", None) is not None
+    assert getattr(btn, "_icon_shade_item", None) is not None
     root.destroy()
