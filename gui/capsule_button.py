@@ -77,10 +77,15 @@ class CapsuleButton(tk.Canvas):
             "height": height,
             "highlightthickness": 0,
         }
+        control_bg = _darken(bg, 0.9)
         try:
-            init_kwargs["bg"] = master.cget("background")
+            master.configure(bg=control_bg)
+            init_kwargs["bg"] = control_bg
         except tk.TclError:
-            pass
+            try:
+                init_kwargs["bg"] = master.cget("background")
+            except tk.TclError:
+                pass
         # ``style`` and ``state`` are ttk-specific options.  Strip them from
         # ``kwargs`` before forwarding to ``Canvas.__init__`` and track the
         # ``state`` value ourselves.  ``image`` and ``compound`` are also Tk
