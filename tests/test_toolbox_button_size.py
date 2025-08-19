@@ -12,14 +12,26 @@ from gsn import GSNDiagram
 from sysml.sysml_repository import SysMLRepository
 
 
-def _button_widths(widget):
-    widths = []
+def _button_data(widget):
+    widths: list[int] = []
+    fits = True
     for child in widget.winfo_children():
         if isinstance(child, ttk.Button):
-            widths.append(child.winfo_width())
+            width = child.winfo_width()
+            req = child.winfo_reqwidth()
+            if hasattr(child, "_content_width"):
+                try:
+                    req = max(req, child._content_width(int(child["height"])))
+                except Exception:  # pragma: no cover - defensive
+                    pass
+            widths.append(width)
+            if width < req:
+                fits = False
         else:
-            widths.extend(_button_widths(child))
-    return widths
+            w, f = _button_data(child)
+            widths.extend(w)
+            fits = fits and f
+    return widths, fits
 
 
 @pytest.mark.skipif("DISPLAY" not in os.environ, reason="Tk display not available")
@@ -31,7 +43,8 @@ def test_governance_toolbox_buttons_same_width():
     diag = repo.create_diagram("Governance", name="Gov")
     win = GovernanceDiagramWindow(root, app=SimpleNamespace(), diagram_id=diag.diag_id)
     root.update_idletasks()
-    widths = _button_widths(win.toolbox)
+    widths, fits = _button_data(win.toolbox)
+    assert fits
     assert len(set(widths)) == 1
     root.destroy()
 
@@ -43,7 +56,8 @@ def test_block_toolbox_buttons_same_width():
     root.withdraw()
     win = BlockDiagramWindow(root, app=SimpleNamespace())
     root.update_idletasks()
-    widths = _button_widths(win.toolbox)
+    widths, fits = _button_data(win.toolbox)
+    assert fits
     assert len(set(widths)) == 1
     root.destroy()
 
@@ -54,7 +68,8 @@ def test_gsn_toolbox_buttons_same_width():
     root.withdraw()
     win = GSNDiagramWindow(root, SimpleNamespace(), GSNDiagram("Test"))
     root.update_idletasks()
-    widths = _button_widths(win.toolbox)
+    widths, fits = _button_data(win.toolbox)
+    assert fits
     assert len(set(widths)) == 1
     root.destroy()
 
@@ -65,6 +80,7 @@ def test_cbn_toolbox_buttons_same_width():
     root.withdraw()
     win = CausalBayesianNetworkWindow(root, SimpleNamespace(cbn_docs=[]))
     root.update_idletasks()
-    widths = _button_widths(win.toolbox)
+    widths, fits = _button_data(win.toolbox)
+    assert fits
     assert len(set(widths)) == 1
     root.destroy()
