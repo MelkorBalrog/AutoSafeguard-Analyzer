@@ -3941,26 +3941,11 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in SAFETY_AI_RELATION_SET:
-                allowed = SAFETY_AI_NODE_TYPES | GOVERNANCE_NODE_TYPES
-                if not (
-                    src.obj_type in allowed
-                    and dst.obj_type in allowed
-                    and (
-                        src.obj_type in SAFETY_AI_NODE_TYPES
-                        or dst.obj_type in SAFETY_AI_NODE_TYPES
-                    )
-                ):
-                    return False, (
-                        "Safety & AI relationships must connect Safety & AI and/or Governance elements"
-                    )
-                rule = CONNECTION_RULES.get("Governance Diagram", {}).get(conn_type)
-                if rule and src.obj_type in SAFETY_AI_NODE_TYPES:
-                    targets = rule.get(src.obj_type)
-                    if not targets or dst.obj_type not in targets:
-                        return (
-                            False,
-                            f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed",
-                        )
+                # Safety & AI connections rely solely on JSON-defined diagram rules.
+                # The generic constraint check above already enforces allowed
+                # source and target combinations, so no additional validation is
+                # required here.
+                pass
             elif conn_type in (
                 "Used By",
                 "Used after Review",
