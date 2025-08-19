@@ -251,6 +251,15 @@ class GSNDiagramWindow(tk.Frame):
         self.toolbox_canvas.configure(width=button_width)
         self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
+        def _set_uniform_width(widget: tk.Misc) -> None:
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    child.pack_configure(fill=tk.X, expand=True)
+                else:
+                    _set_uniform_width(child)
+
+        _set_uniform_width(self.toolbox)
+
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
         # Ensure the diagram has access to the application for SPI lookups

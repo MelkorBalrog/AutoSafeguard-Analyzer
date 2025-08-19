@@ -77,6 +77,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.toolbox.pack_forget()
         self.current_tool = "Select"
 
+        self.after_idle(self._fit_toolbox)
+
         self.canvas_container = ttk.Frame(body)
         self.canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(
@@ -158,6 +160,32 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 self.toolbox.pack(side=tk.LEFT, fill=tk.Y, before=self.canvas_container)
         else:
             self.toolbox.pack_forget()
+
+    # ------------------------------------------------------------------
+    def _fit_toolbox(self) -> None:
+        """Ensure all toolbox buttons share the width of the longest."""
+        self.toolbox.update_idletasks()
+
+        def max_button_width(widget: tk.Misc) -> int:
+            width = 0
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    width = max(width, child.winfo_reqwidth())
+                else:
+                    width = max(width, max_button_width(child))
+            return width
+
+        button_width = max_button_width(self.toolbox)
+
+        def _set_uniform(widget: tk.Misc) -> None:
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    child.pack_configure(fill=tk.X, expand=True)
+                else:
+                    _set_uniform(child)
+
+        _set_uniform(self.toolbox)
+        self.toolbox.configure(width=button_width)
 
     # ------------------------------------------------------------------
     def new_doc(self) -> None:

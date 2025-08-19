@@ -3797,6 +3797,15 @@ class SysMLDiagramWindow(tk.Frame):
         self.toolbox_canvas.configure(width=button_width)
         self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
+        def _set_uniform_width(widget: tk.Misc) -> None:
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    child.pack_configure(fill=tk.X, expand=True)
+                else:
+                    _set_uniform_width(child)
+
+        _set_uniform_width(self.toolbox)
+
         # Shrink the property view to match the button area so it does not force
         # the toolbox wider than needed. Allow the value column to stretch so it
         # can grow to fill the available space within the Properties tab.
