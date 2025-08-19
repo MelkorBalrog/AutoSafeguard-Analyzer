@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 class DummyListbox:
@@ -59,10 +59,10 @@ def test_work_product_groups_follow_phase(work_product, parent):
     toolbox.diagrams = {"Gov": diag.diag_id}
     toolbox.set_active_module("P1")
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
-    app.tool_listboxes = {FaultTreeApp.WORK_PRODUCT_INFO[work_product][0]: lb}
-    app.tool_categories = {FaultTreeApp.WORK_PRODUCT_INFO[work_product][0]: []}
+    app.tool_listboxes = {AutoMLApp.WORK_PRODUCT_INFO[work_product][0]: lb}
+    app.tool_categories = {AutoMLApp.WORK_PRODUCT_INFO[work_product][0]: []}
     app.tool_actions = {}
     wp_menu = DummyMenu()
     parent_menu = wp_menu if work_product == parent else DummyMenu()
@@ -71,12 +71,12 @@ def test_work_product_groups_follow_phase(work_product, parent):
         app.work_product_menus[parent] = [(parent_menu, 0)]
     app.enabled_work_products = set()
     app.enable_process_area = lambda area: None
-    app.tool_to_work_product = {info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()}
+    app.tool_to_work_product = {info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()}
     app.update_views = lambda: None
     app.safety_mgmt_toolbox = toolbox
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(app, FaultTreeApp)
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(app, FaultTreeApp)
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(app, AutoMLApp)
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(app, AutoMLApp)
 
     toolbox.add_work_product("Gov", work_product, "")
     toolbox.on_change = app.refresh_tool_enablement

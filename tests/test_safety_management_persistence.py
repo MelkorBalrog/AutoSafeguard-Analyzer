@@ -11,15 +11,15 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp, HazopDoc
+from AutoML import AutoMLApp, HazopDoc
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
 
 
 def _minimal_app():
-    """Return a barebones ``FaultTreeApp`` suitable for serialisation tests."""
+    """Return a barebones ``AutoMLApp`` suitable for serialisation tests."""
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
     app.root_node = None
     app.fmea_entries = []
@@ -100,8 +100,8 @@ def test_apply_model_enables_governed_work_products(monkeypatch):
         enabled.append(name)
         self.enabled_work_products.add(name)
 
-    monkeypatch.setattr(FaultTreeApp, "enable_work_product", record_enable)
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
+    monkeypatch.setattr(AutoMLApp, "enable_work_product", record_enable)
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
     toolbox = SafetyManagementToolbox()
     toolbox.add_work_product("Gov", "HAZOP", "Rationale")
     data = {"safety_mgmt_toolbox": toolbox.to_dict()}
@@ -114,11 +114,11 @@ def test_apply_model_without_governance_disables_work_products(monkeypatch):
     app.enabled_work_products = {"HAZOP"}
     disabled = []
     monkeypatch.setattr(
-        FaultTreeApp,
+        AutoMLApp,
         "disable_work_product",
         lambda self, name: disabled.append(name) or True,
     )
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
     app.apply_model_data({}, ensure_root=False)
     assert disabled == ["HAZOP"]
     assert app.enabled_work_products == set()
@@ -166,8 +166,8 @@ def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
     data = app.export_model_data(include_versions=False)
 
     new_app = _minimal_app()
-    new_app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        new_app, FaultTreeApp
+    new_app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        new_app, AutoMLApp
     )
 
     def enable_wp(self, name, *, refresh: bool = True):
@@ -177,8 +177,8 @@ def test_only_active_phase_work_products_enabled_on_load(monkeypatch):
         self.enabled_work_products.discard(name)
         return True
 
-    monkeypatch.setattr(FaultTreeApp, "enable_work_product", enable_wp, raising=False)
-    monkeypatch.setattr(FaultTreeApp, "disable_work_product", disable_wp, raising=False)
+    monkeypatch.setattr(AutoMLApp, "enable_work_product", enable_wp, raising=False)
+    monkeypatch.setattr(AutoMLApp, "disable_work_product", disable_wp, raising=False)
 
     new_app.apply_model_data(data, ensure_root=False)
     assert new_app.enabled_work_products == {"Architecture Diagram"}

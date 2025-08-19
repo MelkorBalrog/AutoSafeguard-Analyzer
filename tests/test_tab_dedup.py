@@ -1,7 +1,7 @@
 import types
 
 import AutoML
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_new_tab_reuses_existing(monkeypatch):
@@ -36,7 +36,7 @@ def test_new_tab_reuses_existing(monkeypatch):
 
     monkeypatch.setattr(AutoML, "ttk", types.SimpleNamespace(Frame=lambda master: DummyFrame()))
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = DummyNotebook()
 
     first = app._new_tab("My Tab")

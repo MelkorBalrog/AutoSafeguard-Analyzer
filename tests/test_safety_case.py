@@ -14,7 +14,7 @@ sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
 from gsn import GSNNode, GSNDiagram
-from AutoML import FaultTreeApp, PMHF_TARGETS
+from AutoML import AutoMLApp, PMHF_TARGETS
 from analysis.constants import CHECK_MARK
 
 
@@ -126,7 +126,7 @@ def test_edit_probability_updates_spi(monkeypatch):
         unique_id=1,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -139,7 +139,7 @@ def test_edit_probability_updates_spi(monkeypatch):
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 2e-4)
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     row = next(iter(tree.data))
     tree.next_column = "Achieved Probability"
@@ -159,7 +159,7 @@ def test_edit_probability_updates_spi(monkeypatch):
             CaptureTree.instances.append(self)
 
     monkeypatch.setattr("AutoML.ttk.Treeview", CaptureTree)
-    FaultTreeApp.show_safety_performance_indicators(app)
+    AutoMLApp.show_safety_performance_indicators(app)
     spi_tree = CaptureTree.instances[-1]
     iid = next(iter(spi_tree.data))
     assert spi_tree.data[iid]["values"][2] == f"{2e-4:.2e}"
@@ -185,7 +185,7 @@ def test_safety_case_shows_validation_target(monkeypatch):
         unique_id=1,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -196,7 +196,7 @@ def test_safety_case_shows_validation_target(monkeypatch):
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     assert tree.columns[4] == "Validation Target"
     assert tree.columns[6] == "SPI"
@@ -225,7 +225,7 @@ def test_pmfh_autopopulates_validation_target_and_probability(monkeypatch):
         unique_id=1,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -236,16 +236,16 @@ def test_pmfh_autopopulates_validation_target_and_probability(monkeypatch):
     app.update_views = lambda: None
 
     monkeypatch.setattr("AutoML.AutoML_Helper.calculate_probability_recursive", lambda te: 2e-6)
-    monkeypatch.setattr("AutoML.FaultTreeApp.update_basic_event_probabilities", lambda self: None)
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_basic_events", lambda self: [])
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_failure_mode_node", lambda self, be: None)
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_fmea_entries", lambda self: [])
+    monkeypatch.setattr("AutoML.AutoMLApp.update_basic_event_probabilities", lambda self: None)
+    monkeypatch.setattr("AutoML.AutoMLApp.get_all_basic_events", lambda self: [])
+    monkeypatch.setattr("AutoML.AutoMLApp.get_failure_mode_node", lambda self, be: None)
+    monkeypatch.setattr("AutoML.AutoMLApp.get_all_fmea_entries", lambda self: [])
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
 
-    FaultTreeApp.calculate_pmfh(app)
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.calculate_pmfh(app)
+    AutoMLApp.show_safety_case(app)
 
     tree = app._safety_case_tree
     iid = next(iter(tree.data))
@@ -273,7 +273,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
         unique_id=1,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -287,7 +287,7 @@ def test_edit_probability_in_spi_explorer(monkeypatch):
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.simpledialog.askfloat", lambda *a, **k: 5e-5)
 
-    FaultTreeApp.show_safety_performance_indicators(app)
+    AutoMLApp.show_safety_performance_indicators(app)
     tree = app._spi_tree
     iid = next(iter(tree.data))
     tree.selection_set(iid)
@@ -312,7 +312,7 @@ def test_spi_shows_pmhf_and_validation(monkeypatch):
         unique_id=1,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.push_undo_state = lambda: None
@@ -322,7 +322,7 @@ def test_spi_shows_pmhf_and_validation(monkeypatch):
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
 
-    FaultTreeApp.show_safety_performance_indicators(app)
+    AutoMLApp.show_safety_performance_indicators(app)
     tree = app._spi_tree
     assert len(tree.data) == 2
     targets = {row["values"][1]: row for row in tree.data.values()}
@@ -352,7 +352,7 @@ def test_pmhf_skips_sotif_probabilities(monkeypatch):
         unique_id=2,
     )
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.push_undo_state = lambda: None
@@ -369,17 +369,17 @@ def test_pmhf_skips_sotif_probabilities(monkeypatch):
         return 2e-6 if te is fusa else 3e-5
 
     monkeypatch.setattr("AutoML.AutoML_Helper.calculate_probability_recursive", fake_prob)
-    monkeypatch.setattr("AutoML.FaultTreeApp.update_basic_event_probabilities", lambda self: None)
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_basic_events", lambda self: [])
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_failure_mode_node", lambda self, be: None)
-    monkeypatch.setattr("AutoML.FaultTreeApp.get_all_fmea_entries", lambda self: [])
+    monkeypatch.setattr("AutoML.AutoMLApp.update_basic_event_probabilities", lambda self: None)
+    monkeypatch.setattr("AutoML.AutoMLApp.get_all_basic_events", lambda self: [])
+    monkeypatch.setattr("AutoML.AutoMLApp.get_failure_mode_node", lambda self, be: None)
+    monkeypatch.setattr("AutoML.AutoMLApp.get_all_fmea_entries", lambda self: [])
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
 
-    FaultTreeApp.show_safety_performance_indicators(app)
+    AutoMLApp.show_safety_performance_indicators(app)
 
-    FaultTreeApp.calculate_pmfh(app)
+    AutoMLApp.calculate_pmfh(app)
 
     assert sotif.spi_probability == 1e-4
     assert fusa.probability == 2e-6
@@ -400,7 +400,7 @@ def test_edit_notes_updates_node(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -411,7 +411,7 @@ def test_edit_notes_updates_node(monkeypatch):
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.simpledialog.askstring", lambda *a, **k: "new note")
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     row = next(iter(tree.data))
     tree.next_column = "Notes"
@@ -428,7 +428,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -439,7 +439,7 @@ def test_safety_case_lists_and_toggles(monkeypatch):
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: True)
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     assert len(tree.data) == 1
     iid = next(iter(tree.data))
@@ -462,7 +462,7 @@ def test_safety_case_cancel_does_not_toggle(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: types.SimpleNamespace(
         winfo_exists=lambda: True, winfo_children=lambda: []
@@ -483,7 +483,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -502,7 +502,7 @@ def test_safety_case_edit_updates_table(monkeypatch):
 
     monkeypatch.setattr("AutoML.GSNElementConfig", fake_config)
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     iid = next(iter(tree.data))
     tree.selection_set(iid)
@@ -520,7 +520,7 @@ def test_safety_case_undo_redo_toggle(monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -541,16 +541,16 @@ def test_safety_case_undo_redo_toggle(monkeypatch):
 
     app.export_model_data = export_model_data
     app.apply_model_data = apply_model_data
-    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
-    app.undo = FaultTreeApp.undo.__get__(app)
-    app.redo = FaultTreeApp.redo.__get__(app)
+    app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+    app.undo = AutoMLApp.undo.__get__(app)
+    app.redo = AutoMLApp.redo.__get__(app)
 
     monkeypatch.setattr("AutoML.ttk.Treeview", DummyTree)
     monkeypatch.setattr("AutoML.ttk.Button", DummyButton)
     monkeypatch.setattr("AutoML.tk.Menu", DummyMenu)
     monkeypatch.setattr("AutoML.messagebox.askokcancel", lambda *a, **k: True)
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     tree = app._safety_case_tree
     event = types.SimpleNamespace(x=0, y=0)
     tree.bindings["<Double-Button-1>"](event)
@@ -574,7 +574,7 @@ def test_export_safety_case_writes_rows(tmp_path, monkeypatch):
     diag = GSNDiagram(root)
     diag.add_node(sol)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = types.SimpleNamespace(select=lambda tab: None)
     app._new_tab = lambda title: DummyTab()
     app.all_gsn_diagrams = [diag]
@@ -588,7 +588,7 @@ def test_export_safety_case_writes_rows(tmp_path, monkeypatch):
     path = tmp_path / "out.csv"
     monkeypatch.setattr("AutoML.filedialog.asksaveasfilename", lambda **k: str(path))
 
-    FaultTreeApp.show_safety_case(app)
+    AutoMLApp.show_safety_case(app)
     app.export_safety_case_csv()
 
     with open(path, newline="") as f:

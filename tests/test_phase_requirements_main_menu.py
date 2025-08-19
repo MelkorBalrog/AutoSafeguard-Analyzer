@@ -11,12 +11,12 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("ImageTk"))
 sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("ImageFont"))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from analysis import SafetyManagementToolbox
 
 
 def test_phase_requirements_menu_populated(monkeypatch):
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     toolbox = SafetyManagementToolbox()
     toolbox.add_module("Phase1")
     app.safety_mgmt_toolbox = toolbox
@@ -48,8 +48,8 @@ def test_phase_requirements_menu_populated(monkeypatch):
 
     app.phase_req_menu = DummyMenu()
     req_menu = DummyMenu()
-    FaultTreeApp._add_lifecycle_requirements_menu(app, req_menu)
-    FaultTreeApp._refresh_phase_requirements_menu(app)
+    AutoMLApp._add_lifecycle_requirements_menu(app, req_menu)
+    AutoMLApp._refresh_phase_requirements_menu(app)
 
     labels = [label for label, _ in app.phase_req_menu.items]
     assert "Phase1" in labels and "Lifecycle" in labels
@@ -65,7 +65,7 @@ def test_phase_requirements_menu_populated(monkeypatch):
 
 
 def test_generate_phase_requirements_delegates(monkeypatch):
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     events = []
 
     def fake_open(show_diagrams=True):
@@ -76,13 +76,13 @@ def test_generate_phase_requirements_delegates(monkeypatch):
         generate_phase_requirements=lambda p: events.append(p)
     )
 
-    FaultTreeApp.generate_phase_requirements(app, "PhaseX")
+    AutoMLApp.generate_phase_requirements(app, "PhaseX")
 
     assert events == [False, "PhaseX"]
 
 
 def test_generate_lifecycle_requirements_delegates(monkeypatch):
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     events = []
 
     def fake_open(show_diagrams=True):
@@ -93,13 +93,13 @@ def test_generate_lifecycle_requirements_delegates(monkeypatch):
         generate_lifecycle_requirements=lambda: events.append("lifecycle")
     )
 
-    FaultTreeApp.generate_lifecycle_requirements(app)
+    AutoMLApp.generate_lifecycle_requirements(app)
 
     assert events == [False, "lifecycle"]
 
 
 def test_apply_model_data_refreshes_phase_menu(monkeypatch):
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     # Stub required methods and attributes used during model loading
     app.disable_work_product = lambda name: None
     app.enable_work_product = lambda name: None
@@ -118,11 +118,11 @@ def test_apply_model_data_refreshes_phase_menu(monkeypatch):
 
     calls: list[bool] = []
     monkeypatch.setattr(
-        FaultTreeApp, "_refresh_phase_requirements_menu", lambda self: calls.append(True)
+        AutoMLApp, "_refresh_phase_requirements_menu", lambda self: calls.append(True)
     )
 
     data = {"top_events": [], "safety_mgmt_toolbox": {"modules": [{"name": "P1"}]}}
-    FaultTreeApp.apply_model_data(app, data, ensure_root=False)
+    AutoMLApp.apply_model_data(app, data, ensure_root=False)
 
     assert calls
     assert app.safety_mgmt_toolbox.on_change == app._on_toolbox_change

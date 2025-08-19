@@ -11,12 +11,12 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from gsn import GSNNode, GSNDiagram, GSNModule
 
 
 def _minimal_app():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
     app.root_node = None
     app.fmea_entries = []

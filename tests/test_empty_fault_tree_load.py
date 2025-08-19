@@ -12,11 +12,11 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 # Ensure repository root on path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def _minimal_app():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
     app.fmeas = []
     app.fmedas = []

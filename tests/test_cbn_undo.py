@@ -8,7 +8,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 sys.modules.setdefault("PIL.ImageDraw", types.ModuleType("PIL.ImageDraw"))
 sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from analysis import CausalBayesianNetwork, CausalBayesianNetworkDoc
 from sysml.sysml_repository import SysMLRepository
 
@@ -21,7 +21,7 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
     repo._redo_stack = []
 
     # Minimal application setup
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     doc = CausalBayesianNetworkDoc("CBN")
     doc.network.add_node("A", cpd=0.5)
     doc.positions["A"] = (0, 0)
@@ -83,9 +83,9 @@ def test_cbn_diagram_undo_redo_node_add_and_move():
 
     app.export_model_data = export_model_data
     app.apply_model_data = apply_model_data
-    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
-    app.undo = FaultTreeApp.undo.__get__(app)
-    app.redo = FaultTreeApp.redo.__get__(app)
+    app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+    app.undo = AutoMLApp.undo.__get__(app)
+    app.redo = AutoMLApp.redo.__get__(app)
 
     # Record state then modify
     app.push_undo_state()

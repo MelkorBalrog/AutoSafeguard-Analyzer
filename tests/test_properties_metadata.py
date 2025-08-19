@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from sysml.sysml_repository import SysMLRepository
 from gui.architecture import ArchitectureManagerDialog, SysMLObject
 from types import SimpleNamespace
@@ -16,7 +16,7 @@ def test_analysis_tree_selection_shows_metadata():
     diag = repo.create_diagram("Use Case Diagram", name="Diag")
 
     # setup minimal app instance without running __init__
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
 
     class DummyTree:
         def __init__(self):
@@ -47,8 +47,8 @@ def test_analysis_tree_selection_shows_metadata():
     app.analysis_tree = DummyTree()
     app.prop_view = DummyPropView()
     # bind methods
-    app.show_properties = FaultTreeApp.show_properties.__get__(app)
-    app.on_analysis_tree_select = FaultTreeApp.on_analysis_tree_select.__get__(app)
+    app.show_properties = AutoMLApp.show_properties.__get__(app)
+    app.on_analysis_tree_select = AutoMLApp.on_analysis_tree_select.__get__(app)
 
     app.on_analysis_tree_select(None)
     values = {k: v for k, v in app.prop_view.rows}
@@ -76,7 +76,7 @@ def test_architecture_tree_selection_shows_metadata():
 
     app = SimpleNamespace()
     app.prop_view = DummyPropView()
-    app.show_properties = FaultTreeApp.show_properties.__get__(app)
+    app.show_properties = AutoMLApp.show_properties.__get__(app)
 
     class DummyTree:
         def __init__(self):
@@ -109,7 +109,7 @@ def test_diagram_selection_clears_tree_and_shows_object_properties():
 
     obj = SysMLObject(1, "Actor", 0, 0, properties={"name": "Act"})
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
 
     class DummyTree:
         def __init__(self):
@@ -146,8 +146,8 @@ def test_diagram_selection_clears_tree_and_shows_object_properties():
 
     app.analysis_tree = DummyTree()
     app.prop_view = DummyPropView()
-    app.show_properties = FaultTreeApp.show_properties.__get__(app)
-    app.on_analysis_tree_select = FaultTreeApp.on_analysis_tree_select.__get__(app)
+    app.show_properties = AutoMLApp.show_properties.__get__(app)
+    app.on_analysis_tree_select = AutoMLApp.on_analysis_tree_select.__get__(app)
 
     app.on_analysis_tree_select(None)
 

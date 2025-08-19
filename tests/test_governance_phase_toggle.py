@@ -129,7 +129,7 @@ def test_added_work_product_respects_phase(monkeypatch):
     sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
     sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
     sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
-    from AutoML import FaultTreeApp
+    from AutoML import AutoMLApp
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov2")
@@ -172,7 +172,7 @@ def test_added_work_product_respects_phase(monkeypatch):
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu = DummyMenu()
     app.tool_listboxes = {"Hazard & Threat Analysis": lb}
@@ -183,17 +183,17 @@ def test_added_work_product_respects_phase(monkeypatch):
     app.enable_process_area = lambda area: None
     app.hazop_analysis = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.lifecycle_var = DummyVar("P1")
     app.safety_mgmt_toolbox = toolbox
@@ -247,7 +247,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
     sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
     sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
     sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
-    from AutoML import FaultTreeApp
+    from AutoML import AutoMLApp
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov3")
@@ -290,7 +290,7 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu = DummyMenu()
     app.tool_listboxes = {"Hazard & Threat Analysis": lb}
@@ -301,17 +301,17 @@ def test_work_product_disables_when_leaving_phase(monkeypatch):
     app.enable_process_area = lambda area: None
     app.hazop_analysis = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.lifecycle_var = DummyVar("P2")
     app.safety_mgmt_toolbox = toolbox
@@ -376,7 +376,7 @@ def test_work_product_group_activation(analysis, parent, monkeypatch):
     ]
     toolbox.diagrams = {"GovX": diag.diag_id}
 
-    from AutoML import FaultTreeApp
+    from AutoML import AutoMLApp
 
     class DummyListbox:
         def __init__(self):
@@ -413,10 +413,10 @@ def test_work_product_group_activation(analysis, parent, monkeypatch):
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu = DummyMenu()
-    area = FaultTreeApp.WORK_PRODUCT_INFO[analysis][0]
+    area = AutoMLApp.WORK_PRODUCT_INFO[analysis][0]
     app.tool_listboxes = {area: lb}
     app.tool_categories = {area: []}
     app.tool_actions = {}
@@ -425,26 +425,26 @@ def test_work_product_group_activation(analysis, parent, monkeypatch):
     if parent:
         parent_menu = DummyMenu()
         app.work_product_menus[parent] = [(parent_menu, 0)]
-        pinfo = FaultTreeApp.WORK_PRODUCT_INFO[parent]
+        pinfo = AutoMLApp.WORK_PRODUCT_INFO[parent]
         setattr(app, pinfo[2], lambda: None)
 
-    info = FaultTreeApp.WORK_PRODUCT_INFO[analysis]
+    info = AutoMLApp.WORK_PRODUCT_INFO[analysis]
     setattr(app, info[2], lambda: None)
 
     app.enabled_work_products = set()
     app.enable_process_area = lambda area: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.lifecycle_var = DummyVar("P1")
     app.safety_mgmt_toolbox = toolbox
@@ -506,7 +506,7 @@ def test_work_product_group_activation(analysis, parent, monkeypatch):
 
     win.add_work_product()
 
-    tool_name = FaultTreeApp.WORK_PRODUCT_INFO[analysis][1]
+    tool_name = AutoMLApp.WORK_PRODUCT_INFO[analysis][1]
     assert menu.state == tk.DISABLED
     assert lb.item_colors.get(tool_name) == "gray"
     if parent_menu:

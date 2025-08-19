@@ -11,13 +11,13 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp, FaultTreeNode
+from AutoML import AutoMLApp, FaultTreeNode
 from sysml.sysml_repository import SysMLRepository
 
 class FTAUndoRedoTests(unittest.TestCase):
     def setUp(self):
         # minimal app without Tk initialization
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
         self.app.top_events = []
         self.app.root_node = None
         self.app.selected_node = None

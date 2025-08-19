@@ -1,12 +1,12 @@
 import unittest
 
-from AutoML import FaultTreeApp, FaultTreeNode
+from AutoML import AutoMLApp, FaultTreeNode
 from analysis.models import HazopDoc, HazopEntry, HaraDoc, HaraEntry
 
 
 class OddValidationTargetTests(unittest.TestCase):
     def test_traces_validation_targets_from_scenario_description(self):
-        app = FaultTreeApp.__new__(FaultTreeApp)
+        app = AutoMLApp.__new__(AutoMLApp)
         app.scenario_libraries = [
             {
                 "name": "Default",

@@ -1,9 +1,9 @@
 import types
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_enable_stpa_without_pillow():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.tool_listboxes = {}
     app.tool_actions = {}
     app.tool_categories = {}
@@ -13,5 +13,5 @@ def test_enable_stpa_without_pillow():
     app.enable_process_area = lambda area: None
     app.manage_architecture = lambda: None
     app.show_requirements_editor = lambda: None
-    FaultTreeApp.enable_work_product(app, "STPA")
+    AutoMLApp.enable_work_product(app, "STPA")
     assert "STPA" in app.enabled_work_products

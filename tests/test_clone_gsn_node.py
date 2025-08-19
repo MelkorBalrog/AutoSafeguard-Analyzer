@@ -11,13 +11,13 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from gsn.nodes import GSNNode
 
 
 class CloneGSNNodeTests(unittest.TestCase):
     def test_clone_preserves_gsn_node_attributes(self):
-        app = FaultTreeApp.__new__(FaultTreeApp)
+        app = AutoMLApp.__new__(AutoMLApp)
         original = GSNNode("goal", "Goal")
         clone = app.clone_node_preserving_id(original)
         self.assertIsInstance(clone, GSNNode)

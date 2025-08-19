@@ -6,7 +6,7 @@ import tkinter as tk
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 class DummyMenu:
@@ -37,7 +37,7 @@ def test_explorer_menu_enabled_with_work_product():
         update_views=lambda: None,
     )
 
-    FaultTreeApp.enable_work_product(app, "Requirement Specification", refresh=False)
+    AutoMLApp.enable_work_product(app, "Requirement Specification", refresh=False)
 
     assert menu.states[2] == tk.NORMAL
 

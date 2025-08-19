@@ -11,7 +11,7 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp, FaultTreeNode
+from AutoML import AutoMLApp, FaultTreeNode
 from gui import messagebox
 
 
@@ -27,7 +27,7 @@ class DummyTree:
 
 class CopyPasteSelectionTests(unittest.TestCase):
     def setUp(self):
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
         self.app.root_node = FaultTreeNode("root", "TOP EVENT")
         child = FaultTreeNode("child", "GATE", parent=self.app.root_node)
         self.app.root_node.children.append(child)
@@ -35,7 +35,7 @@ class CopyPasteSelectionTests(unittest.TestCase):
         self.app.selected_node = None
         self.app.clipboard_node = None
         self.app.analysis_tree = DummyTree(child)
-        self.app.find_node_by_id = FaultTreeApp.find_node_by_id.__get__(self.app)
+        self.app.find_node_by_id = AutoMLApp.find_node_by_id.__get__(self.app)
         self.app.top_events = []
         self.app.update_views = lambda: None
         self.app.cut_mode = False

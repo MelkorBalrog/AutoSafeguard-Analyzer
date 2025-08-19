@@ -51,14 +51,14 @@ def test_pas8800_library_non_empty():
 
 def test_default_mechanisms_include_pas8800():
     _stub_review_toolbox()
-    from AutoML import FaultTreeApp
+    from AutoML import AutoMLApp
 
     class Dummy:
         def __init__(self):
             self.mechanism_libraries = []
             self.selected_mechanism_libraries = []
 
-    Dummy.load_default_mechanisms = FaultTreeApp.load_default_mechanisms
+    Dummy.load_default_mechanisms = AutoMLApp.load_default_mechanisms
     obj = Dummy()
     obj.load_default_mechanisms()
 

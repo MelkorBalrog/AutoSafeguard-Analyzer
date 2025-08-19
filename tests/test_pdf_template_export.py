@@ -60,7 +60,7 @@ sys.modules.setdefault("reportlab.lib.styles", reportlab.lib.styles)
 sys.modules.setdefault("reportlab.lib.colors", reportlab.lib.colors)
 sys.modules.setdefault("reportlab.platypus", reportlab.platypus)
 
-from AutoML import FaultTreeApp, filedialog, messagebox
+from AutoML import AutoMLApp, filedialog, messagebox
 
 
 def test_generate_pdf_report_exports_template(tmp_path, monkeypatch):
@@ -73,7 +73,7 @@ def test_generate_pdf_report_exports_template(tmp_path, monkeypatch):
     monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
     monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: None)
 
-    app = type("A", (), {"project_properties": {}, "_generate_pdf_report": FaultTreeApp._generate_pdf_report})()
+    app = type("A", (), {"project_properties": {}, "_generate_pdf_report": AutoMLApp._generate_pdf_report})()
     app._generate_pdf_report()
 
     assert pdf_path.with_suffix(".json").exists()

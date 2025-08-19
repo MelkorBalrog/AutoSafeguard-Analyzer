@@ -17,7 +17,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from config import validate_report_template
 from gui.report_template_toolbox import layout_report_template
 
@@ -53,7 +53,7 @@ def test_report_template_toolbox_single_instance():
     rtt.ReportTemplateEditor = DummyEditor
 
     class DummyApp:
-        open_report_template_toolbox = FaultTreeApp.open_report_template_toolbox
+        open_report_template_toolbox = AutoMLApp.open_report_template_toolbox
 
         def __init__(self):
             self.doc_nb = DummyNotebook()

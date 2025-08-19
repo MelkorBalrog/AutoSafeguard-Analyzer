@@ -11,11 +11,11 @@ if PIL_stub is None:
 PIL_stub.ImageTk = object
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 class CauseEffectPDFTests(unittest.TestCase):
     def setUp(self):
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
 
     def test_render_cause_effect_diagram_size(self):
         row = {

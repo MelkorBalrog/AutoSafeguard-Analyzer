@@ -1,7 +1,7 @@
 import types
 
 import AutoML
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_long_tab_title_truncated(monkeypatch):
@@ -36,16 +36,16 @@ def test_long_tab_title_truncated(monkeypatch):
 
     monkeypatch.setattr(AutoML, "ttk", types.SimpleNamespace(Frame=lambda master: DummyFrame()))
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.doc_nb = DummyNotebook()
 
-    long_title = "x" * (FaultTreeApp.MAX_TAB_TEXT_LENGTH + 10)
+    long_title = "x" * (AutoMLApp.MAX_TAB_TEXT_LENGTH + 10)
     tab = app._new_tab(long_title)
 
     tab_id = app.doc_nb.tabs()[0]
     displayed = app.doc_nb.tab(tab_id, "text")
     assert displayed.endswith("…")
-    assert len(displayed) == FaultTreeApp.MAX_TAB_TEXT_LENGTH
+    assert len(displayed) == AutoMLApp.MAX_TAB_TEXT_LENGTH
 
     second = app._new_tab(long_title)
     assert second is tab

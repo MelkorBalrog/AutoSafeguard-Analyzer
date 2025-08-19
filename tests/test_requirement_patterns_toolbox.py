@@ -15,7 +15,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 import tkinter as tk
 import pytest
 from gui.requirement_patterns_toolbox import RequirementPatternsEditor
@@ -52,7 +52,7 @@ def test_requirement_patterns_toolbox_single_instance():
     rpt.RequirementPatternsEditor = DummyEditor
 
     class DummyApp:
-        open_requirement_patterns_toolbox = FaultTreeApp.open_requirement_patterns_toolbox
+        open_requirement_patterns_toolbox = AutoMLApp.open_requirement_patterns_toolbox
 
         def __init__(self):
             self.doc_nb = DummyNotebook()

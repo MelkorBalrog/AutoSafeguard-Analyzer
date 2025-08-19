@@ -21,7 +21,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 def test_elements_follow_phase_visibility():
     repo = SysMLRepository.reset_instance()
@@ -82,7 +82,7 @@ def test_on_lifecycle_selected_refreshes_diagrams():
     repo = SysMLRepository.reset_instance()
     toolbox = SafetyManagementToolbox()
     toolbox.modules = [GovernanceModule("P1")]
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.lifecycle_var = types.SimpleNamespace(get=lambda: "P1")
     app.safety_mgmt_toolbox = toolbox
     refreshed = {"count": 0}
@@ -101,7 +101,7 @@ def test_on_lifecycle_selected_refreshes_diagrams():
     app.diagram_tabs = {"d": DummyTab()}
     app.update_views = lambda: None
     app.refresh_tool_enablement = lambda: None
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(app, FaultTreeApp)
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(app, AutoMLApp)
     app.on_lifecycle_selected()
     assert refreshed["count"] == 1
 
@@ -125,7 +125,7 @@ def test_governance_diagram_refreshes_on_phase_change():
     toolbox.set_active_module("P2")
     obj2 = SysMLObject(2, "Work Product", 0.0, 0.0, properties={"name": "Spec2"})
     diag.objects.append(asdict(obj2))
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.lifecycle_var = types.SimpleNamespace(get=lambda: "P2")
     app.safety_mgmt_toolbox = toolbox
     app.update_views = lambda: None
@@ -138,6 +138,6 @@ def test_governance_diagram_refreshes_on_phase_change():
     container = types.SimpleNamespace(winfo_children=lambda: [inner])
     app.diagram_tabs = {diag.diag_id: types.SimpleNamespace(winfo_children=lambda: [container])}
 
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(app, FaultTreeApp)
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(app, AutoMLApp)
     app.on_lifecycle_selected()
     assert len(win.objects) == 1 and win.objects[0].obj_id == 2
