@@ -11916,15 +11916,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         right = area.x + area.width / 2 - obj.width / 2
         top = area.y - area.height / 2 + obj.height / 2
         bottom = area.y + area.height / 2 - obj.height / 2
-        if left <= obj.x <= right and top <= obj.y <= bottom:
-            obj.properties["px"] = str(obj.x - area.x)
-            obj.properties["py"] = str(obj.y - area.y)
-        else:
-            # Outside the boundary: snap back to centre and reset offset
-            obj.x = area.x
-            obj.y = area.y
-            obj.properties["px"] = "0"
-            obj.properties["py"] = "0"
+        # Clamp coordinates to the process area so work products cannot escape.
+        obj.x = min(max(obj.x, left), right)
+        obj.y = min(max(obj.y, top), bottom)
+        obj.properties["px"] = str(obj.x - area.x)
+        obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         pending_click = getattr(self, "_pending_wp_click", False)
