@@ -104,6 +104,45 @@ GOV_ELEMENT_NODES = _normalize_plan_types(
 )
 GOV_ELEMENT_RELATIONS = SAFETY_AI_RELATIONS
 
+# Process areas available in governance diagrams
+PROCESS_AREA_OPTIONS = [
+    "System Design (Item Definition)",
+    "Hazard & Threat Analysis",
+    "Risk Assessment",
+    "Safety & Security Management",
+    "Safety Analysis",
+    "Scenario",
+]
+
+# Mapping of work products to the process areas that allow them
+WORK_PRODUCT_AREA_MAP = {
+    "Architecture Diagram": "System Design (Item Definition)",
+    "Safety & Security Concept": "System Design (Item Definition)",
+    "Mission Profile": "Safety Analysis",
+    "Reliability Analysis": "Safety Analysis",
+    "Causal Bayesian Network Analysis": "Safety Analysis",
+    "Safety & Security Case": "Safety & Security Management",
+    "GSN Argumentation": "Safety & Security Management",
+    "Product Goal Specification": "System Design (Item Definition)",
+    **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
+    "HAZOP": "Hazard & Threat Analysis",
+    "STPA": "Hazard & Threat Analysis",
+    "Threat Analysis": "Hazard & Threat Analysis",
+    "FI2TC": "Hazard & Threat Analysis",
+    "TC2FI": "Hazard & Threat Analysis",
+    "Risk Assessment": "Risk Assessment",
+    "FTA": "Safety Analysis",
+    "FMEA": "Safety Analysis",
+    "FMEDA": "Safety Analysis",
+    "SPI Work Document": "Safety & Security Management",
+    "Scenario Library": "Scenario",
+    "ODD": "Scenario",
+}
+
+
+def _work_products_for_area(area: str) -> list[str]:
+    return [wp for wp, a in WORK_PRODUCT_AREA_MAP.items() if a == area]
+
 # Create Safety & AI Lifecycle toolbox frame
 # Create toolbox for additional governance elements grouped by class
 # Repack toolbox to include selector
@@ -4794,6 +4833,8 @@ class SysMLDiagramWindow(tk.Frame):
             new_x = self._constrain_horizontal_movement(self.selected_obj, new_x)
             self.selected_obj.x = new_x
             self.selected_obj.y = y / self.zoom - self.drag_offset[1]
+            if self.selected_obj.obj_type == "Work Product":
+                self._constrain_to_parent(self.selected_obj)
             dx = self.selected_obj.x - old_x
             dy = self.selected_obj.y - old_y
             if self.selected_obj.obj_type in ("Part", "Block Boundary"):
@@ -4818,7 +4859,16 @@ class SysMLDiagramWindow(tk.Frame):
                                 p.y += dy
             if self.selected_obj.obj_type == "System Boundary":
                 for o in self.objects:
-                    if o.properties.get("boundary") == str(self.selected_obj.obj_id):
+                    if (
+                        o.obj_type == "Work Product"
+                        and o.properties.get("parent") == str(self.selected_obj.obj_id)
+                    ):
+                        offx = float(o.properties.get("px", o.x - old_x))
+                        offy = float(o.properties.get("py", o.y - old_y))
+                        o.x = self.selected_obj.x + offx
+                        o.y = self.selected_obj.y + offy
+                        self._constrain_to_parent(o, self.selected_obj)
+                    elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
                         o.x += dx
                         o.y += dy
             boundary = self.get_ibd_boundary()
@@ -5186,12 +5236,14 @@ class SysMLDiagramWindow(tk.Frame):
             self.conn_drag_offset = None
             self.endpoint_drag_pos = None
         if self.selected_obj and self.current_tool == "Select":
-            if self.selected_obj.obj_type != "System Boundary":
+            if self.selected_obj.obj_type not in ("System Boundary", "Work Product"):
                 b = self.find_boundary_for_obj(self.selected_obj)
                 if b:
                     self.selected_obj.properties["boundary"] = str(b.obj_id)
                 else:
                     self.selected_obj.properties.pop("boundary", None)
+            elif self.selected_obj.obj_type == "Work Product":
+                self.selected_obj.properties.pop("boundary", None)
             self._sync_to_repository()
         self.redraw()
 
@@ -5303,6 +5355,15 @@ class SysMLDiagramWindow(tk.Frame):
 
     def on_rc_release(self, event):
         if not self.rc_dragged:
+            x = self.canvas.canvasx(event.x) / self.zoom
+            y = self.canvas.canvasy(event.y) / self.zoom
+            area = self.find_boundary_at(x, y)
+            if area:
+                name = area.properties.get("name", "")
+                wp_name = self._select_work_product_for_area(name)
+                if wp_name:
+                    self._place_work_product(wp_name, x, y, area=area)
+                return
             self.show_context_menu(event)
 
     def show_context_menu(self, event):
@@ -8901,6 +8962,22 @@ class SysMLDiagramWindow(tk.Frame):
                 return b
         return None
 
+    def find_boundary_at(self, x: float, y: float) -> SysMLObject | None:
+        """Return the process area containing (x, y) if any.
+
+        Coordinates are in diagram space, not canvas pixels.
+        """
+        for b in reversed(self.objects):
+            if b.obj_type != "System Boundary":
+                continue
+            left = b.x - b.width / 2
+            right = b.x + b.width / 2
+            top = b.y - b.height / 2
+            bottom = b.y + b.height / 2
+            if left <= x <= right and top <= y <= bottom:
+                return b
+        return None
+
     def _update_drag_selection(self, x: float, y: float) -> None:
         if not self.select_rect_start:
             return
@@ -11224,7 +11301,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self._activate_parent_phase()
         self.refresh_from_repository()
         self._pending_wp_name: str | None = None
-        self._pending_area_name: str | None = None
+        self._pending_wp_step: str = ""
+        self._pending_wp_lock: bool = True
 
     def _activate_parent_phase(self) -> None:
         """Activate the lifecycle phase containing this diagram.
@@ -11268,7 +11346,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             cmds = [
                 ("Add Work Product", self.add_work_product),
                 ("Add Generic Work Product", self.add_generic_work_product),
-                ("Add Process Area", self.add_process_area),
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
             for name, cmd in cmds:
@@ -11409,87 +11486,30 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.selection = self.var.get()
 
     def add_work_product(self):  # pragma: no cover - requires tkinter
-        def _fmt(req: str) -> str:
-            return " ".join(
-                word.upper() if word.isupper() else word.capitalize()
-                for word in req.split()
-            )
-
-        options = [
-            "Architecture Diagram",
-            "Safety & Security Concept",
-            "Mission Profile",
-            "Reliability Analysis",
-            "Causal Bayesian Network Analysis",
-            "Safety & Security Case",
-            "GSN Argumentation",
-            *REQUIREMENT_WORK_PRODUCTS,
-            "HAZOP",
-            "STPA",
-            "Threat Analysis",
-            "FI2TC",
-            "TC2FI",
-            "Risk Assessment",
-            "Product Goal Specification",
-            "FTA",
-            "FMEA",
-            "FMEDA",
-            "SPI Work Document",
-            "Scenario Library",
-            "ODD",
-        ]
-        options = list(dict.fromkeys(options))
-        area_map = {
-            "Architecture Diagram": "System Design (Item Definition)",
-            "Safety & Security Concept": "System Design (Item Definition)",
-            "Mission Profile": "Safety Analysis",
-            "Reliability Analysis": "Safety Analysis",
-            "Causal Bayesian Network Analysis": "Safety Analysis",
-            "Safety & Security Case": "Safety & Security Management",
-            "GSN Argumentation": "Safety & Security Management",
-            "Product Goal Specification": "System Design (Item Definition)",
-            **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
-            "HAZOP": "Hazard & Threat Analysis",
-            "STPA": "Hazard & Threat Analysis",
-            "Threat Analysis": "Hazard & Threat Analysis",
-            "FI2TC": "Hazard & Threat Analysis",
-            "TC2FI": "Hazard & Threat Analysis",
-            "Risk Assessment": "Risk Assessment",
-            "FTA": "Safety Analysis",
-            "FMEA": "Safety Analysis",
-            "FMEDA": "Safety Analysis",
-            "SPI Work Document": "Safety & Security Management",
-            "Scenario Library": "Scenario",
-            "ODD": "Scenario",
-        }
-        areas = {
-            o.properties.get("name")
-            for o in self.objects
-            if o.obj_type == "System Boundary"
-        }
-        options = [
-            opt for opt in options if not area_map.get(opt) or area_map[opt] in areas
-        ]
-        dlg = self._SelectDialog(self, "Add Work Product", options)
-        name = getattr(dlg, "selection", "")
-        if not name:
-            return
-        required = area_map.get(name)
-        if required and required not in areas:
-            messagebox.showerror(
-                "Missing Process Area",
-                f"Add process area '{required}' before adding this work product.",
-            )
-            return
         if not getattr(self, "canvas", None):
-            self._place_work_product(name, 100.0, 100.0)
+            area_name = self._select_process_area()
+            if not area_name:
+                return
+            area = self._place_process_area(area_name, 100.0, 100.0)
+            wp_name = self._select_work_product_for_area(area_name)
+            if not wp_name:
+                return
+            self._place_work_product(wp_name, 100.0, 100.0, area=area)
         else:
-            self._pending_wp_name = name
-            self._pending_wp_lock = True
+            self._pending_wp_step = "loc"
             try:
                 self.canvas.configure(cursor="crosshair")
             except Exception:
                 pass
+
+    def _select_process_area(self) -> str:  # pragma: no cover - requires tkinter
+        dlg = self._SelectDialog(self, "Add Process Area", PROCESS_AREA_OPTIONS)
+        return getattr(dlg, "selection", "")
+
+    def _select_work_product_for_area(self, area_name: str) -> str:  # pragma: no cover - requires tkinter
+        options = _work_products_for_area(area_name)
+        dlg = self._SelectDialog(self, "Add Work Product", options)
+        return getattr(dlg, "selection", "")
 
     def add_generic_work_product(self):  # pragma: no cover - requires tkinter
         name = simpledialog.askstring("Add Work Product", "Enter work product name:")
@@ -11515,34 +11535,20 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
 
-    def add_process_area(self):  # pragma: no cover - requires tkinter
-        options = [
-            "System Design (Item Definition)",
-            "Hazard & Threat Analysis",
-            "Risk Assessment",
-            "Safety & Security Management",
-            "Safety Analysis",
-            "Scenario",
-        ]
-        dlg = self._SelectDialog(self, "Add Process Area", options)
-        name = getattr(dlg, "selection", "")
-        if not name:
-            return
-        if not getattr(self, "canvas", None):
-            self._place_process_area(name, 100.0, 100.0)
-        else:
-            self._pending_area_name = name
-            try:
-                self.canvas.configure(cursor="crosshair")
-            except Exception:
-                pass
-
     def _place_work_product(
-        self, name: str, x: float, y: float, *, lock_name: bool = True
+        self,
+        name: str,
+        x: float,
+        y: float,
+        *,
+        lock_name: bool = True,
+        area: SysMLObject | None = None,
     ) -> SysMLObject:
         props = {"name": name}
         if lock_name:
             props["name_locked"] = "1"
+        if area:
+            props["parent"] = str(area.obj_id)
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
@@ -11552,6 +11558,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             height=80.0,
             properties=props,
         )
+        if area:
+            self._constrain_to_parent(obj, area)
         self.objects.append(obj)
         self.sort_objects()
         self._sync_to_repository()
@@ -11567,7 +11575,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.app.refresh_tool_enablement()
         return obj
 
-    def _place_process_area(self, name: str, x: float, y: float) -> None:
+    def _place_process_area(self, name: str, x: float, y: float) -> SysMLObject:
         obj = SysMLObject(
             _get_next_id(),
             "System Boundary",
@@ -11583,21 +11591,64 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         self.redraw()
         if getattr(self.app, "enable_process_area", None):
             self.app.enable_process_area(name)
+        return obj
+
+    def _constrain_to_parent(
+        self, obj: SysMLObject, area: SysMLObject | None = None
+    ) -> None:
+        if obj.obj_type != "Work Product":
+            return
+        if area is None:
+            pid = obj.properties.get("parent")
+            if not pid:
+                return
+            area = self.get_object(int(pid))
+        if not area:
+            return
+        left = area.x - area.width / 2 + obj.width / 2
+        right = area.x + area.width / 2 - obj.width / 2
+        top = area.y - area.height / 2 + obj.height / 2
+        bottom = area.y + area.height / 2 - obj.height / 2
+        obj.x = min(max(obj.x, left), right)
+        obj.y = min(max(obj.y, top), bottom)
+        obj.properties["px"] = str(obj.x - area.x)
+        obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         pending_wp = getattr(self, "_pending_wp_name", None)
-        pending_area = getattr(self, "_pending_area_name", None)
-        if pending_wp or pending_area:
+        step = getattr(self, "_pending_wp_step", "")
+        if step == "loc":
             x = self.canvas.canvasx(event.x) / self.zoom
             y = self.canvas.canvasy(event.y) / self.zoom
-            if pending_wp:
-                self._pending_wp_name = None
-                lock = getattr(self, "_pending_wp_lock", True)
-                self._pending_wp_lock = True
-                self._place_work_product(pending_wp, x, y, lock_name=lock)
-            else:
-                self._pending_area_name = None
-                self._place_process_area(pending_area, x, y)
+            self._pending_wp_step = ""
+            try:
+                self.canvas.configure(cursor="arrow")
+            except Exception:
+                pass
+            area = self.find_boundary_at(x, y)
+            if area:
+                area_name = area.properties.get("name", "")
+                wp_name = self._select_work_product_for_area(area_name)
+                if not wp_name:
+                    return
+                self._place_work_product(wp_name, x, y, area=area)
+                return
+            area_name = self._select_process_area()
+            if not area_name:
+                return
+            area = self._place_process_area(area_name, x, y)
+            wp_name = self._select_work_product_for_area(area_name)
+            if not wp_name:
+                return
+            self._place_work_product(wp_name, x, y, area=area)
+            return
+        if pending_wp:
+            x = self.canvas.canvasx(event.x) / self.zoom
+            y = self.canvas.canvasy(event.y) / self.zoom
+            self._pending_wp_name = None
+            lock = getattr(self, "_pending_wp_lock", True)
+            self._pending_wp_lock = True
+            self._place_work_product(pending_wp, x, y, lock_name=lock)
             try:
                 self.canvas.configure(cursor="arrow")
             except Exception:
