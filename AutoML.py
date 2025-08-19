@@ -2775,12 +2775,16 @@ class FaultTreeApp:
         self.prop_view.column("field", width=120, anchor="w", stretch=False)
         self.prop_view.column("value", width=200, anchor="w", stretch=True)
         add_treeview_scrollbars(self.prop_view, prop_frame)
-        # Bind resize handlers on both the treeview and its container so the
-        # value column always fills the tab width. DO NOT REMOVE.
+        # Bind resize handlers on the treeview, its container, and the notebook
+        # itself so the value column always fills the tab width even before any
+        # manual resize. DO NOT REMOVE.
         self.prop_view.bind("<Configure>", self._resize_prop_columns)
         self.prop_view.bind("<Map>", self._resize_prop_columns)
         prop_frame.bind("<Configure>", self._resize_prop_columns)
+        self.tools_nb.bind("<Configure>", self._resize_prop_columns)
         prop_frame.after(0, self._resize_prop_columns)
+        self.tools_nb.after(0, self._resize_prop_columns)
+        self.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
         self._resize_prop_columns()
 
@@ -9799,13 +9803,14 @@ class FaultTreeApp:
         if not hasattr(self, "prop_view"):
             return
 
-        # Determine the current width of the treeview widget. When invoked via
-        # ``after`` there is no event, so query the widget directly.
-        self.prop_view.update_idletasks()
-        tree_width = event.width if event else self.prop_view.winfo_width()
+        # Determine the width of the containing frame rather than the treeview
+        # itself, as the tree may not yet have expanded to the full tab width.
+        container = self.prop_view.master
+        container.update_idletasks()
+        tree_width = container.winfo_width()
         field_width = self.prop_view.column("field")["width"]
 
-        # If the treeview hasn't been fully laid out yet (width too small),
+        # If the container hasn't been fully laid out yet (width too small),
         # try again on the next loop iteration so the value column starts at
         # the full tab width. DO NOT REMOVE.
         if tree_width <= field_width + 1:

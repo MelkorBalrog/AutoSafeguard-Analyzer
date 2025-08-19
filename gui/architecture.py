@@ -3690,12 +3690,16 @@ class SysMLDiagramWindow(tk.Frame):
             self.prop_view.column("field", width=80, anchor="w", stretch=False)
             self.prop_view.column("value", width=180, anchor="w", stretch=True)
             add_treeview_scrollbars(self.prop_view, prop_tree_frame)
-            # Bind resize handlers on both widgets to keep value column synced.
-            # DO NOT REMOVE.
+            # Bind resize handlers on the treeview, its container, and the
+            # toolbox so the value column always fills the tab width from the
+            # moment the window appears. DO NOT REMOVE.
             self.prop_view.bind("<Configure>", self._resize_prop_columns)
             self.prop_view.bind("<Map>", self._resize_prop_columns)
             prop_tree_frame.bind("<Configure>", self._resize_prop_columns)
+            self.toolbox.bind("<Configure>", self._resize_prop_columns)
             prop_tree_frame.after(0, self._resize_prop_columns)
+            self.toolbox.after(0, self._resize_prop_columns)
+            self.after(0, self._resize_prop_columns)
             self._resize_prop_columns()
 
         canvas_frame = ttk.Frame(self)
@@ -3805,15 +3809,19 @@ class SysMLDiagramWindow(tk.Frame):
         if not hasattr(self, "prop_view"):
             return
 
-        self.prop_view.update_idletasks()
-        tree_width = event.width if event else self.prop_view.winfo_width()
+        # Base sizing on the containing frame width instead of the tree itself,
+        # which may not have expanded to fill the tab yet.
+        container = self.prop_view.master
+        container.update_idletasks()
+        tree_width = container.winfo_width()
         field_width = self.prop_view.column("field")["width"]
 
-        # If the widget isn't sized yet (tree width too small) postpone the
-        # resize so the value column starts at the full tab width. DO NOT REMOVE.
+        # If the widget isn't sized yet (width too small) postpone the resize so
+        # the value column starts at the full tab width. DO NOT REMOVE.
         if tree_width <= field_width + 1:
             self.prop_view.after(50, self._resize_prop_columns)
             return
+
         new_width = max(tree_width - field_width, 20)
         self.prop_view.column("value", width=new_width)
 
