@@ -13,6 +13,7 @@ from analysis.models import (
 )
 from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox, add_treeview_scrollbars
+from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
@@ -34,6 +35,7 @@ class SafetyManagementWindow(tk.Frame):
         show_diagrams: bool = True,
     ):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
         self.toolbox = toolbox or SafetyManagementToolbox()
         self._auto_show_diagram = show_diagrams
