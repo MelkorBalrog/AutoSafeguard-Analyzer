@@ -105,3 +105,9 @@ def test_bidirectional_external_relations(tmp_path, monkeypatch):
     finally:
         monkeypatch.setattr(architecture, "_CONFIG_PATH", orig_path)
         architecture.reload_config()
+
+def test_governance_core_has_unique_relations():
+    defs = architecture._toolbox_defs()
+    core = defs["Governance Core"]
+    all_rels = core["relations"] + [r for sub in core["externals"].values() for r in sub["relations"]]
+    assert len(all_rels) == len(set(all_rels))
