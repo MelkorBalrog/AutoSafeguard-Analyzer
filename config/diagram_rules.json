@@ -363,7 +363,8 @@
       "Communication Path": {
         "Activity": [],
         "Business Unit": [
-          "Business Unit"
+          "Business Unit",
+          "Organization"
         ],
         "Component": [],
         "Data": [],
