@@ -11451,6 +11451,50 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
     def _rebuild_toolboxes(self) -> None:
         defs = _toolbox_defs()
         ai_data = defs.pop("Safety & AI Lifecycle", None)
+        # Exclude relationships already available in the global relationships
+        # toolbox.  Without this filtering a relation like ``Flow`` added to the
+        # left-hand toolbox via ``relation_tools`` would also appear under each
+        # category that referenced it, leading to duplicate buttons when
+        # switching categories.
+        global_rels = set(getattr(self, "relation_tools", []) or [])
+        if global_rels:
+            for data in defs.values():
+                data["relations"] = [
+                    r for r in data.get("relations", []) if r not in global_rels
+                ]
+                for sub in data.get("externals", {}).values():
+                    sub["relations"] = [
+                        r for r in sub.get("relations", []) if r not in global_rels
+                    ]
+            if ai_data:
+                ai_data["relations"] = [
+                    r for r in ai_data.get("relations", []) if r not in global_rels
+                ]
+                for sub in ai_data.get("externals", {}).values():
+                    sub["relations"] = [
+                        r for r in sub.get("relations", []) if r not in global_rels
+                    ]
+
+        def _dedup_category(data: dict) -> None:
+            seen: set[str] = set()
+            rels = []
+            for r in data.get("relations", []) or []:
+                if r not in seen:
+                    seen.add(r)
+                    rels.append(r)
+            data["relations"] = rels
+            for sub in data.get("externals", {}).values():
+                sub_rels = []
+                for r in sub.get("relations", []) or []:
+                    if r not in seen:
+                        seen.add(r)
+                        sub_rels.append(r)
+                sub["relations"] = sub_rels
+
+        for data in defs.values():
+            _dedup_category(data)
+        if ai_data:
+            _dedup_category(ai_data)
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):

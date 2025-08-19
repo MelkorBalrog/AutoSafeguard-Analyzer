@@ -1935,14 +1935,7 @@
         "Role": [
           "Data",
           "Document",
-          "Record",
-          "Model",
-          "Test Suite",
-          "Component",
-          "System",
-          "Process",
-          "Procedure",
-          "Plan"
+          "Record"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
