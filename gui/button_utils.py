@@ -8,23 +8,19 @@ from tkinter import ttk
 def set_uniform_button_width(widget: tk.Misc) -> None:
     """Ensure all ``ttk.Button`` children of *widget* share the same width.
 
-    The width is based on the longest button label to avoid truncation and
-    provide a consistent appearance across diagram toolboxes.
+    ``CapsuleButton`` derivatives like ``TranslucidButton`` express width in
+    *pixels* rather than character units.  Simply matching on label length can
+    therefore yield inconsistent button sizes or truncated text.  By measuring
+    each button's requested pixel width we can apply a uniform size that fits
+    all labels.
     """
     widget.update_idletasks()
     buttons: list[ttk.Button] = []
-    max_chars = 0
 
     def _collect(w: tk.Misc) -> None:
-        nonlocal max_chars
         for child in w.winfo_children():
             if isinstance(child, ttk.Button):
                 buttons.append(child)
-                try:
-                    text = str(child.cget("text"))
-                except tk.TclError:
-                    text = str(getattr(child, "_text", ""))
-                max_chars = max(max_chars, len(text))
             else:
                 _collect(child)
 
@@ -32,6 +28,9 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
     if not buttons:
         return
 
-    max_chars += 2  # Account for padding inside the button
+    max_width = max(btn.winfo_reqwidth() for btn in buttons)
     for btn in buttons:
-        btn.configure(width=max_chars)
+        try:
+            btn.configure(width=max_width)
+        except Exception:  # pragma: no cover - defensive
+            pass
