@@ -48,7 +48,7 @@ class CapsuleButton(tk.Canvas):
         command: Optional[Callable[[], None]] = None,
         width: int = 80,
         height: int = 26,
-        bg: str = "#e1e1e1",
+        bg: str = "#dbe5ff",
         hover_bg: Optional[str] = None,
         state: str | None = None,
         image: tk.PhotoImage | None = None,
@@ -156,7 +156,7 @@ class CapsuleButton(tk.Canvas):
         """Draw shiny highlight and shaded region to create a 3D capsule."""
         r = self._radius
         color = self._current_color
-        top_highlight = _lighten(color, 1.4)
+        top_highlight = _lighten(color, 1.8)
         bottom_shade = _darken(color, 0.9)
         self._highlight_items = [
             self.create_oval(
@@ -192,7 +192,7 @@ class CapsuleButton(tk.Canvas):
                         cx + rad,
                         cy + rad,
                         outline="",
-                        fill=_lighten(color, 1.6 + 0.1 * i),
+                        fill=_lighten(color, 2.0 + 0.1 * i),
                         stipple="gray25",
                     )
                 )
@@ -221,18 +221,46 @@ class CapsuleButton(tk.Canvas):
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
             img_w = self._image.width()
+            img_h = self._image.height()
             spacing = 4
             total = text_w + img_w + spacing
             start = (w - total) // 2
+            self.create_oval(
+                start + 1,
+                cy - img_h // 2 + 1,
+                start + img_w + 1,
+                cy + img_h // 2 + 1,
+                fill="gray70",
+                outline="",
+                stipple="gray50",
+            )
             self._image_item = self.create_image(start + img_w // 2, cy, image=self._image)
+            self.create_text(
+                start + img_w + spacing + text_w // 2 + 1,
+                cy + 1,
+                text=self._text,
+                fill="gray50",
+            )
             self._text_item = self.create_text(
                 start + img_w + spacing + text_w // 2,
                 cy,
                 text=self._text,
             )
         elif self._image:
+            img_w = self._image.width()
+            img_h = self._image.height()
+            self.create_oval(
+                cx - img_w // 2 + 1,
+                cy - img_h // 2 + 1,
+                cx + img_w // 2 + 1,
+                cy + img_h // 2 + 1,
+                fill="gray70",
+                outline="",
+                stipple="gray50",
+            )
             self._image_item = self.create_image(cx, cy, image=self._image)
         else:
+            self.create_text(cx + 1, cy + 1, text=self._text, fill="gray50")
             self._text_item = self.create_text(cx, cy, text=self._text)
 
     def _draw_border(self, w: int, h: int) -> None:
