@@ -7,7 +7,7 @@ executable the dependencies are already bundled so the installation step
 is skipped.
 """
 import importlib
-import runpy
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -38,8 +38,10 @@ def ensure_packages() -> None:
 def main() -> None:
     ensure_packages()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
-    script = base_path / "AutoML.py"
-    runpy.run_path(str(script), run_name="__main__")
+    sys.path.insert(0, str(base_path))
+    os.chdir(base_path)
+    from AutoML import main as AutoML_main
+    AutoML_main()
 
 if __name__ == "__main__":
     main()
