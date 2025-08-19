@@ -4859,7 +4859,14 @@ class SysMLDiagramWindow(tk.Frame):
                                 p.y += dy
             if self.selected_obj.obj_type == "System Boundary":
                 for o in self.objects:
-                    if o.properties.get("boundary") == str(self.selected_obj.obj_id):
+                    if (
+                        o.obj_type == "Work Product"
+                        and o.properties.get("parent") == str(self.selected_obj.obj_id)
+                    ):
+                        o.x += dx
+                        o.y += dy
+                        self._constrain_to_parent(o, self.selected_obj)
+                    elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
                         o.x += dx
                         o.y += dy
                     if (
@@ -5233,22 +5240,14 @@ class SysMLDiagramWindow(tk.Frame):
             self.conn_drag_offset = None
             self.endpoint_drag_pos = None
         if self.selected_obj and self.current_tool == "Select":
-            if self.selected_obj.obj_type != "System Boundary":
+            if self.selected_obj.obj_type not in ("System Boundary", "Work Product"):
                 b = self.find_boundary_for_obj(self.selected_obj)
                 if b:
                     self.selected_obj.properties["boundary"] = str(b.obj_id)
                 else:
-                    if self.selected_obj.obj_type == "Work Product":
-                        b_id = self.selected_obj.properties.get("boundary")
-                        if b_id:
-                            for o in self.objects:
-                                if str(o.obj_id) == b_id:
-                                    if not self._object_within(self.selected_obj, o):
-                                        self.selected_obj.x = o.x
-                                        self.selected_obj.y = o.y
-                                    break
-                    else:
-                        self.selected_obj.properties.pop("boundary", None)
+                    self.selected_obj.properties.pop("boundary", None)
+            elif self.selected_obj.obj_type == "Work Product":
+                self.selected_obj.properties.pop("boundary", None)
             self._sync_to_repository()
         self.redraw()
 

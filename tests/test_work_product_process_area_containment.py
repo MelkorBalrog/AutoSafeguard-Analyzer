@@ -130,3 +130,51 @@ def test_right_click_process_area_adds_work_product():
     wps = [o for o in win.objects if o.obj_type == "Work Product"]
     assert len(wps) == 1
     assert wps[0].properties.get("parent") == str(area.obj_id)
+
+
+def test_process_area_drag_moves_work_product():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram")
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = []
+    win.connections = []
+    win.zoom = 1.0
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = None
+
+    area = win._place_process_area("Risk Assessment", 0.0, 0.0)
+    wp = win._place_work_product("Risk Assessment", 10.0, 0.0, area=area)
+
+    class DummyCanvas:
+        def canvasx(self, x):
+            return x
+
+        def canvasy(self, y):
+            return y
+
+    win.canvas = DummyCanvas()
+    win.selected_obj = area
+    win.current_tool = "Select"
+    win.drag_offset = (0, 0)
+    win.start = None
+    win.select_rect_start = None
+    win.dragging_conn_mid = None
+    win.selected_conn = None
+    win.dragging_endpoint = None
+    win.dragging_point_index = None
+    win.resizing_obj = None
+
+    class Event:
+        x = 100
+        y = 50
+
+    win.on_left_drag(Event())
+
+    assert win.find_boundary_for_obj(wp) == area
+    assert wp.x == area.x + 10
+    assert wp.y == area.y
