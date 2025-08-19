@@ -17,11 +17,12 @@ def test_display_name_and_phase_rename_propagation():
     diag = repo.create_diagram("Use Case Diagram", name="D1")
     tb.doc_phases = {"HAZOP": {"HZ1": "P1"}}
     assert elem.display_name() == "E1 (P1)"
-    assert diag.display_name() == "D1 (P1)"
+    assert diag.display_name() == "D1 : UCD (P1)"
     tb.rename_module("P1", "NP")
     assert elem.phase == "NP"
     assert diag.phase == "NP"
     assert elem.display_name() == "E1 (NP)"
+    assert diag.display_name() == "D1 : UCD (NP)"
     assert tb.doc_phases["HAZOP"]["HZ1"] == "NP"
 
 

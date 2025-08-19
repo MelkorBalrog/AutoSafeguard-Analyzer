@@ -7,6 +7,15 @@ import os
 import datetime
 import analysis.user_config as user_config
 
+
+def _diagram_type_abbreviation(diag_type: str | None) -> str:
+    """Return an upper-case abbreviation for *diag_type*.
+
+    The abbreviation is constructed from the first letter of each word in the
+    diagram type. For example ``"Internal Block Diagram"`` becomes ``"IBD"``.
+    """
+    return "" if not diag_type else "".join(word[0] for word in diag_type.split()).upper()
+
 @dataclass
 class SysMLElement:
     """Basic AutoML element stored in the repository."""
@@ -70,8 +79,12 @@ class SysMLDiagram:
 
     # ------------------------------------------------------------
     def display_name(self) -> str:
-        """Return diagram name annotated with its creation phase."""
-        return f"{self.name} ({self.phase})" if self.phase else self.name
+        """Return diagram name annotated with its type and creation phase."""
+        name = self.name or self.diag_id
+        abbr = _diagram_type_abbreviation(self.diag_type)
+        if abbr and not name.endswith(f" : {abbr}"):
+            name = f"{name} : {abbr}"
+        return f"{name} ({self.phase})" if self.phase else name
 
 class SysMLRepository:
     """Singleton repository for all AutoML elements and relationships."""

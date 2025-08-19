@@ -3404,12 +3404,20 @@ def diagram_type_abbreviation(diag_type: str | None) -> str:
 
 
 def format_diagram_name(diagram: "SysMLDiagram | None") -> str:
-    """Return the diagram name with its stereotype abbreviation appended."""
+    """Return the diagram name with its stereotype abbreviation appended.
+
+    The abbreviation is added only once, even if the diagram name already
+    contains it. This avoids duplicated suffixes when the caller repeatedly
+    formats the same name or when a user manually includes the abbreviation in
+    the diagram name.
+    """
     if not diagram:
         return ""
     abbr = diagram_type_abbreviation(diagram.diag_type)
     name = diagram.name or diagram.diag_id
-    return f"{name} : {abbr}" if abbr else name
+    if abbr and not name.endswith(f" : {abbr}"):
+        name = f"{name} : {abbr}"
+    return name
 
 
 class SysMLDiagramWindow(tk.Frame):

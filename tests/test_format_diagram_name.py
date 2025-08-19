@@ -11,3 +11,8 @@ def test_format_diagram_name_ibd():
     diag = SysMLDiagram("d2", "Internal Block Diagram", name="Struct")
     assert format_diagram_name(diag) == "Struct : IBD"
 
+
+def test_format_diagram_name_does_not_duplicate():
+    diag = SysMLDiagram("d3", "Control Flow Diagram", name="Diag : CFD")
+    assert format_diagram_name(diag) == "Diag : CFD"
+
