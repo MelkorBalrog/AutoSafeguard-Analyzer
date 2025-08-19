@@ -22,9 +22,25 @@ PLACEHOLDER_COLORS = {
 
 
 def _extract_action(trigger: str) -> str:
-    """Return the action name from a trigger string."""
+    """Return the action name from a trigger string.
+
+    The action in a trigger is typically wrapped in square brackets, e.g.
+    ``System --[Approves]--> Document``.  To make comparisons with template
+    placeholders case insensitive, the returned action is normalised to lower
+    case.
+    """
+
     match = re.search(r"\[([^\]]+)\]", trigger)
-    return match.group(1) if match else ""
+    if not match:
+        return ""
+    act = match.group(1).lower()
+    if act.endswith("ies"):
+        act = act[:-3] + "y"
+    elif act.endswith("es") and len(act) > 3:
+        act = act[:-2]
+    elif act.endswith("s") and len(act) > 3:
+        act = act[:-1]
+    return act
 
 
 def highlight_placeholders(widget: tk.Text, action_word: str = "") -> None:
@@ -442,11 +458,25 @@ class RequirementPatternsEditor(tk.Frame):
         self.tree.bind("<Double-1>", self._edit_item)
         self.tree.grid(row=0, column=0, sticky="nsew")
 
-        ybar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        xbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=ybar.set, xscrollcommand=xbar.set)
+        # Containers for template Text widgets that overlay the Treeview cells
+        self._pat_templates: dict[str, tk.Text] = {}
+
+        def _pat_yscroll(*args):
+            ybar.set(*args)
+            self._position_pattern_templates()
+
+        def _pat_xscroll(*args):
+            xbar.set(*args)
+            self._position_pattern_templates()
+
+        ybar = ttk.Scrollbar(tree_frame, orient="vertical")
+        xbar = ttk.Scrollbar(tree_frame, orient="horizontal")
+        ybar.config(command=lambda *a: (self.tree.yview(*a), self._position_pattern_templates()))
+        xbar.config(command=lambda *a: (self.tree.xview(*a), self._position_pattern_templates()))
+        self.tree.configure(yscrollcommand=_pat_yscroll, xscrollcommand=_pat_xscroll)
         ybar.grid(row=0, column=1, sticky="ns")
         xbar.grid(row=1, column=0, sticky="ew")
+        self.tree.bind("<Configure>", lambda _e: self._position_pattern_templates())
 
         btn_frame = ttk.Frame(pat_frame)
         btn_frame.grid(row=1, column=0, sticky="e", pady=4, padx=4)
@@ -495,11 +525,24 @@ class RequirementPatternsEditor(tk.Frame):
         self.rule_tree.bind("<Double-1>", self._edit_rule)
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
 
-        rybar = ttk.Scrollbar(r_tree_frame, orient="vertical", command=self.rule_tree.yview)
-        rxbar = ttk.Scrollbar(r_tree_frame, orient="horizontal", command=self.rule_tree.xview)
-        self.rule_tree.configure(yscrollcommand=rybar.set, xscrollcommand=rxbar.set)
+        self._rule_templates: dict[str, tk.Text] = {}
+
+        def _rule_yscroll(*args):
+            rybar.set(*args)
+            self._position_rule_templates()
+
+        def _rule_xscroll(*args):
+            rxbar.set(*args)
+            self._position_rule_templates()
+
+        rybar = ttk.Scrollbar(r_tree_frame, orient="vertical")
+        rxbar = ttk.Scrollbar(r_tree_frame, orient="horizontal")
+        rybar.config(command=lambda *a: (self.rule_tree.yview(*a), self._position_rule_templates()))
+        rxbar.config(command=lambda *a: (self.rule_tree.xview(*a), self._position_rule_templates()))
+        self.rule_tree.configure(yscrollcommand=_rule_yscroll, xscrollcommand=_rule_xscroll)
         rybar.grid(row=0, column=1, sticky="ns")
         rxbar.grid(row=1, column=0, sticky="ew")
+        self.rule_tree.bind("<Configure>", lambda _e: self._position_rule_templates())
 
         r_btn = ttk.Frame(rule_frame)
         r_btn.grid(row=1, column=0, sticky="e", pady=4, padx=4)
@@ -556,11 +599,24 @@ class RequirementPatternsEditor(tk.Frame):
         self.seq_tree.bind("<Double-1>", self._edit_sequence)
         self.seq_tree.grid(row=0, column=0, sticky="nsew")
 
-        sybar = ttk.Scrollbar(s_tree_frame, orient="vertical", command=self.seq_tree.yview)
-        sxbar = ttk.Scrollbar(s_tree_frame, orient="horizontal", command=self.seq_tree.xview)
-        self.seq_tree.configure(yscrollcommand=sybar.set, xscrollcommand=sxbar.set)
+        self._seq_templates: dict[str, tk.Text] = {}
+
+        def _seq_yscroll(*args):
+            sybar.set(*args)
+            self._position_seq_templates()
+
+        def _seq_xscroll(*args):
+            sxbar.set(*args)
+            self._position_seq_templates()
+
+        sybar = ttk.Scrollbar(s_tree_frame, orient="vertical")
+        sxbar = ttk.Scrollbar(s_tree_frame, orient="horizontal")
+        sybar.config(command=lambda *a: (self.seq_tree.yview(*a), self._position_seq_templates()))
+        sxbar.config(command=lambda *a: (self.seq_tree.xview(*a), self._position_seq_templates()))
+        self.seq_tree.configure(yscrollcommand=_seq_yscroll, xscrollcommand=_seq_xscroll)
         sybar.grid(row=0, column=1, sticky="ns")
         sxbar.grid(row=1, column=0, sticky="ew")
+        self.seq_tree.bind("<Configure>", lambda _e: self._position_seq_templates())
 
         s_btn = ttk.Frame(seq_frame)
         s_btn.grid(row=1, column=0, sticky="e", pady=4, padx=4)
@@ -582,19 +638,27 @@ class RequirementPatternsEditor(tk.Frame):
     # Pattern helpers
     # ------------------------------------------------------------------
     def _populate_pattern_tree(self):
+        for widget in self._pat_templates.values():
+            widget.destroy()
+        self._pat_templates.clear()
+
         self.tree.delete(*self.tree.get_children(""))
-        wrapped: list[tuple[int, str, str]] = []
+        wrapped: list[tuple[int, str, str, str]] = []
         max_lines = 1
         for idx, pat in enumerate(self.data):
             trig = textwrap.fill(pat.get("Trigger", ""), 40)
             tmpl_raw = pat.get("Template", "")
             act = _extract_action(pat.get("Trigger", ""))
-            if act and act in tmpl_raw:
-                tmpl_raw = tmpl_raw.replace(act, f"<action : {act}>")
+            if act:
+                if re.search(r"<action>", tmpl_raw, re.IGNORECASE):
+                    tmpl_raw = re.sub(r"<action>", f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
+                else:
+                    tmpl_raw = re.sub(re.escape(act), f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
+
             tmpl = textwrap.fill(tmpl_raw, 40)
             lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
             max_lines = max(max_lines, lines)
-            wrapped.append((idx, trig, tmpl))
+            wrapped.append((idx, trig, tmpl, act))
 
         style = ttk.Style(self.tree)
         base = style.lookup("Treeview", "rowheight") or 20
@@ -605,8 +669,37 @@ class RequirementPatternsEditor(tk.Frame):
         style.configure("PatternTree.Treeview", rowheight=base_h * max_lines)
         self.tree.configure(style="PatternTree.Treeview")
 
-        for idx, trig, tmpl in wrapped:
-            self.tree.insert("", "end", iid=str(idx), values=(idx + 1, trig, tmpl))
+        for idx, trig, tmpl, act in wrapped:
+            iid = str(idx)
+            self.tree.insert("", "end", iid=iid, values=(idx + 1, trig, ""))
+            txt = tk.Text(
+                self.tree,
+                wrap="word",
+                height=tmpl.count("\n") + 1,
+                padx=0,
+                pady=0,
+                bd=0,
+                highlightthickness=0,
+            )
+            txt.insert("1.0", tmpl)
+            highlight_placeholders(txt, act)
+            txt.configure(state="disabled")
+            txt.bind(
+                "<Button-1>",
+                lambda _e, item=iid: (self.tree.selection_set(item), self.tree.focus(item)),
+            )
+            self._pat_templates[iid] = txt
+
+        self._position_pattern_templates()
+
+    def _position_pattern_templates(self) -> None:
+        """Position template ``Text`` widgets over their Treeview cells."""
+        for iid, widget in self._pat_templates.items():
+            bbox = self.tree.bbox(iid, "template")
+            if bbox:
+                widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+            else:
+                widget.place_forget()
 
     def _edit_item(self, _event=None):
         item = self.tree.focus()
@@ -660,12 +753,35 @@ class RequirementPatternsEditor(tk.Frame):
     # Rule helpers
     # ------------------------------------------------------------------
     def _populate_rule_tree(self):
+        for widget in self._rule_templates.values():
+            widget.destroy()
+        self._rule_templates.clear()
+
         self.rule_tree.delete(*self.rule_tree.get_children(""))
+        wrapped: list[tuple[str, int, str, str, str]] = []
+        max_lines = 1
         for idx, (label, info) in enumerate(sorted(self.req_rules.items()), 1):
             tmpl = info.get("template", "")
             act = info.get("action", "")
-            if act and act in tmpl:
-                tmpl = tmpl.replace(act, f"<action : {act}>")
+            if act:
+                if re.search(r"<action>", tmpl, re.IGNORECASE):
+                    tmpl = re.sub(r"<action>", f"<action : {act}>", tmpl, flags=re.IGNORECASE)
+                else:
+                    tmpl = re.sub(re.escape(act), f"<action : {act}>", tmpl, flags=re.IGNORECASE)
+            lines = tmpl.count("\n") + 1
+            max_lines = max(max_lines, lines)
+            wrapped.append((label, idx, act, info.get("subject", ""), tmpl))
+
+        style = ttk.Style(self.rule_tree)
+        base = style.lookup("Treeview", "rowheight") or 20
+        try:
+            base_h = int(base)
+        except Exception:
+            base_h = 20
+        style.configure("RuleTree.Treeview", rowheight=base_h * max_lines)
+        self.rule_tree.configure(style="RuleTree.Treeview")
+
+        for label, idx, act, subj, tmpl in wrapped:
             self.rule_tree.insert(
                 "",
                 "end",
@@ -674,12 +790,42 @@ class RequirementPatternsEditor(tk.Frame):
                     idx,
                     label,
                     act,
-                    info.get("subject", ""),
-                    tmpl,
-                    info.get("targets", 1),
-                    "yes" if info.get("constraint") else "",
+                    subj,
+                    "",
+                    self.req_rules[label].get("targets", 1),
+                    "yes" if self.req_rules[label].get("constraint") else "",
                 ),
             )
+            txt = tk.Text(
+                self.rule_tree,
+                wrap="word",
+                height=tmpl.count("\n") + 1,
+                padx=0,
+                pady=0,
+                bd=0,
+                highlightthickness=0,
+            )
+            txt.insert("1.0", tmpl)
+            highlight_placeholders(txt, act)
+            txt.configure(state="disabled")
+            txt.bind(
+                "<Button-1>",
+                lambda _e, item=label: (
+                    self.rule_tree.selection_set(item),
+                    self.rule_tree.focus(item),
+                ),
+            )
+            self._rule_templates[label] = txt
+
+        self._position_rule_templates()
+
+    def _position_rule_templates(self) -> None:
+        for iid, widget in self._rule_templates.items():
+            bbox = self.rule_tree.bbox(iid, "template")
+            if bbox:
+                widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+            else:
+                widget.place_forget()
 
     def _edit_rule(self, _event=None):
         item = self.rule_tree.focus()
@@ -770,9 +916,46 @@ class RequirementPatternsEditor(tk.Frame):
 
     def _populate_seq_tree(self):
         self._ensure_role_subject_variants()
+        for widget in self._seq_templates.values():
+            widget.destroy()
+        self._seq_templates.clear()
+
         self.seq_tree.delete(*self.seq_tree.get_children(""))
+        wrapped: list[tuple[str, int, str, str, str, bool]] = []
+        max_lines = 1
         for idx, (label, info) in enumerate(sorted(self.req_seqs.items()), 1):
             rels = " -> ".join(info.get("relations", []))
+            tmpl = info.get("template", "")
+            act = info.get("action", "")
+            if act:
+                if re.search(r"<action>", tmpl, re.IGNORECASE):
+                    tmpl = re.sub(r"<action>", f"<action : {act}>", tmpl, flags=re.IGNORECASE)
+                else:
+                    tmpl = re.sub(re.escape(act), f"<action : {act}>", tmpl, flags=re.IGNORECASE)
+            lines = tmpl.count("\n") + 1
+            max_lines = max(max_lines, lines)
+            wrapped.append(
+                (
+                    label,
+                    idx,
+                    rels,
+                    act,
+                    info.get("subject", ""),
+                    info.get("role_subject", False),
+                    tmpl,
+                )
+            )
+
+        style = ttk.Style(self.seq_tree)
+        base = style.lookup("Treeview", "rowheight") or 20
+        try:
+            base_h = int(base)
+        except Exception:
+            base_h = 20
+        style.configure("SeqTree.Treeview", rowheight=base_h * max_lines)
+        self.seq_tree.configure(style="SeqTree.Treeview")
+
+        for label, idx, rels, act, subj, role_subj, tmpl in wrapped:
             self.seq_tree.insert(
                 "",
                 "end",
@@ -781,12 +964,42 @@ class RequirementPatternsEditor(tk.Frame):
                     idx,
                     label,
                     rels,
-                    info.get("action", ""),
-                    info.get("subject", ""),
-                    "Y" if info.get("role_subject") else "",
-                    info.get("template", ""),
+                    act,
+                    subj,
+                    "Y" if role_subj else "",
+                    "",
                 ),
             )
+            txt = tk.Text(
+                self.seq_tree,
+                wrap="word",
+                height=tmpl.count("\n") + 1,
+                padx=0,
+                pady=0,
+                bd=0,
+                highlightthickness=0,
+            )
+            txt.insert("1.0", tmpl)
+            highlight_placeholders(txt, act)
+            txt.configure(state="disabled")
+            txt.bind(
+                "<Button-1>",
+                lambda _e, item=label: (
+                    self.seq_tree.selection_set(item),
+                    self.seq_tree.focus(item),
+                ),
+            )
+            self._seq_templates[label] = txt
+
+        self._position_seq_templates()
+
+    def _position_seq_templates(self) -> None:
+        for iid, widget in self._seq_templates.items():
+            bbox = self.seq_tree.bbox(iid, "template")
+            if bbox:
+                widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+            else:
+                widget.place_forget()
 
     def _edit_sequence(self, _event=None):
         item = self.seq_tree.focus()
