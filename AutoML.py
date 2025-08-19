@@ -2767,13 +2767,13 @@ class FaultTreeApp:
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
-        self.prop_view.column("field", width=80, anchor="w", stretch=False)
-        self.prop_view.column("value", anchor="w")
-        prop_frame.bind(
-            "<Configure>",
-            lambda e: self.prop_view.column("value", width=e.width - 80),
-        )
+        # Keep the field column a fixed width so the value column can expand
+        # to occupy the remaining space of the tab. This makes long property
+        # values easier to read within the tools area's Properties tab.
+        self.prop_view.column("field", width=120, anchor="w", stretch=False)
+        self.prop_view.column("value", width=200, anchor="w", stretch=True)
         add_treeview_scrollbars(self.prop_view, prop_frame)
+        prop_frame.bind("<Configure>", self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
 
         # Tooltip helper for tabs (text may be clipped)
@@ -9781,6 +9781,15 @@ class FaultTreeApp:
         if self._tools_tip.text != text:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
+
+    def _resize_prop_columns(self, event):
+        """Resize property view columns so value fills available space."""
+        try:
+            field_width = self.prop_view.column("field")["width"]
+            new_width = max(event.width - field_width - 20, 50)
+            self.prop_view.column("value", width=new_width)
+        except Exception:
+            pass
 
     def _on_doc_tab_motion(self, event):
         """Show tooltip for document notebook tabs when hovering over them."""
