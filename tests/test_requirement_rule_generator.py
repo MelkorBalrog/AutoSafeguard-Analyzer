@@ -116,6 +116,28 @@ def test_grouped_actions_single_pattern() -> None:
     assert "c) <object3_id>" in tmpl
 
 
+def test_grouped_actions_across_relations() -> None:
+    cfg = {
+        "connection_rules": {
+            "Governance Diagram": {
+                "Performs": {"Role": ["Activity"]},
+                "Executes": {"Role": ["Procedure"]},
+            }
+        }
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "GOV-actions-Role-group" in ids
+    assert "GOV-performs-Role-Activity" not in ids
+    assert "GOV-executes-Role-Procedure" not in ids
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "GOV-actions-Role-group"
+    )
+    assert "a) <object1_id>" in tmpl
+    assert "b) <object2_id>" in tmpl
+    
 def test_rule_with_custom_template_and_variables() -> None:
     cfg = {
         "ai_nodes": ["R", "T"],
