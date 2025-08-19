@@ -38,9 +38,9 @@ def test_irrelevant_relations_filtered():
     # toolbox relations.
     assert "Propagate" not in defs["Entities"]["relations"]
     # "Approves" connects Roles to Documents/Records but cannot originate from
-    # an artifact, so it should not appear in either toolbox.
+    # an artifact, so it should only appear in the Entities toolbox.
     assert "Approves" not in defs["Artifacts"]["relations"]
-    assert "Approves" not in defs["Entities"]["relations"]
+    assert "Approves" in defs["Entities"]["relations"]
 
 
 def test_cross_category_relations_surface():
