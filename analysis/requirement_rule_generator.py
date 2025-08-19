@@ -450,11 +450,19 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
                 final_tgt = path[-1][1]
                 tgt_count = len(path)
 
-                # Generate both text-subject and role-subject variants
+                # Generate text-subject and entity-subject variants
+                subject_entities = ["role", "organization", "business_unit"]
                 variants = [
-                    (seq_label, info.get("subject", "Engineering team"), False),
-                    (f"{seq_label}_role_subject", "<subject_id> (<subject_class>)", True),
+                    (seq_label, info.get("subject", "Engineering team"), False)
                 ]
+                for ent in subject_entities:
+                    variants.append(
+                        (
+                            f"{seq_label}_{ent}_subject",
+                            "<subject_id> (<subject_class>)",
+                            True,
+                        )
+                    )
 
                 for label_variant, subj, use_role_subject in variants:
                     tmpl_override = info.get("template")
