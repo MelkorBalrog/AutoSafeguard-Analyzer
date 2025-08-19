@@ -72,6 +72,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 compound=tk.LEFT,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
+        self._set_button_widths()
         # Pack then immediately hide so order relative to the canvas is preserved
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
         self.toolbox.pack_forget()
@@ -119,6 +120,17 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
         self._bind_shortcuts()
         self.focus_set()
+
+    def _set_button_widths(self) -> None:
+        self.toolbox.update_idletasks()
+        width = 0
+        for child in self.toolbox.winfo_children():
+            if isinstance(child, ttk.Button):
+                width = max(width, len(str(child.cget("text"))))
+        width += 2
+        for child in self.toolbox.winfo_children():
+            if isinstance(child, ttk.Button):
+                child.configure(width=width)
 
     # ------------------------------------------------------------------
     def refresh_docs(self) -> None:
