@@ -23,12 +23,11 @@ def _lighten(color: str, factor: float = 1.2) -> str:
 
 
 class CapsuleButton(tk.Canvas):
-    """A capsule-shaped button with a subtle shine on hover.
+    """A capsule-shaped button that lightens on mouse hover.
 
     The button is drawn using canvas primitives so it does not rely on platform
     specific themes.  When the mouse cursor enters the button area the fill
-    color is lightened and a translucent highlight is used to mimic the glossy
-    effect of macOS buttons.
+    color is lightened to mimic the highlight effect of macOS buttons.
     """
 
     def __init__(
@@ -76,7 +75,6 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
-        self._shine_items: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -114,45 +112,29 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
-        shine_color = _lighten(color, 1.3)
-        shine_h = h // 2
-        self._shine_items = [
-            self.create_arc(
-                (0, 0, 2 * r, 2 * shine_h),
-                start=90,
-                extent=180,
-                outline="",
-                fill=shine_color,
-                stipple="gray25",
-            ),
-            self.create_rectangle(
-                (r, 0, w - r, shine_h),
-                outline="",
-                fill=shine_color,
-                stipple="gray25",
-            ),
-            self.create_arc(
-                (w - 2 * r, 0, w, 2 * shine_h),
-                start=-90,
-                extent=180,
-                outline="",
-                fill=shine_color,
-                stipple="gray25",
-            ),
-        ]
+        # Single outline surrounding the entire button for a smooth border
+        self.create_arc(
+            (0, 0, 2 * r, h),
+            start=90,
+            extent=180,
+            style=tk.ARC,
+            outline=outline,
+        )
+        self.create_line(r, 0, w - r, 0, fill=outline)
+        self.create_line(r, h, w - r, h, fill=outline)
+        self.create_arc(
+            (w - 2 * r, 0, w, h),
+            start=-90,
+            extent=180,
+            style=tk.ARC,
+            outline=outline,
+        )
         self._text_item = self.create_text(w // 2, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
         self._current_color = color
-        self._update_shine(color)
-
-    def _update_shine(self, color: str) -> None:
-        """Refresh the highlight overlay to match *color*."""
-        shine_color = _lighten(color, 1.3)
-        for item in self._shine_items:
-            self.itemconfigure(item, fill=shine_color)
 
     def _on_enter(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
