@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 from config import load_diagram_rules, validate_diagram_rules
 from gui import messagebox
+from gui.mac_button_style import apply_translucid_button_style
 
 
 class MultiSelectDialog(simpledialog.Dialog):
@@ -54,6 +55,7 @@ class DiagramRulesEditor(tk.Frame):
 
     def __init__(self, master, app, config_path: Path | None = None):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
         self.config_path = Path(
             config_path or Path(__file__).resolve().parents[1] / "config/diagram_rules.json"

@@ -19,6 +19,7 @@
 import tkinter as tk
 from tkinter import simpledialog, ttk
 from gui import messagebox
+from gui.mac_button_style import apply_translucid_button_style
 from gui.style_manager import StyleManager
 from dataclasses import dataclass, field
 from typing import List
@@ -414,6 +415,7 @@ class UserSelectDialog(simpledialog.Dialog):
 class ReviewToolbox(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
         if isinstance(master, tk.Toplevel):
             master.title("Review Toolbox")
