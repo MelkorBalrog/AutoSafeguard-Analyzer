@@ -2768,7 +2768,19 @@ class AutoMLApp:
         nb_container = ttk.Frame(self.tools_group)
         nb_container.pack(fill=tk.BOTH, expand=True)
         style = ttk.Style()
-        style.configure("ToolsNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20)
+        # Create a custom notebook style so that a layout is available.  Without a
+        # ``TNotebook`` suffix in the style name, ttk cannot find the default
+        # layout which led to ``_tkinter.TclError: Layout ToolsNotebook not
+        # found`` when instantiating the notebook widget.  The following styles
+        # derive from the standard ``TNotebook``/``TNotebook.Tab`` styles and
+        # merely customise the tab appearance.
+        style.configure("ToolsNotebook.TNotebook", padding=0)
+        style.configure(
+            "ToolsNotebook.TNotebook.Tab",
+            font=("Arial", 10),
+            padding=(10, 5),
+            width=20,
+        )
         self.tools_left_btn = ttk.Button(
             nb_container, text="<", width=2, command=self._select_prev_tool_tab
         )
@@ -2777,7 +2789,7 @@ class AutoMLApp:
         )
         self.tools_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self.tools_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
-        self.tools_nb = ttk.Notebook(nb_container, style="ToolsNotebook")
+        self.tools_nb = ttk.Notebook(nb_container, style="ToolsNotebook.TNotebook")
         self.tools_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Properties tab for displaying metadata
