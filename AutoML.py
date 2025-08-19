@@ -19010,7 +19010,7 @@ class FaultTreeApp:
     def save_model(self):
         path = filedialog.asksaveasfilename(
             defaultextension=".autml",
-            filetypes=[("AutoML Project", "*.autml")],
+            filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
         )
         if not path:
             return
@@ -19035,23 +19035,50 @@ class FaultTreeApp:
         import gzip
         import hashlib
         import json
+        import os
 
-        password = simpledialog.askstring(
-            "Password", "Enter encryption password:", show="*"
-        )
-        if password is None:
-            return
         for fmea in self.fmeas:
             self.export_fmea_to_csv(fmea, fmea["file"])
         for fmeda in self.fmedas:
             self.export_fmeda_to_csv(fmeda, fmeda["file"])
         data = self.export_model_data()
-        raw = json.dumps(data).encode("utf-8")
-        compressed = gzip.compress(raw)
-        key = base64.urlsafe_b64encode(hashlib.sha256(password.encode()).digest())
-        token = Fernet(key).encrypt(compressed)
-        with open(path, "wb") as f:
-            f.write(token)
+
+        if path.endswith(".autml"):
+            try:
+                from cryptography.fernet import Fernet
+            except Exception:  # pragma: no cover - dependency check
+                messagebox.showwarning(
+                    "Save Model",
+                    (
+                        "cryptography package is required for encrypted save. "
+                        "Saving unencrypted JSON instead."
+                    ),
+                )
+                path = os.path.splitext(path)[0] + ".json"
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+            else:
+                from tkinter import simpledialog
+                import base64
+                import gzip
+                import hashlib
+
+                password = simpledialog.askstring(
+                    "Password", "Enter encryption password:", show="*"
+                )
+                if password is None:
+                    return
+                raw = json.dumps(data).encode("utf-8")
+                compressed = gzip.compress(raw)
+                key = base64.urlsafe_b64encode(
+                    hashlib.sha256(password.encode()).digest()
+                )
+                token = Fernet(key).encrypt(compressed)
+                with open(path, "wb") as f:
+                    f.write(token)
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
         messagebox.showinfo(
             "Saved", "Model saved with all configuration and safety goal information."
         )
