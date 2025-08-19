@@ -67,6 +67,7 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
+        self._shine_item: Optional[int] = None
         self._text_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
@@ -99,11 +100,23 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        self._shine_item = self.create_arc(
+            (1, 1, w - 1, h - 1),
+            start=90,
+            extent=180,
+            outline="",
+            fill=_lighten(color, 1.3),
+        )
+        # ``stipple`` provides a rudimentary transparency effect that gives the
+        # impression of a glossy highlight across the top half of the button.
+        self.itemconfigure(self._shine_item, stipple="gray50")
         self._text_item = self.create_text(w // 2, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
+        if self._shine_item is not None:
+            self.itemconfigure(self._shine_item, fill=_lighten(color, 1.3))
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
