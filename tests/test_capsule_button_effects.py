@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_text_shadow_and_highlight():
+def test_text_highlight_without_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -16,15 +16,13 @@ def test_text_shadow_and_highlight():
     btn = CapsuleButton(root, text="Test")
     btn.pack()
     root.update_idletasks()
-    shadow = getattr(btn, "_text_shadow_item", None)
-    assert shadow is not None
-    assert btn.itemcget(shadow, "fill") != "#000000"
+    assert getattr(btn, "_text_shadow_item", None) is None
     highlight = getattr(btn, "_text_highlight_item", None)
     assert highlight is not None
     root.destroy()
 
 
-def test_icon_highlight_no_shadow():
+def test_icon_highlight_without_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
