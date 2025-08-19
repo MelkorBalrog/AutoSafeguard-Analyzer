@@ -74,14 +74,28 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a violet-to-black vertical gradient on the background."""
-        violet = (138, 43, 226)
+        """Draw a multi-color gradient dominated by black."""
+        # Color stops: violet -> magenta -> light green -> black
+        stops = [
+            (0.0, (138, 43, 226)),   # violet
+            (0.3, (255, 0, 255)),    # magenta
+            (0.5, (144, 238, 144)),  # light green
+            (1.0, (0, 0, 0)),        # black
+        ]
         steps = self.canvas_size
         for i in range(steps):
             ratio = i / steps
-            r = int(violet[0] * (1 - ratio))
-            g = int(violet[1] * (1 - ratio))
-            b = int(violet[2] * (1 - ratio))
+            # Find two surrounding color stops
+            for idx in range(len(stops) - 1):
+                if stops[idx][0] <= ratio <= stops[idx + 1][0]:
+                    left_pos, left_col = stops[idx]
+                    right_pos, right_col = stops[idx + 1]
+                    break
+            # Normalize ratio between the two stops
+            local = (ratio - left_pos) / (right_pos - left_pos)
+            r = int(left_col[0] + (right_col[0] - left_col[0]) * local)
+            g = int(left_col[1] + (right_col[1] - left_col[1]) * local)
+            b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
@@ -95,6 +109,22 @@ class SplashScreen(tk.Toplevel):
 
     def _draw_cube(self):
         self.canvas.delete("cube")
+        self.canvas.delete("shadow")
+        # Simple oval shadow to give cube a floating appearance
+        shadow_w = 80
+        shadow_h = 20
+        cx = self.canvas_size / 2
+        cy = self.canvas_size / 2 + 60
+        self.canvas.create_oval(
+            cx - shadow_w / 2,
+            cy - shadow_h / 2,
+            cx + shadow_w / 2,
+            cy + shadow_h / 2,
+            fill="black",
+            outline="",
+            tags="shadow",
+            stipple="gray50",
+        )
         angle = math.radians(self.angle)
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
