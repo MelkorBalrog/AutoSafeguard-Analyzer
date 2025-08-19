@@ -2050,6 +2050,15 @@ class AutoMLApp:
     #: the working area.
     MAX_TAB_TEXT_LENGTH = 20
 
+    #: Maximum characters shown for tool notebook tab titles. Tool tabs use
+    #: a fixed width so they remain readable but long names are capped at this
+    #: length and truncated with an ellipsis.
+    MAX_TOOL_TAB_TEXT_LENGTH = 20
+
+    #: Maximum number of tabs displayed at once in the tools and document
+    #: notebooks. Additional tabs can be accessed via the navigation buttons.
+    MAX_VISIBLE_TABS = 4
+
     WORK_PRODUCT_INFO = {
         "Architecture Diagram": (
             "System Design (Item Definition)",
@@ -2749,7 +2758,6 @@ class AutoMLApp:
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_nb = ttk.Notebook(self.tools_group)
         top = ttk.Frame(self.tools_group)
         top.pack(side=tk.TOP, fill=tk.X)
         ttk.Label(top, text="Lifecycle Phase:").pack(side=tk.LEFT)
@@ -2759,7 +2767,38 @@ class AutoMLApp:
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
-        self.tools_nb.pack(fill=tk.BOTH, expand=True)
+
+        # Container holding navigation buttons and the tools notebook
+        nb_container = ttk.Frame(self.tools_group)
+        nb_container.pack(fill=tk.BOTH, expand=True)
+        style = ttk.Style()
+        # Create a custom notebook style so that a layout is available.  Without a
+        # ``TNotebook`` suffix in the style name, ttk cannot find the default
+        # layout which led to ``_tkinter.TclError: Layout ToolsNotebook not
+        # found`` when instantiating the notebook widget.  The following styles
+        # derive from the standard ``TNotebook``/``TNotebook.Tab`` styles and
+        # merely customise the tab appearance.
+        style.configure("ToolsNotebook.TNotebook", padding=0)
+        style.configure(
+            "ToolsNotebook.TNotebook.Tab",
+            font=("Arial", 10),
+            padding=(10, 5),
+            width=20,
+        )
+        self.tools_left_btn = ttk.Button(
+            nb_container, text="<", width=2, command=self._select_prev_tool_tab
+        )
+        self.tools_right_btn = ttk.Button(
+            nb_container, text=">", width=2, command=self._select_next_tool_tab
+        )
+        self.tools_left_btn.pack(side=tk.LEFT, fill=tk.Y)
+        self.tools_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tools_nb = ttk.Notebook(nb_container, style="ToolsNotebook.TNotebook")
+        self.tools_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Track all tool tabs and which range is currently visible
+        self._tool_all_tabs: list[str] = []
+        self._tool_tab_offset = 0
 
         # Properties tab for displaying metadata
         prop_frame = ttk.Frame(self.tools_nb)
@@ -2784,6 +2823,9 @@ class AutoMLApp:
         prop_frame.bind("<Configure>", self._resize_prop_columns)
         self.root.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
+        tab_id = self.tools_nb.tabs()[-1]
+        self._tool_all_tabs.append(tab_id)
+        self._update_tool_tab_visibility()
         self._resize_prop_columns()
 
         # Tooltip helper for tabs (text may be clipped)
@@ -2829,6 +2871,7 @@ class AutoMLApp:
             "Cause & Effect Diagram", set()
         ).add("FTA")
         self.tool_listboxes: dict[str, tk.Listbox] = {}
+        self._tool_tab_titles: dict[str, str] = {}
         for cat, names in self.tool_categories.items():
             self._add_tool_category(cat, names)
 
@@ -2845,6 +2888,16 @@ class AutoMLApp:
         # displayed text may be shortened to keep tabs a reasonable size but we
         # keep the originals here for features like duplicate detection.
         self._tab_titles: dict[str, str] = {}
+        self._doc_all_tabs: list[str] = []
+        self._doc_tab_offset = 0
+        _orig_select = self.doc_nb.select
+
+        def _wrapped_select(tab_id=None):
+            if tab_id is not None:
+                self._make_doc_tab_visible(tab_id)
+            return _orig_select(tab_id)
+
+        self.doc_nb.select = _wrapped_select
         self._tab_left_btn = ttk.Button(
             self.doc_frame, text="<", width=2, command=self._select_prev_tab
         )
@@ -2854,6 +2907,7 @@ class AutoMLApp:
         self._tab_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self._tab_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
         self.doc_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._update_doc_tab_visibility()
         self.main_pane.add(self.doc_frame, stretch="always")
         # Tooltip helper for document tabs
         self._doc_tip = ToolTip(self.doc_nb, "", automatic=False)
@@ -9582,7 +9636,15 @@ class AutoMLApp:
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
-        self.tools_nb.add(frame, text=cat)
+        display = cat
+        if len(display) > self.MAX_TOOL_TAB_TEXT_LENGTH:
+            display = display[: self.MAX_TOOL_TAB_TEXT_LENGTH - 1] + "\N{HORIZONTAL ELLIPSIS}"
+        self.tools_nb.add(frame, text=display)
+        tab_id = self.tools_nb.tabs()[-1]
+        self._tool_tab_titles[tab_id] = cat
+        self._tool_all_tabs.append(tab_id)
+        self._tool_tab_offset = max(0, len(self._tool_all_tabs) - self.MAX_VISIBLE_TABS)
+        self._update_tool_tab_visibility()
         lb = tk.Listbox(frame, height=10)
         vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
         lb.configure(yscrollcommand=vsb.set)
@@ -9781,7 +9843,8 @@ class AutoMLApp:
         except tk.TclError:
             self._tools_tip.hide()
             return
-        text = self.tools_nb.tab(idx, "text")
+        tab_id = self.tools_nb.tabs()[idx]
+        text = self._tool_tab_titles.get(tab_id, self.tools_nb.tab(tab_id, "text"))
         bbox = self.tools_nb.bbox(idx)
         if not bbox:
             self._tools_tip.hide()
@@ -17499,12 +17562,20 @@ class AutoMLApp:
                 del self.diagram_tabs[did]
                 break
         tab.destroy()
+        if hasattr(self, "_doc_all_tabs") and tab_id in self._doc_all_tabs:
+            self._doc_all_tabs.remove(tab_id)
+            self._doc_tab_offset = min(
+                self._doc_tab_offset,
+                max(0, len(self._doc_all_tabs) - self.MAX_VISIBLE_TABS),
+            )
+            self._update_doc_tab_visibility()
         # Ensure the rest of the application reflects the closed tab
         self.refresh_all()
 
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
         tab_id = event.widget.select()
+        self._make_doc_tab_visible(tab_id)
         tab = (
             event.widget.nametowidget(tab_id)
             if hasattr(event.widget, "nametowidget")
@@ -17540,31 +17611,136 @@ class AutoMLApp:
                                 self.lifecycle_var.set(module or "")
                     break
 
-    def _select_prev_tab(self) -> None:
-        """Select the tab to the left of the current tab."""
-        tabs = self.doc_nb.tabs()
-        if not tabs:
-            return
+    def _update_tool_tab_visibility(self) -> None:
+        visible: list[str] = []
+        for idx, tab_id in enumerate(self._tool_all_tabs):
+            state = "normal" if self._tool_tab_offset <= idx < self._tool_tab_offset + self.MAX_VISIBLE_TABS else "hidden"
+            try:
+                self.tools_nb.tab(tab_id, state=state)
+            except Exception:
+                visible.append(tab_id)
+                continue
+            if state == "normal":
+                visible.append(tab_id)
+        current = self.tools_nb.select()
+        if current not in visible and visible:
+            self.tools_nb.select(visible[0])
+        if hasattr(self, "tools_left_btn") and hasattr(self, "tools_right_btn"):
+            if self._tool_tab_offset <= 0:
+                self.tools_left_btn.state(["disabled"])
+            else:
+                self.tools_left_btn.state(["!disabled"])
+            if self._tool_tab_offset + self.MAX_VISIBLE_TABS >= len(self._tool_all_tabs):
+                self.tools_right_btn.state(["disabled"])
+            else:
+                self.tools_right_btn.state(["!disabled"])
+
+    def _update_doc_tab_visibility(self) -> None:
+        visible: list[str] = []
+        for idx, tab_id in enumerate(self._doc_all_tabs):
+            state = "normal" if self._doc_tab_offset <= idx < self._doc_tab_offset + self.MAX_VISIBLE_TABS else "hidden"
+            try:
+                self.doc_nb.tab(tab_id, state=state)
+            except Exception:
+                visible.append(tab_id)
+                continue
+            if state == "normal":
+                visible.append(tab_id)
         current = self.doc_nb.select()
-        try:
-            index = tabs.index(current)
-        except ValueError:
+        if current not in visible and visible:
+            self.doc_nb.select(visible[0])
+        if hasattr(self, "_tab_left_btn") and hasattr(self, "_tab_right_btn"):
+            if self._doc_tab_offset <= 0:
+                self._tab_left_btn.state(["disabled"])
+            else:
+                self._tab_left_btn.state(["!disabled"])
+            if self._doc_tab_offset + self.MAX_VISIBLE_TABS >= len(self._doc_all_tabs):
+                self._tab_right_btn.state(["disabled"])
+            else:
+                self._tab_right_btn.state(["!disabled"])
+
+    def _make_doc_tab_visible(self, tab_id: str) -> None:
+        if tab_id not in self._doc_all_tabs:
             return
-        if index > 0:
-            self.doc_nb.select(tabs[index - 1])
+        index = self._doc_all_tabs.index(tab_id)
+        if index < self._doc_tab_offset:
+            self._doc_tab_offset = index
+            self._update_doc_tab_visibility()
+        elif index >= self._doc_tab_offset + self.MAX_VISIBLE_TABS:
+            self._doc_tab_offset = index - self.MAX_VISIBLE_TABS + 1
+            self._update_doc_tab_visibility()
+
+    def _select_prev_tool_tab(self) -> None:
+        """Scroll tool tabs to show the previous hidden tab."""
+        if len(self._tool_all_tabs) <= self.MAX_VISIBLE_TABS:
+            tabs = self.tools_nb.tabs()
+            if not tabs:
+                return
+            current = self.tools_nb.select()
+            try:
+                index = tabs.index(current)
+            except ValueError:
+                return
+            if index > 0:
+                self.tools_nb.select(tabs[index - 1])
+            return
+        if self._tool_tab_offset > 0:
+            self._tool_tab_offset -= 1
+            self._update_tool_tab_visibility()
+
+    def _select_next_tool_tab(self) -> None:
+        """Scroll tool tabs to show the next hidden tab."""
+        if len(self._tool_all_tabs) <= self.MAX_VISIBLE_TABS:
+            tabs = self.tools_nb.tabs()
+            if not tabs:
+                return
+            current = self.tools_nb.select()
+            try:
+                index = tabs.index(current)
+            except ValueError:
+                return
+            if index < len(tabs) - 1:
+                self.tools_nb.select(tabs[index + 1])
+            return
+        if self._tool_tab_offset + self.MAX_VISIBLE_TABS < len(self._tool_all_tabs):
+            self._tool_tab_offset += 1
+            self._update_tool_tab_visibility()
+
+    def _select_prev_tab(self) -> None:
+        """Scroll document tabs to show the previous hidden tab."""
+        if len(self._doc_all_tabs) <= self.MAX_VISIBLE_TABS:
+            tabs = self.doc_nb.tabs()
+            if not tabs:
+                return
+            current = self.doc_nb.select()
+            try:
+                index = tabs.index(current)
+            except ValueError:
+                return
+            if index > 0:
+                self.doc_nb.select(tabs[index - 1])
+            return
+        if self._doc_tab_offset > 0:
+            self._doc_tab_offset -= 1
+            self._update_doc_tab_visibility()
 
     def _select_next_tab(self) -> None:
-        """Select the tab to the right of the current tab."""
-        tabs = self.doc_nb.tabs()
-        if not tabs:
+        """Scroll document tabs to show the next hidden tab."""
+        if len(self._doc_all_tabs) <= self.MAX_VISIBLE_TABS:
+            tabs = self.doc_nb.tabs()
+            if not tabs:
+                return
+            current = self.doc_nb.select()
+            try:
+                index = tabs.index(current)
+            except ValueError:
+                return
+            if index < len(tabs) - 1:
+                self.doc_nb.select(tabs[index + 1])
             return
-        current = self.doc_nb.select()
-        try:
-            index = tabs.index(current)
-        except ValueError:
-            return
-        if index < len(tabs) - 1:
-            self.doc_nb.select(tabs[index + 1])
+        if self._doc_tab_offset + self.MAX_VISIBLE_TABS < len(self._doc_all_tabs):
+            self._doc_tab_offset += 1
+            self._update_doc_tab_visibility()
 
     def _new_tab(self, title: str) -> ttk.Frame:
         """Create or select a tab in the document notebook."""
@@ -17586,6 +17762,15 @@ class AutoMLApp:
         self.doc_nb.add(tab, text=display)
         tab_id = self.doc_nb.tabs()[-1]
         self._tab_titles[tab_id] = title
+        if not hasattr(self, "_doc_all_tabs"):
+            self._doc_all_tabs = []
+            self._doc_tab_offset = 0
+        self._doc_all_tabs.append(tab_id)
+        self._doc_tab_offset = max(0, len(self._doc_all_tabs) - self.MAX_VISIBLE_TABS)
+        try:
+            self._update_doc_tab_visibility()
+        except Exception:
+            pass
         self.doc_nb.select(tab_id)
         return tab
 

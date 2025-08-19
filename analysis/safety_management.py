@@ -24,6 +24,8 @@ from typing import Dict, List, Callable, Optional
 from sysml.sysml_repository import SysMLRepository
 from .requirement_rule_generator import regenerate_requirement_patterns
 
+
+GLOBAL_PHASE = "GLOBAL"
 ACTIVE_TOOLBOX: Optional["SafetyManagementToolbox"] = None
 
 # Relationships that allow propagation of results between work products. Each
@@ -477,7 +479,27 @@ class SafetyManagementToolbox:
 
     # ------------------------------------------------------------------
     def diagrams_in_module(self, name: str) -> set[str]:
-        """Return all diagram names contained within module *name*."""
+        """Return all diagram names contained within module *name*.
+
+        The special ``GLOBAL`` module contains all governance diagrams that do
+        not declare a lifecycle phase."""
+
+        repo = SysMLRepository.get_instance()
+        if name == GLOBAL_PHASE:
+            names = set(self.list_diagrams())
+
+            def _remove_mods(mods: List[GovernanceModule]) -> None:
+                for m in mods:
+                    names.difference_update(m.diagrams)
+                    _remove_mods(m.modules)
+
+            _remove_mods(self.modules)
+            names = {
+                n
+                for n in names
+                if not getattr(repo.diagrams.get(self.diagrams.get(n)), "phase", None)
+            }
+            return names
 
         mod = self._find_module(name, self.modules)
         names: set[str] = set()
@@ -489,12 +511,6 @@ class SafetyManagementToolbox:
 
             _collect(mod)
 
-        # Governance diagrams may also declare their lifecycle via the
-        # repository ``phase`` attribute even when they were not explicitly
-        # placed inside a toolbox folder.  Include those diagrams so that work
-        # products drawn on such diagrams still enable their analyses when the
-        # corresponding phase becomes active.
-        repo = SysMLRepository.get_instance()
         names.update(
             d.name
             for d in repo.diagrams.values()
@@ -544,7 +560,9 @@ class SafetyManagementToolbox:
         # phase assigned but is not tracked inside the toolbox hierarchy.
         repo = SysMLRepository.get_instance()
         diag = next((d for d in repo.diagrams.values() if d.name == diagram), None)
-        return getattr(diag, "phase", None)
+        if not diag:
+            return None
+        return getattr(diag, "phase", None) or GLOBAL_PHASE
 
     def phase_for_document(self, analysis: str, name: str) -> Optional[str]:
         """Return lifecycle phase assigned to ``analysis`` document ``name``."""
@@ -560,7 +578,7 @@ class SafetyManagementToolbox:
                 ),
                 None,
             )
-            phase = diag.phase if diag else None
+            phase = (diag.phase if diag else None) or (GLOBAL_PHASE if diag else None)
         return phase
 
     def activate_phase(self, phase: str, app=None) -> None:
@@ -603,7 +621,11 @@ class SafetyManagementToolbox:
             self.activate_phase(phase, app)
 
     def list_modules(self) -> List[str]:
-        """Return names of all governance modules including submodules."""
+        """Return names of all governance modules including submodules.
+
+        Always include the special ``GLOBAL`` phase representing diagrams
+        without an assigned lifecycle phase."""
+
         names: List[str] = []
 
         def _collect(mods: List[GovernanceModule]) -> None:
@@ -612,6 +634,8 @@ class SafetyManagementToolbox:
                 _collect(m.modules)
 
         _collect(self.modules)
+        if GLOBAL_PHASE not in names:
+            names.append(GLOBAL_PHASE)
         return names
 
     # ------------------------------------------------------------------

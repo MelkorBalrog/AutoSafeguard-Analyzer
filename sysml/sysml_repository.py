@@ -7,6 +7,8 @@ import os
 import datetime
 import analysis.user_config as user_config
 
+GLOBAL_PHASE = "GLOBAL"
+
 
 def _diagram_type_abbreviation(diag_type: str | None) -> str:
     """Return an upper-case abbreviation for *diag_type*.
@@ -242,7 +244,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
+            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
         )
         self.elements[elem_id] = elem
         try:
@@ -333,7 +335,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
+            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
         )
         self.diagrams[diag_id] = diagram
         try:
@@ -509,7 +511,7 @@ class SysMLRepository:
             author_email=user_config.CURRENT_USER_EMAIL,
             modified_by=user_config.CURRENT_USER_NAME,
             modified_by_email=user_config.CURRENT_USER_EMAIL,
-            phase=self.active_phase,
+            phase=None if self.active_phase == GLOBAL_PHASE else self.active_phase,
         )
         self.relationships.append(rel)
         return rel
@@ -524,6 +526,8 @@ class SysMLRepository:
             return False
         if self.active_phase is None:
             return True
+        if self.active_phase == GLOBAL_PHASE:
+            return elem.phase is None
         if elem.phase is None:
             return False
         if elem.phase == self.active_phase or elem.phase in getattr(self, "reuse_phases", set()):
@@ -544,6 +548,8 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
+        if self.active_phase == GLOBAL_PHASE:
+            return diag.phase is None
         if diag.diag_type == "Governance Diagram" and diag.phase is None:
             return True
         if diag.phase is None:
@@ -643,6 +649,8 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
+        if self.active_phase == GLOBAL_PHASE:
+            return obj.get("phase") is None
         if diag and diag.diag_type == "Governance Diagram" and obj.get("phase") is None:
             return True
         if obj.get("phase") is None:
@@ -656,6 +664,8 @@ class SysMLRepository:
             return True
         if self.active_phase is None:
             return True
+        if self.active_phase == GLOBAL_PHASE:
+            return conn.get("phase") is None
         if diag and diag.diag_type == "Governance Diagram" and conn.get("phase") is None:
             return True
         if conn.get("phase") is None:

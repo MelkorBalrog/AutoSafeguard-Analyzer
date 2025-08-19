@@ -38,6 +38,6 @@ def test_phase_freezes_after_work_product():
     assert "Gov" in tb.frozen_diagrams
     assert repo.diagram_read_only(diag_id)
     tb.rename_module("P1", "New")
-    assert tb.list_modules() == ["P1"]
+    assert tb.list_modules() == ["P1", "GLOBAL"]
     tb.rename_diagram("Gov", "Other")
     assert "Gov" in tb.diagrams
