@@ -39,6 +39,7 @@ class CapsuleButton(tk.Canvas):
         height: int = 26,
         bg: str = "#e1e1e1",
         hover_bg: Optional[str] = None,
+        state: str | None = None,
         **kwargs,
     ) -> None:
         init_kwargs = {
@@ -50,8 +51,14 @@ class CapsuleButton(tk.Canvas):
             init_kwargs["bg"] = master.cget("background")
         except tk.TclError:
             pass
+        # ``state`` is not a valid Canvas option.  Remove it from ``kwargs``
+        # before passing the remaining values to ``Canvas.__init__`` and keep
+        # track of it ourselves.
         init_kwargs.update(kwargs)
         super().__init__(master, **init_kwargs)
+        self._state: set[str] = set()
+        if state in {"disabled", tk.DISABLED}:  # type: ignore[arg-type]
+            self._state.add("disabled")
         self._command = command
         self._text = text
         self._normal_color = bg
@@ -64,6 +71,8 @@ class CapsuleButton(tk.Canvas):
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
         self.bind("<Button-1>", self._on_click)
+        # Apply the initial state after the button has been drawn.
+        self._apply_state()
 
     def _draw_button(self) -> None:
         self.delete("all")
@@ -97,14 +106,26 @@ class CapsuleButton(tk.Canvas):
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
-        self._set_color(self._hover_color)
+        if "disabled" not in self._state:
+            self._set_color(self._hover_color)
 
     def _on_leave(self, _event: tk.Event) -> None:
-        self._set_color(self._normal_color)
+        if "disabled" not in self._state:
+            self._set_color(self._normal_color)
 
     def _on_click(self, _event: tk.Event) -> None:
+        if "disabled" in self._state:
+            return
         if self._command:
             self._command()
+
+    def _apply_state(self) -> None:
+        """Update the visual appearance to reflect the current state."""
+        if "disabled" in self._state:
+            # A light gray color roughly matching ttk's disabled buttons
+            self._set_color("#d9d9d9")
+        else:
+            self._set_color(self._normal_color)
 
     def configure(self, **kwargs) -> None:  # pragma: no cover - thin wrapper
         """Allow dynamic configuration similar to standard Tk buttons."""
@@ -120,7 +141,13 @@ class CapsuleButton(tk.Canvas):
         hover_bg = kwargs.pop("hover_bg", None)
         width = kwargs.get("width")
         height = kwargs.get("height")
+        state = kwargs.pop("state", None)
         super().configure(**kwargs)
+        if state is not None:
+            if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
+                self.state(["disabled"])
+            else:
+                self.state(["!disabled"])
         if bg is not None:
             self._normal_color = bg
             self._hover_color = hover_bg or _lighten(bg, 1.2)
@@ -129,5 +156,20 @@ class CapsuleButton(tk.Canvas):
             self._hover_color = hover_bg
         if width is not None or height is not None or text is not None:
             self._draw_button()
+        # Always re-apply the current state so that disabled buttons retain
+        # their disabled appearance even after reconfiguration.
+        self._apply_state()
 
     config = configure
+
+    def state(self, states: list[str] | tuple[str, ...] | None = None) -> list[str]:
+        """Mimic the ``ttk.Widget.state`` method for simple disabled handling."""
+        if states is None:
+            return list(self._state)
+        for s in states:
+            if s.startswith("!"):
+                self._state.discard(s[1:])
+            else:
+                self._state.add(s)
+        self._apply_state()
+        return list(self._state)
