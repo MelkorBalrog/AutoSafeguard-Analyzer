@@ -21,20 +21,6 @@ def create_icon(
         img.put(bg, to=(0, 0, size - 1, size - 1))
     c = color
     outline = "black"
-    try:
-        tr = int(c[1:3], 16)
-        tg = int(c[3:5], 16)
-        tb = int(c[5:7], 16)
-    except (ValueError, IndexError):  # pragma: no cover - defensive
-        tr = tg = tb = 0
-
-    def _grad(x: int) -> str:
-        """Return white → color gradient value for column *x*."""
-        ratio = x / (size - 1)
-        nr = int(255 * (1 - ratio) + tr * ratio)
-        ng = int(255 * (1 - ratio) + tg * ratio)
-        nb = int(255 * (1 - ratio) + tb * ratio)
-        return f"#{nr:02x}{ng:02x}{nb:02x}"
     if shape == "circle":
         r = size // 2 - 3
         cx = cy = size // 2
@@ -375,21 +361,23 @@ def create_icon(
         mid = size // 2
         head_cy = 5
         r = 5
-        # Draw the outer head with gradient fill
+        # Draw the outer head
         for y in range(head_cy - r, head_cy + r + 1):
             for x in range(mid - r, mid + r + 1):
                 dist = (x - mid) ** 2 + (y - head_cy) ** 2
                 if dist <= r * r:
-                    img.put(_grad(x), (x, y))
+                    img.put(c, (x, y))
                 if r * r <= dist <= (r + 1) * (r + 1):
                     img.put(outline, (x, y))
-        # Hollow out the head for an open-end look without inner outline
+        # Hollow out the head for an open-end look
         inner = r - 2
         for y in range(head_cy - inner, head_cy + inner + 1):
             for x in range(mid - inner, mid + inner + 1):
                 dist = (x - mid) ** 2 + (y - head_cy) ** 2
                 if dist <= inner * inner:
                     img.put(bg or "white", (x, y))
+                if inner * inner <= dist <= (inner + 1) * (inner + 1):
+                    img.put(outline, (x, y))
         # Carve out a larger jaw opening for clearer wrench shape
         notch_start = mid + 1
         for x in range(notch_start, mid + r + 1):
@@ -402,18 +390,19 @@ def create_icon(
                 img.put(outline, (x, y_top))
             if y_bottom <= head_cy + r:
                 img.put(outline, (x, y_bottom))
-        # Draw the handle with gradient fill and single outer border
+        # Draw the handle
         handle_start = head_cy + inner
-        handle_bottom = size - 2
         for x in range(mid - 1, mid + 2):
-            fill = _grad(x)
-            for y in range(handle_start, handle_bottom):
-                img.put(fill, (x, y))
-        for y in range(handle_start, handle_bottom):
+            img.put(c, to=(x, handle_start, x + 1, size - 2))
+        for y in range(handle_start, size - 2):
             img.put(outline, (mid - 1, y))
             img.put(outline, (mid + 1, y))
+        # Add a small cap at the end of the handle
         for x in range(mid - 1, mid + 2):
-            img.put(outline, (x, handle_bottom))
+            for y in range(size - 4, size - 2):
+                img.put(bg or "white", (x, y))
+                if x in (mid - 1, mid + 1) or y in (size - 4, size - 3):
+                    img.put(outline, (x, y))
     elif shape == "steering":
         mid=size//2
         r=size//2-2
