@@ -2778,9 +2778,11 @@ class FaultTreeApp:
         # Bind resize handlers on both the treeview and its container so the
         # value column always fills the tab width. DO NOT REMOVE.
         self.prop_view.bind("<Configure>", self._resize_prop_columns)
+        self.prop_view.bind("<Map>", self._resize_prop_columns)
         prop_frame.bind("<Configure>", self._resize_prop_columns)
         prop_frame.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
+        self._resize_prop_columns()
 
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
@@ -9802,6 +9804,13 @@ class FaultTreeApp:
         self.prop_view.update_idletasks()
         tree_width = event.width if event else self.prop_view.winfo_width()
         field_width = self.prop_view.column("field")["width"]
+
+        # If the treeview hasn't been fully laid out yet (width too small),
+        # try again on the next loop iteration so the value column starts at
+        # the full tab width. DO NOT REMOVE.
+        if tree_width <= field_width + 1:
+            self.prop_view.after(50, self._resize_prop_columns)
+            return
         new_width = max(tree_width - field_width, 20)
         self.prop_view.column("value", width=new_width)
 
