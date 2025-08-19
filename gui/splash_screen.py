@@ -10,7 +10,14 @@ class SplashScreen(tk.Toplevel):
         self.duration = duration
         self.overrideredirect(True)
         self.canvas_size = 300
-        self.canvas = tk.Canvas(self, width=self.canvas_size, height=self.canvas_size, highlightthickness=0, bg="white")
+        # Black background so colors pop
+        self.canvas = tk.Canvas(
+            self,
+            width=self.canvas_size,
+            height=self.canvas_size,
+            highlightthickness=0,
+            bg="black",
+        )
         self.canvas.pack()
         self._center()
         # Initialize cube geometry
@@ -37,6 +44,7 @@ class SplashScreen(tk.Toplevel):
             text="Automotive Modeling Language\nby\nKarel Capek Robotics",
             justify="center",
             font=("Helvetica", 12),
+            fill="white",
         )
         # Start animation
         self.after(10, self._animate)
@@ -75,7 +83,16 @@ class SplashScreen(tk.Toplevel):
         for i, j in self.edges:
             x1, y1 = points[i]
             x2, y2 = points[j]
-            self.canvas.create_line(x1, y1, x2, y2, fill="skyblue", width=2, tags="cube")
+            # Bright cyan edges for visibility against black
+            self.canvas.create_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                fill="cyan",
+                width=2,
+                tags="cube",
+            )
 
     def _draw_gear(self):
         self.canvas.delete("gear")
@@ -90,7 +107,10 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        self.canvas.create_polygon(pts, outline="gray", fill="", width=2, tags="gear")
+        # Light outline keeps gear visible on dark background
+        self.canvas.create_polygon(
+            pts, outline="lightgray", fill="", width=2, tags="gear"
+        )
 
     def _animate(self):
         self.angle = (self.angle + 2) % 360
