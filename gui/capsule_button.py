@@ -249,12 +249,13 @@ class CapsuleButton(tk.Canvas):
 
 
     def _draw_content(self, w: int, h: int) -> None:
-        """Render optional image and text with a subtle shading overlay."""
+        """Render optional image and text with a recessed shading effect."""
         cx, cy = w // 2, h // 2
         self._text_item = None
         self._image_item = None
-        self._content_shade_item = None
-        shade_col = _darken(self._current_color, 0.9)
+        if self._content_shade_item is not None:
+            self.delete(self._content_shade_item)
+            self._content_shade_item = None
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -266,48 +267,11 @@ class CapsuleButton(tk.Canvas):
             text_x = start + img_w + spacing + text_w // 2
             self._image_item = self.create_image(img_x, cy, image=self._image)
             self._text_item = self.create_text(text_x, cy, text=self._text)
-            bbox_img = self.bbox(self._image_item)
-            bbox_txt = self.bbox(self._text_item)
-            if bbox_img and bbox_txt:
-                x1 = min(bbox_img[0], bbox_txt[0])
-                y1 = min(bbox_img[1], bbox_txt[1])
-                x2 = max(bbox_img[2], bbox_txt[2])
-                y2 = max(bbox_img[3], bbox_txt[3])
-                self._content_shade_item = self.create_rectangle(
-                    x1,
-                    y1,
-                    x2,
-                    y2,
-                    outline="",
-                    fill=shade_col,
-                    stipple="gray50",
-                )
         elif self._image:
             self._image_item = self.create_image(cx, cy, image=self._image)
-            bbox = self.bbox(self._image_item)
-            if bbox:
-                self._content_shade_item = self.create_rectangle(
-                    bbox[0],
-                    bbox[1],
-                    bbox[2],
-                    bbox[3],
-                    outline="",
-                    fill=shade_col,
-                    stipple="gray50",
-                )
         else:
             self._text_item = self.create_text(cx, cy, text=self._text)
-            bbox = self.bbox(self._text_item)
-            if bbox:
-                self._content_shade_item = self.create_rectangle(
-                    bbox[0],
-                    bbox[1],
-                    bbox[2],
-                    bbox[3],
-                    outline="",
-                    fill=shade_col,
-                    stipple="gray50",
-                )
+        self._shade_content()
 
     def _shade_content(self) -> None:
         items = [i for i in (self._text_item, self._image_item) if i]
