@@ -41,6 +41,8 @@ class CapsuleButton(tk.Canvas):
         bg: str = "#e1e1e1",
         hover_bg: Optional[str] = None,
         state: str | None = None,
+        image: tk.PhotoImage | None = None,
+        compound: str = tk.CENTER,
         **kwargs,
     ) -> None:
         init_kwargs = {
@@ -54,8 +56,12 @@ class CapsuleButton(tk.Canvas):
             pass
         # ``style`` and ``state`` are ttk-specific options.  Strip them from
         # ``kwargs`` before forwarding to ``Canvas.__init__`` and track the
-        # ``state`` value ourselves.
+        # ``state`` value ourselves.  ``image`` and ``compound`` are also Tk
+        # button options which ``Canvas`` does not understand, so remove them
+        # here and handle them manually.
         kwargs.pop("style", None)
+        kwargs.pop("image", None)
+        kwargs.pop("compound", None)
         init_kwargs.update(kwargs)
         super().__init__(master, **init_kwargs)
         self._state: set[str] = set()
@@ -63,6 +69,8 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._text = text
+        self._image = image
+        self._compound = compound
         self._normal_color = bg
         self._hover_color = hover_bg or _lighten(bg, 1.2)
         self._current_color = self._normal_color
@@ -70,6 +78,7 @@ class CapsuleButton(tk.Canvas):
         self._shape_items: list[int] = []
         self._shine_items: list[int] = []
         self._text_item: Optional[int] = None
+        self._image_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -84,20 +93,24 @@ class CapsuleButton(tk.Canvas):
         r = self._radius
         color = self._current_color
         outline = "#b3b3b3"
+        # Draw the filled shapes without outlines so the seams between the
+        # rectangle and arcs are not visible.
         self._shape_items = [
             self.create_arc(
                 (0, 0, 2 * r, h),
                 start=90,
                 extent=180,
-                outline=outline,
+                style=tk.CHORD,
+                outline="",
                 fill=color,
             ),
-            self.create_rectangle((r, 0, w - r, h), outline=outline, fill=color),
+            self.create_rectangle((r, 0, w - r, h), outline="", fill=color),
             self.create_arc(
                 (w - 2 * r, 0, w, h),
                 start=-90,
                 extent=180,
-                outline=outline,
+                style=tk.CHORD,
+                outline="",
                 fill=color,
             ),
         ]
@@ -175,6 +188,8 @@ class CapsuleButton(tk.Canvas):
             self._command = command
         bg = kwargs.pop("bg", None)
         hover_bg = kwargs.pop("hover_bg", None)
+        image = kwargs.pop("image", None)
+        compound = kwargs.pop("compound", None)
         width = kwargs.get("width")
         height = kwargs.get("height")
         state = kwargs.pop("state", None)
@@ -191,7 +206,11 @@ class CapsuleButton(tk.Canvas):
             self._set_color(self._normal_color)
         if hover_bg is not None and bg is None:
             self._hover_color = hover_bg
-        if width is not None or height is not None or text is not None:
+        if image is not None:
+            self._image = image
+        if compound is not None:
+            self._compound = compound
+        if width is not None or height is not None or text is not None or image is not None or compound is not None:
             self._draw_button()
         # Always re-apply the current state so that disabled buttons retain
         # their disabled appearance even after reconfiguration.
