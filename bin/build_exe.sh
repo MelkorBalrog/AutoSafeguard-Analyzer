@@ -18,6 +18,15 @@ for pkg in openpyxl networkx matplotlib reportlab adjustText; do
     }
 done
 
+# ``tkinter`` is a standard library module but may be shipped separately on
+# some platforms (e.g. on Debian based systems it is provided by the
+# ``python3-tk`` package).  Ensure it is available before attempting to build.
+python -c "import tkinter" >/dev/null 2>&1 || {
+    echo "Missing required module 'tkinter'. Install the Tk bindings for your "
+         "Python distribution (e.g. 'sudo apt-get install python3-tk')." >&2
+    exit 1
+}
+
 # Warn if running a pre-release Python build which may cause PyInstaller errors
 if python -c "import sys, re; v=sys.version; print('pre' if re.search('(alpha|beta|candidate|rc)', v) else '')" | grep -q pre; then
     echo "Warning: pre-release Python builds can fail with PyInstaller. Use a stable release." >&2
@@ -35,6 +44,7 @@ pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
     --exclude-module scipy \
     --hidden-import=PIL.ImageTk \
+    --hidden-import=tkinter \
     --add-data "styles:styles" \
     --add-data "AutoML.py:." launcher.py
 

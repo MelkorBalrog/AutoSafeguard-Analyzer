@@ -35,6 +35,20 @@ def ensure_packages() -> None:
         except ImportError:
             subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
+    # ``tkinter`` is part of the Python standard library but on some
+    # platforms (e.g. minimal Linux installations) it is provided by a
+    # separate package.  Import it explicitly so we can present a clear
+    # error message if it is missing rather than failing later when
+    # :mod:`AutoML` is executed.
+    try:
+        importlib.import_module("tkinter")
+    except ImportError as exc:  # pragma: no cover - depends on system setup
+        raise RuntimeError(
+            "tkinter is required for AutoML. Install the Tk bindings for "
+            "your Python distribution (e.g. 'sudo apt-get install python3-tk' "
+            "on Debian/Ubuntu)."
+        ) from exc
+
 def main() -> None:
     ensure_packages()
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))

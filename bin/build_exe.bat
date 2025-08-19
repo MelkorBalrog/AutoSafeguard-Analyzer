@@ -27,6 +27,15 @@ for %%P in (openpyxl networkx matplotlib reportlab adjustText) do (
     )
 )
 
+REM ``tkinter`` is a standard library module but may not be installed with
+REM minimal Python distributions.  Verify it is available before building so
+REM that the bundled executable contains the GUI components.
+python -c "import tkinter" >NUL 2>&1 || (
+    echo Missing required module 'tkinter'. Install the Tk bindings for your Python distribution.
+    echo For example, on Debian/Ubuntu: sudo apt-get install python3-tk.
+    exit /b 1
+)
+
 REM Ask the user for an optional icon to embed in the executable
 set "ICON_ARG="
 set /P "ICON_PATH=Enter path to .ico icon file (leave blank for none): "
@@ -45,6 +54,7 @@ if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --exclude-module scipy ^
     --hidden-import=PIL.ImageTk ^
+    --hidden-import=tkinter ^
     --add-data "styles;styles" ^
     --add-data "AutoML.py;." ^
     %ICON_ARG% launcher.py
