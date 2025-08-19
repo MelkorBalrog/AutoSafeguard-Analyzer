@@ -1,6 +1,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from gui import messagebox
+from gui import messagebox as mb
 
 
 def test_askyesno_uses_custom_dialog(monkeypatch):
@@ -53,16 +53,44 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
         def pack(self, *a, **k):
             pass
 
-    class DummyTop:
+    class DummyDialog:
         def __init__(self, root):
             pass
+
         def title(self, *a):
+            pass
+
+        def resizable(self, *a, **k):
+            pass
+
+        def transient(self, *a, **k):
             pass
 
         def grab_set(self):
             pass
 
+        def geometry(self, *a, **k):
+            pass
+
+        def update_idletasks(self):
+            pass
+
+        def attributes(self, *a, **k):
+            pass
+
+        def lift(self, *a, **k):
+            pass
+
+        def winfo_screenwidth(self):
+            return 1000
+
+        def winfo_screenheight(self):
+            return 800
+
         def destroy(self):
+            pass
+
+        def protocol(self, *a, **k):
             pass
 
         def wait_window(self):
@@ -103,14 +131,37 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
 
         def resizable(self, *a, **k):
             pass
+
         def transient(self, *a, **k):
             pass
+
         def grab_set(self):
             pass
+
+        def geometry(self, *a, **k):
+            pass
+
+        def update_idletasks(self):
+            pass
+
+        def attributes(self, *a, **k):
+            pass
+
+        def lift(self, *a, **k):
+            pass
+
+        def winfo_screenwidth(self):
+            return 1000
+
+        def winfo_screenheight(self):
+            return 800
+
         def destroy(self):
             pass
+
         def protocol(self, *a, **k):
             pass
+
         def wait_window(self):
             pass
 
