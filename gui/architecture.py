@@ -278,26 +278,27 @@ def _relations_for(nodes: list[str]) -> list[str]:
 
     rels: set[str] = set()
     node_set = set(nodes)
-    # Consider all governance-related nodes when looking for valid
-    # counterparts so cross-group relationships like Field Data --[Assesses]-->
-    # Risk Assessment remain visible.  Previously we required both ends of a
-    # relation to exist within ``node_set`` which hid connections whose source
-    # and target belonged to different toolbox groups.  The broader set below
-    # allows any relation to surface when a node in ``node_set`` can connect to
-    # another configured node.
-    all_nodes = set(GOV_ELEMENT_NODES) | set(SAFETY_AI_NODES) | set(GOV_CORE_NODES)
 
+    # Only consider relationships defined for Governance diagrams.  Iterating
+    # over all diagram rules caused every connection label to appear in each
+    # toolbox even when a node had no valid targets for that relation.
     gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
     for rel, srcs in gov_rules.items():
         for src, dests in srcs.items():
-            if src in node_set and all_nodes.intersection(dests):
+            # A relation is relevant only when an element in ``node_set`` can
+            # connect to another element in ``node_set`` using that relation.
+            # Previously, relations were surfaced whenever a node could act as
+            # either source *or* target.  This caused connections that required
+            # nodes outside the toolbox to appear.  Filtering to pairs within
+            # the toolbox ensures each displayed relationship is actionable for
+            # the current context.
+            if src in node_set and node_set.intersection(dests):
                 rels.add(rel)
-
+    # Apply the same filtering to Safety & AI specific rules.
     for rel, srcs in SAFETY_AI_RELATION_RULES.items():
         for src, dests in srcs.items():
-            if src in node_set and all_nodes.intersection(dests):
+            if src in node_set and node_set.intersection(dests):
                 rels.add(rel)
-
     return sorted(rels)
 
 
@@ -3790,14 +3791,14 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
         """Adjust property view columns so the value column fills the tab."""
-        try:
-            self.prop_view.update_idletasks()
-            tree_width = event.width if event else self.prop_view.winfo_width()
-            field_width = self.prop_view.column("field")["width"]
-            new_width = max(tree_width - field_width, 20)
-            self.prop_view.column("value", width=new_width)
-        except Exception:
-            pass
+        if not hasattr(self, "prop_view"):
+            return
+
+        self.prop_view.update_idletasks()
+        tree_width = event.width if event else self.prop_view.winfo_width()
+        field_width = self.prop_view.column("field")["width"]
+        new_width = max(tree_width - field_width, 20)
+        self.prop_view.column("value", width=new_width)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""

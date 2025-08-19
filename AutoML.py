@@ -9785,18 +9785,18 @@ class FaultTreeApp:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
 
-    def _resize_prop_columns(self, event=None):
+    def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
         """Resize property view columns so the value column fills the tab."""
-        try:
-            # Determine the current width of the treeview widget. When invoked
-            # via ``after`` there is no event, so query the widget directly.
-            self.prop_view.update_idletasks()
-            tree_width = event.width if event else self.prop_view.winfo_width()
-            field_width = self.prop_view.column("field")["width"]
-            new_width = max(tree_width - field_width, 20)
-            self.prop_view.column("value", width=new_width)
-        except Exception:
-            pass
+        if not hasattr(self, "prop_view"):
+            return
+
+        # Determine the current width of the treeview widget. When invoked via
+        # ``after`` there is no event, so query the widget directly.
+        self.prop_view.update_idletasks()
+        tree_width = event.width if event else self.prop_view.winfo_width()
+        field_width = self.prop_view.column("field")["width"]
+        new_width = max(tree_width - field_width, 20)
+        self.prop_view.column("value", width=new_width)
 
     def _on_doc_tab_motion(self, event):
         """Show tooltip for document notebook tabs when hovering over them."""
