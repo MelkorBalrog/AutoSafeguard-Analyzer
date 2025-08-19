@@ -7004,7 +7004,7 @@ class SysMLDiagramWindow(tk.Frame):
         key = (shape, color, size)
         icon = cache.get(key)
         if icon is None:
-            base = self._create_icon(shape, color)
+            base = draw_icon(shape, color)
             if size != 16:
                 icon = base.zoom(size, size).subsample(16, 16)
             else:
