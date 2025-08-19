@@ -32,13 +32,10 @@ def test_governance_work_product_enablement(analysis, area_name, monkeypatch):
     prev_tb = _sm.ACTIVE_TOOLBOX
     toolbox = SafetyManagementToolbox()
 
-    # Required process area for the selected work product
-    area = SysMLObject(1, "System Boundary", 0, 0, properties={"name": area_name})
-
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
-    win.objects = [area]
+    win.objects = []
     win.connections = []
     win.zoom = 1.0
     win.sort_objects = lambda: None
@@ -59,8 +56,11 @@ def test_governance_work_product_enablement(analysis, area_name, monkeypatch):
 
     class DummyDialog:
         def __init__(self, parent, title, options):
-            captured["options"] = options
-            self.selection = analysis
+            if title == "Add Process Area":
+                self.selection = area_name
+            else:
+                captured["options"] = options
+                self.selection = analysis
 
     monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", DummyDialog)
 

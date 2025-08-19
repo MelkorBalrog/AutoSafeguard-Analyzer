@@ -1993,25 +1993,18 @@ def test_add_work_product_uses_half_width(monkeypatch):
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     win.repo = repo
     win.diagram_id = diag.diag_id
-    win.objects = [
-        SysMLObject(
-            2,
-            "System Boundary",
-            0.0,
-            0.0,
-            width=200.0,
-            height=150.0,
-            properties={"name": "Hazard & Threat Analysis"},
-        )
-    ]
+    win.objects = []
     win.sort_objects = lambda: None
     win._sync_to_repository = lambda: None
     win.redraw = lambda: None
     win.app = types.SimpleNamespace(enable_work_product=lambda name, *, refresh=True: None)
 
     class FakeDialog:
-        def __init__(self, *args, **kwargs):
-            self.selection = "HAZOP"
+        def __init__(self, parent, title, options):
+            if title == "Add Process Area":
+                self.selection = "Hazard & Threat Analysis"
+            else:
+                self.selection = "HAZOP"
 
     monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FakeDialog)
 
