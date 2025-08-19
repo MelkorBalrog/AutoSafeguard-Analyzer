@@ -372,10 +372,13 @@ class CapsuleButton(tk.Canvas):
         glow_color = _lighten(self._current_color, 1.3)
         self._glow_items = [
             self.create_arc((-1, -1, 2 * r + 1, h + 1), start=90, extent=180, style=tk.ARC, outline=glow_color, width=2),
-            self.create_line(r, -1, w - r, -1, fill=glow_color, width=2),
+            # Offset the horizontal glow lines by one pixel so the caps extend
+            # beyond the button edge.  Without this adjustment the highlight
+            # appears slightly narrower than the button itself.
+            self.create_line(r - 1, -1, w - r + 1, -1, fill=glow_color, width=2),
             self.create_arc((w - 2 * r - 1, -1, w + 1, h + 1), start=-90, extent=180, style=tk.ARC, outline=glow_color, width=2),
             self.create_line(-1, r, -1, h - r, fill=glow_color, width=2),
-            self.create_line(r, h + 1, w - r, h + 1, fill=glow_color, width=2),
+            self.create_line(r - 1, h + 1, w - r + 1, h + 1, fill=glow_color, width=2),
             self.create_line(w + 1, r, w + 1, h - r, fill=glow_color, width=2),
         ]
 
