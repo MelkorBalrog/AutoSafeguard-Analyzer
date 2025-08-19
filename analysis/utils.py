@@ -46,6 +46,19 @@ def update_probability_tables(
         )
 
 
+def normalize_probability_mapping(mapping: dict | None) -> dict:
+    """Return *mapping* with integer keys and float values.
+
+    Project files store probability tables with string keys.  This helper
+    converts such mappings back to the numeric form expected by the rest of the
+    application.  ``None`` yields an empty dictionary.
+    """
+
+    if not mapping:
+        return {}
+    return {int(k): float(v) for k, v in dict(mapping).items()}
+
+
 def exposure_to_probability(level: int) -> float:
     """Return ``P(E|HB)`` for the given exposure rating.
 
