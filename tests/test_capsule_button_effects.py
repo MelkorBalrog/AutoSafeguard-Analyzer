@@ -21,7 +21,7 @@ def test_text_without_shadow_or_highlight():
     root.destroy()
 
 
-def test_icon_highlight_without_shadow():
+def test_icon_without_highlight_or_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
