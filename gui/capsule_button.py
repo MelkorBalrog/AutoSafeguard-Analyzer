@@ -95,7 +95,7 @@ class CapsuleButton(tk.Canvas):
         # sense of depth.
         self._border_dark: list[int] = []
         self._border_light: list[int] = []
-        self._border_outline: list[int] = []
+        self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -195,11 +195,22 @@ class CapsuleButton(tk.Canvas):
         ]
         dark = _darken(self._current_color, 0.8)
         light = _lighten(self._current_color, 1.2)
+        gap = _darken(self._current_color, 0.7)
+        inset = 1
         # Dark top/left edges
         self._border_dark = [
             self.create_arc((0, 0, 2 * r, h), start=90, extent=180, style=tk.ARC, outline=dark, width=2),
             self.create_line(r, 0, w - r, 0, fill=dark, width=2),
             self.create_line(0, r, 0, h - r, fill=dark, width=2),
+        ]
+        # Thin dark outline inside the border to accentuate the recessed effect
+        self._border_gap = [
+            self.create_arc((inset, inset, 2 * r - inset, h - inset), start=90, extent=180, style=tk.ARC, outline=gap, width=1),
+            self.create_line(r, inset, w - r, inset, fill=gap, width=1),
+            self.create_line(inset, r, inset, h - r, fill=gap, width=1),
+            self.create_arc((w - 2 * r + inset, inset, w - inset, h - inset), start=-90, extent=180, style=tk.ARC, outline=gap, width=1),
+            self.create_line(r, h - inset, w - r, h - inset, fill=gap, width=1),
+            self.create_line(w - inset, r, w - inset, h - r, fill=gap, width=1),
         ]
         # Light bottom/right edges
         self._border_light = [
@@ -217,9 +228,10 @@ class CapsuleButton(tk.Canvas):
         inner = _darken(color, 0.7)
         dark = _darken(color, 0.8)
         light = _lighten(color, 1.2)
-        self._apply_border_color(self._border_outline, inner)
+        gap = _darken(color, 0.7)
         self._apply_border_color(self._border_dark, dark)
         self._apply_border_color(self._border_light, light)
+        self._apply_border_color(self._border_gap, gap)
         self._current_color = color
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
