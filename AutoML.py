@@ -2233,7 +2233,132 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        self.style.configure("Treeview", font=("Arial", 10))
+        self.style.configure(
+            "Treeview",
+            font=("Arial", 10),
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
+            borderwidth=1,
+            relief="sunken",
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        self.style.map(
+            "Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
+        )
+        # ------------------------------------------------------------------
+        # Global color theme inspired by Windows classic / Windows 7
+        # ------------------------------------------------------------------
+        # Overall workspace background
+        root.configure(background="#f0f0f0")
+        # General widget colours
+        self.style.configure("TFrame", background="#f0f0f0")
+        self.style.configure("TLabel", background="#f0f0f0", foreground="black")
+        self.style.configure(
+            "TEntry", fieldbackground="#ffffff", background="#ffffff", foreground="black"
+        )
+        self.style.configure(
+            "TCombobox",
+            fieldbackground="#ffffff",
+            background="#ffffff",
+            foreground="black",
+        )
+        self.style.configure(
+            "TMenubutton", background="#e7edf5", foreground="black"
+        )
+        self.style.configure(
+            "TScrollbar",
+            background="#c0d4eb",
+            troughcolor="#e2e6eb",
+            bordercolor="#888888",
+            arrowcolor="#555555",
+        )
+        # Toolbox/LabelFrame titles
+        self.style.configure(
+            "Toolbox.TLabelframe",
+            background="#fef9e7",
+            bordercolor="#888888",
+            lightcolor="#fffef7",
+            darkcolor="#bfae6a",
+            borderwidth=2,
+            relief="raised",
+        )
+        self.style.configure(
+            "Toolbox.TLabelframe.Label",
+            background="#f8e27c",
+            foreground="black",
+            font=("Segoe UI", 10, "bold"),
+            padding=(4, 0, 0, 0),
+            anchor="w",
+            relief="raised",
+            borderwidth=1,
+        )
+        self.style.map(
+            "Toolbox.TLabelframe.Label",
+            background=[("active", "#e0c95c"), ("!active", "#f8e27c")],
+        )
+        # Notebook (ribbon-like) title bars with beveled edges
+        self.style.configure(
+            "TNotebook",
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
+        self.style.configure(
+            "TNotebook.Tab",
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        self.style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
+        )
+        # Closable notebook shares the same appearance
+        self.style.configure(
+            "ClosableNotebook",
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
+        self.style.configure(
+            "ClosableNotebook.Tab",
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        self.style.map(
+            "ClosableNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
+        )
+        # Classic 3D buttons
+        self.style.configure(
+            "TButton",
+            background="#e7edf5",
+            borderwidth=2,
+            relief="raised",
+            lightcolor="#ffffff",
+            darkcolor="#7a8a99",
+        )
+        self.style.map(
+            "TButton",
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        )
         # Increase notebook tab font/size so titles are fully visible
         self.style.configure(
             "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
@@ -2734,7 +2859,9 @@ class AutoMLApp:
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
 
         # --- Analyses Group ---
-        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
+        self.analysis_group = ttk.LabelFrame(
+            self.analysis_tab, text="Analyses & Architecture", style="Toolbox.TLabelframe"
+        )
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
         tree_frame = ttk.Frame(self.analysis_group)
@@ -2756,7 +2883,9 @@ class AutoMLApp:
         self.treeview = self.analysis_tree
 
         # --- Tools Section ---
-        self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
+        self.tools_group = ttk.LabelFrame(
+            self.analysis_tab, text="Tools", style="Toolbox.TLabelframe"
+        )
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         top = ttk.Frame(self.tools_group)
         top.pack(side=tk.TOP, fill=tk.X)
@@ -2778,12 +2907,29 @@ class AutoMLApp:
         # found`` when instantiating the notebook widget.  The following styles
         # derive from the standard ``TNotebook``/``TNotebook.Tab`` styles and
         # merely customise the tab appearance.
-        style.configure("ToolsNotebook.TNotebook", padding=0)
+        style.configure(
+            "ToolsNotebook.TNotebook",
+            padding=0,
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
         style.configure(
             "ToolsNotebook.TNotebook.Tab",
             font=("Arial", 10),
             padding=(10, 5),
             width=20,
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        style.map(
+            "ToolsNotebook.TNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
         )
         self.tools_left_btn = ttk.Button(
             nb_container, text="<", width=2, command=self._select_prev_tool_tab
@@ -13802,11 +13948,21 @@ class AutoMLApp:
             "FMEA.Treeview",
             font=("Segoe UI", 10),
             rowheight=60,
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
         )
         style.configure(
             "FMEA.Treeview.Heading",
             font=("Segoe UI", 10, "bold"),
-            background="#d0d0d0",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        style.map(
+            "FMEA.Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
         )
 
         columns = [
@@ -17660,13 +17816,15 @@ class AutoMLApp:
                 self._tab_right_btn.state(["!disabled"])
 
     def _make_doc_tab_visible(self, tab_id: str) -> None:
-        if tab_id not in self._doc_all_tabs:
+        all_tabs = getattr(self, "_doc_all_tabs", [])
+        if tab_id not in all_tabs:
             return
-        index = self._doc_all_tabs.index(tab_id)
-        if index < self._doc_tab_offset:
+        index = all_tabs.index(tab_id)
+        offset = getattr(self, "_doc_tab_offset", 0)
+        if index < offset:
             self._doc_tab_offset = index
             self._update_doc_tab_visibility()
-        elif index >= self._doc_tab_offset + self.MAX_VISIBLE_TABS:
+        elif index >= offset + self.MAX_VISIBLE_TABS:
             self._doc_tab_offset = index - self.MAX_VISIBLE_TABS + 1
             self._update_doc_tab_visibility()
 
