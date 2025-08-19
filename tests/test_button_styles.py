@@ -24,7 +24,6 @@ class DummyStyle:
             self.current_theme = theme
         return self.current_theme
 
-
 def test_apply_purplish_button_style_configures_background():
     style = DummyStyle()
     apply_purplish_button_style(style)

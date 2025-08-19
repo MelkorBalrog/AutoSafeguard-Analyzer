@@ -179,16 +179,15 @@ def show_temporarily(duration=3000, lines: int | None = None):
     duration:
         Time in milliseconds before hiding the log window.
     lines:
-        Number of display lines to show. If provided and exceeds the default
-        height, the log window expands to fit the message.
+        Number of display lines to show. If provided, the log window is sized
+        to exactly fit that many lines rather than the default height.
     """
     global _auto_hide_id
     if not log_frame:
         return
     show_log()
     if lines:
-        desired_height = max(_default_height, _line_height * lines)
-        log_frame.configure(height=desired_height)
+        log_frame.configure(height=_line_height * lines)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
