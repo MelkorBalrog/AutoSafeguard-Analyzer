@@ -4869,16 +4869,12 @@ class SysMLDiagramWindow(tk.Frame):
                         o.obj_type == "Work Product"
                         and o.properties.get("parent") == str(self.selected_obj.obj_id)
                     ):
-                        o.x += dx
-                        o.y += dy
+                        offx = float(o.properties.get("px", o.x - old_x))
+                        offy = float(o.properties.get("py", o.y - old_y))
+                        o.x = self.selected_obj.x + offx
+                        o.y = self.selected_obj.y + offy
                         self._constrain_to_parent(o, self.selected_obj)
                     elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
-                        o.x += dx
-                        o.y += dy
-                    if (
-                        o.obj_type == "Work Product"
-                        and o.properties.get("parent") == str(self.selected_obj.obj_id)
-                    ):
                         o.x += dx
                         o.y += dy
             boundary = self.get_ibd_boundary()
@@ -11624,6 +11620,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         bottom = area.y + area.height / 2 - obj.height / 2
         obj.x = min(max(obj.x, left), right)
         obj.y = min(max(obj.y, top), bottom)
+        obj.properties["px"] = str(obj.x - area.x)
+        obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
         pending_click = getattr(self, "_pending_wp_click", False)
