@@ -30,11 +30,11 @@ def test_askokcancel_uses_custom_dialog(monkeypatch):
 
 
 def test_create_dialog_uses_purple_button_style(monkeypatch):
-    colors = []
+    styles = []
 
     class DummyButton:
         def __init__(self, master, **kwargs):
-            colors.append((kwargs.get("bg"), kwargs.get("hover_bg")))
+            styles.append(kwargs.get("style"))
 
         def pack(self, *a, **k):
             pass
@@ -94,7 +94,7 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     )
 
     mb._create_dialog("Title", "Message", [("OK", True)])
-    assert colors == [("#9b59b6", "#b37cc8")]
+    assert styles == ["Purple.TButton"]
 
 
 def test_create_dialog_keeps_existing_root(monkeypatch):

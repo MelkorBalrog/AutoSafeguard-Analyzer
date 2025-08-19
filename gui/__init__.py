@@ -8,25 +8,11 @@ from tkinter import ttk
 
 from .capsule_button import CapsuleButton  # noqa: F401
 
-
-def _translucid_button(*args, **kwargs):
-    """Return a :class:`CapsuleButton` with a subtle translucent palette.
-
-    All toolboxes across the application use this factory to provide a
-    consistent, low‑key appearance.  Callers may override the colours by
-    supplying ``bg``/``hover_bg`` in *kwargs*.
-    """
-
-    kwargs.setdefault("bg", "#ffffff")
-    kwargs.setdefault("hover_bg", "#f0f0f0")
-    return CapsuleButton(*args, **kwargs)
-
-
 # Use CapsuleButton for all button instances across the GUI.  Monkeypatching
 # both ``ttk.Button`` and the classic ``tk.Button`` ensures the custom hover
 # highlight is applied consistently without modifying every call site.
-ttk.Button = _translucid_button  # type: ignore[assignment]
-tk.Button = _translucid_button  # type: ignore[assignment]
+ttk.Button = CapsuleButton  # type: ignore[assignment]
+tk.Button = CapsuleButton  # type: ignore[assignment]
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
