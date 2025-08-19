@@ -204,11 +204,29 @@ CONNECTION_RULES: dict[str, dict[str, dict[str, set[str]]]] = {
     for diag, conns in _CONFIG.get("connection_rules", {}).items()
 }
 
+# Mapping of governance elements to their permitted outgoing connections.
+GOV_ELEMENT_CONNECTIONS: dict[str, dict[str, list[str]]] = {}
+for conn, srcs in CONNECTION_RULES.get("Governance Diagram", {}).items():
+    for src, dests in srcs.items():
+        if dests:
+            GOV_ELEMENT_CONNECTIONS.setdefault(src, {})[conn] = sorted(dests)
+
 # Maximum number of connections allowed per node type
 NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {})
 
 # Node types that require guards on outgoing flows
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
+
+
+def _connection_tooltip_text(elem_type: str) -> str:
+    """Return tooltip text for the given governance element type."""
+
+    elem_type = _GOV_TYPE_ALIASES.get(elem_type, elem_type)
+    rels = GOV_ELEMENT_CONNECTIONS.get(elem_type)
+    if not rels:
+        return ""
+    lines = [f"{rel}: {', '.join(dests)}" for rel, dests in sorted(rels.items())]
+    return "\n".join(lines)
 
 
 def _relations_for(nodes: list[str]) -> list[str]:
@@ -3579,6 +3597,8 @@ class SysMLDiagramWindow(tk.Frame):
         self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
+        self._hover_obj: SysMLObject | None = None
+        self._hover_tip = ToolTip(self.canvas, "", automatic=False) if ToolTip else None
         self.bind("<Control-c>", self.copy_selected)
         self.bind("<Control-x>", self.cut_selected)
         self.bind("<Control-v>", self.paste_selected)
@@ -5146,34 +5166,26 @@ class SysMLDiagramWindow(tk.Frame):
             y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
             self.redraw()
-
-    def on_mouse_move(self, event):
-        if self.start and self.current_tool in (
-            "Association",
-            "Include",
-            "Extend",
-            "Flow",
-            "Propagate",
-            "Propagate by Review",
-            "Propagate by Approval",
-            "Used By",
-            "Used after Review",
-            "Used after Approval",
-            "Re-use",
-            "Trace",
-            "Connector",
-            "Generalization",
-            "Generalize",
-            "Communication Path",
-            "Aggregation",
-            "Composite Aggregation",
-            "Control Action",
-            "Feedback",
-        ):
-            x = self.canvas.canvasx(event.x)
-            y = self.canvas.canvasy(event.y)
-            self.temp_line_end = (x, y)
-            self.redraw()
+        else:
+            if self._hover_tip:
+                x = self.canvas.canvasx(event.x)
+                y = self.canvas.canvasy(event.y)
+                obj = self.find_object(x, y)
+                diag = self.repo.diagrams.get(self.diagram_id)
+                if (
+                    obj
+                    and diag
+                    and diag.diag_type == "Governance Diagram"
+                ):
+                    text = _connection_tooltip_text(obj.obj_type)
+                    if text:
+                        if self._hover_obj is not obj or self._hover_tip.text != text:
+                            self._hover_obj = obj
+                            self._hover_tip.text = text
+                        self._hover_tip.show(event.x_root + 10, event.y_root + 10)
+                        return
+                self._hover_obj = None
+                self._hover_tip.hide()
 
     def on_double_click(self, event):
         x = self.canvas.canvasx(event.x)
