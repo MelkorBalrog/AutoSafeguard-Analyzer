@@ -400,6 +400,7 @@ from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
+    normalize_probability_mapping,
 )
 from analysis.safety_management import SafetyManagementToolbox, ACTIVE_TOOLBOX
 from analysis.causal_bayesian_network import CausalBayesianNetwork, CausalBayesianNetworkDoc
@@ -4711,6 +4712,18 @@ class AutoMLApp:
         )
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        all_frozen = False
+        if smt:
+            diagrams = smt.list_diagrams()
+            all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
+        var_freeze = tk.BooleanVar(value=bool(all_frozen))
+        ttk.Checkbutton(
+            prop_win,
+            text="Freeze Governance Diagrams",
+            variable=var_freeze,
+        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
         # Probability mappings for validation target calculations
         try:
             exp_frame = ttk.LabelFrame(
@@ -4723,7 +4736,7 @@ class AutoMLApp:
                 prop_win,
                 text="Exposure Probabilities P(E|HB)",
             )
-        exp_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        exp_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         exp_vars = {}
         for i in range(1, 5):
             ttk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4755,7 +4768,7 @@ class AutoMLApp:
                 prop_win,
                 text="Controllability Probabilities P(C|E)",
             )
-        ctrl_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        ctrl_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         ctrl_vars = {}
         for i in range(1, 4):
             ttk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4787,7 +4800,7 @@ class AutoMLApp:
                 prop_win,
                 text="Severity Probabilities P(S|C)",
             )
-        sev_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        sev_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         sev_vars = {}
         for i in range(1, 4):
             ttk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4827,6 +4840,8 @@ class AutoMLApp:
                     self.project_properties["controllability_probabilities"],
                     self.project_properties["severity_probabilities"],
                 )
+                if smt:
+                    smt.set_all_diagrams_frozen(var_freeze.get())
                 messagebox.showinfo(
                     "Project Properties", "Project properties updated."
                 )
@@ -4837,7 +4852,7 @@ class AutoMLApp:
             prop_win.destroy()
 
         save_btn = tk.Button(prop_win, text="Save", command=save_props, font=dialog_font)
-        save_btn.grid(row=5, column=0, columnspan=2, pady=10)
+        save_btn.grid(row=6, column=0, columnspan=2, pady=10)
         prop_win.transient(self.root)
         prop_win.grab_set()
         self.root.wait_window(prop_win)
@@ -19621,7 +19636,22 @@ class AutoMLApp:
             self.update_global_requirements_from_nodes(event)
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
-        self._load_project_properties(data)
+        props = data.get("project_properties", self.project_properties)
+        props["exposure_probabilities"] = normalize_probability_mapping(
+            props.get("exposure_probabilities") or EXPOSURE_PROBABILITIES
+        )
+        props["controllability_probabilities"] = normalize_probability_mapping(
+            props.get("controllability_probabilities") or CONTROLLABILITY_PROBABILITIES
+        )
+        props["severity_probabilities"] = normalize_probability_mapping(
+            props.get("severity_probabilities") or SEVERITY_PROBABILITIES
+        )
+        self.project_properties = props
+        update_probability_tables(
+            self.project_properties["exposure_probabilities"],
+            self.project_properties["controllability_probabilities"],
+            self.project_properties["severity_probabilities"],
+        )
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
