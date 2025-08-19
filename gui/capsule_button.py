@@ -117,11 +117,11 @@ class CapsuleButton(tk.Canvas):
         # Drop-shadow canvas items were previously stored in
         # ``_text_shadow_item`` and ``_icon_shadow_item``.  The shadow effect
         # made text and icons appear doubled, so these attributes and the
-        # associated rendering have been removed entirely.  Highlight items are
-        # still tracked to provide a subtle sheen without duplicating content.
+        # associated rendering have been removed entirely.  Icon highlight
+        # items are still tracked to provide a subtle sheen without duplicating
+        # content.
         self._image_item: Optional[int] = None
-        self._text_highlight_item: Optional[int] = None
-        # Icon highlight removed to avoid rectangular shading around icons
+        self._icon_highlight_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -259,11 +259,11 @@ class CapsuleButton(tk.Canvas):
         """Render optional image and text without drop shadows."""
         cx, cy = w // 2, h // 2
         self._text_item = None
-        # Shadow items were removed to avoid doubled rendering.
-        # Only the main content and optional text highlight are
-        # recreated when drawing the button.
+        # Shadow items were removed to avoid doubled rendering of
+        # text and icons.  Only the main content and optional icon highlight
+        # are recreated when drawing the button.
         self._image_item = None
-        self._text_highlight_item = None
+        self._icon_highlight_item = None
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -275,24 +275,10 @@ class CapsuleButton(tk.Canvas):
             text_x = start + img_w + spacing + text_w // 2
             self._image_item = self.create_image(img_x, cy, image=self._image)
             self._text_item = self.create_text(text_x, cy, text=self._text)
-            self._text_highlight_item = self.create_text(
-                text_x,
-                cy,
-                text=self._text,
-                fill="#ffffff",
-                stipple="gray50",
-            )
         elif self._image:
             self._image_item = self.create_image(cx, cy, image=self._image)
         else:
             self._text_item = self.create_text(cx, cy, text=self._text)
-            self._text_highlight_item = self.create_text(
-                cx,
-                cy,
-                text=self._text,
-                fill="#ffffff",
-                stipple="gray50",
-            )
 
 
 
