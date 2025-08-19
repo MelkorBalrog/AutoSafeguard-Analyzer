@@ -3682,13 +3682,18 @@ class SysMLDiagramWindow(tk.Frame):
             )
             self.prop_view.heading("field", text="Field")
             self.prop_view.heading("value", text="Value")
-            # Ensure the field column stays fixed while the value column grows
-            # to utilize the available space within the Properties tab.
+            # --------------------------------------------------------------
+            # NEVER DELETE OR TOUCH THIS:
+            # Keep the field column fixed so the value column can grow to fill
+            # the Properties tab width for readability.
+            # --------------------------------------------------------------
             self.prop_view.column("field", width=80, anchor="w", stretch=False)
             self.prop_view.column("value", width=180, anchor="w", stretch=True)
             add_treeview_scrollbars(self.prop_view, prop_tree_frame)
-            # Keep value column in sync with the Properties tab width.
+            # Bind resize handlers on both widgets to keep value column synced.
+            # DO NOT REMOVE.
             self.prop_view.bind("<Configure>", self._resize_prop_columns)
+            prop_tree_frame.bind("<Configure>", self._resize_prop_columns)
             prop_tree_frame.after(0, self._resize_prop_columns)
 
         canvas_frame = ttk.Frame(self)
@@ -3789,6 +3794,10 @@ class SysMLDiagramWindow(tk.Frame):
         canvas.configure(width=canvas_width)
         canvas.itemconfig(window, width=canvas_width)
 
+    # ------------------------------------------------------------------
+    # NEVER DELETE OR TOUCH THIS: required for keeping the value column
+    # aligned with the Properties tab width.
+    # ------------------------------------------------------------------
     def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
         """Adjust property view columns so the value column fills the tab."""
         if not hasattr(self, "prop_view"):

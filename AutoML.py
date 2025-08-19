@@ -2767,15 +2767,18 @@ class FaultTreeApp:
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
-        # Keep the field column a fixed width so the value column can expand
-        # to occupy the remaining space of the tab. This makes long property
-        # values easier to read within the tools area's Properties tab.
+        # ------------------------------------------------------------------
+        # NEVER DELETE OR TOUCH THIS:
+        # Keep the field column fixed so the value column can expand to occupy
+        # the remaining tab width, making long property values easier to read.
+        # ------------------------------------------------------------------
         self.prop_view.column("field", width=120, anchor="w", stretch=False)
         self.prop_view.column("value", width=200, anchor="w", stretch=True)
         add_treeview_scrollbars(self.prop_view, prop_frame)
-        # Resize value column whenever the treeview width changes so it always
-        # fills the available space inside the tab.
+        # Bind resize handlers on both the treeview and its container so the
+        # value column always fills the tab width. DO NOT REMOVE.
         self.prop_view.bind("<Configure>", self._resize_prop_columns)
+        prop_frame.bind("<Configure>", self._resize_prop_columns)
         prop_frame.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
 
@@ -9785,6 +9788,10 @@ class FaultTreeApp:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
 
+    # ----------------------------------------------------------------------
+    # NEVER DELETE OR TOUCH THIS: helper keeps the value column synced with
+    # the Properties tab width. Removing this breaks property display.
+    # ----------------------------------------------------------------------
     def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
         """Resize property view columns so the value column fills the tab."""
         if not hasattr(self, "prop_view"):
