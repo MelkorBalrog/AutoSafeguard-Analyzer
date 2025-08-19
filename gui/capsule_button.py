@@ -122,11 +122,9 @@ class CapsuleButton(tk.Canvas):
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
-        self._text_shadow_item: Optional[int] = None
         self._image_item: Optional[int] = None
-        self._text_shadow_item: Optional[int] = None
-        self._text_highlight_item: Optional[int] = None
-        self._icon_highlight_item: Optional[int] = None
+        self._text_shade_item: Optional[int] = None
+        self._icon_shade_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -261,15 +259,13 @@ class CapsuleButton(tk.Canvas):
 
 
     def _draw_content(self, w: int, h: int) -> None:
-        """Render optional image and text with soft shadows and highlights."""
+        """Render optional image and text with a recessed shading effect."""
         cx, cy = w // 2, h // 2
         self._text_item = None
-        self._text_shadow_item = None
         self._image_item = None
-        self._text_shadow_item = None
-        self._text_highlight_item = None
-        self._icon_highlight_item = None
-        shadow_col = _darken(self._current_color, 0.6)
+        self._text_shade_item = None
+        self._icon_shade_item = None
+        shade_col = _darken(self._current_color, 0.8)
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -280,63 +276,41 @@ class CapsuleButton(tk.Canvas):
             img_x = start + img_w // 2
             text_x = start + img_w + spacing + text_w // 2
             self._image_item = self.create_image(img_x, cy, image=self._image)
-            self._icon_highlight_item = self.create_rectangle(
+            self._icon_shade_item = self.create_rectangle(
                 start,
                 cy - img_w // 2,
                 start + img_w,
                 cy + img_w // 2,
                 outline="",
-                fill="#ffffff",
+                fill=shade_col,
                 stipple="gray50",
             )
-            self._text_shadow_item = self.create_text(
-                text_x + 1,
-                cy + 1,
-                text=self._text,
-                fill=shadow_col,
-            )
             self._text_item = self.create_text(text_x, cy, text=self._text)
-            self._text_highlight_item = self.create_text(
+            self._text_shade_item = self.create_text(
                 text_x,
                 cy,
                 text=self._text,
-                fill="#ffffff",
+                fill=shade_col,
                 stipple="gray50",
             )
-            self._text_item = self.create_text(text_x, cy, text=self._text)
         elif self._image:
-            self._icon_shadow_item = self.create_oval(
-                cx - self._image.width() // 2 + 1,
-                cy - self._image.height() // 2 + 1,
-                cx + self._image.width() // 2 + 1,
-                cy + self._image.height() // 2 + 1,
-                outline="",
-                fill="#000000",
-                stipple="gray50",
-            )
             self._image_item = self.create_image(cx, cy, image=self._image)
-            self._icon_highlight_item = self.create_rectangle(
+            self._icon_shade_item = self.create_rectangle(
                 cx - self._image.width() // 2,
                 cy - self._image.height() // 2,
                 cx + self._image.width() // 2,
                 cy + self._image.height() // 2,
                 outline="",
-                fill="#ffffff",
+                fill=shade_col,
                 stipple="gray50",
             )
         else:
-            self._text_shadow_item = self.create_text(
-                cx + 1,
-                cy + 1,
-                text=self._text,
-                fill=shadow_col,
-            )
             self._text_item = self.create_text(cx, cy, text=self._text)
-            self._text_highlight_item = self.create_text(
+            self._text_shade_item = self.create_text(
                 cx,
                 cy,
                 text=self._text,
-                fill="#ffffff",
+                fill=shade_col,
                 stipple="gray50",
             )
 
@@ -391,6 +365,14 @@ class CapsuleButton(tk.Canvas):
         self._apply_border_color(self._border_light, light)
         self._apply_border_color(self._border_gap, gap)
         self._current_color = color
+        self._update_shade_overlay()
+
+    def _update_shade_overlay(self) -> None:
+        shade = _darken(self._current_color, 0.8)
+        if self._text_shade_item is not None:
+            self.itemconfigure(self._text_shade_item, fill=shade)
+        if self._icon_shade_item is not None:
+            self.itemconfigure(self._icon_shade_item, fill=shade)
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
         """Apply a colour to border items safely.
