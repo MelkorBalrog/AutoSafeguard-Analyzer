@@ -6,13 +6,61 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .capsule_button import CapsuleButton  # noqa: F401
+from .capsule_button import CapsuleButton, _interpolate_color  # noqa: F401
 
-# Use CapsuleButton for all button instances across the GUI.  Monkeypatching
+
+class _StyledButton(CapsuleButton):
+    """Base class adding optional gradient colouring support."""
+
+    def __init__(self, *args, **kwargs):
+        self._gradient = kwargs.pop("gradient", None)
+        super().__init__(*args, **kwargs)
+
+    def _draw_gradient(self, w: int, h: int) -> None:  # type: ignore[override]
+        if not self._gradient:
+            return
+        colors = self._gradient
+        stops = [i / (len(colors) - 1) for i in range(len(colors))]
+        r = self._radius
+        for y in range(h):
+            t = y / (h - 1) if h > 1 else 0
+            for i in range(len(stops) - 1):
+                if stops[i] <= t <= stops[i + 1]:
+                    local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
+                    color = _interpolate_color(colors[i], colors[i + 1], local_t)
+                    break
+            dy = abs(y - h / 2)
+            x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5) if dy <= r else 0
+            self._gradient_items.append(
+                self.create_line(x_offset, y, w - x_offset, y, fill=color)
+            )
+
+
+class TranslucidButton(_StyledButton):
+    """Capsule button with a subtle translucent palette used by default."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("bg", "#ffffff")
+        kwargs.setdefault("hover_bg", "#f0f0f0")
+        kwargs.setdefault("gradient", ["#ffffff", "#f0f0f0"])
+        super().__init__(*args, **kwargs)
+
+
+class PurpleButton(_StyledButton):
+    """Capsule button variant with a purplish theme for dialogs."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("bg", "#9b59b6")
+        kwargs.setdefault("hover_bg", "#b37cc8")
+        kwargs.setdefault("gradient", ["#9b59b6", "#8e44ad"])
+        super().__init__(*args, **kwargs)
+
+
+# Use ``TranslucidButton`` for all button instances across the GUI.  Monkeypatching
 # both ``ttk.Button`` and the classic ``tk.Button`` ensures the custom hover
 # highlight is applied consistently without modifying every call site.
-ttk.Button = CapsuleButton  # type: ignore[assignment]
-tk.Button = CapsuleButton  # type: ignore[assignment]
+ttk.Button = TranslucidButton  # type: ignore[assignment]
+tk.Button = TranslucidButton  # type: ignore[assignment]
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""

@@ -11,9 +11,8 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from .mac_button_style import apply_purplish_button_style
-
 from . import logger
+from . import PurpleButton
 
 
 def _log_and_return(title: str | None, message: str | None, level: str) -> str:
@@ -66,8 +65,6 @@ def _create_dialog(
     dialog.transient(root)
     dialog.grab_set()
 
-    apply_purplish_button_style()
-
     frame = ttk.Frame(dialog, padding=10)
     frame.pack(fill="both", expand=True)
     ttk.Label(frame, text=message or "").pack(pady=(0, 10))
@@ -80,9 +77,9 @@ def _create_dialog(
         dialog.destroy()
 
     for text, value in buttons:
-        ttk.Button(
-            frame, text=text, style="Purple.TButton", command=lambda v=value: _set(v)
-        ).pack(side="left", padx=5)
+        PurpleButton(frame, text=text, command=lambda v=value: _set(v)).pack(
+            side="left", padx=5
+        )
 
     dialog.protocol("WM_DELETE_WINDOW", lambda: _set(None))
     dialog.wait_window()
