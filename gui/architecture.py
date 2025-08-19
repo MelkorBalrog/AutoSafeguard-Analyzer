@@ -5191,7 +5191,17 @@ class SysMLDiagramWindow(tk.Frame):
                 if b:
                     self.selected_obj.properties["boundary"] = str(b.obj_id)
                 else:
-                    self.selected_obj.properties.pop("boundary", None)
+                    if self.selected_obj.obj_type == "Work Product":
+                        b_id = self.selected_obj.properties.get("boundary")
+                        if b_id:
+                            for o in self.objects:
+                                if str(o.obj_id) == b_id:
+                                    if not self._object_within(self.selected_obj, o):
+                                        self.selected_obj.x = o.x
+                                        self.selected_obj.y = o.y
+                                    break
+                    else:
+                        self.selected_obj.properties.pop("boundary", None)
             self._sync_to_repository()
         self.redraw()
 
@@ -11268,7 +11278,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             cmds = [
                 ("Add Work Product", self.add_work_product),
                 ("Add Generic Work Product", self.add_generic_work_product),
-                ("Add Process Area", self.add_process_area),
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
             for name, cmd in cmds:
@@ -11353,7 +11362,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Build a toolbox entry for each category.  All options include the
         # shared selection/connection tools.  Governance Core also exposes
         # its action buttons for adding work products, generic work products,
-        # process areas, and lifecycle phases.
+        # and lifecycle phases.
         for name, data in defs.items():
             frames = [self.tools_frame]
             if name == "Governance Core":
@@ -11415,81 +11424,94 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 for word in req.split()
             )
 
-        options = [
-            "Architecture Diagram",
-            "Safety & Security Concept",
-            "Mission Profile",
-            "Reliability Analysis",
-            "Causal Bayesian Network Analysis",
-            "Safety & Security Case",
-            "GSN Argumentation",
-            *REQUIREMENT_WORK_PRODUCTS,
-            "HAZOP",
-            "STPA",
-            "Threat Analysis",
-            "FI2TC",
-            "TC2FI",
-            "Risk Assessment",
-            "Product Goal Specification",
-            "FTA",
-            "FMEA",
-            "FMEDA",
-            "SPI Work Document",
-            "Scenario Library",
-            "ODD",
-        ]
-        options = list(dict.fromkeys(options))
-        area_map = {
-            "Architecture Diagram": "System Design (Item Definition)",
-            "Safety & Security Concept": "System Design (Item Definition)",
-            "Mission Profile": "Safety Analysis",
-            "Reliability Analysis": "Safety Analysis",
-            "Causal Bayesian Network Analysis": "Safety Analysis",
-            "Safety & Security Case": "Safety & Security Management",
-            "GSN Argumentation": "Safety & Security Management",
-            "Product Goal Specification": "System Design (Item Definition)",
-            **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
-            "HAZOP": "Hazard & Threat Analysis",
-            "STPA": "Hazard & Threat Analysis",
-            "Threat Analysis": "Hazard & Threat Analysis",
-            "FI2TC": "Hazard & Threat Analysis",
-            "TC2FI": "Hazard & Threat Analysis",
-            "Risk Assessment": "Risk Assessment",
-            "FTA": "Safety Analysis",
-            "FMEA": "Safety Analysis",
-            "FMEDA": "Safety Analysis",
-            "SPI Work Document": "Safety & Security Management",
-            "Scenario Library": "Scenario",
-            "ODD": "Scenario",
-        }
-        areas = {
-            o.properties.get("name")
-            for o in self.objects
-            if o.obj_type == "System Boundary"
-        }
-        options = [
-            opt for opt in options if not area_map.get(opt) or area_map[opt] in areas
-        ]
-        dlg = self._SelectDialog(self, "Add Work Product", options)
-        name = getattr(dlg, "selection", "")
-        if not name:
-            return
-        required = area_map.get(name)
-        if required and required not in areas:
-            messagebox.showerror(
-                "Missing Process Area",
-                f"Add process area '{required}' before adding this work product.",
-            )
-            return
+        # When no canvas is present (headless tests), retain the original
+        # behaviour of prompting for the work product immediately.
         if not getattr(self, "canvas", None):
-            self._place_work_product(name, 100.0, 100.0)
-        else:
-            self._pending_wp_name = name
-            self._pending_wp_lock = True
-            try:
-                self.canvas.configure(cursor="crosshair")
-            except Exception:
-                pass
+            options = [
+                "Architecture Diagram",
+                "Safety & Security Concept",
+                "Mission Profile",
+                "Reliability Analysis",
+                "Causal Bayesian Network Analysis",
+                "Safety & Security Case",
+                "GSN Argumentation",
+                *REQUIREMENT_WORK_PRODUCTS,
+                "HAZOP",
+                "STPA",
+                "Threat Analysis",
+                "FI2TC",
+                "TC2FI",
+                "Risk Assessment",
+                "Product Goal Specification",
+                "FTA",
+                "FMEA",
+                "FMEDA",
+                "SPI Work Document",
+                "Scenario Library",
+                "ODD",
+            ]
+            options = list(dict.fromkeys(options))
+            area_map = {
+                "Architecture Diagram": "System Design (Item Definition)",
+                "Safety & Security Concept": "System Design (Item Definition)",
+                "Mission Profile": "Safety Analysis",
+                "Reliability Analysis": "Safety Analysis",
+                "Causal Bayesian Network Analysis": "Safety Analysis",
+                "Safety & Security Case": "Safety & Security Management",
+                "GSN Argumentation": "Safety & Security Management",
+                "Product Goal Specification": "System Design (Item Definition)",
+                **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
+                "HAZOP": "Hazard & Threat Analysis",
+                "STPA": "Hazard & Threat Analysis",
+                "Threat Analysis": "Hazard & Threat Analysis",
+                "FI2TC": "Hazard & Threat Analysis",
+                "TC2FI": "Hazard & Threat Analysis",
+                "Risk Assessment": "Risk Assessment",
+                "FTA": "Safety Analysis",
+                "FMEA": "Safety Analysis",
+                "FMEDA": "Safety Analysis",
+                "SPI Work Document": "Safety & Security Management",
+                "Scenario Library": "Scenario",
+                "ODD": "Scenario",
+            }
+            areas = {
+                o.properties.get("name")
+                for o in self.objects
+                if o.obj_type == "System Boundary"
+            }
+            options = [
+                opt for opt in options if not area_map.get(opt) or area_map[opt] in areas
+            ]
+            dlg = self._SelectDialog(self, "Add Work Product", options)
+            name = getattr(dlg, "selection", "")
+            if not name:
+                return
+            required = area_map.get(name)
+            if required and required not in areas:
+                messagebox.showerror(
+                    "Missing Process Area",
+                    f"Add process area '{required}' before adding this work product.",
+                )
+                return
+            boundary = None
+            if required:
+                for o in self.objects:
+                    if (
+                        o.obj_type == "System Boundary"
+                        and o.properties.get("name") == required
+                    ):
+                        boundary = o
+                        break
+            self._place_work_product(name, 100.0, 100.0, boundary=boundary)
+            return
+
+        # Interactive mode: wait for a canvas click to determine placement
+        # and subsequently prompt for the process area and work product.
+        self._pending_wp_click = True
+        try:
+            self.canvas.configure(cursor="crosshair")
+        except Exception:
+            pass
 
     def add_generic_work_product(self):  # pragma: no cover - requires tkinter
         name = simpledialog.askstring("Add Work Product", "Enter work product name:")
@@ -11538,11 +11560,19 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 pass
 
     def _place_work_product(
-        self, name: str, x: float, y: float, *, lock_name: bool = True
+        self,
+        name: str,
+        x: float,
+        y: float,
+        *,
+        lock_name: bool = True,
+        boundary: SysMLObject | None = None,
     ) -> SysMLObject:
         props = {"name": name}
         if lock_name:
             props["name_locked"] = "1"
+        if boundary:
+            props["boundary"] = str(boundary.obj_id)
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
@@ -11585,6 +11615,86 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.app.enable_process_area(name)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
+        pending_click = getattr(self, "_pending_wp_click", False)
+        if pending_click:
+            self._pending_wp_click = False
+            x = self.canvas.canvasx(event.x) / self.zoom
+            y = self.canvas.canvasy(event.y) / self.zoom
+            area_opts = [
+                "System Design (Item Definition)",
+                "Hazard & Threat Analysis",
+                "Risk Assessment",
+                "Safety & Security Management",
+                "Safety Analysis",
+                "Scenario",
+            ]
+            dlg = self._SelectDialog(self, "Add Process Area", area_opts)
+            area_name = getattr(dlg, "selection", "")
+            if not area_name:
+                try:
+                    self.canvas.configure(cursor="arrow")
+                except Exception:
+                    pass
+                return
+            area_obj = self._place_process_area(area_name, x, y)
+            wp_options = [
+                "Architecture Diagram",
+                "Safety & Security Concept",
+                "Mission Profile",
+                "Reliability Analysis",
+                "Causal Bayesian Network Analysis",
+                "Safety & Security Case",
+                "GSN Argumentation",
+                *REQUIREMENT_WORK_PRODUCTS,
+                "HAZOP",
+                "STPA",
+                "Threat Analysis",
+                "FI2TC",
+                "TC2FI",
+                "Risk Assessment",
+                "Product Goal Specification",
+                "FTA",
+                "FMEA",
+                "FMEDA",
+                "SPI Work Document",
+                "Scenario Library",
+                "ODD",
+            ]
+            wp_options = list(dict.fromkeys(wp_options))
+            area_map = {
+                "Architecture Diagram": "System Design (Item Definition)",
+                "Safety & Security Concept": "System Design (Item Definition)",
+                "Mission Profile": "Safety Analysis",
+                "Reliability Analysis": "Safety Analysis",
+                "Causal Bayesian Network Analysis": "Safety Analysis",
+                "Safety & Security Case": "Safety & Security Management",
+                "GSN Argumentation": "Safety & Security Management",
+                "Product Goal Specification": "System Design (Item Definition)",
+                **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
+                "HAZOP": "Hazard & Threat Analysis",
+                "STPA": "Hazard & Threat Analysis",
+                "Threat Analysis": "Hazard & Threat Analysis",
+                "FI2TC": "Hazard & Threat Analysis",
+                "TC2FI": "Hazard & Threat Analysis",
+                "Risk Assessment": "Risk Assessment",
+                "FTA": "Safety Analysis",
+                "FMEA": "Safety Analysis",
+                "FMEDA": "Safety Analysis",
+                "SPI Work Document": "Safety & Security Management",
+                "Scenario Library": "Scenario",
+                "ODD": "Scenario",
+            }
+            wp_options = [opt for opt in wp_options if area_map.get(opt) == area_name]
+            dlg2 = self._SelectDialog(self, "Add Work Product", wp_options)
+            name = getattr(dlg2, "selection", "")
+            if name:
+                self._place_work_product(name, area_obj.x, area_obj.y, boundary=area_obj)
+            try:
+                self.canvas.configure(cursor="arrow")
+            except Exception:
+                pass
+            return
+
         pending_wp = getattr(self, "_pending_wp_name", None)
         pending_area = getattr(self, "_pending_area_name", None)
         if pending_wp or pending_area:
