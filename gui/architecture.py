@@ -11474,6 +11474,27 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     sub["relations"] = [
                         r for r in sub.get("relations", []) if r not in global_rels
                     ]
+
+        def _dedup_category(data: dict) -> None:
+            seen: set[str] = set()
+            rels = []
+            for r in data.get("relations", []) or []:
+                if r not in seen:
+                    seen.add(r)
+                    rels.append(r)
+            data["relations"] = rels
+            for sub in data.get("externals", {}).values():
+                sub_rels = []
+                for r in sub.get("relations", []) or []:
+                    if r not in seen:
+                        seen.add(r)
+                        sub_rels.append(r)
+                sub["relations"] = sub_rels
+
+        for data in defs.values():
+            _dedup_category(data)
+        if ai_data:
+            _dedup_category(ai_data)
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
