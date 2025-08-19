@@ -48,7 +48,7 @@ def highlight_placeholders(widget: tk.Text, action_word: str = "") -> None:
             end = f"1.0+{m.end()}c"
             widget.tag_add(tag, start, end)
 
-    if action_word:
+    if action_word and "<action" not in text:
         widget.tag_remove("action_word", "1.0", "end")
         widget.tag_configure(
             "action_word",
@@ -590,7 +590,7 @@ class RequirementPatternsEditor(tk.Frame):
             tmpl_raw = pat.get("Template", "")
             act = _extract_action(pat.get("Trigger", ""))
             if act and act in tmpl_raw:
-                tmpl_raw = tmpl_raw.replace(act, "<action>")
+                tmpl_raw = tmpl_raw.replace(act, f"<action : {act}>")
             tmpl = textwrap.fill(tmpl_raw, 40)
             lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
             max_lines = max(max_lines, lines)
@@ -665,7 +665,7 @@ class RequirementPatternsEditor(tk.Frame):
             tmpl = info.get("template", "")
             act = info.get("action", "")
             if act and act in tmpl:
-                tmpl = tmpl.replace(act, "<action>")
+                tmpl = tmpl.replace(act, f"<action : {act}>")
             self.rule_tree.insert(
                 "",
                 "end",
