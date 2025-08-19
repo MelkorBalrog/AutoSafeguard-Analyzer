@@ -2993,6 +2993,10 @@ class AutoMLApp:
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
+        self.active_phase_lbl = ttk.Label(
+            top, text="Active phase: None", foreground="blue"
+        )
+        self.active_phase_lbl.pack(side=tk.LEFT, padx=5)
 
         # Container holding navigation buttons and the tools notebook
         nb_container = ttk.Frame(self.tools_group)
@@ -9866,6 +9870,10 @@ class AutoMLApp:
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
+        if hasattr(self, "active_phase_lbl"):
+            self.active_phase_lbl.config(
+                text=f"Active phase: {phase or 'None'}"
+            )
         if not phase:
             self.safety_mgmt_toolbox.set_active_module(None)
         else:
