@@ -34,8 +34,6 @@ class ToolTip:
         # Ensure the tooltip stays above other windows
         try:
             tw.wm_attributes("-topmost", True)
-            # Make the tooltip semi-transparent for a subtle appearance
-            tw.wm_attributes("-alpha", 0.85)
         except tk.TclError:
             pass
 
@@ -50,9 +48,9 @@ class ToolTip:
             tw,
             width=width,
             height=height,
-            background="",
-            relief="flat",
-            borderwidth=0,
+            background="#ffffe0",
+            relief="solid",
+            borderwidth=1,
             wrap="none",
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
