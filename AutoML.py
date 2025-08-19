@@ -2767,8 +2767,22 @@ class FaultTreeApp:
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
+        # ------------------------------------------------------------------
+        # NEVER DELETE OR TOUCH THIS:
+        # Keep the field column fixed so the value column can expand to occupy
+        # the remaining tab width, making long property values easier to read.
+        # ------------------------------------------------------------------
+        self.prop_view.column("field", width=120, anchor="w", stretch=False)
+        self.prop_view.column("value", width=200, anchor="w", stretch=True)
         add_treeview_scrollbars(self.prop_view, prop_frame)
+        # Bind resize handlers on both the treeview and its container so the
+        # value column always fills the tab width. DO NOT REMOVE.
+        self.prop_view.bind("<Configure>", self._resize_prop_columns)
+        self.prop_view.bind("<Map>", self._resize_prop_columns)
+        prop_frame.bind("<Configure>", self._resize_prop_columns)
+        prop_frame.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
+        self._resize_prop_columns()
 
         # Tooltip helper for tabs (text may be clipped)
         self._tools_tip = ToolTip(self.tools_nb, "", automatic=False)
@@ -9775,6 +9789,31 @@ class FaultTreeApp:
         if self._tools_tip.text != text:
             self._tools_tip.text = text
         self._tools_tip.show(x, y)
+
+    # ----------------------------------------------------------------------
+    # NEVER DELETE OR TOUCH THIS: helper keeps the value column synced with
+    # the Properties tab width. Removing this breaks property display.
+    # ----------------------------------------------------------------------
+    def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
+        """Resize property view columns so the value column fills the tab."""
+        if not hasattr(self, "prop_view"):
+            return
+
+        # Determine the current width of the treeview widget. When invoked via
+        # ``after`` there is no event, so query the widget directly.
+        self.prop_view.update_idletasks()
+        tree_width = event.width if event else self.prop_view.winfo_width()
+        field_width = self.prop_view.column("field")["width"]
+
+        # If the treeview hasn't been fully laid out yet (width too small),
+        # try again on the next loop iteration so the value column starts at
+        # the full tab width. DO NOT REMOVE.
+        if tree_width <= field_width + 1:
+            self.prop_view.after(50, self._resize_prop_columns)
+            return
+
+        new_width = max(tree_width - field_width, 20)
+        self.prop_view.column("value", width=new_width)
 
     def _on_doc_tab_motion(self, event):
         """Show tooltip for document notebook tabs when hovering over them."""
