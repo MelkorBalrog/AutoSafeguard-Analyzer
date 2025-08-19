@@ -2233,14 +2233,61 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
+        # ------------------------------------------------------------------
+        # Classic Windows inspired color palette
+        # ------------------------------------------------------------------
+        self.root.configure(background="#f0f0f0")
+        self.style.configure("TFrame", background="#f0f0f0")
+        self.style.configure(
+            "TLabelframe",
+            background="#f0f0f0",
+            bordercolor="#808080",
+            relief="solid",
+        )
+        self.style.configure(
+            "TLabelframe.Label",
+            background="#f8e7a0",
+            foreground="black",
+            font=("Segoe UI", 10, "bold"),
+            padding=4,
+        )
+        self.style.map(
+            "TLabelframe.Label",
+            background=[("active", "#f2d48f"), ("selected", "#f2d48f")],
+        )
+        self.style.configure(
+            "TNotebook",
+            background="#d3d9e2",
+            borderwidth=1,
+            relief="flat",
+        )
+        self.style.configure(
+            "TNotebook.Tab",
+            background="#B5BDC9",
+            foreground="darkgray",
+            font=("Arial", 10),
+            padding=(10, 5),
+            width=20,
+        )
+        self.style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#4A6EA9")],
+            foreground=[("selected", "white")],
+        )
+        self.style.configure(
+            "ClosableNotebook.Tab",
+            background="#B5BDC9",
+            foreground="darkgray",
+            font=("Arial", 10),
+            padding=(10, 5),
+            width=20,
+        )
+        self.style.map(
+            "ClosableNotebook.Tab",
+            background=[("selected", "#4A6EA9")],
+            foreground=[("selected", "white")],
+        )
         self.style.configure("Treeview", font=("Arial", 10))
-        # Increase notebook tab font/size so titles are fully visible
-        self.style.configure(
-            "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
-        )
-        self.style.configure(
-            "ClosableNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
-        )
         # style-aware icons used across tree views
         style_mgr = StyleManager.get_instance()
 
@@ -17575,7 +17622,8 @@ class AutoMLApp:
     def _on_tab_change(self, event):
         """Refresh diagrams when their tab becomes active."""
         tab_id = event.widget.select()
-        self._make_doc_tab_visible(tab_id)
+        if hasattr(self, "_doc_all_tabs"):
+            self._make_doc_tab_visible(tab_id)
         tab = (
             event.widget.nametowidget(tab_id)
             if hasattr(event.widget, "nametowidget")
