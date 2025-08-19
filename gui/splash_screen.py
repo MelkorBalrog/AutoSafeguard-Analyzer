@@ -10,17 +10,16 @@ class SplashScreen(tk.Toplevel):
         self.duration = duration
         self.overrideredirect(True)
         self.canvas_size = 300
-        # Nearly black canvas with subtle bluish/greenish tint
+        # Black background so colors pop
         self.canvas = tk.Canvas(
             self,
             width=self.canvas_size,
             height=self.canvas_size,
             highlightthickness=0,
-            bg="#001010",
+            bg="black",
         )
         self.canvas.pack()
         self._center()
-        self._draw_background()
         # Initialize cube geometry
         self.angle = 0.0
         self.vertices = [
@@ -58,60 +57,6 @@ class SplashScreen(tk.Toplevel):
         x = (self.winfo_screenwidth() // 2) - (w // 2)
         y = (self.winfo_screenheight() // 2) - (h // 2)
         self.geometry(f"{w}x{h}+{x}+{y}")
-
-    def _draw_background(self):
-        """Draw gradient background and subtle 3D frame."""
-        # Gradient from white to dark teal across the canvas
-        start_rgb = (255, 255, 255)
-        end_rgb = (0, 16, 16)
-        for i in range(self.canvas_size):
-            ratio = i / self.canvas_size
-            r = int(start_rgb[0] + (end_rgb[0] - start_rgb[0]) * ratio)
-            g = int(start_rgb[1] + (end_rgb[1] - start_rgb[1]) * ratio)
-            b = int(start_rgb[2] + (end_rgb[2] - start_rgb[2]) * ratio)
-            color = f"#{r:02x}{g:02x}{b:02x}"
-            self.canvas.create_line(i, 0, i, self.canvas_size, fill=color, tags="bg")
-
-        # Shaded frame for subtle depth effect
-        margin = 15
-        light = "#003030"
-        dark = "#000000"
-        self.canvas.create_line(
-            margin,
-            margin,
-            self.canvas_size - margin,
-            margin,
-            fill=light,
-            width=3,
-            tags="bg",
-        )
-        self.canvas.create_line(
-            margin,
-            margin,
-            margin,
-            self.canvas_size - margin,
-            fill=light,
-            width=3,
-            tags="bg",
-        )
-        self.canvas.create_line(
-            self.canvas_size - margin,
-            margin,
-            self.canvas_size - margin,
-            self.canvas_size - margin,
-            fill=dark,
-            width=3,
-            tags="bg",
-        )
-        self.canvas.create_line(
-            margin,
-            self.canvas_size - margin,
-            self.canvas_size - margin,
-            self.canvas_size - margin,
-            fill=dark,
-            width=3,
-            tags="bg",
-        )
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
