@@ -22,6 +22,14 @@ def _lighten(color: str, factor: float = 1.2) -> str:
     return _rgb_to_hex((r, g, b))
 
 
+def _darken(color: str, factor: float = 0.8) -> str:
+    r, g, b = _hex_to_rgb(color)
+    r = max(int(r * factor), 0)
+    g = max(int(g * factor), 0)
+    b = max(int(b * factor), 0)
+    return _rgb_to_hex((r, g, b))
+
+
 class CapsuleButton(tk.Canvas):
     """A capsule-shaped button that lightens on mouse hover.
 
@@ -72,6 +80,7 @@ class CapsuleButton(tk.Canvas):
         self._compound = compound
         self._normal_color = bg
         self._hover_color = hover_bg or _lighten(bg, 1.2)
+        self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
@@ -80,7 +89,8 @@ class CapsuleButton(tk.Canvas):
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
-        self.bind("<Button-1>", self._on_click)
+        self.bind("<ButtonPress-1>", self._on_press)
+        self.bind("<ButtonRelease-1>", self._on_release)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
 
@@ -144,11 +154,19 @@ class CapsuleButton(tk.Canvas):
         if "disabled" not in self._state:
             self._set_color(self._normal_color)
 
-    def _on_click(self, _event: tk.Event) -> None:
+    def _on_press(self, _event: tk.Event) -> None:
+        if "disabled" not in self._state:
+            self._set_color(self._pressed_color)
+
+    def _on_release(self, event: tk.Event) -> None:
         if "disabled" in self._state:
             return
-        if self._command:
-            self._command()
+        if self.winfo_containing(event.x_root, event.y_root) == self:
+            self._set_color(self._hover_color)
+            if self._command:
+                self._command()
+        else:
+            self._set_color(self._normal_color)
 
     def _apply_state(self) -> None:
         """Update the visual appearance to reflect the current state."""
@@ -185,6 +203,7 @@ class CapsuleButton(tk.Canvas):
         if bg is not None:
             self._normal_color = bg
             self._hover_color = hover_bg or _lighten(bg, 1.2)
+            self._pressed_color = _darken(bg, 0.8)
             self._set_color(self._normal_color)
         if hover_bg is not None and bg is None:
             self._hover_color = hover_bg
