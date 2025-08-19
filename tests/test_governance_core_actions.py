@@ -61,6 +61,7 @@ def test_governance_core_has_add_buttons(monkeypatch):
     win._rebuild_toolboxes()
     assert "Governance Core" in win._toolbox_frames
     core_frames = win._toolbox_frames["Governance Core"]
+    assert win.rel_frame not in core_frames
     actions = core_frames[1]
     labels = [child.text for child in getattr(actions, "children", [])]
     assert {
@@ -69,3 +70,8 @@ def test_governance_core_has_add_buttons(monkeypatch):
         "Add Process Area",
         "Add Lifecycle Phase",
     } <= set(labels)
+
+    rel_sections = [child for child in getattr(core_frames[-1], "children", []) if getattr(child, "text", "") == "Relationships (relationships)"]
+    assert len(rel_sections) == 1
+    rel_labels = [child.text for child in getattr(rel_sections[0], "children", [])]
+    assert len(rel_labels) == len(set(rel_labels))

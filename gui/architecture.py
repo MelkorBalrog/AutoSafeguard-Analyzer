@@ -491,6 +491,23 @@ _BASE_CONN_TOOLS = [
     "Reviews",
 ]
 
+# Connection types that can link one work product to another.  When a user
+# drags one of these relations onto empty canvas, creating the target should
+# prompt for a generic work product name instead of inserting an unnamed
+# document.
+_WORK_PRODUCT_CONN_TYPES = {
+    "Trace",
+    "Propagate",
+    "Propagate by Review",
+    "Propagate by Approval",
+    "Used By",
+    "Used after Review",
+    "Used after Approval",
+    "Re-use",
+    "Satisfied by",
+    "Derived from",
+}
+
 # Connection types that default to forward arrows
 _ARROW_FORWARD_BASE = {
     "Flow",
@@ -4925,7 +4942,27 @@ class SysMLDiagramWindow(tk.Frame):
         self, source: SysMLObject, x: float, y: float, conn_type: str, obj_type: str
     ) -> None:
         """Create an object of ``obj_type`` at ``(x, y)`` and connect it to ``source``."""
-        new_obj = self._create_element_at(obj_type, x, y)
+        if (
+            obj_type == "Document"
+            and source.obj_type == "Work Product"
+            and conn_type in _WORK_PRODUCT_CONN_TYPES
+        ):
+            name = simpledialog.askstring("Add Work Product", "Enter work product name:")
+            if not name:
+                return
+            name = name.strip()
+            if not name:
+                return
+            existing = {wp.lower() for wp in getattr(self.app, "WORK_PRODUCT_INFO", {})}
+            if name.lower() in existing:
+                messagebox.showerror(
+                    "Duplicate Work Product",
+                    f"'{name}' is already a defined work product.",
+                )
+                return
+            new_obj = self._place_work_product(name, x / self.zoom, y / self.zoom)
+        else:
+            new_obj = self._create_element_at(obj_type, x, y)
         if new_obj:
             self._connect_objects(source, new_obj, conn_type)
 
@@ -7089,19 +7126,43 @@ class SysMLDiagramWindow(tk.Frame):
         drawn using polygon primitives to avoid overlapping shapes.
         """
         size = 16
-        scale = (2 * r) / size
         mid = size / 2
+        bg = StyleManager.get_instance().get_canvas_color()
+
+        # --- Gear ring -------------------------------------------------
+        pts: list[tuple[float, float]] = []
+        teeth = 8
+        for i in range(teeth * 2):
+            angle = math.radians(360 / (teeth * 2) * i)
+            rad = r if i % 2 == 0 else r * 0.82
+            px = x + rad * math.cos(angle)
+            py = y + rad * math.sin(angle)
+            pts.append((px, py))
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [coord for pt in pts for coord in pt], outline=outline, fill=""
+        )
+        hole_r = r * 0.62
+        self.canvas.create_oval(
+            x - hole_r,
+            y - hole_r,
+            x + hole_r,
+            y + hole_r,
+            outline="",
+            fill=bg,
+        )
+
+        # --- Wrench inside the gear -----------------------------------
+        wr = hole_r * 0.95
+        scale = (2 * wr) / size
         head_cy = 5
         head_r = 5
         inner = head_r - 2
         notch_start = mid + 1
 
-        bg = StyleManager.get_instance().get_canvas_color()
-
         def _pt(px: float, py: float) -> tuple[float, float]:
-            return x - r + px * scale, y - r + py * scale
+            return x - wr + px * scale, y - wr + py * scale
 
-        # Single polygon describing the outer contour (squared head + handle)
         outer = [
             _pt(mid - 1, size - 2),  # bottom-left of handle
             _pt(mid - 1, head_cy + head_r),
@@ -7114,13 +7175,6 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(mid + 1, head_cy + head_r),
             _pt(mid + 1, size - 2),
         ]
-        self.canvas.create_polygon(
-            [coord for pt in outer for coord in pt],
-            fill=color,
-            outline=outline,
-        )
-
-        # Inner opening
         hole = [
             _pt(mid - inner, head_cy + inner),
             _pt(mid - inner, head_cy - inner),
@@ -7129,10 +7183,23 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(notch_start, head_cy + 1),
             _pt(mid + inner, head_cy + inner),
         ]
+        theta = -math.pi / 4
+        ct, st = math.cos(theta), math.sin(theta)
+
+        def _rot(pt: tuple[float, float]) -> tuple[float, float]:
+            px, py = pt
+            dx, dy = px - x, py - y
+            return x + dx * ct - dy * st, y + dx * st + dy * ct
+
+        outer = [_rot(p) for p in outer]
+        hole = [_rot(p) for p in hole]
+
+        self.drawing_helper._fill_gradient_polygon(self.canvas, outer, color)
         self.canvas.create_polygon(
-            [coord for pt in hole for coord in pt],
-            fill=bg,
-            outline=outline,
+            [coord for pt in outer for coord in pt], outline=outline, fill=""
+        )
+        self.canvas.create_polygon(
+            [coord for pt in hole for coord in pt], fill=bg, outline=""
         )
 
     def draw_object(self, obj: SysMLObject):
@@ -11281,8 +11348,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             frames = [self.tools_frame]
             if name == "Governance Core":
                 frames.append(action_frame)
-                if getattr(self, "rel_frame", None):
-                    frames.append(self.rel_frame)
             frames.append(build_frame(name, data))
             self._toolbox_frames[name] = frames
 
@@ -11460,7 +11525,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
 
-    def _place_work_product(self, name: str, x: float, y: float) -> None:
+    def _place_work_product(self, name: str, x: float, y: float) -> SysMLObject:
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
@@ -11483,6 +11548,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.app.enable_work_product(name)
         if getattr(self.app, "refresh_tool_enablement", None):
             self.app.refresh_tool_enablement()
+        return obj
 
     def _place_process_area(self, name: str, x: float, y: float) -> None:
         obj = SysMLObject(
