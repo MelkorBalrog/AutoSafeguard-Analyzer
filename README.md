@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
@@ -1602,6 +1602,7 @@ and run the build again if you hit this issue.
 
 
 ## Version History
+- 0.1.6 - Fixed version display in Help → About and splash screen.
 - 0.1.5 - Added a pastel style with peach actions and steel-blue nodes.
 - 0.1.4 - Initial diagram style support documented.
 - 0.1.3 - Added context menu actions to remove parts from a diagram or from the model.
