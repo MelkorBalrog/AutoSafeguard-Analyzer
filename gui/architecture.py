@@ -4904,6 +4904,7 @@ class SysMLDiagramWindow(tk.Frame):
                     inherit_block_properties(self.repo, src.element_id)
         self._sync_to_repository()
         ConnectionDialog(self, conn)
+        self.redraw()
 
     def _create_obj_and_conn(
         self, source: SysMLObject, x: float, y: float, conn_type: str, obj_type: str
@@ -4925,6 +4926,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.temp_line_end = None
             self.current_tool = "Select"
             self.canvas.configure(cursor="arrow")
+            self.redraw()
             if obj and obj != source:
                 self._connect_objects(source, obj, conn_type)
             else:
@@ -4934,9 +4936,14 @@ class SysMLDiagramWindow(tk.Frame):
                     for t in targets:
                         menu.add_command(
                             label=t,
-                            command=lambda tt=t: self._create_obj_and_conn(source, x, y, conn_type, tt),
+                            command=lambda tt=t: self._create_obj_and_conn(
+                                source, x, y, conn_type, tt
+                            ),
                         )
-                    menu.tk_popup(event.x_root, event.y_root)
+                    try:
+                        menu.tk_popup(event.x_root, event.y_root)
+                    finally:
+                        menu.grab_release()
             return
         if self.select_rect_start:
             x = self.canvas.canvasx(event.x)
