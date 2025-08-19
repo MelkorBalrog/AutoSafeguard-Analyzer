@@ -31,7 +31,7 @@ def test_safety_management_process_area_available(monkeypatch):
 
     monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", DummyDialog)
 
-    win.add_process_area()
+    win.add_work_product()
 
     assert "Safety & Security Management" in captured["options"]
     assert len(captured["options"]) == len(set(captured["options"]))
