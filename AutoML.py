@@ -2781,10 +2781,7 @@ class FaultTreeApp:
         self.prop_view.bind("<Configure>", self._resize_prop_columns)
         self.prop_view.bind("<Map>", self._resize_prop_columns)
         prop_frame.bind("<Configure>", self._resize_prop_columns)
-        self.tools_nb.bind("<Configure>", self._resize_prop_columns)
-        prop_frame.after(0, self._resize_prop_columns)
-        self.tools_nb.after(0, self._resize_prop_columns)
-        self.after(0, self._resize_prop_columns)
+        self.root.after(0, self._resize_prop_columns)
         self.tools_nb.add(prop_frame, text="Properties")
         self._resize_prop_columns()
 
