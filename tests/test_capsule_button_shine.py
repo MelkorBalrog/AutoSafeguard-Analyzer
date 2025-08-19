@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_capsule_button_has_diffused_circles():
+def test_capsule_button_has_diffused_circles_and_shade():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -17,4 +17,5 @@ def test_capsule_button_has_diffused_circles():
     btn.pack()
     root.update_idletasks()
     assert len(getattr(btn, "_shine_items", [])) >= 7
+    assert len(getattr(btn, "_shade_items", [])) >= 1
     root.destroy()
