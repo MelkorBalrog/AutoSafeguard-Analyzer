@@ -168,6 +168,11 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
     return f"{prefix}: {src} --[{rel}]--> {tgt}"
 
 
+def is_action_type(name: str) -> bool:
+    """Return True if *name* represents an action-like node type."""
+    return bool(re.search(r"(action|activity|procedure|task|operation)", (name or ""), re.I))
+
+
 # ===== Safety & AI templates =====
 
 
@@ -243,6 +248,16 @@ def make_sequence_template(
     else:
         seq = parts[0]
     return tidy_sentence(f"{subject} shall {seq}")
+
+
+def make_grouped_action_template(subject: str, count: int) -> str:
+    """Return template listing multiple actions as sub-items."""
+    items: List[str] = []
+    for i in range(1, count + 1):
+        letter = chr(ord("a") + i - 1)
+        items.append(f"{letter}) <object{i}_id> (<object{i}_class>)")
+    joined = "; ".join(items)
+    return tidy_sentence(f"{subject} shall execute: {joined}")
 
 
 # ===== Governance templates =====
@@ -332,11 +347,88 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
     conn_rules = rules.get("connection_rules", {}) or {}
     gov_root = conn_rules.get("Governance Diagram", {}) or {}
     ai_nodes = set(rules.get("ai_nodes", []))
+    grouped_pairs: set[tuple[str, str]] = set()
     if isinstance(gov_root, dict):
+        action_map: dict[str, dict[str, List[str]]] = {}
         for relation_label, src_map in gov_root.items():
             if not isinstance(src_map, dict):
                 continue
             for src_type, tgt_list in (src_map or {}).items():
+                if (
+                    isinstance(tgt_list, list)
+                    and src_type not in ai_nodes
+                    and len(tgt_list) > 0
+                    and all(is_action_type(t) and t not in ai_nodes for t in tgt_list)
+                ):
+                    action_map.setdefault(src_type, {})[relation_label] = tgt_list
+
+        for src_type, rel_map in action_map.items():
+            targets: List[str] = []
+            for tlist in rel_map.values():
+                for t in tlist:
+                    if t not in targets:
+                        targets.append(t)
+            if len(targets) < 2:
+                continue
+            subjects: List[str] = []
+            ok = True
+            for rel in rel_map.keys():
+                subj, _act, _tgt_count, tmpl_override, var_override = rule_info(
+                    req_rules, rel, "Engineering team", rel.lower()
+                )
+                if tmpl_override or var_override:
+                    ok = False
+                    break
+                subjects.append(subj)
+            if not ok or not subjects or any(s != subjects[0] for s in subjects):
+                continue
+            subj = subjects[0]
+            if subj == "Engineering team":
+                subj = "<subject_id> (<subject_class>)"
+            template = make_grouped_action_template(subj, len(targets))
+            variables = make_gov_variables_base()
+            rel_labels = sorted(rel_map.keys())
+            relation_key = (
+                rel_labels[0].lower().replace(" ", "_")
+                if len(rel_labels) == 1
+                else "actions"
+            )
+            base_id = f"GOV-{relation_key}-{id_token(src_type)}-group"
+            trigger_rel = "/".join(rel_labels)
+            trigger = make_trigger("Gov", src_type, trigger_rel, ", ".join(targets))
+            notes = "Auto-generated from diagram rules (Governance)."
+            for suf, need_cond, need_const in SUFFIXES:
+                pid = base_id + suf
+                t = (
+                    build_cond_const_template(template)
+                    if (need_cond and need_const)
+                    else build_cond_template(template)
+                    if need_cond
+                    else build_const_template(template)
+                    if need_const
+                    else normalize_base_template(template)
+                )
+                vs = ensure_variables(variables, need_cond, need_const)
+                out.append(
+                    {
+                        "Pattern ID": pid,
+                        "Trigger": trigger,
+                        "Template": t,
+                        "Variables": vs,
+                        "Notes": notes,
+                    }
+                )
+            for rel in rel_map.keys():
+                grouped_pairs.add((rel, src_type))
+
+        for relation_label, src_map in gov_root.items():
+            if not isinstance(src_map, dict):
+                continue
+            for src_type, tgt_list in (src_map or {}).items():
+                if not isinstance(tgt_list, list):
+                    continue
+                if (relation_label, src_type) in grouped_pairs:
+                    continue
                 for tgt_type in (tgt_list or []):
                     is_ai = src_type in ai_nodes or tgt_type in ai_nodes
                     (
