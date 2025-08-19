@@ -4789,122 +4789,155 @@ class SysMLDiagramWindow(tk.Frame):
         if self.app:
             self.app.update_views()
 
+    def _connection_targets(self, source: SysMLObject, conn_type: str) -> list[str]:
+        """Return valid target object types for a connection."""
+        diag = self.repo.diagrams.get(self.diagram_id)
+        diag_type = diag.diag_type if diag else ""
+        conn_rules = CONNECTION_RULES.get(diag_type, {})
+        src_type = source.obj_type
+        if diag_type == "Governance Diagram" and conn_type != "Flow":
+            src_type = _GOV_TYPE_ALIASES.get(src_type, src_type)
+        targets = conn_rules.get(conn_type, {}).get(src_type, set())
+        return sorted(t for t in targets if t != "Port")
+
+    def _create_element_at(self, obj_type: str, x: float, y: float) -> SysMLObject:
+        """Create a new element and diagram object at ``(x, y)``."""
+        pkg = self.repo.diagrams[self.diagram_id].package
+        element = self.repo.create_element(obj_type, owner=pkg)
+        self.repo.add_element_to_diagram(self.diagram_id, element.elem_id)
+        new_obj = SysMLObject(_get_next_id(), obj_type, x / self.zoom, y / self.zoom, element_id=element.elem_id)
+        if obj_type == "Block":
+            new_obj.height = 140.0
+            new_obj.width = 160.0
+        elif obj_type == "System Boundary":
+            new_obj.width = 200.0
+            new_obj.height = 120.0
+        elif obj_type in ("Decision", "Merge"):
+            new_obj.width = new_obj.height = 40.0
+        elif obj_type == "Initial":
+            new_obj.width = new_obj.height = 20.0
+        elif obj_type == "Final":
+            new_obj.width = new_obj.height = 30.0
+        elif obj_type in ("Fork", "Join"):
+            new_obj.width = 60.0
+            new_obj.height = 10.0
+        self.objects.append(new_obj)
+        self.sort_objects()
+        self._sync_to_repository()
+        self.redraw()
+        return new_obj
+
+    def _connect_objects(self, src: SysMLObject, dst: SysMLObject, conn_type: str) -> None:
+        """Connect two objects and create repository relationship."""
+        valid, msg = self.validate_connection(src, dst, conn_type)
+        if not valid:
+            messagebox.showwarning("Invalid Connection", msg)
+            return
+        if conn_type == "Control Action":
+            arrow_default = "forward"
+        elif conn_type == "Feedback":
+            arrow_default = "backward"
+        elif conn_type == "Trace":
+            arrow_default = "both"
+        elif conn_type in _arrow_forward_types():
+            arrow_default = "forward"
+        else:
+            arrow_default = "none"
+        conn_stereo = (
+            "control action"
+            if conn_type == "Control Action"
+            else "feedback" if conn_type == "Feedback" else conn_type.lower()
+        )
+        conn = DiagramConnection(src.obj_id, dst.obj_id, conn_type, arrow=arrow_default, stereotype=conn_stereo)
+        if conn_type == "Connector":
+            src_flow = src.properties.get("flow") if src.obj_type == "Port" else None
+            dst_flow = dst.properties.get("flow") if dst.obj_type == "Port" else None
+            if src_flow or dst_flow:
+                conn.mid_arrow = True
+                if src_flow and dst_flow:
+                    dir_a = src.properties.get("direction", "out").lower()
+                    dir_b = dst.properties.get("direction", "out").lower()
+                    if dir_a == "out":
+                        conn.name = src_flow
+                        conn.arrow = "forward"
+                    elif dir_b == "out":
+                        conn.name = dst_flow
+                        conn.arrow = "backward"
+                    else:
+                        conn.name = src_flow
+                        conn.arrow = "both"
+                elif src_flow:
+                    conn.name = src_flow
+                    dir_attr = src.properties.get("direction", "out")
+                    if dir_attr == "in":
+                        conn.arrow = "backward"
+                    elif dir_attr == "out":
+                        conn.arrow = "forward"
+                    else:
+                        conn.arrow = "both"
+                else:
+                    conn.name = dst_flow
+                    dir_attr = dst.properties.get("direction", "out")
+                    if dir_attr == "in":
+                        conn.arrow = "forward"
+                    elif dir_attr == "out":
+                        conn.arrow = "backward"
+                    else:
+                        conn.arrow = "both"
+        self._assign_decision_corners(conn)
+        self.connections.append(conn)
+        if src.element_id and dst.element_id:
+            rel_stereo = (
+                "control action"
+                if conn_type == "Control Action"
+                else "feedback" if conn_type == "Feedback" else None
+            )
+            if conn_type == "Trace":
+                rel1 = self.repo.create_relationship(conn_type, src.element_id, dst.element_id, stereotype=rel_stereo)
+                rel2 = self.repo.create_relationship(conn_type, dst.element_id, src.element_id, stereotype=rel_stereo)
+                self.repo.add_relationship_to_diagram(self.diagram_id, rel1.rel_id)
+                self.repo.add_relationship_to_diagram(self.diagram_id, rel2.rel_id)
+            else:
+                rel = self.repo.create_relationship(conn_type, src.element_id, dst.element_id, stereotype=rel_stereo)
+                self.repo.add_relationship_to_diagram(self.diagram_id, rel.rel_id)
+                if conn_type == "Generalization":
+                    inherit_block_properties(self.repo, src.element_id)
+        self._sync_to_repository()
+        ConnectionDialog(self, conn)
+
+    def _create_obj_and_conn(
+        self, source: SysMLObject, x: float, y: float, conn_type: str, obj_type: str
+    ) -> None:
+        """Create an object of ``obj_type`` at ``(x, y)`` and connect it to ``source``."""
+        new_obj = self._create_element_at(obj_type, x, y)
+        if new_obj:
+            self._connect_objects(source, new_obj, conn_type)
+
     def on_left_release(self, event):
         if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
-            obj = self.find_object(
-                x,
-                y,
-                prefer_port=True,
-            )
-            if obj and obj != self.start:
-                valid, msg = self.validate_connection(self.start, obj, self.current_tool)
-                if valid:
-                    if self.current_tool == "Control Action":
-                        arrow_default = "forward"
-                    elif self.current_tool == "Feedback":
-                        arrow_default = "backward"
-                    elif self.current_tool == "Trace":
-                        arrow_default = "both"
-                    elif self.current_tool in _arrow_forward_types():
-                        arrow_default = "forward"
-                    else:
-                        arrow_default = "none"
-                    conn_stereo = (
-                        "control action"
-                        if self.current_tool == "Control Action"
-                        else "feedback" if self.current_tool == "Feedback" else self.current_tool.lower()
-                    )
-                    conn = DiagramConnection(
-                        self.start.obj_id,
-                        obj.obj_id,
-                        self.current_tool,
-                        arrow=arrow_default,
-                        stereotype=conn_stereo,
-                    )
-                    if self.current_tool == "Connector":
-                        src_flow = self.start.properties.get("flow") if self.start.obj_type == "Port" else None
-                        dst_flow = obj.properties.get("flow") if obj.obj_type == "Port" else None
-                        if src_flow or dst_flow:
-                            conn.mid_arrow = True
-                            if src_flow and dst_flow:
-                                dir_a = self.start.properties.get("direction", "out").lower()
-                                dir_b = obj.properties.get("direction", "out").lower()
-                                if dir_a == "out":
-                                    conn.name = src_flow
-                                    conn.arrow = "forward"
-                                elif dir_b == "out":
-                                    conn.name = dst_flow
-                                    conn.arrow = "backward"
-                                else:
-                                    conn.name = src_flow
-                                    conn.arrow = "both"
-                            elif src_flow:
-                                conn.name = src_flow
-                                dir_attr = self.start.properties.get("direction", "out")
-                                if dir_attr == "in":
-                                    conn.arrow = "backward"
-                                elif dir_attr == "out":
-                                    conn.arrow = "forward"
-                                else:
-                                    conn.arrow = "both"
-                            else:
-                                conn.name = dst_flow
-                                dir_attr = obj.properties.get("direction", "out")
-                                if dir_attr == "in":
-                                    conn.arrow = "forward"
-                                elif dir_attr == "out":
-                                    conn.arrow = "backward"
-                                else:
-                                    conn.arrow = "both"
-                    self._assign_decision_corners(conn)
-                    self.connections.append(conn)
-                    if self.start.element_id and obj.element_id:
-                        rel_stereo = (
-                            "control action"
-                            if self.current_tool == "Control Action"
-                            else "feedback"
-                            if self.current_tool == "Feedback"
-                            else None
+            obj = self.find_object(x, y, prefer_port=True)
+            source = self.start
+            conn_type = self.current_tool
+            # Reset to select mode regardless of outcome
+            self.start = None
+            self.temp_line_end = None
+            self.current_tool = "Select"
+            self.canvas.configure(cursor="arrow")
+            if obj and obj != source:
+                self._connect_objects(source, obj, conn_type)
+            else:
+                targets = self._connection_targets(source, conn_type)
+                if targets:
+                    menu = tk.Menu(self, tearoff=0)
+                    for t in targets:
+                        menu.add_command(
+                            label=t,
+                            command=lambda tt=t: self._create_obj_and_conn(source, x, y, conn_type, tt),
                         )
-                        if self.current_tool == "Trace":
-                            rel1 = self.repo.create_relationship(
-                                self.current_tool,
-                                self.start.element_id,
-                                obj.element_id,
-                                stereotype=rel_stereo,
-                            )
-                            rel2 = self.repo.create_relationship(
-                                self.current_tool,
-                                obj.element_id,
-                                self.start.element_id,
-                                stereotype=rel_stereo,
-                            )
-                            self.repo.add_relationship_to_diagram(
-                                self.diagram_id, rel1.rel_id
-                            )
-                            self.repo.add_relationship_to_diagram(
-                                self.diagram_id, rel2.rel_id
-                            )
-                        else:
-                            rel = self.repo.create_relationship(
-                                self.current_tool,
-                                self.start.element_id,
-                                obj.element_id,
-                                stereotype=rel_stereo,
-                            )
-                            self.repo.add_relationship_to_diagram(
-                                self.diagram_id, rel.rel_id
-                            )
-                            if self.current_tool == "Generalization":
-                                inherit_block_properties(
-                                    self.repo, self.start.element_id
-                                )
-                    self._sync_to_repository()
-                    ConnectionDialog(self, conn)
-                else:
-                    messagebox.showwarning("Invalid Connection", msg)
+                    menu.tk_popup(event.x_root, event.y_root)
+            return
         if self.select_rect_start:
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -6955,6 +6988,52 @@ class SysMLDiagramWindow(tk.Frame):
             fill=outline,
         )
 
+    def _draw_icon_shape(
+        self, shape: str, x: float, y: float, r: float, color: str
+    ) -> None:
+        """Draw *shape* centered at ``(x, y)`` with radius *r* using the icon image."""
+        size = max(1, int(r * 2))
+        cache = getattr(self, "_scaled_icons", {})
+        key = (shape, color, size)
+        icon = cache.get(key)
+        if icon is None:
+            base = self._create_icon(shape, color)
+            if size != 16:
+                icon = base.zoom(size, size).subsample(16, 16)
+            else:
+                icon = base
+            cache[key] = icon
+            self._scaled_icons = cache
+        self.canvas.create_image(
+            x - size / 2, y - size / 2, anchor="nw", image=icon
+        )
+
+    def _draw_gear(
+        self, x: float, y: float, r: float, color: str, outline: str
+    ) -> None:
+        """Draw a gear centered at (*x*, *y*) with radius *r*."""
+        pts: list[tuple[float, float]] = []
+        teeth = 8
+        for i in range(teeth * 2):
+            angle = math.radians(360 / (teeth * 2) * i)
+            rad = r if i % 2 == 0 else r * 0.7
+            px = x + rad * math.cos(angle)
+            py = y + rad * math.sin(angle)
+            pts.append((px, py))
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [coord for pt in pts for coord in pt], outline=outline, fill=""
+        )
+        hole = r * 0.4
+        self.canvas.create_oval(
+            x - hole,
+            y - hole,
+            x + hole,
+            y + hole,
+            outline=outline,
+            fill=StyleManager.get_instance().get_canvas_color(),
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7304,20 +7383,15 @@ class SysMLDiagramWindow(tk.Frame):
                 font=label_font,
                 anchor="s",
             )
-        elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
+        elif obj.obj_type in (
+            "Process",
+            "Manufacturing Process",
+        ):
             r = min(w, h)
-            pts = []
-            teeth = 8
-            for i in range(teeth * 2):
-                angle = math.radians(360 / (teeth * 2) * i)
-                rad = r if i % 2 == 0 else r * 0.7
-                px = x + rad * math.cos(angle)
-                py = y + rad * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
-            hole = r * 0.4
-            self.canvas.create_oval(x - hole, y - hole, x + hole, y + hole, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
+            self._draw_gear(x, y, r, color, outline)
+        elif obj.obj_type == "Operation":
+            r = min(w, h)
+            self._draw_icon_shape("wrench", x, y, r, color)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
@@ -7340,75 +7414,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
-            )
-        elif obj.obj_type == "Operation":
-            handle_w = w * 0.25
-            head_r = w
-            inner_r = head_r * 0.6
-            bg = StyleManager.get_instance().get_canvas_color()
-            self.drawing_helper._fill_gradient_circle(
-                self.canvas, x, y, head_r, color
-            )
-            self.canvas.create_oval(
-                x - head_r,
-                y - head_r,
-                x + head_r,
-                y + head_r,
-                outline=outline,
-                fill="",
-            )
-            # Hollow out the head for an open-end wrench look
-            self.canvas.create_oval(
-                x - inner_r,
-                y - inner_r,
-                x + inner_r,
-                y + inner_r,
-                outline=outline,
-                fill=bg,
-            )
-            # Carve a wider jaw opening
-            notch = [
-                (x + inner_r, y - inner_r * 0.8),
-                (x + head_r, y - head_r * 0.3),
-                (x + head_r, y + head_r * 0.3),
-                (x + inner_r, y + inner_r * 0.8),
-            ]
-            self.canvas.create_polygon(notch, fill=bg, outline=bg)
-            self.canvas.create_line(
-                x + inner_r,
-                y - inner_r * 0.8,
-                x + head_r,
-                y - head_r * 0.3,
-                fill=outline,
-                width=max(2, self.zoom),
-            )
-            self.canvas.create_line(
-                x + inner_r,
-                y + inner_r * 0.8,
-                x + head_r,
-                y + head_r * 0.3,
-                fill=outline,
-                width=max(2, self.zoom),
-            )
-            hx1, hx2 = x - handle_w / 2, x + handle_w / 2
-            hy1, hy2 = y + inner_r, y + h
-            self._draw_gradient_rect(hx1, hy1, hx2, hy2, color, obj.obj_id)
-            self.canvas.create_rectangle(
-                hx1,
-                hy1,
-                hx2,
-                hy2,
-                outline=outline,
-                fill="",
-            )
-            hole_r = handle_w * 0.4
-            self.canvas.create_oval(
-                x - hole_r,
-                hy2 - hole_r * 2,
-                x + hole_r,
-                hy2,
-                outline=outline,
-                fill=bg,
             )
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
