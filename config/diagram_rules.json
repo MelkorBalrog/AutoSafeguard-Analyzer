@@ -452,7 +452,9 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Policy"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
