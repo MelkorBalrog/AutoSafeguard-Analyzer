@@ -148,7 +148,12 @@
         "Business Unit": [],
         "Component": [],
         "Data": [],
-        "Document": [],
+        "Document": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "Driving Function": [],
         "Field Data": [],
         "Fleet": [],
@@ -429,7 +434,12 @@
         "Business Unit": [],
         "Component": [],
         "Data": [],
-        "Document": [],
+        "Document": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "Driving Function": [],
         "Field Data": [],
         "Fleet": [],
@@ -461,7 +471,12 @@
         "Task": [],
         "Test Suite": [],
         "Vehicle": [],
-        "Work Product": [],
+        "Work Product": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "AI Database": [
           "Guideline",
           "Policy",
@@ -1203,7 +1218,17 @@
           "Record"
         ],
         "Record": [],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Process",
+          "Document",
+          "Report",
+          "Data",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -1868,7 +1893,14 @@
         "Role": [
           "Data",
           "Document",
-          "Record"
+          "Record",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Process",
+          "Procedure",
+          "Plan"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
@@ -1937,7 +1969,23 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Field Data",
+          "Hazard",
+          "Risk Assessment",
+          "Security Threat",
+          "System",
+          "Component",
+          "Process",
+          "Procedure",
+          "Policy",
+          "Plan",
+          "Document",
+          "Report",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -1988,7 +2036,18 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Document",
+          "Report",
+          "Work Product",
+          "Safety Goal"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -2144,7 +2203,23 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Field Data",
+          "Hazard",
+          "Risk Assessment",
+          "Security Threat",
+          "System",
+          "Component",
+          "Process",
+          "Procedure",
+          "Policy",
+          "Plan",
+          "Document",
+          "Report",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Security Threat": [
@@ -2357,7 +2432,16 @@
         "Risk Assessment": [
           "Test Suite"
         ],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Procedure",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Document",
+          "Report",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Goal": [
           "Test Suite"
@@ -2616,7 +2700,19 @@
           "Plan",
           "Safety Goal"
         ],
-        "Role": [],
+        "Role": [
+          "Hazard",
+          "Safety Issue",
+          "Security Threat",
+          "Risk Assessment",
+          "Process",
+          "Plan",
+          "Procedure",
+          "Policy",
+          "Safety Goal",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -3027,7 +3123,18 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Document",
+          "Report",
+          "Work Product",
+          "Safety Goal"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -3699,6 +3806,38 @@
         "Produces"
       ],
       "subject": "Cybersecurity team"
+    },
+    "prototype evaluation": {
+      "action": "evaluate prototype performance",
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Prototype team"
+    },
+    "safety assessment workflow": {
+      "action": "assess and mitigate safety risks",
+      "relations": [
+        "Assesses",
+        "Uses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Safety engineer"
+    },
+    "continuous improvement": {
+      "action": "improve deployed system",
+      "relations": [
+        "Monitors",
+        "Assesses",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Operations team"
     }
   }
 }
