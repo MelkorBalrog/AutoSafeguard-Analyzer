@@ -19120,6 +19120,25 @@ class AutoMLApp:
             data["versions"] = self.versions
         return data
 
+    def _load_project_properties(self, data: dict) -> None:
+        """Load project properties from *data* and normalize probability keys."""
+        self.project_properties = data.get("project_properties", self.project_properties)
+        for key in (
+            "exposure_probabilities",
+            "controllability_probabilities",
+            "severity_probabilities",
+        ):
+            probs = self.project_properties.get(key)
+            if isinstance(probs, Mapping):
+                self.project_properties[key] = {
+                    int(k): float(v) for k, v in probs.items()
+                }
+        update_probability_tables(
+            self.project_properties.get("exposure_probabilities"),
+            self.project_properties.get("controllability_probabilities"),
+            self.project_properties.get("severity_probabilities"),
+        )
+
     def apply_model_data(self, data: dict, ensure_root: bool = True):
         """Load model state from a dictionary."""
 
@@ -19601,12 +19620,7 @@ class AutoMLApp:
             self.update_global_requirements_from_nodes(event)
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
-        self.project_properties = data.get("project_properties", self.project_properties)
-        update_probability_tables(
-            self.project_properties.get("exposure_probabilities"),
-            self.project_properties.get("controllability_probabilities"),
-            self.project_properties.get("severity_probabilities"),
-        )
+        self._load_project_properties(data)
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
@@ -20280,9 +20294,9 @@ class AutoMLApp:
         # Propagate ASIL values from risk assessment entries to loaded safety goals
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
-        
+
         # Load project properties.
-        self.project_properties = data.get("project_properties", self.project_properties)
+        self._load_project_properties(data)
         self.item_definition = data.get(
             "item_definition",
             getattr(self, "item_definition", {"description": "", "assumptions": ""}),
