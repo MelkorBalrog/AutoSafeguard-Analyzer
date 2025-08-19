@@ -207,8 +207,18 @@ class SafetyCaseExplorer(tk.Frame):
             return
         typ, obj = self.item_map.get(sel[0], (None, None))
         if typ == "case":
-            win = tk.Toplevel(self)
-            SafetyCaseTable(win, obj, app=self.app)
+            # Prefer opening safety cases within the application's document
+            # notebook so they appear as a new tab in the main working area
+            # instead of a separate window.  The ``SafetyCaseTable`` already
+            # provides scrollbars via its internal ``TableController`` so users
+            # can navigate large cases easily.
+            if self.app and hasattr(self.app, "_new_tab"):
+                tab = self.app._new_tab(f"Safety Case: {obj.name}")
+                table = SafetyCaseTable(tab, obj, app=self.app)
+                table.pack(fill=tk.BOTH, expand=True)
+            else:  # Fallback to a new toplevel window if no app context
+                win = tk.Toplevel(self)
+                SafetyCaseTable(win, obj, app=self.app)
         elif typ == "solution" and self.app:
             for case in self.library.cases:
                 if obj in case.solutions:
