@@ -356,10 +356,17 @@ def _external_relations_for(nodes: list[str]) -> dict[str, dict[str, list[str]]]
     return result
 
 
-def _dedup_category(data: dict) -> None:
-    """Remove duplicate relations within ``data`` and its externals."""
+def _dedup_category(data: dict, seen: set[str] | None = None) -> None:
+    """Remove duplicate relations within ``data`` and its externals.
 
-    seen: set[str] = set()
+    When ``seen`` is provided the set is used to track relationships across
+    categories so each relationship only appears once in the toolbox overall.
+    Any relations kept in ``data`` or its externals are added to ``seen`` for
+    subsequent calls.
+    """
+
+    if seen is None:
+        seen = set()
     rels: list[str] = []
     for r in data.get("relations", []) or []:
         if r not in seen:
@@ -11659,10 +11666,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     sub["relations"] = [
                         r for r in sub.get("relations", []) if r not in global_rels
                     ]
+        seen_rels: set[str] = set()
         for data in defs.values():
-            _dedup_category(data)
+            _dedup_category(data, seen_rels)
         if ai_data:
-            _dedup_category(ai_data)
+            _dedup_category(ai_data, seen_rels)
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
