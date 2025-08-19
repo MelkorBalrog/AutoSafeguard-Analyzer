@@ -4690,6 +4690,7 @@ class AutoMLApp:
         prop_win = tk.Toplevel(self.root)
         prop_win.title("Project Properties")
         prop_win.geometry("420x380")
+        prop_win.resizable(False, False)
         dialog_font = tkFont.Font(family="Arial", size=10)
 
         ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
