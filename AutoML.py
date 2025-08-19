@@ -9276,6 +9276,12 @@ class FaultTreeApp:
         if obj:
             if not obj:
                 return
+            if hasattr(self, "analysis_tree"):
+                try:
+                    self.analysis_tree.selection_set(())
+                    self.analysis_tree.focus("")
+                except Exception:
+                    pass
             self.prop_view.insert("", "end", values=("Type", obj.obj_type))
             name = obj.properties.get("name", "")
             if name:
