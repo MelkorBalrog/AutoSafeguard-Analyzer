@@ -65,7 +65,8 @@ class WorkProductProcessAreaLockTests(unittest.TestCase):
         win.on_left_drag(self.DummyEvent(200, 0))
         win.on_left_release(self.DummyEvent(200, 0))
         self.assertEqual(wp.properties.get("boundary"), "1")
-        self.assertEqual((wp.x, wp.y), (boundary.x, boundary.y))
+        expected_x = boundary.x + boundary.width / 2 - wp.width / 2
+        self.assertEqual((wp.x, wp.y), (expected_x, boundary.y))
 
 
 if __name__ == "__main__":

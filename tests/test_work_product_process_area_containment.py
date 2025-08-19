@@ -5,6 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from gui.architecture import GovernanceDiagramWindow
 from sysml.sysml_repository import SysMLRepository
+import math
 
 
 def test_work_product_clamped_to_process_area():
@@ -30,6 +31,12 @@ def test_work_product_clamped_to_process_area():
     win._constrain_to_parent(wp)
 
     assert win.find_boundary_for_obj(wp) == area
+    right = area.x + area.width / 2 - wp.width / 2
+    bottom = area.y + area.height / 2 - wp.height / 2
+    assert math.isclose(wp.x, right)
+    assert math.isclose(wp.y, bottom)
+    assert wp.properties.get("px") == str(wp.x - area.x)
+    assert wp.properties.get("py") == str(wp.y - area.y)
 
 
 def test_add_work_product_existing_area_click():
