@@ -17648,10 +17648,12 @@ class AutoMLApp:
                     child.redraw()
 
     def show_hazard_explorer(self):
-        if hasattr(self, "_haz_exp_window") and self._haz_exp_window.winfo_exists():
-            self._haz_exp_window.lift()
-            return
-        self._haz_exp_window = HazardExplorerWindow(self)
+        if hasattr(self, "_haz_exp_tab") and self._haz_exp_tab.winfo_exists():
+            self.doc_nb.select(self._haz_exp_tab)
+        else:
+            self._haz_exp_tab = self._new_tab("Hazard Explorer")
+            self._haz_exp_window = HazardExplorerWindow(self._haz_exp_tab, self)
+            self._haz_exp_window.pack(fill=tk.BOTH, expand=True)
 
     def show_requirements_explorer(self):
         if hasattr(self, "_req_exp_tab") and self._req_exp_tab.winfo_exists():
