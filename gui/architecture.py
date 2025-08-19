@@ -480,6 +480,23 @@ _BASE_CONN_TOOLS = [
     "Reviews",
 ]
 
+# Connection types that can link one work product to another.  When a user
+# drags one of these relations onto empty canvas, creating the target should
+# prompt for a generic work product name instead of inserting an unnamed
+# document.
+_WORK_PRODUCT_CONN_TYPES = {
+    "Trace",
+    "Propagate",
+    "Propagate by Review",
+    "Propagate by Approval",
+    "Used By",
+    "Used after Review",
+    "Used after Approval",
+    "Re-use",
+    "Satisfied by",
+    "Derived from",
+}
+
 # Connection types that default to forward arrows
 _ARROW_FORWARD_BASE = {
     "Flow",
@@ -4914,7 +4931,27 @@ class SysMLDiagramWindow(tk.Frame):
         self, source: SysMLObject, x: float, y: float, conn_type: str, obj_type: str
     ) -> None:
         """Create an object of ``obj_type`` at ``(x, y)`` and connect it to ``source``."""
-        new_obj = self._create_element_at(obj_type, x, y)
+        if (
+            obj_type == "Document"
+            and source.obj_type == "Work Product"
+            and conn_type in _WORK_PRODUCT_CONN_TYPES
+        ):
+            name = simpledialog.askstring("Add Work Product", "Enter work product name:")
+            if not name:
+                return
+            name = name.strip()
+            if not name:
+                return
+            existing = {wp.lower() for wp in getattr(self.app, "WORK_PRODUCT_INFO", {})}
+            if name.lower() in existing:
+                messagebox.showerror(
+                    "Duplicate Work Product",
+                    f"'{name}' is already a defined work product.",
+                )
+                return
+            new_obj = self._place_work_product(name, x / self.zoom, y / self.zoom)
+        else:
+            new_obj = self._create_element_at(obj_type, x, y)
         if new_obj:
             self._connect_objects(source, new_obj, conn_type)
 
@@ -11475,7 +11512,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
 
-    def _place_work_product(self, name: str, x: float, y: float) -> None:
+    def _place_work_product(self, name: str, x: float, y: float) -> SysMLObject:
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
@@ -11498,6 +11535,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self.app.enable_work_product(name)
         if getattr(self.app, "refresh_tool_enablement", None):
             self.app.refresh_tool_enablement()
+        return obj
 
     def _place_process_area(self, name: str, x: float, y: float) -> None:
         obj = SysMLObject(

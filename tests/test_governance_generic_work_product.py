@@ -7,6 +7,7 @@ from gui.architecture import GovernanceDiagramWindow
 from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
 import pytest
+import types
 
 
 def test_add_generic_work_product(monkeypatch):
@@ -95,3 +96,42 @@ def test_add_generic_work_product_name_conflict(monkeypatch):
     assert errors
 
     _sm.ACTIVE_TOOLBOX = prev_tb
+
+
+def test_connection_creates_generic_work_product(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="Gov1")
+
+    win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.objects = []
+    win.connections = []
+    win.zoom = 1.0
+    win.sort_objects = lambda: None
+    win._sync_to_repository = lambda: None
+    win.redraw = lambda: None
+    win.app = types.SimpleNamespace(
+        WORK_PRODUCT_INFO={},
+        enable_work_product=lambda *a, **k: None,
+        refresh_tool_enablement=lambda: None,
+        safety_mgmt_toolbox=None,
+    )
+
+    src = win._place_work_product("Requirement Specification", 0.0, 0.0)
+
+    connected = []
+    win._connect_objects = lambda s, d, c: connected.append((s, d, c))
+
+    monkeypatch.setattr(
+        "gui.architecture.simpledialog.askstring", lambda *a, **k: "Custom WP"
+    )
+
+    win._create_obj_and_conn(src, 100.0, 100.0, "Derived from", "Document")
+
+    assert any(
+        o.obj_type == "Work Product" and o.properties.get("name") == "Custom WP"
+        for o in win.objects
+    )
+    assert connected and connected[0][2] == "Derived from"
