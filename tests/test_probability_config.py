@@ -6,6 +6,7 @@ from analysis.utils import (
     EXPOSURE_PROBABILITIES,
     CONTROLLABILITY_PROBABILITIES,
     SEVERITY_PROBABILITIES,
+    normalize_probability_mapping,
 )
 
 
@@ -21,3 +22,9 @@ def test_update_probability_tables():
     assert severity_to_probability(3) == 0.4
     # Restore defaults to avoid side effects
     update_probability_tables(*defaults)
+
+
+def test_normalize_probability_mapping():
+    data = {"1": "0.1", "2": 0.2}
+    result = normalize_probability_mapping(data)
+    assert result == {1: 0.1, 2: 0.2}
