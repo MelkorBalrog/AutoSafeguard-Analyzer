@@ -37,30 +37,29 @@ class _StyledButton(CapsuleButton):
 
 
 class TranslucidButton(_StyledButton):
-    """Capsule button with a subtle translucent palette used by default."""
+    """Capsule button with a subtle translucent palette."""
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("bg", "#ffffff")
-        kwargs.setdefault("hover_bg", "#f0f0f0")
-        kwargs.setdefault("gradient", ["#ffffff", "#f0f0f0"])
+        kwargs.setdefault("hover_bg", "#f5f5f5")
+        kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
         super().__init__(*args, **kwargs)
 
 
 class PurpleButton(_StyledButton):
-    """Capsule button variant with a purplish theme for dialogs."""
+    """Capsule button variant with a translucent purple theme for dialogs."""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bg", "#9b59b6")
-        kwargs.setdefault("hover_bg", "#b37cc8")
-        kwargs.setdefault("gradient", ["#9b59b6", "#8e44ad"])
+        kwargs.setdefault("bg", "#f3eaff")
+        kwargs.setdefault("hover_bg", "#e6d9ff")
+        kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
         super().__init__(*args, **kwargs)
 
 
-# Use ``TranslucidButton`` for all button instances across the GUI.  Monkeypatching
-# both ``ttk.Button`` and the classic ``tk.Button`` ensures the custom hover
-# highlight is applied consistently without modifying every call site.
-ttk.Button = TranslucidButton  # type: ignore[assignment]
-tk.Button = TranslucidButton  # type: ignore[assignment]
+# Use ``CapsuleButton`` for all standard button instances across the GUI.  Toolbox
+# buttons explicitly use ``TranslucidButton`` for a lighter appearance.
+ttk.Button = CapsuleButton  # type: ignore[assignment]
+tk.Button = CapsuleButton  # type: ignore[assignment]
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""

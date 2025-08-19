@@ -34,8 +34,8 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
 
     class DummyButton:
         def __init__(self, master, **kwargs):
-            kwargs.setdefault("bg", "#9b59b6")
-            kwargs.setdefault("hover_bg", "#b37cc8")
+            kwargs.setdefault("bg", "#f3eaff")
+            kwargs.setdefault("hover_bg", "#e6d9ff")
             colors.append((kwargs.get("bg"), kwargs.get("hover_bg")))
 
         def pack(self, *a, **k):
@@ -80,7 +80,7 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     )
 
     mb._create_dialog("Title", "Message", [("OK", True)])
-    assert colors == [("#9b59b6", "#b37cc8")]
+    assert colors == [("#f3eaff", "#e6d9ff")]
 
 
 def test_create_dialog_keeps_existing_root(monkeypatch):

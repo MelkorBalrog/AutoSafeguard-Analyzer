@@ -5,7 +5,7 @@ from itertools import product
 import re
 
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
-from gui import messagebox
+from gui import messagebox, TranslucidButton
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
@@ -66,7 +66,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Existing Malfunction",
             "Relationship",
         ):
-            ttk.Button(
+            TranslucidButton(
                 self.toolbox,
                 text=name,
                 image=self._icons.get(name),
