@@ -81,11 +81,7 @@ def _create_dialog(
 
     for text, value in buttons:
         ttk.Button(
-            frame,
-            text=text,
-            bg="#9b59b6",
-            hover_bg="#b37cc8",
-            command=lambda v=value: _set(v),
+            frame, text=text, style="Purple.TButton", command=lambda v=value: _set(v)
         ).pack(side="left", padx=5)
 
     dialog.protocol("WM_DELETE_WINDOW", lambda: _set(None))
