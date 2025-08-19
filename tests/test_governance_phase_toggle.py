@@ -111,7 +111,7 @@ def test_add_process_area_lists_scenario(monkeypatch):
 
     monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", capture_dialog)
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
-    win.add_process_area()
+    win.add_work_product()
 
     assert "Scenario" in captured["options"]
 
