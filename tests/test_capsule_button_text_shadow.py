@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_capsule_button_renders_text_shading():
+def test_capsule_button_renders_text_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -16,5 +16,6 @@ def test_capsule_button_renders_text_shading():
     btn = CapsuleButton(root, text="Test")
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_text_shade_item", None) is not None
+    text_items = [i for i in btn.find_withtag("all") if btn.type(i) == "text"]
+    assert len(text_items) >= 2
     root.destroy()
