@@ -22,6 +22,7 @@ from gui.drawing_helper import fta_drawing_helper
 from config import load_diagram_rules, load_json_with_comments
 import json
 from gui.icon_factory import create_icon
+from gui.button_utils import set_uniform_button_width
 
 from sysml.sysml_spec import SYSML_PROPERTIES
 from analysis.models import (
@@ -3807,6 +3808,7 @@ class SysMLDiagramWindow(tk.Frame):
                 _set_uniform_width(child)
 
         _set_uniform_width(self.toolbox)
+        set_uniform_button_width(self.toolbox)
 
         # Shrink the property view to match the button area so it does not force
         # the toolbox wider than needed. Allow the value column to stretch so it

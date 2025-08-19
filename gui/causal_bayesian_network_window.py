@@ -10,6 +10,7 @@ from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon as draw_icon
+from gui.button_utils import set_uniform_button_width
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -72,7 +73,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 compound=tk.LEFT,
                 command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
-        self._set_button_widths()
+        set_uniform_button_width(self.toolbox)
         # Pack then immediately hide so order relative to the canvas is preserved
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
         self.toolbox.pack_forget()
@@ -123,17 +124,6 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self._bind_shortcuts()
         self.focus_set()
 
-    def _set_button_widths(self) -> None:
-        self.toolbox.update_idletasks()
-        width = 0
-        for child in self.toolbox.winfo_children():
-            if isinstance(child, ttk.Button):
-                width = max(width, len(str(child.cget("text"))))
-        width += 2
-        for child in self.toolbox.winfo_children():
-            if isinstance(child, ttk.Button):
-                child.configure(width=width)
-
     # ------------------------------------------------------------------
     def refresh_docs(self) -> None:
         names = [doc.name for doc in getattr(self.app, "cbn_docs", [])]
@@ -177,6 +167,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
     def _fit_toolbox(self) -> None:
         """Ensure all toolbox buttons share the width of the longest."""
         self.toolbox.update_idletasks()
+        set_uniform_button_width(self.toolbox)
 
         def max_button_width(widget: tk.Misc) -> int:
             width = 0
