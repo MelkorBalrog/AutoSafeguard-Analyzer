@@ -5,13 +5,13 @@ from typing import Callable, Optional
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
-    value = value.lstrip('#')
+    value = value.lstrip("#")
     lv = len(value)
-    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    return tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
 
 def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
-    return '#%02x%02x%02x' % rgb
+    return "#%02x%02x%02x" % rgb
 
 
 def _lighten(color: str, factor: float = 1.2) -> str:
@@ -57,6 +57,8 @@ class CapsuleButton(tk.Canvas):
         self._normal_color = bg
         self._hover_color = hover_bg or _lighten(bg, 1.2)
         self._current_color = self._normal_color
+        self._disabled = False
+        self._disabled_color = _lighten(bg, 0.9)
         self._radius = height // 2
         self._shape_items: list[int] = []
         self._text_item: Optional[int] = None
@@ -97,14 +99,31 @@ class CapsuleButton(tk.Canvas):
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
-        self._set_color(self._hover_color)
+        if not self._disabled:
+            self._set_color(self._hover_color)
 
     def _on_leave(self, _event: tk.Event) -> None:
-        self._set_color(self._normal_color)
+        if not self._disabled:
+            self._set_color(self._normal_color)
 
     def _on_click(self, _event: tk.Event) -> None:
-        if self._command:
+        if not self._disabled and self._command:
             self._command()
+
+    # ------------------------------------------------------------------
+    # ttk-compatible state handling
+    # ------------------------------------------------------------------
+    def state(self, states: Optional[list[str]] = None) -> list[str]:
+        """Mimic :meth:`ttk.Button.state` for basic enable/disable support."""
+        if not states:
+            return ["disabled"] if self._disabled else ["!disabled"]
+        if "disabled" in states:
+            self._disabled = True
+            self._set_color(self._disabled_color)
+        if "!disabled" in states or "normal" in states:
+            self._disabled = False
+            self._set_color(self._normal_color)
+        return ["disabled"] if self._disabled else ["!disabled"]
 
     def configure(self, **kwargs) -> None:  # pragma: no cover - thin wrapper
         """Allow dynamic configuration similar to standard Tk buttons."""
@@ -118,6 +137,7 @@ class CapsuleButton(tk.Canvas):
             self._command = command
         bg = kwargs.pop("bg", None)
         hover_bg = kwargs.pop("hover_bg", None)
+        state = kwargs.pop("state", None)
         width = kwargs.get("width")
         height = kwargs.get("height")
         super().configure(**kwargs)
@@ -125,9 +145,16 @@ class CapsuleButton(tk.Canvas):
             self._normal_color = bg
             self._hover_color = hover_bg or _lighten(bg, 1.2)
             self._set_color(self._normal_color)
+            self._disabled_color = _lighten(bg, 0.9)
         if hover_bg is not None and bg is None:
             self._hover_color = hover_bg
+        if state is not None:
+            if isinstance(state, (list, tuple, set)):
+                self.state(list(state))
+            else:
+                self.state([state])
         if width is not None or height is not None or text is not None:
             self._draw_button()
 
     config = configure
+
