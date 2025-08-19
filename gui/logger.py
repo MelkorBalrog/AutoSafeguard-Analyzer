@@ -114,7 +114,12 @@ def show_log():
             _auto_hide_id = None
         return
     log_frame.configure(height=_default_height)
-    log_frame.pack(side=tk.BOTTOM, fill=tk.X, before=_toggle_button)
+    # Pack the log frame below all other widgets so the toggle button
+    # remains visible even when additional panels (like the explorer)
+    # are pinned and consume vertical space.  By omitting the ``before``
+    # argument the log frame is placed at the very bottom, leaving the
+    # toggle button immediately above it.
+    log_frame.pack(side=tk.BOTTOM, fill=tk.X)
     if _toggle_button:
         _toggle_button.config(text="Hide Logs")
         # Ensure the toggle button remains visible when other panels
