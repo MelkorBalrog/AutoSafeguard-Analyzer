@@ -3624,12 +3624,18 @@ class SysMLDiagramWindow(tk.Frame):
             ),
         )
 
-        self.back_btn = ttk.Button(self.toolbox, text="Go Back", command=self.go_back)
-        self.back_btn.pack(fill=tk.X, padx=2, pady=2)
-        self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
-
         # Prepare icon cache for toolbox buttons
         self._icons: dict[str, tk.PhotoImage] = {}
+        self._icons["Back"] = create_icon("arrow", size=self.icon_size)
+        self.back_btn = ttk.Button(
+            self.toolbox,
+            text="Go Back",
+            image=self._icons["Back"],
+            compound=tk.LEFT,
+            command=self.go_back,
+        )
+        self.back_btn.pack(fill=tk.X, padx=2, pady=2)
+        self.back_btn.configure(state=tk.NORMAL if self.diagram_history else tk.DISABLED)
         for name in list(tools) + (relation_tools or []):
             self._icon_for(name)
 
