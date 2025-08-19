@@ -3690,11 +3690,17 @@ class SysMLDiagramWindow(tk.Frame):
             self.prop_view.column("field", width=80, anchor="w", stretch=False)
             self.prop_view.column("value", width=180, anchor="w", stretch=True)
             add_treeview_scrollbars(self.prop_view, prop_tree_frame)
-            # Bind resize handlers on both widgets to keep value column synced.
-            # DO NOT REMOVE.
+            # Bind resize handlers on the treeview, its container, and the
+            # toolbox so the value column always fills the tab width from the
+            # moment the window appears. DO NOT REMOVE.
             self.prop_view.bind("<Configure>", self._resize_prop_columns)
+            self.prop_view.bind("<Map>", self._resize_prop_columns)
             prop_tree_frame.bind("<Configure>", self._resize_prop_columns)
+            self.toolbox.bind("<Configure>", self._resize_prop_columns)
             prop_tree_frame.after(0, self._resize_prop_columns)
+            self.toolbox.after(0, self._resize_prop_columns)
+            self.after(0, self._resize_prop_columns)
+            self._resize_prop_columns()
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
@@ -3803,9 +3809,19 @@ class SysMLDiagramWindow(tk.Frame):
         if not hasattr(self, "prop_view"):
             return
 
-        self.prop_view.update_idletasks()
-        tree_width = event.width if event else self.prop_view.winfo_width()
+        # Base sizing on the containing frame width instead of the tree itself,
+        # which may not have expanded to fill the tab yet.
+        container = self.prop_view.master
+        container.update_idletasks()
+        tree_width = container.winfo_width()
         field_width = self.prop_view.column("field")["width"]
+
+        # If the widget isn't sized yet (width too small) postpone the resize so
+        # the value column starts at the full tab width. DO NOT REMOVE.
+        if tree_width <= field_width + 1:
+            self.prop_view.after(50, self._resize_prop_columns)
+            return
+
         new_width = max(tree_width - field_width, 20)
         self.prop_view.column("value", width=new_width)
 
@@ -9211,6 +9227,34 @@ class SysMLDiagramWindow(tk.Frame):
                         diag = self.repo.diagrams.get(self.diagram_id)
                         diagram_name = diag.name if diag else ""
                         toolbox.remove_work_product(diagram_name, name)
+                elif obj.obj_type == "System Boundary":
+                    children = [
+                        o
+                        for o in list(self.objects)
+                        if o.obj_type == "Work Product"
+                        and o.properties.get("parent") == str(obj.obj_id)
+                    ]
+                    for wp in children:
+                        name = wp.properties.get("name", "")
+                        if getattr(self.app, "can_remove_work_product", None):
+                            if not self.app.can_remove_work_product(name):
+                                messagebox.showerror(
+                                    "Delete",
+                                    f"Cannot delete work product '{name}' with existing artifacts.",
+                                )
+                                break
+                    else:
+                        for wp in children:
+                            name = wp.properties.get("name", "")
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                            if toolbox:
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                diagram_name = diag.name if diag else ""
+                                toolbox.remove_work_product(diagram_name, name)
+                            self.remove_element_model(wp)
+                        self.remove_element_model(obj)
+                        continue
                 if obj.obj_type == "Part":
                     self.remove_part_model(obj)
                 else:
@@ -11505,6 +11549,27 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     sub["relations"] = [
                         r for r in sub.get("relations", []) if r not in global_rels
                     ]
+
+        def _dedup_category(data: dict) -> None:
+            seen: set[str] = set()
+            rels = []
+            for r in data.get("relations", []) or []:
+                if r not in seen:
+                    seen.add(r)
+                    rels.append(r)
+            data["relations"] = rels
+            for sub in data.get("externals", {}).values():
+                sub_rels = []
+                for r in sub.get("relations", []) or []:
+                    if r not in seen:
+                        seen.add(r)
+                        sub_rels.append(r)
+                sub["relations"] = sub_rels
+
+        for data in defs.values():
+            _dedup_category(data)
+        if ai_data:
+            _dedup_category(ai_data)
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
