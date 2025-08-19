@@ -115,7 +115,17 @@ class GSNDiagramWindow(tk.Frame):
             ("Context", self.add_context),
             ("Module", self.add_module),
         ]
-        node_frame = ttk.LabelFrame(self.toolbox, text="Elements (elements)")
+        try:
+            node_frame = ttk.LabelFrame(
+                self.toolbox,
+                text="Elements (elements)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            node_frame = ttk.LabelFrame(
+                self.toolbox,
+                text="Elements (elements)",
+            )
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
             ttk.Button(
@@ -130,7 +140,17 @@ class GSNDiagramWindow(tk.Frame):
             ("Solved By", self.connect_solved_by),
             ("In Context Of", self.connect_in_context),
         ]
-        rel_frame = ttk.LabelFrame(self.toolbox, text="Relationships (relationships)")
+        try:
+            rel_frame = ttk.LabelFrame(
+                self.toolbox,
+                text="Relationships (relationships)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            rel_frame = ttk.LabelFrame(
+                self.toolbox,
+                text="Relationships (relationships)",
+            )
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:
             ttk.Button(
