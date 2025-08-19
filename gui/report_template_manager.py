@@ -1,7 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import ttk, simpledialog, filedialog
 from pathlib import Path
 import json
+import sys
+import shutil
 
 from gui import messagebox
 
@@ -14,12 +16,25 @@ class ReportTemplateManager(tk.Frame):
     contains ``"template"``.
     """
 
+    @staticmethod
+    def _default_templates_dir() -> Path:
+        """Return base directory containing bundled report templates."""
+
+        return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+
+    @staticmethod
+    def _user_templates_dir() -> Path:
+        """Return directory used for user-created templates."""
+
+        path = Path.home() / ".automl" / "templates"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def __init__(self, master, app, templates_dir: Path | None = None):
         super().__init__(master)
         self.app = app
-        self.templates_dir = Path(
-            templates_dir or Path(__file__).resolve().parents[1] / "config"
-        )
+        self.builtin_dir = Path(templates_dir or self._default_templates_dir())
+        self.user_dir = self._user_templates_dir()
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -29,6 +44,9 @@ class ReportTemplateManager(tk.Frame):
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(row=0, column=1, sticky="ns")
+        ttk.Button(btn_frame, text="Load", command=self._load_template).pack(
+            fill=tk.X, padx=2, pady=2
+        )
         ttk.Button(btn_frame, text="Add", command=self._add_template).pack(
             fill=tk.X, padx=2, pady=2
         )
@@ -43,16 +61,25 @@ class ReportTemplateManager(tk.Frame):
 
     # ------------------------------------------------------------------
     def _template_files(self) -> list[Path]:
-        return sorted(
-            p
-            for p in self.templates_dir.glob("*.json")
-            if "template" in p.name.lower()
-        )
+        paths = []
+        for p in self.builtin_dir.rglob("*.json"):
+            if "template" in p.name.lower():
+                paths.append(p)
+        for p in self.user_dir.rglob("*.json"):
+            if "template" in p.name.lower():
+                paths.append(p)
+
+        files: dict[str, Path] = {}
+        for p in paths:
+            files[p.name] = p
+        return [files[name] for name in sorted(files)]
 
     def _refresh_list(self):
         self.listbox.delete(0, tk.END)
+        self._name_to_path: dict[str, Path] = {}
         for p in self._template_files():
             self.listbox.insert(tk.END, p.name)
+            self._name_to_path[p.name] = p
 
     # ------------------------------------------------------------------
     def _add_template(self):  # pragma: no cover - GUI dialog interaction
@@ -61,7 +88,7 @@ class ReportTemplateManager(tk.Frame):
             return
         if not name.lower().endswith("_template"):
             name = f"{name}_template"
-        path = self.templates_dir / f"{name}.json"
+        path = self.user_dir / f"{name}.json"
         if path.exists():
             messagebox.showerror("Template", "Template already exists")
             return
@@ -73,7 +100,8 @@ class ReportTemplateManager(tk.Frame):
         sel = self.listbox.curselection()
         if not sel:
             return None
-        return self.templates_dir / self.listbox.get(sel[0])
+        name = self.listbox.get(sel[0])
+        return self._name_to_path.get(name)
 
     def _edit_template(self):  # pragma: no cover - GUI dialog interaction
         path = self._selected_path()
@@ -92,11 +120,35 @@ class ReportTemplateManager(tk.Frame):
         path = self._selected_path()
         if not path:
             return
+        if self.user_dir not in path.parents:
+            messagebox.showerror("Template", "Cannot delete bundled template")
+            return
         if not messagebox.askyesno("Template", f"Delete {path.name}?"):
             return
         try:
             path.unlink()
         except Exception:
             messagebox.showerror("Template", "Failed to delete template")
+            return
+        self._refresh_list()
+
+    def _load_template(self):  # pragma: no cover - GUI dialog interaction
+        path = filedialog.askopenfilename(
+            title="Select template", filetypes=[("JSON", "*.json")]
+        )
+        if not path:
+            return
+        src = Path(path)
+        if "template" not in src.name.lower():
+            messagebox.showerror("Template", "Selected file is not a template")
+            return
+        dest = self.user_dir / src.name
+        if dest.exists():
+            messagebox.showerror("Template", "Template already exists")
+            return
+        try:
+            shutil.copy(src, dest)
+        except Exception:
+            messagebox.showerror("Template", "Failed to load template")
             return
         self._refresh_list()
