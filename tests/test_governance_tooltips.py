@@ -44,11 +44,25 @@ def _expected_text(cfg, node_type: str) -> str:
                 incoming.setdefault(rel, []).append(src)
     if not outgoing and not incoming:
         return ""
-    lines = ["To Others | From Others"]
+
+    rows = []
     for rel in sorted(set(outgoing) | set(incoming)):
         outs = ", ".join(outgoing.get(rel, []))
         ins = ", ".join(sorted(incoming.get(rel, [])))
-        lines.append(f"{rel}: {outs} | {ins}")
+        rows.append((rel, outs, ins))
+
+    headers = ("Relation", "To Others", "From Others")
+    col_widths = [
+        max(len(row[i]) for row in rows + [headers]) for i in range(3)
+    ]
+    lines = [
+        " | ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers)),
+        "-+-".join("-" * col_widths[i] for i in range(3)),
+    ]
+    for row in rows:
+        lines.append(
+            " | ".join(row[i].ljust(col_widths[i]) for i in range(3))
+        )
     return "\n".join(lines)
 
 
