@@ -9240,7 +9240,32 @@ class FaultTreeApp:
         if tags:
             meta["Type"] = tags[0]
             if len(tags) > 1:
-                meta["ID"] = tags[1]
+                ident = tags[1]
+                meta["ID"] = ident
+                repo = SysMLRepository.get_instance()
+                elem = repo.elements.get(ident)
+                if elem:
+                    meta.update(
+                        {
+                            "Type": elem.elem_type,
+                            "Author": getattr(elem, "author", ""),
+                            "Created": getattr(elem, "created", ""),
+                            "Modified": getattr(elem, "modified", ""),
+                            "ModifiedBy": getattr(elem, "modified_by", ""),
+                        }
+                    )
+                else:
+                    diag = repo.diagrams.get(ident)
+                    if diag:
+                        meta.update(
+                            {
+                                "Type": diag.diag_type,
+                                "Author": getattr(diag, "author", ""),
+                                "Created": getattr(diag, "created", ""),
+                                "Modified": getattr(diag, "modified", ""),
+                                "ModifiedBy": getattr(diag, "modified_by", ""),
+                            }
+                        )
         self.show_properties(meta=meta)
 
     def show_properties(self, obj=None, meta=None):
