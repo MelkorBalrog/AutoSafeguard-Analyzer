@@ -370,11 +370,21 @@ def _gov_connection_text(node_type: str) -> str:
                 incoming.setdefault(rel, []).append(src)
     if not outgoing and not incoming:
         return ""
-    lines = ["To Others | From Others"]
+    rows: list[tuple[str, str, str]] = []
     for rel in sorted(set(outgoing) | set(incoming)):
         outs = ", ".join(outgoing.get(rel, []))
         ins = ", ".join(sorted(incoming.get(rel, [])))
-        lines.append(f"{rel}: {outs} | {ins}")
+        rows.append((rel, outs, ins))
+
+    rel_w = max(len("Relation"), max((len(r) for r, _, _ in rows), default=0))
+    out_w = max(len("To Others"), max((len(o) for _, o, _ in rows), default=0))
+    in_w = max(len("From Others"), max((len(i) for _, _, i in rows), default=0))
+
+    header = f"{'Relation'.ljust(rel_w)} | {'To Others'.ljust(out_w)} | {'From Others'.ljust(in_w)}"
+    separator = f"{'-' * rel_w}-+-{'-' * out_w}-+-{'-' * in_w}"
+    lines = [header, separator]
+    for rel, outs, ins in rows:
+        lines.append(f"{rel.ljust(rel_w)} | {outs.ljust(out_w)} | {ins.ljust(in_w)}")
     return "\n".join(lines)
 
 # Node type aliases used when validating governance diagram connections.
