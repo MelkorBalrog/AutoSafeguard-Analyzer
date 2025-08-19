@@ -258,11 +258,24 @@ class CapsuleButton(tk.Canvas):
         self._current_color = color
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
+        """Apply a colour to border items safely.
+
+        Canvas items support different configuration options depending on their
+        type.  Lines expect a ``fill`` option while arcs and ovals normally use
+        ``outline``.  On some platforms Tk raises ``TclError`` if an unsupported
+        option is passed.  To make the widget robust we determine the preferred
+        option and gracefully fall back to ``fill`` when ``outline`` is not
+        available.
+        """
         for item in items:
-            if self.type(item) == "line":
+            item_type = self.type(item)
+            option = "fill" if item_type == "line" else "outline"
+            try:
+                self.itemconfigure(item, **{option: color})
+            except tk.TclError:
+                # ``outline`` is not supported by some item types (e.g. text),
+                # so retry with ``fill`` to avoid crashes.
                 self.itemconfigure(item, fill=color)
-            else:
-                self.itemconfigure(item, outline=color)
 
     def _on_motion(self, event: tk.Event) -> None:
         if "disabled" in self._state:
