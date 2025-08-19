@@ -187,7 +187,17 @@ def show_temporarily(duration=3000, lines: int | None = None):
         return
     show_log()
     if lines:
-        log_frame.configure(height=_line_height * lines)
+        # Calculate the pixel height of the newly logged message rather than
+        # relying on a fixed line height multiplier.  This accounts for line
+        # wrapping and ensures the entire message is visible.
+        log_frame.update_idletasks()
+        try:
+            start_index = log_widget.index(f"end-{lines} lines linestart")
+            end_index = log_widget.index("end-1c")
+            pixel_height = log_widget.count(start_index, end_index, "ypixels")[0]
+        except Exception:
+            pixel_height = _line_height * lines
+        log_frame.configure(height=pixel_height)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
