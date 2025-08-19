@@ -245,6 +245,36 @@ class GovernanceTraceRelationshipTests(unittest.TestCase):
             )
             self.assertTrue(valid)
 
+    def test_used_allows_scenario_library_to_hazop(self):
+        repo = self.repo
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        scenario_lib = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Scenario Library"},
+        )
+        hazop = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "HAZOP"},
+        )
+        win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
+        win.repo = repo
+        win.diagram_id = diag.diag_id
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            valid, _ = GovernanceDiagramWindow.validate_connection(
+                win, scenario_lib, hazop, rel
+            )
+            self.assertTrue(valid)
+
     def test_used_disallows_scenario_library_to_odd(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")

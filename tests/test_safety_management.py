@@ -79,6 +79,9 @@ class DummyCanvas:
     def create_polygon(self, *args, **kwargs):
         self.polygon_calls.append((args, kwargs))
 
+    def create_arc(self, *args, **kwargs):
+        pass
+
     def canvasx(self, x):
         return x
 
@@ -2024,7 +2027,8 @@ def test_work_product_color_and_text_wrapping():
     win.zoom = 1.0
     win.canvas = DummyCanvas()
     win.font = None
-    win._draw_gradient_rect = lambda *args, **kwargs: None
+    colors = []
+    win._draw_gradient_rect = lambda *args, **kwargs: colors.append(args[4])
     win.selected_objs = []
 
     obj = SysMLObject(
@@ -2037,8 +2041,7 @@ def test_work_product_color_and_text_wrapping():
         properties={"name": "Architecture Diagram"},
     )
     win.draw_object(obj)
-    _, poly_kwargs = win.canvas.polygon_calls[0]
-    assert poly_kwargs["fill"] == "#cfe2f3"
+    assert colors[0] == "#cfe2f3"
     assert win.canvas.text_calls[0][2]["width"] == 60.0
     assert win.canvas.text_calls[0][2]["text"] == "Architecture\nDiagram"
 
@@ -2046,8 +2049,7 @@ def test_work_product_color_and_text_wrapping():
     win.canvas.text_calls.clear()
     obj.properties["name"] = "HAZOP"
     win.draw_object(obj)
-    _, poly_kwargs = win.canvas.polygon_calls[0]
-    assert poly_kwargs["fill"] == "#d5e8d4"
+    assert colors[1] == "#d5e8d4"
 
 
 def test_work_product_shapes_fixed_size():

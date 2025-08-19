@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_text_highlight_without_shadow():
+def test_text_without_shadow_or_highlight():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -17,12 +17,11 @@ def test_text_highlight_without_shadow():
     btn.pack()
     root.update_idletasks()
     assert not hasattr(btn, "_text_shadow_item")
-    highlight = getattr(btn, "_text_highlight_item", None)
-    assert highlight is not None
+    assert not hasattr(btn, "_text_highlight_item")
     root.destroy()
 
 
-def test_icon_highlight_without_shadow():
+def test_icon_without_highlight_or_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -51,4 +50,19 @@ def test_glow_on_hover_and_press():
     assert btn._glow_items == []
     btn._on_release(type("E", (), {"x":1,"y":1})())
     assert btn._glow_items
+    root.destroy()
+
+
+def test_glow_outline_matches_button_size():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    btn = CapsuleButton(root, text="Glow", width=120, height=40)
+    btn.pack()
+    root.update_idletasks()
+    btn._on_enter(type("E", (), {})())
+    w, h = int(btn["width"]), int(btn["height"])
+    bbox = btn.bbox(*btn._glow_items)
+    assert bbox == (0, 0, w, h)
     root.destroy()
