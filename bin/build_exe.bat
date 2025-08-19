@@ -39,14 +39,15 @@ if defined ICON_PATH (
     )
 )
 
-REM Run PyInstaller from the repository root so it can locate AutoML.py
+REM Run PyInstaller from the repository root so it can locate launcher.py
 cd /d "%REPO_ROOT%"
 if exist AutoML.spec del AutoML.spec
 pyinstaller --noconfirm --onefile --windowed --name AutoML ^
     --exclude-module scipy ^
     --hidden-import=PIL.ImageTk ^
     --add-data "styles;styles" ^
-    %ICON_ARG% AutoML.py
+    --add-data "AutoML.py;." ^
+    %ICON_ARG% launcher.py
 if errorlevel 1 (
     echo Failed to build executable.
     exit /b %errorlevel%
