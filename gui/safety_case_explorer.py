@@ -118,14 +118,33 @@ class SafetyCaseExplorer(tk.Frame):
 
     # ------------------------------------------------------------------
     def _available_diagrams(self):
-        """Return a list of all GSN diagrams available in the application."""
+        """Return GSN diagrams visible to the safety case."""
         if not self.app:
             return []
+
         diagrams = list(getattr(self.app, "gsn_diagrams", []))
         for mod in getattr(self.app, "gsn_modules", []):
             diagrams.extend(self._collect_module_diagrams(mod))
         if not diagrams:
             diagrams = list(getattr(self.app, "all_gsn_diagrams", []))
+
+        toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+        if toolbox:
+            reviewed = getattr(getattr(self.app, "current_review", None), "reviewed", False)
+            approved = getattr(getattr(self.app, "current_review", None), "approved", False)
+            if toolbox.can_use_as_input(
+                "GSN Argumentation",
+                "Safety & Security Case",
+                reviewed=reviewed,
+                approved=approved,
+            ):
+                diagrams = [
+                    d
+                    for d in diagrams
+                    if toolbox.document_visible("GSN Argumentation", d.root.user_name)
+                ]
+            else:
+                diagrams = []
         return diagrams
 
     # ------------------------------------------------------------------
