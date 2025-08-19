@@ -84,7 +84,7 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
-        self._shine_items: list[int] = []
+        self._depth_items: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -101,7 +101,6 @@ class CapsuleButton(tk.Canvas):
         h = int(self["height"])
         r = self._radius
         color = self._current_color
-        outline = "#b3b3b3"
         # Draw the filled shapes without outlines so the seams between the
         # rectangle and arcs are not visible.
         self._shape_items = [
@@ -123,26 +122,40 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
-        highlight = _lighten(color, 1.4)
-        self._shine_items = [
-            self.create_oval(
-                1,
-                1,
-                w - 1,
-                h // 2,
-                outline="",
-                fill=highlight,
-                stipple="gray25",
-            )
+        shadow = _darken(color, 0.8)
+        highlight = _lighten(color, 1.2)
+        self._depth_items = [
+            # Top-left shadow
+            self.create_arc(
+                (1, 1, 2 * r - 1, h - 1),
+                start=90,
+                extent=180,
+                style=tk.ARC,
+                outline=shadow,
+            ),
+            self.create_line(r, 1, w - r, 1, fill=shadow),
+            self.create_line(1, r, 1, h - r, fill=shadow),
+            # Bottom-right highlight
+            self.create_arc(
+                (w - 2 * r + 1, 1, w - 1, h - 1),
+                start=-90,
+                extent=180,
+                style=tk.ARC,
+                outline=highlight,
+            ),
+            self.create_line(r, h - 1, w - r, h - 1, fill=highlight),
+            self.create_line(w - 1, r, w - 1, h - r, fill=highlight),
         ]
         self._text_item = self.create_text(w // 2, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
-        highlight = _lighten(color, 1.4)
-        for item in self._shine_items:
-            self.itemconfigure(item, fill=highlight)
+        shadow = _darken(color, 0.8)
+        highlight = _lighten(color, 1.2)
+        colors = [shadow] * 3 + [highlight] * max(0, len(self._depth_items) - 3)
+        for item, col in zip(self._depth_items, colors):
+            self.itemconfigure(item, fill=col, outline=col)
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
