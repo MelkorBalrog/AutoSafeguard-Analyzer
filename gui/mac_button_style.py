@@ -26,3 +26,43 @@ def apply_mac_button_style(style: ttk.Style | None = None) -> ttk.Style:
         relief=[("pressed", "sunken"), ("!pressed", "raised")],
     )
     return style
+
+
+def apply_purplish_button_style(style: ttk.Style | None = None) -> ttk.Style:
+    """Style buttons with a purple theme for message boxes."""
+
+    style = style or ttk.Style()
+    style.configure(
+        "Purple.TButton",
+        padding=(10, 5),
+        relief="raised",
+        borderwidth=1,
+        foreground="white",
+        background="#9b59b6",
+    )
+    style.map(
+        "Purple.TButton",
+        background=[("active", "#b37cc8"), ("pressed", "#8e44ad")],
+        relief=[("pressed", "sunken"), ("!pressed", "raised")],
+    )
+    return style
+
+
+def apply_translucid_button_style(style: ttk.Style | None = None) -> ttk.Style:
+    """Style buttons with a subtle, translucent look for toolboxes."""
+
+    style = style or ttk.Style()
+    style.configure(
+        "Translucid.TButton",
+        padding=(10, 5),
+        relief="flat",
+        borderwidth=1,
+        foreground="black",
+        background="#ffffff",
+    )
+    style.map(
+        "Translucid.TButton",
+        background=[("active", "#f0f0f0"), ("pressed", "#e0e0e0")],
+        relief=[("pressed", "sunken"), ("!pressed", "flat")],
+    )
+    return style
