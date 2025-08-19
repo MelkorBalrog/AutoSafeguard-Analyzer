@@ -226,6 +226,7 @@ class EmailConfigDialog(simpledialog.Dialog):
 
         tk.Label(server_tab, text="SMTP Server:").grid(row=0, column=0, sticky="w")
         self.server_entry = tk.Entry(server_tab)
+        self.server_entry.insert(0, "smtp.gmail.com")
         self.server_entry.grid(row=0, column=1, pady=2)
 
         tk.Label(server_tab, text="Port:").grid(row=1, column=0, sticky="w")
