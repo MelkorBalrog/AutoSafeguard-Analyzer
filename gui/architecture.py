@@ -6995,6 +6995,52 @@ class SysMLDiagramWindow(tk.Frame):
             fill=outline,
         )
 
+    def _draw_icon_shape(
+        self, shape: str, x: float, y: float, r: float, color: str
+    ) -> None:
+        """Draw *shape* centered at ``(x, y)`` with radius *r* using the icon image."""
+        size = max(1, int(r * 2))
+        cache = getattr(self, "_scaled_icons", {})
+        key = (shape, color, size)
+        icon = cache.get(key)
+        if icon is None:
+            base = self._create_icon(shape, color)
+            if size != 16:
+                icon = base.zoom(size, size).subsample(16, 16)
+            else:
+                icon = base
+            cache[key] = icon
+            self._scaled_icons = cache
+        self.canvas.create_image(
+            x - size / 2, y - size / 2, anchor="nw", image=icon
+        )
+
+    def _draw_gear(
+        self, x: float, y: float, r: float, color: str, outline: str
+    ) -> None:
+        """Draw a gear centered at (*x*, *y*) with radius *r*."""
+        pts: list[tuple[float, float]] = []
+        teeth = 8
+        for i in range(teeth * 2):
+            angle = math.radians(360 / (teeth * 2) * i)
+            rad = r if i % 2 == 0 else r * 0.7
+            px = x + rad * math.cos(angle)
+            py = y + rad * math.sin(angle)
+            pts.append((px, py))
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [coord for pt in pts for coord in pt], outline=outline, fill=""
+        )
+        hole = r * 0.4
+        self.canvas.create_oval(
+            x - hole,
+            y - hole,
+            x + hole,
+            y + hole,
+            outline=outline,
+            fill=StyleManager.get_instance().get_canvas_color(),
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7344,20 +7390,15 @@ class SysMLDiagramWindow(tk.Frame):
                 font=label_font,
                 anchor="s",
             )
-        elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
+        elif obj.obj_type in (
+            "Process",
+            "Manufacturing Process",
+        ):
             r = min(w, h)
-            pts = []
-            teeth = 8
-            for i in range(teeth * 2):
-                angle = math.radians(360 / (teeth * 2) * i)
-                rad = r if i % 2 == 0 else r * 0.7
-                px = x + rad * math.cos(angle)
-                py = y + rad * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
-            hole = r * 0.4
-            self.canvas.create_oval(x - hole, y - hole, x + hole, y + hole, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
+            self._draw_gear(x, y, r, color, outline)
+        elif obj.obj_type == "Operation":
+            r = min(w, h)
+            self._draw_icon_shape("wrench", x, y, r, color)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
@@ -7381,19 +7422,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
-        elif obj.obj_type == "Operation":
-            # Draw the operation using the exact wrench icon scaled to fit
-            size = int(min(w, h) * 2)
-            scale = max(1, size // 16)
-            img = create_icon("wrench", color).zoom(scale, scale)
-            self.canvas.create_image(
-                x - 8 * scale,
-                y - 8 * scale,
-                anchor="nw",
-                image=img,
-            )
-            # Cache the image to prevent garbage collection
-            self.gradient_cache[obj.obj_id] = img
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
             self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
@@ -12200,6 +12228,7 @@ class ArchitectureManagerDialog(tk.Frame):
         self.tree.bind("<ButtonPress-1>", self.on_drag_start)
         self.tree.bind("<B1-Motion>", self.on_drag_motion)
         self.tree.bind("<ButtonRelease-1>", self.on_drag_release)
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
         self.bind("<FocusIn>", lambda _e: self.populate())
         self.drag_item = None
         self.cut_item = None
@@ -12342,6 +12371,41 @@ class ArchitectureManagerDialog(tk.Frame):
         add_pkg(root_pkg.elem_id)
         if self.app:
             self.app.update_views()
+
+    def on_tree_select(self, _event):
+        """Show metadata for the selected repository item in the app's property view."""
+        if not self.app or not hasattr(self.app, "show_properties"):
+            return
+        item = self.tree.focus()
+        if not item:
+            return
+        name = self.tree.item(item, "text")
+        meta = {"Name": name}
+        repo = self.repo
+        if item.startswith("diag_"):
+            diag = repo.diagrams.get(item[5:])
+            if diag:
+                meta.update(
+                    {
+                        "Type": diag.diag_type,
+                        "Author": getattr(diag, "author", ""),
+                        "Created": getattr(diag, "created", ""),
+                        "Modified": getattr(diag, "modified", ""),
+                        "ModifiedBy": getattr(diag, "modified_by", ""),
+                    }
+                )
+        elif item in repo.elements:
+            elem = repo.elements[item]
+            meta.update(
+                {
+                    "Type": elem.elem_type,
+                    "Author": getattr(elem, "author", ""),
+                    "Created": getattr(elem, "created", ""),
+                    "Modified": getattr(elem, "modified", ""),
+                    "ModifiedBy": getattr(elem, "modified_by", ""),
+                }
+            )
+        self.app.show_properties(meta=meta)
 
     def selected(self):
         sel = self.tree.selection()
