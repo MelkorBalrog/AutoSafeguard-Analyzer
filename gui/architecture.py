@@ -7030,63 +7030,73 @@ class SysMLDiagramWindow(tk.Frame):
     def _draw_wrench(
         self, x: float, y: float, r: float, color: str, outline: str
     ) -> None:
-        """Draw a wrench centered at (*x*, *y*) with radius *r*."""
-        # Head of the wrench near the top
-        head_r = r * 0.45
-        head_cy = y - r + head_r
+        """Draw a wrench centered at (*x*, *y*) with radius *r*.
+
+        The shape mirrors the 16×16 icon from :mod:`gui.icon_factory` using the
+        same pixel routine scaled to the desired size.
+        """
+        size = 16
+        scale = (2 * r) / size
+        mid = size / 2
+        head_cy = 5
+        head_r = 5
+        inner = head_r - 2
+
         bg = StyleManager.get_instance().get_canvas_color()
+
+        def _pt(px: float, py: float) -> tuple[float, float]:
+            return x - r + px * scale, y - r + py * scale
+
+        # Outer head
+        cx, cy = _pt(mid, head_cy)
+        hr = head_r * scale
         self.canvas.create_oval(
-            x - head_r,
-            head_cy - head_r,
-            x + head_r,
-            head_cy + head_r,
+            cx - hr,
+            cy - hr,
+            cx + hr,
+            cy + hr,
             fill=color,
             outline=outline,
         )
-        inner = head_r * 0.6
+
         # Hollow center
+        ir = inner * scale
         self.canvas.create_oval(
-            x - inner,
-            head_cy - inner,
-            x + inner,
-            head_cy + inner,
+            cx - ir,
+            cy - ir,
+            cx + ir,
+            cy + ir,
             fill=bg,
             outline=outline,
         )
-        # Notch to suggest wrench opening
-        notch = [
-            (x + inner, head_cy - inner),
-            (x + head_r, head_cy - head_r * 0.3),
-            (x + head_r, head_cy + head_r * 0.3),
-            (x + inner, head_cy + inner),
-        ]
+
+        # Notch carved from the head
+        notch_start = mid + 1
+        p1 = _pt(notch_start, head_cy - 1)
+        p2 = _pt(mid + head_r, head_cy - head_r)
+        p3 = _pt(mid + head_r, head_cy + head_r)
+        p4 = _pt(notch_start, head_cy + 1)
         self.canvas.create_polygon(
-            [coord for pt in notch for coord in pt],
+            [coord for pt in (p1, p2, p3, p4) for coord in pt],
             fill=bg,
             outline=outline,
         )
+
         # Handle
-        handle_w = r * 0.25
-        handle_top = head_cy + head_r * 0.2
-        handle_bottom = y + r
-        self.canvas.create_rectangle(
-            x - handle_w / 2,
-            handle_top,
-            x + handle_w / 2,
-            handle_bottom,
-            fill=color,
-            outline=outline,
-        )
+        handle_start = head_cy + inner
+        handle_bottom = size - 2
+        hl, ht = _pt(mid - 1, handle_start)
+        hr_x, hb = _pt(mid + 1, handle_bottom)
+        self.canvas.create_rectangle(hl, ht, hr_x, hb, fill=color, outline="")
+        self.canvas.create_line(hl, ht, hl, hb, fill=outline)
+        self.canvas.create_line(hr_x, ht, hr_x, hb, fill=outline)
+
         # Cap at end of handle
-        cap_h = handle_w * 0.6
-        self.canvas.create_rectangle(
-            x - handle_w / 2,
-            handle_bottom - cap_h,
-            x + handle_w / 2,
-            handle_bottom,
-            fill=bg,
-            outline=outline,
-        )
+        cap_top = size - 4
+        cap_bottom = size - 2
+        cl, ct = _pt(mid - 1, cap_top)
+        cr, cb = _pt(mid + 1, cap_bottom)
+        self.canvas.create_rectangle(cl, ct, cr, cb, fill=bg, outline=outline)
 
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
