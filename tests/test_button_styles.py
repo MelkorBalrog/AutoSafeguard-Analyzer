@@ -11,6 +11,7 @@ class DummyStyle:
     def __init__(self):
         self.configured = {}
         self.mapped = {}
+        self.current_theme = None
 
     def configure(self, style, **kwargs):
         self.configured[style] = kwargs
@@ -18,17 +19,23 @@ class DummyStyle:
     def map(self, style, **kwargs):
         self.mapped[style] = kwargs
 
+    def theme_use(self, theme=None):
+        if theme is not None:
+            self.current_theme = theme
+        return self.current_theme
 
 def test_apply_purplish_button_style_configures_background():
     style = DummyStyle()
     apply_purplish_button_style(style)
     assert style.configured["Purple.TButton"]["background"] == "#9b59b6"
+    assert style.current_theme == "clam"
 
 
 def test_apply_translucid_button_style_sets_flat_relief():
     style = DummyStyle()
     apply_translucid_button_style(style)
     assert style.configured["TButton"]["relief"] == "flat"
+    assert style.current_theme == "clam"
 
 
 def test_configure_table_style_uses_translucid(monkeypatch):

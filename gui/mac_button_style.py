@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tkinter as tk
 from tkinter import ttk
 
 
@@ -32,6 +33,10 @@ def apply_purplish_button_style(style: ttk.Style | None = None) -> ttk.Style:
     """Style buttons with a purple theme for message boxes."""
 
     style = style or ttk.Style()
+    try:
+        style.theme_use("clam")
+    except tk.TclError:
+        pass
     style.configure(
         "Purple.TButton",
         padding=(10, 5),
@@ -52,6 +57,10 @@ def apply_translucid_button_style(style: ttk.Style | None = None) -> ttk.Style:
     """Style the default ``ttk.Button`` with a subtle, translucent look."""
 
     style = style or ttk.Style()
+    try:
+        style.theme_use("clam")
+    except tk.TclError:
+        pass
     style.configure(
         "TButton",
         padding=(10, 5),

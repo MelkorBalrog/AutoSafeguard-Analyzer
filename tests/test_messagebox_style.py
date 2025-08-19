@@ -75,7 +75,15 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     monkeypatch.setattr(
         mb.ttk,
         "Style",
-        lambda *a, **k: type("S", (), {"configure": lambda *a, **k: None, "map": lambda *a, **k: None})(),
+        lambda *a, **k: type(
+            "S",
+            (),
+            {
+                "configure": lambda *a, **k: None,
+                "map": lambda *a, **k: None,
+                "theme_use": lambda *a, **k: None,
+            },
+        )(),
     )
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.tk, "_default_root", None)
@@ -103,7 +111,15 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
     monkeypatch.setattr(
         mb.ttk,
         "Style",
-        lambda *a, **k: type("S", (), {"configure": lambda *a, **k: None, "map": lambda *a, **k: None})(),
+        lambda *a, **k: type(
+            "S",
+            (),
+            {
+                "configure": lambda *a, **k: None,
+                "map": lambda *a, **k: None,
+                "theme_use": lambda *a, **k: None,
+            },
+        )(),
     )
 
     class DummyDialog:
