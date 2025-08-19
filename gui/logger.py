@@ -13,12 +13,13 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=8):
+def init_log_window(root, height=3):
     """Create and return a log window packed in *root*.
 
     The log area now mirrors the dark themed assembly editor styling, using
     a monospaced font and matching foreground/background colours. Line
-    numbers are displayed similar to the assembly editor.
+    numbers are displayed similar to the assembly editor. By default only
+    three rows are shown to keep the log area compact.
     """
     global log_widget, _log_line_numbers, _log_vscroll
     frame = ttk.Frame(root)
