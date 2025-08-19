@@ -470,6 +470,7 @@ _BASE_CONN_TOOLS = [
 
 # Connection types that default to forward arrows
 _ARROW_FORWARD_BASE = {
+    "Flow",
     "Propagate",
     "Propagate by Review",
     "Propagate by Approval",
@@ -3297,7 +3298,6 @@ class DiagramConnection:
     guard: List[str] = field(default_factory=list)
     guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
-    stereotype: str = ""
     multiplicity: str = ""
     stereotype: str = ""
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
@@ -3322,6 +3322,7 @@ def format_control_flow_label(
     operators and shown before the action or activity name.
     """
     label = conn.name or ""
+    has_prefix = label.startswith("<<")
     if conn.conn_type == "Control Action" and not label and conn.element_id:
         elem = repo.elements.get(conn.element_id)
         if elem:
@@ -3333,7 +3334,7 @@ def format_control_flow_label(
         or diag_type == "Governance Diagram"
     )
     if special_case:
-        base = f"<<{stereo}>> {label}".strip() if stereo else label
+        base = label if has_prefix else (f"<<{stereo}>> {label}".strip() if stereo else label)
         if conn.guard:
             lines: List[str] = []
             for i, g in enumerate(conn.guard):
@@ -3345,7 +3346,7 @@ def format_control_flow_label(
             guard_text = "\n".join(lines)
             return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
         return base
-    if stereo:
+    if stereo and not has_prefix:
         return f"<<{stereo}>> {label}".strip() if label else f"<<{stereo}>>"
     return label
 
@@ -3940,26 +3941,11 @@ class SysMLDiagramWindow(tk.Frame):
                 ):
                     return False, "Trace links cannot connect safety analysis work products"
             elif conn_type in SAFETY_AI_RELATION_SET:
-                allowed = SAFETY_AI_NODE_TYPES | GOVERNANCE_NODE_TYPES
-                if not (
-                    src.obj_type in allowed
-                    and dst.obj_type in allowed
-                    and (
-                        src.obj_type in SAFETY_AI_NODE_TYPES
-                        or dst.obj_type in SAFETY_AI_NODE_TYPES
-                    )
-                ):
-                    return False, (
-                        "Safety & AI relationships must connect Safety & AI and/or Governance elements"
-                    )
-                rule = CONNECTION_RULES.get("Governance Diagram", {}).get(conn_type)
-                if rule and src.obj_type in SAFETY_AI_NODE_TYPES:
-                    targets = rule.get(src.obj_type)
-                    if not targets or dst.obj_type not in targets:
-                        return (
-                            False,
-                            f"{conn_type} from {src.obj_type} to {dst.obj_type} is not allowed",
-                        )
+                # Safety & AI connections rely solely on JSON-defined diagram rules.
+                # The generic constraint check above already enforces allowed
+                # source and target combinations, so no additional validation is
+                # required here.
+                pass
             elif conn_type in (
                 "Used By",
                 "Used after Review",
@@ -7050,7 +7036,6 @@ class SysMLDiagramWindow(tk.Frame):
         but the head is rendered as a squared polygon and the entire wrench is
         drawn using polygon primitives to avoid overlapping shapes.
         """
-
         size = 16
         scale = (2 * r) / size
         mid = size / 2
@@ -8849,11 +8834,10 @@ class SysMLDiagramWindow(tk.Frame):
 
     def delete_selected(self, _event=None):
         if self.selected_objs:
-            result = messagebox.askyesnocancel(
-                "Delete",
-                "Remove element from model?\nYes = Model, No = Diagram",
+            confirmed = messagebox.askyesno(
+                "Delete", "Delete element permanently?"
             )
-            if result is None:
+            if not confirmed:
                 return
             for obj in list(self.selected_objs):
                 if obj.obj_type == "Work Product":
@@ -8871,13 +8855,10 @@ class SysMLDiagramWindow(tk.Frame):
                         diag = self.repo.diagrams.get(self.diagram_id)
                         diagram_name = diag.name if diag else ""
                         toolbox.remove_work_product(diagram_name, name)
-                if result:
-                    if obj.obj_type == "Part":
-                        self.remove_part_model(obj)
-                    else:
-                        self.remove_element_model(obj)
+                if obj.obj_type == "Part":
+                    self.remove_part_model(obj)
                 else:
-                    self.remove_object(obj)
+                    self.remove_element_model(obj)
             self.selected_objs = []
             self.selected_obj = None
             if getattr(self.app, "refresh_tool_enablement", None):
