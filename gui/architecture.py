@@ -279,23 +279,26 @@ def _relations_for(nodes: list[str]) -> list[str]:
     rels: set[str] = set()
     node_set = set(nodes)
 
-    def add_from(rules: dict[str, dict[str, set[str]]]) -> None:
-        for rel, srcs in rules.items():
-            for src, dests in srcs.items():
-                # A relation is relevant only when an element in ``node_set``
-                # can connect to another element in ``node_set`` using that
-                # relation.  Once a matching pair is found we stop scanning the
-                # remaining sources to avoid recording duplicate labels.
-                if src in node_set and node_set.intersection(dests):
-                    rels.add(rel)
-                    break
-
     # Only consider relationships defined for Governance diagrams.  Iterating
     # over all diagram rules caused every connection label to appear in each
     # toolbox even when a node had no valid targets for that relation.
-    add_from(CONNECTION_RULES.get("Governance Diagram", {}))
+    gov_rules = CONNECTION_RULES.get("Governance Diagram", {})
+    for rel, srcs in gov_rules.items():
+        for src, dests in srcs.items():
+            # A relation is relevant only when an element in ``node_set`` can
+            # connect to another element in ``node_set`` using that relation.
+            # Previously, relations were surfaced whenever a node could act as
+            # either source *or* target.  This caused connections that required
+            # nodes outside the toolbox to appear.  Filtering to pairs within
+            # the toolbox ensures each displayed relationship is actionable for
+            # the current context.
+            if src in node_set and node_set.intersection(dests):
+                rels.add(rel)
     # Apply the same filtering to Safety & AI specific rules.
-    add_from(SAFETY_AI_RELATION_RULES)
+    for rel, srcs in SAFETY_AI_RELATION_RULES.items():
+        for src, dests in srcs.items():
+            if src in node_set and node_set.intersection(dests):
+                rels.add(rel)
     return sorted(rels)
 
 
