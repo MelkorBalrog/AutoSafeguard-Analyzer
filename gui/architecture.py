@@ -7062,10 +7062,12 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(mid + 1, head_cy + head_r),
             _pt(mid + 1, size - 2),
         ]
+        # Fill outer contour with a horizontal white → color gradient then draw outline
+        self.drawing_helper._fill_gradient_polygon(self.canvas, outer, color)
         self.canvas.create_polygon(
             [coord for pt in outer for coord in pt],
-            fill=color,
             outline=outline,
+            fill="",
         )
 
         # Inner opening
@@ -7077,10 +7079,11 @@ class SysMLDiagramWindow(tk.Frame):
             _pt(notch_start, head_cy + 1),
             _pt(mid + inner, head_cy + inner),
         ]
+        # Carve the wrench opening without adding an internal outline
         self.canvas.create_polygon(
             [coord for pt in hole for coord in pt],
             fill=bg,
-            outline=outline,
+            outline="",
         )
 
     def draw_object(self, obj: SysMLObject):
