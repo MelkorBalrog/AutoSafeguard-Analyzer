@@ -4,6 +4,11 @@ import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
 
+try:  # Pillow is optional
+    from PIL import Image, ImageTk
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None
+
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
     value = value.lstrip('#')
@@ -28,6 +33,15 @@ def _darken(color: str, factor: float = 0.8) -> str:
     r = max(int(r * factor), 0)
     g = max(int(g * factor), 0)
     b = max(int(b * factor), 0)
+    return _rgb_to_hex((r, g, b))
+
+
+def _interpolate_color(c1: str, c2: str, t: float) -> str:
+    r1, g1, b1 = _hex_to_rgb(c1)
+    r2, g2, b2 = _hex_to_rgb(c2)
+    r = int(r1 + (r2 - r1) * t)
+    g = int(g1 + (g2 - g1) * t)
+    b = int(b1 + (b2 - b1) * t)
     return _rgb_to_hex((r, g, b))
 
 
@@ -98,7 +112,10 @@ class CapsuleButton(tk.Canvas):
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
+        self._text_shadow_item: Optional[int] = None
         self._image_item: Optional[int] = None
+        self._image_shadow_item: Optional[int] = None
+        self._image_shadow: tk.PhotoImage | None = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -123,7 +140,6 @@ class CapsuleButton(tk.Canvas):
         h = int(self["height"])
         r = self._radius
         color = self._current_color
-        outline = "#b3b3b3"
         # Draw the filled shapes without outlines so the seams between the
         # rectangle and arcs are not visible.
         self._shape_items = [
@@ -145,12 +161,26 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        self._gradient_items = []
+        self._draw_gradient(w, h)
         self._shine_items = []
         self._shade_items = []
         self._draw_highlight(w, h)
         self._draw_shade(w, h)
         self._draw_content(w, h)
         self._draw_border(w, h)
+
+    def _draw_gradient(self, w: int, h: int) -> None:
+        colors = ["#e6e6fa", "#c3dafe", "#87ceeb", "#e0ffff"]
+        stops = [0.0, 0.33, 0.66, 1.0]
+        for y in range(h):
+            t = y / (h - 1) if h > 1 else 0
+            for i in range(len(stops) - 1):
+                if stops[i] <= t <= stops[i + 1]:
+                    local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
+                    color = _interpolate_color(colors[i], colors[i + 1], local_t)
+                    break
+            self._gradient_items.append(self.create_line(0, y, w, y, fill=color))
 
     def _draw_highlight(self, w: int, h: int) -> None:
         """Draw shiny highlight and shaded region to create a 3D capsule."""
@@ -216,7 +246,9 @@ class CapsuleButton(tk.Canvas):
         """Render optional image and text within the button."""
         cx, cy = w // 2, h // 2
         self._text_item = None
+        self._text_shadow_item = None
         self._image_item = None
+        self._image_shadow_item = None
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -262,6 +294,19 @@ class CapsuleButton(tk.Canvas):
         else:
             self.create_text(cx + 1, cy + 1, text=self._text, fill="gray50")
             self._text_item = self.create_text(cx, cy, text=self._text)
+
+    def _create_image_shadow(self, x: int, y: int) -> Optional[int]:
+        if self._image is None or ImageTk is None:
+            return None
+        try:
+            pil_img = ImageTk.getimage(self._image).convert("RGBA")
+            alpha = pil_img.split()[-1]
+            shadow = Image.new("RGBA", pil_img.size, (0, 0, 0, 80))
+            shadow.putalpha(alpha)
+            self._image_shadow = ImageTk.PhotoImage(shadow)
+            return self.create_image(x + 1, y + 1, image=self._image_shadow)
+        except Exception:
+            return None
 
     def _draw_border(self, w: int, h: int) -> None:
         """Draw border and inner outline to mimic an inset capsule."""
