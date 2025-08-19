@@ -2767,6 +2767,12 @@ class FaultTreeApp:
         )
         self.prop_view.heading("field", text="Field")
         self.prop_view.heading("value", text="Value")
+        self.prop_view.column("field", width=80, anchor="w", stretch=False)
+        self.prop_view.column("value", anchor="w")
+        prop_frame.bind(
+            "<Configure>",
+            lambda e: self.prop_view.column("value", width=e.width - 80),
+        )
         add_treeview_scrollbars(self.prop_view, prop_frame)
         self.tools_nb.add(prop_frame, text="Properties")
 
