@@ -8849,11 +8849,10 @@ class SysMLDiagramWindow(tk.Frame):
 
     def delete_selected(self, _event=None):
         if self.selected_objs:
-            result = messagebox.askyesnocancel(
-                "Delete",
-                "Remove element from model?\nYes = Model, No = Diagram",
+            confirmed = messagebox.askyesno(
+                "Delete", "Delete element permanently?"
             )
-            if result is None:
+            if not confirmed:
                 return
             for obj in list(self.selected_objs):
                 if obj.obj_type == "Work Product":
@@ -8871,13 +8870,10 @@ class SysMLDiagramWindow(tk.Frame):
                         diag = self.repo.diagrams.get(self.diagram_id)
                         diagram_name = diag.name if diag else ""
                         toolbox.remove_work_product(diagram_name, name)
-                if result:
-                    if obj.obj_type == "Part":
-                        self.remove_part_model(obj)
-                    else:
-                        self.remove_element_model(obj)
+                if obj.obj_type == "Part":
+                    self.remove_part_model(obj)
                 else:
-                    self.remove_object(obj)
+                    self.remove_element_model(obj)
             self.selected_objs = []
             self.selected_obj = None
             if getattr(self.app, "refresh_tool_enablement", None):
