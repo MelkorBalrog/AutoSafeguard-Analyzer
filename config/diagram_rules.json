@@ -148,7 +148,12 @@
         "Business Unit": [],
         "Component": [],
         "Data": [],
-        "Document": [],
+        "Document": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "Driving Function": [],
         "Field Data": [],
         "Fleet": [],
@@ -429,7 +434,12 @@
         "Business Unit": [],
         "Component": [],
         "Data": [],
-        "Document": [],
+        "Document": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "Driving Function": [],
         "Field Data": [],
         "Fleet": [],
@@ -461,7 +471,12 @@
         "Task": [],
         "Test Suite": [],
         "Vehicle": [],
-        "Work Product": [],
+        "Work Product": [
+          "Guideline",
+          "Policy",
+          "Principle",
+          "Standard"
+        ],
         "AI Database": [
           "Guideline",
           "Policy",
@@ -1176,7 +1191,17 @@
       },
       "Produces": {
         "Activity": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Plan",
+          "Process",
+          "Document",
+          "Report",
+          "Data",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Component": [],
         "Data": [],
         "Document": [],
@@ -1190,7 +1215,17 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Plan",
+          "Process",
+          "Document",
+          "Report",
+          "Data",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Plan": [
           "Document"
         ],
@@ -1203,7 +1238,17 @@
           "Record"
         ],
         "Record": [],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Process",
+          "Document",
+          "Report",
+          "Data",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -1840,7 +1885,18 @@
       },
       "Uses": {
         "Activity": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Data",
+          "Document",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Process",
+          "Procedure",
+          "Plan"
+        ],
         "Component": [],
         "Data": [],
         "Document": [],
@@ -1858,7 +1914,18 @@
           "Document",
           "Record"
         ],
-        "Organization": [],
+        "Organization": [
+          "Data",
+          "Document",
+          "Record",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Process",
+          "Procedure",
+          "Plan"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -2115,7 +2182,23 @@
       "Assesses": {
         "AI Database": [],
         "ANN": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Field Data",
+          "Hazard",
+          "Risk Assessment",
+          "Security Threat",
+          "System",
+          "Component",
+          "Process",
+          "Procedure",
+          "Policy",
+          "Plan",
+          "Document",
+          "Report",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Component": [],
         "Data": [],
         "Data acquisition": [],
@@ -2135,7 +2218,23 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Field Data",
+          "Hazard",
+          "Risk Assessment",
+          "Security Threat",
+          "System",
+          "Component",
+          "Process",
+          "Procedure",
+          "Policy",
+          "Plan",
+          "Document",
+          "Report",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -2144,7 +2243,23 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Field Data",
+          "Hazard",
+          "Risk Assessment",
+          "Security Threat",
+          "System",
+          "Component",
+          "Process",
+          "Procedure",
+          "Policy",
+          "Plan",
+          "Document",
+          "Report",
+          "Model",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Security Threat": [
@@ -2325,7 +2440,16 @@
       "Develops": {
         "AI Database": [],
         "ANN": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Plan",
+          "Procedure",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Document",
+          "Report",
+          "Work Product"
+        ],
         "Component": [],
         "Data": [],
         "Data acquisition": [],
@@ -2342,7 +2466,16 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Plan",
+          "Procedure",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Document",
+          "Report",
+          "Work Product"
+        ],
         "Plan": [
           "Test Suite"
         ],
@@ -2357,7 +2490,16 @@
         "Risk Assessment": [
           "Test Suite"
         ],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Procedure",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Document",
+          "Report",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Goal": [
           "Test Suite"
@@ -2589,7 +2731,19 @@
       "Mitigates": {
         "AI Database": [],
         "ANN": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Hazard",
+          "Safety Issue",
+          "Security Threat",
+          "Risk Assessment",
+          "Process",
+          "Plan",
+          "Procedure",
+          "Policy",
+          "Safety Goal",
+          "Test Suite",
+          "Work Product"
+        ],
         "Component": [],
         "Data": [],
         "Data acquisition": [],
@@ -2604,7 +2758,19 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Hazard",
+          "Safety Issue",
+          "Security Threat",
+          "Risk Assessment",
+          "Process",
+          "Plan",
+          "Procedure",
+          "Policy",
+          "Safety Goal",
+          "Test Suite",
+          "Work Product"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -2616,7 +2782,19 @@
           "Plan",
           "Safety Goal"
         ],
-        "Role": [],
+        "Role": [
+          "Hazard",
+          "Safety Issue",
+          "Security Threat",
+          "Risk Assessment",
+          "Process",
+          "Plan",
+          "Procedure",
+          "Policy",
+          "Safety Goal",
+          "Test Suite",
+          "Work Product"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -3003,7 +3181,18 @@
       "Verify": {
         "AI Database": [],
         "ANN": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Plan",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Document",
+          "Report",
+          "Work Product",
+          "Safety Goal"
+        ],
         "Component": [],
         "Data": [],
         "Data acquisition": [],
@@ -3018,7 +3207,18 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Plan",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Document",
+          "Report",
+          "Work Product",
+          "Safety Goal"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -3027,7 +3227,18 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Plan",
+          "Process",
+          "Model",
+          "Test Suite",
+          "Component",
+          "System",
+          "Document",
+          "Report",
+          "Work Product",
+          "Safety Goal"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [],
         "Software Component": [],
@@ -3699,6 +3910,62 @@
         "Produces"
       ],
       "subject": "Cybersecurity team"
+    },
+    "prototype evaluation": {
+      "action": "evaluate prototype performance",
+      "relations": [
+        "Assesses",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Prototype team"
+    },
+    "safety assessment workflow": {
+      "action": "assess and mitigate safety risks",
+      "relations": [
+        "Assesses",
+        "Uses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Safety engineer"
+    },
+    "continuous improvement": {
+      "action": "improve deployed system",
+      "relations": [
+        "Monitors",
+        "Assesses",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Operations team"
+    },
+    "business unit process improvement": {
+      "action": "improve business unit processes",
+      "relations": [
+        "Assesses",
+        "Uses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Business Unit"
+    },
+    "organizational safety management": {
+      "action": "manage organization safety processes",
+      "relations": [
+        "Assesses",
+        "Uses",
+        "Mitigates",
+        "Develops",
+        "Verify",
+        "Produces"
+      ],
+      "subject": "Organization"
     }
   }
 }

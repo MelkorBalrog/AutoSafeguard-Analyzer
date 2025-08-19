@@ -9811,7 +9811,6 @@ class FaultTreeApp:
         if tree_width <= field_width + 1:
             self.prop_view.after(50, self._resize_prop_columns)
             return
-
         new_width = max(tree_width - field_width, 20)
         self.prop_view.column("value", width=new_width)
 

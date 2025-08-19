@@ -67,9 +67,9 @@ def test_governance_core_has_add_buttons(monkeypatch):
     assert {
         "Add Work Product",
         "Add Generic Work Product",
-        "Add Process Area",
         "Add Lifecycle Phase",
     } <= set(labels)
+    assert "Add Process Area" not in labels
 
     rel_sections = [child for child in getattr(core_frames[-1], "children", []) if getattr(child, "text", "") == "Relationships (relationships)"]
     assert len(rel_sections) == 1
