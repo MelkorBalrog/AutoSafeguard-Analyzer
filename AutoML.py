@@ -2233,7 +2233,154 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        self.style.configure("Treeview", font=("Arial", 10))
+        self.style.configure(
+            "Treeview",
+            font=("Arial", 10),
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
+            borderwidth=1,
+            relief="sunken",
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        self.style.map(
+            "Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
+        )
+        # ------------------------------------------------------------------
+        # Global color theme inspired by Windows classic / Windows 7
+        # ------------------------------------------------------------------
+        # Overall workspace background
+        root.configure(background="#f0f0f0")
+        # General widget colours
+        self.style.configure("TFrame", background="#f0f0f0")
+        self.style.configure("TLabel", background="#f0f0f0", foreground="black")
+        self.style.configure(
+            "TEntry", fieldbackground="#ffffff", background="#ffffff", foreground="black"
+        )
+        self.style.configure(
+            "TCombobox",
+            fieldbackground="#ffffff",
+            background="#ffffff",
+            foreground="black",
+        )
+        self.style.configure(
+            "TMenubutton", background="#e7edf5", foreground="black"
+        )
+        self.style.configure(
+            "TScrollbar",
+            background="#c0d4eb",
+            troughcolor="#e2e6eb",
+            bordercolor="#888888",
+            arrowcolor="#555555",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
+        # Apply the scrollbar styling to both orientations
+        for orient in ("Horizontal.TScrollbar", "Vertical.TScrollbar"):
+            self.style.configure(orient,
+                                background="#c0d4eb",
+                                troughcolor="#e2e6eb",
+                                bordercolor="#888888",
+                                arrowcolor="#555555",
+                                lightcolor="#eaf2fb",
+                                darkcolor="#5a6d84",
+                                borderwidth=2,
+                                relief="raised")
+        # Toolbox/LabelFrame titles
+        self.style.configure(
+            "Toolbox.TLabelframe",
+            background="#fef9e7",
+            bordercolor="#888888",
+            lightcolor="#fffef7",
+            darkcolor="#bfae6a",
+            borderwidth=1,
+            relief="raised",
+        )
+        self.style.configure(
+            "Toolbox.TLabelframe.Label",
+            background="#fef9e7",
+            foreground="black",
+            font=("Segoe UI", 10, "bold"),
+            padding=(4, 0, 0, 0),
+            anchor="w",
+        )
+        # Notebook (ribbon-like) title bars with beveled edges
+        self.style.configure(
+            "TNotebook",
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
+        self.style.configure(
+            "TNotebook.Tab",
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        self.style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
+        )
+        # Closable notebook shares the same appearance
+        self.style.configure(
+            "ClosableNotebook",
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
+        self.style.configure(
+            "ClosableNotebook.Tab",
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        self.style.map(
+            "ClosableNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
+        )
+        # Classic 3D buttons
+        self.style.configure(
+            "TButton",
+            background="#e7edf5",
+            borderwidth=2,
+            relief="raised",
+            lightcolor="#ffffff",
+            darkcolor="#7a8a99",
+        )
+        self.style.map(
+            "TButton",
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        )
+        # Navigation buttons used to scroll document tabs
+        self.style.configure(
+            "Nav.TButton",
+            background="#e7edf5",
+            borderwidth=2,
+            relief="raised",
+            lightcolor="#ffffff",
+            darkcolor="#7a8a99",
+        )
+        self.style.map(
+            "Nav.TButton",
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        )
         # Increase notebook tab font/size so titles are fully visible
         self.style.configure(
             "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
@@ -2734,7 +2881,9 @@ class AutoMLApp:
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
 
         # --- Analyses Group ---
-        self.analysis_group = ttk.LabelFrame(self.analysis_tab, text="Analyses & Architecture")
+        self.analysis_group = ttk.LabelFrame(
+            self.analysis_tab, text="Analyses & Architecture", style="Toolbox.TLabelframe"
+        )
         self.analysis_group.pack(fill=tk.BOTH, expand=True)
 
         tree_frame = ttk.Frame(self.analysis_group)
@@ -2756,7 +2905,9 @@ class AutoMLApp:
         self.treeview = self.analysis_tree
 
         # --- Tools Section ---
-        self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
+        self.tools_group = ttk.LabelFrame(
+            self.analysis_tab, text="Tools", style="Toolbox.TLabelframe"
+        )
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
         top = ttk.Frame(self.tools_group)
         top.pack(side=tk.TOP, fill=tk.X)
@@ -2778,12 +2929,29 @@ class AutoMLApp:
         # found`` when instantiating the notebook widget.  The following styles
         # derive from the standard ``TNotebook``/``TNotebook.Tab`` styles and
         # merely customise the tab appearance.
-        style.configure("ToolsNotebook.TNotebook", padding=0)
+        style.configure(
+            "ToolsNotebook.TNotebook",
+            padding=0,
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
         style.configure(
             "ToolsNotebook.TNotebook.Tab",
             font=("Arial", 10),
             padding=(10, 5),
             width=20,
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        style.map(
+            "ToolsNotebook.TNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
         )
         self.tools_left_btn = ttk.Button(
             nb_container, text="<", width=2, command=self._select_prev_tool_tab
@@ -2899,10 +3067,18 @@ class AutoMLApp:
 
         self.doc_nb.select = _wrapped_select
         self._tab_left_btn = ttk.Button(
-            self.doc_frame, text="<", width=2, command=self._select_prev_tab
+            self.doc_frame,
+            text="<",
+            width=2,
+            command=self._select_prev_tab,
+            style="Nav.TButton",
         )
         self._tab_right_btn = ttk.Button(
-            self.doc_frame, text=">", width=2, command=self._select_next_tab
+            self.doc_frame,
+            text=">",
+            width=2,
+            command=self._select_next_tab,
+            style="Nav.TButton",
         )
         self._tab_left_btn.pack(side=tk.LEFT, fill=tk.Y)
         self._tab_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
@@ -4416,8 +4592,10 @@ class AutoMLApp:
         prop_win.geometry("420x380")
         dialog_font = tkFont.Font(family="Arial", size=10)
 
-        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        pdf_entry = tk.Entry(prop_win, width=40, font=dialog_font)
+        ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
+            row=0, column=0, padx=10, pady=10, sticky="w"
+        )
+        pdf_entry = ttk.Entry(prop_win, width=40, font=dialog_font)
         pdf_entry.insert(0, self.project_properties.get("pdf_report_name", "AutoML-Analyzer PDF Report"))
         pdf_entry.grid(row=0, column=1, padx=10, pady=10)
 
@@ -4425,22 +4603,29 @@ class AutoMLApp:
         var_detailed = tk.BooleanVar(
             value=self.project_properties.get("pdf_detailed_formulas", True)
         )
-        chk = tk.Checkbutton(
+        chk = ttk.Checkbutton(
             prop_win,
             text="Show Detailed Formulas in PDF Report",
             variable=var_detailed,
-            font=dialog_font,
         )
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
         # Probability mappings for validation target calculations
-        exp_frame = tk.LabelFrame(
-            prop_win, text="Exposure Probabilities P(E|HB)", font=dialog_font
-        )
+        try:
+            exp_frame = ttk.LabelFrame(
+                prop_win,
+                text="Exposure Probabilities P(E|HB)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            exp_frame = ttk.LabelFrame(
+                prop_win,
+                text="Exposure Probabilities P(E|HB)",
+            )
         exp_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         exp_vars = {}
         for i in range(1, 5):
-            tk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4448,7 +4633,7 @@ class AutoMLApp:
                     self.project_properties.get("exposure_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 exp_frame,
                 textvariable=var,
                 width=8,
@@ -4458,13 +4643,21 @@ class AutoMLApp:
             ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
             exp_vars[i] = var
 
-        ctrl_frame = tk.LabelFrame(
-            prop_win, text="Controllability Probabilities P(C|E)", font=dialog_font
-        )
+        try:
+            ctrl_frame = ttk.LabelFrame(
+                prop_win,
+                text="Controllability Probabilities P(C|E)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            ctrl_frame = ttk.LabelFrame(
+                prop_win,
+                text="Controllability Probabilities P(C|E)",
+            )
         ctrl_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         ctrl_vars = {}
         for i in range(1, 4):
-            tk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4472,7 +4665,7 @@ class AutoMLApp:
                     self.project_properties.get("controllability_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 ctrl_frame,
                 textvariable=var,
                 width=8,
@@ -4482,13 +4675,21 @@ class AutoMLApp:
             ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
             ctrl_vars[i] = var
 
-        sev_frame = tk.LabelFrame(
-            prop_win, text="Severity Probabilities P(S|C)", font=dialog_font
-        )
+        try:
+            sev_frame = ttk.LabelFrame(
+                prop_win,
+                text="Severity Probabilities P(S|C)",
+                style="Toolbox.TLabelframe",
+            )
+        except TypeError:
+            sev_frame = ttk.LabelFrame(
+                prop_win,
+                text="Severity Probabilities P(S|C)",
+            )
         sev_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         sev_vars = {}
         for i in range(1, 4):
-            tk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
+            ttk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
                 row=0, column=(i - 1) * 2, padx=2, pady=2
             )
             var = tk.StringVar(
@@ -4496,7 +4697,7 @@ class AutoMLApp:
                     self.project_properties.get("severity_probabilities", {}).get(i, 0.0)
                 )
             )
-            tk.Entry(
+            ttk.Entry(
                 sev_frame,
                 textvariable=var,
                 width=8,
@@ -12077,7 +12278,7 @@ class AutoMLApp:
         # Show allocation and safety goal traceability below the table
         frame = tk.Frame(win)
         frame.pack(fill=tk.BOTH, expand=True)
-        vbar = tk.Scrollbar(frame, orient="vertical")
+        vbar = ttk.Scrollbar(frame, orient="vertical")
         text = tk.Text(frame, wrap="word", yscrollcommand=vbar.set, height=8)
         text.tag_configure("added", foreground="blue")
         text.tag_configure("removed", foreground="red")
@@ -13802,11 +14003,21 @@ class AutoMLApp:
             "FMEA.Treeview",
             font=("Segoe UI", 10),
             rowheight=60,
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
         )
         style.configure(
             "FMEA.Treeview.Heading",
             font=("Segoe UI", 10, "bold"),
-            background="#d0d0d0",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        style.map(
+            "FMEA.Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
         )
 
         columns = [
@@ -17660,13 +17871,15 @@ class AutoMLApp:
                 self._tab_right_btn.state(["!disabled"])
 
     def _make_doc_tab_visible(self, tab_id: str) -> None:
-        if tab_id not in self._doc_all_tabs:
+        all_tabs = getattr(self, "_doc_all_tabs", [])
+        if tab_id not in all_tabs:
             return
-        index = self._doc_all_tabs.index(tab_id)
-        if index < self._doc_tab_offset:
+        index = all_tabs.index(tab_id)
+        offset = getattr(self, "_doc_tab_offset", 0)
+        if index < offset:
             self._doc_tab_offset = index
             self._update_doc_tab_visibility()
-        elif index >= self._doc_tab_offset + self.MAX_VISIBLE_TABS:
+        elif index >= offset + self.MAX_VISIBLE_TABS:
             self._doc_tab_offset = index - self.MAX_VISIBLE_TABS + 1
             self._update_doc_tab_visibility()
 
