@@ -4141,6 +4141,9 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         conn_tools = _all_connection_tools()
         prefer = self.current_tool in conn_tools
         t = self.current_tool
@@ -4641,6 +4644,9 @@ class SysMLDiagramWindow(tk.Frame):
                     self.update_property_view()
 
     def on_left_drag(self, event):
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -5027,6 +5033,9 @@ class SysMLDiagramWindow(tk.Frame):
             self._connect_objects(source, new_obj, conn_type)
 
     def on_left_release(self, event):
+        if self._conn_tip:
+            self._conn_tip.hide()
+            self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
             x = self.canvas.canvasx(event.x)
             y = self.canvas.canvasy(event.y)
@@ -11430,7 +11439,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         # Build a toolbox entry for each category.  All options include the
         # shared selection/connection tools.  Governance Core also exposes
         # its action buttons for adding work products, generic work products,
-        # process areas, and lifecycle phases.
+        # and lifecycle phases.
         for name, data in defs.items():
             frames = [self.tools_frame]
             if name == "Governance Core":
@@ -11615,6 +11624,86 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
+        pending_click = getattr(self, "_pending_wp_click", False)
+        if pending_click:
+            self._pending_wp_click = False
+            x = self.canvas.canvasx(event.x) / self.zoom
+            y = self.canvas.canvasy(event.y) / self.zoom
+            area_opts = [
+                "System Design (Item Definition)",
+                "Hazard & Threat Analysis",
+                "Risk Assessment",
+                "Safety & Security Management",
+                "Safety Analysis",
+                "Scenario",
+            ]
+            dlg = self._SelectDialog(self, "Add Process Area", area_opts)
+            area_name = getattr(dlg, "selection", "")
+            if not area_name:
+                try:
+                    self.canvas.configure(cursor="arrow")
+                except Exception:
+                    pass
+                return
+            area_obj = self._place_process_area(area_name, x, y)
+            wp_options = [
+                "Architecture Diagram",
+                "Safety & Security Concept",
+                "Mission Profile",
+                "Reliability Analysis",
+                "Causal Bayesian Network Analysis",
+                "Safety & Security Case",
+                "GSN Argumentation",
+                *REQUIREMENT_WORK_PRODUCTS,
+                "HAZOP",
+                "STPA",
+                "Threat Analysis",
+                "FI2TC",
+                "TC2FI",
+                "Risk Assessment",
+                "Product Goal Specification",
+                "FTA",
+                "FMEA",
+                "FMEDA",
+                "SPI Work Document",
+                "Scenario Library",
+                "ODD",
+            ]
+            wp_options = list(dict.fromkeys(wp_options))
+            area_map = {
+                "Architecture Diagram": "System Design (Item Definition)",
+                "Safety & Security Concept": "System Design (Item Definition)",
+                "Mission Profile": "Safety Analysis",
+                "Reliability Analysis": "Safety Analysis",
+                "Causal Bayesian Network Analysis": "Safety Analysis",
+                "Safety & Security Case": "Safety & Security Management",
+                "GSN Argumentation": "Safety & Security Management",
+                "Product Goal Specification": "System Design (Item Definition)",
+                **{wp: "System Design (Item Definition)" for wp in REQUIREMENT_WORK_PRODUCTS},
+                "HAZOP": "Hazard & Threat Analysis",
+                "STPA": "Hazard & Threat Analysis",
+                "Threat Analysis": "Hazard & Threat Analysis",
+                "FI2TC": "Hazard & Threat Analysis",
+                "TC2FI": "Hazard & Threat Analysis",
+                "Risk Assessment": "Risk Assessment",
+                "FTA": "Safety Analysis",
+                "FMEA": "Safety Analysis",
+                "FMEDA": "Safety Analysis",
+                "SPI Work Document": "Safety & Security Management",
+                "Scenario Library": "Scenario",
+                "ODD": "Scenario",
+            }
+            wp_options = [opt for opt in wp_options if area_map.get(opt) == area_name]
+            dlg2 = self._SelectDialog(self, "Add Work Product", wp_options)
+            name = getattr(dlg2, "selection", "")
+            if name:
+                self._place_work_product(name, area_obj.x, area_obj.y, boundary=area_obj)
+            try:
+                self.canvas.configure(cursor="arrow")
+            except Exception:
+                pass
+            return
+
         pending_wp = getattr(self, "_pending_wp_name", None)
         step = getattr(self, "_pending_wp_step", "")
         if step == "loc":
