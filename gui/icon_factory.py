@@ -4,9 +4,12 @@ import math
 
 
 def create_icon(
-    shape: str, color: str = "black", bg: Optional[str] = None
+    shape: str,
+    color: str = "black",
+    bg: Optional[str] = None,
+    size: int = 16,
 ) -> tk.PhotoImage:
-    """Return a small 16x16 PhotoImage for *shape* using *color*.
+    """Return a ``size``×``size`` :class:`tk.PhotoImage` for *shape*.
 
     Icons now have filled interiors and simple outlines so they look like
     miniature versions of the objects they represent. By default the returned
@@ -14,8 +17,18 @@ def create_icon(
     The implementation is deliberately lightweight and only uses
     ``tk.PhotoImage`` drawing primitives so it works in the same environments
     as the previous icon helpers.
+
+    Parameters
+    ----------
+    shape:
+        The geometric shape to draw (e.g. ``"circle"``).
+    color:
+        Fill color for the shape.
+    bg:
+        Optional background color. When omitted the background is transparent.
+    size:
+        Width and height of the icon in pixels.
     """
-    size = 16
     img = tk.PhotoImage(width=size, height=size)
     if bg:
         img.put(bg, to=(0, 0, size - 1, size - 1))
