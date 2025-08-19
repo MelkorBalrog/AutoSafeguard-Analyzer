@@ -6950,6 +6950,52 @@ class SysMLDiagramWindow(tk.Frame):
             fill=outline,
         )
 
+    def _draw_icon_shape(
+        self, shape: str, x: float, y: float, r: float, color: str
+    ) -> None:
+        """Draw *shape* centered at ``(x, y)`` with radius *r* using the icon image."""
+        size = max(1, int(r * 2))
+        cache = getattr(self, "_scaled_icons", {})
+        key = (shape, color, size)
+        icon = cache.get(key)
+        if icon is None:
+            base = draw_icon(shape, color)
+            if size != 16:
+                icon = base.zoom(size, size).subsample(16, 16)
+            else:
+                icon = base
+            cache[key] = icon
+            self._scaled_icons = cache
+        self.canvas.create_image(
+            x - size / 2, y - size / 2, anchor="nw", image=icon
+        )
+
+    def _draw_gear(
+        self, x: float, y: float, r: float, color: str, outline: str
+    ) -> None:
+        """Draw a gear centered at (*x*, *y*) with radius *r*."""
+        pts: list[tuple[float, float]] = []
+        teeth = 8
+        for i in range(teeth * 2):
+            angle = math.radians(360 / (teeth * 2) * i)
+            rad = r if i % 2 == 0 else r * 0.7
+            px = x + rad * math.cos(angle)
+            py = y + rad * math.sin(angle)
+            pts.append((px, py))
+        self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
+        self.canvas.create_polygon(
+            [coord for pt in pts for coord in pt], outline=outline, fill=""
+        )
+        hole = r * 0.4
+        self.canvas.create_oval(
+            x - hole,
+            y - hole,
+            x + hole,
+            y + hole,
+            outline=outline,
+            fill=StyleManager.get_instance().get_canvas_color(),
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7299,20 +7345,15 @@ class SysMLDiagramWindow(tk.Frame):
                 font=label_font,
                 anchor="s",
             )
-        elif obj.obj_type == "Process" or obj.obj_type == "Manufacturing Process":
+        elif obj.obj_type in (
+            "Process",
+            "Manufacturing Process",
+        ):
             r = min(w, h)
-            pts = []
-            teeth = 8
-            for i in range(teeth * 2):
-                angle = math.radians(360 / (teeth * 2) * i)
-                rad = r if i % 2 == 0 else r * 0.7
-                px = x + rad * math.cos(angle)
-                py = y + rad * math.sin(angle)
-                pts.append((px, py))
-            self.drawing_helper._fill_gradient_polygon(self.canvas, pts, color)
-            self.canvas.create_polygon([c for pt in pts for c in pt], outline=outline, fill="")
-            hole = r * 0.4
-            self.canvas.create_oval(x - hole, y - hole, x + hole, y + hole, outline=outline, fill=StyleManager.get_instance().get_canvas_color())
+            self._draw_gear(x, y, r, color, outline)
+        elif obj.obj_type == "Operation":
+            r = min(w, h)
+            self._draw_icon_shape("wrench", x, y, r, color)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
@@ -7336,41 +7377,6 @@ class SysMLDiagramWindow(tk.Frame):
             self.canvas.create_polygon(
                 [c for pt in pts for c in pt], outline=outline, fill=""
             )
-        elif obj.obj_type == "Operation":
-            handle_w = w * 0.25
-            head_r = w
-            bg = StyleManager.get_instance().get_canvas_color()
-            self.drawing_helper._fill_gradient_circle(self.canvas, x, y, head_r, color)
-            self.canvas.create_oval(x - head_r, y - head_r, x + head_r, y + head_r, outline=outline, fill="")
-            notch = [
-                (x + head_r * 0.4, y - head_r * 0.7),
-                (x + head_r, y - head_r * 0.2),
-                (x + head_r, y + head_r * 0.2),
-                (x + head_r * 0.4, y + head_r * 0.7),
-            ]
-            self.canvas.create_polygon(notch, fill=bg, outline=bg)
-            self.canvas.create_line(
-                x + head_r * 0.4,
-                y - head_r * 0.7,
-                x + head_r,
-                y - head_r * 0.2,
-                fill=outline,
-                width=max(2, self.zoom),
-            )
-            self.canvas.create_line(
-                x + head_r * 0.4,
-                y + head_r * 0.7,
-                x + head_r,
-                y + head_r * 0.2,
-                fill=outline,
-                width=max(2, self.zoom),
-            )
-            hx1, hx2 = x - handle_w / 2, x + handle_w / 2
-            hy1, hy2 = y, y + h
-            self._draw_gradient_rect(hx1, hy1, hx2, hy2, color, obj.obj_id)
-            self.canvas.create_rectangle(hx1, hy1, hx2, hy2, outline=outline, fill="")
-            hole_r = handle_w * 0.4
-            self.canvas.create_oval(x - hole_r, hy2 - hole_r * 2, x + hole_r, hy2, outline=outline, fill=bg)
         elif obj.obj_type == "Driving Function":
             r = min(w, h)
             self.drawing_helper._fill_gradient_circle(self.canvas, x, y, r, color)
