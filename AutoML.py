@@ -18018,14 +18018,22 @@ class AutoMLApp:
         if current not in visible and visible:
             self.tools_nb.select(visible[0])
         if hasattr(self, "tools_left_btn") and hasattr(self, "tools_right_btn"):
-            if self._tool_tab_offset <= 0:
-                self.tools_left_btn.state(["disabled"])
+            if len(self._tool_all_tabs) <= self.MAX_VISIBLE_TABS:
+                if len(self._tool_all_tabs) <= 1:
+                    self.tools_left_btn.state(["disabled"])
+                    self.tools_right_btn.state(["disabled"])
+                else:
+                    self.tools_left_btn.state(["!disabled"])
+                    self.tools_right_btn.state(["!disabled"])
             else:
-                self.tools_left_btn.state(["!disabled"])
-            if self._tool_tab_offset + self.MAX_VISIBLE_TABS >= len(self._tool_all_tabs):
-                self.tools_right_btn.state(["disabled"])
-            else:
-                self.tools_right_btn.state(["!disabled"])
+                if self._tool_tab_offset <= 0:
+                    self.tools_left_btn.state(["disabled"])
+                else:
+                    self.tools_left_btn.state(["!disabled"])
+                if self._tool_tab_offset + self.MAX_VISIBLE_TABS >= len(self._tool_all_tabs):
+                    self.tools_right_btn.state(["disabled"])
+                else:
+                    self.tools_right_btn.state(["!disabled"])
 
     def _update_doc_tab_visibility(self) -> None:
         visible: list[str] = []
@@ -18042,14 +18050,22 @@ class AutoMLApp:
         if current not in visible and visible:
             self.doc_nb.select(visible[0])
         if hasattr(self, "_tab_left_btn") and hasattr(self, "_tab_right_btn"):
-            if self._doc_tab_offset <= 0:
-                self._tab_left_btn.state(["disabled"])
+            if len(self._doc_all_tabs) <= self.MAX_VISIBLE_TABS:
+                if len(self._doc_all_tabs) <= 1:
+                    self._tab_left_btn.state(["disabled"])
+                    self._tab_right_btn.state(["disabled"])
+                else:
+                    self._tab_left_btn.state(["!disabled"])
+                    self._tab_right_btn.state(["!disabled"])
             else:
-                self._tab_left_btn.state(["!disabled"])
-            if self._doc_tab_offset + self.MAX_VISIBLE_TABS >= len(self._doc_all_tabs):
-                self._tab_right_btn.state(["disabled"])
-            else:
-                self._tab_right_btn.state(["!disabled"])
+                if self._doc_tab_offset <= 0:
+                    self._tab_left_btn.state(["disabled"])
+                else:
+                    self._tab_left_btn.state(["!disabled"])
+                if self._doc_tab_offset + self.MAX_VISIBLE_TABS >= len(self._doc_all_tabs):
+                    self._tab_right_btn.state(["disabled"])
+                else:
+                    self._tab_right_btn.state(["!disabled"])
 
     def _make_doc_tab_visible(self, tab_id: str) -> None:
         all_tabs = getattr(self, "_doc_all_tabs", [])
