@@ -3530,6 +3530,7 @@ class SysMLDiagramWindow(tk.Frame):
         history=None,
         relation_tools: list[str] | None = None,
         tool_groups: dict[str, list[str]] | None = None,
+        icon_size: int = 16,
     ):
         super().__init__(master)
         self.app = app
@@ -3539,6 +3540,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.master.geometry("800x600")
 
         self.repo = SysMLRepository.get_instance()
+        self.icon_size = icon_size
         if diagram_id and diagram_id in self.repo.diagrams:
             diagram = self.repo.diagrams[diagram_id]
         else:
@@ -3902,7 +3904,11 @@ class SysMLDiagramWindow(tk.Frame):
                     color = style.get_color(base)
                 if color == "#FFFFFF":
                     color = "black"
-            icon = draw_icon(shape, color)
+            size = getattr(self, "icon_size", 16)
+            if size == 16:
+                icon = draw_icon(shape, color)
+            else:
+                icon = draw_icon(shape, color, size=size)
             self._icons[name] = icon
         return icon
 

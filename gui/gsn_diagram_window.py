@@ -61,23 +61,26 @@ class GSNDiagramWindow(tk.Frame):
         "Export CSV",
     ]
 
-    def __init__(self, master, app, diagram: GSNDiagram):
+    def __init__(self, master, app, diagram: GSNDiagram, icon_size: int = 16):
         super().__init__(master)
         self.app = app
         self.diagram = diagram
+        self.icon_size = icon_size
 
         # toolbox with buttons to add nodes and connectors
         self.toolbox_container = ttk.Frame(self)
         self.toolbox_container.pack(side=tk.LEFT, fill=tk.Y)
         self.toolbox_canvas = tk.Canvas(self.toolbox_container, highlightthickness=0)
         self.toolbox_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
-        toolbox_scroll = ttk.Scrollbar(
+        self.toolbox_scroll = ttk.Scrollbar(
             self.toolbox_container, orient=tk.VERTICAL, command=self.toolbox_canvas.yview
         )
-        toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.toolbox_canvas.configure(yscrollcommand=toolbox_scroll.set)
+        self.toolbox_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.toolbox_canvas.configure(yscrollcommand=self.toolbox_scroll.set)
         self.toolbox = ttk.Frame(self.toolbox_canvas)
-        self.toolbox_canvas.create_window((0, 0), window=self.toolbox, anchor="nw")
+        self._toolbox_window = self.toolbox_canvas.create_window(
+            (0, 0), window=self.toolbox, anchor="nw"
+        )
         self.toolbox.bind(
             "<Configure>",
             lambda e: self.toolbox_canvas.configure(
@@ -92,18 +95,26 @@ class GSNDiagramWindow(tk.Frame):
             return default if c == "#FFFFFF" else c
 
         self._icons = {
-            "Goal": create_icon("rect", _color("Goal", "#2e8b57")),
-            "Strategy": create_icon("parallelogram", _color("Strategy", "#8b008b")),
-            "Solution": create_icon("circle", _color("Solution", "#1e90ff")),
-            "Assumption": create_icon("ellipse", _color("Assumption", "#b22222")),
-            "Justification": create_icon("ellipse", _color("Justification", "#ff8c00")),
-            "Context": create_icon("ellipse", _color("Context", "#696969")),
-            "Module": create_icon("folder", _color("Module", "#b8860b")),
-            "Solved By": create_icon("arrow", _color("Solved By", "black")),
-            "In Context Of": create_icon("relation", _color("In Context Of", "black")),
-            "Zoom In": create_icon("plus", "black"),
-            "Zoom Out": create_icon("minus", "black"),
-            "Export CSV": create_icon("disk", "black"),
+            "Goal": create_icon("rect", _color("Goal", "#2e8b57"), size=self.icon_size),
+            "Strategy": create_icon(
+                "parallelogram", _color("Strategy", "#8b008b"), size=self.icon_size
+            ),
+            "Solution": create_icon("circle", _color("Solution", "#1e90ff"), size=self.icon_size),
+            "Assumption": create_icon(
+                "ellipse", _color("Assumption", "#b22222"), size=self.icon_size
+            ),
+            "Justification": create_icon(
+                "ellipse", _color("Justification", "#ff8c00"), size=self.icon_size
+            ),
+            "Context": create_icon("ellipse", _color("Context", "#696969"), size=self.icon_size),
+            "Module": create_icon("folder", _color("Module", "#b8860b"), size=self.icon_size),
+            "Solved By": create_icon("arrow", _color("Solved By", "black"), size=self.icon_size),
+            "In Context Of": create_icon(
+                "relation", _color("In Context Of", "black"), size=self.icon_size
+            ),
+            "Zoom In": create_icon("plus", "black", size=self.icon_size),
+            "Zoom Out": create_icon("minus", "black", size=self.icon_size),
+            "Export CSV": create_icon("disk", "black", size=self.icon_size),
         }
 
         node_cmds = [
@@ -177,6 +188,9 @@ class GSNDiagramWindow(tk.Frame):
                 compound=tk.LEFT,
             ).pack(fill=tk.X, padx=2, pady=2)
 
+        # Ensure the toolbox is wide enough to display button text
+        self.after_idle(self._fit_toolbox)
+
         # drawing canvas with scrollbars so large diagrams remain accessible
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -217,6 +231,25 @@ class GSNDiagramWindow(tk.Frame):
         self.canvas.bind("<Button-3>", self._on_right_click)
         self.refresh()
         self._bind_shortcuts()
+
+    def _fit_toolbox(self) -> None:
+        """Resize toolbox to the smallest width that shows all button text."""
+        self.toolbox.update_idletasks()
+
+        def max_button_width(widget: tk.Misc) -> int:
+            width = 0
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    width = max(width, child.winfo_reqwidth())
+                else:
+                    width = max(width, max_button_width(child))
+            return width
+
+        button_width = max_button_width(self.toolbox) + 4
+        scroll_width = self.toolbox_scroll.winfo_reqwidth()
+        self.toolbox_container.configure(width=button_width + scroll_width)
+        self.toolbox_canvas.configure(width=button_width)
+        self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
