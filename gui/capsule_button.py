@@ -143,7 +143,15 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
-        highlight = _lighten(color, 1.4)
+        self._draw_highlight(w, h)
+        self._draw_content(w, h)
+        self._draw_border(w, h)
+
+    def _draw_highlight(self, w: int, h: int) -> None:
+        """Draw shiny highlight and diffused circles on the capsule ends."""
+        r = self._radius
+        color = self._current_color
+        top_highlight = _lighten(color, 1.4)
         self._shine_items = [
             self.create_oval(
                 1,
@@ -151,12 +159,26 @@ class CapsuleButton(tk.Canvas):
                 w - 1,
                 h // 2,
                 outline="",
-                fill=highlight,
+                fill=top_highlight,
                 stipple="gray25",
             )
         ]
-        self._draw_content(w, h)
-        self._draw_border(w, h)
+        small_r = max(r // 3, 2)
+        centers = [(r // 2, h // 2), (w - r // 2, h // 2)]
+        for cx, cy in centers:
+            for i in range(3):
+                rad = max(small_r - i * (small_r // 3), 1)
+                self._shine_items.append(
+                    self.create_oval(
+                        cx - rad,
+                        cy - rad,
+                        cx + rad,
+                        cy + rad,
+                        outline="",
+                        fill=_lighten(color, 1.6 + 0.1 * i),
+                        stipple="gray25",
+                    )
+                )
 
     def _draw_content(self, w: int, h: int) -> None:
         """Render optional image and text within the button."""
