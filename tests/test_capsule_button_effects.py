@@ -51,3 +51,18 @@ def test_glow_on_hover_and_press():
     btn._on_release(type("E", (), {"x":1,"y":1})())
     assert btn._glow_items
     root.destroy()
+
+
+def test_glow_outline_matches_button_size():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    btn = CapsuleButton(root, text="Glow", width=120, height=40)
+    btn.pack()
+    root.update_idletasks()
+    btn._on_enter(type("E", (), {})())
+    w, h = int(btn["width"]), int(btn["height"])
+    bbox = btn.bbox(*btn._glow_items)
+    assert bbox == (0, 0, w, h)
+    root.destroy()
