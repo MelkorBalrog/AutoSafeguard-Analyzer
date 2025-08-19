@@ -185,6 +185,7 @@ class CapsuleButton(tk.Canvas):
     def _draw_gradient(self, w: int, h: int) -> None:
         colors = ["#e6e6fa", "#c3dafe", "#87ceeb", "#e0ffff"]
         stops = [0.0, 0.33, 0.66, 1.0]
+        r = self._radius
         for y in range(h):
             t = y / (h - 1) if h > 1 else 0
             for i in range(len(stops) - 1):
@@ -192,16 +193,23 @@ class CapsuleButton(tk.Canvas):
                     local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
                     color = _interpolate_color(colors[i], colors[i + 1], local_t)
                     break
-            self._gradient_items.append(self.create_line(0, y, w, y, fill=color))
+            dy = abs(y - h / 2)
+            if dy <= r:
+                x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5)
+            else:
+                x_offset = 0
+            self._gradient_items.append(
+                self.create_line(x_offset, y, w - x_offset, y, fill=color)
+            )
 
     def _draw_highlight(self, w: int, h: int) -> None:
         """Draw shiny highlight to create a glassy lavender sheen."""
         r = self._radius
         self._shine_items = [
             self.create_oval(
+                r,
                 1,
-                1,
-                w - 1,
+                w - r,
                 h // 2,
                 outline="",
                 fill="#e6e6fa",
@@ -227,12 +235,13 @@ class CapsuleButton(tk.Canvas):
 
     def _draw_shade(self, w: int, h: int) -> None:
         """Add cool blue and aqua shades to suggest depth."""
+        r = self._radius
         self._shade_items = [
             # Bright medium sky blue
             self.create_oval(
-                1,
+                r,
                 h // 2,
-                w - 1,
+                w - r,
                 h - 1,
                 outline="",
                 fill="#87ceeb",
@@ -240,9 +249,9 @@ class CapsuleButton(tk.Canvas):
             ),
             # Fading light cyan/aqua
             self.create_oval(
-                1,
+                r,
                 (3 * h) // 4,
-                w - 1,
+                w - r,
                 h - 1,
                 outline="",
                 fill="#e0ffff",
