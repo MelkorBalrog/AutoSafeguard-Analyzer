@@ -117,6 +117,10 @@ def show_log():
     log_frame.pack(side=tk.BOTTOM, fill=tk.X, before=_toggle_button)
     if _toggle_button:
         _toggle_button.config(text="Hide Logs")
+        # Ensure the toggle button remains visible when other panels
+        # (such as a pinned explorer) might overlap it by raising it
+        # to the top of the stacking order.
+        _toggle_button.lift()
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
         _auto_hide_id = None
@@ -149,6 +153,7 @@ def hide_log(animate=False):
         log_frame.configure(height=_default_height)
         if _toggle_button:
             _toggle_button.config(text="Show Logs")
+            _toggle_button.lift()
 
 
 def toggle_log():
