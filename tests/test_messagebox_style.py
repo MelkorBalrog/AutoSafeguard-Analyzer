@@ -1,6 +1,6 @@
 import sys, pathlib
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from gui import messagebox as mb
+from gui import messagebox
 
 
 def test_askyesno_uses_custom_dialog(monkeypatch):
@@ -42,24 +42,21 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
             pass
 
     class DummyFrame:
+        def __init__(self, *a, **k):
+            pass
         def pack(self, *a, **k):
             pass
 
     class DummyLabel:
+        def __init__(self, *a, **k):
+            pass
         def pack(self, *a, **k):
             pass
 
-    class DummyDialog:
+    class DummyTop:
         def __init__(self, root):
-            self.protocol = lambda *a, **k: None
-
-        def title(self, *a, **k):
             pass
-
-        def resizable(self, *a, **k):
-            pass
-
-        def transient(self, *a, **k):
+        def title(self, *a):
             pass
 
         def grab_set(self):
@@ -106,16 +103,14 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
 
         def resizable(self, *a, **k):
             pass
-
         def transient(self, *a, **k):
             pass
-
         def grab_set(self):
             pass
-
         def destroy(self):
             pass
-
+        def protocol(self, *a, **k):
+            pass
         def wait_window(self):
             pass
 

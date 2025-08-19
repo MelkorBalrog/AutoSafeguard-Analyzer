@@ -8,6 +8,7 @@ from typing import Any
 
 from config import load_report_template, validate_report_template
 from gui import messagebox
+from gui.mac_button_style import apply_translucid_button_style
 
 
 def layout_report_template(
@@ -218,6 +219,7 @@ class ReportTemplateEditor(tk.Frame):
 
     def __init__(self, master, app, config_path: Path | None = None):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
         self.config_path = Path(
             config_path or Path(__file__).resolve().parents[1] / "config/report_template.json"
