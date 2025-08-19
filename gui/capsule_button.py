@@ -91,38 +91,45 @@ class CapsuleButton(tk.Canvas):
         r = self._radius
         color = self._current_color
         outline = "#b3b3b3"
+        # Draw the filled shapes without outlines so the seams between the
+        # rectangle and arcs are not visible.
         self._shape_items = [
             self.create_arc(
                 (0, 0, 2 * r, h),
                 start=90,
                 extent=180,
-                outline=outline,
+                style=tk.CHORD,
+                outline="",
                 fill=color,
             ),
-            self.create_rectangle((r, 0, w - r, h), outline=outline, fill=color),
+            self.create_rectangle((r, 0, w - r, h), outline="", fill=color),
             self.create_arc(
                 (w - 2 * r, 0, w, h),
                 start=-90,
                 extent=180,
-                outline=outline,
+                style=tk.CHORD,
+                outline="",
                 fill=color,
             ),
         ]
-        img_w = self._image.width() if self._image else 0
-        if self._image and self._compound == tk.LEFT:
-            x_img = 4 + img_w // 2
-            y_img = h // 2
-            self._image_item = self.create_image(x_img, y_img, image=self._image)
-            self._text_item = self.create_text(
-                x_img + img_w // 2 + 4,
-                h // 2,
-                text=self._text,
-                anchor="w",
-            )
-        else:
-            if self._image:
-                self._image_item = self.create_image(w // 2, h // 2, image=self._image)
-            self._text_item = self.create_text(w // 2, h // 2, text=self._text)
+        # Single outline surrounding the entire button for a smooth border
+        self.create_arc(
+            (0, 0, 2 * r, h),
+            start=90,
+            extent=180,
+            style=tk.ARC,
+            outline=outline,
+        )
+        self.create_line(r, 0, w - r, 0, fill=outline)
+        self.create_line(r, h, w - r, h, fill=outline)
+        self.create_arc(
+            (w - 2 * r, 0, w, h),
+            start=-90,
+            extent=180,
+            style=tk.ARC,
+            outline=outline,
+        )
+        self._text_item = self.create_text(w // 2, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
