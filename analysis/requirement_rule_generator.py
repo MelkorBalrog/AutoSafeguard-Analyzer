@@ -168,6 +168,11 @@ def make_trigger(prefix: str, src: str, rel: str, tgt: str) -> str:
     return f"{prefix}: {src} --[{rel}]--> {tgt}"
 
 
+def is_action_type(name: str) -> bool:
+    """Return True if *name* represents an action-like node type."""
+    return bool(re.search(r"(action|activity|procedure|task|operation)", (name or ""), re.I))
+
+
 # ===== Safety & AI templates =====
 
 
@@ -243,6 +248,16 @@ def make_sequence_template(
     else:
         seq = parts[0]
     return tidy_sentence(f"{subject} shall {seq}")
+
+
+def make_grouped_action_template(subject: str, count: int) -> str:
+    """Return template listing multiple actions as sub-items."""
+    items: List[str] = []
+    for i in range(1, count + 1):
+        letter = chr(ord("a") + i - 1)
+        items.append(f"{letter}) <object{i}_id> (<object{i}_class>)")
+    joined = "; ".join(items)
+    return tidy_sentence(f"{subject} shall execute: {joined}")
 
 
 # ===== Governance templates =====
@@ -337,6 +352,52 @@ def generate_patterns_from_rules(rules: dict) -> List[dict]:
             if not isinstance(src_map, dict):
                 continue
             for src_type, tgt_list in (src_map or {}).items():
+                if not isinstance(tgt_list, list):
+                    continue
+                group_actions = len(tgt_list) > 1 and all(is_action_type(t) for t in tgt_list)
+                if group_actions and not any(t in ai_nodes for t in tgt_list) and src_type not in ai_nodes:
+                    (
+                        subj,
+                        _act,
+                        _tgt_count,
+                        tmpl_override,
+                        var_override,
+                    ) = rule_info(
+                        req_rules, relation_label, "Engineering team", relation_label.lower()
+                    )
+                    if tmpl_override:
+                        template = tmpl_override
+                        variables = var_override or []
+                    else:
+                        template = make_grouped_action_template(subj, len(tgt_list))
+                        variables = make_gov_variables_base()
+                    base_id = f"GOV-{relation_label.lower().replace(' ', '_')}-{id_token(src_type)}-group"
+                    trigger = make_trigger(
+                        "Gov", src_type, relation_label, ", ".join(tgt_list)
+                    )
+                    notes = "Auto-generated from diagram rules (Governance)."
+                    for suf, need_cond, need_const in SUFFIXES:
+                        pid = base_id + suf
+                        t = (
+                            build_cond_const_template(template)
+                            if (need_cond and need_const)
+                            else build_cond_template(template)
+                            if need_cond
+                            else build_const_template(template)
+                            if need_const
+                            else normalize_base_template(template)
+                        )
+                        vs = ensure_variables(variables, need_cond, need_const)
+                        out.append(
+                            {
+                                "Pattern ID": pid,
+                                "Trigger": trigger,
+                                "Template": t,
+                                "Variables": vs,
+                                "Notes": notes,
+                            }
+                        )
+                    continue
                 for tgt_type in (tgt_list or []):
                     is_ai = src_type in ai_nodes or tgt_type in ai_nodes
                     (
