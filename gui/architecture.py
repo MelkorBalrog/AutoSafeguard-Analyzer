@@ -11688,7 +11688,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 ("Add Lifecycle Phase", self.add_lifecycle_phase),
             ]
             for name, cmd in cmds:
-                ttk.Button(
+                TranslucidButton(
                     action_frame,
                     text=name,
                     image=self._icon_for(name),
