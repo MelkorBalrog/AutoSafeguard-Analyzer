@@ -3797,6 +3797,24 @@ class SysMLDiagramWindow(tk.Frame):
         self.toolbox_canvas.configure(width=button_width)
         self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
+        def max_text_len(widget: tk.Misc) -> int:
+            length = 0
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    length = max(length, len(str(child.cget("text"))))
+                else:
+                    length = max(length, max_text_len(child))
+            return length
+
+        def set_width(widget: tk.Misc, width: int) -> None:
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button):
+                    child.configure(width=width)
+                else:
+                    set_width(child, width)
+
+        set_width(self.toolbox, max_text_len(self.toolbox) + 2)
+
         # Shrink the property view to match the button area so it does not force
         # the toolbox wider than needed. Allow the value column to stretch so it
         # can grow to fill the available space within the Properties tab.
