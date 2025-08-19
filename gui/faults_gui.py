@@ -526,6 +526,12 @@ class FaultsWindow(QMainWindow):
         btn_row.addStretch(1)
 
         self.status = QStatusBar()
+        pal = self.status.palette()
+        color = pal.color(QPalette.ColorRole.Window)
+        color.setAlpha(230)
+        pal.setColor(QPalette.ColorRole.Window, color)
+        self.status.setPalette(pal)
+        self.status.setAutoFillBackground(True)
         self.setStatusBar(self.status)
 
         # Menus / toolbar
