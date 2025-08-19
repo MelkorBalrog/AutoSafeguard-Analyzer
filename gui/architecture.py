@@ -315,6 +315,18 @@ def _toolbox_defs() -> dict[str, dict[str, list[str] | dict]]:
         }
     return defs
 
+
+def _gov_connection_text(node_type: str) -> str:
+    """Return tooltip text listing governance connections for ``node_type``."""
+    node_type = _GOV_TYPE_ALIASES.get(node_type, node_type)
+    rules = CONNECTION_RULES.get("Governance Diagram", {})
+    lines: list[str] = []
+    for rel in sorted(rules):
+        targets = rules[rel].get(node_type)
+        if targets:
+            lines.append(f"{rel}: {', '.join(sorted(targets))}")
+    return "\n".join(lines)
+
 # Node type aliases used when validating governance diagram connections.
 # Governance tasks are implemented using SysML ``Action`` elements but are
 # presented as "Task" to users.  Mapping aliases before applying connection
@@ -3560,6 +3572,12 @@ class SysMLDiagramWindow(tk.Frame):
         canvas_frame.columnconfigure(0, weight=1)
         canvas_frame.rowconfigure(0, weight=1)
 
+        if ToolTip:
+            self._conn_tip = ToolTip(self.canvas, "", automatic=False)
+        else:  # pragma: no cover - tooltip module unavailable
+            self._conn_tip = None
+        self._conn_tip_obj = None
+
         # Keep references to gradient images used for element backgrounds
         self.gradient_cache: dict[int, tk.PhotoImage] = {}
         # Track bounding boxes for compartment toggle buttons
@@ -5148,6 +5166,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.redraw()
 
     def on_mouse_move(self, event):
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
         if self.start and self.current_tool in (
             "Association",
             "Include",
@@ -5170,10 +5190,29 @@ class SysMLDiagramWindow(tk.Frame):
             "Control Action",
             "Feedback",
         ):
-            x = self.canvas.canvasx(event.x)
-            y = self.canvas.canvasy(event.y)
             self.temp_line_end = (x, y)
             self.redraw()
+            return
+        if self._conn_tip:
+            diag = self.repo.diagrams.get(self.diagram_id)
+            obj = self.find_object(x, y)
+            if (
+                diag
+                and diag.diag_type == "Governance Diagram"
+                and obj
+                and obj is not self._conn_tip_obj
+            ):
+                text = _gov_connection_text(obj.obj_type)
+                if text:
+                    self._conn_tip.text = text
+                    self._conn_tip.show()
+                    self._conn_tip_obj = obj
+                else:
+                    self._conn_tip.hide()
+                    self._conn_tip_obj = None
+            elif not obj and self._conn_tip_obj is not None:
+                self._conn_tip.hide()
+                self._conn_tip_obj = None
 
     def on_double_click(self, event):
         x = self.canvas.canvasx(event.x)
