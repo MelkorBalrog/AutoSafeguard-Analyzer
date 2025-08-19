@@ -237,6 +237,61 @@ def test_scenario_library_inputs_respect_phase():
     toolbox.set_active_module("P1")
     assert toolbox.analysis_inputs("Scenario Library") == {"ODD"}
 
+
+def test_scenario_library_used_relationships_expose_hazop_inputs():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    for rel in ["Used By", "Used after Review", "Used after Approval"]:
+        SysMLRepository.reset_instance()
+        repo = SysMLRepository.get_instance()
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        toolbox.diagrams = {"Gov": diag.diag_id}
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+        src = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "Scenario Library"},
+        )
+        dst = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "HAZOP"},
+        )
+        diag.objects = [src.__dict__, dst.__dict__]
+        toolbox.work_products = [
+            SafetyWorkProduct("Gov", "Scenario Library", ""),
+            SafetyWorkProduct("Gov", "HAZOP", ""),
+        ]
+        win = _create_window(repo, rel, src, dst, diag)
+        GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+        GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+        diag.connections = [c.__dict__ for c in win.connections]
+        base = toolbox.analysis_inputs("HAZOP")
+        reviewed = toolbox.analysis_inputs("HAZOP", reviewed=True)
+        approved = toolbox.analysis_inputs("HAZOP", approved=True)
+        if rel == "Used By":
+            assert base == {"Scenario Library"}
+            assert reviewed == {"Scenario Library"}
+            assert approved == {"Scenario Library"}
+        elif rel == "Used after Review":
+            assert base == set()
+            assert reviewed == {"Scenario Library"}
+            assert approved == {"Scenario Library"}
+        else:  # Used after Approval
+            assert base == set()
+            assert reviewed == set()
+            assert approved == {"Scenario Library"}
+
 def test_stpa_button_requires_relationship():
     SysMLRepository.reset_instance()
     repo = SysMLRepository.get_instance()

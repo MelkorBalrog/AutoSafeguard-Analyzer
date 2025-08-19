@@ -54,6 +54,7 @@ ALLOWED_ANALYSIS_USAGE: set[tuple[str, str]] = {
     ("Reliability Analysis", "FMEA"),
     ("Reliability Analysis", "FMEDA"),
     ("ODD", "Scenario Library"),
+    ("Scenario Library", "HAZOP"),
     ("GSN Argumentation", "Safety & Security Case"),
 }
 
@@ -95,6 +96,7 @@ ALLOWED_USAGE.update(
         ("Mission Profile", "FTA"),
         ("Requirement Specification", "HAZOP"),
         ("ODD", "Scenario Library"),
+        ("Scenario Library", "HAZOP"),
         ("Reliability Analysis", "FMEA"),
         ("Reliability Analysis", "FMEDA"),
         ("GSN Argumentation", "Safety & Security Case"),

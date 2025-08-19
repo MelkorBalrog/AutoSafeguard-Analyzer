@@ -18931,6 +18931,8 @@ class AutoMLApp:
                     os.remove(path)
             except OSError:
                 pass
+        # Ensure the Tk event loop terminates and all windows are destroyed
+        self.root.quit()
         self.root.destroy()
 
     def show_about(self):
