@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from typing import Callable, Optional
+import tkinter.font as tkfont
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -35,18 +36,20 @@ class CapsuleButton(tk.Canvas):
         master: tk.Widget,
         text: str,
         command: Optional[Callable[[], None]] = None,
-        width: int = 80,
-        height: int = 26,
+        width: int | None = None,
+        height: int | None = None,
         bg: str = "#e1e1e1",
         hover_bg: Optional[str] = None,
         state: str | None = None,
         image: tk.PhotoImage | None = None,
         compound: str = tk.CENTER,
+        padx: int = 10,
+        pady: int = 5,
         **kwargs,
     ) -> None:
         init_kwargs = {
-            "width": width,
-            "height": height,
+            "width": width or 80,
+            "height": height or 26,
             "highlightthickness": 0,
         }
         try:
@@ -70,25 +73,48 @@ class CapsuleButton(tk.Canvas):
         self._text = text
         self._image = image
         self._compound = compound
+        self._padx = padx
+        self._pady = pady
         self._normal_color = bg
         self._hover_color = hover_bg or _lighten(bg, 1.2)
         self._current_color = self._normal_color
-        self._radius = height // 2
+        self._radius = (height or 26) // 2
         self._shape_items: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
-        self._draw_button()
+        self._draw_button(width, height)
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
         self.bind("<Button-1>", self._on_click)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
 
-    def _draw_button(self) -> None:
+    def _compute_size(self, width: int | None, height: int | None) -> tuple[int, int]:
+        """Return canvas dimensions accommodating text and image."""
+        font = tkfont.nametofont("TkDefaultFont")
+        text_w = font.measure(self._text) if self._text else 0
+        text_h = font.metrics("linespace") if self._text else 0
+        img_w = self._image.width() if self._image else 0
+        img_h = self._image.height() if self._image else 0
+        spacing = 4 if self._text and self._image and self._compound != tk.CENTER else 0
+        if self._compound in (tk.LEFT, tk.RIGHT):
+            content_w = text_w + img_w + spacing
+            content_h = max(text_h, img_h)
+        elif self._compound in (tk.TOP, tk.BOTTOM):
+            content_w = max(text_w, img_w)
+            content_h = text_h + img_h + spacing
+        else:
+            content_w = max(text_w, img_w)
+            content_h = max(text_h, img_h)
+        w = max(width or 0, content_w + 2 * self._padx)
+        h = max(height or 0, content_h + 2 * self._pady)
+        return w, h
+
+    def _draw_button(self, width: int | None = None, height: int | None = None) -> None:
         self.delete("all")
-        w = int(self["width"])
-        h = int(self["height"])
-        r = self._radius
+        w, h = self._compute_size(width, height)
+        super().configure(width=w, height=h)
+        r = h // 2
         color = self._current_color
         outline = "#b3b3b3"
         # Draw the filled shapes without outlines so the seams between the
@@ -129,7 +155,46 @@ class CapsuleButton(tk.Canvas):
             style=tk.ARC,
             outline=outline,
         )
-        self._text_item = self.create_text(w // 2, h // 2, text=self._text)
+        self._text_item = self._image_item = None
+        font = tkfont.nametofont("TkDefaultFont")
+        text_w = font.measure(self._text) if self._text else 0
+        text_h = font.metrics("linespace") if self._text else 0
+        img_w = self._image.width() if self._image else 0
+        img_h = self._image.height() if self._image else 0
+        spacing = 4 if self._text and self._image and self._compound != tk.CENTER else 0
+        if self._compound == tk.LEFT:
+            start_x = (w - (img_w + spacing + text_w)) // 2
+            if self._image:
+                self._image_item = self.create_image(start_x + img_w / 2, h / 2, image=self._image)
+                start_x += img_w + spacing
+            if self._text:
+                self._text_item = self.create_text(start_x + text_w / 2, h / 2, text=self._text)
+        elif self._compound == tk.RIGHT:
+            start_x = (w - (text_w + spacing + img_w)) // 2
+            if self._text:
+                self._text_item = self.create_text(start_x + text_w / 2, h / 2, text=self._text)
+                start_x += text_w + spacing
+            if self._image:
+                self._image_item = self.create_image(start_x + img_w / 2, h / 2, image=self._image)
+        elif self._compound == tk.TOP:
+            start_y = (h - (img_h + spacing + text_h)) // 2
+            if self._image:
+                self._image_item = self.create_image(w / 2, start_y + img_h / 2, image=self._image)
+                start_y += img_h + spacing
+            if self._text:
+                self._text_item = self.create_text(w / 2, start_y + text_h / 2, text=self._text)
+        elif self._compound == tk.BOTTOM:
+            start_y = (h - (text_h + spacing + img_h)) // 2
+            if self._text:
+                self._text_item = self.create_text(w / 2, start_y + text_h / 2, text=self._text)
+                start_y += text_h + spacing
+            if self._image:
+                self._image_item = self.create_image(w / 2, start_y + img_h / 2, image=self._image)
+        else:  # CENTER
+            if self._image:
+                self._image_item = self.create_image(w / 2, h / 2, image=self._image)
+            if self._text:
+                self._text_item = self.create_text(w / 2, h / 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
@@ -172,8 +237,10 @@ class CapsuleButton(tk.Canvas):
         hover_bg = kwargs.pop("hover_bg", None)
         image = kwargs.pop("image", None)
         compound = kwargs.pop("compound", None)
-        width = kwargs.get("width")
-        height = kwargs.get("height")
+        width = kwargs.pop("width", None)
+        height = kwargs.pop("height", None)
+        padx = kwargs.pop("padx", None)
+        pady = kwargs.pop("pady", None)
         state = kwargs.pop("state", None)
         kwargs.pop("style", None)
         super().configure(**kwargs)
@@ -192,8 +259,12 @@ class CapsuleButton(tk.Canvas):
             self._image = image
         if compound is not None:
             self._compound = compound
-        if width is not None or height is not None or text is not None or image is not None or compound is not None:
-            self._draw_button()
+        if padx is not None:
+            self._padx = padx
+        if pady is not None:
+            self._pady = pady
+        if width is not None or height is not None or text is not None or image is not None or compound is not None or padx is not None or pady is not None:
+            self._draw_button(width, height)
         # Always re-apply the current state so that disabled buttons retain
         # their disabled appearance even after reconfiguration.
         self._apply_state()
