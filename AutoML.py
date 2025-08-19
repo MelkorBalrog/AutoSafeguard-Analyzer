@@ -2924,7 +2924,14 @@ class AutoMLApp:
         root.bind_all("<Control-z>", lambda event: self.undo())
         root.bind_all("<Control-y>", lambda event: self.redo())
         root.bind("<F1>", lambda event: self.show_about())
-        self.main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL)
+
+        # Container to hold the auto-hiding explorer tab and main pane
+        self.top_frame = tk.Frame(root)
+        self.top_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.main_pane = tk.PanedWindow(self.top_frame, orient=tk.HORIZONTAL)
+        self.main_pane.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
         # Initialise the log window but keep it hidden by default.
         self.log_frame = logger.init_log_window(root, height=7)
         self.toggle_log_button = ttk.Button(
@@ -2932,10 +2939,21 @@ class AutoMLApp:
         )
         self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         logger.set_toggle_button(self.toggle_log_button)
-        self.main_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+        # Explorer notebook (hidden by default)
         self.explorer_nb = ttk.Notebook(self.main_pane)
-        self.main_pane.add(self.explorer_nb, width=300)
+        self._explorer_width = 300
+        self._explorer_auto_hide_id = None
+        self._explorer_tab = ttk.Label(
+            self.top_frame,
+            text="F\ni\nl\ne\ns",
+            relief="raised",
+            cursor="hand2",
+        )
+        self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
+        self._explorer_tab.bind("<Enter>", lambda _e: self.show_explorer(animate=True))
+        self.explorer_nb.bind("<Enter>", lambda _e: self._cancel_explorer_hide())
+        self.explorer_nb.bind("<Leave>", lambda _e: self._schedule_explorer_hide())
 
         self.analysis_tab = ttk.Frame(self.explorer_nb)
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
@@ -10386,6 +10404,68 @@ class AutoMLApp:
 
     def toggle_logs(self):
         logger.toggle_log()
+
+    # ------------------------------------------------------------------
+    # Explorer panel show/hide helpers
+    def show_explorer(self, animate=False):
+        """Display the explorer pane."""
+        if self.explorer_nb.winfo_manager():
+            self._cancel_explorer_hide()
+            return
+        self._explorer_tab.pack_forget()
+        self.main_pane.add(self.explorer_nb, width=0, before=self.doc_frame)
+        if animate:
+            self._animate_explorer_show(0)
+        else:
+            self.main_pane.paneconfig(self.explorer_nb, width=self._explorer_width)
+
+    def _animate_explorer_show(self, width):
+        if width >= self._explorer_width:
+            self.main_pane.paneconfig(self.explorer_nb, width=self._explorer_width)
+            return
+        self.main_pane.paneconfig(self.explorer_nb, width=width)
+        self.root.after(
+            15,
+            lambda: self._animate_explorer_show(
+                width + max(self._explorer_width // 10, 1)
+            ),
+        )
+
+    def hide_explorer(self, animate=False):
+        """Hide the explorer pane."""
+        if not self.explorer_nb.winfo_manager():
+            return
+        self._cancel_explorer_hide()
+        if animate:
+            self._animate_explorer_hide(self.explorer_nb.winfo_width())
+        else:
+            self.main_pane.forget(self.explorer_nb)
+            self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
+
+    def _animate_explorer_hide(self, width):
+        if width <= 0:
+            self.main_pane.forget(self.explorer_nb)
+            self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
+            return
+        self.main_pane.paneconfig(self.explorer_nb, width=width)
+        self.root.after(
+            15,
+            lambda: self._animate_explorer_hide(
+                width - max(self._explorer_width // 10, 1)
+            ),
+        )
+
+    def _schedule_explorer_hide(self, delay=1000):
+        if self._explorer_auto_hide_id:
+            self.root.after_cancel(self._explorer_auto_hide_id)
+        self._explorer_auto_hide_id = self.root.after(
+            delay, lambda: self.hide_explorer(animate=True)
+        )
+
+    def _cancel_explorer_hide(self):
+        if self._explorer_auto_hide_id:
+            self.root.after_cancel(self._explorer_auto_hide_id)
+            self._explorer_auto_hide_id = None
 
     def auto_arrange(self):
         if self.root_node is None:
