@@ -2368,8 +2368,17 @@ class AutoMLApp:
             # ``TclError`` on some Tk builds, particularly on Windows
             # where transparency is not parsed in this manner.  To create
             # a fully transparent background we instead specify an RGB
-            # color and use the ``alpha`` parameter.
-            img.put("#000000", to=(0, 0, 40, 20), alpha=0)
+            # color and use the ``alpha`` parameter.  Older Tk releases do
+            # not understand the ``alpha`` option, so fall back to
+            # flagging the color as transparent when necessary.
+            try:
+                img.put("#000000", to=(0, 0, 40, 20), alpha=0)
+            except tk.TclError:
+                img.put("#000000", to=(0, 0, 40, 20))
+                try:
+                    img.transparency_set(0, 0, 0)
+                except Exception:
+                    pass
             radius = 10
             t_r = int(top[1:3], 16)
             t_g = int(top[3:5], 16)
