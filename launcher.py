@@ -11,6 +11,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Hint PyInstaller to bundle AutoML and its dependencies (e.g. gui package)
+if False:  # pragma: no cover
+    import AutoML  # noqa: F401
+
 REQUIRED_PACKAGES = [
     "pillow",
     "openpyxl",
