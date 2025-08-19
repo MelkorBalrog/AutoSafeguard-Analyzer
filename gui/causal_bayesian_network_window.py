@@ -156,22 +156,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if self.doc_var.get():
             if not self.toolbox.winfo_ismapped():
                 self.toolbox.pack(side=tk.LEFT, fill=tk.Y, before=self.canvas_container)
-            # Defer sizing until widgets are visible when running with Tk
-            if hasattr(self, "tk"):
-                self.after_idle(self._fit_toolbox)
         else:
             self.toolbox.pack_forget()
-
-    # ------------------------------------------------------------------
-    def _fit_toolbox(self) -> None:
-        """Resize toolbox so button text and icons are fully visible."""
-        self.toolbox.update_idletasks()
-        width = 0
-        for child in self.toolbox.winfo_children():
-            if isinstance(child, ttk.Button):
-                width = max(width, child.winfo_reqwidth())
-        if width:
-            self.toolbox.configure(width=width + 4)
 
     # ------------------------------------------------------------------
     def new_doc(self) -> None:
