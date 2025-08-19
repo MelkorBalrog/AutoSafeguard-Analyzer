@@ -10,6 +10,7 @@ from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
 from gui.icon_factory import create_icon as draw_icon
+from gui.button_utils import create_tool_button
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -65,12 +66,11 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Existing Malfunction",
             "Relationship",
         ):
-            ttk.Button(
+            create_tool_button(
                 self.toolbox,
                 text=name,
-                image=self._icons.get(name),
-                compound=tk.LEFT,
                 command=lambda t=name: self.select_tool(t),
+                icon=self._icons.get(name),
             ).pack(fill=tk.X, padx=2, pady=2)
         # Pack then immediately hide so order relative to the canvas is preserved
         self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
