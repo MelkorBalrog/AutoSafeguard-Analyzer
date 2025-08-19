@@ -2357,7 +2357,7 @@ def test_list_modules_includes_submodules():
     child = GovernanceModule("Child")
     parent = GovernanceModule("Parent", modules=[child])
     toolbox.modules = [parent]
-    assert set(toolbox.list_modules()) == {"Parent", "Child"}
+    assert set(toolbox.list_modules()) == {"Parent", "Child", "GLOBAL"}
 
 
 def test_enabled_products_only_active_module():

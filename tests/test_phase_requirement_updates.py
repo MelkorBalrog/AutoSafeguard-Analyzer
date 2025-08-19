@@ -21,9 +21,9 @@ def _setup_window(monkeypatch):
     win = SafetyManagementWindow.__new__(SafetyManagementWindow)
     toolbox = types.SimpleNamespace(
         diagrams={"D": "id1", "L": "id2"},
-        diagrams_for_module=lambda phase: {"D"} if phase == "Phase1" else set(),
-        list_modules=lambda: ["Phase1"],
-        module_for_diagram=lambda name: "Phase1" if name == "D" else None,
+        diagrams_for_module=lambda phase: {"D"} if phase == "Phase1" else {"L"} if phase == "GLOBAL" else set(),
+        list_modules=lambda: ["Phase1", "GLOBAL"],
+        module_for_diagram=lambda name: "Phase1" if name == "D" else "GLOBAL",
         list_diagrams=lambda: {"D", "L"},
     )
     win.toolbox = toolbox

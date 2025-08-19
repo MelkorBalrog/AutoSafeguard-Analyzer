@@ -4,6 +4,7 @@ from tkinter import ttk, simpledialog
 from functools import partial
 
 from analysis import SafetyManagementToolbox
+from analysis.safety_management import GLOBAL_PHASE
 from analysis.governance import GovernanceDiagram
 from analysis.models import (
     REQUIREMENT_TYPE_OPTIONS,
@@ -520,10 +521,7 @@ class SafetyManagementWindow(tk.Frame):
 
     def generate_lifecycle_requirements(self) -> None:
         """Generate requirements for diagrams outside of any phase."""
-        all_diags = set(self.toolbox.list_diagrams())
-        for phase in self.toolbox.list_modules():
-            all_diags -= self.toolbox.diagrams_for_module(phase)
-        diag_names = sorted(all_diags)
+        diag_names = sorted(self.toolbox.diagrams_for_module(GLOBAL_PHASE))
         if not diag_names:
             messagebox.showinfo(
                 "Requirements", "No lifecycle governance diagrams.")

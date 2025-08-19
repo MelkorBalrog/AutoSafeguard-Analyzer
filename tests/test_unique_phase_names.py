@@ -10,6 +10,6 @@ def test_add_module_enforces_unique_names():
     child = tb.add_module("Phase", parent=parent)
     assert [m.name for m in tb.modules] == ["Phase", "Phase_1", "Parent"]
     assert child.name == "Phase_2"
-    assert tb.list_modules() == ["Phase", "Phase_1", "Parent", "Phase_2"]
-    assert len(set(tb.list_modules())) == 4
+    assert tb.list_modules() == ["Phase", "Phase_1", "Parent", "Phase_2", "GLOBAL"]
+    assert len(set(tb.list_modules())) == 5
     safety_management.ACTIVE_TOOLBOX = prev
