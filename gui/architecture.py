@@ -9173,6 +9173,37 @@ class SysMLDiagramWindow(tk.Frame):
             if not confirmed:
                 return
             for obj in list(self.selected_objs):
+                if obj.obj_type == "System Boundary":
+                    wps = [
+                        o
+                        for o in self.objects
+                        if o.obj_type == "Work Product"
+                        and (
+                            o.properties.get("parent") == str(obj.obj_id)
+                            or o.properties.get("boundary") == str(obj.obj_id)
+                        )
+                    ]
+                    for wp in wps:
+                        name = wp.properties.get("name", "")
+                        if getattr(self.app, "can_remove_work_product", None):
+                            if not self.app.can_remove_work_product(name):
+                                messagebox.showerror(
+                                    "Delete",
+                                    f"Cannot delete work product '{name}' with existing artifacts.",
+                                )
+                                break
+                    else:
+                        for wp in wps:
+                            name = wp.properties.get("name", "")
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                            if toolbox:
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                diagram_name = diag.name if diag else ""
+                                toolbox.remove_work_product(diagram_name, name)
+                            self.remove_element_model(wp)
+                        self.remove_element_model(obj)
+                    continue
                 if obj.obj_type == "Work Product":
                     name = obj.properties.get("name", "")
                     if getattr(self.app, "can_remove_work_product", None):
