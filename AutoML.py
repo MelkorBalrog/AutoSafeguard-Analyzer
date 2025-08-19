@@ -449,6 +449,11 @@ def get_version() -> str:
 
 VERSION = get_version()
 
+# Contact information for splash screen
+AUTHOR = "Miguel Marina"
+AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
+AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
+
 
 class UserInfoDialog(simpledialog.Dialog):
     """Prompt for the user's name and email."""
@@ -21821,7 +21826,13 @@ def main():
     # Hide the main window while prompting for user info
     root.withdraw()
     # Show initialization splash screen
-    SplashScreen(root).wait_window()
+    SplashScreen(
+        root,
+        version=VERSION,
+        author=AUTHOR,
+        email=AUTHOR_EMAIL,
+        linkedin=AUTHOR_LINKEDIN,
+    ).wait_window()
     users = load_all_users()
     last_name, last_email = load_user_config()
     if users:
