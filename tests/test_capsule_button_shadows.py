@@ -16,7 +16,7 @@ def test_text_shadow_removed():
     btn = CapsuleButton(root, text="Test")
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_text_shadow_item", None) is None
+    assert not hasattr(btn, "_text_shadow_item")
     root.destroy()
 
 
@@ -29,5 +29,5 @@ def test_icon_shadow_removed():
     btn = CapsuleButton(root, image=img)
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_icon_shadow_item", None) is None
+    assert not hasattr(btn, "_icon_shadow_item")
     root.destroy()

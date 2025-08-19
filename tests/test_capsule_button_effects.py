@@ -16,7 +16,7 @@ def test_text_highlight_without_shadow():
     btn = CapsuleButton(root, text="Test")
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_text_shadow_item", None) is None
+    assert not hasattr(btn, "_text_shadow_item")
     highlight = getattr(btn, "_text_highlight_item", None)
     assert highlight is not None
     root.destroy()
@@ -32,7 +32,7 @@ def test_icon_highlight_without_shadow():
     btn.pack()
     root.update_idletasks()
     assert getattr(btn, "_icon_highlight_item", None) is not None
-    assert getattr(btn, "_icon_shadow_item", None) is None
+    assert not hasattr(btn, "_icon_shadow_item")
     root.destroy()
 
 
