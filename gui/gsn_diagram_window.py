@@ -17,7 +17,6 @@ from .gsn_connection_config import GSNConnectionConfig
 from . import messagebox
 from .style_manager import StyleManager
 from .icon_factory import create_icon
-from .button_utils import create_tool_button
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -140,11 +139,12 @@ class GSNDiagramWindow(tk.Frame):
             )
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
-            create_tool_button(
+            ttk.Button(
                 node_frame,
                 text=name,
                 command=cmd,
-                icon=self._icons.get(name),
+                image=self._icons.get(name),
+                compound=tk.LEFT,
             ).pack(fill=tk.X, padx=2, pady=2)
 
         rel_cmds = [
@@ -164,11 +164,12 @@ class GSNDiagramWindow(tk.Frame):
             )
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:
-            create_tool_button(
+            ttk.Button(
                 rel_frame,
                 text=name,
                 command=cmd,
-                icon=self._icons.get(name),
+                image=self._icons.get(name),
+                compound=tk.LEFT,
             ).pack(fill=tk.X, padx=2, pady=2)
 
         util_cmds = [
@@ -179,11 +180,12 @@ class GSNDiagramWindow(tk.Frame):
         util_frame = ttk.Frame(self.toolbox)
         util_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in util_cmds:
-            create_tool_button(
+            ttk.Button(
                 util_frame,
                 text=name,
                 command=cmd,
-                icon=self._icons.get(name),
+                image=self._icons.get(name),
+                compound=tk.LEFT,
             ).pack(fill=tk.X, padx=2, pady=2)
 
         # Ensure the toolbox is wide enough to display button text

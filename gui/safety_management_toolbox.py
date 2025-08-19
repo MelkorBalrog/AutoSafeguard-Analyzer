@@ -15,8 +15,6 @@ from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox, add_treeview_scrollbars
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
-from gui.icon_factory import create_icon
-from gui.button_utils import create_tool_button
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -60,42 +58,25 @@ class SafetyManagementWindow(tk.Frame):
         self.diag_cb.pack(side=tk.LEFT, padx=2)
         self.diag_cb.bind("<<ComboboxSelected>>", self.select_diagram)
 
-        self._icons = {
-            "New": create_icon("plus", "black"),
-            "Rename": create_icon("gear", "black"),
-            "Delete": create_icon("cross", "black"),
-            "Requirements": create_icon("clipboard", "black"),
-            "Lifecycle Requirements": create_icon("clipboard", "black"),
-            "Delete Obsolete": create_icon("minus", "black"),
-        }
-        create_tool_button(top, "New", self.new_diagram, self._icons["New"]).pack(side=tk.LEFT)
-        create_tool_button(
-            top, "Rename", self.rename_diagram, self._icons["Rename"]
-        ).pack(side=tk.LEFT)
-        create_tool_button(
-            top, "Delete", self.delete_diagram, self._icons["Delete"]
-        ).pack(side=tk.LEFT)
-        create_tool_button(
-            top,
-            "Requirements",
-            self.generate_requirements,
-            self._icons["Requirements"],
-        ).pack(side=tk.LEFT)
+        ttk.Button(top, text="New", command=self.new_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Rename", command=self.rename_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Delete", command=self.delete_diagram).pack(side=tk.LEFT)
+        ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
+            side=tk.LEFT
+        )
         self.phase_menu_btn = ttk.Menubutton(top, text="Phase Requirements")
         self.phase_menu = tk.Menu(self.phase_menu_btn, tearoff=False)
         self.phase_menu_btn.configure(menu=self.phase_menu)
         self.phase_menu_btn.pack(side=tk.LEFT)
-        create_tool_button(
+        ttk.Button(
             top,
-            "Lifecycle Requirements",
-            self.generate_lifecycle_requirements,
-            self._icons["Lifecycle Requirements"],
+            text="Lifecycle Requirements",
+            command=self.generate_lifecycle_requirements,
         ).pack(side=tk.LEFT)
-        create_tool_button(
+        ttk.Button(
             top,
-            "Delete Obsolete",
-            self.delete_obsolete_requirements,
-            self._icons["Delete Obsolete"],
+            text="Delete Obsolete",
+            command=self.delete_obsolete_requirements,
         ).pack(side=tk.LEFT)
 
         self.diagram_frame = ttk.Frame(self)
