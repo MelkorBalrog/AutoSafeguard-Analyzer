@@ -28,8 +28,8 @@ def _log_and_return(title: str | None, message: str | None, level: str) -> str:
         Log level to associate with the message.
     """
 
-    lines = logger.log_message(f"{title}: {message}", level)
-    logger.show_temporarily(lines=lines)
+    logger.log_message(f"{title}: {message}", level)
+    logger.show_temporarily()
     return "ok"
 
 
@@ -98,8 +98,8 @@ def _create_dialog(
 
 
 def askyesno(title=None, message=None, **options):
-    lines = logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily(lines=lines)
+    logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily()
     try:
         return bool(
             _create_dialog(title, message, [("Yes", True), ("No", False)])
@@ -109,8 +109,8 @@ def askyesno(title=None, message=None, **options):
 
 
 def askyesnocancel(title=None, message=None, **options):
-    lines = logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily(lines=lines)
+    logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily()
     try:
         return _create_dialog(
             title, message, [("Yes", True), ("No", False), ("Cancel", None)]
@@ -120,8 +120,8 @@ def askyesnocancel(title=None, message=None, **options):
 
 
 def askokcancel(title=None, message=None, **options):
-    lines = logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily(lines=lines)
+    logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily()
     try:
         return bool(
             _create_dialog(title, message, [("OK", True), ("Cancel", False)])
