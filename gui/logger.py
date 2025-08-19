@@ -13,7 +13,7 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=8, dark_mode: bool = True):
+def init_log_window(root, height=7, dark_mode: bool = True):
     """Create and return a styled log window packed in *root*.
 
     Parameters
