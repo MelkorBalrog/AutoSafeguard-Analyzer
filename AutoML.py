@@ -18925,12 +18925,9 @@ class AutoMLApp:
                 return
             if result:
                 self.save_model()
-        for path in getattr(self, "_loaded_model_paths", []):
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except OSError:
-                pass
+        # Previously, any loaded model paths were deleted on close, which could
+        # remove user data. Avoid deleting files that were explicitly opened by
+        # the user so their project files remain intact.
         # Ensure the Tk event loop terminates and all windows are destroyed
         self.root.quit()
         self.root.destroy()
