@@ -112,6 +112,7 @@ class CapsuleButton(tk.Canvas):
         self._border_dark: list[int] = []
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
+        self._outer_shadow: list[int] = []
         self._text_item: Optional[int] = None
         self._text_shadow_item: Optional[int] = None
         self._icon_shadow_item: Optional[int] = None
@@ -313,6 +314,15 @@ class CapsuleButton(tk.Canvas):
     def _draw_border(self, w: int, h: int) -> None:
         """Draw border and inner outline to mimic an inset capsule."""
         r = self._radius
+        shadow = _darken(self._current_color, 0.5)
+        self._outer_shadow = [
+            self.create_arc((-2, -2, 2 * r + 2, h + 2), start=90, extent=180, style=tk.ARC, outline=shadow, width=2),
+            self.create_line(r, -2, w - r, -2, fill=shadow, width=2),
+            self.create_arc((w - 2 * r - 2, -2, w + 2, h + 2), start=-90, extent=180, style=tk.ARC, outline=shadow, width=2),
+            self.create_line(-2, r, -2, h - r, fill=shadow, width=2),
+            self.create_line(r, h + 2, w - r, h + 2, fill=shadow, width=2),
+            self.create_line(w + 2, r, w + 2, h - r, fill=shadow, width=2),
+        ]
         inner = _darken(self._current_color, 0.7)
         self._border_outline = [
             self.create_arc((1, 1, 2 * r - 1, h - 1), start=90, extent=180, style=tk.ARC, outline=inner),
@@ -355,9 +365,11 @@ class CapsuleButton(tk.Canvas):
         dark = _darken(color, 0.8)
         light = _lighten(color, 1.2)
         gap = _darken(color, 0.7)
+        shadow = _darken(color, 0.5)
         self._apply_border_color(self._border_dark, dark)
         self._apply_border_color(self._border_light, light)
         self._apply_border_color(self._border_gap, gap)
+        self._apply_border_color(self._outer_shadow, shadow)
         self._current_color = color
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
@@ -381,21 +393,19 @@ class CapsuleButton(tk.Canvas):
                 self.itemconfigure(item, fill=color)
 
     def _add_glow(self) -> None:
-        """Draw a bright oval to simulate an internal LED glow."""
+        """Lighten the button edges without covering the surface."""
         if self._glow_items:
             return
         w, h = int(self["width"]), int(self["height"])
-        glow_color = _lighten(self._current_color, 1.5)
+        r = self._radius
+        glow_color = _lighten(self._current_color, 1.3)
         self._glow_items = [
-            self.create_oval(
-                2,
-                2,
-                w - 2,
-                h - 2,
-                outline="",
-                fill=glow_color,
-                stipple="gray25",
-            )
+            self.create_arc((2, 2, 2 * r - 2, h - 2), start=90, extent=180, style=tk.ARC, outline=glow_color, width=2),
+            self.create_line(r, 2, w - r, 2, fill=glow_color, width=2),
+            self.create_arc((w - 2 * r + 2, 2, w - 2, h - 2), start=-90, extent=180, style=tk.ARC, outline=glow_color, width=2),
+            self.create_line(2, r, 2, h - r, fill=glow_color, width=2),
+            self.create_line(r, h - 2, w - r, h - 2, fill=glow_color, width=2),
+            self.create_line(w - 2, r, w - 2, h - r, fill=glow_color, width=2),
         ]
 
     def _remove_glow(self) -> None:
