@@ -122,9 +122,9 @@ class CapsuleButton(tk.Canvas):
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
-        self._text_shadow_item: Optional[int] = None
+        self._text_shade_item: Optional[int] = None
         self._image_item: Optional[int] = None
-        self._text_shadow_item: Optional[int] = None
+        self._icon_shade_item: Optional[int] = None
         self._text_highlight_item: Optional[int] = None
         self._icon_highlight_item: Optional[int] = None
         self._draw_button()
@@ -261,15 +261,15 @@ class CapsuleButton(tk.Canvas):
 
 
     def _draw_content(self, w: int, h: int) -> None:
-        """Render optional image and text with soft shadows and highlights."""
+        """Render optional image and text with shading and highlights."""
         cx, cy = w // 2, h // 2
         self._text_item = None
-        self._text_shadow_item = None
+        self._text_shade_item = None
         self._image_item = None
-        self._text_shadow_item = None
+        self._icon_shade_item = None
         self._text_highlight_item = None
         self._icon_highlight_item = None
-        shadow_col = _darken(self._current_color, 0.6)
+        shade_col = _darken(self._current_color, 0.6)
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -280,6 +280,15 @@ class CapsuleButton(tk.Canvas):
             img_x = start + img_w // 2
             text_x = start + img_w + spacing + text_w // 2
             self._image_item = self.create_image(img_x, cy, image=self._image)
+            self._icon_shade_item = self.create_rectangle(
+                start,
+                cy - img_w // 2,
+                start + img_w,
+                cy + img_w // 2,
+                outline="",
+                fill="#000000",
+                stipple="gray25",
+            )
             self._icon_highlight_item = self.create_rectangle(
                 start,
                 cy - img_w // 2,
@@ -289,13 +298,14 @@ class CapsuleButton(tk.Canvas):
                 fill="#ffffff",
                 stipple="gray50",
             )
-            self._text_shadow_item = self.create_text(
-                text_x + 1,
-                cy + 1,
-                text=self._text,
-                fill=shadow_col,
-            )
             self._text_item = self.create_text(text_x, cy, text=self._text)
+            self._text_shade_item = self.create_text(
+                text_x,
+                cy,
+                text=self._text,
+                fill=shade_col,
+                stipple="gray25",
+            )
             self._text_highlight_item = self.create_text(
                 text_x,
                 cy,
@@ -303,18 +313,17 @@ class CapsuleButton(tk.Canvas):
                 fill="#ffffff",
                 stipple="gray50",
             )
-            self._text_item = self.create_text(text_x, cy, text=self._text)
         elif self._image:
-            self._icon_shadow_item = self.create_oval(
-                cx - self._image.width() // 2 + 1,
-                cy - self._image.height() // 2 + 1,
-                cx + self._image.width() // 2 + 1,
-                cy + self._image.height() // 2 + 1,
+            self._image_item = self.create_image(cx, cy, image=self._image)
+            self._icon_shade_item = self.create_rectangle(
+                cx - self._image.width() // 2,
+                cy - self._image.height() // 2,
+                cx + self._image.width() // 2,
+                cy + self._image.height() // 2,
                 outline="",
                 fill="#000000",
-                stipple="gray50",
+                stipple="gray25",
             )
-            self._image_item = self.create_image(cx, cy, image=self._image)
             self._icon_highlight_item = self.create_rectangle(
                 cx - self._image.width() // 2,
                 cy - self._image.height() // 2,
@@ -325,13 +334,14 @@ class CapsuleButton(tk.Canvas):
                 stipple="gray50",
             )
         else:
-            self._text_shadow_item = self.create_text(
-                cx + 1,
-                cy + 1,
-                text=self._text,
-                fill=shadow_col,
-            )
             self._text_item = self.create_text(cx, cy, text=self._text)
+            self._text_shade_item = self.create_text(
+                cx,
+                cy,
+                text=self._text,
+                fill=shade_col,
+                stipple="gray25",
+            )
             self._text_highlight_item = self.create_text(
                 cx,
                 cy,
