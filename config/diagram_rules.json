@@ -1548,7 +1548,8 @@
         "Role": [
           "Activity",
           "Process",
-          "Task"
+          "Task",
+          "Work Product"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
