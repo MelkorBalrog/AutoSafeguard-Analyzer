@@ -4141,7 +4141,7 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
         conn_tools = _all_connection_tools()
@@ -4644,7 +4644,7 @@ class SysMLDiagramWindow(tk.Frame):
                     self.update_property_view()
 
     def on_left_drag(self, event):
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
@@ -4788,31 +4788,94 @@ class SysMLDiagramWindow(tk.Frame):
                 min_w, min_h = self._min_data_acquisition_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
+            elif obj.obj_type == "System Boundary":
+                name = obj.properties.get("name", "")
+                font = getattr(self, "font", None)
+                if font:
+                    min_w = max(
+                        (font.measure(name) + 8 * self.zoom) / self.zoom,
+                        20.0,
+                    )
+                    min_h = max(
+                        (font.metrics("linespace") + 8 * self.zoom) / self.zoom,
+                        20.0,
+                    )
+                else:  # fallback for tests without a font
+                    min_w = max(len(name) * 7, 20.0)
+                    min_h = 20.0
+                wps = [
+                    o
+                    for o in self.objects
+                    if o.obj_type == "Work Product"
+                    and o.properties.get("parent") == str(obj.obj_id)
+                ]
+                max_right = (
+                    max(o.x + o.width / 2 for o in wps) if wps else None
+                )
+                min_left = (
+                    min(o.x - o.width / 2 for o in wps) if wps else None
+                )
+                max_bottom = (
+                    max(o.y + o.height / 2 for o in wps) if wps else None
+                )
+                min_top = (
+                    min(o.y - o.height / 2 for o in wps) if wps else None
+                )
             left = obj.x - obj.width / 2
             right = obj.x + obj.width / 2
             top = obj.y - obj.height / 2
             bottom = obj.y + obj.height / 2
-            if "e" in self.resize_edge:
-                new_right = x / self.zoom
-                if new_right - left < min_w:
-                    new_right = left + min_w
-                right = new_right
-            if "w" in self.resize_edge:
-                new_left = x / self.zoom
-                if right - new_left < min_w:
-                    new_left = right - min_w
-                left = new_left
-            if obj.obj_type not in ("Fork", "Join", "Existing Element"):
+            if obj.obj_type == "System Boundary":
+                if "e" in self.resize_edge:
+                    new_right = x / self.zoom
+                    if max_right is not None and new_right < max_right:
+                        new_right = max_right
+                    if new_right - left < min_w:
+                        new_right = left + min_w
+                    right = new_right
+                if "w" in self.resize_edge:
+                    new_left = x / self.zoom
+                    if min_left is not None and new_left > min_left:
+                        new_left = min_left
+                    if right - new_left < min_w:
+                        new_left = right - min_w
+                    left = new_left
                 if "s" in self.resize_edge:
                     new_bottom = y / self.zoom
+                    if max_bottom is not None and new_bottom < max_bottom:
+                        new_bottom = max_bottom
                     if new_bottom - top < min_h:
                         new_bottom = top + min_h
                     bottom = new_bottom
                 if "n" in self.resize_edge:
                     new_top = y / self.zoom
+                    if min_top is not None and new_top > min_top:
+                        new_top = min_top
                     if bottom - new_top < min_h:
                         new_top = bottom - min_h
                     top = new_top
+            else:
+                if "e" in self.resize_edge:
+                    new_right = x / self.zoom
+                    if new_right - left < min_w:
+                        new_right = left + min_w
+                    right = new_right
+                if "w" in self.resize_edge:
+                    new_left = x / self.zoom
+                    if right - new_left < min_w:
+                        new_left = right - min_w
+                    left = new_left
+                if obj.obj_type not in ("Fork", "Join", "Existing Element"):
+                    if "s" in self.resize_edge:
+                        new_bottom = y / self.zoom
+                        if new_bottom - top < min_h:
+                            new_bottom = top + min_h
+                        bottom = new_bottom
+                    if "n" in self.resize_edge:
+                        new_top = y / self.zoom
+                        if bottom - new_top < min_h:
+                            new_top = bottom - min_h
+                        top = new_top
             new_w = right - left
             new_h = bottom - top
             obj.x = (left + right) / 2
@@ -4840,7 +4903,14 @@ class SysMLDiagramWindow(tk.Frame):
             self.selected_obj.x = new_x
             self.selected_obj.y = y / self.zoom - self.drag_offset[1]
             if self.selected_obj.obj_type == "Work Product":
-                self._constrain_to_parent(self.selected_obj)
+                if (
+                    self.selected_obj.properties.get("boundary")
+                    and not self.selected_obj.properties.get("parent")
+                ):
+                    self.selected_obj.x = old_x
+                    self.selected_obj.y = old_y
+                else:
+                    self._constrain_to_parent(self.selected_obj)
             dx = self.selected_obj.x - old_x
             dy = self.selected_obj.y - old_y
             if self.selected_obj.obj_type in ("Part", "Block Boundary"):
@@ -5033,7 +5103,7 @@ class SysMLDiagramWindow(tk.Frame):
             self._connect_objects(source, new_obj, conn_type)
 
     def on_left_release(self, event):
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
         if self.start and self.current_tool in _all_connection_tools():
@@ -5252,7 +5322,11 @@ class SysMLDiagramWindow(tk.Frame):
                 else:
                     self.selected_obj.properties.pop("boundary", None)
             elif self.selected_obj.obj_type == "Work Product":
-                self.selected_obj.properties.pop("boundary", None)
+                b = self.find_boundary_for_obj(self.selected_obj)
+                if b:
+                    self.selected_obj.properties["boundary"] = str(b.obj_id)
+                else:
+                    self.selected_obj.properties.pop("boundary", None)
             self._sync_to_repository()
         self.redraw()
 
@@ -5312,7 +5386,7 @@ class SysMLDiagramWindow(tk.Frame):
             self.temp_line_end = (x, y)
             self.redraw()
             return
-        if self._conn_tip:
+        if getattr(self, "_conn_tip", None):
             diag = self.repo.diagrams.get(self.diagram_id)
             obj = self.find_object(x, y)
             if (
@@ -5332,7 +5406,8 @@ class SysMLDiagramWindow(tk.Frame):
                     self._conn_tip.hide()
                     self._conn_tip_obj = None
             elif not obj and self._conn_tip_obj is not None:
-                self._conn_tip.hide()
+                if getattr(self, "_conn_tip", None):
+                    self._conn_tip.hide()
                 self._conn_tip_obj = None
 
     def on_double_click(self, event):
@@ -11496,10 +11571,29 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
 
     def add_work_product(self):  # pragma: no cover - requires tkinter
         if not getattr(self, "canvas", None):
-            area_name = self._select_process_area()
-            if not area_name:
-                return
-            area = self._place_process_area(area_name, 100.0, 100.0)
+            objs = getattr(self, "objects", [])
+            areas = [o for o in objs if o.obj_type == "System Boundary"]
+            area = None
+            if areas:
+                area_name = self._select_process_area()
+                if not area_name:
+                    if len(areas) == 1:
+                        area = areas[0]
+                        area_name = area.properties.get("name", "")
+                    else:
+                        return
+                if area is None:
+                    area = next(
+                        (a for a in areas if a.properties.get("name", "") == area_name),
+                        None,
+                    )
+                if area is None:
+                    area = self._place_process_area(area_name, 100.0, 100.0)
+            else:
+                area_name = self._select_process_area()
+                if not area_name:
+                    return
+                area = self._place_process_area(area_name, 100.0, 100.0)
             wp_name = self._select_work_product_for_area(area_name)
             if not wp_name:
                 return
@@ -11609,9 +11703,13 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             return
         if area is None:
             pid = obj.properties.get("parent")
-            if not pid:
-                return
-            area = self.get_object(int(pid))
+            if pid:
+                area = self.get_object(int(pid))
+            else:
+                bid = obj.properties.get("boundary")
+                if not bid:
+                    return
+                area = self.get_object(int(bid))
         if not area:
             return
         left = area.x - area.width / 2 + obj.width / 2
