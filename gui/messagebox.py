@@ -26,8 +26,8 @@ def _log_and_return(title: str | None, message: str | None, level: str) -> str:
         Log level to associate with the message.
     """
 
-    logger.log_message(f"{title}: {message}", level)
-    logger.show_temporarily()
+    lines = logger.log_message(f"{title}: {message}", level)
+    logger.show_temporarily(lines=lines)
     return "ok"
 
 
@@ -44,8 +44,8 @@ def showerror(title=None, message=None, **options):
 
 
 def askyesno(title=None, message=None, **options):
-    logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily()
+    lines = logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily(lines=lines)
     try:
         return tk_messagebox.askyesno(title, message, **options)
     except (TclError, RuntimeError):
@@ -53,8 +53,8 @@ def askyesno(title=None, message=None, **options):
 
 
 def askyesnocancel(title=None, message=None, **options):
-    logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily()
+    lines = logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily(lines=lines)
     try:
         return tk_messagebox.askyesnocancel(title, message, **options)
     except (TclError, RuntimeError):
@@ -62,8 +62,8 @@ def askyesnocancel(title=None, message=None, **options):
 
 
 def askokcancel(title=None, message=None, **options):
-    logger.log_message(f"{title}: {message}", "ASK")
-    logger.show_temporarily()
+    lines = logger.log_message(f"{title}: {message}", "ASK")
+    logger.show_temporarily(lines=lines)
     try:
         return tk_messagebox.askokcancel(title, message, **options)
     except (TclError, RuntimeError):
