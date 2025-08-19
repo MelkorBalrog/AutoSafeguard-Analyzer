@@ -255,6 +255,7 @@ from gsn import GSNDiagram, GSNModule
 from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
+from gui.splash_screen import SplashScreen
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -21634,6 +21635,8 @@ def main():
     root.minsize(1200, 700)
     # Hide the main window while prompting for user info
     root.withdraw()
+    # Show initialization splash screen
+    SplashScreen(root).wait_window()
     users = load_all_users()
     last_name, last_email = load_user_config()
     if users:
