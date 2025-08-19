@@ -12221,6 +12221,7 @@ class ArchitectureManagerDialog(tk.Frame):
         self.tree.bind("<ButtonPress-1>", self.on_drag_start)
         self.tree.bind("<B1-Motion>", self.on_drag_motion)
         self.tree.bind("<ButtonRelease-1>", self.on_drag_release)
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
         self.bind("<FocusIn>", lambda _e: self.populate())
         self.drag_item = None
         self.cut_item = None
@@ -12363,6 +12364,41 @@ class ArchitectureManagerDialog(tk.Frame):
         add_pkg(root_pkg.elem_id)
         if self.app:
             self.app.update_views()
+
+    def on_tree_select(self, _event):
+        """Show metadata for the selected repository item in the app's property view."""
+        if not self.app or not hasattr(self.app, "show_properties"):
+            return
+        item = self.tree.focus()
+        if not item:
+            return
+        name = self.tree.item(item, "text")
+        meta = {"Name": name}
+        repo = self.repo
+        if item.startswith("diag_"):
+            diag = repo.diagrams.get(item[5:])
+            if diag:
+                meta.update(
+                    {
+                        "Type": diag.diag_type,
+                        "Author": getattr(diag, "author", ""),
+                        "Created": getattr(diag, "created", ""),
+                        "Modified": getattr(diag, "modified", ""),
+                        "ModifiedBy": getattr(diag, "modified_by", ""),
+                    }
+                )
+        elif item in repo.elements:
+            elem = repo.elements[item]
+            meta.update(
+                {
+                    "Type": elem.elem_type,
+                    "Author": getattr(elem, "author", ""),
+                    "Created": getattr(elem, "created", ""),
+                    "Modified": getattr(elem, "modified", ""),
+                    "ModifiedBy": getattr(elem, "modified_by", ""),
+                }
+            )
+        self.app.show_properties(meta=meta)
 
     def selected(self):
         sel = self.tree.selection()
