@@ -6988,71 +6988,24 @@ class SysMLDiagramWindow(tk.Frame):
             fill=outline,
         )
 
-    def _draw_wrench(
-        self, x: float, y: float, r: float, color: str, outline: str
+    def _draw_icon_shape(
+        self, shape: str, x: float, y: float, r: float, color: str
     ) -> None:
-        """Draw a wrench centered at (*x*, *y*) with radius *r*."""
-        head_r = r * 0.45
-        head_cy = y - r * 0.3
-        self.drawing_helper._fill_gradient_circle(
-            self.canvas, x, head_cy, head_r, color
-        )
-        self.canvas.create_oval(
-            x - head_r,
-            head_cy - head_r,
-            x + head_r,
-            head_cy + head_r,
-            outline=outline,
-            fill="",
-        )
-        bg = StyleManager.get_instance().get_canvas_color()
-        inner = head_r * 0.6
-        self.canvas.create_oval(
-            x - inner,
-            head_cy - inner,
-            x + inner,
-            head_cy + inner,
-            outline=outline,
-            fill=bg,
-        )
-        notch_pts = [
-            (x + inner, head_cy),
-            (x + head_r, head_cy - (head_r - inner)),
-            (x + head_r, head_cy + (head_r - inner)),
-        ]
-        self.canvas.create_polygon(
-            [c for pt in notch_pts for c in pt], outline=outline, fill=bg
-        )
-        handle_top = head_cy + inner
-        handle_width = head_r * 0.5
-        handle_left = x - handle_width / 2
-        handle_right = x + handle_width / 2
-        handle_bottom = y + r
-        handle_pts = [
-            (handle_left, handle_top),
-            (handle_right, handle_top),
-            (handle_right, handle_bottom),
-            (handle_left, handle_bottom),
-        ]
-        self.drawing_helper._fill_gradient_polygon(
-            self.canvas, handle_pts, color
-        )
-        self.canvas.create_rectangle(
-            handle_left,
-            handle_top,
-            handle_right,
-            handle_bottom,
-            outline=outline,
-            fill="",
-        )
-        cap_h = handle_width * 0.6
-        self.canvas.create_rectangle(
-            handle_left,
-            handle_bottom - cap_h,
-            handle_right,
-            handle_bottom,
-            outline=outline,
-            fill=bg,
+        """Draw *shape* centered at ``(x, y)`` with radius *r* using the icon image."""
+        size = max(1, int(r * 2))
+        cache = getattr(self, "_scaled_icons", {})
+        key = (shape, color, size)
+        icon = cache.get(key)
+        if icon is None:
+            base = self._create_icon(shape, color)
+            if size != 16:
+                icon = base.zoom(size, size).subsample(16, 16)
+            else:
+                icon = base
+            cache[key] = icon
+            self._scaled_icons = cache
+        self.canvas.create_image(
+            x - size / 2, y - size / 2, anchor="nw", image=icon
         )
 
     def _draw_gear(
@@ -7438,7 +7391,7 @@ class SysMLDiagramWindow(tk.Frame):
             self._draw_gear(x, y, r, color, outline)
         elif obj.obj_type == "Operation":
             r = min(w, h)
-            self._draw_wrench(x, y, r, color, outline)
+            self._draw_icon_shape("wrench", x, y, r, color)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
