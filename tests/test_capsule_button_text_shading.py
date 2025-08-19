@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from gui.capsule_button import CapsuleButton
 
 
-def test_capsule_button_renders_text_shadow():
+def test_capsule_button_renders_text_shading():
     try:
         root = tk.Tk()
     except tk.TclError:
