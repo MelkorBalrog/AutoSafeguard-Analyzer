@@ -145,17 +145,19 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        self._shine_items = []
+        self._shade_items = []
         self._draw_highlight(w, h)
         self._draw_shade(w, h)
         self._draw_content(w, h)
         self._draw_border(w, h)
 
     def _draw_highlight(self, w: int, h: int) -> None:
-        """Draw shiny highlight and diffused circles on the capsule ends."""
+        """Draw shiny highlight, diffused circles and bottom shade."""
         r = self._radius
         color = self._current_color
         top_highlight = _lighten(color, 1.4)
-        self._shine_items = [
+        self._shine_items.append(
             self.create_oval(
                 1,
                 1,
@@ -165,7 +167,19 @@ class CapsuleButton(tk.Canvas):
                 fill=top_highlight,
                 stipple="gray25",
             )
-        ]
+        )
+        bottom_shade = _darken(color, 0.9)
+        self._shade_items.append(
+            self.create_oval(
+                1,
+                h // 2,
+                w - 1,
+                h - 1,
+                outline="",
+                fill=bottom_shade,
+                stipple="gray50",
+            )
+        )
         small_r = max(r // 3, 2)
         centers = [(r // 2, h // 2), (w - r // 2, h // 2)]
         for cx, cy in centers:
