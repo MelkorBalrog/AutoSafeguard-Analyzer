@@ -2748,7 +2748,6 @@ class AutoMLApp:
         # --- Tools Section ---
         self.tools_group = ttk.LabelFrame(self.analysis_tab, text="Tools")
         self.tools_group.pack(fill=tk.BOTH, expand=False, pady=5)
-        self.tools_nb = ttk.Notebook(self.tools_group)
         top = ttk.Frame(self.tools_group)
         top.pack(side=tk.TOP, fill=tk.X)
         ttk.Label(top, text="Lifecycle Phase:").pack(side=tk.LEFT)
@@ -2758,7 +2757,20 @@ class AutoMLApp:
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
-        self.tools_nb.pack(fill=tk.BOTH, expand=True)
+        # Notebook for various tools with navigation buttons
+        self.tools_frame = ttk.Frame(self.tools_group)
+        self.tools_nb = ttk.Notebook(self.tools_frame)
+        self._tool_tab_titles: dict[str, str] = {}
+        self._tool_left_btn = ttk.Button(
+            self.tools_frame, text="<", width=2, command=self._select_prev_tool_tab
+        )
+        self._tool_right_btn = ttk.Button(
+            self.tools_frame, text=">", width=2, command=self._select_next_tool_tab
+        )
+        self._tool_left_btn.pack(side=tk.LEFT, fill=tk.Y)
+        self._tool_right_btn.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tools_nb.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.tools_frame.pack(fill=tk.BOTH, expand=True)
 
         # Properties tab for displaying metadata
         prop_frame = ttk.Frame(self.tools_nb)
@@ -2782,7 +2794,8 @@ class AutoMLApp:
         self.prop_view.bind("<Map>", self._resize_prop_columns)
         prop_frame.bind("<Configure>", self._resize_prop_columns)
         self.root.after(0, self._resize_prop_columns)
-        self.tools_nb.add(prop_frame, text="Properties")
+        self.tools_nb.add(prop_frame, text=self._truncate_tab_title("Properties"))
+        self._tool_tab_titles[self.tools_nb.tabs()[-1]] = "Properties"
         self._resize_prop_columns()
 
         # Tooltip helper for tabs (text may be clipped)
@@ -9581,7 +9594,10 @@ class AutoMLApp:
 
     def _add_tool_category(self, cat: str, names: list[str]) -> None:
         frame = ttk.Frame(self.tools_nb)
-        self.tools_nb.add(frame, text=cat)
+        display = self._truncate_tab_title(cat)
+        self.tools_nb.add(frame, text=display)
+        tab_id = self.tools_nb.tabs()[-1]
+        self._tool_tab_titles[tab_id] = cat
         lb = tk.Listbox(frame, height=10)
         vsb = ttk.Scrollbar(frame, orient="vertical", command=lb.yview)
         lb.configure(yscrollcommand=vsb.set)
@@ -9780,7 +9796,8 @@ class AutoMLApp:
         except tk.TclError:
             self._tools_tip.hide()
             return
-        text = self.tools_nb.tab(idx, "text")
+        tab_id = self.tools_nb.tabs()[idx]
+        text = self._tool_tab_titles.get(tab_id, self.tools_nb.tab(tab_id, "text"))
         bbox = self.tools_nb.bbox(idx)
         if not bbox:
             self._tools_tip.hide()
@@ -17564,6 +17581,32 @@ class AutoMLApp:
             return
         if index < len(tabs) - 1:
             self.doc_nb.select(tabs[index + 1])
+
+    def _select_prev_tool_tab(self) -> None:
+        """Select the tools tab to the left of the current tab."""
+        tabs = self.tools_nb.tabs()
+        if not tabs:
+            return
+        current = self.tools_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index > 0:
+            self.tools_nb.select(tabs[index - 1])
+
+    def _select_next_tool_tab(self) -> None:
+        """Select the tools tab to the right of the current tab."""
+        tabs = self.tools_nb.tabs()
+        if not tabs:
+            return
+        current = self.tools_nb.select()
+        try:
+            index = tabs.index(current)
+        except ValueError:
+            return
+        if index < len(tabs) - 1:
+            self.tools_nb.select(tabs[index + 1])
 
     def _new_tab(self, title: str) -> ttk.Frame:
         """Create or select a tab in the document notebook."""
