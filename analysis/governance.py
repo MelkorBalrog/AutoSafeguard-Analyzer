@@ -21,7 +21,10 @@ _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
 # entry defines the verb to use, whether the destination element acts as a
 # constraint instead of an object, and an optional default subject.  The
 # resulting requirement follows the ISO/IEC/IEEE 29148 pattern
-# ``[CND] <SUB> shall <ACT> [OBJ] [CON].``
+# [CND] <span style="color:#2e86c1;font-weight:bold">&lt;subject&gt;</span> shall
+# <span style="color:#28b463;font-weight:bold">&lt;action&gt;</span>
+# [<span style="color:#f39c12;font-weight:bold">&lt;object&gt;</span>]
+# [<span style="color:#c0392b;font-weight:bold">&lt;constraint&gt;</span>].
 _REQUIREMENT_RULES: dict[str, dict[str, str | bool]] = _CONFIG.get(
     "requirement_rules", _CONFIG.get("relationship_rules", {})
 )
@@ -146,7 +149,10 @@ class GeneratedRequirement:
     """Structured requirement composed from diagram elements.
 
     The dataclass exposes the individual requirement components (condition,
-    subject, action, object and constraint) alongside the requirement
+    <span style="color:#2e86c1;font-weight:bold">&lt;subject&gt;</span>,
+    <span style="color:#28b463;font-weight:bold">&lt;action&gt;</span>,
+    <span style="color:#f39c12;font-weight:bold">&lt;object&gt;</span> and
+    <span style="color:#c0392b;font-weight:bold">&lt;constraint&gt;</span>) alongside the requirement
     category.  Each field except ``action`` is optional and therefore given a
     default value.  This ordering avoids the ``TypeError`` raised when optional
     fields precede required ones in a :func:`dataclass` definition and mirrors

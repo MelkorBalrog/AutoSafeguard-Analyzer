@@ -3,6 +3,7 @@ from tkinter import ttk
 from pathlib import Path
 import json
 import textwrap
+import re
 from config import (
     load_diagram_rules,
     validate_diagram_rules,
@@ -10,6 +11,54 @@ from config import (
     validate_requirement_patterns,
 )
 from gui import messagebox
+
+
+PLACEHOLDER_COLORS = {
+    "subject": "#2e86c1",
+    "action": "#27ae60",
+    "object": "#d35400",
+    "constraint": "#8e44ad",
+}
+
+
+def _extract_action(trigger: str) -> str:
+    """Return the action name from a trigger string."""
+    match = re.search(r"\[([^\]]+)\]", trigger)
+    return match.group(1) if match else ""
+
+
+def highlight_placeholders(widget: tk.Text, action_word: str = "") -> None:
+    """Apply color and bold styling to requirement placeholders in ``widget``.
+
+    Parameters
+    ----------
+    widget:
+        Text widget containing the template.
+    action_word:
+        Optional action verb to highlight when no ``<action>`` placeholder is
+        present.
+    """
+
+    text = widget.get("1.0", "end-1c")
+    for tag, color in PLACEHOLDER_COLORS.items():
+        widget.tag_remove(tag, "1.0", "end")
+        widget.tag_configure(tag, foreground=color, font=(None, -12, "bold"))
+        for m in re.finditer(rf"<{tag}[^>]*>", text):
+            start = f"1.0+{m.start()}c"
+            end = f"1.0+{m.end()}c"
+            widget.tag_add(tag, start, end)
+
+    if action_word and "<action" not in text:
+        widget.tag_remove("action_word", "1.0", "end")
+        widget.tag_configure(
+            "action_word",
+            foreground=PLACEHOLDER_COLORS["action"],
+            font=(None, -12, "bold"),
+        )
+        for m in re.finditer(re.escape(action_word), text, re.IGNORECASE):
+            start = f"1.0+{m.start()}c"
+            end = f"1.0+{m.end()}c"
+            widget.tag_add("action_word", start, end)
 
 
 class PatternConfig(tk.Toplevel):
@@ -25,11 +74,14 @@ class PatternConfig(tk.Toplevel):
 
         self.pid_var = tk.StringVar(value=pattern.get("Pattern ID", ""))
         self.trigger_var = tk.StringVar(value=pattern.get("Trigger", ""))
-        self.template_var = tk.StringVar(value=pattern.get("Template", ""))
+        tmpl = pattern.get("Template", "")
+        self.template_text = tk.Text(self, height=3, wrap="word")
+        self.template_text.insert("1.0", tmpl)
         self.vars_var = tk.StringVar(
             value=", ".join(pattern.get("Variables", []))
         )
         self.notes_var = tk.StringVar(value=pattern.get("Notes", ""))
+        self._highlight_template(self.template_text, pattern.get("Trigger", ""))
 
         row = 0
         tk.Label(self, text="Pattern ID:").grid(
@@ -49,10 +101,12 @@ class PatternConfig(tk.Toplevel):
         row += 1
 
         tk.Label(self, text="Template:").grid(
-            row=row, column=0, sticky="e", padx=4, pady=4
+            row=row, column=0, sticky="ne", padx=4, pady=4
         )
-        ttk.Entry(self, textvariable=self.template_var).grid(
-            row=row, column=1, sticky="ew", padx=4, pady=4
+        self.template_text.grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+        self.template_text.bind(
+            "<KeyRelease>",
+            lambda _e: self._highlight_template(self.template_text, self.trigger_var.get()),
         )
         row += 1
 
@@ -88,13 +142,17 @@ class PatternConfig(tk.Toplevel):
         self.result = {
             "Pattern ID": self.pid_var.get().strip(),
             "Trigger": self.trigger_var.get().strip(),
-            "Template": self.template_var.get().strip(),
+            "Template": self.template_text.get("1.0", "end-1c").strip(),
             "Variables": [
                 v.strip() for v in self.vars_var.get().split(",") if v.strip()
             ],
             "Notes": self.notes_var.get().strip(),
         }
         self.destroy()
+
+    def _highlight_template(self, widget: tk.Text, trigger: str) -> None:
+        action = _extract_action(trigger)
+        highlight_placeholders(widget, action)
 
 
 class RuleConfig(tk.Toplevel):
@@ -112,7 +170,9 @@ class RuleConfig(tk.Toplevel):
         self.action_var = tk.StringVar(value=rule.get("action", ""))
         self.subject_var = tk.StringVar(value=rule.get("subject", ""))
         self.targets_var = tk.IntVar(value=rule.get("targets", 1))
-        self.template_var = tk.StringVar(value=rule.get("template", ""))
+        tmpl = rule.get("template", "")
+        self.template_text = tk.Text(self, height=3, wrap="word")
+        self.template_text.insert("1.0", tmpl)
         self.vars_var = tk.StringVar(
             value=", ".join(rule.get("variables", []))
         )
@@ -144,11 +204,14 @@ class RuleConfig(tk.Toplevel):
         row += 1
 
         tk.Label(self, text="Template:").grid(
-            row=row, column=0, sticky="e", padx=4, pady=4
+            row=row, column=0, sticky="ne", padx=4, pady=4
         )
-        ttk.Entry(self, textvariable=self.template_var).grid(
-            row=row, column=1, sticky="ew", padx=4, pady=4
+        self.template_text.grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+        self.template_text.bind(
+            "<KeyRelease>",
+            lambda _e: highlight_placeholders(self.template_text, self.action_var.get()),
         )
+        highlight_placeholders(self.template_text, self.action_var.get())
         row += 1
 
         tk.Label(self, text="Variables:").grid(
@@ -194,7 +257,7 @@ class RuleConfig(tk.Toplevel):
         subj = self.subject_var.get().strip()
         if subj:
             res["subject"] = subj
-        tmpl = self.template_var.get().strip()
+        tmpl = self.template_text.get("1.0", "end-1c").strip()
         if tmpl:
             res["template"] = tmpl
             vars_ = [v.strip() for v in self.vars_var.get().split(",") if v.strip()]
@@ -524,7 +587,11 @@ class RequirementPatternsEditor(tk.Frame):
         max_lines = 1
         for idx, pat in enumerate(self.data):
             trig = textwrap.fill(pat.get("Trigger", ""), 40)
-            tmpl = textwrap.fill(pat.get("Template", ""), 40)
+            tmpl_raw = pat.get("Template", "")
+            act = _extract_action(pat.get("Trigger", ""))
+            if act and act in tmpl_raw:
+                tmpl_raw = tmpl_raw.replace(act, f"<action : {act}>")
+            tmpl = textwrap.fill(tmpl_raw, 40)
             lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
             max_lines = max(max_lines, lines)
             wrapped.append((idx, trig, tmpl))
@@ -595,6 +662,10 @@ class RequirementPatternsEditor(tk.Frame):
     def _populate_rule_tree(self):
         self.rule_tree.delete(*self.rule_tree.get_children(""))
         for idx, (label, info) in enumerate(sorted(self.req_rules.items()), 1):
+            tmpl = info.get("template", "")
+            act = info.get("action", "")
+            if act and act in tmpl:
+                tmpl = tmpl.replace(act, f"<action : {act}>")
             self.rule_tree.insert(
                 "",
                 "end",
@@ -602,9 +673,9 @@ class RequirementPatternsEditor(tk.Frame):
                 values=(
                     idx,
                     label,
-                    info.get("action", ""),
+                    act,
                     info.get("subject", ""),
-                    info.get("template", ""),
+                    tmpl,
                     info.get("targets", 1),
                     "yes" if info.get("constraint") else "",
                 ),
