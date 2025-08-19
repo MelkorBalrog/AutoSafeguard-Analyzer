@@ -23,3 +23,18 @@ def test_log_window_expands_to_fit_message():
     assert logger.log_frame.winfo_height() == expected_height
     assert logger.log_frame.winfo_height() > default_height
     root.destroy()
+
+
+def test_log_window_shrinks_to_message_lines():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    logger.init_log_window(root)
+    short_message = "short"
+    messagebox.showinfo("Title", short_message)
+    root.update_idletasks()
+    expected_height = logger._line_height
+    assert logger.log_frame.winfo_height() == expected_height
+    assert expected_height < logger._default_height
+    root.destroy()
