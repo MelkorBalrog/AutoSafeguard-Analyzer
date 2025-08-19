@@ -14,7 +14,6 @@ from .capsule_button import CapsuleButton  # noqa: F401
 ttk.Button = CapsuleButton  # type: ignore[assignment]
 tk.Button = CapsuleButton  # type: ignore[assignment]
 
-
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
 

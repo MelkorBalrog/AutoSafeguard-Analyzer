@@ -14,9 +14,9 @@ def test_toggle_log_area():
     except tk.TclError:
         pytest.skip("Tk not available")
     app = AutoMLApp(root)
-    assert app.log_frame.winfo_manager() == "pack"
-    app.toggle_logs()
     assert app.log_frame.winfo_manager() == ""
     app.toggle_logs()
     assert app.log_frame.winfo_manager() == "pack"
+    app.toggle_logs()
+    assert app.log_frame.winfo_manager() == ""
     root.destroy()
