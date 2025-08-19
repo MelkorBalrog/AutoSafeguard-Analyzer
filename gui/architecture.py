@@ -7041,6 +7041,63 @@ class SysMLDiagramWindow(tk.Frame):
             fill=StyleManager.get_instance().get_canvas_color(),
         )
 
+    def _draw_wrench(
+        self, x: float, y: float, r: float, color: str, outline: str
+    ) -> None:
+        """Draw a wrench centered at (*x*, *y*) with radius *r*.
+
+        The 16×16 pixel icon from :mod:`gui.icon_factory` serves as the template
+        but the head is rendered as a squared polygon and the entire wrench is
+        drawn using polygon primitives to avoid overlapping shapes.
+        """
+
+        size = 16
+        scale = (2 * r) / size
+        mid = size / 2
+        head_cy = 5
+        head_r = 5
+        inner = head_r - 2
+        notch_start = mid + 1
+
+        bg = StyleManager.get_instance().get_canvas_color()
+
+        def _pt(px: float, py: float) -> tuple[float, float]:
+            return x - r + px * scale, y - r + py * scale
+
+        # Single polygon describing the outer contour (squared head + handle)
+        outer = [
+            _pt(mid - 1, size - 2),  # bottom-left of handle
+            _pt(mid - 1, head_cy + head_r),
+            _pt(mid - head_r, head_cy + head_r),
+            _pt(mid - head_r, head_cy - head_r),
+            _pt(mid + head_r, head_cy - head_r),
+            _pt(notch_start, head_cy - 1),
+            _pt(notch_start, head_cy + 1),
+            _pt(mid + head_r, head_cy + head_r),
+            _pt(mid + 1, head_cy + head_r),
+            _pt(mid + 1, size - 2),
+        ]
+        self.canvas.create_polygon(
+            [coord for pt in outer for coord in pt],
+            fill=color,
+            outline=outline,
+        )
+
+        # Inner opening
+        hole = [
+            _pt(mid - inner, head_cy + inner),
+            _pt(mid - inner, head_cy - inner),
+            _pt(mid + inner, head_cy - inner),
+            _pt(notch_start, head_cy - 1),
+            _pt(notch_start, head_cy + 1),
+            _pt(mid + inner, head_cy + inner),
+        ]
+        self.canvas.create_polygon(
+            [coord for pt in hole for coord in pt],
+            fill=bg,
+            outline=outline,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7398,7 +7455,7 @@ class SysMLDiagramWindow(tk.Frame):
             self._draw_gear(x, y, r, color, outline)
         elif obj.obj_type == "Operation":
             r = min(w, h)
-            self._draw_icon_shape("wrench", x, y, r, color)
+            self._draw_wrench(x, y, r, color, outline)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
