@@ -8,7 +8,10 @@ decision is needed.
 """
 
 from tkinter import TclError
-import tkinter.messagebox as tk_messagebox
+import tkinter as tk
+from tkinter import ttk
+
+from .mac_button_style import apply_purplish_button_style
 
 from . import logger
 
@@ -43,11 +46,58 @@ def showerror(title=None, message=None, **options):
     return _log_and_return(title, message, "ERROR")
 
 
+def _create_dialog(
+    title: str | None,
+    message: str | None,
+    buttons: list[tuple[str, object]],
+) -> object:
+    """Create a simple ``ttk`` dialog returning the associated button value."""
+
+    root = tk._default_root
+    temp_root = False
+    if root is None:
+        root = tk.Tk()
+        root.withdraw()
+        temp_root = True
+
+    dialog = tk.Toplevel(root)
+    dialog.title(title or "")
+    dialog.resizable(False, False)
+    dialog.transient(root)
+    dialog.grab_set()
+
+    apply_purplish_button_style()
+
+    frame = ttk.Frame(dialog, padding=10)
+    frame.pack(fill="both", expand=True)
+    ttk.Label(frame, text=message or "").pack(pady=(0, 10))
+
+    result: object = None
+
+    def _set(value: object) -> None:
+        nonlocal result
+        result = value
+        dialog.destroy()
+
+    for text, value in buttons:
+        ttk.Button(
+            frame, text=text, style="Purple.TButton", command=lambda v=value: _set(v)
+        ).pack(side="left", padx=5)
+
+    dialog.protocol("WM_DELETE_WINDOW", lambda: _set(None))
+    dialog.wait_window()
+    if temp_root:
+        root.destroy()
+    return result
+
+
 def askyesno(title=None, message=None, **options):
     lines = logger.log_message(f"{title}: {message}", "ASK")
     logger.show_temporarily(lines=lines)
     try:
-        return tk_messagebox.askyesno(title, message, **options)
+        return bool(
+            _create_dialog(title, message, [("Yes", True), ("No", False)])
+        )
     except (TclError, RuntimeError):
         return False
 
@@ -56,7 +106,9 @@ def askyesnocancel(title=None, message=None, **options):
     lines = logger.log_message(f"{title}: {message}", "ASK")
     logger.show_temporarily(lines=lines)
     try:
-        return tk_messagebox.askyesnocancel(title, message, **options)
+        return _create_dialog(
+            title, message, [("Yes", True), ("No", False), ("Cancel", None)]
+        )
     except (TclError, RuntimeError):
         return None
 
@@ -65,6 +117,8 @@ def askokcancel(title=None, message=None, **options):
     lines = logger.log_message(f"{title}: {message}", "ASK")
     logger.show_temporarily(lines=lines)
     try:
-        return tk_messagebox.askokcancel(title, message, **options)
+        return bool(
+            _create_dialog(title, message, [("OK", True), ("Cancel", False)])
+        )
     except (TclError, RuntimeError):
         return False
