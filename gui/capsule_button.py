@@ -121,7 +121,7 @@ class CapsuleButton(tk.Canvas):
         # still tracked to provide a subtle sheen without duplicating content.
         self._image_item: Optional[int] = None
         self._text_highlight_item: Optional[int] = None
-        self._icon_highlight_item: Optional[int] = None
+        # Icon highlight removed to avoid rectangular shading around icons
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -259,12 +259,11 @@ class CapsuleButton(tk.Canvas):
         """Render optional image and text without drop shadows."""
         cx, cy = w // 2, h // 2
         self._text_item = None
-        # Shadow items were removed to avoid doubled rendering of
-        # text and icons.  Only the main content and optional highlight items
-        # are recreated when drawing the button.
+        # Shadow items were removed to avoid doubled rendering.
+        # Only the main content and optional text highlight are
+        # recreated when drawing the button.
         self._image_item = None
         self._text_highlight_item = None
-        self._icon_highlight_item = None
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)

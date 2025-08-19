@@ -22,7 +22,7 @@ def test_text_highlight_without_shadow():
     root.destroy()
 
 
-def test_icon_highlight_without_shadow():
+def test_icon_without_highlight_or_shadow():
     try:
         root = tk.Tk()
     except tk.TclError:
@@ -31,7 +31,7 @@ def test_icon_highlight_without_shadow():
     btn = CapsuleButton(root, image=img)
     btn.pack()
     root.update_idletasks()
-    assert getattr(btn, "_icon_highlight_item", None) is not None
+    assert not hasattr(btn, "_icon_highlight_item")
     assert not hasattr(btn, "_icon_shadow_item")
     root.destroy()
 
