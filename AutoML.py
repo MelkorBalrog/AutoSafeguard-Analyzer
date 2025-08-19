@@ -231,6 +231,7 @@ from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger, add_treeview_scrollbars
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
+from gui.splash_screen import show_splash
 from gui.review_toolbox import (
     ReviewToolbox,
     ReviewData,
@@ -21634,6 +21635,7 @@ def main():
     root.minsize(1200, 700)
     # Hide the main window while prompting for user info
     root.withdraw()
+    show_splash(root)
     users = load_all_users()
     last_name, last_email = load_user_config()
     if users:
