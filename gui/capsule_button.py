@@ -31,11 +31,13 @@ def _darken(color: str, factor: float = 0.8) -> str:
 
 
 class CapsuleButton(tk.Canvas):
-    """A capsule-shaped button that lightens on mouse hover.
+    """A capsule-shaped button that lightens on hover and appears recessed.
 
-    The button is drawn using canvas primitives so it does not rely on platform
-    specific themes.  When the mouse cursor enters the button area the fill
-    color is lightened to mimic the highlight effect of macOS buttons.
+    The widget renders a rounded button using canvas primitives so it does not
+    rely on platform specific themes.  A subtle dark/light border is drawn
+    around the capsule to give the impression that the button sits inside a
+    hole matching its shape.  When the mouse cursor enters the button area the
+    fill colour is lightened to mimic a highlight effect.
     """
 
     def __init__(
@@ -85,6 +87,10 @@ class CapsuleButton(tk.Canvas):
         self._radius = height // 2
         self._shape_items: list[int] = []
         self._shine_items: list[int] = []
+        # Border items are split into dark and light segments to create a
+        # recessed "hole" effect around the button outline.
+        self._border_dark: list[int] = []
+        self._border_light: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -136,6 +142,25 @@ class CapsuleButton(tk.Canvas):
             )
         ]
         self._text_item = self.create_text(w // 2, h // 2, text=self._text)
+        self._draw_border(w, h)
+
+    def _draw_border(self, w: int, h: int) -> None:
+        """Draw dark/light border to mimic an inset capsule."""
+        r = self._radius
+        dark = _darken(self._current_color, 0.8)
+        light = _lighten(self._current_color, 1.2)
+        # Dark top/left edges
+        self._border_dark = [
+            self.create_arc((0, 0, 2 * r, h), start=90, extent=180, style=tk.ARC, outline=dark, width=2),
+            self.create_line(r, 0, w - r, 0, fill=dark, width=2),
+            self.create_line(0, r, 0, h - r, fill=dark, width=2),
+        ]
+        # Light bottom/right edges
+        self._border_light = [
+            self.create_arc((w - 2 * r, 0, w, h), start=-90, extent=180, style=tk.ARC, outline=light, width=2),
+            self.create_line(r, h, w - r, h, fill=light, width=2),
+            self.create_line(w, r, w, h - r, fill=light, width=2),
+        ]
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
@@ -143,7 +168,18 @@ class CapsuleButton(tk.Canvas):
         highlight = _lighten(color, 1.4)
         for item in self._shine_items:
             self.itemconfigure(item, fill=highlight)
+        dark = _darken(color, 0.8)
+        light = _lighten(color, 1.2)
+        self._apply_border_color(self._border_dark, dark)
+        self._apply_border_color(self._border_light, light)
         self._current_color = color
+
+    def _apply_border_color(self, items: list[int], color: str) -> None:
+        for item in items:
+            if self.type(item) == "line":
+                self.itemconfigure(item, fill=color)
+            else:
+                self.itemconfigure(item, outline=color)
 
     def _on_enter(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
