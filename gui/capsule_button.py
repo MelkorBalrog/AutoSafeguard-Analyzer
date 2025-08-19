@@ -41,14 +41,17 @@ class CapsuleButton(tk.Canvas):
         hover_bg: Optional[str] = None,
         **kwargs,
     ) -> None:
-        super().__init__(
-            master,
-            width=width,
-            height=height,
-            highlightthickness=0,
-            bg=master.cget("background"),
-            **kwargs,
-        )
+        init_kwargs = {
+            "width": width,
+            "height": height,
+            "highlightthickness": 0,
+        }
+        try:
+            init_kwargs["bg"] = master.cget("background")
+        except tk.TclError:
+            pass
+        init_kwargs.update(kwargs)
+        super().__init__(master, **init_kwargs)
         self._command = command
         self._text = text
         self._normal_color = bg
