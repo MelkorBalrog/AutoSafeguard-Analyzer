@@ -30,11 +30,13 @@ def test_askokcancel_uses_custom_dialog(monkeypatch):
 
 
 def test_create_dialog_uses_purple_button_style(monkeypatch):
-    styles = []
+    colors = []
 
     class DummyButton:
         def __init__(self, master, **kwargs):
-            styles.append(kwargs.get("style"))
+            kwargs.setdefault("bg", "#f3eaff")
+            kwargs.setdefault("hover_bg", "#e6d9ff")
+            colors.append((kwargs.get("bg"), kwargs.get("hover_bg")))
 
         def pack(self, *a, **k):
             pass
@@ -69,22 +71,9 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
         def wait_window(self):
             pass
 
-    monkeypatch.setattr(mb.ttk, "Button", DummyButton)
+    monkeypatch.setattr(mb, "PurpleButton", DummyButton)
     monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: DummyFrame())
     monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: DummyLabel())
-    monkeypatch.setattr(
-        mb.ttk,
-        "Style",
-        lambda *a, **k: type(
-            "S",
-            (),
-            {
-                "configure": lambda *a, **k: None,
-                "map": lambda *a, **k: None,
-                "theme_use": lambda *a, **k: None,
-            },
-        )(),
-    )
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.tk, "_default_root", None)
     monkeypatch.setattr(
@@ -94,7 +83,7 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     )
 
     mb._create_dialog("Title", "Message", [("OK", True)])
-    assert styles == ["Purple.TButton"]
+    assert colors == [("#f3eaff", "#e6d9ff")]
 
 
 def test_create_dialog_keeps_existing_root(monkeypatch):
@@ -107,20 +96,6 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
 
     dummy_root = DummyRoot()
     monkeypatch.setattr(mb.tk, "_default_root", dummy_root)
-    monkeypatch.setattr(mb, "apply_purplish_button_style", lambda *a, **k: None)
-    monkeypatch.setattr(
-        mb.ttk,
-        "Style",
-        lambda *a, **k: type(
-            "S",
-            (),
-            {
-                "configure": lambda *a, **k: None,
-                "map": lambda *a, **k: None,
-                "theme_use": lambda *a, **k: None,
-            },
-        )(),
-    )
 
     class DummyDialog:
         def __init__(self, root):
@@ -147,7 +122,7 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: type("F", (), {"pack": lambda *a, **k: None})())
     monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: type("L", (), {"pack": lambda *a, **k: None})())
-    monkeypatch.setattr(mb.ttk, "Button", lambda *a, **k: type("B", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr(mb, "PurpleButton", lambda *a, **k: type("B", (), {"pack": lambda *a, **k: None})())
 
     mb._create_dialog("Title", "Message", [("OK", True)])
     assert dummy_root.withdrawn is False

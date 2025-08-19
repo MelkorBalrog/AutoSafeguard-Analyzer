@@ -43,9 +43,13 @@ def test_governance_core_has_add_buttons(monkeypatch):
         def destroy(self):
             pass
 
+    class DummyTranslucidButton(DummyButton):
+        pass
+
     monkeypatch.setattr(architecture.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(architecture.ttk, "LabelFrame", DummyFrame)
     monkeypatch.setattr(architecture.ttk, "Button", DummyButton)
+    monkeypatch.setattr(architecture, "TranslucidButton", DummyTranslucidButton)
 
     win = GovernanceDiagramWindow.__new__(GovernanceDiagramWindow)
     toolbox = DummyFrame()
@@ -63,15 +67,21 @@ def test_governance_core_has_add_buttons(monkeypatch):
     core_frames = win._toolbox_frames["Governance Core"]
     assert win.rel_frame not in core_frames
     actions = core_frames[1]
-    labels = [child.text for child in getattr(actions, "children", [])]
+    buttons = getattr(actions, "children", [])
+    labels = [child.text for child in buttons]
     assert {
         "Add Work Product",
         "Add Generic Work Product",
         "Add Lifecycle Phase",
     } <= set(labels)
     assert "Add Process Area" not in labels
+    assert all(isinstance(child, DummyTranslucidButton) for child in buttons)
 
-    rel_sections = [child for child in getattr(core_frames[-1], "children", []) if getattr(child, "text", "") == "Relationships (relationships)"]
+    rel_sections = [
+        child
+        for child in getattr(core_frames[-1], "children", [])
+        if getattr(child, "text", "") == "Relationships"
+    ]
     assert len(rel_sections) == 1
     rel_labels = [child.text for child in getattr(rel_sections[0], "children", [])]
     assert len(rel_labels) == len(set(rel_labels))
