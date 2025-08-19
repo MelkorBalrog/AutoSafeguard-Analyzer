@@ -76,7 +76,7 @@ def init_log_window(root, height=7, dark_mode: bool = True):
         background=bg,
         foreground=fg,
         insertbackground=fg,
-        yscrollcommand=lambda *args: [scrollbar.set(*args), _line_widget.yview(*args)],
+        yscrollcommand=lambda first, last: [scrollbar.set(first, last), _line_widget.yview_moveto(first)],
     )
     log_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.config(command=lambda *args: [log_widget.yview(*args), _line_widget.yview(*args)])
