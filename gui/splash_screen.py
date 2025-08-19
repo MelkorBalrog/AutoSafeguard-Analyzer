@@ -67,13 +67,13 @@ class SplashScreen(tk.Toplevel):
             fill="white",
         )
 
-        # Version and author info at bottom right
+        # Version and author info at top right
         info_text = f"v{version}\n{author}\n{email}\n{linkedin}"
         self.canvas.create_text(
             self.canvas_size - 10,
-            self.canvas_size - 10,
+            10,
             text=info_text,
-            anchor="se",
+            anchor="ne",
             justify="right",
             font=("Helvetica", 9),
             fill="white",

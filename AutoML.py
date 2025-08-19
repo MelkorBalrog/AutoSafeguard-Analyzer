@@ -450,10 +450,9 @@ def get_version() -> str:
 VERSION = get_version()
 
 # Contact information for splash screen
-AUTHOR = "Your Name"
-AUTHOR_EMAIL = "email@example.com"
-AUTHOR_LINKEDIN = "https://www.linkedin.com/in/yourprofile"
-
+AUTHOR = "Miguel Marina"
+AUTHOR_EMAIL = "karel.capek.robotics@gmail.com"
+AUTHOR_LINKEDIN = "https://www.linkedin.com/in/progman32/"
 
 class UserInfoDialog(simpledialog.Dialog):
     """Prompt for the user's name and email."""
