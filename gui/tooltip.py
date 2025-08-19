@@ -23,7 +23,7 @@ class ToolTip:
         self._unschedule()
         self.id = self.widget.after(self.delay, self._show)
 
-    def _show(self, x: int | None = None, y: int | None = None):
+    def _show(self, _x: int | None = None, _y: int | None = None):
         if self.tipwindow or not self.text:
             return
 
@@ -87,7 +87,7 @@ class ToolTip:
     def show(self, x: int | None = None, y: int | None = None):
         """Show the tooltip immediately."""
         self._hide()
-        self._show(x, y)
+        self._show()
 
     def hide(self):
         """Hide the tooltip immediately."""
