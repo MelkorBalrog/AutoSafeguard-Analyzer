@@ -35,7 +35,8 @@ pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
     --exclude-module scipy \
     --hidden-import=PIL.ImageTk \
-    --add-data "styles:styles" AutoML.py
+    --add-data "styles:styles" \
+    --add-data "AutoML.py:." launcher.py
 
 # Move the resulting executable to the bin directory
 mkdir -p bin

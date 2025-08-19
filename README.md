@@ -1525,24 +1525,38 @@ If sending fails with a connection error, the dialog will prompt again so you ca
 
 ## Dependencies
 
-AutoML relies on a few third‑party Python packages which must be installed
-before running the tool or creating the executable. Install them with pip:
+AutoML relies on a few third‑party Python packages. The new
+`launcher.py` script checks for these dependencies and installs any that are
+missing before handing off execution to `AutoML.py`. The required packages
+are:
+
+```
+Pillow openpyxl networkx matplotlib reportlab adjustText
+```
+
+You can still install them manually with pip if preferred:
 
 ```
 pip install pillow openpyxl networkx matplotlib reportlab adjustText
 ```
 
-PyInstaller requires these packages to be present so they are bundled into
-`AutoML.exe`. Missing dependencies, such as Pillow, will otherwise lead to
-`ModuleNotFoundError` when launching the built executable.
+When building the standalone executable with PyInstaller these packages must
+already be available so they can be bundled into `AutoML.exe`. Missing
+dependencies, such as Pillow, will otherwise lead to `ModuleNotFoundError`
+when launching the built executable.
 
-Note that Pillow provides the `PIL` module. The build scripts now verify
+Note that Pillow provides the `PIL` module. The build scripts verify
 dependencies with `python -m pip show` so the correct interpreter is used and
 pass `--hidden-import=PIL.ImageTk` to PyInstaller to ensure the module is
 bundled correctly.
 
 If double‑clicking `AutoML.py` closes immediately, launch it from a command
-prompt instead so any error messages remain visible.
+prompt instead so any error messages remain visible. Running `launcher.py`
+performs the dependency installation automatically:
+
+```
+python launcher.py
+```
 
 ## Diagram Styles
 
@@ -1557,7 +1571,8 @@ the desired style. All open diagrams update immediately.
 This project is licensed under the GNU General Public License version 3. See the [LICENSE](LICENSE) file for details.
 
 ## Building the Executable
-To create a standalone Windows executable with PyInstaller:
+To create a standalone Windows executable with PyInstaller that embeds the
+dependency-checking launcher:
 
 - **Linux/macOS:** run `bin/build_exe.sh`
 - **Windows:** run `bin\build_exe.bat`
@@ -1566,7 +1581,8 @@ You can invoke these scripts from any directory; they locate the repository
 root automatically. Both generate `AutoML.exe` inside the `bin` directory.
 After building you can launch the application directly or use
 `bin/run_automl.sh` on Unix-like systems or `bin\run_automl.bat` on
-Windows.
+Windows. The bundled executable executes `launcher.py` internally so it
+performs the same dependency installation when run from source.
 
 If a previous build failed and left an `AutoML.spec` file behind, the build
 scripts now delete it before running PyInstaller so your command line
