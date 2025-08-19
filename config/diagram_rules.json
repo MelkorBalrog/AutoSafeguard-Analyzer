@@ -159,7 +159,9 @@
         "Fleet": [],
         "Guideline": [],
         "Incident": [],
-        "Lifecycle Phase": [],
+        "Lifecycle Phase": [
+          "Work Product"
+        ],
         "Manufacturing Process": [],
         "Metric": [],
         "Model": [],
@@ -1645,7 +1647,9 @@
         "Fleet": [],
         "Guideline": [],
         "Incident": [],
-        "Lifecycle Phase": [],
+        "Lifecycle Phase": [
+          "Work Product"
+        ],
         "Manufacturing Process": [],
         "Metric": [],
         "Model": [],
