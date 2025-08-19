@@ -11,7 +11,7 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from .mac_button_style import apply_mac_button_style
+from .mac_button_style import apply_purplish_button_style
 
 from . import logger
 
@@ -53,8 +53,12 @@ def _create_dialog(
 ) -> object:
     """Create a simple ``ttk`` dialog returning the associated button value."""
 
-    root = tk._default_root or tk.Tk()
-    root.withdraw()
+    root = tk._default_root
+    temp_root = False
+    if root is None:
+        root = tk.Tk()
+        root.withdraw()
+        temp_root = True
 
     dialog = tk.Toplevel(root)
     dialog.title(title or "")
@@ -62,7 +66,7 @@ def _create_dialog(
     dialog.transient(root)
     dialog.grab_set()
 
-    apply_mac_button_style()
+    apply_purplish_button_style()
 
     frame = ttk.Frame(dialog, padding=10)
     frame.pack(fill="both", expand=True)
@@ -76,12 +80,14 @@ def _create_dialog(
         dialog.destroy()
 
     for text, value in buttons:
-        ttk.Button(frame, text=text, command=lambda v=value: _set(v)).pack(
-            side="left", padx=5
-        )
+        ttk.Button(
+            frame, text=text, style="Purple.TButton", command=lambda v=value: _set(v)
+        ).pack(side="left", padx=5)
 
     dialog.protocol("WM_DELETE_WINDOW", lambda: _set(None))
     dialog.wait_window()
+    if temp_root:
+        root.destroy()
     return result
 
 
