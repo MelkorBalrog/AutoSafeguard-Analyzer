@@ -3,7 +3,6 @@ from __future__ import annotations
 
 """Shared GUI helpers and widget customizations."""
 
-import tkinter as tk
 from tkinter import ttk
 
 
@@ -79,49 +78,3 @@ def _sortable_heading(self, column, option=None, **kw):
 
 
 ttk.Treeview.heading = _sortable_heading
-
-
-def _create_gradient_image(width: int = 200, height: int = 200) -> tk.PhotoImage:
-    """Return a vertical gradient image from light blue to white.
-
-    The bottom few pixels use a darker grey to create a subtle 3D effect.
-    """
-    top = (0xAD, 0xD8, 0xE6)  # light blue
-    img = tk.PhotoImage(width=width, height=height)
-    for y in range(height):
-        r = int(top[0] + (0xFF - top[0]) * y / (height - 1))
-        g = int(top[1] + (0xFF - top[1]) * y / (height - 1))
-        b = int(top[2] + (0xFF - top[2]) * y / (height - 1))
-        if y > height * 0.95:
-            r = g = b = 0xA0  # thin dark band at the bottom
-        img.put(f"#{r:02x}{g:02x}{b:02x}", to=(0, y, width, y + 1))
-    return img
-
-
-def apply_gradient_theme(root: tk.Misc) -> None:
-    """Apply a light-blue gradient theme to common ttk widgets."""
-    style = ttk.Style(root)
-    try:
-        style.theme_use("clam")
-    except tk.TclError:
-        pass
-    gradient = _create_gradient_image(400, 200)
-    style.element_create("Gradient", "image", gradient, border=0, sticky="nsew")
-    style.layout("TFrame", [("Gradient", {"sticky": "nsew"})])
-    style.layout(
-        "TButton",
-        [
-            (
-                "Gradient",
-                {
-                    "sticky": "nsew",
-                    "children": [
-                        ("Button.focus", {"sticky": "nsew", "children": [("Button.label", {"sticky": "nsew"})]})
-                    ],
-                },
-            )
-        ],
-    )
-    style.configure("TButton", padding=5, relief="flat")
-    # Keep a reference to prevent the image from being garbage collected
-    root._gradient_image = gradient
