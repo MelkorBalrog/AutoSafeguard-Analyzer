@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog
 from pathlib import Path
 import json
+import sys
 
 from gui import messagebox
 
@@ -14,12 +15,26 @@ class ReportTemplateManager(tk.Frame):
     contains ``"template"``.
     """
 
+    @staticmethod
+    def _default_templates_dir() -> Path:
+        """Return directory containing bundled report templates."""
+
+        base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+        return base / "config"
+
+    @staticmethod
+    def _user_templates_dir() -> Path:
+        """Return directory used for user-created templates."""
+
+        path = Path.home() / ".automl" / "templates"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def __init__(self, master, app, templates_dir: Path | None = None):
         super().__init__(master)
         self.app = app
-        self.templates_dir = Path(
-            templates_dir or Path(__file__).resolve().parents[1] / "config"
-        )
+        self.builtin_dir = Path(templates_dir or self._default_templates_dir())
+        self.user_dir = self._user_templates_dir()
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -43,11 +58,19 @@ class ReportTemplateManager(tk.Frame):
 
     # ------------------------------------------------------------------
     def _template_files(self) -> list[Path]:
-        return sorted(
-            p
-            for p in self.templates_dir.glob("*.json")
+        files = {
+            p.name: p
+            for p in self.builtin_dir.glob("*.json")
             if "template" in p.name.lower()
+        }
+        files.update(
+            {
+                p.name: p
+                for p in self.user_dir.glob("*.json")
+                if "template" in p.name.lower()
+            }
         )
+        return [files[name] for name in sorted(files)]
 
     def _refresh_list(self):
         self.listbox.delete(0, tk.END)
@@ -61,7 +84,7 @@ class ReportTemplateManager(tk.Frame):
             return
         if not name.lower().endswith("_template"):
             name = f"{name}_template"
-        path = self.templates_dir / f"{name}.json"
+        path = self.user_dir / f"{name}.json"
         if path.exists():
             messagebox.showerror("Template", "Template already exists")
             return
@@ -73,7 +96,11 @@ class ReportTemplateManager(tk.Frame):
         sel = self.listbox.curselection()
         if not sel:
             return None
-        return self.templates_dir / self.listbox.get(sel[0])
+        name = self.listbox.get(sel[0])
+        user_path = self.user_dir / name
+        if user_path.exists():
+            return user_path
+        return self.builtin_dir / name
 
     def _edit_template(self):  # pragma: no cover - GUI dialog interaction
         path = self._selected_path()
@@ -91,6 +118,9 @@ class ReportTemplateManager(tk.Frame):
     def _delete_template(self):  # pragma: no cover - GUI dialog interaction
         path = self._selected_path()
         if not path:
+            return
+        if path.parent != self.user_dir:
+            messagebox.showerror("Template", "Cannot delete bundled template")
             return
         if not messagebox.askyesno("Template", f"Delete {path.name}?"):
             return

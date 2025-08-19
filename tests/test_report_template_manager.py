@@ -33,11 +33,16 @@ class DummyListbox:
 
 
 def test_report_template_manager_lists_templates(tmp_path):
-    (tmp_path / "report_template.json").write_text("{}")
-    (tmp_path / "custom_template.json").write_text("{}")
-    (tmp_path / "diagram_rules.json").write_text("{}")
+    builtin = tmp_path / "builtin"
+    builtin.mkdir()
+    user = tmp_path / "user"
+    user.mkdir()
+    (builtin / "report_template.json").write_text("{}")
+    (user / "custom_template.json").write_text("{}")
+    (builtin / "diagram_rules.json").write_text("{}")
     mgr = object.__new__(ReportTemplateManager)
-    mgr.templates_dir = tmp_path
+    mgr.builtin_dir = builtin
+    mgr.user_dir = user
     mgr.listbox = DummyListbox()
     ReportTemplateManager._refresh_list(mgr)
     names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
@@ -47,13 +52,17 @@ def test_report_template_manager_lists_templates(tmp_path):
 
 
 def test_report_template_manager_add_delete(tmp_path, monkeypatch):
+    builtin = tmp_path / "builtin"
+    builtin.mkdir()
     mgr = object.__new__(ReportTemplateManager)
-    mgr.templates_dir = tmp_path
+    mgr.builtin_dir = builtin
+    mgr.user_dir = tmp_path / "user"
+    mgr.user_dir.mkdir()
     mgr.listbox = DummyListbox()
     ReportTemplateManager._refresh_list(mgr)
     monkeypatch.setattr(rtm.simpledialog, "askstring", lambda *a, **k: "new")
     mgr._add_template()
-    new_path = tmp_path / "new_template.json"
+    new_path = mgr.user_dir / "new_template.json"
     assert new_path.exists()
     idx = list(mgr.listbox.get(i) for i in range(mgr.listbox.size())).index("new_template.json")
     mgr.listbox.selection_set(idx)
@@ -63,7 +72,9 @@ def test_report_template_manager_add_delete(tmp_path, monkeypatch):
 
 
 def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
-    file = tmp_path / "a_template.json"
+    user = tmp_path / "user"
+    user.mkdir()
+    file = user / "a_template.json"
     file.write_text("{}")
 
     class DummyTab:
@@ -97,7 +108,9 @@ def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
     monkeypatch.setattr(rtt, "ReportTemplateEditor", DummyEditor)
 
     mgr = object.__new__(ReportTemplateManager)
-    mgr.templates_dir = tmp_path
+    mgr.builtin_dir = tmp_path / "builtin"
+    mgr.builtin_dir.mkdir()
+    mgr.user_dir = user
     mgr.listbox = DummyListbox()
     mgr.app = DummyApp()
     ReportTemplateManager._refresh_list(mgr)
@@ -107,3 +120,20 @@ def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
     mgr._edit_template()
     assert DummyEditor.called == 1
     assert mgr.app.titles == [f"Report Template: {file.stem}", f"Report Template: {file.stem}"]
+
+
+def test_report_template_manager_meipass_default(monkeypatch, tmp_path):
+    """Templates bundled in executables are discovered via sys._MEIPASS."""
+
+    cfg_dir = tmp_path / "config"
+    cfg_dir.mkdir()
+    (cfg_dir / "report_template.json").write_text("{}")
+    monkeypatch.setattr(sys, "_MEIPASS", tmp_path, raising=False)
+    mgr = object.__new__(ReportTemplateManager)
+    mgr.builtin_dir = ReportTemplateManager._default_templates_dir()
+    mgr.user_dir = tmp_path / "user"
+    mgr.user_dir.mkdir()
+    mgr.listbox = DummyListbox()
+    ReportTemplateManager._refresh_list(mgr)
+    names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
+    assert "report_template.json" in names
