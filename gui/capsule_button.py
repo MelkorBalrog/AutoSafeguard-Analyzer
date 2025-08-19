@@ -3,15 +3,6 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
-try:  # pillow is optional and used only for icon shadows
-    from PIL import Image, ImageTk  # type: ignore
-except Exception:  # pragma: no cover - pillow may be missing
-    Image = ImageTk = None  # type: ignore
-
-try:  # Pillow is optional
-    from PIL import Image, ImageTk
-except Exception:  # pragma: no cover - pillow may be missing
-    Image = ImageTk = None
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -318,7 +309,25 @@ class CapsuleButton(tk.Canvas):
                     stipple="gray50",
                 )
 
-
+    def _shade_content(self) -> None:
+        items = [i for i in (self._text_item, self._image_item) if i]
+        if not items:
+            return
+        x1, y1, x2, y2 = self.bbox(items[0])
+        for item in items[1:]:
+            bx1, by1, bx2, by2 = self.bbox(item)
+            x1, y1 = min(x1, bx1), min(y1, by1)
+            x2, y2 = max(x2, bx2), max(y2, by2)
+        shade = _darken(self._current_color, 0.9)
+        self._content_shade_item = self.create_rectangle(
+            x1,
+            y1,
+            x2,
+            y2,
+            outline="",
+            fill=shade,
+            stipple="gray25",
+        )
 
     def _draw_border(self, w: int, h: int) -> None:
         """Draw border and inner outline to mimic an inset capsule."""
