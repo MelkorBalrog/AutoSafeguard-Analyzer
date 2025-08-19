@@ -230,6 +230,12 @@ class SafetyManagementToolbox:
             self.frozen_diagrams.discard(name)
 
     # ------------------------------------------------------------------
+    def set_all_diagrams_frozen(self, frozen: bool) -> None:
+        """Freeze or unfreeze every registered governance diagram."""
+        for name in self.list_diagrams():
+            self.set_diagram_frozen(name, frozen)
+
+    # ------------------------------------------------------------------
     def diagram_frozen(self, name: str) -> bool:
         """Return ``True`` if the named diagram is frozen."""
         return name in self.frozen_diagrams
