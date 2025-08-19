@@ -2237,12 +2237,53 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        self.style.configure("Treeview", font=("Arial", 10))
+        self.style.configure(
+            "Treeview",
+            font=("Arial", 10),
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
+            borderwidth=1,
+            relief="sunken",
+        )
+        self.style.configure(
+            "Treeview.Heading",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        self.style.map(
+            "Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
+        )
         # ------------------------------------------------------------------
         # Global color theme inspired by Windows classic / Windows 7
         # ------------------------------------------------------------------
         # Overall workspace background
         root.configure(background="#f0f0f0")
+        # General widget colours
+        self.style.configure("TFrame", background="#f0f0f0")
+        self.style.configure("TLabel", background="#f0f0f0", foreground="black")
+        self.style.configure(
+            "TEntry", fieldbackground="#ffffff", background="#ffffff", foreground="black"
+        )
+        self.style.configure(
+            "TCombobox",
+            fieldbackground="#ffffff",
+            background="#ffffff",
+            foreground="black",
+        )
+        self.style.configure(
+            "TMenubutton", background="#e7edf5", foreground="black"
+        )
+        self.style.configure(
+            "TScrollbar",
+            background="#c0d4eb",
+            troughcolor="#e2e6eb",
+            bordercolor="#888888",
+            arrowcolor="#555555",
+        )
         # Toolbox/LabelFrame titles
         self.style.configure(
             "Toolbox.TLabelframe",
@@ -2870,12 +2911,29 @@ class AutoMLApp:
         # found`` when instantiating the notebook widget.  The following styles
         # derive from the standard ``TNotebook``/``TNotebook.Tab`` styles and
         # merely customise the tab appearance.
-        style.configure("ToolsNotebook.TNotebook", padding=0)
+        style.configure(
+            "ToolsNotebook.TNotebook",
+            padding=0,
+            background="#c0d4eb",
+            lightcolor="#eaf2fb",
+            darkcolor="#5a6d84",
+            borderwidth=2,
+            relief="raised",
+        )
         style.configure(
             "ToolsNotebook.TNotebook.Tab",
             font=("Arial", 10),
             padding=(10, 5),
             width=20,
+            background="#b5bdc9",
+            foreground="#555555",
+            borderwidth=1,
+            relief="raised",
+        )
+        style.map(
+            "ToolsNotebook.TNotebook.Tab",
+            background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
+            foreground=[("selected", "white"), ("!selected", "#555555")],
         )
         self.tools_left_btn = ttk.Button(
             nb_container, text="<", width=2, command=self._select_prev_tool_tab
@@ -13894,11 +13952,21 @@ class AutoMLApp:
             "FMEA.Treeview",
             font=("Segoe UI", 10),
             rowheight=60,
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            foreground="black",
         )
         style.configure(
             "FMEA.Treeview.Heading",
             font=("Segoe UI", 10, "bold"),
-            background="#d0d0d0",
+            background="#b5bdc9",
+            foreground="black",
+            relief="raised",
+        )
+        style.map(
+            "FMEA.Treeview.Heading",
+            background=[("active", "#4a6ea9"), ("!active", "#b5bdc9")],
+            foreground=[("active", "white"), ("!active", "black")],
         )
 
         columns = [
