@@ -3,7 +3,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
-from gui import messagebox, format_name_with_phase, add_treeview_scrollbars
+from gui import messagebox, format_name_with_phase, add_treeview_scrollbars, TranslucidButton
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -3656,7 +3656,7 @@ class SysMLDiagramWindow(tk.Frame):
         # Prepare icon cache for toolbox buttons
         self._icons: dict[str, tk.PhotoImage] = {}
         self._icons["Back"] = create_icon("arrow", size=self.icon_size)
-        self.back_btn = ttk.Button(
+        self.back_btn = TranslucidButton(
             self.toolbox,
             text="Go Back",
             image=self._icons["Back"],
@@ -3689,7 +3689,7 @@ class SysMLDiagramWindow(tk.Frame):
             frame.pack(fill=tk.X, padx=2, pady=2)
             self.element_frames[name] = frame
             for tool in group_tools:
-                btn = ttk.Button(
+                btn = TranslucidButton(
                     frame,
                     text=tool,
                     image=self._icon_for(tool),
@@ -3706,7 +3706,7 @@ class SysMLDiagramWindow(tk.Frame):
             )
             self.rel_frame.pack(fill=tk.X, padx=2, pady=2)
             for tool in relation_tools:
-                ttk.Button(
+                TranslucidButton(
                     self.rel_frame,
                     text=tool,
                     image=self._icon_for(tool),
