@@ -3,6 +3,15 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
+try:  # pillow is optional and used only for icon shadows
+    from PIL import Image, ImageTk  # type: ignore
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None  # type: ignore
+
+try:  # Pillow is optional
+    from PIL import Image, ImageTk
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -28,6 +37,15 @@ def _darken(color: str, factor: float = 0.8) -> str:
     r = max(int(r * factor), 0)
     g = max(int(g * factor), 0)
     b = max(int(b * factor), 0)
+    return _rgb_to_hex((r, g, b))
+
+
+def _interpolate_color(c1: str, c2: str, t: float) -> str:
+    r1, g1, b1 = _hex_to_rgb(c1)
+    r2, g2, b2 = _hex_to_rgb(c2)
+    r = int(r1 + (r2 - r1) * t)
+    g = int(g1 + (g2 - g1) * t)
+    b = int(b1 + (b2 - b1) * t)
     return _rgb_to_hex((r, g, b))
 
 
@@ -104,6 +122,7 @@ class CapsuleButton(tk.Canvas):
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
+        self._text_shadow_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._text_shadow_item: Optional[int] = None
         self._text_highlight_item: Optional[int] = None
@@ -132,7 +151,6 @@ class CapsuleButton(tk.Canvas):
         h = int(self["height"])
         r = self._radius
         color = self._current_color
-        outline = "#b3b3b3"
         # Draw the filled shapes without outlines so the seams between the
         # rectangle and arcs are not visible.
         self._shape_items = [
@@ -154,6 +172,8 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        self._gradient_items = []
+        self._draw_gradient(w, h)
         self._shine_items = []
         self._shade_items = []
         self._glow_items = []
@@ -161,6 +181,18 @@ class CapsuleButton(tk.Canvas):
         self._draw_shade(w, h)
         self._draw_content(w, h)
         self._draw_border(w, h)
+
+    def _draw_gradient(self, w: int, h: int) -> None:
+        colors = ["#e6e6fa", "#c3dafe", "#87ceeb", "#e0ffff"]
+        stops = [0.0, 0.33, 0.66, 1.0]
+        for y in range(h):
+            t = y / (h - 1) if h > 1 else 0
+            for i in range(len(stops) - 1):
+                if stops[i] <= t <= stops[i + 1]:
+                    local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
+                    color = _interpolate_color(colors[i], colors[i + 1], local_t)
+                    break
+            self._gradient_items.append(self.create_line(0, y, w, y, fill=color))
 
     def _draw_highlight(self, w: int, h: int) -> None:
         """Draw shiny highlight to create a glassy lavender sheen."""
@@ -223,6 +255,7 @@ class CapsuleButton(tk.Canvas):
         """Render optional image and text with soft shadows and highlights."""
         cx, cy = w // 2, h // 2
         self._text_item = None
+        self._text_shadow_item = None
         self._image_item = None
         self._text_shadow_item = None
         self._text_highlight_item = None
@@ -261,7 +294,17 @@ class CapsuleButton(tk.Canvas):
                 fill="#ffffff",
                 stipple="gray50",
             )
+            self._text_item = self.create_text(text_x, cy, text=self._text)
         elif self._image:
+            self._icon_shadow_item = self.create_oval(
+                cx - self._image.width() // 2 + 1,
+                cy - self._image.height() // 2 + 1,
+                cx + self._image.width() // 2 + 1,
+                cy + self._image.height() // 2 + 1,
+                outline="",
+                fill="#000000",
+                stipple="gray50",
+            )
             self._image_item = self.create_image(cx, cy, image=self._image)
             self._icon_highlight_item = self.create_rectangle(
                 cx - self._image.width() // 2,
@@ -287,6 +330,7 @@ class CapsuleButton(tk.Canvas):
                 fill="#ffffff",
                 stipple="gray50",
             )
+
 
 
     def _draw_border(self, w: int, h: int) -> None:
