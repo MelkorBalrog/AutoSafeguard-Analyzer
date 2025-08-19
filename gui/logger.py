@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkfont
 
 log_widget = None
 _line_widget = None
@@ -12,7 +13,7 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=8, dark_mode: bool = True):
+def init_log_window(root, height=7, dark_mode: bool = True):
     """Create and return a styled log window packed in *root*.
 
     Parameters
@@ -28,6 +29,10 @@ def init_log_window(root, height=8, dark_mode: bool = True):
 
     global log_widget, _line_widget
     frame = ttk.Frame(root)
+    frame.pack_propagate(False)
+    font = tkfont.Font(root=root, family="Consolas", size=11)
+    line_height = font.metrics("linespace")
+    frame.configure(height=line_height * height)
 
     # Choose colours based on the requested theme
     if dark_mode:
@@ -54,7 +59,8 @@ def init_log_window(root, height=8, dark_mode: bool = True):
         background=bg,
         foreground=line_fg,
         state="disabled",
-        font=("Consolas", 11),
+        font=font,
+        height=height,
     )
     _line_widget.pack(side=tk.LEFT, fill=tk.Y)
 
@@ -65,7 +71,7 @@ def init_log_window(root, height=8, dark_mode: bool = True):
         frame,
         height=height,
         state="disabled",
-        font=("Consolas", 11),
+        font=font,
         wrap="word",
         background=bg,
         foreground=fg,
