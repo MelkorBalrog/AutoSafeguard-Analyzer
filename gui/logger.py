@@ -12,15 +12,52 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=8):
-    """Create and return a log window packed in *root*."""
+def init_log_window(root, height=8, dark_mode: bool = True):
+    """Create and return a styled log window packed in *root*.
+
+    Parameters
+    ----------
+    root:
+        Parent widget in which the log window is created.
+    height:
+        Height of the ScrolledText widget.
+    dark_mode:
+        When ``True`` the widget uses the dark theme that matches the
+        SynapseX assembly editor style. Otherwise a light theme is used.
+    """
+
     global log_widget
     frame = ttk.Frame(root)
-    log_widget = ScrolledText(frame, height=height, state="disabled", font=("Arial", 9))
+
+    # Choose colours based on the requested theme
+    if dark_mode:
+        bg = "#1e1e1e"
+        fg = "#d4d4d4"
+        info = "#569CD6"  # instruction blue
+        warning = "#FFFF00"  # register yellow
+        error = "#FF00FF"  # number magenta
+    else:
+        bg = "white"
+        fg = "black"
+        info = "#0066CC"
+        warning = "#FFA500"
+        error = "#CC0000"
+
+    log_widget = ScrolledText(
+        frame,
+        height=height,
+        state="disabled",
+        font=("Consolas", 11),
+        wrap="word",
+        background=bg,
+        foreground=fg,
+        insertbackground=fg,
+    )
+
     # Define tags for different log levels with appropriate colours
-    log_widget.tag_configure("error", foreground="red")
-    log_widget.tag_configure("warning", foreground="orange")
-    log_widget.tag_configure("info", foreground="blue")
+    log_widget.tag_configure("error", foreground=error)
+    log_widget.tag_configure("warning", foreground=warning)
+    log_widget.tag_configure("info", foreground=info)
     log_widget.pack(fill=tk.BOTH, expand=True)
     return frame
 
