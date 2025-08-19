@@ -591,6 +591,17 @@ class SysMLRepository:
     def freeze_diagram(self, diag_id: str) -> None:
         """Mark a diagram as immutable."""
         self.frozen_diagrams.add(diag_id)
+        diag = self.diagrams.get(diag_id)
+        if diag:
+            diag.locked = True
+
+    # ------------------------------------------------------------
+    def unfreeze_diagram(self, diag_id: str) -> None:
+        """Allow modifications to a previously frozen diagram."""
+        self.frozen_diagrams.discard(diag_id)
+        diag = self.diagrams.get(diag_id)
+        if diag:
+            diag.locked = False
 
     # ------------------------------------------------------------
     def rename_phase(self, old: str, new: str) -> None:

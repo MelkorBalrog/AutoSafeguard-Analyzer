@@ -90,6 +90,12 @@ class SafetyManagementWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.delete_diagram,
         ).pack(side=tk.LEFT)
+        self.freeze_btn = ttk.Button(
+            top,
+            text="Freeze",
+            command=self.toggle_freeze,
+        )
+        self.freeze_btn.pack(side=tk.LEFT)
         ttk.Button(
             top,
             text="Requirements",
@@ -154,6 +160,7 @@ class SafetyManagementWindow(tk.Frame):
         elif self._auto_show_diagram:
             self.diag_var.set("")
             self.open_diagram(None)
+        self.update_freeze_button()
 
     def refresh_phases(self):
         phases = ["All"] + sorted(self.toolbox.list_modules())
@@ -238,6 +245,24 @@ class SafetyManagementWindow(tk.Frame):
             return
         self.current_window = GovernanceDiagramWindow(self.diagram_frame, self.app, diagram_id=diag_id)
         self.current_window.pack(fill=tk.BOTH, expand=True)
+        self.update_freeze_button()
+
+    def toggle_freeze(self):
+        name = self.diag_var.get()
+        if not name:
+            return
+        frozen = self.toolbox.diagram_frozen(name)
+        self.toolbox.set_diagram_frozen(name, not frozen)
+        self.update_freeze_button()
+
+    def update_freeze_button(self):
+        name = self.diag_var.get()
+        if not name:
+            self.freeze_btn.configure(state=tk.DISABLED, text="Freeze")
+            return
+        self.freeze_btn.configure(state=tk.NORMAL)
+        text = "Unfreeze" if self.toolbox.diagram_frozen(name) else "Freeze"
+        self.freeze_btn.configure(text=text)
 
     # ------------------------------------------------------------------
     def _add_requirement(

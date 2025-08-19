@@ -2465,6 +2465,7 @@ class AutoMLApp:
             "exposure_probabilities": EXPOSURE_PROBABILITIES.copy(),
             "controllability_probabilities": CONTROLLABILITY_PROBABILITIES.copy(),
             "severity_probabilities": SEVERITY_PROBABILITIES.copy(),
+            "project_frozen": False,
         }
         update_probability_tables(
             self.project_properties["exposure_probabilities"],
@@ -4670,7 +4671,8 @@ class AutoMLApp:
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
         prop_win.title("Project Properties")
-        prop_win.geometry("420x380")
+        prop_win.geometry("420x420")
+        prop_win.resizable(False, False)
         dialog_font = tkFont.Font(family="Arial", size=10)
 
         ttk.Label(prop_win, text="PDF Report Name:", font=dialog_font).grid(
@@ -4691,6 +4693,15 @@ class AutoMLApp:
         )
         chk.grid(row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
+        var_frozen = tk.BooleanVar(
+            value=self.project_properties.get("project_frozen", False)
+        )
+        ttk.Checkbutton(
+            prop_win,
+            text="Freeze Governance Diagrams",
+            variable=var_frozen,
+        ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+
         # Probability mappings for validation target calculations
         try:
             exp_frame = ttk.LabelFrame(
@@ -4703,7 +4714,7 @@ class AutoMLApp:
                 prop_win,
                 text="Exposure Probabilities P(E|HB)",
             )
-        exp_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        exp_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         exp_vars = {}
         for i in range(1, 5):
             ttk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4711,7 +4722,9 @@ class AutoMLApp:
             )
             var = tk.StringVar(
                 value=str(
-                    self.project_properties.get("exposure_probabilities", {}).get(i, 0.0)
+                    self.project_properties.get(
+                        "exposure_probabilities", EXPOSURE_PROBABILITIES
+                    ).get(i, EXPOSURE_PROBABILITIES[i])
                 )
             )
             ttk.Entry(
@@ -4735,7 +4748,7 @@ class AutoMLApp:
                 prop_win,
                 text="Controllability Probabilities P(C|E)",
             )
-        ctrl_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        ctrl_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         ctrl_vars = {}
         for i in range(1, 4):
             ttk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4743,7 +4756,9 @@ class AutoMLApp:
             )
             var = tk.StringVar(
                 value=str(
-                    self.project_properties.get("controllability_probabilities", {}).get(i, 0.0)
+                    self.project_properties.get(
+                        "controllability_probabilities", CONTROLLABILITY_PROBABILITIES
+                    ).get(i, CONTROLLABILITY_PROBABILITIES[i])
                 )
             )
             ttk.Entry(
@@ -4767,7 +4782,7 @@ class AutoMLApp:
                 prop_win,
                 text="Severity Probabilities P(S|C)",
             )
-        sev_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        sev_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         sev_vars = {}
         for i in range(1, 4):
             ttk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
@@ -4775,7 +4790,9 @@ class AutoMLApp:
             )
             var = tk.StringVar(
                 value=str(
-                    self.project_properties.get("severity_probabilities", {}).get(i, 0.0)
+                    self.project_properties.get(
+                        "severity_probabilities", SEVERITY_PROBABILITIES
+                    ).get(i, SEVERITY_PROBABILITIES[i])
                 )
             )
             ttk.Entry(
@@ -4793,6 +4810,7 @@ class AutoMLApp:
             if new_name:
                 self.project_properties["pdf_report_name"] = new_name
                 self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
+                self.project_properties["project_frozen"] = var_frozen.get()
                 self.project_properties["exposure_probabilities"] = {
                     lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
                 }
@@ -4802,6 +4820,9 @@ class AutoMLApp:
                 self.project_properties["severity_probabilities"] = {
                     lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
                 }
+                if hasattr(self, "safety_mgmt_toolbox"):
+                    for name in self.safety_mgmt_toolbox.diagrams:
+                        self.safety_mgmt_toolbox.set_diagram_frozen(name, var_frozen.get())
                 update_probability_tables(
                     self.project_properties["exposure_probabilities"],
                     self.project_properties["controllability_probabilities"],
@@ -4817,7 +4838,7 @@ class AutoMLApp:
             prop_win.destroy()
 
         save_btn = tk.Button(prop_win, text="Save", command=save_props, font=dialog_font)
-        save_btn.grid(row=5, column=0, columnspan=2, pady=10)
+        save_btn.grid(row=6, column=0, columnspan=2, pady=10)
         prop_win.transient(self.root)
         prop_win.grab_set()
         self.root.wait_window(prop_win)
@@ -19565,6 +19586,11 @@ class AutoMLApp:
         if hasattr(self, "hara_entries"):
             self.sync_hara_to_safety_goals()
         self.project_properties = data.get("project_properties", self.project_properties)
+        if self.project_properties.get("project_frozen"):
+            tb = getattr(self, "safety_mgmt_toolbox", None)
+            if tb:
+                for name in tb.diagrams:
+                    tb.set_diagram_frozen(name, True)
         update_probability_tables(
             self.project_properties.get("exposure_probabilities"),
             self.project_properties.get("controllability_probabilities"),
