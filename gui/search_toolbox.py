@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui import messagebox
+from gui.mac_button_style import apply_translucid_button_style
 
 # Additional model sections that can be searched.  Each tuple contains a
 # human-readable category name, the name of a method on the ``app`` object
@@ -48,6 +49,7 @@ class SearchToolbox(ttk.Frame):
 
     def __init__(self, master, app):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
 
         self.search_var = tk.StringVar()
