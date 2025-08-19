@@ -23,17 +23,23 @@ class ToolTip:
         self._unschedule()
         self.id = self.widget.after(self.delay, self._show)
 
-    def _show(self, x: int | None = None, y: int | None = None):
+    def _show(self, _x: int | None = None, _y: int | None = None):
         if self.tipwindow or not self.text:
             return
-        if x is None:
-            x = self.widget.winfo_rootx() + 20
-            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
+
+        x = self.widget.winfo_pointerx()
+        y = self.widget.winfo_pointery()
+
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         # Ensure the tooltip stays above other windows
         try:
             tw.wm_attributes("-topmost", True)
+        except tk.TclError:
+            pass
+        # Add slight transparency
+        try:
+            tw.wm_attributes("-alpha", 0.9)
         except tk.TclError:
             pass
 
@@ -52,6 +58,7 @@ class ToolTip:
             relief="solid",
             borderwidth=1,
             wrap="none",
+            font=("TkDefaultFont", 8),
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
         hbar = ttk.Scrollbar(tw, orient="horizontal", command=text.xview)
@@ -71,7 +78,7 @@ class ToolTip:
     def show(self, x: int | None = None, y: int | None = None):
         """Show the tooltip immediately."""
         self._hide()
-        self._show(x, y)
+        self._show()
 
     def hide(self):
         """Hide the tooltip immediately."""
