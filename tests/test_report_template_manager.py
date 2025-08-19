@@ -107,3 +107,18 @@ def test_report_template_manager_edit_uses_editor(tmp_path, monkeypatch):
     mgr._edit_template()
     assert DummyEditor.called == 1
     assert mgr.app.titles == [f"Report Template: {file.stem}", f"Report Template: {file.stem}"]
+
+
+def test_report_template_manager_meipass_default(monkeypatch, tmp_path):
+    """Templates bundled in executables are discovered via sys._MEIPASS."""
+
+    cfg_dir = tmp_path / "config"
+    cfg_dir.mkdir()
+    (cfg_dir / "report_template.json").write_text("{}")
+    monkeypatch.setattr(sys, "_MEIPASS", tmp_path, raising=False)
+    mgr = object.__new__(ReportTemplateManager)
+    mgr.templates_dir = ReportTemplateManager._default_templates_dir()
+    mgr.listbox = DummyListbox()
+    ReportTemplateManager._refresh_list(mgr)
+    names = [mgr.listbox.get(i) for i in range(mgr.listbox.size())]
+    assert "report_template.json" in names
