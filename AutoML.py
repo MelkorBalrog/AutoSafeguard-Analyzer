@@ -10413,7 +10413,14 @@ class AutoMLApp:
             self._cancel_explorer_hide()
             return
         self._explorer_tab.pack_forget()
-        self.main_pane.add(self.explorer_nb, width=0, before=self.doc_frame)
+        # Adding the pane with ``width=0`` often results in Tk briefly
+        # allocating a large default width before our animation kicks in.
+        # This caused a distracting flash of a full-sized panel prior to the
+        # slide-out effect.  To ensure a smooth animation, add the explorer
+        # pane first and immediately force its width to zero before scheduling
+        # the animation.
+        self.main_pane.add(self.explorer_nb, before=self.doc_frame)
+        self.main_pane.paneconfig(self.explorer_nb, width=0)
         if animate:
             self._animate_explorer_show(0)
         else:
