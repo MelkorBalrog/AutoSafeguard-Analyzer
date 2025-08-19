@@ -137,8 +137,7 @@ def test_grouped_actions_across_relations() -> None:
     )
     assert "a) <object1_id>" in tmpl
     assert "b) <object2_id>" in tmpl
-
-
+    
 def test_rule_with_custom_template_and_variables() -> None:
     cfg = {
         "ai_nodes": ["R", "T"],

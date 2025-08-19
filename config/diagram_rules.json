@@ -363,7 +363,8 @@
       "Communication Path": {
         "Activity": [],
         "Business Unit": [
-          "Business Unit"
+          "Business Unit",
+          "Organization"
         ],
         "Component": [],
         "Data": [],
@@ -433,7 +434,9 @@
       },
       "Constrained by": {
         "Activity": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Principle"
+        ],
         "Component": [],
         "Data": [],
         "Document": [
@@ -452,7 +455,9 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Policy"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -1062,7 +1067,9 @@
       },
       "Monitors": {
         "Activity": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Incident"
+        ],
         "Component": [],
         "Data": [],
         "Document": [],
@@ -1076,7 +1083,9 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Incident"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -1086,7 +1095,8 @@
         "Role": [
           "Activity",
           "Metric",
-          "Process"
+          "Process",
+          "Incident"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
@@ -1913,7 +1923,8 @@
         "Role": [
           "Data",
           "Document",
-          "Record"
+          "Record",
+          "Work Product"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
@@ -3053,7 +3064,9 @@
       "Triage": {
         "AI Database": [],
         "ANN": [],
-        "Business Unit": [],
+        "Business Unit": [
+          "Safety Issue"
+        ],
         "Component": [],
         "Data": [],
         "Data acquisition": [],
@@ -3068,7 +3081,9 @@
         "Metric": [],
         "Model": [],
         "Operation": [],
-        "Organization": [],
+        "Organization": [
+          "Safety Issue"
+        ],
         "Plan": [],
         "Policy": [],
         "Principle": [],
@@ -3077,7 +3092,9 @@
         "Record": [],
         "Report": [],
         "Risk Assessment": [],
-        "Role": [],
+        "Role": [
+          "Safety Issue"
+        ],
         "Safety Compliance": [],
         "Safety Issue": [
           "Field Data"
@@ -3899,23 +3916,71 @@
       ],
       "subject": "Prototype team"
     },
-    "safety assessment workflow": {
-      "action": "assess and mitigate safety risks",
-      "relations": [
-        "Assesses",
-        "Uses",
-        "Mitigates",
-        "Develops",
-        "Verify",
-        "Produces"
-      ],
-      "subject": "Safety engineer"
-    },
-    "continuous improvement": {
-      "action": "improve deployed system",
-      "relations": [
-        "Monitors",
-        "Assesses",
+      "safety assessment workflow": {
+        "action": "assess and mitigate safety risks",
+        "relations": [
+          "Assesses",
+          "Uses",
+          "Mitigates",
+          "Develops",
+          "Verify",
+          "Produces"
+        ],
+        "subject": "Safety engineer"
+      },
+      "role safety issue triage": {
+        "action": "triage safety issue",
+        "relations": [
+          "Assesses",
+          "Triage"
+        ],
+        "subject": "Role"
+      },
+      "organization safety issue triage": {
+        "action": "triage safety issue",
+        "relations": [
+          "Assesses",
+          "Triage"
+        ],
+        "subject": "Organization"
+      },
+      "business unit safety issue triage": {
+        "action": "triage safety issue",
+        "relations": [
+          "Assesses",
+          "Triage"
+        ],
+        "subject": "Business Unit"
+      },
+      "role incident monitoring": {
+        "action": "monitor incident",
+        "relations": [
+          "Monitors",
+          "Assesses"
+        ],
+        "subject": "Role"
+      },
+      "organization incident monitoring": {
+        "action": "monitor incident",
+        "relations": [
+          "Monitors",
+          "Assesses"
+        ],
+        "subject": "Organization"
+      },
+      "business unit incident monitoring": {
+        "action": "monitor incident",
+        "relations": [
+          "Monitors",
+          "Assesses"
+        ],
+        "subject": "Business Unit"
+      },
+      "continuous improvement": {
+        "action": "improve deployed system",
+        "relations": [
+          "Monitors",
+          "Assesses",
         "Develops",
         "Produces"
       ],
