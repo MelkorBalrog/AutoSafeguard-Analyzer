@@ -45,10 +45,12 @@ def test_add_generic_work_product(monkeypatch):
     win.add_generic_work_product()
 
     assert enable_calls == ["Custom WP"]
-    assert any(
-        o.obj_type == "Work Product" and o.properties.get("name") == "Custom WP"
+    obj = next(
+        o
         for o in win.objects
+        if o.obj_type == "Work Product" and o.properties.get("name") == "Custom WP"
     )
+    assert obj.properties.get("name_locked") != "1"
     assert any(wp.analysis == "Custom WP" for wp in toolbox.work_products)
 
     _sm.ACTIVE_TOOLBOX = prev_tb
@@ -130,8 +132,8 @@ def test_connection_creates_generic_work_product(monkeypatch):
 
     win._create_obj_and_conn(src, 100.0, 100.0, "Derived from", "Document")
 
-    assert any(
-        o.obj_type == "Work Product" and o.properties.get("name") == "Custom WP"
-        for o in win.objects
+    obj = next(
+        o for o in win.objects if o.obj_type == "Work Product" and o.properties.get("name") == "Custom WP"
     )
+    assert obj.properties.get("name_locked") != "1"
     assert connected and connected[0][2] == "Derived from"

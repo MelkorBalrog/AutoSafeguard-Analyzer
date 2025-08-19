@@ -4960,7 +4960,9 @@ class SysMLDiagramWindow(tk.Frame):
                     f"'{name}' is already a defined work product.",
                 )
                 return
-            new_obj = self._place_work_product(name, x / self.zoom, y / self.zoom)
+            new_obj = self._place_work_product(
+                name, x / self.zoom, y / self.zoom, lock_name=False
+            )
         else:
             new_obj = self._create_element_at(obj_type, x, y)
         if new_obj:
@@ -9508,7 +9510,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
         gen_row = 0
         ttk.Label(gen_frame, text="Name:").grid(row=gen_row, column=0, sticky="e", padx=4, pady=4)
         self.name_var = tk.StringVar(value=self.obj.properties.get("name", ""))
-        readonly = self.obj.obj_type == "Work Product" or self.obj.properties.get("name_locked") == "1"
+        readonly = self.obj.properties.get("name_locked") == "1"
         name_state = "readonly" if readonly else "normal"
         ttk.Entry(gen_frame, textvariable=self.name_var, state=name_state).grid(
             row=gen_row, column=1, padx=4, pady=4
@@ -10319,7 +10321,7 @@ class SysMLObjectDialog(simpledialog.Dialog):
     def apply(self):
         repo = SysMLRepository.get_instance()
         parent_id = None
-        if self.obj.obj_type != "Work Product" and self.obj.properties.get("name_locked") != "1":
+        if self.obj.properties.get("name_locked") != "1":
             new_name = self.name_var.get()
             if self.obj.obj_type == "Part" and hasattr(self.master, "diagram_id"):
                 diag = repo.diagrams.get(self.master.diagram_id)
@@ -11475,6 +11477,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             self._place_work_product(name, 100.0, 100.0)
         else:
             self._pending_wp_name = name
+            self._pending_wp_lock = True
             try:
                 self.canvas.configure(cursor="crosshair")
             except Exception:
@@ -11495,9 +11498,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             )
             return
         if not getattr(self, "canvas", None):
-            self._place_work_product(name, 100.0, 100.0)
+            self._place_work_product(name, 100.0, 100.0, lock_name=False)
         else:
             self._pending_wp_name = name
+            self._pending_wp_lock = False
             try:
                 self.canvas.configure(cursor="crosshair")
             except Exception:
@@ -11525,7 +11529,12 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             except Exception:
                 pass
 
-    def _place_work_product(self, name: str, x: float, y: float) -> SysMLObject:
+    def _place_work_product(
+        self, name: str, x: float, y: float, *, lock_name: bool = True
+    ) -> SysMLObject:
+        props = {"name": name}
+        if lock_name:
+            props["name_locked"] = "1"
         obj = SysMLObject(
             _get_next_id(),
             "Work Product",
@@ -11533,7 +11542,7 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             y,
             width=60.0,
             height=80.0,
-            properties={"name": name, "name_locked": "1"},
+            properties=props,
         )
         self.objects.append(obj)
         self.sort_objects()
@@ -11575,7 +11584,9 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             y = self.canvas.canvasy(event.y) / self.zoom
             if pending_wp:
                 self._pending_wp_name = None
-                self._place_work_product(pending_wp, x, y)
+                lock = getattr(self, "_pending_wp_lock", True)
+                self._pending_wp_lock = True
+                self._place_work_product(pending_wp, x, y, lock_name=lock)
             else:
                 self._pending_area_name = None
                 self._place_process_area(pending_area, x, y)
