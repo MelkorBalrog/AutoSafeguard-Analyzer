@@ -3791,14 +3791,14 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _resize_prop_columns(self, event: tk.Event | None = None) -> None:
         """Adjust property view columns so the value column fills the tab."""
-        try:
-            self.prop_view.update_idletasks()
-            tree_width = event.width if event else self.prop_view.winfo_width()
-            field_width = self.prop_view.column("field")["width"]
-            new_width = max(tree_width - field_width, 20)
-            self.prop_view.column("value", width=new_width)
-        except Exception:
-            pass
+        if not hasattr(self, "prop_view"):
+            return
+
+        self.prop_view.update_idletasks()
+        tree_width = event.width if event else self.prop_view.winfo_width()
+        field_width = self.prop_view.column("field")["width"]
+        new_width = max(tree_width - field_width, 20)
+        self.prop_view.column("value", width=new_width)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
