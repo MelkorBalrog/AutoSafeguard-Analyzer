@@ -3777,10 +3777,13 @@ class SysMLDiagramWindow(tk.Frame):
         self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
         # Shrink the property view to match the button area so it does not force
-        # the toolbox wider than needed.
+        # the toolbox wider than needed. Allow the value column to stretch so it
+        # can grow to fill the available space within the Properties tab.
         field_width = button_width // 2
         self.prop_view.column("field", width=field_width, stretch=False)
-        self.prop_view.column("value", width=button_width - field_width, stretch=False)
+        self.prop_view.column(
+            "value", width=button_width - field_width, stretch=True
+        )
 
     def _fit_governance_toolbox(
         self, container: tk.Misc, canvas: tk.Canvas, window: int
@@ -3823,7 +3826,7 @@ class SysMLDiagramWindow(tk.Frame):
             return
 
         new_width = max(tree_width - field_width, 20)
-        self.prop_view.column("value", width=new_width)
+        self.prop_view.column("value", width=new_width, stretch=True)
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
