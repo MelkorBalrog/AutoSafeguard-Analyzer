@@ -7041,6 +7041,67 @@ class SysMLDiagramWindow(tk.Frame):
             fill=StyleManager.get_instance().get_canvas_color(),
         )
 
+    def _draw_wrench(
+        self, x: float, y: float, r: float, color: str, outline: str
+    ) -> None:
+        """Draw a wrench centered at (*x*, *y*) with radius *r*."""
+        # Head of the wrench near the top
+        head_r = r * 0.45
+        head_cy = y - r + head_r
+        bg = StyleManager.get_instance().get_canvas_color()
+        self.canvas.create_oval(
+            x - head_r,
+            head_cy - head_r,
+            x + head_r,
+            head_cy + head_r,
+            fill=color,
+            outline=outline,
+        )
+        inner = head_r * 0.6
+        # Hollow center
+        self.canvas.create_oval(
+            x - inner,
+            head_cy - inner,
+            x + inner,
+            head_cy + inner,
+            fill=bg,
+            outline=outline,
+        )
+        # Notch to suggest wrench opening
+        notch = [
+            (x + inner, head_cy - inner),
+            (x + head_r, head_cy - head_r * 0.3),
+            (x + head_r, head_cy + head_r * 0.3),
+            (x + inner, head_cy + inner),
+        ]
+        self.canvas.create_polygon(
+            [coord for pt in notch for coord in pt],
+            fill=bg,
+            outline=outline,
+        )
+        # Handle
+        handle_w = r * 0.25
+        handle_top = head_cy + head_r * 0.2
+        handle_bottom = y + r
+        self.canvas.create_rectangle(
+            x - handle_w / 2,
+            handle_top,
+            x + handle_w / 2,
+            handle_bottom,
+            fill=color,
+            outline=outline,
+        )
+        # Cap at end of handle
+        cap_h = handle_w * 0.6
+        self.canvas.create_rectangle(
+            x - handle_w / 2,
+            handle_bottom - cap_h,
+            x + handle_w / 2,
+            handle_bottom,
+            fill=bg,
+            outline=outline,
+        )
+
     def draw_object(self, obj: SysMLObject):
         x = obj.x * self.zoom
         y = obj.y * self.zoom
@@ -7398,7 +7459,7 @@ class SysMLDiagramWindow(tk.Frame):
             self._draw_gear(x, y, r, color, outline)
         elif obj.obj_type == "Operation":
             r = min(w, h)
-            self._draw_icon_shape("wrench", x, y, r, color)
+            self._draw_wrench(x, y, r, color, outline)
         elif obj.obj_type == "Activity":
             self._draw_gradient_rect(x - w, y - h, x + w, y + h, color, obj.obj_id)
             self._create_round_rect(
