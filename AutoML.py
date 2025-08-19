@@ -9901,13 +9901,16 @@ class AutoMLApp:
     def update_lifecycle_cb(self) -> None:
         if not hasattr(self, "lifecycle_cb"):
             return
-        names = [m.name for m in getattr(self.safety_mgmt_toolbox, "modules", [])]
+        smt = getattr(self, "safety_mgmt_toolbox", None)
+        list_modules = getattr(smt, "list_modules", None)
+        names = (
+            list_modules()
+            if callable(list_modules)
+            else [m.name for m in getattr(smt, "modules", [])]
+        )
         self.lifecycle_cb.configure(values=names)
-        if (
-            self.safety_mgmt_toolbox.active_module
-            and self.safety_mgmt_toolbox.active_module in names
-        ):
-            self.lifecycle_var.set(self.safety_mgmt_toolbox.active_module)
+        if getattr(smt, "active_module", None) in names:
+            self.lifecycle_var.set(smt.active_module)
         else:
             self.lifecycle_var.set("")
 
