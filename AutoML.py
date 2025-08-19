@@ -2924,11 +2924,34 @@ class AutoMLApp:
 
         # Initialise the log window but keep it hidden by default.
         self.log_frame = logger.init_log_window(root, height=7)
+        # Status bar showing lifecycle phase and object metadata
+        self.status_frame = ttk.Frame(root)
+        self.status_frame.pack(side=tk.BOTTOM, fill=tk.X)
         self.toggle_log_button = ttk.Button(
             root, text="Show Logs", command=self.toggle_logs
         )
         self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         logger.set_toggle_button(self.toggle_log_button)
+        self.style.configure(
+            "Phase.TLabel",
+            background="#4a6ea9",
+            foreground="white",
+            font=("Arial", 10, "bold"),
+        )
+        self.active_phase_lbl = ttk.Label(
+            self.status_frame, text="Active phase: None", style="Phase.TLabel"
+        )
+        self.active_phase_lbl.pack(side=tk.LEFT, padx=5)
+        self.status_meta_vars = {
+            "Name": tk.StringVar(value=""),
+            "Type": tk.StringVar(value=""),
+            "Author": tk.StringVar(value=""),
+        }
+        for key, var in self.status_meta_vars.items():
+            ttk.Label(self.status_frame, text=f"{key}:").pack(
+                side=tk.LEFT, padx=(10, 0)
+            )
+            ttk.Label(self.status_frame, textvariable=var).pack(side=tk.LEFT)
 
         # Explorer pane with notebook and pin button (hidden by default)
         self.explorer_pane = ttk.Frame(self.main_pane)
@@ -2994,10 +3017,6 @@ class AutoMLApp:
         )
         self.lifecycle_cb.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.lifecycle_cb.bind("<<ComboboxSelected>>", self.on_lifecycle_selected)
-        self.active_phase_lbl = ttk.Label(
-            top, text="Active phase: None", foreground="blue"
-        )
-        self.active_phase_lbl.pack(side=tk.LEFT, padx=5)
 
         # Container holding navigation buttons and the tools notebook
         nb_container = ttk.Frame(self.tools_group)
@@ -9654,6 +9673,24 @@ class AutoMLApp:
         elif meta:
             for k, v in meta.items():
                 self.prop_view.insert("", "end", values=(k, v))
+        if hasattr(self, "status_meta_vars"):
+            for key in self.status_meta_vars:
+                self.status_meta_vars[key].set("")
+            if obj:
+                self.status_meta_vars["Type"].set(obj.obj_type)
+                name = obj.properties.get("name", "")
+                if name:
+                    self.status_meta_vars["Name"].set(name)
+                if obj.element_id:
+                    elem = SysMLRepository.get_instance().elements.get(obj.element_id)
+                    if elem:
+                        self.status_meta_vars["Author"].set(
+                            getattr(elem, "author", "")
+                        )
+            elif meta:
+                for k, v in meta.items():
+                    if k in self.status_meta_vars:
+                        self.status_meta_vars[k].set(v)
 
     def rename_selected_tree_item(self):
         item = self.analysis_tree.focus()
