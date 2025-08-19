@@ -13,6 +13,7 @@ from analysis.models import (
 )
 from gui.architecture import GovernanceDiagramWindow
 from gui import messagebox, add_treeview_scrollbars
+from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
 
@@ -41,6 +42,16 @@ class SafetyManagementWindow(tk.Frame):
         except Exception:
             pass
 
+        self._icons = {
+            "New": create_icon("plus"),
+            "Rename": create_icon("gear"),
+            "Delete": create_icon("cross"),
+            "Requirements": create_icon("clipboard"),
+            "Phase Requirements": create_icon("clipboard"),
+            "Lifecycle Requirements": create_icon("clipboard"),
+            "Delete Obsolete": create_icon("cross"),
+        }
+
         phase_bar = ttk.Frame(self)
         phase_bar.pack(fill=tk.X)
         ttk.Label(phase_bar, text="Lifecycle:").pack(side=tk.LEFT)
@@ -58,24 +69,55 @@ class SafetyManagementWindow(tk.Frame):
         self.diag_cb.pack(side=tk.LEFT, padx=2)
         self.diag_cb.bind("<<ComboboxSelected>>", self.select_diagram)
 
-        ttk.Button(top, text="New", command=self.new_diagram).pack(side=tk.LEFT)
-        ttk.Button(top, text="Rename", command=self.rename_diagram).pack(side=tk.LEFT)
-        ttk.Button(top, text="Delete", command=self.delete_diagram).pack(side=tk.LEFT)
-        ttk.Button(top, text="Requirements", command=self.generate_requirements).pack(
-            side=tk.LEFT
+        ttk.Button(
+            top,
+            text="New",
+            image=self._icons["New"],
+            compound=tk.LEFT,
+            command=self.new_diagram,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Rename",
+            image=self._icons["Rename"],
+            compound=tk.LEFT,
+            command=self.rename_diagram,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Delete",
+            image=self._icons["Delete"],
+            compound=tk.LEFT,
+            command=self.delete_diagram,
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            top,
+            text="Requirements",
+            image=self._icons["Requirements"],
+            compound=tk.LEFT,
+            command=self.generate_requirements,
+        ).pack(side=tk.LEFT)
+        self.phase_menu_btn = ttk.Menubutton(
+            top,
+            text="Phase Requirements",
+            image=self._icons["Phase Requirements"],
+            compound=tk.LEFT,
         )
-        self.phase_menu_btn = ttk.Menubutton(top, text="Phase Requirements")
         self.phase_menu = tk.Menu(self.phase_menu_btn, tearoff=False)
         self.phase_menu_btn.configure(menu=self.phase_menu)
         self.phase_menu_btn.pack(side=tk.LEFT)
         ttk.Button(
             top,
             text="Lifecycle Requirements",
+            image=self._icons["Lifecycle Requirements"],
+            compound=tk.LEFT,
             command=self.generate_lifecycle_requirements,
         ).pack(side=tk.LEFT)
         ttk.Button(
             top,
             text="Delete Obsolete",
+            image=self._icons["Delete Obsolete"],
+            compound=tk.LEFT,
             command=self.delete_obsolete_requirements,
         ).pack(side=tk.LEFT)
 

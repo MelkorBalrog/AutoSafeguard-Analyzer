@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+import tkinter.font as tkfont
 from typing import Callable, Optional
 
 
@@ -55,7 +56,6 @@ class CapsuleButton(tk.Canvas):
         **kwargs,
     ) -> None:
         init_kwargs = {
-            "width": width,
             "height": height,
             "highlightthickness": 0,
         }
@@ -71,15 +71,17 @@ class CapsuleButton(tk.Canvas):
         kwargs.pop("style", None)
         kwargs.pop("image", None)
         kwargs.pop("compound", None)
+        self._text = text
+        self._image = image
+        self._compound = compound
+        req_width = max(width, self._content_width(height))
+        init_kwargs["width"] = req_width
         init_kwargs.update(kwargs)
         super().__init__(master, **init_kwargs)
         self._state: set[str] = set()
         if state in {"disabled", tk.DISABLED}:  # type: ignore[arg-type]
             self._state.add("disabled")
         self._command = command
-        self._text = text
-        self._image = image
-        self._compound = compound
         self._normal_color = bg
         self._hover_color = hover_bg or _lighten(bg, 1.2)
         self._pressed_color = _darken(bg, 0.8)
@@ -100,6 +102,15 @@ class CapsuleButton(tk.Canvas):
         self.bind("<ButtonRelease-1>", self._on_release)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
+
+    def _content_width(self, height: int) -> int:
+        """Return the minimum width to display current text and image."""
+        font = tkfont.nametofont("TkDefaultFont")
+        text_w = font.measure(self._text) if self._text else 0
+        img_w = self._image.width() if self._image else 0
+        spacing = 4 if self._text and self._image else 0
+        padding = height  # space for rounded ends
+        return max(text_w + img_w + spacing + padding, height)
 
     def _draw_button(self) -> None:
         self.delete("all")
@@ -141,8 +152,31 @@ class CapsuleButton(tk.Canvas):
                 stipple="gray25",
             )
         ]
-        self._text_item = self.create_text(w // 2, h // 2, text=self._text)
+        self._draw_content(w, h)
         self._draw_border(w, h)
+
+    def _draw_content(self, w: int, h: int) -> None:
+        """Render optional image and text within the button."""
+        cx, cy = w // 2, h // 2
+        self._text_item = None
+        self._image_item = None
+        if self._image and self._text and self._compound == tk.LEFT:
+            font = tkfont.nametofont("TkDefaultFont")
+            text_w = font.measure(self._text)
+            img_w = self._image.width()
+            spacing = 4
+            total = text_w + img_w + spacing
+            start = (w - total) // 2
+            self._image_item = self.create_image(start + img_w // 2, cy, image=self._image)
+            self._text_item = self.create_text(
+                start + img_w + spacing + text_w // 2,
+                cy,
+                text=self._text,
+            )
+        elif self._image:
+            self._image_item = self.create_image(cx, cy, image=self._image)
+        else:
+            self._text_item = self.create_text(cx, cy, text=self._text)
 
     def _draw_border(self, w: int, h: int) -> None:
         """Draw dark/light border to mimic an inset capsule."""
@@ -219,15 +253,19 @@ class CapsuleButton(tk.Canvas):
         hover_bg = kwargs.pop("hover_bg", None)
         image = kwargs.pop("image", None)
         compound = kwargs.pop("compound", None)
-        width = kwargs.get("width")
-        height = kwargs.get("height")
+        width = kwargs.pop("width", None)
+        height = kwargs.pop("height", None)
         state = kwargs.pop("state", None)
         kwargs.pop("style", None)
         super().configure(**kwargs)
+        changed = False
         self._update_command(command)
-        self._update_text(text)
+        if self._update_text(text):
+            changed = True
+        if self._update_image(image, compound):
+            changed = True
         self._update_colors(bg, hover_bg)
-        self._update_geometry(width, height, text)
+        self._update_geometry(width, height, changed)
         self._update_state(state)
         # Always re-apply the current state so that disabled buttons retain
         # their disabled appearance even after reconfiguration.
@@ -239,12 +277,11 @@ class CapsuleButton(tk.Canvas):
         if command is not None:
             self._command = command
 
-    def _update_text(self, text: Optional[str]) -> None:
-        if text is None:
-            return
+    def _update_text(self, text: Optional[str]) -> bool:
+        if text is None or text == self._text:
+            return False
         self._text = text
-        if self._text_item is not None:
-            self.itemconfigure(self._text_item, text=self._text)
+        return True
 
     def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
         if bg is not None:
@@ -255,10 +292,29 @@ class CapsuleButton(tk.Canvas):
         elif hover_bg is not None:
             self._hover_color = hover_bg
 
+    def _update_image(
+        self, image: tk.PhotoImage | None, compound: Optional[str]
+    ) -> bool:
+        changed = False
+        if image is not None:
+            self._image = image
+            changed = True
+        if compound is not None:
+            self._compound = compound
+            changed = True
+        return changed
+
     def _update_geometry(
-        self, width: Optional[int], height: Optional[int], text: Optional[str]
+        self, width: Optional[int], height: Optional[int], redraw: bool
     ) -> None:
-        if width is not None or height is not None or text is not None:
+        h = height if height is not None else int(self["height"])
+        req_w = self._content_width(h)
+        w = width if width is not None else int(self["width"])
+        if w < req_w:
+            w = req_w
+        super().configure(width=w, height=h)
+        self._radius = h // 2
+        if redraw or w != int(self["width"]) or h != int(self["height"]):
             self._draw_button()
 
     def _update_state(self, state: Optional[str]) -> None:
