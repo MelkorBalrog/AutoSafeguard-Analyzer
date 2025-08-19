@@ -3592,9 +3592,12 @@ class SysMLDiagramWindow(tk.Frame):
             )
             self.prop_view.heading("field", text="Field")
             self.prop_view.heading("value", text="Value")
-            self.prop_view.column("field", width=80, anchor="w")
-            self.prop_view.column("value", width=120, anchor="w")
+            # Ensure the field column stays fixed while the value column grows
+            # to utilize the available space within the Properties tab.
+            self.prop_view.column("field", width=80, anchor="w", stretch=False)
+            self.prop_view.column("value", width=180, anchor="w", stretch=True)
             add_treeview_scrollbars(self.prop_view, prop_tree_frame)
+            prop_tree_frame.bind("<Configure>", self._resize_prop_columns)
 
         canvas_frame = ttk.Frame(self)
         canvas_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
@@ -3693,6 +3696,15 @@ class SysMLDiagramWindow(tk.Frame):
         container.configure(width=container_width)
         canvas.configure(width=canvas_width)
         canvas.itemconfig(window, width=canvas_width)
+
+    def _resize_prop_columns(self, event) -> None:
+        """Adjust property view columns to fill the available space."""
+        try:
+            field_width = self.prop_view.column("field")["width"]
+            new_width = max(event.width - field_width - 20, 50)
+            self.prop_view.column("value", width=new_width)
+        except Exception:
+            pass
 
     def update_property_view(self) -> None:
         """Display properties and metadata for the selected object."""
