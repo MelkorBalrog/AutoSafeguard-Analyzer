@@ -35,6 +35,11 @@ pyinstaller --noconfirm --onefile --windowed \
     --name AutoML \
     --exclude-module scipy \
     --hidden-import=PIL.ImageTk \
+    --hidden-import=tkinter \
+    --hidden-import=tkinter.filedialog \
+    --hidden-import=tkinter.simpledialog \
+    --hidden-import=tkinter.scrolledtext \
+    --hidden-import=tkinter.ttk \
     --add-data "styles:styles" \
     --add-data "AutoML.py:." launcher.py
 

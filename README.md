@@ -1584,6 +1584,11 @@ After building you can launch the application directly or use
 Windows. The bundled executable executes `launcher.py` internally so it
 performs the same dependency installation when run from source.
 
+The build scripts explicitly include Tkinter and its submodules so the GUI
+launches correctly when running the packaged executable. This prevents
+`ModuleNotFoundError: No module named 'tkinter'` errors on systems without a
+full Python installation.
+
 If a previous build failed and left an `AutoML.spec` file behind, the build
 scripts now delete it before running PyInstaller so your command line
 options are always applied.
