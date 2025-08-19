@@ -9180,6 +9180,34 @@ class SysMLDiagramWindow(tk.Frame):
                         diag = self.repo.diagrams.get(self.diagram_id)
                         diagram_name = diag.name if diag else ""
                         toolbox.remove_work_product(diagram_name, name)
+                elif obj.obj_type == "System Boundary":
+                    children = [
+                        o
+                        for o in list(self.objects)
+                        if o.obj_type == "Work Product"
+                        and o.properties.get("parent") == str(obj.obj_id)
+                    ]
+                    for wp in children:
+                        name = wp.properties.get("name", "")
+                        if getattr(self.app, "can_remove_work_product", None):
+                            if not self.app.can_remove_work_product(name):
+                                messagebox.showerror(
+                                    "Delete",
+                                    f"Cannot delete work product '{name}' with existing artifacts.",
+                                )
+                                break
+                    else:
+                        for wp in children:
+                            name = wp.properties.get("name", "")
+                            getattr(self.app, "disable_work_product", lambda *_: None)(name)
+                            toolbox = getattr(self.app, "safety_mgmt_toolbox", None)
+                            if toolbox:
+                                diag = self.repo.diagrams.get(self.diagram_id)
+                                diagram_name = diag.name if diag else ""
+                                toolbox.remove_work_product(diagram_name, name)
+                            self.remove_element_model(wp)
+                        self.remove_element_model(obj)
+                        continue
                 if obj.obj_type == "Part":
                     self.remove_part_model(obj)
                 else:
