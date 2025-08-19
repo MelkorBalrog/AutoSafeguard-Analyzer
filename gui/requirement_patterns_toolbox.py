@@ -460,6 +460,7 @@ class RequirementPatternsEditor(tk.Frame):
 
         # Containers for template Text widgets that overlay the Treeview cells
         self._pat_templates: dict[str, tk.Text] = {}
+        self._pat_rows: dict[str, tuple[str, str]] = {}
 
         def _pat_yscroll(*args):
             ybar.set(*args)
@@ -526,6 +527,7 @@ class RequirementPatternsEditor(tk.Frame):
         self.rule_tree.grid(row=0, column=0, sticky="nsew")
 
         self._rule_templates: dict[str, tk.Text] = {}
+        self._rule_rows: dict[str, tuple[str, str]] = {}
 
         def _rule_yscroll(*args):
             rybar.set(*args)
@@ -600,6 +602,7 @@ class RequirementPatternsEditor(tk.Frame):
         self.seq_tree.grid(row=0, column=0, sticky="nsew")
 
         self._seq_templates: dict[str, tk.Text] = {}
+        self._seq_rows: dict[str, tuple[str, str]] = {}
 
         def _seq_yscroll(*args):
             sybar.set(*args)
@@ -641,9 +644,9 @@ class RequirementPatternsEditor(tk.Frame):
         for widget in self._pat_templates.values():
             widget.destroy()
         self._pat_templates.clear()
+        self._pat_rows: dict[str, tuple[str, str]] = {}
 
         self.tree.delete(*self.tree.get_children(""))
-        wrapped: list[tuple[int, str, str, str]] = []
         max_lines = 1
         for idx, pat in enumerate(self.data):
             trig = textwrap.fill(pat.get("Trigger", ""), 40)
@@ -654,11 +657,12 @@ class RequirementPatternsEditor(tk.Frame):
                     tmpl_raw = re.sub(r"<action>", f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
                 else:
                     tmpl_raw = re.sub(re.escape(act), f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
-
             tmpl = textwrap.fill(tmpl_raw, 40)
             lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
             max_lines = max(max_lines, lines)
-            wrapped.append((idx, trig, tmpl, act))
+            iid = str(idx)
+            self.tree.insert("", "end", iid=iid, values=(idx + 1, trig, ""))
+            self._pat_rows[iid] = (tmpl, act)
 
         style = ttk.Style(self.tree)
         base = style.lookup("Treeview", "rowheight") or 20
@@ -669,37 +673,41 @@ class RequirementPatternsEditor(tk.Frame):
         style.configure("PatternTree.Treeview", rowheight=base_h * max_lines)
         self.tree.configure(style="PatternTree.Treeview")
 
-        for idx, trig, tmpl, act in wrapped:
-            iid = str(idx)
-            self.tree.insert("", "end", iid=iid, values=(idx + 1, trig, ""))
-            txt = tk.Text(
-                self.tree,
-                wrap="word",
-                height=tmpl.count("\n") + 1,
-                padx=0,
-                pady=0,
-                bd=0,
-                highlightthickness=0,
-            )
-            txt.insert("1.0", tmpl)
-            highlight_placeholders(txt, act)
-            txt.configure(state="disabled")
-            txt.bind(
-                "<Button-1>",
-                lambda _e, item=iid: (self.tree.selection_set(item), self.tree.focus(item)),
-            )
-            self._pat_templates[iid] = txt
-
         self._position_pattern_templates()
 
     def _position_pattern_templates(self) -> None:
-        """Position template ``Text`` widgets over their Treeview cells."""
-        for iid, widget in self._pat_templates.items():
+        """Create/place template widgets only for visible Treeview rows."""
+        for iid in self.tree.get_children(""):
             bbox = self.tree.bbox(iid, "template")
+            widget = self._pat_templates.get(iid)
             if bbox:
+                if widget is None:
+                    tmpl, act = self._pat_rows.get(iid, ("", ""))
+                    widget = tk.Text(
+                        self.tree,
+                        wrap="word",
+                        height=tmpl.count("\n") + 1,
+                        padx=0,
+                        pady=0,
+                        bd=0,
+                        highlightthickness=0,
+                    )
+                    widget.insert("1.0", tmpl)
+                    highlight_placeholders(widget, act)
+                    widget.configure(state="disabled")
+                    widget.bind(
+                        "<Button-1>",
+                        lambda _e, item=iid: (
+                            self.tree.selection_set(item),
+                            self.tree.focus(item),
+                        ),
+                    )
+                    self._pat_templates[iid] = widget
                 widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
-            else:
+            elif widget is not None:
                 widget.place_forget()
+                widget.destroy()
+                del self._pat_templates[iid]
 
     def _edit_item(self, _event=None):
         item = self.tree.focus()
@@ -756,9 +764,9 @@ class RequirementPatternsEditor(tk.Frame):
         for widget in self._rule_templates.values():
             widget.destroy()
         self._rule_templates.clear()
+        self._rule_rows: dict[str, tuple[str, str]] = {}
 
         self.rule_tree.delete(*self.rule_tree.get_children(""))
-        wrapped: list[tuple[str, int, str, str, str]] = []
         max_lines = 1
         for idx, (label, info) in enumerate(sorted(self.req_rules.items()), 1):
             tmpl = info.get("template", "")
@@ -770,7 +778,21 @@ class RequirementPatternsEditor(tk.Frame):
                     tmpl = re.sub(re.escape(act), f"<action : {act}>", tmpl, flags=re.IGNORECASE)
             lines = tmpl.count("\n") + 1
             max_lines = max(max_lines, lines)
-            wrapped.append((label, idx, act, info.get("subject", ""), tmpl))
+            self.rule_tree.insert(
+                "",
+                "end",
+                iid=label,
+                values=(
+                    idx,
+                    label,
+                    act,
+                    info.get("subject", ""),
+                    "",
+                    info.get("targets", 1),
+                    "yes" if info.get("constraint") else "",
+                ),
+            )
+            self._rule_rows[label] = (tmpl, act)
 
         style = ttk.Style(self.rule_tree)
         base = style.lookup("Treeview", "rowheight") or 20
@@ -781,51 +803,40 @@ class RequirementPatternsEditor(tk.Frame):
         style.configure("RuleTree.Treeview", rowheight=base_h * max_lines)
         self.rule_tree.configure(style="RuleTree.Treeview")
 
-        for label, idx, act, subj, tmpl in wrapped:
-            self.rule_tree.insert(
-                "",
-                "end",
-                iid=label,
-                values=(
-                    idx,
-                    label,
-                    act,
-                    subj,
-                    "",
-                    self.req_rules[label].get("targets", 1),
-                    "yes" if self.req_rules[label].get("constraint") else "",
-                ),
-            )
-            txt = tk.Text(
-                self.rule_tree,
-                wrap="word",
-                height=tmpl.count("\n") + 1,
-                padx=0,
-                pady=0,
-                bd=0,
-                highlightthickness=0,
-            )
-            txt.insert("1.0", tmpl)
-            highlight_placeholders(txt, act)
-            txt.configure(state="disabled")
-            txt.bind(
-                "<Button-1>",
-                lambda _e, item=label: (
-                    self.rule_tree.selection_set(item),
-                    self.rule_tree.focus(item),
-                ),
-            )
-            self._rule_templates[label] = txt
-
         self._position_rule_templates()
 
     def _position_rule_templates(self) -> None:
-        for iid, widget in self._rule_templates.items():
+        for iid in self.rule_tree.get_children(""):
             bbox = self.rule_tree.bbox(iid, "template")
+            widget = self._rule_templates.get(iid)
             if bbox:
+                if widget is None:
+                    tmpl, act = self._rule_rows.get(iid, ("", ""))
+                    widget = tk.Text(
+                        self.rule_tree,
+                        wrap="word",
+                        height=tmpl.count("\n") + 1,
+                        padx=0,
+                        pady=0,
+                        bd=0,
+                        highlightthickness=0,
+                    )
+                    widget.insert("1.0", tmpl)
+                    highlight_placeholders(widget, act)
+                    widget.configure(state="disabled")
+                    widget.bind(
+                        "<Button-1>",
+                        lambda _e, item=iid: (
+                            self.rule_tree.selection_set(item),
+                            self.rule_tree.focus(item),
+                        ),
+                    )
+                    self._rule_templates[iid] = widget
                 widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
-            else:
+            elif widget is not None:
                 widget.place_forget()
+                widget.destroy()
+                del self._rule_templates[iid]
 
     def _edit_rule(self, _event=None):
         item = self.rule_tree.focus()
@@ -919,9 +930,9 @@ class RequirementPatternsEditor(tk.Frame):
         for widget in self._seq_templates.values():
             widget.destroy()
         self._seq_templates.clear()
+        self._seq_rows: dict[str, tuple[str, str]] = {}
 
         self.seq_tree.delete(*self.seq_tree.get_children(""))
-        wrapped: list[tuple[str, int, str, str, str, bool]] = []
         max_lines = 1
         for idx, (label, info) in enumerate(sorted(self.req_seqs.items()), 1):
             rels = " -> ".join(info.get("relations", []))
@@ -934,17 +945,21 @@ class RequirementPatternsEditor(tk.Frame):
                     tmpl = re.sub(re.escape(act), f"<action : {act}>", tmpl, flags=re.IGNORECASE)
             lines = tmpl.count("\n") + 1
             max_lines = max(max_lines, lines)
-            wrapped.append(
-                (
-                    label,
+            self.seq_tree.insert(
+                "",
+                "end",
+                iid=label,
+                values=(
                     idx,
+                    label,
                     rels,
                     act,
                     info.get("subject", ""),
-                    info.get("role_subject", False),
-                    tmpl,
-                )
+                    "Y" if info.get("role_subject", False) else "",
+                    "",
+                ),
             )
+            self._seq_rows[label] = (tmpl, act)
 
         style = ttk.Style(self.seq_tree)
         base = style.lookup("Treeview", "rowheight") or 20
@@ -955,51 +970,40 @@ class RequirementPatternsEditor(tk.Frame):
         style.configure("SeqTree.Treeview", rowheight=base_h * max_lines)
         self.seq_tree.configure(style="SeqTree.Treeview")
 
-        for label, idx, rels, act, subj, role_subj, tmpl in wrapped:
-            self.seq_tree.insert(
-                "",
-                "end",
-                iid=label,
-                values=(
-                    idx,
-                    label,
-                    rels,
-                    act,
-                    subj,
-                    "Y" if role_subj else "",
-                    "",
-                ),
-            )
-            txt = tk.Text(
-                self.seq_tree,
-                wrap="word",
-                height=tmpl.count("\n") + 1,
-                padx=0,
-                pady=0,
-                bd=0,
-                highlightthickness=0,
-            )
-            txt.insert("1.0", tmpl)
-            highlight_placeholders(txt, act)
-            txt.configure(state="disabled")
-            txt.bind(
-                "<Button-1>",
-                lambda _e, item=label: (
-                    self.seq_tree.selection_set(item),
-                    self.seq_tree.focus(item),
-                ),
-            )
-            self._seq_templates[label] = txt
-
         self._position_seq_templates()
 
     def _position_seq_templates(self) -> None:
-        for iid, widget in self._seq_templates.items():
+        for iid in self.seq_tree.get_children(""):
             bbox = self.seq_tree.bbox(iid, "template")
+            widget = self._seq_templates.get(iid)
             if bbox:
+                if widget is None:
+                    tmpl, act = self._seq_rows.get(iid, ("", ""))
+                    widget = tk.Text(
+                        self.seq_tree,
+                        wrap="word",
+                        height=tmpl.count("\n") + 1,
+                        padx=0,
+                        pady=0,
+                        bd=0,
+                        highlightthickness=0,
+                    )
+                    widget.insert("1.0", tmpl)
+                    highlight_placeholders(widget, act)
+                    widget.configure(state="disabled")
+                    widget.bind(
+                        "<Button-1>",
+                        lambda _e, item=iid: (
+                            self.seq_tree.selection_set(item),
+                            self.seq_tree.focus(item),
+                        ),
+                    )
+                    self._seq_templates[iid] = widget
                 widget.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
-            else:
+            elif widget is not None:
                 widget.place_forget()
+                widget.destroy()
+                del self._seq_templates[iid]
 
     def _edit_sequence(self, _event=None):
         item = self.seq_tree.focus()
