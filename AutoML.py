@@ -2232,6 +2232,7 @@ class AutoMLApp:
         self.root.title("AutoML-Analyzer")
         self.version = VERSION
         self.zoom = 1.0
+        self.rc_dragged = False
         self.diagram_font = tkFont.Font(family="Arial", size=int(8 * self.zoom))
         self.style = ttk.Style()
         try:
@@ -10247,10 +10248,16 @@ class AutoMLApp:
         return "#FAD7A0"
 
     def on_right_mouse_press(self, event):
+        self.rc_dragged = False
         self.canvas.scan_mark(event.x, event.y)
 
     def on_right_mouse_drag(self, event):
+        self.rc_dragged = True
         self.canvas.scan_dragto(event.x, event.y, gain=1)
+
+    def on_right_mouse_release(self, event):
+        if not self.rc_dragged:
+            self.show_context_menu(event)
 
     def show_context_menu(self, event):
         x = self.canvas.canvasx(event.x) / self.zoom
@@ -17787,7 +17794,7 @@ class AutoMLApp:
                            scrollregion=(0, 0, 2000, 2000))
         self.canvas.bind("<ButtonPress-3>", self.on_right_mouse_press)
         self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-        self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
+        self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
@@ -20257,8 +20264,13 @@ class AutoMLApp:
         page_canvas.grid(row=1, column=0, sticky="nsew")
         vbar = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=page_canvas.yview)
         vbar.grid(row=1, column=1, sticky="ns")
+        hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL, command=page_canvas.xview)
+        hbar.grid(row=2, column=0, sticky="ew")
+        page_canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
+        self.page_canvas = page_canvas
         self.canvas_frame.rowconfigure(0, weight=0)
         self.canvas_frame.rowconfigure(1, weight=1)
+        self.canvas_frame.rowconfigure(2, weight=0)
         self.canvas_frame.columnconfigure(0, weight=1)
 
         # Use the resolved (original) node for the page diagram.
@@ -20451,7 +20463,7 @@ class AutoMLApp:
                 self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
                 self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
                 self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-                self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
+                self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
                 self.update_views()
                 self.page_diagram = None
             else:
@@ -20473,7 +20485,7 @@ class AutoMLApp:
             self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
             self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
             self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
-            self.canvas.bind("<ButtonRelease-3>", self.show_context_menu)
+            self.canvas.bind("<ButtonRelease-3>", self.on_right_mouse_release)
             self.update_views()
             self.page_diagram = None
 
