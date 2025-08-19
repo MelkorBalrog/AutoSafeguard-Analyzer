@@ -470,6 +470,7 @@ _BASE_CONN_TOOLS = [
 
 # Connection types that default to forward arrows
 _ARROW_FORWARD_BASE = {
+    "Flow",
     "Propagate",
     "Propagate by Review",
     "Propagate by Approval",
@@ -3297,7 +3298,6 @@ class DiagramConnection:
     guard: List[str] = field(default_factory=list)
     guard_ops: List[str] = field(default_factory=list)
     element_id: str = ""
-    stereotype: str = ""
     multiplicity: str = ""
     stereotype: str = ""
     phase: str | None = field(default_factory=lambda: SysMLRepository.get_instance().active_phase)
@@ -3322,6 +3322,7 @@ def format_control_flow_label(
     operators and shown before the action or activity name.
     """
     label = conn.name or ""
+    has_prefix = label.startswith("<<")
     if conn.conn_type == "Control Action" and not label and conn.element_id:
         elem = repo.elements.get(conn.element_id)
         if elem:
@@ -3333,7 +3334,7 @@ def format_control_flow_label(
         or diag_type == "Governance Diagram"
     )
     if special_case:
-        base = f"<<{stereo}>> {label}".strip() if stereo else label
+        base = label if has_prefix else (f"<<{stereo}>> {label}".strip() if stereo else label)
         if conn.guard:
             lines: List[str] = []
             for i, g in enumerate(conn.guard):
@@ -3345,7 +3346,7 @@ def format_control_flow_label(
             guard_text = "\n".join(lines)
             return f"[{guard_text}] / {base}" if base else f"[{guard_text}]"
         return base
-    if stereo:
+    if stereo and not has_prefix:
         return f"<<{stereo}>> {label}".strip() if label else f"<<{stereo}>>"
     return label
 
