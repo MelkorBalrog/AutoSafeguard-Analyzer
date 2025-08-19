@@ -4177,27 +4177,32 @@ class SysMLDiagramWindow(tk.Frame):
                 "Used after Review",
                 "Used after Approval",
             ):
-                sname = src.properties.get("name")
-                dname = dst.properties.get("name")
-                if sname not in UNRESTRICTED_USAGE_SOURCES and (
-                    sname, dname
-                ) not in ALLOWED_USAGE:
-                    return False, (
-                        "No metamodel dependency between these work products"
-                    )
-                if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
-                    sname == "ODD" and dname == "Scenario Library"
-                ):
-                    return False, f"{conn_type} links must target a safety analysis work product"
-                if (
-                    sname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                    and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
-                ):
-                    if sname != "Mission Profile":
-                        if (sname, dname) in ALLOWED_PROPAGATIONS:
-                            return False, "Use a Propagate relationship between safety analysis work products"
-                        if (sname, dname) not in ALLOWED_ANALYSIS_USAGE:
-                            return False, "No metamodel dependency between these safety analyses"
+                special_doc_link = (
+                    src.obj_type in {"Guideline", "Policy", "Principle", "Standard"}
+                    and dst.obj_type == "Lifecycle Phase"
+                )
+                if not special_doc_link:
+                    sname = src.properties.get("name")
+                    dname = dst.properties.get("name")
+                    if sname not in UNRESTRICTED_USAGE_SOURCES and (
+                        sname, dname
+                    ) not in ALLOWED_USAGE:
+                        return False, (
+                            "No metamodel dependency between these work products"
+                        )
+                    if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
+                        sname == "ODD" and dname == "Scenario Library"
+                    ):
+                        return False, f"{conn_type} links must target a safety analysis work product"
+                    if (
+                        sname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                        and dname in SAFETY_ANALYSIS_WORK_PRODUCTS
+                    ):
+                        if sname != "Mission Profile":
+                            if (sname, dname) in ALLOWED_PROPAGATIONS:
+                                return False, "Use a Propagate relationship between safety analysis work products"
+                            if (sname, dname) not in ALLOWED_ANALYSIS_USAGE:
+                                return False, "No metamodel dependency between these safety analyses"
                 # Prevent multiple 'Used' relationships between the same
                 # work products within the active lifecycle phase. Only one
                 # of "Used By", "Used after Review" or "Used after Approval"
