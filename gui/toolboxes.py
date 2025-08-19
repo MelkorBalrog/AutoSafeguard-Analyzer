@@ -3968,13 +3968,18 @@ class TC2FIWindow(tk.Frame):
         self.app.update_views()
 
 
-class HazardExplorerWindow(tk.Toplevel):
+class HazardExplorerWindow(tk.Frame):
     """Read-only list of hazards per risk assessment."""
 
-    def __init__(self, app):
-        super().__init__(app.root)
+    def __init__(self, master, app=None):
+        if app is None and hasattr(master, "root"):
+            app = master
+            master = tk.Toplevel(app.root)
+        super().__init__(master)
         self.app = app
-        self.title("Hazard Explorer")
+        if isinstance(master, tk.Toplevel):
+            master.title("Hazard Explorer")
+            self.pack(fill=tk.BOTH, expand=True)
 
         columns = ("Assessment", "Malfunction", "Hazard", "Severity")
         configure_table_style("HazExp.Treeview")
