@@ -19014,7 +19014,26 @@ class FaultTreeApp:
         )
         if not path:
             return
+        try:
+            from cryptography.fernet import Fernet
+        except Exception:  # pragma: no cover - dependency check
+            import subprocess
+            import sys
 
+            try:
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "cryptography"]
+                )
+                from cryptography.fernet import Fernet
+            except Exception:
+                messagebox.showerror(
+                    "Save Model", "cryptography package is required for encrypted save."
+                )
+                return
+        from tkinter import simpledialog
+        import base64
+        import gzip
+        import hashlib
         import json
         import os
 
@@ -19080,10 +19099,19 @@ class FaultTreeApp:
             try:
                 from cryptography.fernet import Fernet, InvalidToken
             except Exception:  # pragma: no cover - dependency check
-                messagebox.showerror(
-                    "Load Model", "cryptography package is required for encrypted files."
-                )
-                return
+                import subprocess
+                import sys
+
+                try:
+                    subprocess.check_call(
+                        [sys.executable, "-m", "pip", "install", "cryptography"]
+                    )
+                    from cryptography.fernet import Fernet, InvalidToken
+                except Exception:
+                    messagebox.showerror(
+                        "Load Model", "cryptography package is required for encrypted files."
+                    )
+                    return
             from tkinter import simpledialog
             import base64
             import gzip
