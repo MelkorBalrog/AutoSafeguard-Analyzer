@@ -2940,10 +2940,17 @@ class AutoMLApp:
         self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         logger.set_toggle_button(self.toggle_log_button)
 
-        # Explorer notebook (hidden by default)
-        self.explorer_nb = ttk.Notebook(self.main_pane)
+        # Explorer pane with notebook and pin button (hidden by default)
+        self.explorer_pane = ttk.Frame(self.main_pane)
+        self.explorer_nb = ttk.Notebook(self.explorer_pane)
+        self.explorer_nb.pack(fill=tk.BOTH, expand=True)
         self._explorer_width = 300
         self._explorer_auto_hide_id = None
+        self._explorer_pinned = False
+        self._explorer_pin_btn = ttk.Button(
+            self.explorer_pane, text="Pin", command=self.toggle_explorer_pin
+        )
+        self._explorer_pin_btn.pack(anchor="ne")
         self._explorer_tab = ttk.Label(
             self.top_frame,
             text="F\ni\nl\ne\ns",
@@ -2952,8 +2959,9 @@ class AutoMLApp:
         )
         self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
         self._explorer_tab.bind("<Enter>", lambda _e: self.show_explorer(animate=True))
-        self.explorer_nb.bind("<Enter>", lambda _e: self._cancel_explorer_hide())
-        self.explorer_nb.bind("<Leave>", lambda _e: self._schedule_explorer_hide())
+        self.explorer_pane.bind("<Enter>", lambda _e: self._cancel_explorer_hide())
+        self.explorer_pane.bind("<Leave>", lambda _e: self._schedule_explorer_hide())
+        self.explorer_pane.bind("<Configure>", lambda _e: self._limit_explorer_size())
 
         self.analysis_tab = ttk.Frame(self.explorer_nb)
         self.explorer_nb.add(self.analysis_tab, text="File Explorer")
@@ -10409,7 +10417,7 @@ class AutoMLApp:
     # Explorer panel show/hide helpers
     def show_explorer(self, animate=False):
         """Display the explorer pane."""
-        if self.explorer_nb.winfo_manager():
+        if self.explorer_pane.winfo_manager():
             self._cancel_explorer_hide()
             return
         self._explorer_tab.pack_forget()
@@ -10419,18 +10427,18 @@ class AutoMLApp:
         # slide-out effect.  To ensure a smooth animation, add the explorer
         # pane first and immediately force its width to zero before scheduling
         # the animation.
-        self.main_pane.add(self.explorer_nb, before=self.doc_frame)
-        self.main_pane.paneconfig(self.explorer_nb, width=0)
+        self.main_pane.add(self.explorer_pane, before=self.doc_frame)
+        self.main_pane.paneconfig(self.explorer_pane, width=0)
         if animate:
             self._animate_explorer_show(0)
         else:
-            self.main_pane.paneconfig(self.explorer_nb, width=self._explorer_width)
+            self.main_pane.paneconfig(self.explorer_pane, width=self._explorer_width)
 
     def _animate_explorer_show(self, width):
         if width >= self._explorer_width:
-            self.main_pane.paneconfig(self.explorer_nb, width=self._explorer_width)
+            self.main_pane.paneconfig(self.explorer_pane, width=self._explorer_width)
             return
-        self.main_pane.paneconfig(self.explorer_nb, width=width)
+        self.main_pane.paneconfig(self.explorer_pane, width=width)
         self.root.after(
             15,
             lambda: self._animate_explorer_show(
@@ -10440,21 +10448,21 @@ class AutoMLApp:
 
     def hide_explorer(self, animate=False):
         """Hide the explorer pane."""
-        if not self.explorer_nb.winfo_manager():
+        if self._explorer_pinned or not self.explorer_pane.winfo_manager():
             return
         self._cancel_explorer_hide()
         if animate:
-            self._animate_explorer_hide(self.explorer_nb.winfo_width())
+            self._animate_explorer_hide(self.explorer_pane.winfo_width())
         else:
-            self.main_pane.forget(self.explorer_nb)
+            self.main_pane.forget(self.explorer_pane)
             self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
 
     def _animate_explorer_hide(self, width):
         if width <= 0:
-            self.main_pane.forget(self.explorer_nb)
+            self.main_pane.forget(self.explorer_pane)
             self._explorer_tab.pack(side=tk.LEFT, fill=tk.Y)
             return
-        self.main_pane.paneconfig(self.explorer_nb, width=width)
+        self.main_pane.paneconfig(self.explorer_pane, width=width)
         self.root.after(
             15,
             lambda: self._animate_explorer_hide(
@@ -10463,6 +10471,8 @@ class AutoMLApp:
         )
 
     def _schedule_explorer_hide(self, delay=1000):
+        if self._explorer_pinned:
+            return
         if self._explorer_auto_hide_id:
             self.root.after_cancel(self._explorer_auto_hide_id)
         self._explorer_auto_hide_id = self.root.after(
@@ -10473,6 +10483,22 @@ class AutoMLApp:
         if self._explorer_auto_hide_id:
             self.root.after_cancel(self._explorer_auto_hide_id)
             self._explorer_auto_hide_id = None
+
+    def toggle_explorer_pin(self):
+        """Toggle between auto-hide and pinned explorer modes."""
+        self._explorer_pinned = not self._explorer_pinned
+        self._explorer_pin_btn.config(text="Unpin" if self._explorer_pinned else "Pin")
+        if self._explorer_pinned:
+            self._cancel_explorer_hide()
+        else:
+            self._schedule_explorer_hide()
+
+    def _limit_explorer_size(self):
+        """Ensure the explorer pane does not exceed the maximum width."""
+        if self.explorer_pane.winfo_manager():
+            width = self.explorer_pane.winfo_width()
+            if width > self._explorer_width:
+                self.main_pane.paneconfig(self.explorer_pane, width=self._explorer_width)
 
     def auto_arrange(self):
         if self.root_node is None:
