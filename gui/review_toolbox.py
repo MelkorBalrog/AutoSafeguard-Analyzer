@@ -1973,17 +1973,38 @@ class VersionCompareDialog(tk.Frame):
         log_frame = tk.Frame(self)
         log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         vbar_log = tk.Scrollbar(log_frame, orient=tk.VERTICAL)
+        self.log_line_numbers = tk.Text(
+            log_frame,
+            width=4,
+            padx=4,
+            takefocus=0,
+            fg="white",
+            bg="black",
+            yscrollcommand=vbar_log.set,
+            state="disabled",
+        )
         self.log_text = tk.Text(
             log_frame,
             wrap="word",
-            yscrollcommand=vbar_log.set,
+            yscrollcommand=lambda *args: (
+                vbar_log.set(*args),
+                self.log_line_numbers.yview_moveto(args[0]),
+            ),
             height=8,
         )
-        vbar_log.config(command=self.log_text.yview)
-        vbar_log.pack(side=tk.RIGHT, fill=tk.Y)
+        vbar_log.config(
+            command=lambda *args: (
+                self.log_text.yview(*args),
+                self.log_line_numbers.yview(*args),
+            )
+        )
+        self.log_line_numbers.pack(side=tk.LEFT, fill=tk.Y)
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vbar_log.pack(side=tk.RIGHT, fill=tk.Y)
         self.log_text.tag_configure("added", foreground="blue")
         self.log_text.tag_configure("removed", foreground="red")
+        self.log_text.bind("<<Modified>>", self._on_log_text_modified)
+        self._update_log_line_numbers()
 
         if names:
             self.base_combo.current(0)
@@ -2006,6 +2027,20 @@ class VersionCompareDialog(tk.Frame):
             elif tag == "replace":
                 self.log_text.insert(tk.END, old[i1:i2], "removed")
                 self.log_text.insert(tk.END, new[j1:j2], "added")
+
+    def _on_log_text_modified(self, event=None):
+        """Update line numbers when the log text changes."""
+        self.log_text.edit_modified(False)
+        self._update_log_line_numbers()
+
+    def _update_log_line_numbers(self):
+        """Refresh the line number column for the log text."""
+        self.log_line_numbers.config(state="normal")
+        self.log_line_numbers.delete("1.0", tk.END)
+        line_count = int(self.log_text.index("end-1c").split(".")[0])
+        numbers = "\n".join(str(i) for i in range(1, line_count + 1))
+        self.log_line_numbers.insert("1.0", numbers)
+        self.log_line_numbers.config(state="disabled")
 
     def diff_segments(self, old, new):
         """Return [(text, color)] representing the diff between old and new."""
