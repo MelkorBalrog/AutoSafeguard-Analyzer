@@ -11229,8 +11229,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
             frames = [self.tools_frame]
             if name == "Governance Core":
                 frames.append(action_frame)
-                if getattr(self, "rel_frame", None):
-                    frames.append(self.rel_frame)
             frames.append(build_frame(name, data))
             self._toolbox_frames[name] = frames
 
