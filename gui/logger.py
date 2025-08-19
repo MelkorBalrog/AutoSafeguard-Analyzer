@@ -10,6 +10,7 @@ _toggle_button = None
 
 # Internal state tracking
 _default_height = 0
+_line_height = 0
 _auto_hide_id = None
 
 # Mapping of log levels to the tag name that will be used for colouring
@@ -34,11 +35,12 @@ def init_log_window(root, height=7, dark_mode: bool = True):
         SynapseX assembly editor style. Otherwise a light theme is used.
     """
 
-    global log_widget, _line_widget, log_frame, _default_height
+    global log_widget, _line_widget, log_frame, _default_height, _line_height
     frame = ttk.Frame(root)
     frame.pack_propagate(False)
     font = tkfont.Font(root=root, family="Consolas", size=11)
     line_height = font.metrics("linespace")
+    _line_height = line_height
     _default_height = line_height * height
     frame.configure(height=_default_height)
     log_frame = frame
@@ -169,12 +171,24 @@ def toggle_log():
         show_log()
 
 
-def show_temporarily(duration=3000):
-    """Show the logs briefly before hiding them with animation."""
+def show_temporarily(duration=3000, lines: int | None = None):
+    """Show the logs briefly before hiding them with animation.
+
+    Parameters
+    ----------
+    duration:
+        Time in milliseconds before hiding the log window.
+    lines:
+        Number of display lines to show. If provided and exceeds the default
+        height, the log window expands to fit the message.
+    """
     global _auto_hide_id
     if not log_frame:
         return
     show_log()
+    if lines:
+        desired_height = max(_default_height, _line_height * lines)
+        log_frame.configure(height=desired_height)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
@@ -200,13 +214,23 @@ def _update_line_numbers() -> None:
     _line_widget.configure(state="disabled")
 
 
-def log_message(message: str, level: str = "INFO") -> None:
-    """Append *message* with *level* prefix to the log window."""
+def log_message(message: str, level: str = "INFO") -> int:
+    """Append *message* with *level* prefix to the log window.
+
+    Returns the number of display lines added for the message.
+    """
     if not log_widget:
-        return
+        return 0
     log_widget.configure(state="normal")
     tag = _LEVEL_TAGS.get(level.upper(), "info")
+    start_index = log_widget.index("end-1c")
     log_widget.insert(tk.END, f"[{level}] {message}\n", tag)
+    end_index = log_widget.index("end-1c")
     log_widget.see(tk.END)
     log_widget.configure(state="disabled")
     _update_line_numbers()
+    try:
+        return log_widget.count(start_index, end_index, "displaylines")[0]
+    except Exception:
+        # Fallback to a simple newline count if displaylines is unsupported
+        return message.count("\n") + 1
