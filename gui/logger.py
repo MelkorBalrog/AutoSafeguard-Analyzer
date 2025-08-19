@@ -12,6 +12,9 @@ _toggle_button = None
 _default_height = 0
 _line_height = 0
 _auto_hide_id = None
+# Start and end indices of the most recently logged message
+_last_msg_start = "1.0"
+_last_msg_end = "1.0"
 
 # Mapping of log levels to the tag name that will be used for colouring
 _LEVEL_TAGS = {
@@ -179,25 +182,26 @@ def show_temporarily(duration=3000, lines: int | None = None):
     duration:
         Time in milliseconds before hiding the log window.
     lines:
-        Number of display lines to show. If provided, the log window is sized
-        to exactly fit that many lines rather than the default height.
+        If provided, explicitly size the log window for this many display lines
+        (plus an extra trailing blank).  When ``None`` the size is computed from
+        the most recently logged message which ensures correct sizing even when
+        other panes are pinned and affect widget width.
     """
     global _auto_hide_id
     if not log_frame:
         return
     show_log()
-    if lines:
-        # Calculate the pixel height of the newly logged message rather than
-        # relying on a fixed line height multiplier.  This accounts for line
-        # wrapping and ensures the entire message is visible.
-        log_frame.update_idletasks()
+    log_frame.update_idletasks()
+    if lines is None:
         try:
-            start_index = log_widget.index(f"end-{lines} lines linestart")
-            end_index = log_widget.index("end-1c")
-            pixel_height = log_widget.count(start_index, end_index, "ypixels")[0]
+            lines = log_widget.count(_last_msg_start, _last_msg_end, "displaylines")[0]
         except Exception:
-            pixel_height = _line_height * lines
-        log_frame.configure(height=pixel_height)
+            lines = None
+    if lines:
+        # Add one extra line to account for the newline appended after each
+        # message.  Without this the final line of a multi-line message may be
+        # obscured when the log is shown temporarily.
+        log_frame.configure(height=_line_height * (lines + 1))
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
@@ -228,6 +232,7 @@ def log_message(message: str, level: str = "INFO") -> int:
 
     Returns the number of display lines added for the message.
     """
+    global _last_msg_start, _last_msg_end
     if not log_widget:
         return 0
     log_widget.configure(state="normal")
@@ -235,6 +240,7 @@ def log_message(message: str, level: str = "INFO") -> int:
     start_index = log_widget.index("end-1c")
     log_widget.insert(tk.END, f"[{level}] {message}\n", tag)
     end_index = log_widget.index("end-1c")
+    _last_msg_start, _last_msg_end = start_index, end_index
     log_widget.see(tk.END)
     log_widget.configure(state="disabled")
     _update_line_numbers()
