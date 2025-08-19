@@ -18,7 +18,7 @@ import ast
 import json
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Sequence
 from dataclasses import dataclass
 
 # Ensure repository root is importable for local matplotlib stub
@@ -27,12 +27,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 def _sloc(lines: Iterable[str]) -> int:
     """Return the number of source lines of code ignoring blanks and comments."""
-    count = 0
-    for line in lines:
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#"):
-            count += 1
-    return count
+    return sum(
+        1
+        for line in lines
+        if (stripped := line.strip()) and not stripped.startswith("#")
+    )
 
 
 class ComplexityVisitor(ast.NodeVisitor):
@@ -80,6 +79,17 @@ class FunctionMetric:
     complexity: int
 
 
+def _function_metrics(tree: ast.AST) -> List[FunctionMetric]:
+    """Return complexity metrics for all functions within *tree*."""
+    functions: List[FunctionMetric] = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            visitor = ComplexityVisitor()
+            visitor.visit(node)
+            functions.append(FunctionMetric(node.name, node.lineno, visitor.score))
+    return functions
+
+
 def analyze_file(path: Path) -> Dict[str, object]:
     """Analyse a single Python file and return metrics."""
     try:
@@ -89,34 +99,68 @@ def analyze_file(path: Path) -> Dict[str, object]:
 
     loc = _sloc(source.splitlines())
     tree = ast.parse(source, filename=str(path))
-    functions: List[FunctionMetric] = []
-
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            visitor = ComplexityVisitor()
-            visitor.visit(node)
-            functions.append(FunctionMetric(node.name, node.lineno, visitor.score))
+    functions = _function_metrics(tree)
 
     return {"file": str(path), "loc": loc, "functions": [f.__dict__ for f in functions]}
 
 
+def _python_files(root: Path) -> List[Path]:
+    """Return all Python files under *root*."""
+    return list(root.rglob("*.py"))
+
+
+def _total_loc(results: Sequence[Dict[str, object]]) -> int:
+    return sum(r["loc"] for r in results)
+
+
+def _total_functions(results: Sequence[Dict[str, object]]) -> int:
+    return sum(len(r["functions"]) for r in results)
+
+
+def _average_complexity(results: Sequence[Dict[str, object]]) -> float:
+    complexities = [f["complexity"] for r in results for f in r["functions"]]
+    if not complexities:
+        return 0.0
+    return round(sum(complexities) / len(complexities), 2)
+
+
 def collect_metrics(root: Path) -> Dict[str, object]:
     """Collect metrics for all Python files under *root* directory."""
-    files = [p for p in root.rglob("*.py")]
+    files = _python_files(root)
     results = [analyze_file(p) for p in files]
-
-    total_loc = sum(r["loc"] for r in results)
-    total_functions = sum(len(r["functions"]) for r in results)
-    complexities = [f["complexity"] for r in results for f in r["functions"]]
-    avg_complexity = (sum(complexities) / len(complexities)) if complexities else 0
-
     return {
         "total_files": len(files),
-        "total_loc": total_loc,
-        "total_functions": total_functions,
-        "average_complexity": round(avg_complexity, 2),
+        "total_loc": _total_loc(results),
+        "total_functions": _total_functions(results),
+        "average_complexity": _average_complexity(results),
         "files": results,
     }
+
+
+def _plot_loc(files: Sequence[Dict[str, object]], out_dir: Path, plt) -> None:
+    names = [Path(f["file"]).name for f in files]
+    locs = [f["loc"] for f in files]
+    plt.figure()
+    plt.title("Lines of code per file")
+    plt.bar(names, locs)
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(out_dir / "metrics_loc.png")
+    plt.close()
+
+
+def _plot_complexity(files: Sequence[Dict[str, object]], out_dir: Path, plt) -> None:
+    complexities = [f["complexity"] for r in files for f in r["functions"]]
+    if not complexities:
+        return
+    plt.figure()
+    plt.title("Function complexity distribution")
+    plt.hist(complexities, bins=range(1, max(complexities) + 2))
+    plt.xlabel("Complexity")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.savefig(out_dir / "metrics_complexity.png")
+    plt.close()
 
 
 def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
@@ -128,27 +172,10 @@ def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
         return
 
     files = metrics.get("files", [])
-    if files:
-        names = [Path(f["file"]).name for f in files]
-        locs = [f["loc"] for f in files]
-        plt.figure()
-        plt.title("Lines of code per file")
-        plt.bar(names, locs)
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(out_dir / "metrics_loc.png")
-        plt.close()
-
-    complexities = [f["complexity"] for r in files for f in r["functions"]]
-    if complexities:
-        plt.figure()
-        plt.title("Function complexity distribution")
-        plt.hist(complexities, bins=range(1, max(complexities) + 2))
-        plt.xlabel("Complexity")
-        plt.ylabel("Frequency")
-        plt.tight_layout()
-        plt.savefig(out_dir / "metrics_complexity.png")
-        plt.close()
+    if not files:
+        return
+    _plot_loc(files, out_dir, plt)
+    _plot_complexity(files, out_dir, plt)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
