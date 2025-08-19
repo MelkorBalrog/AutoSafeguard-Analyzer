@@ -102,3 +102,29 @@ class CapsuleButton(tk.Canvas):
     def _on_click(self, _event: tk.Event) -> None:
         if self._command:
             self._command()
+
+    def configure(self, **kwargs) -> None:  # pragma: no cover - thin wrapper
+        """Allow dynamic configuration similar to standard Tk buttons."""
+        text = kwargs.pop("text", None)
+        if text is not None:
+            self._text = text
+            if self._text_item is not None:
+                self.itemconfigure(self._text_item, text=self._text)
+        command = kwargs.pop("command", None)
+        if command is not None:
+            self._command = command
+        bg = kwargs.pop("bg", None)
+        hover_bg = kwargs.pop("hover_bg", None)
+        width = kwargs.get("width")
+        height = kwargs.get("height")
+        super().configure(**kwargs)
+        if bg is not None:
+            self._normal_color = bg
+            self._hover_color = hover_bg or _lighten(bg, 1.2)
+            self._set_color(self._normal_color)
+        if hover_bg is not None and bg is None:
+            self._hover_color = hover_bg
+        if width is not None or height is not None or text is not None:
+            self._draw_button()
+
+    config = configure

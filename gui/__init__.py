@@ -3,10 +3,16 @@ from __future__ import annotations
 
 """Shared GUI helpers and widget customizations."""
 
+import tkinter as tk
 from tkinter import ttk
 
 from .capsule_button import CapsuleButton  # noqa: F401
 
+# Use CapsuleButton for all button instances across the GUI.  Monkeypatching
+# both ``ttk.Button`` and the classic ``tk.Button`` ensures the custom hover
+# highlight is applied consistently without modifying every call site.
+ttk.Button = CapsuleButton  # type: ignore[assignment]
+tk.Button = CapsuleButton  # type: ignore[assignment]
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
