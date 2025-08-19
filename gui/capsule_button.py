@@ -23,6 +23,14 @@ def _lighten(color: str, factor: float = 1.2) -> str:
     return _rgb_to_hex((r, g, b))
 
 
+def _darken(color: str, factor: float = 0.8) -> str:
+    r, g, b = _hex_to_rgb(color)
+    r = max(int(r * factor), 0)
+    g = max(int(g * factor), 0)
+    b = max(int(b * factor), 0)
+    return _rgb_to_hex((r, g, b))
+
+
 class CapsuleButton(tk.Canvas):
     """A capsule-shaped button that lightens on mouse hover.
 
@@ -71,16 +79,20 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._normal_color = bg
+
         self._hover_color = hover_bg or _lighten(bg, hover_factor)
+        self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
+        self._shine_items: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
-        self.bind("<Button-1>", self._on_click)
+        self.bind("<ButtonPress-1>", self._on_press)
+        self.bind("<ButtonRelease-1>", self._on_release)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
 
@@ -162,6 +174,9 @@ class CapsuleButton(tk.Canvas):
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
+        highlight = _lighten(color, 1.4)
+        for item in self._shine_items:
+            self.itemconfigure(item, fill=highlight)
         self._current_color = color
 
     def _on_enter(self, _event: tk.Event) -> None:
@@ -172,11 +187,19 @@ class CapsuleButton(tk.Canvas):
         if "disabled" not in self._state:
             self._set_color(self._normal_color)
 
-    def _on_click(self, _event: tk.Event) -> None:
+    def _on_press(self, _event: tk.Event) -> None:
+        if "disabled" not in self._state:
+            self._set_color(self._pressed_color)
+
+    def _on_release(self, event: tk.Event) -> None:
         if "disabled" in self._state:
             return
-        if self._command:
-            self._command()
+        if self.winfo_containing(event.x_root, event.y_root) == self:
+            self._set_color(self._hover_color)
+            if self._command:
+                self._command()
+        else:
+            self._set_color(self._normal_color)
 
     def _apply_state(self) -> None:
         """Update the visual appearance to reflect the current state."""
@@ -233,7 +256,13 @@ class CapsuleButton(tk.Canvas):
         self._draw_button()
         self._apply_state()
 
-    config = configure
+    def _update_state(self, state: Optional[str]) -> None:
+        if state is None:
+            return
+        if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
+            self.state(["disabled"])
+        else:
+            self.state(["!disabled"])
 
     def state(self, states: list[str] | tuple[str, ...] | None = None) -> list[str]:
         """Mimic the ``ttk.Widget.state`` method for simple disabled handling."""
