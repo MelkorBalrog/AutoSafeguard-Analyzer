@@ -131,13 +131,13 @@ class GSNDiagramWindow(tk.Frame):
         try:
             node_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Elements (elements)",
+                text="Elements",
                 style="Toolbox.TLabelframe",
             )
         except TypeError:
             node_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Elements (elements)",
+                text="Elements",
             )
         node_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in node_cmds:
@@ -156,13 +156,13 @@ class GSNDiagramWindow(tk.Frame):
         try:
             rel_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Relationships (relationships)",
+                text="Relationships",
                 style="Toolbox.TLabelframe",
             )
         except TypeError:
             rel_frame = ttk.LabelFrame(
                 self.toolbox,
-                text="Relationships (relationships)",
+                text="Relationships",
             )
         rel_frame.pack(side=tk.TOP, fill=tk.X)
         for name, cmd in rel_cmds:

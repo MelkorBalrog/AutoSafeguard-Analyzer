@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
-from gui import messagebox
+from gui import messagebox, TranslucidButton
 from gui.toolboxes import (
     configure_table_style,
     _RequirementDialog,
@@ -44,10 +44,10 @@ class StpaWindow(tk.Frame):
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
-        ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
-        ttk.Button(top, text="Edit", command=self.edit_doc).pack(side=tk.LEFT)
-        ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="Edit", command=self.edit_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
         self.diag_lbl = ttk.Label(top, text="")
         self.diag_lbl.pack(side=tk.LEFT, padx=10)
@@ -79,13 +79,13 @@ class StpaWindow(tk.Frame):
 
         btn = ttk.Frame(self)
         btn.pack(fill=tk.X)
-        ttk.Button(btn, text="Add", command=self.add_row).pack(
+        TranslucidButton(btn, text="Add", command=self.add_row).pack(
             side=tk.LEFT, padx=2, pady=2
         )
-        ttk.Button(btn, text="Edit", command=self.edit_row).pack(
+        TranslucidButton(btn, text="Edit", command=self.edit_row).pack(
             side=tk.LEFT, padx=2, pady=2
         )
-        ttk.Button(btn, text="Delete", command=self.del_row).pack(
+        TranslucidButton(btn, text="Delete", command=self.del_row).pack(
             side=tk.LEFT, padx=2, pady=2
         )
 
@@ -455,16 +455,16 @@ class StpaWindow(tk.Frame):
             for rid in self.row.safety_constraints:
                 req = global_requirements.get(rid, {"text": ""})
                 self.sc_lb.insert(tk.END, f"[{rid}] {req.get('text','')}")
-            ttk.Button(sc_frame, text="Add New", command=self.add_sc_new).grid(
+            TranslucidButton(sc_frame, text="Add New", command=self.add_sc_new).grid(
                 row=1, column=0
             )
-            ttk.Button(
+            TranslucidButton(
                 sc_frame, text="Add Existing", command=self.add_sc_existing
             ).grid(row=1, column=1)
-            ttk.Button(sc_frame, text="Edit", command=self.edit_sc).grid(
+            TranslucidButton(sc_frame, text="Edit", command=self.edit_sc).grid(
                 row=1, column=2
             )
-            ttk.Button(sc_frame, text="Delete", command=self.del_sc).grid(
+            TranslucidButton(sc_frame, text="Delete", command=self.del_sc).grid(
                 row=1, column=3
             )
             return action_cb

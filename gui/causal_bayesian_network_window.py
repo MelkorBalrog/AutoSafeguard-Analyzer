@@ -31,9 +31,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         self.doc_var = tk.StringVar()
         self.doc_cb = ttk.Combobox(top, textvariable=self.doc_var, state="readonly")
         self.doc_cb.pack(side=tk.LEFT, padx=2)
-        ttk.Button(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
-        ttk.Button(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
-        ttk.Button(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="New", command=self.new_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="Rename", command=self.rename_doc).pack(side=tk.LEFT)
+        TranslucidButton(top, text="Delete", command=self.delete_doc).pack(side=tk.LEFT)
         self.doc_cb.bind("<<ComboboxSelected>>", self.select_doc)
 
         body = ttk.Frame(self)
