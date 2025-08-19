@@ -1,0 +1,11 @@
+{
+  "elements": {
+    "page_diagrams": "page_diagrams",
+    "sysml_diagrams": "sysml_diagrams"
+  },
+  "sections": [
+    {"title": "Item Overview", "content": "Describe the item and its purpose.<br/><page_diagrams>"},
+    {"title": "Operational Environment", "content": "Summarize operating conditions and assumptions."},
+    {"title": "Interfaces", "content": "List key interfaces and interactions.<br/><sysml_diagrams>"}
+  ]
+}

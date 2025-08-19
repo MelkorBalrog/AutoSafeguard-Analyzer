@@ -1,0 +1,13 @@
+{
+  "elements": {
+    "hazop": "hazop",
+    "risk": "risk",
+    "safety_goals": "safety_goals",
+    "req_functional_safety": "req_functional_safety"
+  },
+  "sections": [
+    {"title": "Hazard Analysis", "content": "<hazop><risk>"},
+    {"title": "Safety Goals", "content": "<safety_goals>"},
+    {"title": "Functional Safety Requirements", "content": "<req_functional_safety>"}
+  ]
+}
