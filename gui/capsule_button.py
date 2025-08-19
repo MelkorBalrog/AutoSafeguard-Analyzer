@@ -145,7 +145,10 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
+        self._shine_items = []
+        self._shade_items = []
         self._draw_highlight(w, h)
+        self._draw_shade(w, h)
         self._draw_content(w, h)
         self._draw_border(w, h)
 
@@ -193,6 +196,21 @@ class CapsuleButton(tk.Canvas):
                         stipple="gray25",
                     )
                 )
+
+    def _draw_shade(self, w: int, h: int) -> None:
+        """Add a translucent shade to suggest the far side of the capsule."""
+        shade_color = _darken(self._current_color, 0.9)
+        self._shade_items = [
+            self.create_oval(
+                1,
+                h // 2,
+                w - 1,
+                h - 1,
+                outline="",
+                fill=shade_color,
+                stipple="gray25",
+            )
+        ]
 
     def _draw_content(self, w: int, h: int) -> None:
         """Render optional image and text within the button."""
