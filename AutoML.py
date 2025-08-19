@@ -19008,48 +19008,112 @@ class FaultTreeApp:
         self.update_views()
 
     def save_model(self):
-        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
-        if path:
-            for fmea in self.fmeas:
-                self.export_fmea_to_csv(fmea, fmea['file'])
-            for fmeda in self.fmedas:
-                self.export_fmeda_to_csv(fmeda, fmeda['file'])
-            data = self.export_model_data()
-            with open(path, "w") as f:
-                json.dump(data, f, indent=4)
-            messagebox.showinfo("Saved", "Model saved with all configuration and safety goal information.")
-            self.set_last_saved_state()
+        path = filedialog.asksaveasfilename(
+            defaultextension=".autml",
+            filetypes=[("AutoML Project", "*.autml")],
+        )
+        if not path:
+            return
+        try:
+            from cryptography.fernet import Fernet
+        except Exception:  # pragma: no cover - dependency check
+            messagebox.showerror(
+                "Save Model", "cryptography package is required for encrypted save."
+            )
+            return
+        from tkinter import simpledialog
+        import base64
+        import gzip
+        import hashlib
+        import json
+
+        password = simpledialog.askstring(
+            "Password", "Enter encryption password:", show="*"
+        )
+        if password is None:
+            return
+        for fmea in self.fmeas:
+            self.export_fmea_to_csv(fmea, fmea["file"])
+        for fmeda in self.fmedas:
+            self.export_fmeda_to_csv(fmeda, fmeda["file"])
+        data = self.export_model_data()
+        raw = json.dumps(data).encode("utf-8")
+        compressed = gzip.compress(raw)
+        key = base64.urlsafe_b64encode(hashlib.sha256(password.encode()).digest())
+        token = Fernet(key).encrypt(compressed)
+        with open(path, "wb") as f:
+            f.write(token)
+        messagebox.showinfo(
+            "Saved", "Model saved with all configuration and safety goal information."
+        )
+        self.set_last_saved_state()
 
     def load_model(self):
         global AutoML_Helper
         # Reinitialize the helper so that the counter is reset.
         AutoML_Helper = AutoMLHelper()
         
-        path = filedialog.askopenfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
+        path = filedialog.askopenfilename(
+            defaultextension=".autml",
+            filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
+        )
         if not path:
             return
-        with open(path, "r") as f:
-            raw = f.read()
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            import re
-
-            def clean(text: str) -> str:
-                text = re.sub(r"//.*", "", text)
-                text = re.sub(r"#.*", "", text)
-                text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-                text = re.sub(r",\s*(\]|\})", r"\1", text)
-                return text
-
+        if path.endswith(".autml"):
             try:
-                data = json.loads(clean(raw))
-            except json.JSONDecodeError:
+                from cryptography.fernet import Fernet, InvalidToken
+            except Exception:  # pragma: no cover - dependency check
                 messagebox.showerror(
-                    "Load Model",
-                    f"Failed to parse JSON file:\n{exc}",
+                    "Load Model", "cryptography package is required for encrypted files."
                 )
                 return
+            from tkinter import simpledialog
+            import base64
+            import gzip
+            import hashlib
+            import json
+
+            password = simpledialog.askstring(
+                "Password", "Enter decryption password:", show="*"
+            )
+            if password is None:
+                return
+            key = base64.urlsafe_b64encode(hashlib.sha256(password.encode()).digest())
+            with open(path, "rb") as f:
+                token = f.read()
+            try:
+                compressed = Fernet(key).decrypt(token)
+            except InvalidToken:
+                messagebox.showerror("Load Model", "Decryption failed. Check password.")
+                return
+            try:
+                raw = gzip.decompress(compressed).decode("utf-8")
+                data = json.loads(raw)
+            except Exception as exc:  # pragma: no cover - parsing failure
+                messagebox.showerror("Load Model", f"Failed to parse model: {exc}")
+                return
+        else:
+            with open(path, "r") as f:
+                raw = f.read()
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                import re
+
+                def clean(text: str) -> str:
+                    text = re.sub(r"//.*", "", text)
+                    text = re.sub(r"#.*", "", text)
+                    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+                    text = re.sub(r",\s*(\]|\})", r"\1", text)
+                    return text
+
+                try:
+                    data = json.loads(clean(raw))
+                except json.JSONDecodeError:
+                    messagebox.showerror(
+                        "Load Model", f"Failed to parse JSON file:\n{exc}"
+                    )
+                    return
 
         self.apply_model_data(data)
         self.set_last_saved_state()
