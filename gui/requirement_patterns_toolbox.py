@@ -11,6 +11,7 @@ from config import (
     validate_requirement_patterns,
 )
 from gui import messagebox
+from gui.mac_button_style import apply_translucid_button_style
 
 
 PLACEHOLDER_COLORS = {
@@ -458,6 +459,7 @@ class RequirementPatternsEditor(tk.Frame):
 
     def __init__(self, master, app, config_path: Path | None = None):
         super().__init__(master)
+        apply_translucid_button_style()
         self.app = app
         self.config_path = Path(
             config_path
