@@ -3,6 +3,15 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
+try:  # pillow is optional and used only for icon shadows
+    from PIL import Image, ImageTk  # type: ignore
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None  # type: ignore
+
+try:  # Pillow is optional
+    from PIL import Image, ImageTk
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -113,8 +122,11 @@ class CapsuleButton(tk.Canvas):
         self._border_light: list[int] = []
         self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
+        self._text_shadow_item: Optional[int] = None
         self._image_item: Optional[int] = None
-        self._content_shade_item: Optional[int] = None
+        self._text_shadow_item: Optional[int] = None
+        self._text_highlight_item: Optional[int] = None
+        self._icon_highlight_item: Optional[int] = None
         self._draw_button()
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -249,13 +261,15 @@ class CapsuleButton(tk.Canvas):
 
 
     def _draw_content(self, w: int, h: int) -> None:
-        """Render optional image and text with a recessed shading effect."""
+        """Render optional image and text with soft shadows and highlights."""
         cx, cy = w // 2, h // 2
         self._text_item = None
+        self._text_shadow_item = None
         self._image_item = None
-        if self._content_shade_item is not None:
-            self.delete(self._content_shade_item)
-            self._content_shade_item = None
+        self._text_shadow_item = None
+        self._text_highlight_item = None
+        self._icon_highlight_item = None
+        shadow_col = _darken(self._current_color, 0.6)
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -266,32 +280,67 @@ class CapsuleButton(tk.Canvas):
             img_x = start + img_w // 2
             text_x = start + img_w + spacing + text_w // 2
             self._image_item = self.create_image(img_x, cy, image=self._image)
+            self._icon_highlight_item = self.create_rectangle(
+                start,
+                cy - img_w // 2,
+                start + img_w,
+                cy + img_w // 2,
+                outline="",
+                fill="#ffffff",
+                stipple="gray50",
+            )
+            self._text_shadow_item = self.create_text(
+                text_x + 1,
+                cy + 1,
+                text=self._text,
+                fill=shadow_col,
+            )
+            self._text_item = self.create_text(text_x, cy, text=self._text)
+            self._text_highlight_item = self.create_text(
+                text_x,
+                cy,
+                text=self._text,
+                fill="#ffffff",
+                stipple="gray50",
+            )
             self._text_item = self.create_text(text_x, cy, text=self._text)
         elif self._image:
+            self._icon_shadow_item = self.create_oval(
+                cx - self._image.width() // 2 + 1,
+                cy - self._image.height() // 2 + 1,
+                cx + self._image.width() // 2 + 1,
+                cy + self._image.height() // 2 + 1,
+                outline="",
+                fill="#000000",
+                stipple="gray50",
+            )
             self._image_item = self.create_image(cx, cy, image=self._image)
+            self._icon_highlight_item = self.create_rectangle(
+                cx - self._image.width() // 2,
+                cy - self._image.height() // 2,
+                cx + self._image.width() // 2,
+                cy + self._image.height() // 2,
+                outline="",
+                fill="#ffffff",
+                stipple="gray50",
+            )
         else:
+            self._text_shadow_item = self.create_text(
+                cx + 1,
+                cy + 1,
+                text=self._text,
+                fill=shadow_col,
+            )
             self._text_item = self.create_text(cx, cy, text=self._text)
-        self._shade_content()
+            self._text_highlight_item = self.create_text(
+                cx,
+                cy,
+                text=self._text,
+                fill="#ffffff",
+                stipple="gray50",
+            )
 
-    def _shade_content(self) -> None:
-        items = [i for i in (self._text_item, self._image_item) if i]
-        if not items:
-            return
-        x1, y1, x2, y2 = self.bbox(items[0])
-        for item in items[1:]:
-            bx1, by1, bx2, by2 = self.bbox(item)
-            x1, y1 = min(x1, bx1), min(y1, by1)
-            x2, y2 = max(x2, bx2), max(y2, by2)
-        shade = _darken(self._current_color, 0.9)
-        self._content_shade_item = self.create_rectangle(
-            x1,
-            y1,
-            x2,
-            y2,
-            outline="",
-            fill=shade,
-            stipple="gray25",
-        )
+
 
     def _draw_border(self, w: int, h: int) -> None:
         """Draw border and inner outline to mimic an inset capsule."""
@@ -341,8 +390,6 @@ class CapsuleButton(tk.Canvas):
         self._apply_border_color(self._border_dark, dark)
         self._apply_border_color(self._border_light, light)
         self._apply_border_color(self._border_gap, gap)
-        if self._content_shade_item is not None:
-            self.itemconfigure(self._content_shade_item, fill=_darken(color, 0.9))
         self._current_color = color
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
