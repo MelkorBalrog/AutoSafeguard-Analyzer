@@ -13,3 +13,7 @@ def test_governance_element_connection_rules():
     assert set(rules["Uses"]["Role"]) == {"Document", "Data", "Record"}
     assert set(rules["Executes"]["Operation"]) == {"Procedure", "Process"}
     assert set(rules["Uses"]["Operation"]) == {"Data", "Document", "Record"}
+    assert set(rules["Used By"]["Guideline"]) == {"Lifecycle Phase"}
+    assert set(rules["Used By"]["Policy"]) == {"Lifecycle Phase"}
+    assert set(rules["Used By"]["Principle"]) == {"Lifecycle Phase"}
+    assert set(rules["Used By"]["Standard"]) == {"Lifecycle Phase"}
