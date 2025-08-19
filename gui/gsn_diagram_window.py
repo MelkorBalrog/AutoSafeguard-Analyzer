@@ -251,23 +251,14 @@ class GSNDiagramWindow(tk.Frame):
         self.toolbox_canvas.configure(width=button_width)
         self.toolbox_canvas.itemconfig(self._toolbox_window, width=button_width)
 
-        def max_text_len(widget: tk.Misc) -> int:
-            length = 0
+        def _set_uniform_width(widget: tk.Misc) -> None:
             for child in widget.winfo_children():
                 if isinstance(child, ttk.Button):
-                    length = max(length, len(str(child.cget("text"))))
+                    child.pack_configure(fill=tk.X, expand=True)
                 else:
-                    length = max(length, max_text_len(child))
-            return length
+                    _set_uniform_width(child)
 
-        def set_width(widget: tk.Misc, width: int) -> None:
-            for child in widget.winfo_children():
-                if isinstance(child, ttk.Button):
-                    child.configure(width=width)
-                else:
-                    set_width(child, width)
-
-        set_width(self.toolbox, max_text_len(self.toolbox) + 2)
+        _set_uniform_width(self.toolbox)
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
