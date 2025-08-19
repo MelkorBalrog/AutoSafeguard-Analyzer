@@ -17,9 +17,10 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
     NODE_RADIUS = 30
 
-    def __init__(self, master, app):
+    def __init__(self, master, app, icon_size: int = 16):
         super().__init__(master)
         self.app = app
+        self.icon_size = icon_size
         if isinstance(master, tk.Toplevel):
             master.title("Causal Bayesian Network Analysis")
 
@@ -39,13 +40,21 @@ class CausalBayesianNetworkWindow(tk.Frame):
 
         self.toolbox = ttk.Frame(body)
         self._icons = {
-            "Variable": draw_icon("circle", "lightgray"),
-            "Triggering Condition": draw_icon("circle", "lightblue"),
-            "Existing Triggering Condition": draw_icon("circle", "lightblue"),
-            "Functional Insufficiency": draw_icon("circle", "lightyellow"),
-            "Existing Functional Insufficiency": draw_icon("circle", "lightyellow"),
-            "Existing Malfunction": draw_icon("circle", "lightgreen"),
-            "Relationship": draw_icon("relation", "black"),
+            "Variable": draw_icon("circle", "lightgray", size=self.icon_size),
+            "Triggering Condition": draw_icon("circle", "lightblue", size=self.icon_size),
+            "Existing Triggering Condition": draw_icon(
+                "circle", "lightblue", size=self.icon_size
+            ),
+            "Functional Insufficiency": draw_icon(
+                "circle", "lightyellow", size=self.icon_size
+            ),
+            "Existing Functional Insufficiency": draw_icon(
+                "circle", "lightyellow", size=self.icon_size
+            ),
+            "Existing Malfunction": draw_icon(
+                "circle", "lightgreen", size=self.icon_size
+            ),
+            "Relationship": draw_icon("relation", "black", size=self.icon_size),
         }
         for name in (
             "Variable",
