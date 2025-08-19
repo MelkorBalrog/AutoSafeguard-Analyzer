@@ -12,7 +12,7 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=8, dark_mode: bool = True):
+def init_log_window(root, height=10, dark_mode: bool = True):
     """Create and return a styled log window packed in *root*.
 
     Parameters
@@ -47,7 +47,7 @@ def init_log_window(root, height=8, dark_mode: bool = True):
 
     _line_widget = tk.Text(
         frame,
-        width=4,
+        width=2,
         padx=3,
         takefocus=0,
         border=0,
@@ -91,7 +91,7 @@ def _update_line_numbers() -> None:
     _line_widget.configure(state="normal")
     _line_widget.delete("1.0", tk.END)
     num_lines = int(log_widget.index("end-1c").split(".")[0])
-    lines = "\n".join(str(i) for i in range(1, num_lines + 1))
+    lines = "\n".join(str(i).rjust(2) for i in range(1, num_lines + 1))
     _line_widget.insert("1.0", lines)
     _line_widget.configure(state="disabled")
 
@@ -103,6 +103,11 @@ def log_message(message: str, level: str = "INFO") -> None:
     log_widget.configure(state="normal")
     tag = _LEVEL_TAGS.get(level.upper(), "info")
     log_widget.insert(tk.END, f"[{level}] {message}\n", tag)
+    # Keep only the last 10 lines in the log
+    lines = int(log_widget.index("end-1c").split(".")[0])
+    if lines > 10:
+        excess = lines - 10
+        log_widget.delete("1.0", f"{excess + 1}.0")
     log_widget.see(tk.END)
     log_widget.configure(state="disabled")
     _update_line_numbers()
