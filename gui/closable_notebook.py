@@ -76,10 +76,17 @@ class ClosableNotebook(ttk.Notebook):
         # attach to the containing toplevel while a drag operation is active.
         # This ensures that we still receive ``<B1-Motion>`` and
         # ``<ButtonRelease-1>`` events even when the pointer is dragged outside
-        # of the notebook's visible area.
-        self._root: tk.Misc | None = None
-        self._root_motion: str | None = None
-        self._root_release: str | None = None
+        # of the notebook's visible area.  The internal Tk widget base class
+        # defines a ``_root()`` method which returns the containing toplevel.
+        # A previous version of this class used an attribute named ``_root`` to
+        # keep track of the bound toplevel and inadvertently shadowed that
+        # method.  When Tk's event dispatch code later attempted to call
+        # ``_root()`` it ended up invoking the attribute instead, resulting in a
+        # ``TypeError: 'NoneType' object is not callable``.  Use distinct names
+        # for our bookkeeping attributes to avoid clashing with Tk internals.
+        self._drag_root: tk.Misc | None = None
+        self._drag_root_motion: str | None = None
+        self._drag_root_release: str | None = None
 
         self.bind("<ButtonPress-1>", self._on_press, True)
         self.bind("<B1-Motion>", self._on_motion)
@@ -135,9 +142,11 @@ class ClosableNotebook(ttk.Notebook):
         # area.  Temporarily bind to the toplevel that contains this notebook
         # so those events are forwarded to the handlers below.  The bindings
         # are removed again in ``_reset_drag`` once the drag operation ends.
-        self._root = self.winfo_toplevel()
-        self._root_motion = self._root.bind("<B1-Motion>", self._on_motion, add="+")
-        self._root_release = self._root.bind(
+        self._drag_root = self.winfo_toplevel()
+        self._drag_root_motion = self._drag_root.bind(
+            "<B1-Motion>", self._on_motion, add="+"
+        )
+        self._drag_root_release = self._drag_root.bind(
             "<ButtonRelease-1>", self._on_release, add="+"
         )
         return None
@@ -272,17 +281,19 @@ class ClosableNotebook(ttk.Notebook):
     def _reset_drag(self) -> None:
         self._drag_data = {"tab": None, "x": 0, "y": 0}
         self._dragging = False
-        if self._root is not None:
-            if self._root_motion:
+        if self._drag_root is not None:
+            if self._drag_root_motion:
                 try:
-                    self._root.unbind("<B1-Motion>", self._root_motion)
+                    self._drag_root.unbind("<B1-Motion>", self._drag_root_motion)
                 except tk.TclError:
                     pass
-            if self._root_release:
+            if self._drag_root_release:
                 try:
-                    self._root.unbind("<ButtonRelease-1>", self._root_release)
+                    self._drag_root.unbind(
+                        "<ButtonRelease-1>", self._drag_root_release
+                    )
                 except tk.TclError:
                     pass
-            self._root = None
-            self._root_motion = None
-            self._root_release = None
+            self._drag_root = None
+            self._drag_root_motion = None
+            self._drag_root_release = None
