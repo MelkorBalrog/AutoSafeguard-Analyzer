@@ -15,14 +15,14 @@ def apply_mac_button_style(style: ttk.Style | None = None) -> ttk.Style:
     style.configure(
         "TButton",
         padding=(10, 5),
-        relief="raised",
-        borderwidth=1,
+        relief="flat",
+        borderwidth=0,
         foreground="black",
-        background="#e1e1e1",
+        background="",
     )
     style.map(
         "TButton",
-        background=[("active", "#f5f5f5"), ("pressed", "#d9d9d9")],
-        relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        background=[("active", ""), ("pressed", "")],
+        relief=[("pressed", "sunken"), ("!pressed", "flat")],
     )
     return style
