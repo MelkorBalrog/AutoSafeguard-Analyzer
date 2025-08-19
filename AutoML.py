@@ -2360,14 +2360,53 @@ class AutoMLApp:
             background=[("selected", "#4a6ea9"), ("!selected", "#b5bdc9")],
             foreground=[("selected", "white"), ("!selected", "#555555")],
         )
-        # Classic 3D buttons
-        self.style.configure(
-            "TButton",
-            background="#e7edf5",
-            borderwidth=2,
-            relief="raised",
-            lightcolor="#ffffff",
-            darkcolor="#7a8a99",
+        # Mac-like capsule buttons
+        def _build_pill(top: str, bottom: str) -> tk.PhotoImage:
+            img = tk.PhotoImage(width=40, height=20)
+            # ``PhotoImage.put`` only accepts RGB colors. Supplying an
+            # 8‑digit hex value (including an alpha channel) raises a
+            # ``TclError`` on some Tk builds, particularly on Windows
+            # where transparency is not parsed in this manner.  To create
+            # a fully transparent background we instead specify an RGB
+            # color and use the ``alpha`` parameter.
+            img.put("#000000", to=(0, 0, 40, 20), alpha=0)
+            radius = 10
+            t_r = int(top[1:3], 16)
+            t_g = int(top[3:5], 16)
+            t_b = int(top[5:7], 16)
+            b_r = int(bottom[1:3], 16)
+            b_g = int(bottom[3:5], 16)
+            b_b = int(bottom[5:7], 16)
+            for y in range(20):
+                ratio = y / 19
+                r = int(t_r * (1 - ratio) + b_r * ratio)
+                g = int(t_g * (1 - ratio) + b_g * ratio)
+                b = int(t_b * (1 - ratio) + b_b * ratio)
+                color = f"#{r:02x}{g:02x}{b:02x}"
+                for x in range(40):
+                    if x < radius:
+                        if (x - radius) ** 2 + (y - radius) ** 2 <= radius ** 2:
+                            img.put(color, (x, y))
+                    elif x >= 40 - radius:
+                        if (x - (40 - radius - 1)) ** 2 + (y - radius) ** 2 <= radius ** 2:
+                            img.put(color, (x, y))
+                    else:
+                        img.put(color, (x, y))
+            return img
+
+        self._btn_imgs = {
+            "normal": _build_pill("#fdfdfd", "#d2d2d2"),
+            "active": _build_pill("#eaeaea", "#c8c8c8"),
+            "pressed": _build_pill("#d0d0d0", "#a5a5a5"),
+        }
+        self.style.element_create(
+            "RoundedButton",
+            "image",
+            self._btn_imgs["normal"],
+            ("active", self._btn_imgs["active"]),
+            ("pressed", self._btn_imgs["pressed"]),
+            border=10,
+            sticky="nsew",
         )
         self.style.map(
             "TButton",
