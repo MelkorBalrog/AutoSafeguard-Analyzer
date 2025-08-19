@@ -190,11 +190,13 @@ class CausalBayesianNetworkWindow(tk.Frame):
         button_width = max_button_width(self.toolbox)
 
         def _set_uniform(widget: tk.Misc) -> None:
-            for child in widget.winfo_children():
-                if isinstance(child, ttk.Button):
-                    child.pack_configure(fill=tk.X, expand=True)
-                else:
-                    _set_uniform(child)
+            for child in getattr(widget, "winfo_children", lambda: [])():
+                if hasattr(child, "pack_configure"):
+                    try:
+                        child.pack_configure(fill=tk.X, expand=True)
+                    except Exception:
+                        pass
+                _set_uniform(child)
 
         _set_uniform(self.toolbox)
         self.toolbox.configure(width=button_width)
