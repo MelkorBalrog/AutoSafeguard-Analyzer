@@ -31,10 +31,9 @@ class ToolTip:
             y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
-        # Ensure the tooltip stays above other windows and make it translucent
+        # Ensure the tooltip stays above other windows
         try:
             tw.wm_attributes("-topmost", True)
-            tw.wm_attributes("-alpha", 0.9)
         except tk.TclError:
             pass
 
@@ -49,10 +48,9 @@ class ToolTip:
             tw,
             width=width,
             height=height,
-            background=tw.cget("background"),
-            relief="flat",
-            borderwidth=0,
-            highlightthickness=0,
+            background="#ffffe0",
+            relief="solid",
+            borderwidth=1,
             wrap="none",
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
