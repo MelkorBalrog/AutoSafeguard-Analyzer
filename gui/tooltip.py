@@ -26,14 +26,28 @@ class ToolTip:
     def _show(self, x: int | None = None, y: int | None = None):
         if self.tipwindow or not self.text:
             return
-        if x is None:
-            x = self.widget.winfo_rootx() + 20
-            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
+
+        # If explicit coordinates aren't provided, fall back to the current
+        # pointer location so the tooltip follows the cursor.  Handle x and y
+        # independently to avoid "unbound" errors when only one value is given.
+        if x is None or y is None:
+            px, py = self.widget.winfo_pointerxy()
+            if x is None:
+                x = px
+            if y is None:
+                y = py
+
+        # Offset slightly so the cursor stays over the widget, otherwise some
+        # widgets (e.g. notebook tabs) immediately receive a <Leave> event when
+        # the tooltip window appears on top of the pointer.
+        x += 1
+        y += 1
         self.tipwindow = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         # Ensure the tooltip stays above other windows
         try:
             tw.wm_attributes("-topmost", True)
+            tw.wm_attributes("-alpha", 0.9)
         except tk.TclError:
             pass
 
@@ -52,6 +66,8 @@ class ToolTip:
             relief="solid",
             borderwidth=1,
             wrap="none",
+            # Use a fixed-width font so table-like tooltip content stays aligned
+            font=("TkFixedFont", 8),
         )
         vbar = ttk.Scrollbar(tw, orient="vertical", command=text.yview)
         hbar = ttk.Scrollbar(tw, orient="horizontal", command=text.xview)
