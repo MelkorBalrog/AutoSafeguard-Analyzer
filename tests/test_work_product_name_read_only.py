@@ -19,8 +19,14 @@ class DummyVar:
 def test_work_product_name_read_only():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
-    diag = repo.create_diagram("Governance Diagram")
-    obj = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Risk Assessment"})
+    repo.create_diagram("Governance Diagram")
+    obj = SysMLObject(
+        1,
+        "Work Product",
+        0.0,
+        0.0,
+        properties={"name": "Risk Assessment", "name_locked": "1"},
+    )
     dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
     dlg.obj = obj
     dlg.master = object()
@@ -33,6 +39,25 @@ def test_work_product_name_read_only():
     dlg._behaviors = []
     dlg.apply()
     assert obj.properties["name"] == "Risk Assessment"
+
+
+def test_work_product_name_editable_when_unlocked():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    repo.create_diagram("Governance Diagram")
+    obj = SysMLObject(1, "Work Product", 0.0, 0.0, properties={"name": "Custom"})
+    dlg = SysMLObjectDialog.__new__(SysMLObjectDialog)
+    dlg.obj = obj
+    dlg.master = object()
+    dlg.name_var = DummyVar("Renamed")
+    dlg.width_var = DummyVar(str(obj.width))
+    dlg.height_var = DummyVar(str(obj.height))
+    dlg.entries = {}
+    dlg.listboxes = {}
+    dlg._operations = []
+    dlg._behaviors = []
+    dlg.apply()
+    assert obj.properties["name"] == "Renamed"
 
 
 def test_process_area_name_read_only():
@@ -111,6 +136,12 @@ def test_place_work_product_sets_name_locked():
     win = _create_win()
     win._place_work_product("FMEA", 0.0, 0.0)
     assert win.objects[-1].properties.get("name_locked") == "1"
+
+
+def test_place_generic_work_product_unlocked():
+    win = _create_win()
+    win._place_work_product("Generic", 0.0, 0.0, lock_name=False)
+    assert win.objects[-1].properties.get("name_locked") != "1"
 
 
 def test_place_process_area_sets_name_locked():
