@@ -20,7 +20,11 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
         for child in w.winfo_children():
             if isinstance(child, ttk.Button):
                 buttons.append(child)
-                max_chars = max(max_chars, len(str(child.cget("text"))))
+                try:
+                    text = str(child.cget("text"))
+                except tk.TclError:
+                    text = str(getattr(child, "_text", ""))
+                max_chars = max(max_chars, len(text))
             else:
                 _collect(child)
 
