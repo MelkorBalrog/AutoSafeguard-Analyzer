@@ -88,7 +88,7 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
-        self._shine_items: list[int] = []
+        self._highlight_items: list[int] = []
         self._shade_items: list[int] = []
         # Border items are split into dark and light segments to create a
         # recessed "hole" effect around the button outline.  ``_border_outline``
@@ -153,11 +153,12 @@ class CapsuleButton(tk.Canvas):
         self._draw_border(w, h)
 
     def _draw_highlight(self, w: int, h: int) -> None:
-        """Draw shiny highlight, diffused circles and bottom shade."""
+        """Draw shiny highlight and shaded region to create a 3D capsule."""
         r = self._radius
         color = self._current_color
         top_highlight = _lighten(color, 1.4)
-        self._shine_items.append(
+        bottom_shade = _darken(color, 0.9)
+        self._highlight_items = [
             self.create_oval(
                 1,
                 1,
@@ -167,9 +168,8 @@ class CapsuleButton(tk.Canvas):
                 fill=top_highlight,
                 stipple="gray25",
             )
-        )
-        bottom_shade = _darken(color, 0.9)
-        self._shade_items.append(
+        ]
+        self._shade_items = [
             self.create_oval(
                 1,
                 h // 2,
@@ -179,13 +179,13 @@ class CapsuleButton(tk.Canvas):
                 fill=bottom_shade,
                 stipple="gray50",
             )
-        )
+        ]
         small_r = max(r // 3, 2)
         centers = [(r // 2, h // 2), (w - r // 2, h // 2)]
         for cx, cy in centers:
             for i in range(3):
                 rad = max(small_r - i * (small_r // 3), 1)
-                self._shine_items.append(
+                self._highlight_items.append(
                     self.create_oval(
                         cx - rad,
                         cy - rad,
@@ -277,9 +277,9 @@ class CapsuleButton(tk.Canvas):
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
         highlight = _lighten(color, 1.4)
-        for item in self._shine_items:
-            self.itemconfigure(item, fill=highlight)
         shade = _darken(color, 0.9)
+        for item in self._highlight_items:
+            self.itemconfigure(item, fill=highlight)
         for item in self._shade_items:
             self.itemconfigure(item, fill=shade)
         inner = _darken(color, 0.7)
