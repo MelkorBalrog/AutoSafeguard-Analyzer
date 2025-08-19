@@ -6,7 +6,7 @@ from analysis.models import (
     HaraEntry,
     CybersecurityGoal,
 )
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 class CyberRiskEntryTests(unittest.TestCase):
@@ -29,7 +29,7 @@ class CyberRiskEntryTests(unittest.TestCase):
         self.assertEqual(entry.cal, "CAL3")
 
     def test_sync_to_goals(self):
-        app = FaultTreeApp.__new__(FaultTreeApp)
+        app = AutoMLApp.__new__(AutoMLApp)
         cyber = CyberRiskEntry(
             damage_scenario="D",
             threat_scenario="T",
@@ -46,12 +46,12 @@ class CyberRiskEntryTests(unittest.TestCase):
         doc = HaraDoc("RA1", [], [entry])
         app.hara_docs = [doc]
         app.cybersecurity_goals = [CybersecurityGoal("CG1", "desc"), CybersecurityGoal("CG2", "d2")]
-        FaultTreeApp.sync_cyber_risk_to_goals(app)
+        AutoMLApp.sync_cyber_risk_to_goals(app)
         self.assertEqual(app.cybersecurity_goals[0].risk_assessments[0]["name"], "RA1")
         self.assertEqual(app.cybersecurity_goals[0].cal, cyber.cal)
 
     def test_get_cyber_goal_cal(self):
-        app = FaultTreeApp.__new__(FaultTreeApp)
+        app = AutoMLApp.__new__(AutoMLApp)
         cyber1 = CyberRiskEntry(
             damage_scenario="D1",
             threat_scenario="T1",

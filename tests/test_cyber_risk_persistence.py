@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from analysis.models import HaraEntry, CyberRiskEntry
 
 def test_cyber_risk_entry_persistence():
@@ -29,7 +29,7 @@ def test_cyber_risk_entry_persistence():
             }
         ]
     }
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.top_events = []
     app.fmea_entries = []
     app.fmeas = []

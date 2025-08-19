@@ -11,14 +11,14 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 
 from gsn import GSNNode, GSNDiagram
 from gui.gsn_explorer import GSNExplorer
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_gsn_diagram_undo_redo_rename(monkeypatch):
     root = GSNNode("G", "Goal")
     diag = GSNDiagram(root)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.gsn_diagrams = [diag]
     app.gsn_modules = []
     app.update_views = lambda: None
@@ -37,9 +37,9 @@ def test_gsn_diagram_undo_redo_rename(monkeypatch):
 
     app.export_model_data = export_model_data
     app.apply_model_data = apply_model_data
-    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
-    app.undo = FaultTreeApp.undo.__get__(app)
-    app.redo = FaultTreeApp.redo.__get__(app)
+    app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+    app.undo = AutoMLApp.undo.__get__(app)
+    app.redo = AutoMLApp.redo.__get__(app)
 
     explorer = GSNExplorer.__new__(GSNExplorer)
     explorer.app = app
@@ -65,7 +65,7 @@ def test_gsn_explorer_refreshes_after_undo(monkeypatch):
     root = GSNNode("G", "Goal")
     diag = GSNDiagram(root)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.gsn_diagrams = [diag]
     app.gsn_modules = []
     app.update_views = lambda: None
@@ -84,8 +84,8 @@ def test_gsn_explorer_refreshes_after_undo(monkeypatch):
 
     app.export_model_data = export_model_data
     app.apply_model_data = apply_model_data
-    app.push_undo_state = FaultTreeApp.push_undo_state.__get__(app)
-    app.undo = FaultTreeApp.undo.__get__(app)
+    app.push_undo_state = AutoMLApp.push_undo_state.__get__(app)
+    app.undo = AutoMLApp.undo.__get__(app)
 
     explorer = GSNExplorer.__new__(GSNExplorer)
     app._gsn_window = explorer

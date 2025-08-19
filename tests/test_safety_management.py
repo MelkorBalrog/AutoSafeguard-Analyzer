@@ -18,7 +18,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 import AutoML
 from analysis.safety_management import (
     SafetyManagementToolbox,
@@ -240,7 +240,7 @@ def test_rename_module_updates_phase_references():
 
 def test_disable_work_product_rejects_existing_docs():
     """Work product types with existing documents cannot be removed."""
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.enabled_work_products = {"HAZOP"}
     app.work_product_menus = {}
     app.tool_listboxes = {}
@@ -264,7 +264,7 @@ def test_disable_work_product_rejects_existing_docs():
 
 
 def test_open_safety_management_toolbox_uses_browser(monkeypatch):
-    """FaultTreeApp opens the Safety & Security Management window and toolbox."""
+    """AutoMLApp opens the Safety & Security Management window and toolbox."""
     SysMLRepository._instance = None
 
     class DummyTab:
@@ -290,7 +290,7 @@ def test_open_safety_management_toolbox_uses_browser(monkeypatch):
     monkeypatch.setattr(smt, "SafetyManagementWindow", DummySMW)
 
     class DummyApp:
-        open_safety_management_toolbox = FaultTreeApp.open_safety_management_toolbox
+        open_safety_management_toolbox = AutoMLApp.open_safety_management_toolbox
 
         def __init__(self):
             self.doc_nb = DummyNotebook()
@@ -404,7 +404,7 @@ def test_safety_diagrams_visible_in_analysis_tree():
             self.items[iid] = {"parent": parent, "text": text}
             return iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -454,7 +454,7 @@ def test_gsn_diagrams_visible_in_analysis_tree():
     root = GSNNode("Goal1", "Goal")
     diag = GSNDiagram(root)
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -499,7 +499,7 @@ def test_explorers_removed_from_safety_concept_group():
             self.items[iid] = {"parent": parent, "text": text, "tags": tags}
             return iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -545,7 +545,7 @@ def test_joint_reviews_visible_in_analysis_tree():
     joint = ReviewData(name="JR1", mode="joint")
     peer = ReviewData(name="PR1", mode="peer")
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -641,7 +641,7 @@ def test_disabled_work_products_absent_from_analysis_tree():
             self.items[iid] = {"parent": parent, "text": text}
             return iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -676,7 +676,7 @@ def test_disabled_work_products_absent_from_analysis_tree():
 
 
 def test_enable_work_product_refreshes_views():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     called = {"count": 0}
     app.update_views = lambda: called.__setitem__("count", called["count"] + 1)
     app.tool_listboxes = {}
@@ -685,15 +685,15 @@ def test_enable_work_product_refreshes_views():
     app.tool_actions = {}
     app.enabled_work_products = set()
     app.enable_process_area = lambda area: None
-    FaultTreeApp.enable_work_product(app, "HAZOP")
+    AutoMLApp.enable_work_product(app, "HAZOP")
     assert called["count"] == 1
     app.hazop_docs = []
-    FaultTreeApp.disable_work_product(app, "HAZOP")
+    AutoMLApp.disable_work_product(app, "HAZOP")
     assert called["count"] == 2
 
 
 def test_open_work_product_requires_enablement():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     opened = {"count": 0}
     app.tool_actions = {"HAZOP Analysis": lambda: opened.__setitem__("count", opened["count"] + 1)}
     app.arch_diagrams = []
@@ -716,7 +716,7 @@ def test_phase_without_diagrams_disables_products():
 
 
 def test_menu_work_products_toggle_and_guard_existing_docs():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.tool_listboxes = {}
     app.tool_categories = {}
     app.tool_actions = {}
@@ -747,14 +747,14 @@ def test_menu_work_products_toggle_and_guard_existing_docs():
         app.tool_categories = {}
         if attr:
             setattr(app, attr, [])
-        FaultTreeApp.enable_work_product(app, name)
+        AutoMLApp.enable_work_product(app, name)
         assert menu.state == tk.NORMAL
         if attr:
             getattr(app, attr).append(object())
-            assert not FaultTreeApp.disable_work_product(app, name)
+            assert not AutoMLApp.disable_work_product(app, name)
             assert menu.state == tk.NORMAL
             getattr(app, attr).clear()
-        assert FaultTreeApp.disable_work_product(app, name)
+        assert AutoMLApp.disable_work_product(app, name)
         assert menu.state == tk.DISABLED
 
 def test_governance_diagram_opens_with_governance_toolbox(monkeypatch):
@@ -764,7 +764,7 @@ def test_governance_diagram_opens_with_governance_toolbox(monkeypatch):
     diag = repo.create_diagram("Governance Diagram", name="GovA")
     diag.tags.append("safety-management")
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.management_diagrams = [diag]
     app.diagram_tabs = {}
 
@@ -900,7 +900,7 @@ def test_work_products_filtered_by_phase_in_tree():
             self.items[iid] = {"parent": parent, "text": text}
             return iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -1005,7 +1005,7 @@ def test_governance_enables_tools_per_phase():
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu_arch = DummyMenu()
     menu_req = DummyMenu()
@@ -1021,20 +1021,20 @@ def test_governance_enables_tools_per_phase():
     app.manage_architecture = lambda: None
     app.show_requirements_editor = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
-        app, FaultTreeApp
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.safety_mgmt_toolbox = toolbox
     toolbox.on_change = app.refresh_tool_enablement
@@ -1120,7 +1120,7 @@ def test_phase_without_governance_disables_tools():
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu_arch = DummyMenu()
     app.tool_listboxes = {"System Design (Item Definition)": lb}
@@ -1131,20 +1131,20 @@ def test_phase_without_governance_disables_tools():
     app.enable_process_area = lambda area: None
     app.manage_architecture = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
-        app, FaultTreeApp
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.safety_mgmt_toolbox = toolbox
     toolbox.on_change = app.refresh_tool_enablement
@@ -1271,7 +1271,7 @@ def test_child_work_product_enables_parent_menu():
     parent_menu = DummyMenu()
     child_menu = DummyMenu()
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.tool_listboxes = {}
     app.tool_actions = {}
     app.tool_categories = {}
@@ -1283,12 +1283,12 @@ def test_child_work_product_enables_parent_menu():
     app.enabled_work_products = set()
     app.update_views = lambda: None
 
-    FaultTreeApp.enable_work_product(app, "HAZOP")
+    AutoMLApp.enable_work_product(app, "HAZOP")
 
     assert child_menu.state == tk.NORMAL
     assert parent_menu.state == tk.NORMAL
 
-    FaultTreeApp.disable_work_product(app, "HAZOP", force=True)
+    AutoMLApp.disable_work_product(app, "HAZOP", force=True)
     assert parent_menu.state == tk.DISABLED
 
 
@@ -1312,7 +1312,7 @@ def test_refresh_tool_enablement_enables_parent_menus():
     fmeda_menu = DummyMenu()
     quant_menu = DummyMenu()
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.tool_listboxes = {}
     app.tool_categories = {}
     app.tool_actions = {}
@@ -1327,7 +1327,7 @@ def test_refresh_tool_enablement_enables_parent_menus():
     app.enabled_work_products = set()
     app.safety_mgmt_toolbox = toolbox
 
-    FaultTreeApp.refresh_tool_enablement(app)
+    AutoMLApp.refresh_tool_enablement(app)
 
     assert hazop_menu.state == tk.NORMAL
     assert qual_menu.state == tk.NORMAL
@@ -1388,7 +1388,7 @@ def test_phase_without_diagrams_disables_tools():
         def set(self, value):
             self.value = value
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu_arch = DummyMenu()
     app.tool_listboxes = {"System Design (Item Definition)": lb}
@@ -1399,20 +1399,20 @@ def test_phase_without_diagrams_disables_tools():
     app.enable_process_area = lambda area: None
     app.manage_architecture = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
-        app, FaultTreeApp
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.on_lifecycle_selected = FaultTreeApp.on_lifecycle_selected.__get__(
-        app, FaultTreeApp
+    app.on_lifecycle_selected = AutoMLApp.on_lifecycle_selected.__get__(
+        app, AutoMLApp
     )
     app.safety_mgmt_toolbox = toolbox
     toolbox.on_change = app.refresh_tool_enablement
@@ -1462,7 +1462,7 @@ def test_governance_without_declarations_keeps_tools_enabled():
         def entryconfig(self, _idx, state=tk.DISABLED):
             self.state = state
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     menu_arch = DummyMenu()
     menu_req = DummyMenu()
@@ -1478,17 +1478,17 @@ def test_governance_without_declarations_keeps_tools_enabled():
     app.manage_architecture = lambda: None
     app.show_requirements_editor = lambda: None
     app.tool_to_work_product = {
-        info[1]: name for name, info in FaultTreeApp.WORK_PRODUCT_INFO.items()
+        info[1]: name for name, info in AutoMLApp.WORK_PRODUCT_INFO.items()
     }
     app.update_views = lambda: None
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(
-        app, FaultTreeApp
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(
+        app, AutoMLApp
     )
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(
-        app, FaultTreeApp
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(
+        app, AutoMLApp
     )
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(
-        app, FaultTreeApp
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(
+        app, AutoMLApp
     )
     app.safety_mgmt_toolbox = toolbox
 
@@ -1769,7 +1769,7 @@ def test_explorer_handles_duplicate_names(monkeypatch):
 
 
 def test_tools_include_safety_management_explorer():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.manage_safety_management = lambda: None
     app.open_safety_management_toolbox = lambda: None
     app.show_safety_performance_indicators = lambda: None
@@ -1878,7 +1878,7 @@ def test_governance_hierarchy_in_analysis_tree():
             }
             return iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -1956,7 +1956,7 @@ def test_folder_double_click_opens_safety_management_explorer():
                 return self._focus
             self._focus = iid
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.refresh_model = lambda: None
     app.compute_occurrence_counts = lambda: {}
     app.diagram_icons = {}
@@ -2413,11 +2413,11 @@ def test_each_analysis_enabled_only_in_own_phase():
 
 def test_work_product_info_includes_requirement_types():
     for wp in REQUIREMENT_WORK_PRODUCTS:
-        assert wp in FaultTreeApp.WORK_PRODUCT_INFO
+        assert wp in AutoMLApp.WORK_PRODUCT_INFO
 
 
 def test_disable_requirement_work_product_keeps_editor():
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.update_views = lambda: None
     app.tool_listboxes = {}
     app.tool_categories = {}
@@ -2427,12 +2427,12 @@ def test_disable_requirement_work_product_keeps_editor():
     app.enable_process_area = lambda area: None
 
     wp1, wp2 = REQUIREMENT_WORK_PRODUCTS[:2]
-    FaultTreeApp.enable_work_product(app, wp1)
-    FaultTreeApp.enable_work_product(app, wp2)
+    AutoMLApp.enable_work_product(app, wp1)
+    AutoMLApp.enable_work_product(app, wp2)
     assert "Requirements Editor" in app.tool_actions
-    FaultTreeApp.disable_work_product(app, wp1)
+    AutoMLApp.disable_work_product(app, wp1)
     assert "Requirements Editor" in app.tool_actions
-    FaultTreeApp.disable_work_product(app, wp2)
+    AutoMLApp.disable_work_product(app, wp2)
     assert "Requirements Editor" not in app.tool_actions
 
 
@@ -2489,7 +2489,7 @@ def test_focus_governance_diagram_sets_phase_and_hides_functions():
         def set(self, v):
             self.value = v
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     app.diagram_tabs = {}
     app.doc_nb = DummyNotebook(app)
     app._new_tab = types.MethodType(_new_tab, app)
@@ -2501,12 +2501,12 @@ def test_focus_governance_diagram_sets_phase_and_hides_functions():
     toolbox.on_change = lambda: changes.append("x")
     AutoML.GovernanceDiagramWindow = lambda *args, **kwargs: None
 
-    FaultTreeApp.open_arch_window(app, d1)
+    AutoMLApp.open_arch_window(app, d1)
     app.doc_nb.select(app.diagram_tabs[d1])
     assert toolbox.active_module == "Phase1"
     assert app.lifecycle_var.value == "Phase1"
 
-    FaultTreeApp.open_arch_window(app, d2)
+    AutoMLApp.open_arch_window(app, d2)
     app.doc_nb.select(app.diagram_tabs[d2])
     assert toolbox.active_module == "Phase2"
     assert app.lifecycle_var.value == "Phase2"
@@ -2546,7 +2546,7 @@ def test_tab_focus_triggers_refresh():
         def nametowidget(self, widget):
             return widget
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     tab = DummyTab()
     nb = DummyNotebook(tab)
     app.refresh_all = types.MethodType(lambda self: None, app)

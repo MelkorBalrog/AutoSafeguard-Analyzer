@@ -2041,7 +2041,7 @@ class DecompositionDialog(simpledialog.Dialog):
 ##########################################
 # Main Application (Parent Diagram)
 ##########################################
-class FaultTreeApp:
+class AutoMLApp:
     """Main application window for AutoML Analyzer."""
 
     #: Maximum number of characters displayed for a notebook tab title. Longer
@@ -21671,7 +21671,7 @@ def main():
         except tk.TclError:
             pass
 
-    app = FaultTreeApp(root)
+    app = AutoMLApp(root)
     root.mainloop()
 
 if __name__ == "__main__":

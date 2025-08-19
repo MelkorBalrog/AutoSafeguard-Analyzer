@@ -12,7 +12,7 @@ sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp, FaultTreeNode
+from AutoML import AutoMLApp, FaultTreeNode
 from gsn import GSNNode, GSNDiagram
 from gui import messagebox
 
@@ -26,7 +26,7 @@ class DummyTree:
 
 class GSNCopyPasteTests(unittest.TestCase):
     def setUp(self):
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
         self.app.root_node = FaultTreeNode("root", "TOP EVENT")
         self.app.analysis_tree = DummyTree()
         self.app.top_events = []

@@ -5,7 +5,7 @@ sys.modules.setdefault('PIL.Image', types.ModuleType('PIL.Image'))
 sys.modules.setdefault('PIL.ImageDraw', types.ModuleType('PIL.ImageDraw'))
 sys.modules.setdefault('PIL.ImageFont', types.ModuleType('PIL.ImageFont'))
 sys.modules.setdefault('PIL.ImageTk', types.ModuleType('PIL.ImageTk'))
-from AutoML import FaultTreeNode, FaultTreeApp, GATE_NODE_TYPES
+from AutoML import FaultTreeNode, AutoMLApp, GATE_NODE_TYPES
 from analysis.models import MissionProfile, ReliabilityComponent
 
 class DummyApp:
@@ -45,7 +45,7 @@ class FailureProbabilityTests(unittest.TestCase):
         be.prob_formula = "linear"
 
         app = DummyApp(fm)
-        prob = FaultTreeApp.compute_failure_prob(app, be)
+        prob = AutoMLApp.compute_failure_prob(app, be)
         expected = (20.0 / 4) / 1e9
         self.assertAlmostEqual(prob, expected)
 

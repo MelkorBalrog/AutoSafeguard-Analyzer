@@ -6,12 +6,12 @@ sys.modules.setdefault('PIL.ImageDraw', types.ModuleType('PIL.ImageDraw'))
 sys.modules.setdefault('PIL.ImageFont', types.ModuleType('PIL.ImageFont'))
 sys.modules.setdefault('PIL.ImageTk', types.ModuleType('PIL.ImageTk'))
 
-from AutoML import FaultTreeApp, FaultTreeNode
+from AutoML import AutoMLApp, FaultTreeNode
 
 
 class FunctionalInsufficiencySubtypeTests(unittest.TestCase):
     def test_subtype_nodes_listed(self):
-        app = FaultTreeApp.__new__(FaultTreeApp)
+        app = AutoMLApp.__new__(AutoMLApp)
         top = FaultTreeNode("TE", "TOP EVENT")
 
         fi_type = FaultTreeNode("FI1", "Functional Insufficiency")

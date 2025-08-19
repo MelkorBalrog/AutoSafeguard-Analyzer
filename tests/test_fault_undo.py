@@ -11,12 +11,12 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from sysml.sysml_repository import SysMLRepository
 
 class FaultUndoRedoTests(unittest.TestCase):
     def setUp(self):
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
         # Minimal attributes for export_model_data
         self.app.top_events = []
         self.app.fmeas = []

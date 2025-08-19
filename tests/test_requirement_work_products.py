@@ -3,7 +3,7 @@ import types
 from analysis.models import REQUIREMENT_TYPE_OPTIONS
 from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def _fmt(req: str) -> str:
@@ -15,7 +15,7 @@ def _fmt(req: str) -> str:
 def test_work_product_created_for_each_requirement_type():
     for req in REQUIREMENT_TYPE_OPTIONS:
         name = f"{_fmt(req)} Requirement Specification"
-        assert name in FaultTreeApp.WORK_PRODUCT_INFO
+        assert name in AutoMLApp.WORK_PRODUCT_INFO
 
 
 def test_add_requirement_work_product(monkeypatch):

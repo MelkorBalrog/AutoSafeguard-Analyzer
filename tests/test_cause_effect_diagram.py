@@ -96,7 +96,7 @@ numpy_stub.bool_ = bool
 sys.modules.setdefault("numpy", numpy_stub)
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 class DummyNode:
@@ -111,8 +111,8 @@ class DummyNode:
 
 class CauseEffectDiagramTests(unittest.TestCase):
     def setUp(self):
-        # Create a minimal FaultTreeApp instance without initialising Tk
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        # Create a minimal AutoMLApp instance without initialising Tk
+        self.app = AutoMLApp.__new__(AutoMLApp)
 
     def test_build_simplified_fta_model_includes_basic_events(self):
         be1 = DummyNode(2, "BASIC EVENT", "Cause 1")
@@ -132,7 +132,7 @@ class CauseEffectDiagramTests(unittest.TestCase):
         created_sizes.clear()
         top = DummyNode(1, "TOP EVENT", "Hazard")
         model = self.app.build_simplified_fta_model(top)
-        FaultTreeApp.auto_generate_fta_diagram(model, "out.png")
+        AutoMLApp.auto_generate_fta_diagram(model, "out.png")
         self.assertTrue(created_sizes, "Image.new was not called")
         width, height = created_sizes[0]
         self.assertGreaterEqual(width, 120)

@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from analysis.safety_management import SafetyManagementToolbox, GovernanceModule
 from sysml.sysml_repository import SysMLRepository
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 class DummyListbox:
@@ -51,7 +51,7 @@ def test_cause_effect_tool_enabled_with_safety_analysis():
     toolbox.diagrams = {"Gov": diag.diag_id}
     toolbox.set_active_module("P1")
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     app.tool_listboxes = {"Safety Analysis": lb}
     app.tool_categories = {"Safety Analysis": ["Cause & Effect Diagram"]}
@@ -62,9 +62,9 @@ def test_cause_effect_tool_enabled_with_safety_analysis():
     app.update_views = lambda: None
     app.tool_to_work_product = {"Cause & Effect Diagram": {"FTA"}}
     app.safety_mgmt_toolbox = toolbox
-    app.refresh_tool_enablement = FaultTreeApp.refresh_tool_enablement.__get__(app, FaultTreeApp)
-    app.enable_work_product = FaultTreeApp.enable_work_product.__get__(app, FaultTreeApp)
-    app.disable_work_product = FaultTreeApp.disable_work_product.__get__(app, FaultTreeApp)
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
+    app.enable_work_product = AutoMLApp.enable_work_product.__get__(app, AutoMLApp)
+    app.disable_work_product = AutoMLApp.disable_work_product.__get__(app, AutoMLApp)
 
     toolbox.on_change = app.refresh_tool_enablement
     toolbox.add_work_product("Gov", "FTA", "")
@@ -79,7 +79,7 @@ def test_cause_effect_tool_opens_on_double_click():
     def action():
         action_called["flag"] = True
 
-    app = FaultTreeApp.__new__(FaultTreeApp)
+    app = AutoMLApp.__new__(AutoMLApp)
     lb = DummyListbox()
     app.tool_actions = {"Cause & Effect Diagram": action}
     app.tool_to_work_product = {"Cause & Effect Diagram": {"FTA"}}

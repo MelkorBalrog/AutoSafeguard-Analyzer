@@ -16,7 +16,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_diagram_rules_toolbox_single_instance():
@@ -50,7 +50,7 @@ def test_diagram_rules_toolbox_single_instance():
     drt.DiagramRulesEditor = DummyEditor
 
     class DummyApp:
-        open_diagram_rules_toolbox = FaultTreeApp.open_diagram_rules_toolbox
+        open_diagram_rules_toolbox = AutoMLApp.open_diagram_rules_toolbox
 
         def __init__(self):
             self.doc_nb = DummyNotebook()

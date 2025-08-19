@@ -11,12 +11,12 @@ sys.modules.setdefault("PIL.ImageFont", types.ModuleType("PIL.ImageFont"))
 sys.modules.setdefault("PIL.ImageTk", types.ModuleType("PIL.ImageTk"))
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 from sysml.sysml_repository import SysMLRepository
 
 class HazardSeverityUndoRedoTests(unittest.TestCase):
     def setUp(self):
-        self.app = FaultTreeApp.__new__(FaultTreeApp)
+        self.app = AutoMLApp.__new__(AutoMLApp)
         self.app.hazard_severity = {"H1": 1}
         self.app.hazards = ["H1"]
         self.app.hara_docs = []

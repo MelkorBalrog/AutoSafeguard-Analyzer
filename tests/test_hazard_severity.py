@@ -17,7 +17,7 @@ sys.modules.setdefault("PIL.ImageDraw", pil.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", pil.ImageFont)
 
 from analysis.models import HaraDoc, HaraEntry
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_update_hazard_list_uses_entry_severity():
@@ -43,7 +43,7 @@ def test_update_hazard_list_uses_entry_severity():
         hazards=[],
     )
 
-    FaultTreeApp.update_hazard_list(app)
+    AutoMLApp.update_hazard_list(app)
 
     assert app.hazard_severity["HZ"] == 3
     assert "HZ" in app.hazards

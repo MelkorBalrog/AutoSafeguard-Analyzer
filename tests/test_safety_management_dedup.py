@@ -17,7 +17,7 @@ sys.modules.setdefault("PIL.ImageTk", PIL_stub.ImageTk)
 sys.modules.setdefault("PIL.ImageDraw", PIL_stub.ImageDraw)
 sys.modules.setdefault("PIL.ImageFont", PIL_stub.ImageFont)
 
-from AutoML import FaultTreeApp
+from AutoML import AutoMLApp
 
 
 def test_safety_management_toolbox_single_instance(monkeypatch):
@@ -57,7 +57,7 @@ def test_safety_management_toolbox_single_instance(monkeypatch):
     monkeypatch.setattr(analysis, "SafetyManagementToolbox", DummyToolbox)
 
     class DummyApp:
-        open_safety_management_toolbox = FaultTreeApp.open_safety_management_toolbox
+        open_safety_management_toolbox = AutoMLApp.open_safety_management_toolbox
 
         def __init__(self):
             self.doc_nb = DummyNotebook()
