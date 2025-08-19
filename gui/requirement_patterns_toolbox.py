@@ -654,6 +654,7 @@ class RequirementPatternsEditor(tk.Frame):
                     tmpl_raw = re.sub(r"<action>", f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
                 else:
                     tmpl_raw = re.sub(re.escape(act), f"<action : {act}>", tmpl_raw, flags=re.IGNORECASE)
+
             tmpl = textwrap.fill(tmpl_raw, 40)
             lines = max(trig.count("\n") + 1, tmpl.count("\n") + 1)
             max_lines = max(max_lines, lines)
