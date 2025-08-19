@@ -726,7 +726,8 @@
         "Test Suite": [],
         "Vehicle": [],
         "Work Product": [
-          "Work Product"
+          "Work Product",
+          "Lifecycle Phase"
         ],
         "AI Database": [
           "Work Product"
@@ -1666,7 +1667,8 @@
         "Test Suite": [],
         "Vehicle": [],
         "Work Product": [
-          "Work Product"
+          "Work Product",
+          "Lifecycle Phase"
         ],
         "AI Database": [
           "Work Product"
