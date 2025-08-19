@@ -21,3 +21,22 @@ def test_capsule_button_darkens_when_pressed():
     assert btn._current_color == btn._hover_color
 
     root.destroy()
+
+
+def test_capsule_button_has_inset_shadow():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    btn = CapsuleButton(root, text="Test")
+    btn.pack()
+    root.update_idletasks()
+
+    assert hasattr(btn, "_depth_items")
+    assert btn._depth_items
+    shadow_item = btn._depth_items[0]
+    shadow_color = btn.itemcget(shadow_item, "fill") or btn.itemcget(shadow_item, "outline")
+    from gui.capsule_button import _darken
+    assert shadow_color == _darken(btn._normal_color, 0.8)
+
+    root.destroy()
