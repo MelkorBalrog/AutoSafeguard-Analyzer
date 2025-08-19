@@ -191,6 +191,65 @@ def test_sequence_role_subject_variants() -> None:
     assert "using the <object0_id>" not in tmpl
 
 
+def test_sequence_organization_subject_variants() -> None:
+    cfg = {
+        "connection_rules": {
+            "Governance Diagram": {
+                "Leads": {"Organization": ["Process"]},
+                "Produces": {"Process": ["Document"]},
+            }
+        },
+        "requirement_sequences": {
+            "management": {
+                "relations": ["Leads", "Produces"],
+                "subject": "Management team",
+            }
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SEQ-management-Organization-Document" in ids
+    assert "SEQ-management_organization_subject-Organization-Document" in ids
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"] == "SEQ-management_organization_subject-Organization-Document"
+    )
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall leads")
+    assert "using the <object0_id>" not in tmpl
+
+
+def test_sequence_business_unit_subject_variants() -> None:
+    cfg = {
+        "connection_rules": {
+            "Governance Diagram": {
+                "Owns": {"Business Unit": ["Process"]},
+                "Produces": {"Process": ["Document"]},
+            }
+        },
+        "requirement_sequences": {
+            "responsibility": {
+                "relations": ["Owns", "Produces"],
+                "subject": "Business leadership",
+            }
+        },
+    }
+    patterns = generate_patterns_from_config(cfg)
+    ids = {p["Pattern ID"] for p in patterns}
+    assert "SEQ-responsibility-Business_Unit-Document" in ids
+    assert (
+        "SEQ-responsibility_business_unit_subject-Business_Unit-Document" in ids
+    )
+    tmpl = next(
+        p["Template"]
+        for p in patterns
+        if p["Pattern ID"]
+        == "SEQ-responsibility_business_unit_subject-Business_Unit-Document"
+    )
+    assert tmpl.startswith("<subject_id> (<subject_class>) shall owns")
+    assert "using the <object0_id>" not in tmpl
+
+
 def test_complex_sequences() -> None:
     cfg = {
         "ai_nodes": [

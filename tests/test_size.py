@@ -153,14 +153,18 @@ class EnsureTextFitsTests(unittest.TestCase):
             properties={"name": "B", "partProperties": "p1,p2"},
         )
         block.requirements = []
+        initial_w = block.width
         win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
         expanded_h = block.height
         block.collapsed["Parts"] = True
         win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
         collapsed_h = block.height
         self.assertLess(collapsed_h, expanded_h)
         block.collapsed["Parts"] = False
         win._resize_block_to_content(block)
+        self.assertEqual(block.width, initial_w)
         self.assertGreater(block.height, collapsed_h)
 
 if __name__ == "__main__":

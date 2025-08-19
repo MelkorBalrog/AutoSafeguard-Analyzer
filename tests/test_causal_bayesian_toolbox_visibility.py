@@ -49,6 +49,7 @@ def _make_window(docs):
     win.doc_var = DummyVar()
     win.doc_cb = DummyCB()
     win.canvas = DummyCanvas()
+    win.canvas_container = object()
     win.toolbox = DummyToolbox()
     win.app = types.SimpleNamespace(cbn_docs=docs, active_cbn=None)
     win.load_doc = lambda *a, **k: None

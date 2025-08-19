@@ -9,6 +9,7 @@ from gui import messagebox
 from gui.tooltip import ToolTip
 from gui.drawing_helper import FTADrawingHelper
 from gui.style_manager import StyleManager
+from gui.icon_factory import create_icon as draw_icon
 
 
 class CausalBayesianNetworkWindow(tk.Frame):
@@ -37,6 +38,15 @@ class CausalBayesianNetworkWindow(tk.Frame):
         body.pack(fill=tk.BOTH, expand=True)
 
         self.toolbox = ttk.Frame(body)
+        self._icons = {
+            "Variable": draw_icon("circle", "lightgray"),
+            "Triggering Condition": draw_icon("circle", "lightblue"),
+            "Existing Triggering Condition": draw_icon("circle", "lightblue"),
+            "Functional Insufficiency": draw_icon("circle", "lightyellow"),
+            "Existing Functional Insufficiency": draw_icon("circle", "lightyellow"),
+            "Existing Malfunction": draw_icon("circle", "lightgreen"),
+            "Relationship": draw_icon("relation", "black"),
+        }
         for name in (
             "Variable",
             "Triggering Condition",
@@ -47,23 +57,30 @@ class CausalBayesianNetworkWindow(tk.Frame):
             "Relationship",
         ):
             ttk.Button(
-                self.toolbox, text=name, command=lambda t=name: self.select_tool(t)
+                self.toolbox,
+                text=name,
+                image=self._icons.get(name),
+                compound=tk.LEFT,
+                command=lambda t=name: self.select_tool(t),
             ).pack(fill=tk.X, padx=2, pady=2)
+        # Pack then immediately hide so order relative to the canvas is preserved
+        self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+        self.toolbox.pack_forget()
         self.current_tool = "Select"
 
-        canvas_container = ttk.Frame(body)
-        canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas_container = ttk.Frame(body)
+        self.canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(
-            canvas_container,
+            self.canvas_container,
             background=StyleManager.get_instance().canvas_bg,
         )
         self.canvas.grid(row=0, column=0, sticky="nsew")
-        xbar = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        xbar = ttk.Scrollbar(self.canvas_container, orient=tk.HORIZONTAL, command=self.canvas.xview)
         xbar.grid(row=1, column=0, sticky="ew")
-        ybar = ttk.Scrollbar(canvas_container, orient=tk.VERTICAL, command=self.canvas.yview)
+        ybar = ttk.Scrollbar(self.canvas_container, orient=tk.VERTICAL, command=self.canvas.yview)
         ybar.grid(row=0, column=1, sticky="ns")
-        canvas_container.rowconfigure(0, weight=1)
-        canvas_container.columnconfigure(0, weight=1)
+        self.canvas_container.rowconfigure(0, weight=1)
+        self.canvas_container.columnconfigure(0, weight=1)
         self.canvas.configure(xscrollcommand=xbar.set, yscrollcommand=ybar.set)
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
@@ -129,10 +146,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
     def _update_toolbox_visibility(self) -> None:
         if self.doc_var.get():
             if not self.toolbox.winfo_ismapped():
-                self.toolbox.pack(side=tk.LEFT, fill=tk.Y)
+                self.toolbox.pack(side=tk.LEFT, fill=tk.Y, before=self.canvas_container)
         else:
-            if self.toolbox.winfo_ismapped():
-                self.toolbox.pack_forget()
+            self.toolbox.pack_forget()
 
     # ------------------------------------------------------------------
     def new_doc(self) -> None:
