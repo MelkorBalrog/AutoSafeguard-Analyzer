@@ -97,6 +97,7 @@ ALLOWED_USAGE.update(
         ("ODD", "Scenario Library"),
         ("Reliability Analysis", "FMEA"),
         ("Reliability Analysis", "FMEDA"),
+        ("GSN Argumentation", "Safety & Security Case"),
     }
 )
 
