@@ -356,6 +356,31 @@ def _external_relations_for(nodes: list[str]) -> dict[str, dict[str, list[str]]]
     return result
 
 
+def _dedup_toolbox_data(data: dict) -> None:
+    """Remove duplicate relationships from toolbox definition ``data``.
+
+    A relation should only appear once across the main category and any of its
+    related groups.  This helper walks the primary ``relations`` list followed
+    by each external group's relations, discarding any repeated entries while
+    preserving order for the first occurrence.
+    """
+
+    seen: set[str] = set()
+    rels = []
+    for r in data.get("relations", []) or []:
+        if r not in seen:
+            seen.add(r)
+            rels.append(r)
+    data["relations"] = rels
+    for sub in data.get("externals", {}).values():
+        sub_rels: list[str] = []
+        for r in sub.get("relations", []) or []:
+            if r not in seen:
+                seen.add(r)
+                sub_rels.append(r)
+        sub["relations"] = sub_rels
+
+
 def _toolbox_defs() -> dict[str, dict[str, list[str] | dict]]:
     """Return mapping of toolbox name to node/relation lists."""
     defs: dict[str, dict[str, list[str] | dict]] = {}
@@ -383,6 +408,7 @@ def _toolbox_defs() -> dict[str, dict[str, list[str] | dict]]:
             "relations": _relations_for(GOV_CORE_NODES),
             "externals": _external_relations_for(GOV_CORE_NODES),
         }
+        _dedup_toolbox_data(defs["Governance Core"])
     return defs
 
 
@@ -11638,27 +11664,10 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                     sub["relations"] = [
                         r for r in sub.get("relations", []) if r not in global_rels
                     ]
-
-        def _dedup_category(data: dict) -> None:
-            seen: set[str] = set()
-            rels = []
-            for r in data.get("relations", []) or []:
-                if r not in seen:
-                    seen.add(r)
-                    rels.append(r)
-            data["relations"] = rels
-            for sub in data.get("externals", {}).values():
-                sub_rels = []
-                for r in sub.get("relations", []) or []:
-                    if r not in seen:
-                        seen.add(r)
-                        sub_rels.append(r)
-                sub["relations"] = sub_rels
-
         for data in defs.values():
-            _dedup_category(data)
+            _dedup_toolbox_data(data)
         if ai_data:
-            _dedup_category(ai_data)
+            _dedup_toolbox_data(ai_data)
         if hasattr(self.tools_frame, "pack_forget"):
             self.tools_frame.pack_forget()
         if getattr(self, "rel_frame", None) and hasattr(self.rel_frame, "pack_forget"):
