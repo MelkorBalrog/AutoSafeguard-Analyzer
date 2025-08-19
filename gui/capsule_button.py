@@ -3,6 +3,10 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
+try:  # pillow is optional and used only for icon shadows
+    from PIL import Image, ImageTk  # type: ignore
+except Exception:  # pragma: no cover - pillow may be missing
+    Image = ImageTk = None  # type: ignore
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -48,7 +52,7 @@ class CapsuleButton(tk.Canvas):
         command: Optional[Callable[[], None]] = None,
         width: int = 80,
         height: int = 26,
-        bg: str = "#e1e1e1",
+        bg: str = "#cfe0ff",
         hover_bg: Optional[str] = None,
         state: str | None = None,
         image: tk.PhotoImage | None = None,
@@ -88,7 +92,7 @@ class CapsuleButton(tk.Canvas):
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
-        self._highlight_items: list[int] = []
+        self._shine_items: list[int] = []
         self._shade_items: list[int] = []
         # Border items are split into dark and light segments to create a
         # recessed "hole" effect around the button outline.  ``_border_outline``
@@ -153,12 +157,11 @@ class CapsuleButton(tk.Canvas):
         self._draw_border(w, h)
 
     def _draw_highlight(self, w: int, h: int) -> None:
-        """Draw shiny highlight and shaded region to create a 3D capsule."""
+        """Draw shiny highlight to create a glass-like capsule."""
         r = self._radius
-        color = self._current_color
-        top_highlight = _lighten(color, 1.4)
-        bottom_shade = _darken(color, 0.9)
-        self._highlight_items = [
+        top_highlight = "#f5f5ff"  # very light bluish-white
+        mid_sky = "#87ceeb"  # bright medium sky blue
+        self._shine_items = [
             self.create_oval(
                 1,
                 1,
@@ -167,39 +170,37 @@ class CapsuleButton(tk.Canvas):
                 outline="",
                 fill=top_highlight,
                 stipple="gray25",
-            )
-        ]
-        self._shade_items = [
-            self.create_oval(
+            ),
+            self.create_rectangle(
                 1,
-                h // 2,
+                h // 3,
                 w - 1,
-                h - 1,
+                2 * h // 3,
                 outline="",
-                fill=bottom_shade,
-                stipple="gray50",
-            )
+                fill=mid_sky,
+                stipple="gray25",
+            ),
         ]
         small_r = max(r // 3, 2)
         centers = [(r // 2, h // 2), (w - r // 2, h // 2)]
         for cx, cy in centers:
             for i in range(3):
                 rad = max(small_r - i * (small_r // 3), 1)
-                self._highlight_items.append(
+                self._shine_items.append(
                     self.create_oval(
                         cx - rad,
                         cy - rad,
                         cx + rad,
                         cy + rad,
                         outline="",
-                        fill=_lighten(color, 1.6 + 0.1 * i),
+                        fill=top_highlight,
                         stipple="gray25",
                     )
                 )
 
     def _draw_shade(self, w: int, h: int) -> None:
-        """Add a translucent shade to suggest the far side of the capsule."""
-        shade_color = _darken(self._current_color, 0.9)
+        """Add a translucent aqua shade for a cool gradient."""
+        shade_color = "#e0ffff"  # light cyan / aqua
         self._shade_items = [
             self.create_oval(
                 1,
@@ -208,7 +209,7 @@ class CapsuleButton(tk.Canvas):
                 h - 1,
                 outline="",
                 fill=shade_color,
-                stipple="gray25",
+                stipple="gray50",
             )
         ]
 
@@ -217,6 +218,8 @@ class CapsuleButton(tk.Canvas):
         cx, cy = w // 2, h // 2
         self._text_item = None
         self._image_item = None
+        self._text_shadow_item = None
+        self._image_shadow = None
         if self._image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
@@ -224,16 +227,34 @@ class CapsuleButton(tk.Canvas):
             spacing = 4
             total = text_w + img_w + spacing
             start = (w - total) // 2
-            self._image_item = self.create_image(start + img_w // 2, cy, image=self._image)
-            self._text_item = self.create_text(
-                start + img_w + spacing + text_w // 2,
-                cy,
-                text=self._text,
+            ix = start + img_w // 2
+            tx = start + img_w + spacing + text_w // 2
+            self._draw_image_with_shadow(ix, cy)
+            self._text_shadow_item = self.create_text(
+                tx + 1, cy + 1, text=self._text, fill="#00000040"
             )
+            self._text_item = self.create_text(tx, cy, text=self._text, fill="black")
         elif self._image:
-            self._image_item = self.create_image(cx, cy, image=self._image)
+            self._draw_image_with_shadow(cx, cy)
         else:
-            self._text_item = self.create_text(cx, cy, text=self._text)
+            self._text_shadow_item = self.create_text(
+                cx + 1, cy + 1, text=self._text, fill="#00000040"
+            )
+            self._text_item = self.create_text(cx, cy, text=self._text, fill="black")
+
+    def _draw_image_with_shadow(self, x: int, y: int) -> None:
+        """Helper to render an image with a subtle drop shadow."""
+        if self._image is None:
+            return
+        if Image and ImageTk:
+            pil_img = ImageTk.getimage(self._image).convert("RGBA")
+            shadow = Image.new("RGBA", pil_img.size, (0, 0, 0, 80))
+            shadow.putalpha(pil_img.split()[3])
+            self._image_shadow = ImageTk.PhotoImage(shadow)
+            self.create_image(x + 1, y + 1, image=self._image_shadow)
+        else:  # fallback without pillow
+            self.create_image(x + 1, y + 1, image=self._image)
+        self._image_item = self.create_image(x, y, image=self._image)
 
     def _draw_border(self, w: int, h: int) -> None:
         """Draw border and inner outline to mimic an inset capsule."""
@@ -276,12 +297,11 @@ class CapsuleButton(tk.Canvas):
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
             self.itemconfigure(item, fill=color)
-        highlight = _lighten(color, 1.4)
-        shade = _darken(color, 0.9)
-        for item in self._highlight_items:
-            self.itemconfigure(item, fill=highlight)
+        for idx, item in enumerate(self._shine_items):
+            colour = "#87ceeb" if idx == 1 else "#f5f5ff"
+            self.itemconfigure(item, fill=colour)
         for item in self._shade_items:
-            self.itemconfigure(item, fill=shade)
+            self.itemconfigure(item, fill="#e0ffff")
         inner = _darken(color, 0.7)
         dark = _darken(color, 0.8)
         light = _lighten(color, 1.2)
