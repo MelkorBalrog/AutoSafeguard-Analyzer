@@ -347,6 +347,7 @@ def create_icon(
         mid = size // 2
         head_cy = 5
         r = 5
+        # Draw the outer head
         for y in range(head_cy - r, head_cy + r + 1):
             for x in range(mid - r, mid + r + 1):
                 dist = (x - mid) ** 2 + (y - head_cy) ** 2
@@ -354,18 +355,35 @@ def create_icon(
                     img.put(c, (x, y))
                 if r * r <= dist <= (r + 1) * (r + 1):
                     img.put(outline, (x, y))
-        notch_start = mid + r // 2
+        # Hollow out the head for an open-end look
+        inner = r - 2
+        for y in range(head_cy - inner, head_cy + inner + 1):
+            for x in range(mid - inner, mid + inner + 1):
+                dist = (x - mid) ** 2 + (y - head_cy) ** 2
+                if dist <= inner * inner:
+                    img.put(bg or "white", (x, y))
+                if inner * inner <= dist <= (inner + 1) * (inner + 1):
+                    img.put(outline, (x, y))
+        # Carve out a larger jaw opening for clearer wrench shape
+        notch_start = mid + 1
         for x in range(notch_start, mid + r + 1):
-            span = x - notch_start
-            for y in range(head_cy - span, head_cy + span + 1):
+            span = x - notch_start + 1
+            y_top = head_cy - span
+            y_bottom = head_cy + span
+            for y in range(y_top, y_bottom + 1):
                 img.put(bg or "white", (x, y))
-            img.put(outline, (x, head_cy - span))
-            img.put(outline, (x, head_cy + span))
+            if y_top >= head_cy - r:
+                img.put(outline, (x, y_top))
+            if y_bottom <= head_cy + r:
+                img.put(outline, (x, y_bottom))
+        # Draw the handle
+        handle_start = head_cy + inner
         for x in range(mid - 1, mid + 2):
-            img.put(c, to=(x, head_cy, x + 1, size - 2))
-        for y in range(head_cy, size - 2):
+            img.put(c, to=(x, handle_start, x + 1, size - 2))
+        for y in range(handle_start, size - 2):
             img.put(outline, (mid - 1, y))
             img.put(outline, (mid + 1, y))
+        # Add a small cap at the end of the handle
         for x in range(mid - 1, mid + 2):
             for y in range(size - 4, size - 2):
                 img.put(bg or "white", (x, y))
