@@ -51,9 +51,10 @@ class CapsuleButton(tk.Canvas):
             init_kwargs["bg"] = master.cget("background")
         except tk.TclError:
             pass
-        # ``state`` is not a valid Canvas option.  Remove it from ``kwargs``
-        # before passing the remaining values to ``Canvas.__init__`` and keep
-        # track of it ourselves.
+        # ``style`` and ``state`` are ttk-specific options.  Strip them from
+        # ``kwargs`` before forwarding to ``Canvas.__init__`` and track the
+        # ``state`` value ourselves.
+        kwargs.pop("style", None)
         init_kwargs.update(kwargs)
         super().__init__(master, **init_kwargs)
         self._state: set[str] = set()
@@ -142,6 +143,7 @@ class CapsuleButton(tk.Canvas):
         width = kwargs.get("width")
         height = kwargs.get("height")
         state = kwargs.pop("state", None)
+        kwargs.pop("style", None)
         super().configure(**kwargs)
         if state is not None:
             if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
