@@ -216,6 +216,25 @@ class SafetyManagementToolbox:
         return bool(mod and getattr(mod, "frozen", False))
 
     # ------------------------------------------------------------------
+    def set_diagram_frozen(self, name: str, frozen: bool) -> None:
+        """Toggle immutability of a governance diagram."""
+        diag_id = self.diagrams.get(name)
+        if not diag_id:
+            return
+        repo = SysMLRepository.get_instance()
+        if frozen:
+            repo.freeze_diagram(diag_id)
+            self.frozen_diagrams.add(name)
+        else:
+            repo.unfreeze_diagram(diag_id)
+            self.frozen_diagrams.discard(name)
+
+    # ------------------------------------------------------------------
+    def diagram_frozen(self, name: str) -> bool:
+        """Return ``True`` if the named diagram is frozen."""
+        return name in self.frozen_diagrams
+
+    # ------------------------------------------------------------------
     def freeze_active_phase(self) -> None:
         """Mark the currently active module as frozen and lock its diagrams."""
         if not self.active_module or self.module_frozen(self.active_module):
