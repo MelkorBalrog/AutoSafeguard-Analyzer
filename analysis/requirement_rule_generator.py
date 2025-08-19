@@ -6,7 +6,13 @@ This module derives requirement pattern definitions for both Safety & AI
 connections and Governance diagram relationships.  It mirrors the standalone
 ``generate_from_diagram_rules.py`` utility supplied by the user but exposes a
 ``generate_patterns_from_config`` function so existing code can reuse the
-generator programmatically.
+generator programmatically.  Resulting requirement templates follow the
+ISO/IEC/IEEE 29148 structure
+
+    [CND] <span style="color:#2e86c1;font-weight:bold">&lt;subject&gt;</span> shall
+    <span style="color:#28b463;font-weight:bold">&lt;action&gt;</span>
+    [<span style="color:#f39c12;font-weight:bold">&lt;object&gt;</span>]
+    [<span style="color:#c0392b;font-weight:bold">&lt;constraint&gt;</span>].
 
 The main entry point :func:`regenerate_requirement_patterns` reloads the
 ``config/diagram_rules.json`` file, regenerates all patterns and writes the
