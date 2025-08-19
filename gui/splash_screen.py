@@ -18,15 +18,23 @@ class SplashScreen(tk.Toplevel):
         self.duration = duration
         self.overrideredirect(True)
 
+        # Track whether transparency is supported
+        try:
+            self.attributes("-alpha", 0.0)
+            self._alpha_supported = True
+        except tk.TclError:
+            self._alpha_supported = False
+
         # Shadow window to create simple 3D effect
         self.shadow = tk.Toplevel(master)
         self.shadow.overrideredirect(True)
         self.shadow.configure(bg="black")
+        self._shadow_alpha_target = 0.3
         try:
-            # Transparency might not be supported on all systems
-            self.shadow.attributes("-alpha", 0.3)
+            # Start fully transparent for fade in
+            self.shadow.attributes("-alpha", 0.0)
         except tk.TclError:
-            pass
+            self._shadow_alpha_target = None
 
         self.canvas_size = 300
         # Black background so colors pop
@@ -78,9 +86,41 @@ class SplashScreen(tk.Toplevel):
             font=("Helvetica", 9),
             fill="white",
         )
-        # Start animation
+        # Start animation and fade-in effect
         self.after(10, self._animate)
-        self.after(self.duration, self._close)
+        self.after(10, self._fade_in)
+
+    def _fade_in(self):
+        if not getattr(self, "_alpha_supported", False):
+            self.after(self.duration, self._close)
+            return
+        alpha = min(self.attributes("-alpha") + 0.05, 1.0)
+        self.attributes("-alpha", alpha)
+        if self._shadow_alpha_target is not None:
+            try:
+                self.shadow.attributes("-alpha", alpha * self._shadow_alpha_target)
+            except tk.TclError:
+                pass
+        if alpha < 1.0:
+            self.after(50, self._fade_in)
+        else:
+            self.after(self.duration, self._fade_out)
+
+    def _fade_out(self):
+        if not getattr(self, "_alpha_supported", False):
+            self._close()
+            return
+        alpha = max(self.attributes("-alpha") - 0.05, 0.0)
+        self.attributes("-alpha", alpha)
+        if self._shadow_alpha_target is not None:
+            try:
+                self.shadow.attributes("-alpha", alpha * self._shadow_alpha_target)
+            except tk.TclError:
+                pass
+        if alpha > 0.0:
+            self.after(50, self._fade_out)
+        else:
+            self._close()
 
     def _center(self):
         self.update_idletasks()
