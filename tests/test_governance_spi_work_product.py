@@ -40,32 +40,31 @@ def test_governance_spi_work_product_enablement(monkeypatch):
 
     win.app = DummyApp()
 
-    class MissingWpDialog:
+    class FirstDialog:
         def __init__(self, parent, title, options):
-            captured["initial_wp_options"] = options
-            self.selection = ""
+            if title == "Add Process Area":
+                self.selection = "System Design (Item Definition)"
+            else:
+                captured["initial_wp_options"] = options
+                self.selection = ""
 
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", MissingWpDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FirstDialog)
     win.add_work_product()
     assert "SPI Work Document" not in captured.get("initial_wp_options", [])
 
-    class AreaDialog:
+    class SecondDialog:
         def __init__(self, parent, title, options):
-            captured["area_options"] = options
-            self.selection = "Safety & Security Management"
+            if title == "Add Process Area":
+                captured["area_options"] = options
+                self.selection = "Safety & Security Management"
+            else:
+                captured["wp_options"] = options
+                self.selection = "SPI Work Document"
 
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", AreaDialog)
-    win.add_process_area()
-    assert "Safety & Security Management" in captured["area_options"]
-
-    class WorkProductDialog:
-        def __init__(self, parent, title, options):
-            captured["wp_options"] = options
-            self.selection = "SPI Work Document"
-
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", WorkProductDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", SecondDialog)
     win.add_work_product()
 
+    assert "Safety & Security Management" in captured["area_options"]
     assert "SPI Work Document" in captured["wp_options"]
     assert enable_calls == ["SPI Work Document"]
     assert any(wp.analysis == "SPI Work Document" for wp in toolbox.work_products)
