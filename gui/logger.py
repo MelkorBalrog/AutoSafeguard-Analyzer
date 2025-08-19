@@ -4,6 +4,9 @@ import tkinter.font as tkfont
 
 log_widget = None
 _line_widget = None
+_log_frame = None
+_toggle_button = None
+_initial_height = 0
 
 # Mapping of log levels to the tag name that will be used for colouring
 _LEVEL_TAGS = {
@@ -27,12 +30,14 @@ def init_log_window(root, height=7, dark_mode: bool = True):
         SynapseX assembly editor style. Otherwise a light theme is used.
     """
 
-    global log_widget, _line_widget
+    global log_widget, _line_widget, _log_frame, _initial_height
     frame = ttk.Frame(root)
     frame.pack_propagate(False)
     font = tkfont.Font(root=root, family="Consolas", size=11)
     line_height = font.metrics("linespace")
-    frame.configure(height=line_height * height)
+    _initial_height = line_height * height
+    frame.configure(height=_initial_height)
+    _log_frame = frame
 
     # Choose colours based on the requested theme
     if dark_mode:
@@ -112,3 +117,60 @@ def log_message(message: str, level: str = "INFO") -> None:
     log_widget.see(tk.END)
     log_widget.configure(state="disabled")
     _update_line_numbers()
+
+
+def set_toggle_button(button) -> None:
+    """Register the button used to manually toggle the log window."""
+    global _toggle_button
+    _toggle_button = button
+
+
+def _is_visible() -> bool:
+    return bool(_log_frame and _log_frame.winfo_manager())
+
+
+def is_visible() -> bool:
+    """Return ``True`` if the log window is currently displayed."""
+    return _is_visible()
+
+
+def show_logs() -> None:
+    """Display the log window."""
+    if not _log_frame or _is_visible():
+        return
+    _log_frame.configure(height=_initial_height)
+    pack_kwargs = {"side": tk.BOTTOM, "fill": tk.X}
+    if _toggle_button:
+        pack_kwargs["before"] = _toggle_button
+    _log_frame.pack(**pack_kwargs)
+    if _toggle_button:
+        _toggle_button.config(text="Hide Logs")
+
+
+def hide_logs() -> None:
+    """Hide the log window."""
+    if not _log_frame or not _is_visible():
+        return
+    _log_frame.pack_forget()
+    if _toggle_button:
+        _toggle_button.config(text="Show Logs")
+
+
+def _animate_hide(step: int = 10, delay: int = 15) -> None:
+    if not _log_frame or not _is_visible():
+        return
+    h = _log_frame.winfo_height()
+    if h <= 0:
+        hide_logs()
+        _log_frame.configure(height=_initial_height)
+        return
+    _log_frame.configure(height=max(0, h - step))
+    _log_frame.after(delay, lambda: _animate_hide(step, delay))
+
+
+def flash_log(duration: int = 3000) -> None:
+    """Temporarily show the log window and hide it after *duration* ms."""
+    if not _log_frame or _is_visible():
+        return
+    show_logs()
+    _log_frame.after(duration, _animate_hide)
