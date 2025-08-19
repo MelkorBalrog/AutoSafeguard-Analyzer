@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+import tkinter.font as tkfont
 from typing import Callable, Optional
 
 
@@ -35,15 +36,23 @@ class CapsuleButton(tk.Canvas):
         master: tk.Widget,
         text: str,
         command: Optional[Callable[[], None]] = None,
-        width: int = 80,
+        width: int | None = None,
         height: int = 26,
         bg: str = "#e1e1e1",
         hover_bg: Optional[str] = None,
         state: str | None = None,
         image: tk.PhotoImage | None = None,
         compound: str = tk.CENTER,
+        hover_factor: float = 1.2,
         **kwargs,
     ) -> None:
+        self._text = text
+        self._image = image
+        self._compound = compound
+        self._hover_factor = hover_factor
+        if width is None:
+            font = tkfont.nametofont(kwargs.get("font", "TkDefaultFont"))
+            width = self._calc_width(text, image, font)
         init_kwargs = {
             "width": width,
             "height": height,
@@ -53,25 +62,16 @@ class CapsuleButton(tk.Canvas):
             init_kwargs["bg"] = master.cget("background")
         except tk.TclError:
             pass
-        # ``style`` and ``state`` are ttk-specific options.  Strip them from
-        # ``kwargs`` before forwarding to ``Canvas.__init__`` and track the
-        # ``state`` value ourselves.  ``image`` and ``compound`` are also Tk
-        # button options which ``Canvas`` does not understand, so remove them
-        # here and handle them manually.
         kwargs.pop("style", None)
         kwargs.pop("image", None)
         kwargs.pop("compound", None)
-        init_kwargs.update(kwargs)
-        super().__init__(master, **init_kwargs)
+        super().__init__(master, **init_kwargs, **kwargs)
         self._state: set[str] = set()
         if state in {"disabled", tk.DISABLED}:  # type: ignore[arg-type]
             self._state.add("disabled")
         self._command = command
-        self._text = text
-        self._image = image
-        self._compound = compound
         self._normal_color = bg
-        self._hover_color = hover_bg or _lighten(bg, 1.2)
+        self._hover_color = hover_bg or _lighten(bg, hover_factor)
         self._current_color = self._normal_color
         self._radius = height // 2
         self._shape_items: list[int] = []
@@ -83,6 +83,17 @@ class CapsuleButton(tk.Canvas):
         self.bind("<Button-1>", self._on_click)
         # Apply the initial state after the button has been drawn.
         self._apply_state()
+
+    @staticmethod
+    def _calc_width(
+        text: str | None,
+        image: tk.PhotoImage | None,
+        font: tkfont.Font,
+    ) -> int:
+        text_w = font.measure(text) if text else 0
+        img_w = image.width() if image else 0
+        spacing = 4 if text and image else 0
+        return text_w + img_w + spacing + 20
 
     def _draw_button(self) -> None:
         self.delete("all")
@@ -129,7 +140,24 @@ class CapsuleButton(tk.Canvas):
             style=tk.ARC,
             outline=outline,
         )
-        self._text_item = self.create_text(w // 2, h // 2, text=self._text)
+        font = tkfont.nametofont(self.cget("font"))
+        text_w = font.measure(self._text) if self._text else 0
+        img_w = self._image.width() if self._image else 0
+        spacing = 4 if self._text and self._image else 0
+        total = text_w + img_w + spacing
+        start = (w - total) // 2
+        if self._image:
+            if self._compound == tk.RIGHT:
+                img_x = start + text_w + spacing + img_w // 2
+            else:
+                img_x = start + img_w // 2
+            self._image_item = self.create_image(img_x, h // 2, image=self._image)
+        if self._text:
+            if self._image and self._compound == tk.LEFT:
+                text_x = start + img_w + spacing + text_w // 2
+            else:
+                text_x = start + text_w // 2
+            self._text_item = self.create_text(text_x, h // 2, text=self._text)
 
     def _set_color(self, color: str) -> None:
         for item in self._shape_items:
@@ -161,41 +189,48 @@ class CapsuleButton(tk.Canvas):
     def configure(self, **kwargs) -> None:  # pragma: no cover - thin wrapper
         """Allow dynamic configuration similar to standard Tk buttons."""
         text = kwargs.pop("text", None)
-        if text is not None:
-            self._text = text
-            if self._text_item is not None:
-                self.itemconfigure(self._text_item, text=self._text)
         command = kwargs.pop("command", None)
-        if command is not None:
-            self._command = command
         bg = kwargs.pop("bg", None)
         hover_bg = kwargs.pop("hover_bg", None)
         image = kwargs.pop("image", None)
         compound = kwargs.pop("compound", None)
-        width = kwargs.get("width")
-        height = kwargs.get("height")
+        width = kwargs.pop("width", None)
+        height = kwargs.pop("height", None)
         state = kwargs.pop("state", None)
         kwargs.pop("style", None)
-        super().configure(**kwargs)
+
+        if text is not None:
+            self._text = text
+        if command is not None:
+            self._command = command
+        if image is not None:
+            self._image = image
+        if compound is not None:
+            self._compound = compound
+
+        font = tkfont.nametofont(self.cget("font"))
+        if width is None:
+            width = self._calc_width(self._text, self._image, font)
+        if height is None:
+            height = int(self["height"])
+        else:
+            self._radius = height // 2
+
+        super().configure(width=width, height=height, **kwargs)
+
+        if bg is not None or hover_bg is not None:
+            if bg is not None:
+                self._normal_color = bg
+            self._hover_color = hover_bg or _lighten(self._normal_color, self._hover_factor)
+            self._set_color(self._normal_color)
+
         if state is not None:
             if state in ("disabled", tk.DISABLED):  # type: ignore[arg-type]
                 self.state(["disabled"])
             else:
                 self.state(["!disabled"])
-        if bg is not None:
-            self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.2)
-            self._set_color(self._normal_color)
-        if hover_bg is not None and bg is None:
-            self._hover_color = hover_bg
-        if image is not None:
-            self._image = image
-        if compound is not None:
-            self._compound = compound
-        if width is not None or height is not None or text is not None or image is not None or compound is not None:
-            self._draw_button()
-        # Always re-apply the current state so that disabled buttons retain
-        # their disabled appearance even after reconfiguration.
+
+        self._draw_button()
         self._apply_state()
 
     config = configure
