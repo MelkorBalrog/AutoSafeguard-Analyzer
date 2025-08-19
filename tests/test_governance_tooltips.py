@@ -16,6 +16,9 @@ class DummyCanvas:
     def canvasy(self, y):
         return y
 
+    def configure(self, **kwargs):
+        pass
+
 
 class DummyTip:
     def __init__(self, widget, text, automatic=False):
@@ -41,11 +44,25 @@ def _expected_text(cfg, node_type: str) -> str:
                 incoming.setdefault(rel, []).append(src)
     if not outgoing and not incoming:
         return ""
-    lines = ["To Others | From Others"]
+
+    rows = []
     for rel in sorted(set(outgoing) | set(incoming)):
         outs = ", ".join(outgoing.get(rel, []))
         ins = ", ".join(sorted(incoming.get(rel, [])))
-        lines.append(f"{rel}: {outs} | {ins}")
+        rows.append((rel, outs, ins))
+
+    headers = ("Relation", "To Others", "From Others")
+    col_widths = [
+        max(len(row[i]) for row in rows + [headers]) for i in range(3)
+    ]
+    lines = [
+        " | ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers)),
+        "-+-".join("-" * col_widths[i] for i in range(3)),
+    ]
+    for row in rows:
+        lines.append(
+            " | ".join(row[i].ljust(col_widths[i]) for i in range(3))
+        )
     return "\n".join(lines)
 
 
@@ -79,3 +96,57 @@ def test_governance_element_tooltips(monkeypatch):
 
     win.on_mouse_move(types.SimpleNamespace(x=400, y=0))
     assert win._conn_tip.text == _expected_text(cfg, "Operation")
+
+
+def test_tooltip_hides_during_drag(monkeypatch):
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+
+    role = SysMLObject(1, "Role", 0.0, 0.0)
+
+    win = SysMLDiagramWindow.__new__(SysMLDiagramWindow)
+    win.canvas = DummyCanvas()
+    win._conn_tip = DummyTip(win.canvas, "")
+    win._conn_tip_obj = None
+    win.repo = repo
+    win.diagram_id = diag.diag_id
+    win.current_tool = "Select"
+    win.start = None
+    win.zoom = 1.0
+    win.objects = [role]
+    win.connections = []
+    win.find_object = SysMLDiagramWindow.find_object.__get__(win)
+    win.redraw = lambda: None
+    win.update_property_view = lambda: None
+    win._sync_to_repository = lambda: None
+    win.select_rect_start = None
+    win.select_rect_id = None
+    win.dragging_conn_mid = None
+    win.dragging_conn_vec = None
+    win.dragging_endpoint = None
+    win.dragging_point_index = None
+    win.conn_drag_offset = (0, 0)
+    win.resizing_obj = None
+    win.resize_edge = None
+    win.selected_conn = None
+    win.selected_objs = []
+    win.drag_offset = (0, 0)
+    win.app = None
+
+    win.on_mouse_move(types.SimpleNamespace(x=0, y=0))
+    assert win._conn_tip_obj == role
+
+    hidden = {"called": False}
+
+    def hide():
+        hidden["called"] = True
+
+    win._conn_tip.hide = hide
+
+    win.on_left_press(types.SimpleNamespace(x=0, y=0, state=0))
+    win.on_left_drag(types.SimpleNamespace(x=10, y=0))
+    win.on_left_release(types.SimpleNamespace(x=10, y=0))
+
+    assert hidden["called"]
+    assert win._conn_tip_obj is None
