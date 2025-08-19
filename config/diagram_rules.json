@@ -159,7 +159,9 @@
         "Fleet": [],
         "Guideline": [],
         "Incident": [],
-        "Lifecycle Phase": [],
+        "Lifecycle Phase": [
+          "Work Product"
+        ],
         "Manufacturing Process": [],
         "Metric": [],
         "Model": [],
@@ -726,7 +728,8 @@
         "Test Suite": [],
         "Vehicle": [],
         "Work Product": [
-          "Work Product"
+          "Work Product",
+          "Lifecycle Phase"
         ],
         "AI Database": [
           "Work Product"
@@ -1644,7 +1647,9 @@
         "Fleet": [],
         "Guideline": [],
         "Incident": [],
-        "Lifecycle Phase": [],
+        "Lifecycle Phase": [
+          "Work Product"
+        ],
         "Manufacturing Process": [],
         "Metric": [],
         "Model": [],
@@ -1666,7 +1671,8 @@
         "Test Suite": [],
         "Vehicle": [],
         "Work Product": [
-          "Work Product"
+          "Work Product",
+          "Lifecycle Phase"
         ],
         "AI Database": [
           "Work Product"
