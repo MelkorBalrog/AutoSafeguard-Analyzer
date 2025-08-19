@@ -17,7 +17,9 @@ class ToolTip:
         self.id = None
         if automatic:
             widget.bind("<Enter>", self._schedule)
-            widget.bind("<Leave>", self._hide)
+        # Always hide the tooltip when the pointer leaves the widget so
+        # tooltips shown manually disappear as expected.
+        widget.bind("<Leave>", self._hide)
 
     def _schedule(self, _event=None):
         self._unschedule()
