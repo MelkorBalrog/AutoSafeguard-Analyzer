@@ -17,6 +17,7 @@ from .gsn_connection_config import GSNConnectionConfig
 from . import messagebox
 from .style_manager import StyleManager
 from .icon_factory import create_icon
+from .button_utils import set_uniform_button_width
 
 
 class ModuleSelectDialog(simpledialog.Dialog):  # pragma: no cover - requires tkinter
@@ -259,6 +260,7 @@ class GSNDiagramWindow(tk.Frame):
                     _set_uniform_width(child)
 
         _set_uniform_width(self.toolbox)
+        set_uniform_button_width(self.toolbox)
 
     # ------------------------------------------------------------------
     def refresh(self):  # pragma: no cover - requires tkinter
