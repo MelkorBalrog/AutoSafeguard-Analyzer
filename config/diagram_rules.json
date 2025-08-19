@@ -1923,7 +1923,8 @@
         "Role": [
           "Data",
           "Document",
-          "Record"
+          "Record",
+          "Work Product"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
