@@ -88,9 +88,12 @@ class CapsuleButton(tk.Canvas):
         self._shape_items: list[int] = []
         self._shine_items: list[int] = []
         # Border items are split into dark and light segments to create a
-        # recessed "hole" effect around the button outline.
+        # recessed "hole" effect around the button outline.  ``_border_outline``
+        # draws a thin dark line between the button and its hole for an extra
+        # sense of depth.
         self._border_dark: list[int] = []
         self._border_light: list[int] = []
+        self._border_outline: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -145,8 +148,17 @@ class CapsuleButton(tk.Canvas):
         self._draw_border(w, h)
 
     def _draw_border(self, w: int, h: int) -> None:
-        """Draw dark/light border to mimic an inset capsule."""
+        """Draw border and inner outline to mimic an inset capsule."""
         r = self._radius
+        inner = _darken(self._current_color, 0.7)
+        self._border_outline = [
+            self.create_arc((1, 1, 2 * r - 1, h - 1), start=90, extent=180, style=tk.ARC, outline=inner),
+            self.create_line(r, 1, w - r, 1, fill=inner),
+            self.create_arc((w - 2 * r + 1, 1, w - 1, h - 1), start=-90, extent=180, style=tk.ARC, outline=inner),
+            self.create_line(1, r, 1, h - r, fill=inner),
+            self.create_line(r, h - 1, w - r, h - 1, fill=inner),
+            self.create_line(w - 1, r, w - 1, h - r, fill=inner),
+        ]
         dark = _darken(self._current_color, 0.8)
         light = _lighten(self._current_color, 1.2)
         # Dark top/left edges
@@ -168,8 +180,10 @@ class CapsuleButton(tk.Canvas):
         highlight = _lighten(color, 1.4)
         for item in self._shine_items:
             self.itemconfigure(item, fill=highlight)
+        inner = _darken(color, 0.7)
         dark = _darken(color, 0.8)
         light = _lighten(color, 1.2)
+        self._apply_border_color(self._border_outline, inner)
         self._apply_border_color(self._border_dark, dark)
         self._apply_border_color(self._border_light, light)
         self._current_color = color
