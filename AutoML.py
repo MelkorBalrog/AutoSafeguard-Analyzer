@@ -2428,18 +2428,7 @@ class AutoMLApp:
             relief=[("pressed", "sunken"), ("!pressed", "raised")],
         )
         # Navigation buttons used to scroll document tabs
-        self.style.configure(
-            "Nav.TButton",
-            background="#e7edf5",
-            borderwidth=2,
-            relief="raised",
-            lightcolor="#ffffff",
-            darkcolor="#7a8a99",
-        )
-        self.style.map(
-            "Nav.TButton",
-            relief=[("pressed", "sunken"), ("!pressed", "raised")],
-        )
+        self._init_nav_button_style()
         # Increase notebook tab font/size so titles are fully visible
         self.style.configure(
             "TNotebook.Tab", font=("Arial", 10), padding=(10, 5), width=20
@@ -17997,6 +17986,22 @@ class AutoMLApp:
                             if hasattr(self, "lifecycle_var") and hasattr(self.lifecycle_var, "set"):
                                 self.lifecycle_var.set(module or "")
                     break
+
+    def _init_nav_button_style(self) -> None:
+        """Configure custom style for tab navigation buttons."""
+        self.style.configure(
+            "Nav.TButton",
+            background="#e7edf5",
+            borderwidth=2,
+            relief="raised",
+            lightcolor="#ffffff",
+            darkcolor="#7a8a99",
+        )
+        self.style.map(
+            "Nav.TButton",
+            background=[("active", "#f2f6fa"), ("pressed", "#dae2ea")],
+            relief=[("pressed", "sunken"), ("!pressed", "raised")],
+        )
 
     def _update_tool_tab_visibility(self) -> None:
         visible: list[str] = []

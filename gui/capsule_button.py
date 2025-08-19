@@ -95,7 +95,7 @@ class CapsuleButton(tk.Canvas):
         # sense of depth.
         self._border_dark: list[int] = []
         self._border_light: list[int] = []
-        self._border_outline: list[int] = []
+        self._border_gap: list[int] = []
         self._text_item: Optional[int] = None
         self._image_item: Optional[int] = None
         self._draw_button()
@@ -143,7 +143,15 @@ class CapsuleButton(tk.Canvas):
                 fill=color,
             ),
         ]
-        highlight = _lighten(color, 1.4)
+        self._draw_highlight(w, h)
+        self._draw_content(w, h)
+        self._draw_border(w, h)
+
+    def _draw_highlight(self, w: int, h: int) -> None:
+        """Draw shiny highlight and diffused circles on the capsule ends."""
+        r = self._radius
+        color = self._current_color
+        top_highlight = _lighten(color, 1.4)
         self._shine_items = [
             self.create_oval(
                 1,
@@ -151,12 +159,26 @@ class CapsuleButton(tk.Canvas):
                 w - 1,
                 h // 2,
                 outline="",
-                fill=highlight,
+                fill=top_highlight,
                 stipple="gray25",
             )
         ]
-        self._draw_content(w, h)
-        self._draw_border(w, h)
+        small_r = max(r // 3, 2)
+        centers = [(r // 2, h // 2), (w - r // 2, h // 2)]
+        for cx, cy in centers:
+            for i in range(3):
+                rad = max(small_r - i * (small_r // 3), 1)
+                self._shine_items.append(
+                    self.create_oval(
+                        cx - rad,
+                        cy - rad,
+                        cx + rad,
+                        cy + rad,
+                        outline="",
+                        fill=_lighten(color, 1.6 + 0.1 * i),
+                        stipple="gray25",
+                    )
+                )
 
     def _draw_content(self, w: int, h: int) -> None:
         """Render optional image and text within the button."""
@@ -195,11 +217,22 @@ class CapsuleButton(tk.Canvas):
         ]
         dark = _darken(self._current_color, 0.8)
         light = _lighten(self._current_color, 1.2)
+        gap = _darken(self._current_color, 0.7)
+        inset = 1
         # Dark top/left edges
         self._border_dark = [
             self.create_arc((0, 0, 2 * r, h), start=90, extent=180, style=tk.ARC, outline=dark, width=2),
             self.create_line(r, 0, w - r, 0, fill=dark, width=2),
             self.create_line(0, r, 0, h - r, fill=dark, width=2),
+        ]
+        # Thin dark outline inside the border to accentuate the recessed effect
+        self._border_gap = [
+            self.create_arc((inset, inset, 2 * r - inset, h - inset), start=90, extent=180, style=tk.ARC, outline=gap, width=1),
+            self.create_line(r, inset, w - r, inset, fill=gap, width=1),
+            self.create_line(inset, r, inset, h - r, fill=gap, width=1),
+            self.create_arc((w - 2 * r + inset, inset, w - inset, h - inset), start=-90, extent=180, style=tk.ARC, outline=gap, width=1),
+            self.create_line(r, h - inset, w - r, h - inset, fill=gap, width=1),
+            self.create_line(w - inset, r, w - inset, h - r, fill=gap, width=1),
         ]
         # Light bottom/right edges
         self._border_light = [
@@ -217,9 +250,10 @@ class CapsuleButton(tk.Canvas):
         inner = _darken(color, 0.7)
         dark = _darken(color, 0.8)
         light = _lighten(color, 1.2)
-        self._apply_border_color(self._border_outline, inner)
+        gap = _darken(color, 0.7)
         self._apply_border_color(self._border_dark, dark)
         self._apply_border_color(self._border_light, light)
+        self._apply_border_color(self._border_gap, gap)
         self._current_color = color
 
     def _apply_border_color(self, items: list[int], color: str) -> None:
