@@ -149,3 +149,14 @@ def test_tasks_create_requirement_actions():
     acquire_req = next(r for r in reqs if r.action == "acquire data")
     assert acquire_req.subject == "Engineering team"
     assert acquire_req.req_type == "AI safety"
+
+
+def test_generic_ai_relation_defaults_to_organizational():
+    diagram = GovernanceDiagram()
+    diagram.add_task("Policy", node_type="Policy")
+    diagram.add_task("Role1", node_type="Role")
+    diagram.add_relationship("Role1", "Policy", conn_type="Assesses")
+
+    reqs = diagram.generate_requirements()
+    assess_req = next(r for r in reqs if r.action == "assess" and r.subject == "Role1")
+    assert assess_req.req_type == "organizational"

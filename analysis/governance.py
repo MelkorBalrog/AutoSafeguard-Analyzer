@@ -17,6 +17,16 @@ _CONFIG = load_diagram_rules(_CONFIG_PATH)
 _AI_NODES = set(_CONFIG.get("ai_nodes", []))
 _AI_RELATIONS = set(_CONFIG.get("ai_relations", []))
 
+
+def _is_ai_specific_relation(conn_type: str | None) -> bool:
+    """Return True if *conn_type* represents an AI-specific relationship."""
+    if not conn_type:
+        return False
+    lowered = conn_type.lower()
+    return conn_type in _AI_RELATIONS and any(
+        key in lowered for key in ("train", "curat")
+    )
+
 # Map relationship labels or connection types to requirement actions.  Each
 # entry defines the verb to use, whether the destination element acts as a
 # constraint instead of an object, and an optional default subject.  The
@@ -432,9 +442,9 @@ class GovernanceDiagram:
 
             req_type = "organizational"
             if (
-                conn_type in _AI_RELATIONS
-                or self.node_types.get(src) in _AI_NODES
+                self.node_types.get(src) in _AI_NODES
                 or self.node_types.get(dst) in _AI_NODES
+                or _is_ai_specific_relation(conn_type)
             ):
                 req_type = "AI safety"
 
