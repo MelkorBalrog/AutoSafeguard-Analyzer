@@ -256,6 +256,7 @@ from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
+from gui.mac_button_style import apply_mac_button_style
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -2237,21 +2238,7 @@ class AutoMLApp:
             self.style.theme_use("clam")
         except tk.TclError:
             pass
-        # Give all ttk buttons a macOS-like 3D capsule appearance so that
-        # buttons across the entire tool have a consistent style.
-        self.style.configure(
-            "TButton",
-            padding=(10, 5),
-            relief="raised",
-            borderwidth=1,
-            background="#e5e5e5",
-            foreground="black",
-        )
-        self.style.map(
-            "TButton",
-            background=[("active", "#d9d9d9"), ("pressed", "#d0d0d0")],
-            relief=[("pressed", "sunken"), ("!pressed", "raised")],
-        )
+        apply_mac_button_style(self.style)
         self.style.configure(
             "Treeview",
             font=("Arial", 10),
@@ -2942,6 +2929,7 @@ class AutoMLApp:
         nb_container = ttk.Frame(self.tools_group)
         nb_container.pack(fill=tk.BOTH, expand=True)
         style = ttk.Style()
+        apply_mac_button_style(style)
         # Create a custom notebook style so that a layout is available.  Without a
         # ``TNotebook`` suffix in the style name, ttk cannot find the default
         # layout which led to ``_tkinter.TclError: Layout ToolsNotebook not
@@ -13993,6 +13981,7 @@ class AutoMLApp:
             style.theme_use("clam")
         except tk.TclError:
             pass
+        apply_mac_button_style(style)
         style.configure(
             "FMEA.Treeview",
             font=("Segoe UI", 10),

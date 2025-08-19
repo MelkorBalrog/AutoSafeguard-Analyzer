@@ -38,6 +38,7 @@ from analysis.models import (
 from analysis.safety_management import ACTIVE_TOOLBOX, SAFETY_ANALYSIS_WORK_PRODUCTS
 from analysis.fmeda_utils import compute_fmeda_metrics
 from analysis.constants import CHECK_MARK, CROSS_MARK
+from gui.mac_button_style import apply_mac_button_style
 from gui.icon_factory import create_icon
 from analysis.causal_bayesian_network import CausalBayesianNetworkDoc
 from gui.architecture import (
@@ -86,6 +87,7 @@ def configure_table_style(style_name: str, rowheight: int = 60) -> None:
         style.theme_use("clam")
     except tk.TclError:
         pass
+    apply_mac_button_style(style)
     border_opts = {"bordercolor": "black", "borderwidth": 1, "relief": "solid"}
     style.configure(
         style_name,
