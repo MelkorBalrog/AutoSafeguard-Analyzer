@@ -4780,6 +4780,7 @@ class SysMLDiagramWindow(tk.Frame):
             if obj.obj_type in _FIXED_SIZE_TYPES:
                 return
             min_w, min_h = (10.0, 10.0)
+            child_left = child_right = child_top = child_bottom = None
             if obj.obj_type == "Block":
                 min_w, min_h = self._min_block_size(obj)
             elif obj.obj_type in ("Action", "CallBehaviorAction"):
@@ -4788,28 +4789,57 @@ class SysMLDiagramWindow(tk.Frame):
                 min_w, min_h = self._min_data_acquisition_size(obj)
             elif obj.obj_type == "Block Boundary":
                 min_w, min_h = _boundary_min_size(obj, self.objects)
+            elif obj.obj_type == "System Boundary":
+                wps = [
+                    o
+                    for o in self.objects
+                    if o.obj_type == "Work Product"
+                    and o.properties.get("parent") == str(obj.obj_id)
+                ]
+                if wps:
+                    child_left = min(w.x - w.width / 2 for w in wps)
+                    child_right = max(w.x + w.width / 2 for w in wps)
+                    child_top = min(w.y - w.height / 2 for w in wps)
+                    child_bottom = max(w.y + w.height / 2 for w in wps)
+                    min_w = max(min_w, child_right - child_left)
+                    min_h = max(min_h, child_bottom - child_top)
+                if getattr(self, "font", None):
+                    label_lines = self._object_label_lines(obj)
+                    if label_lines:
+                        text_w = max(self.font.measure(line) for line in label_lines)
+                        text_h = self.font.metrics("linespace") * len(label_lines)
+                        min_w = max(min_w, (text_w + 10 * self.zoom) / self.zoom)
+                        min_h = max(min_h, (text_h + 10 * self.zoom) / self.zoom)
             left = obj.x - obj.width / 2
             right = obj.x + obj.width / 2
             top = obj.y - obj.height / 2
             bottom = obj.y + obj.height / 2
             if "e" in self.resize_edge:
                 new_right = x / self.zoom
+                if child_right is not None and new_right < child_right:
+                    new_right = child_right
                 if new_right - left < min_w:
                     new_right = left + min_w
                 right = new_right
             if "w" in self.resize_edge:
                 new_left = x / self.zoom
+                if child_left is not None and new_left > child_left:
+                    new_left = child_left
                 if right - new_left < min_w:
                     new_left = right - min_w
                 left = new_left
             if obj.obj_type not in ("Fork", "Join", "Existing Element"):
                 if "s" in self.resize_edge:
                     new_bottom = y / self.zoom
+                    if child_bottom is not None and new_bottom < child_bottom:
+                        new_bottom = child_bottom
                     if new_bottom - top < min_h:
                         new_bottom = top + min_h
                     bottom = new_bottom
                 if "n" in self.resize_edge:
                     new_top = y / self.zoom
+                    if child_top is not None and new_top > child_top:
+                        new_top = child_top
                     if bottom - new_top < min_h:
                         new_top = bottom - min_h
                     top = new_top

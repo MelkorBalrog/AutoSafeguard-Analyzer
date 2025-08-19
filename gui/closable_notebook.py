@@ -174,19 +174,26 @@ class ClosableNotebook(ttk.Notebook):
             return
 
         tab_index = self._drag_data["tab"]
-        if tab_index is not None and self._dragging:
-            try:
-                tab_id = self.tabs()[tab_index]
-            except IndexError:
-                self._reset_drag()
-                return
-            widget = self.winfo_containing(event.x_root, event.y_root)
-            while widget is not None and not isinstance(widget, ClosableNotebook):
-                widget = widget.master
-            if isinstance(widget, ClosableNotebook) and widget is not self:
-                self._move_tab(tab_id, widget)
-            else:
-                self._detach_tab(tab_id, event.x_root, event.y_root)
+        if tab_index is not None:
+            outside = (
+                event.x < 0
+                or event.y < 0
+                or event.x >= self.winfo_width()
+                or event.y >= self.winfo_height()
+            )
+            if self._dragging or outside:
+                try:
+                    tab_id = self.tabs()[tab_index]
+                except IndexError:
+                    self._reset_drag()
+                    return
+                widget = self.winfo_containing(event.x_root, event.y_root)
+                while widget is not None and not isinstance(widget, ClosableNotebook):
+                    widget = widget.master
+                if isinstance(widget, ClosableNotebook) and widget is not self:
+                    self._move_tab(tab_id, widget)
+                else:
+                    self._detach_tab(tab_id, event.x_root, event.y_root)
         self._reset_drag()
 
     def _move_tab(self, tab_id: str, target: "ClosableNotebook") -> bool:
