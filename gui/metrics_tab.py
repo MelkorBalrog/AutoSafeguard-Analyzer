@@ -12,82 +12,21 @@ class MetricsTab(tk.Frame):
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
-
-    def _draw_line_chart_v1(self, canvas: tk.Canvas, data):
-        """Version 1: guard against max value of zero by fallback to 1."""
-        canvas.delete("all")
-        h = int(canvas["height"])
-        w = int(canvas["width"])
-        max_val = max(data) if data else 1
-        if max_val == 0:
-            max_val = 1
-        step = w / max(1, len(data) - 1)
-        points = []
-        for i, val in enumerate(data):
-            x = i * step
-            y = h - (val / max_val) * h
-            points.extend([x, y])
-        if len(points) > 3:
-            canvas.create_line(*points, fill="blue")
-        canvas.create_text(5, 5, anchor="nw", text="Requirements")
-
-    def _draw_line_chart_v2(self, canvas: tk.Canvas, data):
-        """Version 2: use Python's 'or' to ensure non-zero max value."""
-        canvas.delete("all")
-        h = int(canvas["height"])
-        w = int(canvas["width"])
-        max_val = max(data or [1]) or 1
-        step = w / max(1, len(data) - 1)
-        points = []
-        for i, val in enumerate(data):
-            x = i * step
-            y = h - (val / max_val) * h
-            points.extend([x, y])
-        if len(points) > 3:
-            canvas.create_line(*points, fill="blue")
-        canvas.create_text(5, 5, anchor="nw", text="Requirements")
-
-    def _draw_line_chart_v3(self, canvas: tk.Canvas, data):
-        """Version 3: handle empty and non-positive data via try/except."""
-        canvas.delete("all")
-        h = int(canvas["height"])
-        w = int(canvas["width"])
-        try:
-            max_val = max(data)
-            if max_val <= 0:
-                max_val = 1
-        except ValueError:
-            max_val = 1
-        step = w / max(1, len(data) - 1)
-        points = []
-        for i, val in enumerate(data):
-            x = i * step
-            y = h - (val / max_val) * h
-            points.extend([x, y])
-        if len(points) > 3:
-            canvas.create_line(*points, fill="blue")
-        canvas.create_text(5, 5, anchor="nw", text="Requirements")
-
-    def _draw_line_chart_v4(self, canvas: tk.Canvas, data):
-        """Version 4: pre-compute scaling factor avoiding division by zero."""
-        canvas.delete("all")
-        h = int(canvas["height"])
-        w = int(canvas["width"])
-        max_val = max(data) if data else 1
-        scale = h / max_val if max_val else 0
-        step = w / max(1, len(data) - 1)
-        points = []
-        for i, val in enumerate(data):
-            x = i * step
-            y = h - val * scale
-            points.extend([x, y])
-        if len(points) > 3:
-            canvas.create_line(*points, fill="blue")
-        canvas.create_text(5, 5, anchor="nw", text="Requirements")
-
+        
     def _draw_line_chart(self, canvas: tk.Canvas, data):
-        """Final implementation selecting the most complete version."""
-        self._draw_line_chart_v4(canvas, data)
+        canvas.delete("all")
+        h = int(canvas["height"])
+        w = int(canvas["width"])
+        max_val = max(data) if data else 1
+        step = w / max(1, len(data) - 1)
+        points = []
+        for i, val in enumerate(data):
+            x = i * step
+            y = h - (val / max_val) * h
+            points.extend([x, y])
+        if len(points) > 3:
+            canvas.create_line(*points, fill="blue")
+        canvas.create_text(5, 5, anchor="nw", text="Requirements")
 
     def _draw_bar_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")
@@ -111,9 +50,7 @@ class MetricsTab(tk.Frame):
             req_history = [len(getattr(self.app, "requirements", []))]
         self._draw_line_chart(self.canvases[0], req_history)
 
-        statuses = Counter(
-            getattr(r, "status", "unknown") for r in getattr(self.app, "requirements", [])
-        )
+        statuses = Counter(getattr(r, "status", "unknown") for r in getattr(self.app, "requirements", []))
         self._draw_bar_chart(self.canvases[1], statuses)
         self.canvases[1].create_text(5, 5, anchor="nw", text="Status")
 
