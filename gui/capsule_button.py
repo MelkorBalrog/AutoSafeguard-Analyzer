@@ -151,6 +151,11 @@ class CapsuleButton(tk.Canvas):
         kwargs.pop("style", None)
         kwargs.pop("image", None)
         kwargs.pop("compound", None)
+        # ``default`` is a standard ``Button`` option used by dialogs to mark
+        # the widget activated when the user presses Return.  ``Canvas`` does
+        # not recognise it, so silently drop the option to avoid a Tk error
+        # when our custom button is used as a stand-in for ``tk.Button``.
+        kwargs.pop("default", None)
         self._text = text
         self._image = image
         self._glow_cache: tk.PhotoImage | None = None

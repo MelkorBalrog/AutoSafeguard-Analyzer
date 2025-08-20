@@ -21,10 +21,10 @@ class MetricsTab(tk.Frame):
         if max_val == 0:
             max_val = 1
         step = w / max(1, len(data) - 1)
-        points = []
+        points: list[float] = []
         for i, val in enumerate(data):
             x = i * step
-            y = h - (val / max_val) * h
+            y = h - (val / max_val) * h if max_val else h
             points.extend([x, y])
         return points
 
@@ -62,6 +62,25 @@ class MetricsTab(tk.Frame):
         if len(points) > 3:
             canvas.create_line(*points, fill="blue")
         canvas.create_text(5, 5, anchor="nw", text="Requirements")
+
+    def _draw_line_chart(self, canvas: tk.Canvas, data):
+        self._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v1(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v2(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v3(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v4(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
 
     def _draw_bar_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")

@@ -18135,7 +18135,7 @@ class AutoMLApp:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
+        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
     def ensure_fta_tab(self):
@@ -22061,7 +22061,7 @@ class PageDiagram:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
+        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
     def on_right_mouse_press(self, event):
