@@ -48,6 +48,17 @@ def _lighten_color(color: str, factor: float = 1.2) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def _lighten_image(
     img: tk.PhotoImage,
     factor: float = 1.2,
@@ -80,7 +91,12 @@ def _lighten_image(
                 new_img.put(pixel, (x, y))
             else:
                 lf = factor * bottom_factor if y >= highlight_start else factor
-                new_img.put(_lighten_color(pixel, lf), (x, y))
+                light = _lighten_color(pixel, lf)
+                if y >= highlight_start:
+                    blend = _blend_with(light, (179, 255, 179), 0.3)
+                else:
+                    blend = _blend_with(light, (255, 255, 255), 0.3)
+                new_img.put(blend, (x, y))
     return new_img
 
 
