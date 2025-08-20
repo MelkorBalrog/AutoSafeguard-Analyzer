@@ -35,19 +35,6 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
             btn.configure(width=max_width)
         except Exception:  # pragma: no cover - defensive
             pass
-
-
-def _lighten_color(color: str, factor: float = 1.2) -> str:
-    """Return *color* lightened by *factor* while clamping to valid range."""
-    r = int(color[1:3], 16)
-    g = int(color[3:5], 16)
-    b = int(color[5:7], 16)
-    r = min(int(r * factor), 255)
-    g = min(int(g * factor), 255)
-    b = min(int(b * factor), 255)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
 def _lighten_image(
     img: tk.PhotoImage,
     factor: float = 1.2,
@@ -55,12 +42,12 @@ def _lighten_image(
     bottom_factor: float = 1.4,
     bottom_ratio: float = 0.3,
 ) -> tk.PhotoImage:
-    """Return a new image with all non-black pixels lightened.
+    """Return a new image with all non-black pixels lightened and tinted.
 
-    A subtle "lighting" effect is added to the lower portion of the image by
-    applying a stronger lightening factor to the bottom *bottom_ratio* of
-    pixels.  This creates the impression of a light source shining on the base
-    of the button when hovered.
+    Each pixel is brightened and then blended with white and a hint of light
+    green (``#ccffcc``) to give hover images a soft glow.  The lower portion of
+    the image receives an extra boost to suggest a light source shining from
+    below.
     """
     w, h = img.width(), img.height()
     new_img = tk.PhotoImage(width=w, height=h)
@@ -80,7 +67,17 @@ def _lighten_image(
                 new_img.put(pixel, (x, y))
             else:
                 lf = factor * bottom_factor if y >= highlight_start else factor
-                new_img.put(_lighten_color(pixel, lf), (x, y))
+                r = int(pixel[1:3], 16)
+                g = int(pixel[3:5], 16)
+                b = int(pixel[5:7], 16)
+                r = min(int(r * lf), 255)
+                g = min(int(g * lf), 255)
+                b = min(int(b * lf), 255)
+                # Blend with white (255,255,255) and light green (204,255,204)
+                r = int(r * 0.6 + 255 * 0.3 + 204 * 0.1)
+                g = int(g * 0.6 + 255 * 0.3 + 255 * 0.1)
+                b = int(b * 0.6 + 255 * 0.3 + 204 * 0.1)
+                new_img.put(f"#{r:02x}{g:02x}{b:02x}", (x, y))
     return new_img
 
 
