@@ -129,6 +129,7 @@ class EditableTreeview(ttk.Treeview):
         edit_callback=None,
         requirement_columns=None,
         requirement_target=None,
+        multiline_columns=None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)
@@ -136,6 +137,7 @@ class EditableTreeview(ttk.Treeview):
         self._edit_cb = edit_callback
         self._req_cols = requirement_columns or {}
         self._req_target = requirement_target
+        self._multiline = set(multiline_columns or [])
         self._edit_widget = None
         self.bind("<Double-1>", self._begin_edit, add="+")
 
@@ -169,21 +171,45 @@ class EditableTreeview(ttk.Treeview):
         x, y, w, h = self.bbox(rowid, col)
         opts = self._col_options.get(col_name)
         var = tk.StringVar(value=value)
-        if opts:
+        if col_name in self._multiline:
+            widget = tk.Text(self, wrap="word")
+            widget.insert("1.0", value)
+            def save(event=None):
+                new_val = widget.get("1.0", "end-1c")
+                self.set(rowid, col_name, new_val)
+                widget.destroy()
+                self._edit_widget = None
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, new_val)
+            widget.bind("<Control-Return>", save)
+            widget.bind("<FocusOut>", save)
+        elif opts:
             widget = ttk.Combobox(self, textvariable=var, values=opts, state="readonly")
+            def save(event=None):
+                new_val = var.get()
+                self.set(rowid, col_name, new_val)
+                widget.destroy()
+                self._edit_widget = None
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, new_val)
+            widget.bind("<Return>", save)
+            widget.bind("<FocusOut>", save)
         else:
             widget = tk.Entry(self, textvariable=var)
+            def save(event=None):
+                new_val = var.get()
+                self.set(rowid, col_name, new_val)
+                widget.destroy()
+                self._edit_widget = None
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, new_val)
+            widget.bind("<Return>", save)
+            widget.bind("<FocusOut>", save)
         widget.place(x=x, y=y, width=w, height=h)
         widget.focus_set()
-        def save(event=None):
-            self.set(rowid, col_name, var.get())
-            widget.destroy()
-            self._edit_widget = None
-            if self._edit_cb:
-                row_index = self.index(rowid)
-                self._edit_cb(row_index, col_name, var.get())
-        widget.bind("<Return>", save)
-        widget.bind("<FocusOut>", save)
         self._edit_widget = widget
 def stripe_rows(tree: ttk.Treeview) -> None:
     """Apply alternating background colors to rows for visual separation."""
@@ -4161,7 +4187,7 @@ class RequirementsExplorerWindow(tk.Frame):
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
         self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text")
-        configure_table_style("ReqExp.Treeview")
+        configure_table_style("ReqExp.Treeview", rowheight=80)
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True)
         self.tree = EditableTreeview(
@@ -4170,6 +4196,7 @@ class RequirementsExplorerWindow(tk.Frame):
             show="headings",
             style="ReqExp.Treeview",
             edit_callback=self.on_cell_edit,
+            multiline_columns={"Text"},
             height=10,
         )
         for c in self.columns:
@@ -4240,7 +4267,7 @@ class RequirementsExplorerWindow(tk.Frame):
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":6}
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":7}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
