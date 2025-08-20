@@ -789,7 +789,8 @@
         "Record": [],
         "Role": [
           "Procedure",
-          "Process"
+          "Process",
+          "Operation"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
