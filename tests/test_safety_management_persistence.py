@@ -109,6 +109,30 @@ def test_apply_model_enables_governed_work_products(monkeypatch):
     assert set(enabled) == {"HAZOP", "Qualitative Analysis"}
 
 
+def test_apply_model_enables_multiple_work_products(monkeypatch):
+    app = _minimal_app()
+    enabled = set()
+
+    def record_enable(self, name, *, refresh: bool = True):
+        enabled.add(name)
+        self.enabled_work_products.add(name)
+
+    monkeypatch.setattr(AutoMLApp, "enable_work_product", record_enable)
+    app.refresh_tool_enablement = AutoMLApp.refresh_tool_enablement.__get__(app, AutoMLApp)
+    toolbox = SafetyManagementToolbox()
+    toolbox.add_work_product("Gov", "HAZOP", "")
+    toolbox.add_work_product("Gov", "STPA", "")
+    toolbox.add_work_product("Gov", "Threat Analysis", "")
+    data = {"safety_mgmt_toolbox": toolbox.to_dict()}
+    app.apply_model_data(data, ensure_root=False)
+    assert {
+        "HAZOP",
+        "STPA",
+        "Threat Analysis",
+        "Qualitative Analysis",
+    } <= enabled
+
+
 def test_apply_model_without_governance_disables_work_products(monkeypatch):
     app = _minimal_app()
     app.enabled_work_products = {"HAZOP"}
