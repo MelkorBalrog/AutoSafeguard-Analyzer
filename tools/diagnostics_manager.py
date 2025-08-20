@@ -18,8 +18,10 @@ The following managers are available:
 * :class:`AsyncDiagnosticsManager` -- awaits registered asynchronous
   check coroutines.
 
-Each manager raises :class:`DiagnosticError` when one or more checks
-fail, allowing callers to decide how to handle integrity issues.
+Each manager attempts recovery and mitigation to correct detected
+issues at runtime.  If neither strategy succeeds, a
+:class:`DiagnosticError` is raised so callers can react to the
+unhandled fault.
 """
 
 from dataclasses import dataclass, field
@@ -49,24 +51,39 @@ class DiagnosticsManagerBase:
         mitigate: Optional[Callable[[], Optional[str]]] = None,
     ) -> None:
         """Attempt recovery or mitigation for a failed check."""
-        if recoverable:
-            if recover:
-                try:
-                    if recover():
-                        return
-                except Exception as exc:  # pragma: no cover - rare
-                    self.errors.append(f"{name}: recovery error: {exc}")
-            self.errors.append(name)
+        if self._attempt_recover(name, recoverable, recover):
             return
+        if self._attempt_mitigate(name, mitigate):
+            return
+        self.errors.append(name)
 
+    def _attempt_recover(
+        self,
+        name: str,
+        recoverable: bool,
+        recover: Optional[Callable[[], bool]],
+    ) -> bool:
+        if recoverable and recover:
+            try:
+                return bool(recover())
+            except Exception as exc:  # pragma: no cover - rare
+                self.errors.append(f"{name}: recovery error: {exc}")
+        return False
+
+    def _attempt_mitigate(
+        self,
+        name: str,
+        mitigate: Optional[Callable[[], Optional[str]]],
+    ) -> bool:
         if mitigate:
             try:
                 msg = mitigate()
                 if msg:
                     self.notifications.append(msg)
+                return True
             except Exception as exc:  # pragma: no cover - rare
                 self.errors.append(f"{name}: mitigation error: {exc}")
-        self.errors.append(name)
+        return False
 
     def raise_errors(self) -> None:
         """Raise :class:`DiagnosticError` if any errors were collected."""
