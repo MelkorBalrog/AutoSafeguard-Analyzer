@@ -1,0 +1,46 @@
+import sys
+from pathlib import Path
+
+import tkinter as tk
+import pytest
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from gui.capsule_button import CapsuleButton, _lighten
+
+
+def test_capsule_button_lightens_icon_on_hover():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    img = tk.PhotoImage(width=1, height=1)
+    img.put("#808080", to=(0, 0, 1, 1))
+    btn = CapsuleButton(root, image=img)
+    btn.pack()
+    root.update_idletasks()
+    # hover image should be a lighter tone of original
+    assert btn._hover_image.get(0, 0) == _lighten("#808080")
+    btn._on_enter(type("E", (), {})())
+    assert btn.itemcget(btn._image_item, "image") == str(btn._hover_image)
+    btn._on_leave(type("E", (), {})())
+    assert btn.itemcget(btn._image_item, "image") == str(btn._image)
+    root.destroy()
+
+
+def test_capsule_button_preserves_transparency_on_hover():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    img = tk.PhotoImage(width=2, height=1)
+    img.put("#808080", to=(0, 0, 1, 1))
+    btn = CapsuleButton(root, image=img)
+    btn.pack()
+    root.update_idletasks()
+    assert btn._image.get(1, 0) == "{}"
+    assert btn._hover_image.get(1, 0) == btn._image.get(1, 0)
+    btn._on_enter(type("E", (), {})())
+    assert btn.itemcget(btn._image_item, "image") == str(btn._hover_image)
+    btn._on_leave(type("E", (), {})())
+    assert btn.itemcget(btn._image_item, "image") == str(btn._image)
+    root.destroy()
