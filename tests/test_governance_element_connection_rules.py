@@ -11,7 +11,11 @@ def test_governance_element_connection_rules():
     rules = cfg["connection_rules"]["Governance Diagram"]
     assert set(rules["Approves"]["Role"]) == {"Document", "Policy", "Procedure", "Record"}
     assert set(rules["Uses"]["Role"]) == {"Document", "Data", "Record", "Work Product"}
-    assert set(rules["Executes"]["Operation"]) == {"Procedure", "Process"}
+    assert set(rules["Executes"]["Operation"]) == {
+        "Procedure",
+        "Process",
+        "Work Product",
+    }
     assert set(rules["Uses"]["Operation"]) == {"Data", "Document", "Record"}
     assert set(rules["Used By"]["Guideline"]) == {"Lifecycle Phase"}
     assert set(rules["Used By"]["Policy"]) == {"Lifecycle Phase"}
