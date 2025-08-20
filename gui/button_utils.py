@@ -180,7 +180,6 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         required = {"size", "nearest", "itemconfig", "itemcget", "cget"}
         if not all(hasattr(lb, attr) for attr in required):
             return
-        size = lb.size()
         if size == 0:
             return
         index = lb.nearest(event.y)
