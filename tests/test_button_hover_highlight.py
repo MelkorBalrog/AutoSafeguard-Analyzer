@@ -68,3 +68,22 @@ def test_add_hover_highlight_blends_white_and_green():
     assert bg > br and bg > bb
     assert abs(tr - tg) < 5 and abs(tg - tb) < 5
     root.destroy()
+
+
+def test_add_hover_highlight_lightens_black_pixels():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+
+    img = tk.PhotoImage(width=2, height=2)
+    img.put("#000000", to=(0, 0, 2, 2))
+    btn = ttk.Button(root, image=img)
+    hover_img = add_hover_highlight(btn, img)
+
+    top = _sum_rgb(hover_img.get(0, 0))
+    bottom = _sum_rgb(hover_img.get(0, 1))
+
+    assert top > 0
+    assert bottom > top
+    root.destroy()

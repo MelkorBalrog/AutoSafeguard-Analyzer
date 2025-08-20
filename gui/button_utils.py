@@ -70,6 +70,17 @@ def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def _lighten_image(
     img: tk.PhotoImage,
     factor: float = 1.4,
@@ -79,11 +90,13 @@ def _lighten_image(
     top_alpha: float = 0.5,
     bottom_alpha: float = 0.5,
 ) -> tk.PhotoImage:
-    """Return a new image with all non-black pixels lightened.
+    """Return a new image with all pixels lightened.
 
     The default factors intentionally apply a strong boost so the hover image is
     visually distinct.  The bottom portion receives both a higher lightening
-    factor and a green-tinted blend, creating a pronounced glow effect.
+    factor and a green-tinted blend, creating a pronounced glow effect.  Even
+    fully black capsules are brightened so the hover state is immediately
+    noticeable.
     """
     w, h = img.width(), img.height()
     new_img = tk.PhotoImage(width=w, height=h)
@@ -99,16 +112,21 @@ def _lighten_image(
                 pixel = f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}"
             if not pixel:
                 continue
+            lf = factor * bottom_factor if y >= highlight_start else factor
+            overlay = (179, 255, 179) if y >= highlight_start else (255, 255, 255)
+            alpha = bottom_alpha if y >= highlight_start else top_alpha
+
             if pixel.lower() == "#000000":
-                new_img.put(pixel, (x, y))
+                # Seed black pixels with a blend first so the lightening factor
+                # can meaningfully brighten them, producing a visibly lighter
+                # capsule image.
+                blended = _blend_with(pixel, overlay, alpha)
+                light = _lighten_color(blended, lf)
             else:
-                lf = factor * bottom_factor if y >= highlight_start else factor
                 light = _lighten_color(pixel, lf)
-                if y >= highlight_start:
-                    blend = _blend_with(light, (179, 255, 179), bottom_alpha)
-                else:
-                    blend = _blend_with(light, (255, 255, 255), top_alpha)
-                new_img.put(blend, (x, y))
+                light = _blend_with(light, overlay, alpha)
+
+            new_img.put(light, (x, y))
     return new_img
 
 
