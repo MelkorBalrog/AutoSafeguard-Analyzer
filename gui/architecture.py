@@ -11696,8 +11696,11 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                         r for r in sub.get("relations", []) if r not in global_rels
                     ]
         seen_rels: set[str] = set()
-        for data in defs.values():
-            _dedup_category(data, seen_rels)
+        for name, data in defs.items():
+            if name == "Governance Core":
+                _dedup_category(data)
+            else:
+                _dedup_category(data, seen_rels)
         if ai_data:
             _dedup_category(ai_data, seen_rels)
         if hasattr(self.tools_frame, "pack_forget"):
