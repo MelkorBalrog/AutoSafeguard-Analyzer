@@ -241,7 +241,7 @@ from gui.review_toolbox import (
     ParticipantDialog,
     EmailConfigDialog,
     ReviewScopeDialog,
-    UserSelectDialog,
+    UserSelectDialog as ReviewUserSelectDialog,
     ReviewDocumentDialog,
     VersionCompareDialog,
 )
@@ -258,7 +258,10 @@ from gsn.nodes import GSNNode
 from gui.closable_notebook import ClosableNotebook
 from gui.icon_factory import create_icon
 from gui.splash_screen import SplashScreen
-from gui.mac_button_style import apply_translucid_button_style
+from gui.mac_button_style import (
+    apply_translucid_button_style,
+    apply_purplish_button_style,
+)
 from dataclasses import asdict
 from pathlib import Path
 from analysis.mechanisms import (
@@ -491,6 +494,27 @@ class UserInfoDialog(simpledialog.Dialog):
     def apply(self):
         self.result = (self.name_var.get().strip(), self.email_var.get().strip())
 
+    def buttonbox(self):
+        box = ttk.Frame(self)
+        apply_purplish_button_style()
+        ttk.Button(
+            box,
+            text="OK",
+            width=10,
+            command=self.ok,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            box,
+            text="Cancel",
+            width=10,
+            command=self.cancel,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        box.pack()
+
 
 class UserSelectDialog(simpledialog.Dialog):
     """Prompt to select a user from a list."""
@@ -526,6 +550,27 @@ class UserSelectDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = (self.name_var.get(), self.email_var.get().strip())
+
+    def buttonbox(self):
+        box = ttk.Frame(self)
+        apply_purplish_button_style()
+        ttk.Button(
+            box,
+            text="OK",
+            width=10,
+            command=self.ok,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            box,
+            text="Cancel",
+            width=10,
+            command=self.cancel,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        box.pack()
 
 
 # Target PMHF limits per ASIL level (events per hour)
@@ -21655,7 +21700,7 @@ class AutoMLApp:
             messagebox.showwarning("User", "Start a review first")
             return
         parts = self.review_data.participants + self.review_data.moderators
-        dlg = UserSelectDialog(self.root, parts, initial_name=self.current_user)
+        dlg = ReviewUserSelectDialog(self.root, parts, initial_name=self.current_user)
         if not dlg.result:
             return
         name, _ = dlg.result
