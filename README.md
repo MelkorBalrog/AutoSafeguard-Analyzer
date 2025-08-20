@@ -1555,6 +1555,12 @@ You can still install them manually with pip if preferred:
 pip install pillow openpyxl networkx matplotlib reportlab adjustText
 ```
 
+If you encounter an error like `No module named 'matplotlib.backends'` when opening the Metrics tab, install Matplotlib with:
+
+```
+pip install matplotlib
+```
+
 When building the standalone executable with PyInstaller these packages must
 already be available so they can be bundled into `AutoML.exe`. Missing
 dependencies, such as Pillow, will otherwise lead to `ModuleNotFoundError`
