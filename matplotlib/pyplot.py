@@ -1,5 +1,43 @@
+class Axes:
+    """Minimal stand-in for :class:`matplotlib.axes.Axes`."""
+
+    def clear(self):
+        pass
+
+    def plot(self, *args, **kwargs):
+        pass
+
+    def set_title(self, *args, **kwargs):
+        pass
+
+    def bar(self, *args, **kwargs):
+        pass
+
+
+class Figure:
+    """Very small substitute for :class:`matplotlib.figure.Figure`.
+
+    The real ``matplotlib`` library exposes a ``Figure`` class used to
+    create and manage subplots.  The GUI's metrics tab imports this class via
+    ``plt.Figure``.  The testing environment only requires enough behaviour
+    to satisfy those imports, so this stub tracks created axes and exposes a
+    ``tight_layout`` no-op.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.axes = []
+
+    def add_subplot(self, *args, **kwargs):  # pragma: no cover - trivial
+        ax = Axes()
+        self.axes.append(ax)
+        return ax
+
+    def tight_layout(self, *args, **kwargs):  # pragma: no cover - trivial
+        pass
+
+
 def figure(*args, **kwargs):
-    pass
+    return Figure(*args, **kwargs)
 
 def title(*args, **kwargs):
     pass
