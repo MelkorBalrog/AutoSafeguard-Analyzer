@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
+import tkinter.font as tkfont
 
 from functools import partial
 
@@ -328,6 +329,26 @@ class SafetyManagementWindow(tk.Frame):
         for c in columns:
             tree.heading(c, text=c)
 
+        def _fit_columns() -> None:
+            if not hasattr(tree, "column") or not hasattr(tree, "get_children"):
+                return
+            try:
+                font = tkfont.nametofont("TkDefaultFont")
+                measure = font.measure
+            except Exception:
+                measure = len
+            for c in ("ID", "Type", "Status"):
+                header_w = measure(c)
+                max_w = header_w
+                if hasattr(tree, "set"):
+                    for iid in tree.get_children():
+                        try:
+                            val = tree.set(iid, c)
+                        except Exception:
+                            val = ""
+                        max_w = max(max_w, measure(val))
+                tree.column(c, width=max_w + 10, stretch=False)
+
         def populate(ids_list: list[str]) -> None:
             tree.delete(*tree.get_children())
             for rid in ids_list:
@@ -343,6 +364,7 @@ class SafetyManagementWindow(tk.Frame):
                         _wrap_val(req.get("status", "")),
                     ),
                 )
+            _fit_columns()
 
         populate(ids)
         add_treeview_scrollbars(tree, tree_frame)
