@@ -47,6 +47,7 @@ class SplashScreen(tk.Toplevel):
         )
         self.canvas.pack()
         self._draw_gradient()
+        self._draw_floor()
         self._center()
         # Initialize cube geometry
         self.angle = 0.0
@@ -64,6 +65,14 @@ class SplashScreen(tk.Toplevel):
             (0, 1), (1, 2), (2, 3), (3, 0),
             (4, 5), (5, 6), (6, 7), (7, 4),
             (0, 4), (1, 5), (2, 6), (3, 7),
+        ]
+        self.faces = [
+            (0, 1, 2, 3),
+            (4, 5, 6, 7),
+            (0, 1, 5, 4),
+            (2, 3, 7, 6),
+            (1, 2, 6, 5),
+            (0, 3, 7, 4),
         ]
         # Text at bottom center
         self.canvas.create_text(
@@ -134,13 +143,13 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a multi-color gradient dominated by black."""
-        # Color stops: violet -> magenta -> light green -> black
+        """Draw a multi-color background gradient."""
+        # Color stops: violet sky -> magenta -> light green horizon -> dark ground
         stops = [
             (0.0, (138, 43, 226)),   # violet
             (0.3, (255, 0, 255)),    # magenta
-            (0.5, (144, 238, 144)),  # light green
-            (1.0, (0, 0, 0)),        # black
+            (0.55, (144, 238, 144)), # light green
+            (1.0, (0, 100, 0)),      # dark green ground
         ]
         steps = self.canvas_size
         for i in range(steps):
@@ -159,6 +168,26 @@ class SplashScreen(tk.Toplevel):
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
+    def _draw_floor(self):
+        """Darken ground toward the viewer for a subtle horizon shadow."""
+        horizon_ratio = 0.55
+        horizon = int(self.canvas_size * horizon_ratio)
+        steps = self.canvas_size - horizon
+        for i in range(steps):
+            ratio = i / steps
+            # base gradient from light to dark green
+            r = int(144 + (0 - 144) * ratio)
+            g = int(238 + (100 - 238) * ratio)
+            b = int(144 + (0 - 144) * ratio)
+            # additional shadow that intensifies toward bottom
+            shadow = 1 - 0.4 * (1 - ratio)
+            r = int(r * shadow)
+            g = int(g * shadow)
+            b = int(b * shadow)
+            color = f"#{r:02x}{g:02x}{b:02x}"
+            y = horizon + i
+            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
+
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
         distance = 5
@@ -170,6 +199,7 @@ class SplashScreen(tk.Toplevel):
     def _draw_cube(self):
         self.canvas.delete("cube")
         self.canvas.delete("shadow")
+        self.canvas.delete("cube_face")
         # Simple oval shadow to give cube a floating appearance
         shadow_w = 80
         shadow_h = 20
@@ -189,6 +219,7 @@ class SplashScreen(tk.Toplevel):
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
         points = []
+        points3d = []
         for x, y, z in self.vertices:
             # rotate around Y axis
             x1 = x * cos_a - z * sin_a
@@ -196,11 +227,58 @@ class SplashScreen(tk.Toplevel):
             # rotate around X axis for slight 3D
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
+            points3d.append((x1, y1, z2))
             points.append(self._project(x1, y1, z2))
+
+        faces_to_draw = []
+        light_dir = (0, 0, 1)
+        for face in self.faces:
+            pts2d = [points[i] for i in face]
+            pts3d = [points3d[i] for i in face]
+            z_avg = sum(p[2] for p in pts3d) / len(pts3d)
+            # compute normal for basic shading
+            u = (
+                pts3d[1][0] - pts3d[0][0],
+                pts3d[1][1] - pts3d[0][1],
+                pts3d[1][2] - pts3d[0][2],
+            )
+            v = (
+                pts3d[2][0] - pts3d[0][0],
+                pts3d[2][1] - pts3d[0][1],
+                pts3d[2][2] - pts3d[0][2],
+            )
+            nx = u[1] * v[2] - u[2] * v[1]
+            ny = u[2] * v[0] - u[0] * v[2]
+            nz = u[0] * v[1] - u[1] * v[0]
+            norm = math.sqrt(nx * nx + ny * ny + nz * nz) or 1
+            nx /= norm
+            ny /= norm
+            nz /= norm
+            brightness = max(0, nx * light_dir[0] + ny * light_dir[1] + nz * light_dir[2])
+            base = 120
+            col_val = int(base + 135 * brightness)
+            color = f"#00{col_val:02x}{col_val:02x}"
+            faces_to_draw.append((z_avg, pts2d, color, brightness))
+
+        for z_avg, pts2d, color, brightness in sorted(faces_to_draw, key=lambda item: item[0]):
+            self.canvas.create_polygon(
+                pts2d,
+                fill=color,
+                outline="",
+                tags="cube_face",
+            )
+            if brightness > 0.4:
+                self.canvas.create_polygon(
+                    pts2d,
+                    fill="white",
+                    outline="",
+                    stipple="gray75",
+                    tags="cube_face",
+                )
+
         for i, j in self.edges:
             x1, y1 = points[i]
             x2, y2 = points[j]
-            # Bright cyan edges for visibility against black
             self.canvas.create_line(
                 x1,
                 y1,
