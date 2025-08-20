@@ -174,7 +174,10 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         lb = event.widget
         if isinstance(lb, str):
             resolver = getattr(root, "nametowidget", lambda name: name)
-            lb = resolver(lb)
+            try:
+                lb = resolver(lb)
+            except Exception:
+                return
         # Accept any object implementing the listbox API so tests can supply
         # lightweight stand-ins without requiring a full tk.Listbox instance.
         required = {"size", "nearest", "itemconfig", "itemcget", "cget"}
@@ -183,6 +186,7 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         size = lb.size()
         if size == 0:
             return
+
         index = lb.nearest(event.y)
         if index < 0 or index >= size:
             prev = getattr(lb, "_hover_index", None)
@@ -203,7 +207,10 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         lb = event.widget
         if isinstance(lb, str):
             resolver = getattr(root, "nametowidget", lambda name: name)
-            lb = resolver(lb)
+            try:
+                lb = resolver(lb)
+            except Exception:
+                return
         if not hasattr(lb, "itemconfig"):
             return
         prev = getattr(lb, "_hover_index", None)
