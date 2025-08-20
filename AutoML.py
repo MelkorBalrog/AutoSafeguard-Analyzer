@@ -12719,7 +12719,7 @@ class AutoMLApp:
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree_frame.pack(fill=tk.BOTH)
         style = ttk.Style(tree_frame)
         style.configure("ReqEditor.Treeview", rowheight=20)
         tree = ttk.Treeview(
@@ -12729,6 +12729,7 @@ class AutoMLApp:
             selectmode="browse",
             style="ReqEditor.Treeview",
         )
+        tree.configure(height=10)
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
@@ -13010,6 +13011,77 @@ class AutoMLApp:
                 unlink_requirements(rid, relation, tid)
             refresh_tree()
 
+        def save_csv():
+            path = filedialog.asksaveasfilename(
+                defaultextension=".csv", filetypes=[("CSV", "*.csv")]
+            )
+            if not path:
+                return
+            try:
+                with open(path, "w", newline="") as fh:
+                    writer = csv.writer(fh)
+                    writer.writerow(columns)
+                    for req in global_requirements.values():
+                        rid = req.get("id", "")
+                        trace = ", ".join(_get_requirement_allocations(rid))
+                        links = ", ".join(
+                            f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
+                        )
+                        writer.writerow(
+                            [
+                                rid,
+                                req.get("asil", ""),
+                                req.get("cal", ""),
+                                req.get("req_type", ""),
+                                req.get("status", "draft"),
+                                req.get("parent_id", ""),
+                                trace,
+                                links,
+                                req.get("text", ""),
+                            ]
+                        )
+                messagebox.showinfo(
+                    "Requirements", f"Saved {len(global_requirements)} requirements to {path}"
+                )
+            except Exception as exc:
+                messagebox.showerror("Requirements", f"Failed to save CSV:\n{exc}")
+
+        if hasattr(tree, "bind"):
+            try:
+                menu = tk.Menu(tree, tearoff=False)
+            except Exception:
+                menu = None
+            if menu:
+                menu.add_command(label="Add", command=add_req)
+                menu.add_command(label="Edit", command=edit_req)
+                menu.add_command(label="Delete", command=del_req)
+                menu.add_command(label="Link to Diagram...", command=link_to_diagram)
+                menu.add_command(label="Link Requirement...", command=link_requirement)
+                menu.add_command(label="Save CSV", command=save_csv)
+
+                def _popup(event: tk.Event) -> None:
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                    try:
+                        menu.tk_popup(event.x_root, event.y_root)
+                    finally:
+                        menu.grab_release()
+
+                def _on_double(event: tk.Event) -> None:
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                        edit_req()
+
+                tree.bind("<Button-3>", _popup)
+                tree.bind("<Button-2>", _popup)
+                tree.bind("<Control-Button-1>", _popup)
+                tree.bind("<Double-1>", _on_double)
+                tree.context_menu = menu
+
         btn = tk.Frame(win)
         btn.pack(fill=tk.X)
         tk.Button(btn, text="Add", command=add_req).pack(side=tk.LEFT)
@@ -13017,6 +13089,7 @@ class AutoMLApp:
         tk.Button(btn, text="Delete", command=del_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Link to Diagram...", command=link_to_diagram).pack(side=tk.LEFT)
         tk.Button(btn, text="Link Requirement...", command=link_requirement).pack(side=tk.LEFT)
+        tk.Button(btn, text="Save CSV", command=save_csv).pack(side=tk.LEFT)
 
         refresh_tree()
 
