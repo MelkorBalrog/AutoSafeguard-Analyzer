@@ -95,8 +95,10 @@ class SafetyManagementExplorer(tk.Frame):
                 _add_module(sub_id, sub)
             for name in mod.diagrams:
                 plain = _strip_phase_suffix(name)
-                diag_id = self.tree.insert(parent, "end", text=plain, image=self.diagram_icon)
-                self.item_map[diag_id] = ("diagram", plain)
+                diag_iid = self.tree.insert(parent, "end", text=plain, image=self.diagram_icon)
+                # Store the full diagram name so lookups succeed even when the
+                # displayed label omits phase information.
+                self.item_map[diag_iid] = ("diagram", name)
 
         for mod in self.toolbox.modules:
             label = _strip_phase_suffix(mod.name)
@@ -112,7 +114,9 @@ class SafetyManagementExplorer(tk.Frame):
                 iid = self.tree.insert(
                     self.root_iid, "end", text=label, image=self.diagram_icon
                 )
-                self.item_map[iid] = ("diagram", label)
+                # As above, keep the real name mapped to the tree item so
+                # actions can resolve the diagram identifier.
+                self.item_map[iid] = ("diagram", name)
 
     # ------------------------------------------------------------------
     def refresh(self):
