@@ -2625,6 +2625,7 @@ class AutoMLApp:
             label="Light Mode",
             command=lambda: self.apply_style('pastel.xml'),
         )
+        view_menu.add_command(label="Metrics", command=self.open_metrics_tab)
 
         requirements_menu = tk.Menu(menubar, tearoff=0)
         requirements_menu.add_command(
@@ -17918,6 +17919,22 @@ class AutoMLApp:
     def open_style_editor(self):
         """Open the diagram style editor window."""
         StyleEditor(self.root)
+
+    def open_metrics_tab(self):
+        """Open a tab displaying project metrics."""
+        try:
+            from gui.metrics_tab import MetricsTab
+        except Exception as exc:  # pragma: no cover - display error in GUI
+            from gui import messagebox
+            if isinstance(exc, ModuleNotFoundError) and "matplotlib" in str(exc):
+                msg = ("Matplotlib is required to view metrics.\n"
+                       "Install it with 'pip install matplotlib'.")
+            else:
+                msg = str(exc)
+            messagebox.showerror("Metrics unavailable", msg)
+            return
+        tab = self._new_tab("Metrics")
+        MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
 
     def apply_style(self, filename: str) -> None:
         path = Path(__file__).resolve().parent / 'styles' / filename

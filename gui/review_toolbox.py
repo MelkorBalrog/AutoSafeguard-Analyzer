@@ -29,6 +29,7 @@ import re
 from pathlib import Path
 from config import load_diagram_rules
 import json
+import time
 try:
     from PIL import Image, ImageTk
 except ModuleNotFoundError:  # pragma: no cover - pillow optional
@@ -59,6 +60,8 @@ class ReviewParticipant:
     done: bool = False
     approved: bool = False
     reject_reason: str = ""
+    start_time: float = 0.0
+    time_spent: float = 0.0
 
 @dataclass
 class ReviewComment:
@@ -490,6 +493,7 @@ class ReviewToolbox(tk.Frame):
         self.refresh_targets()
         self.refresh_comments()
         self.update_buttons()
+        self.start_participant_timer()
 
     def on_close(self):
         self.app.review_window = None
@@ -545,6 +549,7 @@ class ReviewToolbox(tk.Frame):
         self.refresh_comments()
         self.refresh_targets()
         self.update_buttons()
+        self.start_participant_timer()
         try:
             if hasattr(self.app, "canvas") and self.app.canvas.winfo_exists():
                 self.app.redraw_canvas()
@@ -571,8 +576,17 @@ class ReviewToolbox(tk.Frame):
                 node_name += f" [FMEA {c.field}]"
 
             status = "(resolved)" if c.resolved else ""
-            self.comment_list.insert(tk.END, f"{c.comment_id}: {node_name} - {c.reviewer} {status}")
+        self.comment_list.insert(tk.END, f"{c.comment_id}: {node_name} - {c.reviewer} {status}")
         self.update_buttons()
+
+    def start_participant_timer(self):
+        if not self.app.review_data:
+            return
+        user = self.app.current_user
+        for p in self.app.review_data.participants:
+            if p.name == user and p.start_time == 0:
+                p.start_time = time.time()
+                break
 
     def on_select(self, event):
         if not self.app.review_data:
@@ -665,6 +679,8 @@ class ReviewToolbox(tk.Frame):
         user = self.app.current_user
         for p in self.app.review_data.participants:
             if p.name == user:
+                if p.start_time:
+                    p.time_spent = time.time() - p.start_time
                 p.done = True
         messagebox.showinfo("Review", "Marked as done")
         self.update_buttons()
@@ -753,6 +769,7 @@ class ReviewToolbox(tk.Frame):
 
     def on_user_change(self, event):
         self.app.current_user = self.user_var.get()
+        self.start_participant_timer()
         self.update_buttons()
 
     def show_comment(self, comment):
