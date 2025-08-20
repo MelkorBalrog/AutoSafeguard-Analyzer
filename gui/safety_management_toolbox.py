@@ -19,6 +19,7 @@ from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
+from gui.mac_button_style import apply_translucid_button_style
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -320,13 +321,12 @@ class SafetyManagementWindow(tk.Frame):
         tree_frame = ttk.Frame(frame)
         style_name = "Requirements.Treeview"
         try:
-            configure_table_style(style_name)
+            configure_table_style(style_name, rowheight=40)
             tree = ttk.Treeview(
                 tree_frame, columns=columns, show="headings", style=style_name
             )
         except Exception:
             tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
-        tree.configure(height=10)  # limit table height so buttons remain visible
         for c in columns:
             tree.heading(c, text=c)
 
@@ -369,7 +369,7 @@ class SafetyManagementWindow(tk.Frame):
 
         populate(ids)
         add_treeview_scrollbars(tree, tree_frame)
-        tree_frame.pack(fill=tk.BOTH)  # don't expand so button bar has room
+        tree_frame.pack(fill=tk.BOTH, expand=True)
 
         def _selected_rid() -> str | None:
             item = tree.focus()
