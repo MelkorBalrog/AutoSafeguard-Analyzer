@@ -12,15 +12,17 @@ class MetricsTab(tk.Frame):
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
-        
-    # -- Line chart implementations -------------------------------------------------
 
+    # ---- line chart helpers -------------------------------------------------
     @staticmethod
-    def _draw_line_chart_template(canvas: tk.Canvas, data, max_val: int) -> None:
-        """Render ``data`` on ``canvas`` scaling values by ``max_val``."""
+    def _line_chart_core(canvas: tk.Canvas, data) -> None:
+        """Render a simple line chart handling zero or empty data safely."""
         canvas.delete("all")
         h = int(canvas["height"])
         w = int(canvas["width"])
+        max_val = max(data) if data else 0
+        if max_val <= 0:
+            max_val = 1
         step = w / max(1, len(data) - 1)
         points: list[float] = []
         for i, val in enumerate(data):
@@ -31,32 +33,24 @@ class MetricsTab(tk.Frame):
             canvas.create_line(*points, fill="blue")
         canvas.create_text(5, 5, anchor="nw", text="Requirements")
 
-    def _draw_line_chart_v1(self, canvas: tk.Canvas, data):
-        """Variant 1: treat all-zero input as a flat line."""
-        max_val = max(data) if any(data) else 1
-        MetricsTab._draw_line_chart_template(canvas, data, max_val)
-
-    def _draw_line_chart_v2(self, canvas: tk.Canvas, data):
-        """Variant 2: ``max`` with a default list element to avoid zero."""
-        max_val = max(list(data) + [1])
-        MetricsTab._draw_line_chart_template(canvas, data, max_val)
-
-    def _draw_line_chart_v3(self, canvas: tk.Canvas, data):
-        """Variant 3: use ``or`` to coerce zero to one."""
-        max_val = max(data) or 1
-        MetricsTab._draw_line_chart_template(canvas, data, max_val)
-
-    def _draw_line_chart_v4(self, canvas: tk.Canvas, data):
-        """Variant 4: early return when data empty or non-positive."""
-        if not data or max(data) <= 0:
-            MetricsTab._draw_line_chart_template(canvas, [0] * max(1, len(data)), 1)
-            return
-        max_val = max(data)
-        MetricsTab._draw_line_chart_template(canvas, data, max_val)
-
     def _draw_line_chart(self, canvas: tk.Canvas, data):
-        """Default line chart implementation used by the application."""
-        self._draw_line_chart_v4(canvas, data)
+        self._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v1(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v2(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v3(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
+
+    @staticmethod
+    def _draw_line_chart_v4(_self, canvas: tk.Canvas, data):
+        MetricsTab._line_chart_core(canvas, data)
 
     def _draw_bar_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")
