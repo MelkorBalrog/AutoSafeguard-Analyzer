@@ -1555,7 +1555,8 @@
           "Activity",
           "Process",
           "Task",
-          "Work Product"
+          "Work Product",
+          "System Boundary"
         ],
         "Safety Compliance": [],
         "Safety Issue": [],
