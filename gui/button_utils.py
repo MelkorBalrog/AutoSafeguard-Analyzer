@@ -5,6 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from .capsule_button import _lighten
+
 
 def set_uniform_button_width(widget: tk.Misc) -> None:
     """Ensure all ``ttk.Button`` children of *widget* share the same width.
@@ -36,17 +38,26 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
         except Exception:  # pragma: no cover - defensive
             pass
 
-
 def _lighten_color(color: str, factor: float = 1.2) -> str:
-    """Return *color* lightened by *factor* while clamping to valid range."""
+    """Return a subtly glowing version of *color*.
+
+    The base colour channels are scaled by *factor* and then blended with
+    white and a hint of pastel green.  This mirrors the behaviour of the
+    :func:`_lighten` helper used by :class:`gui.capsule_button.CapsuleButton` so
+    hover images across the application share the same gentle glow.
+    """
+
     r = int(color[1:3], 16)
     g = int(color[3:5], 16)
     b = int(color[5:7], 16)
     r = min(int(r * factor), 255)
     g = min(int(g * factor), 255)
     b = min(int(b * factor), 255)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
+    # Blend with white and a touch of light green (#ccffcc)
+    r = int(r * 0.6 + 255 * 0.3 + 204 * 0.1)
+    g = int(g * 0.6 + 255 * 0.3 + 255 * 0.1)
+    b = int(b * 0.6 + 255 * 0.3 + 204 * 0.1)
+    return f"#{min(r,255):02x}{min(g,255):02x}{min(b,255):02x}"
 
 def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
     """Blend *color* towards *overlay* by *alpha*."""
