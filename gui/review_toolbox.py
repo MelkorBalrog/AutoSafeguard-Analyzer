@@ -21,6 +21,7 @@ from tkinter import simpledialog, ttk
 from gui import messagebox
 from gui.mac_button_style import apply_translucid_button_style
 from gui.style_manager import StyleManager
+from gui.dialog_utils import askstring_fixed
 from dataclasses import dataclass, field
 from typing import List
 import difflib
@@ -745,7 +746,12 @@ class ReviewToolbox(tk.Frame):
             return
         self.app.review_data.moderators = moderators
         self.app.review_data.participants = participants
-        desc = simpledialog.askstring("Description", "Edit description:", initialvalue=self.app.review_data.description)
+        desc = askstring_fixed(
+            simpledialog,
+            "Description",
+            "Edit description:",
+            initialvalue=self.app.review_data.description,
+        )
         if desc is not None:
             self.app.review_data.description = desc
         due = simpledialog.askstring("Due Date", "Edit due date (YYYY-MM-DD):", initialvalue=self.app.review_data.due_date)
