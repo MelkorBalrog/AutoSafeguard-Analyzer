@@ -144,12 +144,12 @@ class SplashScreen(tk.Toplevel):
 
     def _draw_gradient(self):
         """Draw a multi-color gradient dominated by black."""
-        # Color stops: violet -> magenta -> light green -> black
+        # Color stops: violet sky -> magenta -> light green horizon -> dark ground
         stops = [
             (0.0, (138, 43, 226)),   # violet
             (0.3, (255, 0, 255)),    # magenta
-            (0.5, (144, 238, 144)),  # light green
-            (1.0, (0, 0, 0)),        # black
+            (0.55, (144, 238, 144)), # light green
+            (1.0, (0, 100, 0)),      # dark green ground
         ]
         steps = self.canvas_size
         for i in range(steps):
@@ -168,16 +168,32 @@ class SplashScreen(tk.Toplevel):
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
-    def _draw_floor(self):
-        """Add a darkening gradient at the bottom to mimic a horizon."""
-        horizon = int(self.canvas_size * 0.6)
-        steps = self.canvas_size - horizon
-        for i in range(steps):
-            ratio = i / steps
-            level = int(40 * (1 - ratio))
-            color = f"#{level:02x}{level:02x}{level:02x}"
-            y = horizon + i
-            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
+        # Add subtle lighting and shadow on the floor to avoid a flat black look
+        cx = self.canvas_size / 2
+        cy = self.canvas_size
+        radius = self.canvas_size * 0.9
+        # soft shadow across the ground
+        self.canvas.create_oval(
+            cx - radius,
+            cy - radius * 0.3,
+            cx + radius,
+            cy + radius * 0.2,
+            fill="black",
+            outline="",
+            stipple="gray50",
+            tags="floor",
+        )
+        # gentle light at center
+        self.canvas.create_oval(
+            cx - radius * 0.7,
+            cy - radius * 0.2,
+            cx + radius * 0.7,
+            cy + radius * 0.1,
+            fill="#90ee90",
+            outline="",
+            stipple="gray25",
+            tags="floor",
+        )
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
