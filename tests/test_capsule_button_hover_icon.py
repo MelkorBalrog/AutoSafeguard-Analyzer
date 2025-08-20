@@ -44,3 +44,25 @@ def test_capsule_button_preserves_transparency_on_hover():
     btn._on_leave(type("E", (), {})())
     assert btn.itemcget(btn._image_item, "image") == str(btn._image)
     root.destroy()
+
+
+def test_lighten_image_preserves_alpha_with_png():
+    try:
+        from PIL import Image, ImageTk  # type: ignore
+    except Exception:
+        pytest.skip("Tk or Pillow not available")
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    img = Image.new("RGBA", (2, 1))
+    img.putpixel((0, 0), (128, 128, 128, 255))
+    img.putpixel((1, 0), (0, 0, 0, 0))
+    photo = ImageTk.PhotoImage(img)
+    btn = CapsuleButton(root, image=photo)
+    btn.pack()
+    root.update_idletasks()
+    hover = btn._hover_image
+    pil_hover = ImageTk.getimage(hover)
+    assert pil_hover.getpixel((1, 0))[3] == 0
+    root.destroy()
