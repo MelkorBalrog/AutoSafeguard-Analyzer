@@ -49,16 +49,29 @@ class DiagnosticsManagerBase:
         mitigate: Optional[Callable[[], Optional[str]]] = None,
     ) -> None:
         """Attempt recovery or mitigation for a failed check."""
-        if recoverable:
-            if recover:
-                try:
-                    if recover():
-                        return
-                except Exception as exc:  # pragma: no cover - rare
-                    self.errors.append(f"{name}: recovery error: {exc}")
-            self.errors.append(name)
+        if self._attempt_recover(name, recoverable, recover):
             return
+        self._attempt_mitigate(name, mitigate)
+        self.errors.append(name)
 
+    def _attempt_recover(
+        self,
+        name: str,
+        recoverable: bool,
+        recover: Optional[Callable[[], bool]],
+    ) -> bool:
+        if recoverable and recover:
+            try:
+                return bool(recover())
+            except Exception as exc:  # pragma: no cover - rare
+                self.errors.append(f"{name}: recovery error: {exc}")
+        return False
+
+    def _attempt_mitigate(
+        self,
+        name: str,
+        mitigate: Optional[Callable[[], Optional[str]]],
+    ) -> None:
         if mitigate:
             try:
                 msg = mitigate()
@@ -66,7 +79,6 @@ class DiagnosticsManagerBase:
                     self.notifications.append(msg)
             except Exception as exc:  # pragma: no cover - rare
                 self.errors.append(f"{name}: mitigation error: {exc}")
-        self.errors.append(name)
 
     def raise_errors(self) -> None:
         """Raise :class:`DiagnosticError` if any errors were collected."""
