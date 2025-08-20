@@ -40,6 +40,42 @@ def _interpolate_color(c1: str, c2: str, t: float) -> str:
     return _rgb_to_hex((r, g, b))
 
 
+def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
+    """Return a lightened copy of ``img`` while preserving transparency.
+
+    ``tk.PhotoImage`` provides no direct access to per-pixel alpha values, so
+    when Pillow is available the image is converted to an ``RGBA`` bitmap where
+    the colour channels are brightened and the original alpha channel is
+    reapplied.  If Pillow cannot be imported we fall back to a pure Tk based
+    implementation that skips pixels reported as transparent.
+    """
+
+    try:  # Prefer Pillow for correct alpha handling
+        from PIL import Image, ImageEnhance, ImageTk  # type: ignore
+
+        pil_img = ImageTk.getimage(img).convert("RGBA")
+        r, g, b, a = pil_img.split()
+        rgb = Image.merge("RGB", (r, g, b))
+        bright = ImageEnhance.Brightness(rgb).enhance(factor)
+        light = Image.merge("RGBA", (*bright.split(), a))
+        return ImageTk.PhotoImage(light)
+    except Exception:  # pragma: no cover - Pillow may be unavailable
+        w, h = img.width(), img.height()
+        new = tk.PhotoImage(width=w, height=h)
+        for x in range(w):
+            for y in range(h):
+                pixel = img.get(x, y)
+                if pixel in ("", "{}", None):
+                    # Leave fully transparent pixels untouched
+                    continue
+                if isinstance(pixel, tuple):
+                    color = _rgb_to_hex(pixel[:3])
+                else:
+                    color = pixel
+                new.put(_lighten(color, factor), (x, y))
+        return new
+
+
 class CapsuleButton(tk.Canvas):
     """A capsule-shaped button that lightens on hover and appears recessed.
 
@@ -87,7 +123,9 @@ class CapsuleButton(tk.Canvas):
         kwargs.pop("compound", None)
         self._text = text
         self._image = image
+        self._hover_image = _lighten_image(image) if image else None
         self._compound = compound
+        self._current_image = self._image
         req_width = max(width, self._content_width(height))
         init_kwargs["width"] = req_width
         init_kwargs.update(kwargs)
@@ -264,19 +302,19 @@ class CapsuleButton(tk.Canvas):
         # are recreated when drawing the button.
         self._image_item = None
         self._icon_highlight_item = None
-        if self._image and self._text and self._compound == tk.LEFT:
+        if self._current_image and self._text and self._compound == tk.LEFT:
             font = tkfont.nametofont("TkDefaultFont")
             text_w = font.measure(self._text)
-            img_w = self._image.width()
+            img_w = self._current_image.width()
             spacing = 4
             total = text_w + img_w + spacing
             start = (w - total) // 2
             img_x = start + img_w // 2
             text_x = start + img_w + spacing + text_w // 2
-            self._image_item = self.create_image(img_x, cy, image=self._image)
+            self._image_item = self.create_image(img_x, cy, image=self._current_image)
             self._text_item = self.create_text(text_x, cy, text=self._text)
-        elif self._image:
-            self._image_item = self.create_image(cx, cy, image=self._image)
+        elif self._current_image:
+            self._image_item = self.create_image(cx, cy, image=self._current_image)
         else:
             self._text_item = self.create_text(cx, cy, text=self._text)
 
@@ -409,11 +447,17 @@ class CapsuleButton(tk.Canvas):
     def _on_enter(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
             self._set_color(self._hover_color)
+            if self._image_item and self._hover_image:
+                self.itemconfigure(self._image_item, image=self._hover_image)
+                self._current_image = self._hover_image
             self._add_glow()
 
     def _on_leave(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
             self._set_color(self._normal_color)
+            if self._image_item and self._hover_image:
+                self.itemconfigure(self._image_item, image=self._image)
+                self._current_image = self._image
             self._remove_glow()
 
     def _on_press(self, _event: tk.Event) -> None:
@@ -502,6 +546,8 @@ class CapsuleButton(tk.Canvas):
         changed = False
         if image is not None:
             self._image = image
+            self._hover_image = _lighten_image(image)
+            self._current_image = self._image
             changed = True
         if compound is not None:
             self._compound = compound
