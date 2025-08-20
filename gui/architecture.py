@@ -3918,6 +3918,8 @@ class SysMLDiagramWindow(tk.Frame):
                 self.prop_view.insert("", "end", values=("ModifiedBy", getattr(elem, "modified_by", "")))
 
     def select_tool(self, tool):
+        if self.repo.diagram_read_only(self.diagram_id) and tool != "Select":
+            return
         self.current_tool = tool
         self.start = None
         self.temp_line_end = None
@@ -4307,6 +4309,19 @@ class SysMLDiagramWindow(tk.Frame):
     def on_left_press(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
+        if self.repo.diagram_read_only(self.diagram_id):
+            conn = self.find_connection(x, y)
+            if conn:
+                self.selected_conn = conn
+                self.selected_obj = None
+                self.selected_objs = []
+            else:
+                obj = self.find_object(x, y, prefer_port=True)
+                self.selected_conn = None
+                self.selected_obj = obj
+                self.selected_objs = [obj] if obj else []
+            self.update_property_view()
+            return
         if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
@@ -4810,6 +4825,8 @@ class SysMLDiagramWindow(tk.Frame):
                     self.update_property_view()
 
     def on_left_drag(self, event):
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
@@ -5121,6 +5138,8 @@ class SysMLDiagramWindow(tk.Frame):
 
     def _connect_objects(self, src: SysMLObject, dst: SysMLObject, conn_type: str) -> None:
         """Connect two objects and create repository relationship."""
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         valid, msg = self.validate_connection(src, dst, conn_type)
         if not valid:
             messagebox.showwarning("Invalid Connection", msg)
@@ -5202,6 +5221,8 @@ class SysMLDiagramWindow(tk.Frame):
         self, source: SysMLObject, x: float, y: float, conn_type: str, obj_type: str
     ) -> None:
         """Create an object of ``obj_type`` at ``(x, y)`` and connect it to ``source``."""
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if (
             obj_type == "Document"
             and source.obj_type == "Work Product"
@@ -5229,6 +5250,8 @@ class SysMLDiagramWindow(tk.Frame):
             self._connect_objects(source, new_obj, conn_type)
 
     def on_left_release(self, event):
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if getattr(self, "_conn_tip", None):
             self._conn_tip.hide()
             self._conn_tip_obj = None
@@ -9259,6 +9282,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.clipboard = copy.deepcopy(self.selected_obj)
 
     def cut_selected(self, _event=None):
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if self.selected_obj:
             import copy
 
@@ -9270,6 +9295,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.update_property_view()
 
     def paste_selected(self, _event=None):
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if self.clipboard:
             import copy
 
@@ -9291,6 +9318,8 @@ class SysMLDiagramWindow(tk.Frame):
             self.update_property_view()
 
     def delete_selected(self, _event=None):
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         if self.selected_objs:
             confirmed = messagebox.askyesno(
                 "Delete", "Delete element permanently?"
@@ -9436,7 +9465,7 @@ class SysMLDiagramWindow(tk.Frame):
                 self.update_property_view()
 
     def remove_object(self, obj: SysMLObject) -> None:
-        if getattr(obj, "locked", False):
+        if self.repo.diagram_read_only(self.diagram_id) or getattr(obj, "locked", False):
             return
         removed_ids = {obj.obj_id}
         if obj in self.objects:
@@ -11987,6 +12016,8 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
         obj.properties["py"] = str(obj.y - area.y)
 
     def on_left_press(self, event):  # pragma: no cover - requires tkinter
+        if self.repo.diagram_read_only(self.diagram_id):
+            return
         pending_click = getattr(self, "_pending_wp_click", False)
         if pending_click:
             self._pending_wp_click = False
