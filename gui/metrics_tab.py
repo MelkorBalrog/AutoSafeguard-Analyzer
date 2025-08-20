@@ -12,16 +12,13 @@ class MetricsTab(tk.Frame):
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
-
-    # ---- line chart helpers -------------------------------------------------
+        
     @staticmethod
-    def _line_chart_core(canvas: tk.Canvas, data) -> None:
-        """Render a simple line chart handling zero or empty data safely."""
-        canvas.delete("all")
+    def _line_chart_points(canvas: tk.Canvas, data):
         h = int(canvas["height"])
         w = int(canvas["width"])
         max_val = max(data) if data else 0
-        if max_val <= 0:
+        if max_val == 0:
             max_val = 1
         step = w / max(1, len(data) - 1)
         points: list[float] = []
@@ -29,6 +26,39 @@ class MetricsTab(tk.Frame):
             x = i * step
             y = h - (val / max_val) * h if max_val else h
             points.extend([x, y])
+        return points
+
+    def _draw_line_chart(self, canvas: tk.Canvas, data):
+        canvas.delete("all")
+        points = MetricsTab._line_chart_points(canvas, data)
+        if len(points) > 3:
+            canvas.create_line(*points, fill="blue")
+        canvas.create_text(5, 5, anchor="nw", text="Requirements")
+
+    def _draw_line_chart_v1(self, canvas: tk.Canvas, data):
+        MetricsTab._draw_line_chart(self, canvas, data)
+
+    def _draw_line_chart_v2(self, canvas: tk.Canvas, data):
+        canvas.delete("all")
+        points = MetricsTab._line_chart_points(canvas, data)
+        if len(points) > 3:
+            canvas.create_line(*points, fill="blue")
+        canvas.create_text(5, 5, anchor="nw", text="Requirements")
+
+    def _draw_line_chart_v3(self, canvas: tk.Canvas, data):
+        MetricsTab._draw_line_chart_v2(self, canvas, data)
+
+    def _draw_line_chart_v4(self, canvas: tk.Canvas, data):
+        canvas.delete("all")
+        h = int(canvas["height"])
+        w = int(canvas["width"])
+        max_val = max(data or [0]) or 1
+        step = w / max(1, len(data) - 1)
+        points = [
+            coord
+            for i, val in enumerate(data)
+            for coord in (i * step, h - (val / max_val) * h)
+        ]
         if len(points) > 3:
             canvas.create_line(*points, fill="blue")
         canvas.create_text(5, 5, anchor="nw", text="Requirements")

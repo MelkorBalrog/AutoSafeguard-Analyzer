@@ -48,6 +48,8 @@ class DummyMenu:
         ("FMEA", "Qualitative Analysis"),
         ("FMEDA", "Quantitative Analysis"),
         ("Causal Bayesian Network Analysis", "Quantitative Analysis"),
+        ("Mission Profile", "Quantitative Analysis"),
+        ("Reliability Analysis", "Quantitative Analysis"),
     ],
 )
 def test_work_product_groups_follow_phase(work_product, parent):
