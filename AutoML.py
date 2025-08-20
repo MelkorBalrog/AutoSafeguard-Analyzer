@@ -12786,7 +12786,7 @@ class AutoMLApp:
                         text,
                     ],
                 )
-            style.configure("ReqEditor.Treeview", rowheight=min(80, 20 * max_lines))
+            style.configure("ReqEditor.Treeview", rowheight=20 * max_lines)
 
         class ReqDialog(simpledialog.Dialog):
             def __init__(self, parent, title, initial=None):
