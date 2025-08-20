@@ -40,24 +40,38 @@ def _interpolate_color(c1: str, c2: str, t: float) -> str:
     return _rgb_to_hex((r, g, b))
 
 
-def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
-    """Return a lightened copy of ``img`` while preserving transparency.
+def _glow_color(color: str, factor: float = 1.5, mix: float = 0.1) -> str:
+    """Lighten ``color`` and blend it slightly with light green.
+
+    The ``mix`` parameter controls how much of the light green ``#ccffcc`` is
+    blended into the brightened colour.
+    """
+
+    bright = _lighten(color, factor)
+    return _interpolate_color(bright, "#ccffcc", mix)
+
+
+def _glow_image(img: tk.PhotoImage, factor: float = 1.5, mix: float = 0.1) -> tk.PhotoImage:
+    """Return a glowing copy of ``img`` while preserving transparency.
 
     ``tk.PhotoImage`` provides no direct access to per-pixel alpha values, so
     when Pillow is available the image is converted to an ``RGBA`` bitmap where
-    the colour channels are brightened and the original alpha channel is
-    reapplied.  If Pillow cannot be imported we fall back to a pure Tk based
-    implementation that skips pixels reported as transparent.
+    the colour channels are brightened and a hint of light green is blended in
+    before the original alpha channel is reapplied.  If Pillow cannot be
+    imported we fall back to a pure Tk based implementation that skips pixels
+    reported as transparent.
     """
 
     try:  # Prefer Pillow for correct alpha handling
-        from PIL import Image, ImageEnhance, ImageTk  # type: ignore
+        from PIL import Image, ImageEnhance, ImageTk, ImageColor  # type: ignore
 
         pil_img = ImageTk.getimage(img).convert("RGBA")
         r, g, b, a = pil_img.split()
         rgb = Image.merge("RGB", (r, g, b))
         bright = ImageEnhance.Brightness(rgb).enhance(factor)
-        light = Image.merge("RGBA", (*bright.split(), a))
+        green = Image.new("RGB", pil_img.size, ImageColor.getrgb("#ccffcc"))
+        blended = Image.blend(bright, green, mix)
+        light = Image.merge("RGBA", (*blended.split(), a))
         return ImageTk.PhotoImage(light)
     except Exception:  # pragma: no cover - Pillow may be unavailable
         w, h = img.width(), img.height()
@@ -72,7 +86,7 @@ def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
                     color = _rgb_to_hex(pixel[:3])
                 else:
                     color = pixel
-                new.put(_lighten(color, factor), (x, y))
+                new.put(_glow_color(color, factor, mix), (x, y))
         return new
 
 
@@ -98,6 +112,8 @@ class CapsuleButton(tk.Canvas):
         state: str | None = None,
         image: tk.PhotoImage | None = None,
         compound: str = tk.CENTER,
+        gradient: list[str] | None = None,
+        hover_gradient: list[str] | None = None,
         **kwargs,
     ) -> None:
         init_kwargs = {
@@ -123,7 +139,7 @@ class CapsuleButton(tk.Canvas):
         kwargs.pop("compound", None)
         self._text = text
         self._image = image
-        self._hover_image = _lighten_image(image) if image else None
+        self._hover_image = _glow_image(image) if image else None
         self._compound = compound
         self._current_image = self._image
         req_width = max(width, self._content_width(height))
@@ -135,9 +151,14 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._normal_color = bg
-        self._hover_color = hover_bg or _lighten(bg, 1.5)
+        self._hover_color = hover_bg or _glow_color(bg)
         self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
+        self._normal_gradient = gradient or ["#e6e6fa", "#c3dafe", "#87ceeb", "#e0ffff"]
+        self._hover_gradient = hover_gradient or [
+            _glow_color(c) for c in self._normal_gradient
+        ]
+        self._current_gradient = self._normal_gradient
         self._radius = height // 2
         self._shape_items: list[int] = []
         self._shade_items: list[int] = []
@@ -216,8 +237,10 @@ class CapsuleButton(tk.Canvas):
         self._draw_border(w, h)
 
     def _draw_gradient(self, w: int, h: int) -> None:
-        colors = ["#e6e6fa", "#c3dafe", "#87ceeb", "#e0ffff"]
-        stops = [0.0, 0.33, 0.66, 1.0]
+        if not self._current_gradient:
+            return
+        colors = self._current_gradient
+        stops = [i / (len(colors) - 1) for i in range(len(colors))]
         r = self._radius
         for y in range(h):
             t = y / (h - 1) if h > 1 else 0
@@ -227,13 +250,17 @@ class CapsuleButton(tk.Canvas):
                     color = _interpolate_color(colors[i], colors[i + 1], local_t)
                     break
             dy = abs(y - h / 2)
-            if dy <= r:
-                x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5)
-            else:
-                x_offset = 0
+            x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5) if dy <= r else 0
             self._gradient_items.append(
                 self.create_line(x_offset, y, w - x_offset, y, fill=color)
             )
+
+    def _set_gradient(self, gradient: list[str]) -> None:
+        self._current_gradient = gradient
+        for item in self._gradient_items:
+            self.delete(item)
+        self._gradient_items = []
+        self._draw_gradient(int(self["width"]), int(self["height"]))
 
     def _draw_highlight(self, w: int, h: int) -> None:
         """Draw shiny highlight to create a glassy lavender sheen."""
@@ -407,8 +434,8 @@ class CapsuleButton(tk.Canvas):
             return
         w, h = int(self["width"]), int(self["height"])
         r = self._radius
-        glow_color = _lighten(self._normal_color, 1.3)
-        bottom_color = _lighten(self._normal_color, 1.6)
+        glow_color = _glow_color(self._normal_color, 1.3)
+        bottom_color = _glow_color(self._normal_color, 1.6)
         self._glow_items = [
             self.create_arc((-1, -1, 2 * r + 1, h + 1), start=90, extent=180, style=tk.ARC, outline=glow_color, width=2),
             # Offset the horizontal glow lines by one pixel so the caps extend
@@ -457,6 +484,7 @@ class CapsuleButton(tk.Canvas):
                 self.itemconfigure(self._image_item, image=self._hover_image)
                 self._current_image = self._hover_image
             self._add_glow()
+            self._set_gradient(self._hover_gradient)
         else:
             if self._current_color != self._normal_color:
                 self._set_color(self._normal_color)
@@ -468,6 +496,7 @@ class CapsuleButton(tk.Canvas):
                 self.itemconfigure(self._image_item, image=self._image)
                 self._current_image = self._image
             self._remove_glow()
+            self._set_gradient(self._normal_gradient)
 
     def _on_enter(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
@@ -476,6 +505,7 @@ class CapsuleButton(tk.Canvas):
                 self.itemconfigure(self._image_item, image=self._hover_image)
                 self._current_image = self._hover_image
             self._add_glow()
+            self._set_gradient(self._hover_gradient)
 
     def _on_leave(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
@@ -484,12 +514,14 @@ class CapsuleButton(tk.Canvas):
                 self.itemconfigure(self._image_item, image=self._image)
                 self._current_image = self._image
             self._remove_glow()
+            self._set_gradient(self._normal_gradient)
 
     def _on_press(self, _event: tk.Event) -> None:
         if "disabled" not in self._state:
             self._remove_glow()
             self._toggle_shine(False)
             self._set_color(self._pressed_color)
+            self._set_gradient(self._normal_gradient)
 
     def _on_release(self, event: tk.Event) -> None:
         if "disabled" in self._state:
@@ -500,12 +532,14 @@ class CapsuleButton(tk.Canvas):
             self._set_color(self._hover_color)
             self._toggle_shine(True)
             self._add_glow()
+            self._set_gradient(self._hover_gradient)
             if self._command:
                 self._command()
         else:
             self._set_color(self._normal_color)
             self._toggle_shine(True)
             self._remove_glow()
+            self._set_gradient(self._normal_gradient)
 
     def _apply_state(self) -> None:
         """Update the visual appearance to reflect the current state."""
@@ -559,7 +593,7 @@ class CapsuleButton(tk.Canvas):
     def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
         if bg is not None:
             self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.5)
+            self._hover_color = hover_bg or _glow_color(bg)
             self._pressed_color = _darken(bg, 0.8)
             self._set_color(self._normal_color)
         elif hover_bg is not None:
@@ -571,7 +605,7 @@ class CapsuleButton(tk.Canvas):
         changed = False
         if image is not None:
             self._image = image
-            self._hover_image = _lighten_image(image)
+            self._hover_image = _glow_image(image)
             self._current_image = self._image
             changed = True
         if compound is not None:
