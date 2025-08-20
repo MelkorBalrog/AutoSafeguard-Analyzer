@@ -69,3 +69,20 @@ def test_log_window_resizes_with_pinned_explorer():
     expected_height = logger._line_height * display_lines
     assert logger.log_frame.winfo_height() == expected_height
     root.destroy()
+
+
+def test_log_window_visible_by_default_and_with_pinned_explorer():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    app = AutoMLApp(root)
+    root.update_idletasks()
+    assert logger.log_frame.winfo_manager() == "pack"
+    assert logger.log_frame.winfo_height() == logger._default_height
+    assert logger._default_height == logger._line_height * 10
+    app.toggle_explorer_pin()
+    root.update_idletasks()
+    assert logger.log_frame.winfo_manager() == "pack"
+    assert logger.log_frame.winfo_height() == logger._default_height
+    root.destroy()

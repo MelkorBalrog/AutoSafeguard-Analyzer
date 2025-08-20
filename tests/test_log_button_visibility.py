@@ -5,6 +5,7 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from AutoML import AutoMLApp
+from gui import logger
 
 
 def test_log_toggle_button_visible_with_pinned_explorer():
@@ -15,8 +16,12 @@ def test_log_toggle_button_visible_with_pinned_explorer():
     app = AutoMLApp(root)
     # Pin the explorer pane which previously caused the toggle button to be hidden
     app.toggle_explorer_pin()
-    app.toggle_logs()  # show logs
+    # Logs are shown by default; ensure the toggle button remains visible
     root.update_idletasks()
     button_bottom = app.toggle_log_button.winfo_y() + app.toggle_log_button.winfo_height()
     assert button_bottom <= root.winfo_height()
+    # The log frame should sit directly beneath the toggle button at its
+    # default height even when the explorer pane is pinned.
+    assert logger.log_frame.winfo_y() >= button_bottom
+    assert logger.log_frame.winfo_height() == logger._default_height
     root.destroy()
