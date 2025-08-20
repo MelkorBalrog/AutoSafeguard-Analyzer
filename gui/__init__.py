@@ -45,6 +45,58 @@ class PurpleButton(_StyledButton):
 ttk.Button = CapsuleButton  # type: ignore[assignment]
 tk.Button = CapsuleButton  # type: ignore[assignment]
 
+
+def add_listbox_hover_highlight(lb: tk.Listbox) -> None:
+    """Highlight listbox rows on mouse hover.
+
+    The hovered item receives a light green background, reverting to the
+    widget's original ``bg`` (or ``selectbackground`` when selected) when the
+    pointer leaves.  This provides a subtle square shading from white to light
+    green, helping users track list items under the cursor.
+    """
+
+    default_bg = lb.cget("bg")
+
+    def _restore(index: int | None) -> None:
+        if index is None:
+            return
+        bg = default_bg
+        if index in lb.curselection():
+            bg = lb.cget("selectbackground")
+        try:
+            lb.itemconfig(index, background=bg)
+        except Exception:  # pragma: no cover - defensive for non-Tk dummies
+            pass
+
+    def _on_motion(event: object) -> None:
+        index = lb.nearest(getattr(event, "y", 0))
+        prev = getattr(lb, "_hover_index", None)
+        if prev != index:
+            _restore(prev)
+            try:
+                lb.itemconfig(index, background="#ccffcc")
+            except Exception:  # pragma: no cover
+                pass
+            lb._hover_index = index  # type: ignore[attr-defined]
+
+    def _on_leave(_event: object) -> None:
+        _restore(getattr(lb, "_hover_index", None))
+        lb._hover_index = None  # type: ignore[attr-defined]
+
+    lb.bind("<Motion>", _on_motion)
+    lb.bind("<Leave>", _on_leave)
+
+
+class HoverListbox(tk.Listbox):
+    """Listbox variant that applies hover highlighting automatically."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        add_listbox_hover_highlight(self)
+
+
+tk.Listbox = HoverListbox  # type: ignore[assignment]
+
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
 
