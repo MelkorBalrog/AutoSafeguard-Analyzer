@@ -5,6 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from .capsule_button import _lighten
+
 
 def set_uniform_button_width(widget: tk.Misc) -> None:
     """Ensure all ``ttk.Button`` children of *widget* share the same width.
@@ -36,31 +38,75 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
         except Exception:  # pragma: no cover - defensive
             pass
 
-
 def _lighten_color(color: str, factor: float = 1.2) -> str:
-    """Return *color* lightened by *factor* while clamping to valid range."""
+    """Return a subtly glowing version of *color*.
+
+    The base colour channels are scaled by *factor* and then blended with
+    white and a hint of pastel green.  This mirrors the behaviour of the
+    :func:`_lighten` helper used by :class:`gui.capsule_button.CapsuleButton` so
+    hover images across the application share the same gentle glow.
+    """
+
     r = int(color[1:3], 16)
     g = int(color[3:5], 16)
     b = int(color[5:7], 16)
     r = min(int(r * factor), 255)
     g = min(int(g * factor), 255)
     b = min(int(b * factor), 255)
+    # Blend with white and a touch of light green (#ccffcc)
+    r = int(r * 0.6 + 255 * 0.3 + 204 * 0.1)
+    g = int(g * 0.6 + 255 * 0.3 + 255 * 0.1)
+    b = int(b * 0.6 + 255 * 0.3 + 204 * 0.1)
+    return f"#{min(r,255):02x}{min(g,255):02x}{min(b,255):02x}"
+
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def _lighten_image(
     img: tk.PhotoImage,
-    factor: float = 1.2,
+    factor: float = 1.4,
     *,
-    bottom_factor: float = 1.4,
+    bottom_factor: float = 1.8,
     bottom_ratio: float = 0.3,
+    top_alpha: float = 0.7,
+    bottom_alpha: float = 0.9,
 ) -> tk.PhotoImage:
-    """Return a new image with all non-black pixels lightened.
+    """Return a new image with all pixels lightened.
 
-    A subtle "lighting" effect is added to the lower portion of the image by
-    applying a stronger lightening factor to the bottom *bottom_ratio* of
-    pixels.  This creates the impression of a light source shining on the base
-    of the button when hovered.
+    Pixels are first blended towards either white (top) or light green (bottom)
+    to seed a visible glow.  The blended colour is then lightened by ``factor``
+    (with an extra ``bottom_factor`` boost for lower pixels) so the tint remains
+    bright.  Alpha values are preserved where present.
     """
     w, h = img.width(), img.height()
     new_img = tk.PhotoImage(width=w, height=h)
@@ -70,22 +116,33 @@ def _lighten_image(
             pixel = img.get(x, y)
             # ``PhotoImage.get`` may return a tuple or an empty string for
             # transparency.  Normalise to ``#rrggbb`` when a colour is present.
+            alpha_px = None
             if isinstance(pixel, tuple):
-                if len(pixel) == 4 and pixel[3] == 0:
-                    continue
+                if len(pixel) == 4:
+                    if pixel[3] == 0:
+                        continue
+                    alpha_px = pixel[3]
                 pixel = f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}"
             if not pixel:
                 continue
-            if pixel.lower() == "#000000":
-                new_img.put(pixel, (x, y))
+            lf = factor * bottom_factor if y >= highlight_start else factor
+            overlay = (179, 255, 179) if y >= highlight_start else (255, 255, 255)
+            alpha = bottom_alpha if y >= highlight_start else top_alpha
+
+            # Blend first to inject the glow colour, then lighten so the tint is
+            # preserved yet brighter.
+            blended = _blend_with(pixel, overlay, alpha)
+            light = _lighten_color(blended, lf)
+
+            if alpha_px is not None:
+                new_img.put(f"{light}{alpha_px:02x}", (x, y))
             else:
-                lf = factor * bottom_factor if y >= highlight_start else factor
-                new_img.put(_lighten_color(pixel, lf), (x, y))
+                new_img.put(light, (x, y))
     return new_img
 
 
 def add_hover_highlight(
-    button: ttk.Button, image: tk.PhotoImage, factor: float = 1.2
+    button: ttk.Button, image: tk.PhotoImage, factor: float = 1.4
 ) -> tk.PhotoImage:
     """Swap *button* image to a lighter variant on hover.
 
