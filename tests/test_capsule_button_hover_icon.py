@@ -22,6 +22,13 @@ def test_capsule_button_lightens_icon_on_hover():
     assert btn._hover_image.get(0, 0) == _lighten("#808080")
     btn._on_enter(type("E", (), {})())
     assert btn.itemcget(btn._image_item, "image") == str(btn._hover_image)
+    # Motion inside maintains hover image, outside restores original
+    inside_evt = type("E", (), {"x": 0, "y": 0})()
+    outside_evt = type("E", (), {"x": btn.winfo_width() + 1, "y": btn.winfo_height() + 1})()
+    btn._on_motion(inside_evt)
+    assert btn.itemcget(btn._image_item, "image") == str(btn._hover_image)
+    btn._on_motion(outside_evt)
+    assert btn.itemcget(btn._image_item, "image") == str(btn._image)
     btn._on_leave(type("E", (), {})())
     assert btn.itemcget(btn._image_item, "image") == str(btn._image)
     root.destroy()
