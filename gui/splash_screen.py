@@ -74,15 +74,7 @@ class SplashScreen(tk.Toplevel):
             (1, 2, 6, 5),
             (0, 3, 7, 4),
         ]
-        # Text at bottom center
-        self.canvas.create_text(
-            self.canvas_size / 2,
-            self.canvas_size - 40,
-            text="Automotive Modeling Language\nby\nKarel Capek Robotics",
-            justify="center",
-            font=("Helvetica", 12),
-            fill="white",
-        )
+        self._draw_title()
 
         # Version and author info at top right
         info_text = f"v{version}\n{author}\n{email}\n{linkedin}"
@@ -217,6 +209,38 @@ class SplashScreen(tk.Toplevel):
             stipple="gray50",
         )
 
+    def _draw_title(self) -> None:
+        """Render project title with a simple neon glow."""
+        x = self.canvas_size / 2
+        y = self.canvas_size - 40
+        text = "Automotive Modeling Language"
+        # Offset coloured shadows for glow effect
+        for dx, dy, colour in [(-2, -2, "#00ffff"), (2, 2, "#ff00ff")]:
+            self.canvas.create_text(
+                x + dx,
+                y + dy,
+                text=text,
+                font=("Helvetica", 16, "bold"),
+                fill=colour,
+                tags="title",
+            )
+        self.canvas.create_text(
+            x,
+            y,
+            text=text,
+            font=("Helvetica", 16, "bold"),
+            fill="white",
+            tags="title",
+        )
+        self.canvas.create_text(
+            x,
+            y + 20,
+            text="by Karel Capek Robotics",
+            font=("Helvetica", 10),
+            fill="white",
+            tags="title",
+        )
+
     def _draw_floor(self):
         """Add subtle white light near horizon and darker shadow toward bottom."""
         horizon_ratio = 0.55
@@ -252,6 +276,44 @@ class SplashScreen(tk.Toplevel):
         y = y * factor + self.canvas_size / 2
         return x, y
 
+    def _shade_color(self, diffuse: float) -> str:
+        """Return a teal shade adjusted by *diffuse* light value."""
+        base = (0, 120, 120)
+        r = int(base[0] + (255 - base[0]) * diffuse)
+        g = int(base[1] + (255 - base[1]) * diffuse)
+        b = int(base[2] + (255 - base[2]) * diffuse)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _face_data(
+        self, face, points, points3d, light_dir, view_dir
+    ):
+        """Return drawing data for a single cube face."""
+        pts2d = [points[i] for i in face]
+        pts3d = [points3d[i] for i in face]
+        z_avg = sum(p[2] for p in pts3d) / len(pts3d)
+        u = (
+            pts3d[1][0] - pts3d[0][0],
+            pts3d[1][1] - pts3d[0][1],
+            pts3d[1][2] - pts3d[0][2],
+        )
+        v = (
+            pts3d[2][0] - pts3d[0][0],
+            pts3d[2][1] - pts3d[0][1],
+            pts3d[2][2] - pts3d[0][2],
+        )
+        nx = u[1] * v[2] - u[2] * v[1]
+        ny = u[2] * v[0] - u[0] * v[2]
+        nz = u[0] * v[1] - u[1] * v[0]
+        norm = math.sqrt(nx * nx + ny * ny + nz * nz) or 1
+        nx, ny, nz = nx / norm, ny / norm, nz / norm
+        diffuse = max(0, nx * light_dir[0] + ny * light_dir[1] + nz * light_dir[2])
+        rx = 2 * diffuse * nx - light_dir[0]
+        ry = 2 * diffuse * ny - light_dir[1]
+        rz = 2 * diffuse * nz - light_dir[2]
+        spec = max(0, rx * view_dir[0] + ry * view_dir[1] + rz * view_dir[2]) ** 20
+        color = self._shade_color(diffuse)
+        return z_avg, pts2d, color, spec
+
     def _draw_cube(self):
         self.canvas.delete("cube")
         self.canvas.delete("shadow")
@@ -271,64 +333,44 @@ class SplashScreen(tk.Toplevel):
             tags="shadow",
             stipple="gray50",
         )
-        angle = math.radians(self.angle)
-        cos_a = math.cos(angle)
-        sin_a = math.sin(angle)
+        angle_y = math.radians(self.angle)
+        angle_x = math.radians(self.angle * 0.6)
+        cos_y, sin_y = math.cos(angle_y), math.sin(angle_y)
+        cos_x, sin_x = math.cos(angle_x), math.sin(angle_x)
         points = []
         points3d = []
         for x, y, z in self.vertices:
-            # rotate around Y axis
-            x1 = x * cos_a - z * sin_a
-            z1 = x * sin_a + z * cos_a
-            # rotate around X axis for slight 3D
-            y1 = y * cos_a - z1 * sin_a
-            z2 = y * sin_a + z1 * cos_a
+            # rotate around Y axis then X axis for 3D effect
+            x1 = x * cos_y - z * sin_y
+            z1 = x * sin_y + z * cos_y
+            y1 = y * cos_x - z1 * sin_x
+            z2 = y * sin_x + z1 * cos_x
             points3d.append((x1, y1, z2))
             points.append(self._project(x1, y1, z2))
 
-        faces_to_draw = []
-        light_dir = (0, 0, 1)
-        for face in self.faces:
-            pts2d = [points[i] for i in face]
-            pts3d = [points3d[i] for i in face]
-            z_avg = sum(p[2] for p in pts3d) / len(pts3d)
-            # compute normal for basic shading
-            u = (
-                pts3d[1][0] - pts3d[0][0],
-                pts3d[1][1] - pts3d[0][1],
-                pts3d[1][2] - pts3d[0][2],
-            )
-            v = (
-                pts3d[2][0] - pts3d[0][0],
-                pts3d[2][1] - pts3d[0][1],
-                pts3d[2][2] - pts3d[0][2],
-            )
-            nx = u[1] * v[2] - u[2] * v[1]
-            ny = u[2] * v[0] - u[0] * v[2]
-            nz = u[0] * v[1] - u[1] * v[0]
-            norm = math.sqrt(nx * nx + ny * ny + nz * nz) or 1
-            nx /= norm
-            ny /= norm
-            nz /= norm
-            brightness = max(0, nx * light_dir[0] + ny * light_dir[1] + nz * light_dir[2])
-            base = 120
-            col_val = int(base + 135 * brightness)
-            color = f"#00{col_val:02x}{col_val:02x}"
-            faces_to_draw.append((z_avg, pts2d, color, brightness))
+        lx, ly, lz = 1, -1, 2
+        lnorm = math.sqrt(lx * lx + ly * ly + lz * lz)
+        light_dir = (lx / lnorm, ly / lnorm, lz / lnorm)
+        view_dir = (0, 0, 1)
+        faces_to_draw = [
+            self._face_data(face, points, points3d, light_dir, view_dir)
+            for face in self.faces
+        ]
 
-        for z_avg, pts2d, color, brightness in sorted(faces_to_draw, key=lambda item: item[0]):
+        for z_avg, pts2d, color, spec in sorted(faces_to_draw, key=lambda item: item[0]):
             self.canvas.create_polygon(
                 pts2d,
                 fill=color,
                 outline="",
+                stipple="gray50",
                 tags="cube_face",
             )
-            if brightness > 0.4:
+            if spec > 0.01:
                 self.canvas.create_polygon(
                     pts2d,
                     fill="white",
                     outline="",
-                    stipple="gray75",
+                    stipple="gray25",
                     tags="cube_face",
                 )
 
