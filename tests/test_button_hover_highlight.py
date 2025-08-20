@@ -30,6 +30,8 @@ def test_add_hover_highlight_swaps_to_lighter_image():
     root.update_idletasks()
 
     assert btn.cget("image") == str(hover_img)
+    # Entire image should be lighter
     assert _sum_rgb(hover_img.get(0, 0)) > _sum_rgb(img.get(0, 0))
+    # Bottom pixels receive an extra boost creating a light glow
+    assert _sum_rgb(hover_img.get(0, 1)) > _sum_rgb(hover_img.get(0, 0))
     root.destroy()
-
