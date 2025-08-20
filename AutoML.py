@@ -228,6 +228,7 @@ import sys
 import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
+from gui.dialog_utils import askstring_fixed
 from gui import messagebox, logger, add_treeview_scrollbars
 from gui.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
@@ -18811,7 +18812,12 @@ class AutoMLApp:
 
     def edit_description(self):
         if self.selected_node:
-            new_desc = simpledialog.askstring("Edit Description", "Enter new description:", initialvalue=self.selected_node.description)
+            new_desc = askstring_fixed(
+                simpledialog,
+                "Edit Description",
+                "Enter new description:",
+                initialvalue=self.selected_node.description,
+            )
             if new_desc is not None:
                 self.selected_node.description = new_desc
                 # Propagate the updated description across clones/original.
@@ -19790,7 +19796,6 @@ class AutoMLApp:
                     "Save Model", "cryptography package is required for encrypted save."
                 )
                 return
-        from tkinter import simpledialog
         import base64
         import gzip
         import hashlib
@@ -19818,13 +19823,15 @@ class AutoMLApp:
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
             else:
-                from tkinter import simpledialog
                 import base64
                 import gzip
                 import hashlib
 
-                password = simpledialog.askstring(
-                    "Password", "Enter encryption password:", show="*"
+                password = askstring_fixed(
+                    simpledialog,
+                    "Password",
+                    "Enter encryption password:",
+                    show="*",
                 )
                 if password is None:
                     return
@@ -19872,14 +19879,16 @@ class AutoMLApp:
                         "Load Model", "cryptography package is required for encrypted files."
                     )
                     return
-            from tkinter import simpledialog
             import base64
             import gzip
             import hashlib
             import json
 
-            password = simpledialog.askstring(
-                "Password", "Enter decryption password:", show="*"
+            password = askstring_fixed(
+                simpledialog,
+                "Password",
+                "Enter decryption password:",
+                show="*",
             )
             if password is None:
                 return
@@ -20761,7 +20770,11 @@ class AutoMLApp:
             name = simpledialog.askstring("Review Name", "Enter unique review name:")
             if not name:
                 return
-            description = simpledialog.askstring("Description", "Enter a short description:")
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
             if description is None:
                 description = ""
             if not moderators:
@@ -20816,7 +20829,11 @@ class AutoMLApp:
             name = simpledialog.askstring("Review Name", "Enter unique review name:")
             if not name:
                 return
-            description = simpledialog.askstring("Description", "Enter a short description:")
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
             if description is None:
                 description = ""
             if not moderators:
