@@ -38,3 +38,32 @@ def test_treeview_row_highlight_on_hover():
     root.update_idletasks()
     assert not tree.tag_has("hover", "0")
     root.destroy()
+
+
+def test_treeview_hover_after_item_deleted():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+
+    enable_listbox_hover_highlight(root)
+    tree = ttk.Treeview(root, columns=("c",), show="headings")
+    tree.insert("", "end", iid="0", values=("a",))
+    tree.insert("", "end", iid="1", values=("b",))
+    tree.pack()
+    root.update_idletasks()
+
+    x0, y0, _, _ = tree.bbox("0")
+    tree.event_generate("<Motion>", x=x0 + 1, y=y0 + 1)
+    root.update_idletasks()
+    assert getattr(tree, "_hover_item", None) == "0"
+
+    tree.delete("0")
+    root.update_idletasks()
+
+    x1, y1, _, _ = tree.bbox("1")
+    tree.event_generate("<Motion>", x=x1 + 1, y=y1 + 1)
+    root.update_idletasks()
+    assert getattr(tree, "_hover_item", None) == "1"
+    assert tree.tag_has("hover", "1")
+    root.destroy()
