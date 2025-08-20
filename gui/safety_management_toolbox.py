@@ -19,7 +19,6 @@ from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
-from gui.mac_button_style import apply_translucid_button_style
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -321,12 +320,13 @@ class SafetyManagementWindow(tk.Frame):
         tree_frame = ttk.Frame(frame)
         style_name = "Requirements.Treeview"
         try:
-            configure_table_style(style_name, rowheight=40)
+            configure_table_style(style_name)
             tree = ttk.Treeview(
                 tree_frame, columns=columns, show="headings", style=style_name
             )
         except Exception:
             tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        tree.configure(height=10)  # limit table height so buttons remain visible
         for c in columns:
             tree.heading(c, text=c)
 
@@ -369,7 +369,7 @@ class SafetyManagementWindow(tk.Frame):
 
         populate(ids)
         add_treeview_scrollbars(tree, tree_frame)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree_frame.pack(fill=tk.BOTH)  # don't expand so button bar has room
 
         def _selected_rid() -> str | None:
             item = tree.focus()
@@ -464,6 +464,14 @@ class SafetyManagementWindow(tk.Frame):
                 menu.add_command(label="Save CSV", command=_save_csv)
 
                 def _popup(event: tk.Event) -> None:
+                    """Display the context menu at the cursor position.
+
+                    The menu should appear regardless of whether a row is
+                    under the cursor so users can access actions from any
+                    location within the table.  When a row is present, focus
+                    it to ensure subsequent actions operate on the expected
+                    requirement.
+                    """
                     row = tree.identify_row(event.y)
                     if row:
                         tree.selection_set(row)
@@ -481,8 +489,9 @@ class SafetyManagementWindow(tk.Frame):
                         _edit()
 
                 tree.bind("<Button-3>", _popup)
-                tree.bind("<Double-1>", _on_double_click)
-                
+                tree.bind("<Button-2>", _popup)
+                tree.bind("<Control-Button-1>", _popup)
+                tree.bind("<Double-1>", _on_double_click, add="+")
         if hasattr(ttk.Frame, "grid"):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(fill=tk.X, pady=4)
