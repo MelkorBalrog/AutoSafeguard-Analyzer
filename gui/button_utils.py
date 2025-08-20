@@ -38,7 +38,6 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
         except Exception:  # pragma: no cover - defensive
             pass
 
-
 def _lighten_image(
     img: tk.PhotoImage,
     factor: float = 1.2,
