@@ -134,12 +134,13 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a sky-to-ground gradient to hint at a distant horizon."""
-        # Color stops: dark blue sky -> warm horizon -> dark ground
+        """Draw a multi-color gradient dominated by black."""
+        # Color stops: violet -> magenta -> light green -> black
         stops = [
-            (0.0, (10, 10, 40)),     # night sky
-            (0.5, (255, 165, 0)),    # orange horizon
-            (1.0, (0, 20, 0)),       # ground
+            (0.0, (138, 43, 226)),   # violet
+            (0.3, (255, 0, 255)),    # magenta
+            (0.5, (144, 238, 144)),  # light green
+            (1.0, (0, 0, 0)),        # black
         ]
         steps = self.canvas_size
         for i in range(steps):
@@ -187,8 +188,7 @@ class SplashScreen(tk.Toplevel):
         angle = math.radians(self.angle)
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
-        projected = []
-        rotated = []
+        points = []
         for x, y, z in self.vertices:
             # rotate around Y axis
             x1 = x * cos_a - z * sin_a
@@ -196,37 +196,11 @@ class SplashScreen(tk.Toplevel):
             # rotate around X axis for slight 3D
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
-            rotated.append((x1, y1, z2))
-            projected.append(self._project(x1, y1, z2))
-
-        # Draw semi-transparent faces for a glassy look
-        faces = [
-            (0, 1, 2, 3),
-            (4, 5, 6, 7),
-            (0, 1, 5, 4),
-            (2, 3, 7, 6),
-            (0, 3, 7, 4),
-            (1, 2, 6, 5),
-        ]
-        # Sort faces by average depth so farthest are drawn first
-        depths = [
-            (sum(rotated[i][2] for i in face) / 4.0, face)
-            for face in faces
-        ]
-        for _, face in sorted(depths):
-            pts = [coord for i in face for coord in projected[i]]
-            self.canvas.create_polygon(
-                pts,
-                fill="cyan",
-                outline="",
-                stipple="gray25",
-                tags="cube",
-            )
-
-        # Bright cyan edges with white highlight for shininess
+            points.append(self._project(x1, y1, z2))
         for i, j in self.edges:
-            x1, y1 = projected[i]
-            x2, y2 = projected[j]
+            x1, y1 = points[i]
+            x2, y2 = points[j]
+            # Bright cyan edges for visibility against black
             self.canvas.create_line(
                 x1,
                 y1,
@@ -236,19 +210,9 @@ class SplashScreen(tk.Toplevel):
                 width=2,
                 tags="cube",
             )
-            self.canvas.create_line(
-                x1,
-                y1,
-                x2,
-                y2,
-                fill="white",
-                width=1,
-                tags="cube",
-            )
 
     def _draw_gear(self):
         self.canvas.delete("gear")
-        self.canvas.delete("gear_glow")
         teeth = 8
         inner = 20
         outer = 30
@@ -260,18 +224,9 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        # Glow effect: draw a thicker translucent outline underneath
+        # Light outline keeps gear visible on dark background
         self.canvas.create_polygon(
-            pts,
-            outline="cyan",
-            fill="",
-            width=6,
-            stipple="gray50",
-            tags="gear_glow",
-        )
-        # Sharp gear outline on top
-        self.canvas.create_polygon(
-            pts, outline="white", fill="", width=2, tags="gear"
+            pts, outline="lightgray", fill="", width=2, tags="gear"
         )
 
     def _animate(self):
