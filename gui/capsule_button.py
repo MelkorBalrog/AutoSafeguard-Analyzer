@@ -408,6 +408,7 @@ class CapsuleButton(tk.Canvas):
         w, h = int(self["width"]), int(self["height"])
         r = self._radius
         glow_color = _lighten(self._current_color, 1.3)
+        bottom_color = _lighten(self._current_color, 1.6)
         self._glow_items = [
             self.create_arc((-1, -1, 2 * r + 1, h + 1), start=90, extent=180, style=tk.ARC, outline=glow_color, width=2),
             # Offset the horizontal glow lines by one pixel so the caps extend
@@ -419,6 +420,16 @@ class CapsuleButton(tk.Canvas):
             self.create_line(r - 1, h + 1, w - r + 1, h + 1, fill=glow_color, width=2),
             self.create_line(w + 1, r, w + 1, h - r, fill=glow_color, width=2),
         ]
+        self._glow_items.append(
+            self.create_rectangle(
+                r,
+                h - 2,
+                w - r,
+                h,
+                outline="",
+                fill=bottom_color,
+            )
+        )
 
     def _remove_glow(self) -> None:
         for item in self._glow_items:
