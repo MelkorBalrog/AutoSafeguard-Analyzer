@@ -3493,9 +3493,7 @@
       "action": "communicate with"
     },
     "complies with": {
-      "action": "comply with",
-      "constraint": true,
-      "subject": "Engineering team"
+      "action": "comply with"
     },
     "composite aggregation": {
       "action": "compose"

@@ -160,3 +160,33 @@ def test_generic_ai_relation_defaults_to_organizational():
     reqs = diagram.generate_requirements()
     assess_req = next(r for r in reqs if r.action == "assess" and r.subject == "Role1")
     assert assess_req.req_type == "organizational"
+
+
+def test_complies_with_between_work_products():
+    diagram = GovernanceDiagram()
+    diagram.add_task("Requirement Specification", node_type="Work Product")
+    diagram.add_task("Operational Requirement", node_type="Work Product")
+    diagram.add_relationship(
+        "Requirement Specification", "Operational Requirement", conn_type="Complies with"
+    )
+
+    reqs = diagram.generate_requirements()
+    comp_req = next(r for r in reqs if r.action == "comply with")
+    assert comp_req.subject == "Requirement Specification"
+    assert comp_req.obj == "Operational Requirement"
+    assert comp_req.req_type == "organizational"
+
+
+def test_constrained_by_between_work_products():
+    diagram = GovernanceDiagram()
+    diagram.add_task("Requirement Specification", node_type="Work Product")
+    diagram.add_task("Operational Requirement", node_type="Work Product")
+    diagram.add_relationship(
+        "Requirement Specification", "Operational Requirement", conn_type="Constrained by"
+    )
+
+    reqs = diagram.generate_requirements()
+    comp_req = next(r for r in reqs if r.action == "comply with")
+    assert comp_req.subject == "Requirement Specification"
+    assert comp_req.constraint == "Operational Requirement"
+    assert comp_req.req_type == "organizational"
