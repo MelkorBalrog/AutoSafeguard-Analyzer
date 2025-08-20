@@ -549,7 +549,9 @@
         "Software Component": [],
         "Standard": [],
         "System": [],
-        "Task": [],
+        "Task": [
+          "Work Product"
+        ],
         "Test Suite": [],
         "Vehicle": [],
         "Work Product": [],
