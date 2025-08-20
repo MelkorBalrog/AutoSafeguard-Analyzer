@@ -24,7 +24,7 @@ _LEVEL_TAGS = {
 }
 
 
-def init_log_window(root, height=7, dark_mode: bool = True):
+def init_log_window(root, height=10, dark_mode: bool = True):
     """Create and return an un-packed styled log window in *root*.
 
     Parameters
@@ -111,29 +111,28 @@ def set_toggle_button(button):
 
 
 def show_log():
-    """Display the log frame and update the toggle button text."""
+    """Display the log frame and ensure related widgets stay visible."""
     global _auto_hide_id
-    if not log_frame or log_frame.winfo_manager():
-        if log_frame and _auto_hide_id:
-            log_frame.after_cancel(_auto_hide_id)
-            _auto_hide_id = None
+    if not log_frame:
         return
+    if _auto_hide_id:
+        log_frame.after_cancel(_auto_hide_id)
+        _auto_hide_id = None
     log_frame.configure(height=_default_height)
-    # Pack the log frame below all other widgets so the toggle button
-    # remains visible even when additional panels (like the explorer)
-    # are pinned and consume vertical space.  By omitting the ``before``
-    # argument the log frame is placed at the very bottom, leaving the
-    # toggle button immediately above it.
-    log_frame.pack(side=tk.BOTTOM, fill=tk.X)
+    if not log_frame.winfo_manager():
+        # Pack the log frame below all other widgets so the toggle button
+        # remains visible even when additional panels (like the explorer)
+        # are pinned and consume vertical space.  By omitting the ``before``
+        # argument the log frame is placed at the very bottom, leaving the
+        # toggle button immediately above it.
+        log_frame.pack(side=tk.BOTTOM, fill=tk.X)
     if _toggle_button:
         _toggle_button.config(text="Hide Logs")
         # Ensure the toggle button remains visible when other panels
         # (such as a pinned explorer) might overlap it by raising it
         # to the top of the stacking order.
         _raise_widget(_toggle_button)
-    if _auto_hide_id:
-        log_frame.after_cancel(_auto_hide_id)
-        _auto_hide_id = None
+    _raise_widget(log_frame)
 
 
 def _animate_hide(height):

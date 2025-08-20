@@ -2923,16 +2923,17 @@ class AutoMLApp:
         self.main_pane = tk.PanedWindow(self.top_frame, orient=tk.HORIZONTAL)
         self.main_pane.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        # Initialise the log window but keep it hidden by default.
-        self.log_frame = logger.init_log_window(root, height=7)
+        # Initialise the log window and show it by default.
+        self.log_frame = logger.init_log_window(root, height=10)
         # Status bar showing lifecycle phase and object metadata
         self.status_frame = ttk.Frame(root)
         self.status_frame.pack(side=tk.BOTTOM, fill=tk.X)
         self.toggle_log_button = ttk.Button(
-            root, text="Show Logs", command=self.toggle_logs
+            root, text="Hide Logs", command=self.toggle_logs
         )
         self.toggle_log_button.pack(side=tk.BOTTOM, fill=tk.X)
         logger.set_toggle_button(self.toggle_log_button)
+        logger.show_log()
         self.style.configure(
             "Phase.TLabel",
             background="#4a6ea9",
@@ -10546,6 +10547,8 @@ class AutoMLApp:
             self._cancel_explorer_hide()
         else:
             self._schedule_explorer_hide()
+        # Ensure the log window and toggle button remain visible
+        logger.show_log()
 
     def _limit_explorer_size(self):
         """Ensure the explorer pane does not exceed the maximum width."""

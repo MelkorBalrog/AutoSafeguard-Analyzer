@@ -15,7 +15,7 @@ def test_log_toggle_button_visible_with_pinned_explorer():
     app = AutoMLApp(root)
     # Pin the explorer pane which previously caused the toggle button to be hidden
     app.toggle_explorer_pin()
-    app.toggle_logs()  # show logs
+    # Logs are shown by default; ensure the toggle button remains visible
     root.update_idletasks()
     button_bottom = app.toggle_log_button.winfo_y() + app.toggle_log_button.winfo_height()
     assert button_bottom <= root.winfo_height()
