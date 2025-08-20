@@ -47,7 +47,6 @@ class SplashScreen(tk.Toplevel):
         )
         self.canvas.pack()
         self._draw_gradient()
-        self._draw_cloud()
         self._draw_floor()
         self._center()
         # Initialize cube geometry
@@ -168,6 +167,32 @@ class SplashScreen(tk.Toplevel):
             b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
+    def _draw_floor(self):
+        """Add subtle white light near horizon and darker shadow toward bottom."""
+        horizon_ratio = 0.55
+        horizon = int(self.canvas_size * horizon_ratio)
+        steps = self.canvas_size - horizon
+        white_strength = 0.15
+        black_strength = 0.25
+        for i in range(steps):
+            ratio = i / steps
+            # base gradient from light to dark green
+            r = int(144 + (0 - 144) * ratio)
+            g = int(238 + (100 - 238) * ratio)
+            b = int(144 + (0 - 144) * ratio)
+            # white glow near horizon
+            w = (1 - ratio) * white_strength
+            r = int(r + (255 - r) * w)
+            g = int(g + (255 - g) * w)
+            b = int(b + (255 - b) * w)
+            # black shadow near bottom
+            sh = ratio * black_strength
+            r = int(r * (1 - sh))
+            g = int(g * (1 - sh))
+            b = int(b * (1 - sh))
+            color = f"#{r:02x}{g:02x}{b:02x}"
+            y = horizon + i
+            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
 
     def _draw_cloud(self):
         """Draw a small turquoise-magenta-white cloud on the sky."""
