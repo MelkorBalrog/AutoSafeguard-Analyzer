@@ -169,32 +169,24 @@ class SplashScreen(tk.Toplevel):
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
     def _draw_floor(self):
-        """Overlay floor lighting and shadow for a horizon effect."""
-        cx = self.canvas_size / 2
-        cy = self.canvas_size
-        radius = self.canvas_size * 0.9
-        # soft shadow across the ground
-        self.canvas.create_oval(
-            cx - radius,
-            cy - radius * 0.3,
-            cx + radius,
-            cy + radius * 0.2,
-            fill="black",
-            outline="",
-            stipple="gray50",
-            tags="floor",
-        )
-        # gentle light at center
-        self.canvas.create_oval(
-            cx - radius * 0.7,
-            cy - radius * 0.2,
-            cx + radius * 0.7,
-            cy + radius * 0.1,
-            fill="#90ee90",
-            outline="",
-            stipple="gray25",
-            tags="floor",
-        )
+        """Darken ground toward the viewer for a subtle horizon shadow."""
+        horizon_ratio = 0.55
+        horizon = int(self.canvas_size * horizon_ratio)
+        steps = self.canvas_size - horizon
+        for i in range(steps):
+            ratio = i / steps
+            # base gradient from light to dark green
+            r = int(144 + (0 - 144) * ratio)
+            g = int(238 + (100 - 238) * ratio)
+            b = int(144 + (0 - 144) * ratio)
+            # additional shadow that intensifies toward bottom
+            shadow = 1 - 0.4 * (1 - ratio)
+            r = int(r * shadow)
+            g = int(g * shadow)
+            b = int(b * shadow)
+            color = f"#{r:02x}{g:02x}{b:02x}"
+            y = horizon + i
+            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
@@ -263,18 +255,26 @@ class SplashScreen(tk.Toplevel):
             ny /= norm
             nz /= norm
             brightness = max(0, nx * light_dir[0] + ny * light_dir[1] + nz * light_dir[2])
-            col_val = int(155 + 100 * brightness)
+            base = 120
+            col_val = int(base + 135 * brightness)
             color = f"#00{col_val:02x}{col_val:02x}"
-            faces_to_draw.append((z_avg, pts2d, color))
+            faces_to_draw.append((z_avg, pts2d, color, brightness))
 
-        for z_avg, pts2d, color in sorted(faces_to_draw, key=lambda item: item[0]):
+        for z_avg, pts2d, color, brightness in sorted(faces_to_draw, key=lambda item: item[0]):
             self.canvas.create_polygon(
                 pts2d,
                 fill=color,
                 outline="",
                 tags="cube_face",
-                stipple="gray25",
             )
+            if brightness > 0.4:
+                self.canvas.create_polygon(
+                    pts2d,
+                    fill="white",
+                    outline="",
+                    stipple="gray75",
+                    tags="cube_face",
+                )
 
         for i, j in self.edges:
             x1, y1 = points[i]
