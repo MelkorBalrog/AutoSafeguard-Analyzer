@@ -47,6 +47,7 @@ class SplashScreen(tk.Toplevel):
         )
         self.canvas.pack()
         self._draw_gradient()
+        self._draw_cloud()
         self._draw_floor()
         self._center()
         # Initialize cube geometry
@@ -143,7 +144,7 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a multi-color gradient dominated by black."""
+        """Draw a multi-color background gradient."""
         # Color stops: violet sky -> magenta -> light green horizon -> dark ground
         stops = [
             (0.0, (138, 43, 226)),   # violet
@@ -168,32 +169,55 @@ class SplashScreen(tk.Toplevel):
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
-        # Add subtle lighting and shadow on the floor to avoid a flat black look
-        cx = self.canvas_size / 2
-        cy = self.canvas_size
-        radius = self.canvas_size * 0.9
-        # soft shadow across the ground
+    def _draw_cloud(self):
+        """Draw a small turquoise-magenta-white cloud on the sky."""
+        cx, cy = 80, 80
+        ovals = [
+            (cx - 40, cy - 20, cx + 40, cy + 20),
+            (cx - 20, cy - 30, cx + 60, cy + 10),
+            (cx - 60, cy - 30, cx + 20, cy + 10),
+        ]
+        for x1, y1, x2, y2 in ovals:
+            self.canvas.create_oval(
+                x1, y1, x2, y2, fill="#40E0D0", outline="#FF00FF", width=2
+            )
+        # subtle white highlight
         self.canvas.create_oval(
-            cx - radius,
-            cy - radius * 0.3,
-            cx + radius,
-            cy + radius * 0.2,
-            fill="black",
+            cx - 30,
+            cy - 20,
+            cx + 20,
+            cy + 10,
+            fill="white",
             outline="",
             stipple="gray50",
-            tags="floor",
         )
-        # gentle light at center
-        self.canvas.create_oval(
-            cx - radius * 0.7,
-            cy - radius * 0.2,
-            cx + radius * 0.7,
-            cy + radius * 0.1,
-            fill="#90ee90",
-            outline="",
-            stipple="gray25",
-            tags="floor",
-        )
+
+    def _draw_floor(self):
+        """Add subtle white light near horizon and darker shadow toward bottom."""
+        horizon_ratio = 0.55
+        horizon = int(self.canvas_size * horizon_ratio)
+        steps = self.canvas_size - horizon
+        white_strength = 0.15
+        black_strength = 0.25
+        for i in range(steps):
+            ratio = i / steps
+            # base gradient from light to dark green
+            r = int(144 + (0 - 144) * ratio)
+            g = int(238 + (100 - 238) * ratio)
+            b = int(144 + (0 - 144) * ratio)
+            # white glow near horizon
+            w = (1 - ratio) * white_strength
+            r = int(r + (255 - r) * w)
+            g = int(g + (255 - g) * w)
+            b = int(b + (255 - b) * w)
+            # black shadow near bottom
+            sh = ratio * black_strength
+            r = int(r * (1 - sh))
+            g = int(g * (1 - sh))
+            b = int(b * (1 - sh))
+            color = f"#{r:02x}{g:02x}{b:02x}"
+            y = horizon + i
+            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
@@ -262,18 +286,26 @@ class SplashScreen(tk.Toplevel):
             ny /= norm
             nz /= norm
             brightness = max(0, nx * light_dir[0] + ny * light_dir[1] + nz * light_dir[2])
-            col_val = int(155 + 100 * brightness)
+            base = 120
+            col_val = int(base + 135 * brightness)
             color = f"#00{col_val:02x}{col_val:02x}"
-            faces_to_draw.append((z_avg, pts2d, color))
+            faces_to_draw.append((z_avg, pts2d, color, brightness))
 
-        for z_avg, pts2d, color in sorted(faces_to_draw, key=lambda item: item[0]):
+        for z_avg, pts2d, color, brightness in sorted(faces_to_draw, key=lambda item: item[0]):
             self.canvas.create_polygon(
                 pts2d,
                 fill=color,
                 outline="",
                 tags="cube_face",
-                stipple="gray25",
             )
+            if brightness > 0.4:
+                self.canvas.create_polygon(
+                    pts2d,
+                    fill="white",
+                    outline="",
+                    stipple="gray75",
+                    tags="cube_face",
+                )
 
         for i, j in self.edges:
             x1, y1 = points[i]

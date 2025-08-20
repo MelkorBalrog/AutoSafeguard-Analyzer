@@ -54,7 +54,7 @@ def test_glow_bottom_highlight():
     x1, y1, x2, y2 = btn.coords(rect_id)
     h = int(btn["height"])
     assert y2 == h
-    assert y2 - y1 <= 2
-    expected_color = _lighten(btn._current_color, 1.6)
+    assert y2 - y1 <= 3
+    expected_color = _lighten(btn._normal_color, 1.6)
     assert btn.itemcget(rect_id, "fill") == expected_color
     root.destroy()

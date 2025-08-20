@@ -2,9 +2,9 @@ version: 0.1.6
 Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 # AutoML
 
-AutoML is an automotive modeling and analysis tool built around a SysML-based metamodel. The language lets you model items, operating scenarios, functions, structure and interfaces in a single environment.
+AutoML is an automotive modeling and analysis tool built around a SysML-based metamodel. It lets you describe items, operating scenarios, functions, structure and interfaces in a single environment.
 
-The metamodel weaves together concepts from key automotive standards—ISO 26262 for functional safety, ISO 21448 for SOTIF, ISO 21434 for cybersecurity and ISO 8800 for safety and AI—so one project can address safety, cybersecurity and assurance requirements side by side.
+The metamodel blends concepts from key automotive standards—ISO 26262 (functional safety), ISO 21448 (SOTIF), ISO 21434 (cybersecurity) and ISO 8800 (safety and AI)—so one project can address safety, cybersecurity and assurance requirements side by side.
 
 ## Getting Started
 

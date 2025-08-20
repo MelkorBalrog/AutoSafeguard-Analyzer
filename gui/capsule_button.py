@@ -135,7 +135,7 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._normal_color = bg
-        self._hover_color = hover_bg or _lighten(bg, 1.2)
+        self._hover_color = hover_bg or _lighten(bg, 1.5)
         self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
         self._radius = height // 2
@@ -407,8 +407,8 @@ class CapsuleButton(tk.Canvas):
             return
         w, h = int(self["width"]), int(self["height"])
         r = self._radius
-        glow_color = _lighten(self._current_color, 1.3)
-        bottom_color = _lighten(self._current_color, 1.6)
+        glow_color = _lighten(self._normal_color, 1.3)
+        bottom_color = _lighten(self._normal_color, 1.6)
         self._glow_items = [
             self.create_arc((-1, -1, 2 * r + 1, h + 1), start=90, extent=180, style=tk.ARC, outline=glow_color, width=2),
             # Offset the horizontal glow lines by one pixel so the caps extend
@@ -423,7 +423,7 @@ class CapsuleButton(tk.Canvas):
         self._glow_items.append(
             self.create_rectangle(
                 r,
-                h - 2,
+                h - 3,
                 w - r,
                 h,
                 outline="",
@@ -545,7 +545,7 @@ class CapsuleButton(tk.Canvas):
     def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
         if bg is not None:
             self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.2)
+            self._hover_color = hover_bg or _lighten(bg, 1.5)
             self._pressed_color = _darken(bg, 0.8)
             self._set_color(self._normal_color)
         elif hover_bg is not None:
