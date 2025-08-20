@@ -183,24 +183,7 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         required = {"size", "nearest", "itemconfig", "itemcget", "cget"}
         if not all(hasattr(lb, attr) for attr in required):
             return
-
-        def _resolve_size(widget: tk.Misc) -> int:
-            strategies = [
-                lambda w: w.size(),
-                lambda w: len(w.get(0, tk.END)),
-                lambda w: len(getattr(w, "items", [])),
-                lambda w: int(w.cget("height")) if str(w.cget("height")).isdigit() else 0,
-            ]
-            for strat in strategies:
-                try:
-                    result = strat(widget)
-                    if isinstance(result, int):
-                        return result
-                except Exception:
-                    continue
-            return 0
-
-        size = _resolve_size(lb)
+        size = lb.size()
         if size == 0:
             return
 
