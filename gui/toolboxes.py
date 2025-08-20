@@ -4217,7 +4217,6 @@ class RequirementsExplorerWindow(tk.Frame):
             edit_callback=self.on_cell_edit,
             multiline_columns={"Text"},
             height=10,
-            multiline_columns={"Text"},
         )
         for c in self.columns:
             self.tree.heading(c, text=c)
