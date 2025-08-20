@@ -27,7 +27,7 @@ class MetricsTab(tk.Frame):
         points: list[float] = []
         for i, val in enumerate(data):
             x = i * step
-            y = h - (val / max_val) * h
+            y = h - (val / max_val) * h if max_val else h
             points.extend([x, y])
         if len(points) > 3:
             canvas.create_line(*points, fill="blue")
