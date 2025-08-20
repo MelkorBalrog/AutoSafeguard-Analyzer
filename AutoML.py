@@ -9854,6 +9854,13 @@ class AutoMLApp:
         except Exception:
             pass
 
+    def apply_governance_rules(self) -> None:
+        """Apply governance rules and refresh related UI elements."""
+        try:
+            self._on_toolbox_change()
+        except Exception:
+            pass
+
     def refresh_tool_enablement(self) -> None:
         if not hasattr(self, "tool_listboxes"):
             return
@@ -19613,10 +19620,7 @@ class AutoMLApp:
         if not self.odd_libraries and "odd_elements" in data:
             self.odd_libraries = [{"name": "Default", "elements": data.get("odd_elements", [])}]
         self.update_odd_elements()
-        try:
-            self.refresh_tool_enablement()
-        except Exception:
-            pass
+        self.apply_governance_rules()
 
         self.fmedas = []
         for doc in data.get("fmedas", []):
