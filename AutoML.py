@@ -12724,7 +12724,6 @@ class AutoMLApp:
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH)
         style = ttk.Style(tree_frame)
         style.configure("ReqEditor.Treeview", rowheight=20)
         tree = ttk.Treeview(
@@ -13092,9 +13091,10 @@ class AutoMLApp:
         tk.Button(btn, text="Add", command=add_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Edit", command=edit_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Delete", command=del_req).pack(side=tk.LEFT)
+        tk.Button(btn, text="Save CSV", command=save_csv).pack(side=tk.LEFT)
         tk.Button(btn, text="Link to Diagram...", command=link_to_diagram).pack(side=tk.LEFT)
         tk.Button(btn, text="Link Requirement...", command=link_requirement).pack(side=tk.LEFT)
-        tk.Button(btn, text="Save CSV", command=save_csv).pack(side=tk.LEFT)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
 
         refresh_tree()
 
