@@ -364,7 +364,6 @@ import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
-import matplotlib.pyplot as plt
 # Import ReportLab for PDF export.
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
 from gui.style_editor import StyleEditor
@@ -18080,19 +18079,7 @@ class AutoMLApp:
 
     def open_metrics_tab(self):
         """Open a tab displaying project metrics."""
-        import importlib
-        from gui import messagebox
-
-        if importlib.util.find_spec("matplotlib") is None:
-            msg = ("Matplotlib is required to view metrics.\n"
-                   "Install it with 'pip install matplotlib'.")
-            messagebox.showerror("Metrics unavailable", msg)
-            return
-        try:
-            from gui.metrics_tab import MetricsTab
-        except Exception as exc:  # pragma: no cover - display error in GUI
-            messagebox.showerror("Metrics unavailable", str(exc))
-            return
+        from gui.metrics_tab import MetricsTab
 
         tab = self._new_tab("Metrics")
         MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
