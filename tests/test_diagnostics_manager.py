@@ -51,3 +51,37 @@ def test_async_manager_detects_failure() -> None:
     asyncio.run(manager.run_once())
     with pytest.raises(DiagnosticError):
         manager.raise_errors()
+
+
+def test_recoverable_fault_recovers() -> None:
+    manager = PassiveDiagnosticsManager()
+    recovered = {"called": False}
+
+    def check() -> bool:
+        return False
+
+    def recover() -> bool:
+        recovered["called"] = True
+        return True
+
+    manager.run_check("r1", check, recover=recover, recoverable=True)
+    manager.raise_errors()  # should not raise because recovered
+    assert recovered["called"]
+
+
+def test_nonrecoverable_fault_mitigates_and_notifies() -> None:
+    manager = PassiveDiagnosticsManager()
+    mitigated = {"called": False}
+
+    def check() -> bool:
+        return False
+
+    def mitigate() -> str:
+        mitigated["called"] = True
+        return "degraded mode"
+
+    manager.run_check("n1", check, mitigate=mitigate, recoverable=False)
+    with pytest.raises(DiagnosticError):
+        manager.raise_errors()
+    assert mitigated["called"]
+    assert "degraded mode" in manager.notifications
