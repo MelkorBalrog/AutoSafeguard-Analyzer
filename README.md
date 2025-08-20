@@ -6,10 +6,25 @@ AutoML is an automotive modeling and analysis tool built around a SysML-based me
 
 The metamodel weaves together concepts from key automotive standards—ISO 26262 for functional safety, ISO 21448 for SOTIF, ISO 21434 for cybersecurity and ISO 8800 for safety and AI—so one project can address safety, cybersecurity and assurance requirements side by side.
 
-Recent updates add a **Review Toolbox** supporting peer and joint review workflows. The explorer pane now includes an **Analyses** tab organized into *System Design (Item Definition)*, *Hazard Analysis*, *Risk Assessment* and *Safety Analysis* sections so documents and diagrams can be opened directly. Architecture objects can be resized either by editing width and height values or by dragging the red handles that appear when an item is selected. Fork and join bars keep a constant thickness so only their length changes. **Deleting objects on a diagram now asks whether to remove them from the model or only from the current view. Removing from the model also deletes any part elements referencing it so names can be reused.** New FMEDA functionality automatically fills the violated safety goal from chosen malfunctions, supports selecting multiple malfunction effects and prevents assigning one malfunction to more than one top level event. Malfunctions can be added or removed via **Add** and **Delete** buttons in the FMEA/FMEDA dialogs, but deletion is blocked for malfunctions currently used in analyses or FTAs.
+## Getting Started
 
-## Index
+1. **Install dependencies**
+   ```bash
+   pip install pillow openpyxl networkx matplotlib reportlab adjustText
+   ```
+2. **Launch AutoML**
+   ```bash
+   python AutoML.py
+   ```
+3. **Create a new project**
+   - Choose **File → New Project** from the menu.
+   - Use the diagrams and analysis tools to build your model.
 
+These steps start the application with an empty project so you can explore the workflow described in later sections.
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
 - [Governance Diagrams](#governance-diagrams)
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
