@@ -153,6 +153,82 @@ def test_used_after_approval_input_visibility(analysis):
     assert toolbox.analysis_inputs(analysis, approved=True) == {"Architecture Diagram"}
 
 
+def test_stpa_to_architecture_used_by_input_visibility():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "STPA"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": "Architecture Diagram"})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used By", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "Architecture Diagram", ""),
+        SafetyWorkProduct("Gov", "STPA", ""),
+    ]
+    assert toolbox.analysis_inputs("STPA") == {"Architecture Diagram"}
+
+
+def test_stpa_to_architecture_used_after_review_input_visibility():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "STPA"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": "Architecture Diagram"})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used after Review", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "Architecture Diagram", ""),
+        SafetyWorkProduct("Gov", "STPA", ""),
+    ]
+    assert toolbox.analysis_inputs("STPA") == set()
+    assert toolbox.analysis_inputs("STPA", reviewed=True) == {"Architecture Diagram"}
+    assert toolbox.analysis_inputs("STPA", approved=True) == {"Architecture Diagram"}
+
+
+def test_stpa_to_architecture_used_after_approval_input_visibility():
+    SysMLRepository.reset_instance()
+    repo = SysMLRepository.get_instance()
+    toolbox = SafetyManagementToolbox()
+    diag = repo.create_diagram("Governance Diagram", name="Gov")
+    toolbox.diagrams = {"Gov": diag.diag_id}
+    e1 = repo.create_element("Block", name="E1")
+    e2 = repo.create_element("Block", name="E2")
+    repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+    repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+    o1 = SysMLObject(1, "Work Product", 0, 0, element_id=e1.elem_id, properties={"name": "STPA"})
+    o2 = SysMLObject(2, "Work Product", 0, 100, element_id=e2.elem_id, properties={"name": "Architecture Diagram"})
+    diag.objects = [o1.__dict__, o2.__dict__]
+    win = _create_window(repo, "Used after Approval", o1, o2, diag)
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=0, state=0))
+    GovernanceDiagramWindow.on_left_press(win, types.SimpleNamespace(x=0, y=100, state=0))
+    diag.connections = [c.__dict__ for c in win.connections]
+    toolbox.work_products = [
+        SafetyWorkProduct("Gov", "Architecture Diagram", ""),
+        SafetyWorkProduct("Gov", "STPA", ""),
+    ]
+    assert toolbox.analysis_inputs("STPA") == set()
+    assert toolbox.analysis_inputs("STPA", reviewed=True) == set()
+    assert toolbox.analysis_inputs("STPA", approved=True) == {"Architecture Diagram"}
+
+
 @pytest.mark.parametrize("analysis", ["FI2TC", "TC2FI"])
 def test_analysis_inputs_respect_phase(analysis):
     SysMLRepository.reset_instance()
