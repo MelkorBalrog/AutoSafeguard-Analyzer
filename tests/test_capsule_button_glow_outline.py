@@ -5,7 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton
+from gui.capsule_button import CapsuleButton, _lighten
 
 
 def test_glow_edges_only():
@@ -55,4 +55,6 @@ def test_glow_bottom_highlight():
     h = int(btn["height"])
     assert y2 == h
     assert y2 - y1 <= 2
+    expected_color = _lighten(btn._current_color, 1.6)
+    assert btn.itemcget(rect_id, "fill") == expected_color
     root.destroy()
