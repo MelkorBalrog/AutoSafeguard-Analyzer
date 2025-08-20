@@ -4,7 +4,30 @@ from __future__ import annotations
 """Shared GUI helpers and widget customizations."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
+
+# Default background color for all dialog windows
+DIALOG_BG_COLOR = "#A9BCE2"
+
+
+_orig_dialog_init = simpledialog.Dialog.__init__
+
+
+def _dialog_init_with_color(self, parent, title=None):
+    """Apply light blue background to every dialog window."""
+    _orig_dialog_init(self, parent, title)
+    try:
+        self.configure(bg=DIALOG_BG_COLOR)
+        for child in self.winfo_children():
+            try:
+                child.configure(bg=DIALOG_BG_COLOR)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+simpledialog.Dialog.__init__ = _dialog_init_with_color
 
 from .capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
 
@@ -15,7 +38,9 @@ class _StyledButton(CapsuleButton):
     def __init__(self, *args, **kwargs):
         gradient = kwargs.pop("gradient", None)
         hover_gradient = kwargs.pop("hover_gradient", None)
-        super().__init__(*args, gradient=gradient, hover_gradient=hover_gradient, **kwargs)
+        super().__init__(
+            *args, gradient=gradient, hover_gradient=hover_gradient, **kwargs
+        )
 
 
 class TranslucidButton(_StyledButton):
@@ -34,7 +59,9 @@ class PurpleButton(_StyledButton):
 
     def __init__(self, *args, **kwargs):
         bg = kwargs.setdefault("bg", "#f3eaff")
-        gradient = kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
+        gradient = kwargs.setdefault(
+            "gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"]
+        )
         kwargs.setdefault("hover_bg", _glow_color(bg))
         kwargs.setdefault("hover_gradient", [_glow_color(c) for c in gradient])
         super().__init__(*args, **kwargs)
@@ -97,6 +124,7 @@ class HoverListbox(tk.Listbox):
 
 tk.Listbox = HoverListbox  # type: ignore[assignment]
 
+
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
 
@@ -105,7 +133,9 @@ def format_name_with_phase(name: str, phase: str | None) -> str:
     return name
 
 
-def add_treeview_scrollbars(tree: ttk.Treeview, container: ttk.Widget | None = None) -> None:
+def add_treeview_scrollbars(
+    tree: ttk.Treeview, container: ttk.Widget | None = None
+) -> None:
     """Attach both vertical and horizontal scrollbars to ``tree``.
 
     Parameters
@@ -137,6 +167,7 @@ _orig_heading = ttk.Treeview.heading
 def _sortable_heading(self, column, option=None, **kw):
     """Add ascending/descending sort behavior when a column header is clicked."""
     if option is None and kw and "command" not in kw:
+
         def sort_column(col=column):
             data = [(self.set(k, col), k) for k in self.get_children("")]
 
@@ -150,7 +181,9 @@ def _sortable_heading(self, column, option=None, **kw):
             numeric = all(_is_number(v) for v, _ in data if v not in ("", None))
             if numeric:
                 data.sort(
-                    key=lambda t: float(t[0]) if t[0] not in ("", None) else float("-inf")
+                    key=lambda t: (
+                        float(t[0]) if t[0] not in ("", None) else float("-inf")
+                    )
                 )
             else:
                 data.sort(key=lambda t: str(t[0]).lower())

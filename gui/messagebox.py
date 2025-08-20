@@ -11,7 +11,7 @@ from tkinter import TclError
 import tkinter as tk
 from tkinter import ttk
 
-from . import logger
+from . import logger, DIALOG_BG_COLOR
 from . import PurpleButton
 
 
@@ -60,6 +60,10 @@ def _create_dialog(
         temp_root = True
 
     dialog = tk.Toplevel(root)
+    try:
+        dialog.configure(bg=DIALOG_BG_COLOR)
+    except Exception:
+        pass
     dialog.title(title or "")
     dialog.resizable(False, False)
     dialog.transient(root)
@@ -101,9 +105,7 @@ def askyesno(title=None, message=None, **options):
     logger.log_message(f"{title}: {message}", "ASK")
     logger.show_temporarily()
     try:
-        return bool(
-            _create_dialog(title, message, [("Yes", True), ("No", False)])
-        )
+        return bool(_create_dialog(title, message, [("Yes", True), ("No", False)]))
     except (TclError, RuntimeError):
         return False
 
@@ -123,8 +125,6 @@ def askokcancel(title=None, message=None, **options):
     logger.log_message(f"{title}: {message}", "ASK")
     logger.show_temporarily()
     try:
-        return bool(
-            _create_dialog(title, message, [("OK", True), ("Cancel", False)])
-        )
+        return bool(_create_dialog(title, message, [("OK", True), ("Cancel", False)]))
     except (TclError, RuntimeError):
         return False

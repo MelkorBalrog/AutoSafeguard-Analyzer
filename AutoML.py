@@ -1918,11 +1918,23 @@ class EditNodeDialog(simpledialog.Dialog):
             pass  # ASIL recalculated when joint review closes
 
     def buttonbox(self):
-        box = tk.Frame(self)
-        ok_button = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE)
-        ok_button.pack(side=tk.LEFT, padx=5, pady=5)
-        cancel_button = tk.Button(box, text="Cancel", width=10, command=self.cancel)
-        cancel_button.pack(side=tk.LEFT, padx=5, pady=5)
+        box = ttk.Frame(self)
+        apply_purplish_button_style()
+        ttk.Button(
+            box,
+            text="OK",
+            width=10,
+            command=self.ok,
+            style="Purple.TButton",
+            default=tk.ACTIVE,
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            box,
+            text="Cancel",
+            width=10,
+            command=self.cancel,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
         self.bind("<Escape>", lambda event: self.cancel())
         box.pack()
 

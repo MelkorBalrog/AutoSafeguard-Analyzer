@@ -8,7 +8,9 @@ class MetricsTab(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
         self.app = app
-        self.canvases = [tk.Canvas(self, width=300, height=200, bg="white") for _ in range(3)]
+        self.canvases = [
+            tk.Canvas(self, width=300, height=200, bg="white") for _ in range(3)
+        ]
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
@@ -72,7 +74,10 @@ class MetricsTab(tk.Frame):
             req_history = [len(getattr(self.app, "requirements", []))]
         self._draw_line_chart(self.canvases[0], req_history)
 
-        statuses = Counter(getattr(r, "status", "unknown") for r in getattr(self.app, "requirements", []))
+        statuses = Counter(
+            getattr(r, "status", "unknown")
+            for r in getattr(self.app, "requirements", [])
+        )
         self._draw_bar_chart(self.canvases[1], statuses)
         self.canvases[1].create_text(5, 5, anchor="nw", text="Status")
 

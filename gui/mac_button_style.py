@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import simpledialog, ttk
 
 
 def apply_mac_button_style(style: ttk.Style | None = None) -> ttk.Style:
@@ -75,3 +75,36 @@ def apply_translucid_button_style(style: ttk.Style | None = None) -> ttk.Style:
         relief=[("pressed", "sunken"), ("!pressed", "flat")],
     )
     return style
+
+
+def _purplish_buttonbox(self) -> None:
+    """Default ``simpledialog`` button box with purple-themed buttons."""
+
+    box = ttk.Frame(self)
+    apply_purplish_button_style()
+    ttk.Button(
+        box,
+        text="OK",
+        width=10,
+        command=self.ok,
+        style="Purple.TButton",
+    ).pack(side=tk.LEFT, padx=5, pady=5)
+    ttk.Button(
+        box,
+        text="Cancel",
+        width=10,
+        command=self.cancel,
+        style="Purple.TButton",
+    ).pack(side=tk.LEFT, padx=5, pady=5)
+    self.bind("<Return>", self.ok)
+    self.bind("<Escape>", self.cancel)
+    box.pack()
+
+
+def enable_purplish_dialog_buttons() -> None:
+    """Monkeypatch ``simpledialog.Dialog`` to use purple buttons everywhere."""
+
+    simpledialog.Dialog.buttonbox = _purplish_buttonbox
+
+
+enable_purplish_dialog_buttons()

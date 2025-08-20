@@ -2,6 +2,8 @@
 import tkinter as tk
 from tkinter import simpledialog, ttk
 
+from gui.mac_button_style import apply_purplish_button_style
+
 from gui import messagebox
 from gui.toolboxes import ToolTip
 from gui.table_controller import TableController
@@ -217,12 +219,24 @@ class ThreatWindow(tk.Frame):
 
             box = ttk.Frame(self)
             box.pack(fill=tk.X, padx=5, pady=5)
+            apply_purplish_button_style()
 
             ok_btn = ttk.Button(
-                box, text="OK", width=10, command=self.ok, default=tk.ACTIVE
+                box,
+                text="OK",
+                width=10,
+                command=self.ok,
+                default=tk.ACTIVE,
+                style="Purple.TButton",
             )
             ok_btn.pack(side=tk.RIGHT, padx=5)
-            cancel_btn = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
+            cancel_btn = ttk.Button(
+                box,
+                text="Cancel",
+                width=10,
+                command=self.cancel,
+                style="Purple.TButton",
+            )
             cancel_btn.pack(side=tk.RIGHT, padx=5)
 
             ok_btn.focus_set()
