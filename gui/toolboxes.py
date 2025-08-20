@@ -8,6 +8,7 @@ import textwrap
 import uuid
 
 from gui.tooltip import ToolTip
+from gui.button_utils import add_hover_highlight
 from sysml.sysml_repository import SysMLRepository
 from analysis.models import (
     ReliabilityComponent,
@@ -665,6 +666,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.load_csv,
         )
+        add_hover_highlight(load_btn, self._icons["load"])
         load_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_btn, "Import components from a CSV Bill of Materials.")
 
@@ -675,6 +677,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.add_component,
         )
+        add_hover_highlight(add_btn, self._icons["add"])
         add_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(add_btn, "Create a new component entry manually.")
 
@@ -685,6 +688,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.configure_component,
         )
+        add_hover_highlight(cfg_btn, self._icons["cfg"])
         cfg_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(cfg_btn, "Edit parameters of the selected component.")
 
@@ -695,6 +699,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.delete_component,
         )
+        add_hover_highlight(del_comp_btn, self._icons["del"])
         del_comp_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_comp_btn, "Remove the selected component from the table.")
 
@@ -705,6 +710,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.calculate_fit,
         )
+        add_hover_highlight(calc_btn, self._icons["calc"])
         calc_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(
             calc_btn,
@@ -718,6 +724,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.save_analysis,
         )
+        add_hover_highlight(save_btn, self._icons["save"])
         save_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(save_btn, "Store the current analysis in the project file.")
 
@@ -728,6 +735,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.load_analysis,
         )
+        add_hover_highlight(load_an_btn, self._icons["load"])
         load_an_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(load_an_btn, "Reload a previously saved reliability analysis.")
 
@@ -738,6 +746,7 @@ class ReliabilityWindow(tk.Frame):
             compound=tk.LEFT,
             command=self.delete_analysis,
         )
+        add_hover_highlight(del_btn, self._icons["del"])
         del_btn.pack(side=tk.LEFT, padx=2, pady=2)
         ToolTip(del_btn, "Remove the selected analysis from the project.")
         self.formula_label = ttk.Label(self, text="")
