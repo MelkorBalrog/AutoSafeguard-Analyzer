@@ -183,31 +183,20 @@ def show_temporarily(duration=3000, lines: int | None = None):
         Time in milliseconds before hiding the log window.
     lines:
         If provided, explicitly size the log window for this many display lines
-        (plus an extra trailing blank).  When ``None`` the required pixel height
-        is calculated from the most recently logged message so that all of its
-        lines remain visible even when other panes alter the available width.
+        (plus an extra trailing blank).  When ``None`` the log window uses its
+        default height (seven lines) regardless of other panels such as the
+        file explorer.
     """
     global _auto_hide_id
     if not log_frame:
         return
     show_log()
     log_widget.update_idletasks()
-    height = None
     if lines is None:
-        try:
-            height = log_widget.count(_last_msg_start, _last_msg_end, "ypixels")[0]
-        except Exception:
-            try:
-                lines = log_widget.count(
-                    _last_msg_start, _last_msg_end, "displaylines"
-                )[0]
-                height = _line_height * lines
-            except Exception:
-                pass
+        height = _default_height
     else:
         height = _line_height * (lines + 1)
-    if height:
-        log_frame.configure(height=height)
+    log_frame.configure(height=height)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
