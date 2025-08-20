@@ -16,11 +16,22 @@ def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
 
 
 def _lighten(color: str, factor: float = 1.2) -> str:
+    """Return a brighter, lightly green-tinted version of ``color``.
+
+    The original RGB channels are scaled by *factor* and then blended with a
+    hint of white and pastel green to create a subtle glow used for hover
+    effects.
+    """
+
     r, g, b = _hex_to_rgb(color)
     r = min(int(r * factor), 255)
     g = min(int(g * factor), 255)
     b = min(int(b * factor), 255)
-    return _rgb_to_hex((r, g, b))
+    # Blend with white and a touch of light green (#ccffcc)
+    r = int(r * 0.6 + 255 * 0.3 + 204 * 0.1)
+    g = int(g * 0.6 + 255 * 0.3 + 255 * 0.1)
+    b = int(b * 0.6 + 255 * 0.3 + 204 * 0.1)
+    return _rgb_to_hex((min(r, 255), min(g, 255), min(b, 255)))
 
 
 def _glow(color: str) -> str:
