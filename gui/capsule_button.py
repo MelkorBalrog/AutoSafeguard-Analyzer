@@ -23,6 +23,17 @@ def _lighten(color: str, factor: float = 1.2) -> str:
     return _rgb_to_hex((r, g, b))
 
 
+def _glow(color: str) -> str:
+    r, g, b = _hex_to_rgb(color)
+    r = int((r + 255) / 2)
+    g = int((g + 255) / 2)
+    b = int((b + 255) / 2)
+    r = int(r * 0.9 + 204 * 0.1)
+    g = int(g * 0.9 + 255 * 0.1)
+    b = int(b * 0.9 + 204 * 0.1)
+    return _rgb_to_hex((r, g, b))
+
+
 def _darken(color: str, factor: float = 0.8) -> str:
     r, g, b = _hex_to_rgb(color)
     r = max(int(r * factor), 0)
@@ -57,8 +68,10 @@ def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
         r, g, b, a = pil_img.split()
         rgb = Image.merge("RGB", (r, g, b))
         bright = ImageEnhance.Brightness(rgb).enhance(factor)
+        glow_overlay = Image.new("RGBA", pil_img.size, "#ccffcc")
         light = Image.merge("RGBA", (*bright.split(), a))
-        return ImageTk.PhotoImage(light)
+        blended = Image.blend(light, glow_overlay, 0.1)
+        return ImageTk.PhotoImage(blended)
     except Exception:  # pragma: no cover - Pillow may be unavailable
         w, h = img.width(), img.height()
         new = tk.PhotoImage(width=w, height=h)
@@ -72,7 +85,12 @@ def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
                     color = _rgb_to_hex(pixel[:3])
                 else:
                     color = pixel
-                new.put(_lighten(color, factor), (x, y))
+                base = _lighten(color, factor)
+                r, g, b = _hex_to_rgb(base)
+                r = int(r * 0.9 + 204 * 0.1)
+                g = int(g * 0.9 + 255 * 0.1)
+                b = int(b * 0.9 + 204 * 0.1)
+                new.put(_rgb_to_hex((r, g, b)), (x, y))
         return new
 
 
@@ -135,7 +153,7 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._normal_color = bg
-        self._hover_color = hover_bg or _lighten(bg, 1.5)
+        self._hover_color = hover_bg or _glow(bg)
         self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
         self._radius = height // 2
@@ -559,7 +577,7 @@ class CapsuleButton(tk.Canvas):
     def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
         if bg is not None:
             self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.5)
+            self._hover_color = hover_bg or _glow(bg)
             self._pressed_color = _darken(bg, 0.8)
             self._set_color(self._normal_color)
         elif hover_bg is not None:
