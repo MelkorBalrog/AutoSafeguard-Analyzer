@@ -449,10 +449,24 @@ class CapsuleButton(tk.Canvas):
         if inside:
             if self._current_color == self._normal_color:
                 self._set_color(self._hover_color)
+            if (
+                self._image_item
+                and self._hover_image
+                and self._current_image != self._hover_image
+            ):
+                self.itemconfigure(self._image_item, image=self._hover_image)
+                self._current_image = self._hover_image
             self._add_glow()
         else:
             if self._current_color != self._normal_color:
                 self._set_color(self._normal_color)
+            if (
+                self._image_item
+                and self._hover_image
+                and self._current_image != self._image
+            ):
+                self.itemconfigure(self._image_item, image=self._image)
+                self._current_image = self._image
             self._remove_glow()
 
     def _on_enter(self, _event: tk.Event) -> None:
