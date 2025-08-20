@@ -5,6 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from .capsule_button import _lighten
+
 
 def set_uniform_button_width(widget: tk.Misc) -> None:
     """Ensure all ``ttk.Button`` children of *widget* share the same width.
@@ -36,7 +38,6 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
         except Exception:  # pragma: no cover - defensive
             pass
 
-
 def _lighten_color(color: str, factor: float = 1.2) -> str:
     """Return a subtly glowing version of *color*.
 
@@ -57,7 +58,6 @@ def _lighten_color(color: str, factor: float = 1.2) -> str:
     g = int(g * 0.6 + 255 * 0.3 + 255 * 0.1)
     b = int(b * 0.6 + 255 * 0.3 + 204 * 0.1)
     return f"#{min(r,255):02x}{min(g,255):02x}{min(b,255):02x}"
-
 
 def _lighten_image(
     img: tk.PhotoImage,
@@ -91,7 +91,7 @@ def _lighten_image(
                 new_img.put(pixel, (x, y))
             else:
                 lf = factor * bottom_factor if y >= highlight_start else factor
-                new_img.put(_lighten_color(pixel, lf), (x, y))
+                new_img.put(_lighten(pixel, lf), (x, y))
     return new_img
 
 
