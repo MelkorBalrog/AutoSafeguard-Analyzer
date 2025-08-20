@@ -194,10 +194,12 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         item = tree.identify_row(event.y)
         prev = getattr(tree, "_hover_item", None)
         if prev and prev != item:
-            tags = list(tree.item(prev, "tags"))
-            if "hover" in tags:
-                tags.remove("hover")
-                tree.item(prev, tags=tags)
+            if tree.exists(prev):
+                tags = list(tree.item(prev, "tags"))
+                if "hover" in tags:
+                    tags.remove("hover")
+                    tree.item(prev, tags=tags)
+            tree._hover_item = None  # type: ignore[attr-defined]
         if item:
             if not getattr(tree, "_hover_tagged", False):
                 style = ttk.Style(tree)
@@ -215,12 +217,12 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
     def _tv_on_leave(event: tk.Event) -> None:
         tree: ttk.Treeview = event.widget  # type: ignore[assignment]
         prev = getattr(tree, "_hover_item", None)
-        if prev:
+        if prev and tree.exists(prev):
             tags = list(tree.item(prev, "tags"))
             if "hover" in tags:
                 tags.remove("hover")
                 tree.item(prev, tags=tags)
-            tree._hover_item = None  # type: ignore[attr-defined]
+        tree._hover_item = None  # type: ignore[attr-defined]
 
     root.bind_class("Listbox", "<Motion>", _lb_on_motion, add="+")
     root.bind_class("Listbox", "<Leave>", _lb_on_leave, add="+")
