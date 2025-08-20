@@ -17923,17 +17923,20 @@ class AutoMLApp:
 
     def open_metrics_tab(self):
         """Open a tab displaying project metrics."""
+        import importlib
+        from gui import messagebox
+
+        if importlib.util.find_spec("matplotlib") is None:
+            msg = ("Matplotlib is required to view metrics.\n"
+                   "Install it with 'pip install matplotlib'.")
+            messagebox.showerror("Metrics unavailable", msg)
+            return
         try:
             from gui.metrics_tab import MetricsTab
         except Exception as exc:  # pragma: no cover - display error in GUI
-            from gui import messagebox
-            if isinstance(exc, ModuleNotFoundError) and "matplotlib" in str(exc):
-                msg = ("Matplotlib is required to view metrics.\n"
-                       "Install it with 'pip install matplotlib'.")
-            else:
-                msg = str(exc)
-            messagebox.showerror("Metrics unavailable", msg)
+            messagebox.showerror("Metrics unavailable", str(exc))
             return
+
         tab = self._new_tab("Metrics")
         MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
 
