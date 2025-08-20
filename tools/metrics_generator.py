@@ -25,6 +25,7 @@ from dataclasses import dataclass
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+# REQ-MG-001: Count source lines of code ignoring blanks and comments
 def _sloc(lines: Iterable[str]) -> int:
     """Return the number of source lines of code ignoring blanks and comments."""
     count = 0
@@ -35,13 +36,16 @@ def _sloc(lines: Iterable[str]) -> int:
     return count
 
 
+# REQ-MG-002: Provide a basic cyclomatic complexity visitor
 class ComplexityVisitor(ast.NodeVisitor):
     """Very small cyclomatic complexity visitor."""
 
+    # REQ-MG-003: Initialise complexity score for each function
     def __init__(self) -> None:
         self.score = 1
 
     # Decision points increase complexity
+    # REQ-MG-004: Increase complexity for conditional branches
     def visit_If(self, node: ast.If) -> None:  # noqa: N802 - required by ast
         self.score += 1
         self.generic_visit(node)
@@ -50,29 +54,35 @@ class ComplexityVisitor(ast.NodeVisitor):
     visit_AsyncFor = visit_If
     visit_While = visit_If
 
+    # REQ-MG-005: Account for context manager usage
     def visit_With(self, node: ast.With) -> None:  # noqa: N802
         self.score += 1
         self.generic_visit(node)
 
     visit_AsyncWith = visit_With
 
+    # REQ-MG-006: Track complexity for try/except constructs
     def visit_Try(self, node: ast.Try) -> None:  # noqa: N802
         self.score += len(node.handlers) + bool(node.orelse) + bool(node.finalbody)
         self.generic_visit(node)
 
+    # REQ-MG-007: Increment for boolean operations
     def visit_BoolOp(self, node: ast.BoolOp) -> None:  # noqa: N802
         self.score += len(node.values) - 1
         self.generic_visit(node)
 
+    # REQ-MG-008: Handle inline conditional expressions
     def visit_IfExp(self, node: ast.IfExp) -> None:  # noqa: N802
         self.score += 1
         self.generic_visit(node)
 
+    # REQ-MG-009: Consider generator and list comprehensions
     def visit_comprehension(self, node: ast.comprehension) -> None:  # noqa: N802
         self.score += 1
         self.generic_visit(node)
 
 
+# REQ-MG-010: Represent collected metrics for a function
 @dataclass
 class FunctionMetric:
     name: str
@@ -80,6 +90,7 @@ class FunctionMetric:
     complexity: int
 
 
+# REQ-MG-011: Analyse a file to gather LOC and complexity metrics
 def analyze_file(path: Path) -> Dict[str, object]:
     """Analyse a single Python file and return metrics."""
     try:
@@ -100,6 +111,7 @@ def analyze_file(path: Path) -> Dict[str, object]:
     return {"file": str(path), "loc": loc, "functions": [f.__dict__ for f in functions]}
 
 
+# REQ-MG-012: Recursively gather metrics for all Python files under a root
 def collect_metrics(root: Path) -> Dict[str, object]:
     """Collect metrics for all Python files under *root* directory."""
     files = [p for p in root.rglob("*.py")]
@@ -119,6 +131,7 @@ def collect_metrics(root: Path) -> Dict[str, object]:
     }
 
 
+# REQ-MG-013: Produce optional visualisations for collected metrics
 def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
     """Create simple visualisations of LOC and complexity metrics."""
     try:
@@ -150,6 +163,7 @@ def generate_plots(metrics: Dict[str, object], out_dir: Path) -> None:
         plt.savefig(out_dir / "metrics_complexity.png")
         plt.close()
 
+# REQ-MG-014: Command-line interface for metric generation
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default=".", type=Path, help="Directory to analyse")
