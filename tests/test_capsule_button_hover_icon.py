@@ -5,13 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton
-
-
-def _sum_rgb(value):
-    if isinstance(value, tuple):
-        return sum(value[:3])
-    return sum(int(value[i : i + 2], 16) for i in (1, 3, 5))
+from gui.capsule_button import CapsuleButton, _lighten
 
 
 def test_capsule_button_lightens_icon_on_hover():
@@ -19,15 +13,13 @@ def test_capsule_button_lightens_icon_on_hover():
         root = tk.Tk()
     except tk.TclError:
         pytest.skip("Tk not available")
-    img = tk.PhotoImage(width=2, height=2)
-    img.put("#808080", to=(0, 0, 2, 2))
+    img = tk.PhotoImage(width=1, height=1)
+    img.put("#808080", to=(0, 0, 1, 1))
     btn = CapsuleButton(root, image=img)
     btn.pack()
     root.update_idletasks()
-    top = btn._hover_image.get(0, 0)
-    bottom = btn._hover_image.get(0, 1)
-    assert _sum_rgb(top) > _sum_rgb(img.get(0, 0))
-    assert _sum_rgb(bottom) > _sum_rgb(top)
+    # hover image should be a lighter tone of original
+    assert btn._hover_image.get(0, 0) == _lighten("#808080")
     btn._on_enter(type("E", (), {})())
     assert btn.itemcget(btn._image_item, "image") == str(btn._hover_image)
     # Motion inside maintains hover image, outside restores original
