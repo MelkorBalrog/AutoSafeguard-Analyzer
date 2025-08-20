@@ -6,24 +6,25 @@ AutoML is an automotive modeling and analysis tool built around a SysML-based me
 
 The metamodel blends concepts from key automotive standards—ISO 26262 (functional safety), ISO 21448 (SOTIF), ISO 21434 (cybersecurity) and ISO 8800 (safety and AI)—so one project can address safety, cybersecurity and assurance requirements side by side.
 
-## Quick Start
+## Getting Started
 
-1. Install the required Python packages:
-
-   ```
+1. **Install dependencies**
+   ```bash
    pip install pillow openpyxl networkx matplotlib reportlab adjustText
    ```
-
-2. Launch the application:
-
-   ```
+2. **Launch AutoML**
+   ```bash
    python AutoML.py
    ```
+3. **Create a new project**
+   - Choose **File → New Project** from the menu.
+   - Use the diagrams and analysis tools to build your model.
 
-3. Create a new project via **File → New Project** and begin modeling. Detailed workflows—HAZOP, risk assessment, fault trees and more—are described in the sections below.
+These steps start the application with an empty project so you can explore the workflow described in later sections.
 
-## Contents
+## Table of Contents
 
+- [Getting Started](#getting-started)
 - [Governance Diagrams](#governance-diagrams)
 - [Workflow Overview](#workflow-overview)
 - [HAZOP Analysis](#hazop-analysis)
