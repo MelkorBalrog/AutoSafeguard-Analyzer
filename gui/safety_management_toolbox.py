@@ -464,14 +464,6 @@ class SafetyManagementWindow(tk.Frame):
                 menu.add_command(label="Save CSV", command=_save_csv)
 
                 def _popup(event: tk.Event) -> None:
-                    """Display the context menu at the cursor position.
-
-                    The menu should appear regardless of whether a row is
-                    under the cursor so users can access actions from any
-                    location within the table.  When a row is present, focus
-                    it to ensure subsequent actions operate on the expected
-                    requirement.
-                    """
                     row = tree.identify_row(event.y)
                     if row:
                         tree.selection_set(row)
@@ -488,10 +480,14 @@ class SafetyManagementWindow(tk.Frame):
                         tree.focus(row)
                         _edit()
 
+                # support right-click across platforms and trackpads
                 tree.bind("<Button-3>", _popup)
                 tree.bind("<Button-2>", _popup)
                 tree.bind("<Control-Button-1>", _popup)
-                tree.bind("<Double-1>", _on_double_click, add="+")
+                tree.bind("<Double-1>", _on_double_click)
+                # keep a reference so the menu isn't garbage collected
+                tree.context_menu = menu
+
         if hasattr(ttk.Frame, "grid"):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(fill=tk.X, pady=4)
