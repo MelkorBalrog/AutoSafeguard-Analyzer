@@ -2948,6 +2948,7 @@ class AutoMLApp:
         menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Review", menu=review_menu)
         help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(label="Version", command=self.show_version)
         help_menu.add_command(label="About", command=self.show_about)
         menubar.add_cascade(label="Help", menu=help_menu)
 
@@ -19126,6 +19127,10 @@ class AutoMLApp:
             f"Version: {self.version}"
         )
         messagebox.showinfo("About AutoML", message)
+
+    def show_version(self):
+        """Display the tool version."""
+        messagebox.showinfo("Version", f"AutoML version {self.version}")
 
     def export_model_data(self, include_versions=True):
         # Ensure aggregated ODD elements are up to date
