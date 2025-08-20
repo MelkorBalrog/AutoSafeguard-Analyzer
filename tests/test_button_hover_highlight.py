@@ -15,6 +15,12 @@ def _sum_rgb(value):
     return sum(int(value[i : i + 2], 16) for i in (1, 3, 5))
 
 
+def _get_rgb(value):
+    if isinstance(value, tuple):
+        return value[:3]
+    return tuple(int(value[i : i + 2], 16) for i in (1, 3, 5))
+
+
 def test_add_hover_highlight_swaps_to_lighter_image():
     try:
         root = tk.Tk()
