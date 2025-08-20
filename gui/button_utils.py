@@ -171,20 +171,17 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
     """
 
     def _lb_on_motion(event: tk.Event) -> None:
-        lb = event.widget
-        if isinstance(lb, str):  # widget path names may be provided by events
-            resolver = getattr(root, "nametowidget", None)
-            if resolver is None:
-                return
+        lb_widget = event.widget
+        if isinstance(lb_widget, str):
             try:
-                lb = resolver(lb)
+                lb_widget = root.nametowidget(lb_widget)
             except Exception:
                 return
-        # ``tk.Listbox`` isn't available in tests; fall back to duck-typing.
-        required = ("size", "nearest", "itemconfig")
-        if not all(hasattr(lb, attr) for attr in required):
+        lb = lb_widget
+        try:
+            size = lb.size()
+        except Exception:
             return
-        size = lb.size()
         if size == 0:
             return
         index = lb.nearest(event.y)
@@ -204,17 +201,13 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         lb._hover_index = index  # type: ignore[attr-defined]
 
     def _lb_on_leave(event: tk.Event) -> None:
-        lb = event.widget
-        if isinstance(lb, str):
-            resolver = getattr(root, "nametowidget", None)
-            if resolver is None:
-                return
+        lb_widget = event.widget
+        if isinstance(lb_widget, str):
             try:
-                lb = resolver(lb)
+                lb_widget = root.nametowidget(lb_widget)
             except Exception:
                 return
-        if not hasattr(lb, "itemconfig"):
-            return
+        lb = lb_widget
         prev = getattr(lb, "_hover_index", None)
         if prev is not None:
             lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
