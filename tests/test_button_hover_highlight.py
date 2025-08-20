@@ -34,4 +34,11 @@ def test_add_hover_highlight_swaps_to_lighter_image():
     assert _sum_rgb(hover_img.get(0, 0)) > _sum_rgb(img.get(0, 0))
     # Bottom pixels receive an extra boost creating a light glow
     assert _sum_rgb(hover_img.get(0, 1)) > _sum_rgb(hover_img.get(0, 0))
+    # Hover image is tinted slightly green to produce a glow
+    px = hover_img.get(0, 0)
+    if isinstance(px, tuple):
+        r, g, b = px[:3]
+    else:
+        r, g, b = (int(px[i : i + 2], 16) for i in (1, 3, 5))
+    assert g >= r and g >= b
     root.destroy()
