@@ -1546,19 +1546,13 @@ missing before handing off execution to `AutoML.py`. The required packages
 are:
 
 ```
-Pillow openpyxl networkx matplotlib reportlab adjustText
+Pillow openpyxl networkx reportlab adjustText
 ```
 
 You can still install them manually with pip if preferred:
 
 ```
-pip install pillow openpyxl networkx matplotlib reportlab adjustText
-```
-
-If you encounter an error like `No module named 'matplotlib.backends'` when opening the Metrics tab, install Matplotlib with:
-
-```
-pip install matplotlib
+pip install pillow openpyxl networkx reportlab adjustText
 ```
 
 When building the standalone executable with PyInstaller these packages must
@@ -1578,6 +1572,21 @@ performs the dependency installation automatically:
 ```
 python launcher.py
 ```
+
+## Metrics Tab
+
+AutoML can display simple project metrics without needing Matplotlib. Open the
+graphs via **View → Metrics**. Three canvases provide at‑a‑glance insight:
+
+- **Requirement history** – line chart tracking the total number of
+  requirements over time.
+- **Status distribution** – bar chart showing counts for each requirement
+  status such as *open* or *closed*.
+- **User effort** – bar chart summarizing any values stored in
+  ``app.user_metrics``.
+
+Create requirements and populate their statuses to see data appear. Empty
+projects will show blank charts until information is added.
 
 ## Diagram Styles
 

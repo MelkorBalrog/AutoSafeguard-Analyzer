@@ -159,33 +159,6 @@ class SplashScreen(tk.Toplevel):
             b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
-    def _draw_floor(self):
-        """Add subtle white light near horizon and darker shadow toward bottom."""
-        horizon_ratio = 0.55
-        horizon = int(self.canvas_size * horizon_ratio)
-        steps = self.canvas_size - horizon
-        white_strength = 0.15
-        black_strength = 0.25
-        for i in range(steps):
-            ratio = i / steps
-            # base gradient from light to dark green
-            r = int(144 + (0 - 144) * ratio)
-            g = int(238 + (100 - 238) * ratio)
-            b = int(144 + (0 - 144) * ratio)
-            # white glow near horizon
-            w = (1 - ratio) * white_strength
-            r = int(r + (255 - r) * w)
-            g = int(g + (255 - g) * w)
-            b = int(b + (255 - b) * w)
-            # black shadow near bottom
-            sh = ratio * black_strength
-            r = int(r * (1 - sh))
-            g = int(g * (1 - sh))
-            b = int(b * (1 - sh))
-            color = f"#{r:02x}{g:02x}{b:02x}"
-            y = horizon + i
-            self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
-
     def _draw_cloud(self):
         """Draw a small turquoise-magenta-white cloud on the sky."""
         cx, cy = 80, 80
@@ -210,37 +183,38 @@ class SplashScreen(tk.Toplevel):
         )
 
     def _draw_title(self) -> None:
-        """Render project title with a simple neon glow."""
+        """Render project title in white on a black shadow background."""
         x = self.canvas_size / 2
         y = self.canvas_size - 40
-        text = "Automotive Modeling Language"
+        main_text = "Automotive Modeling Language"
+        sub_text = "by Karel Capek Robotics"
         title_font = ("Helvetica", 12, "bold")
-        # Offset coloured shadows for glow effect
-        for dx, dy, colour in [(-2, -2, "#00ffff"), (2, 2, "#ff00ff")]:
+        sub_font = ("Helvetica", 10)
+
+        text_ids = [
             self.canvas.create_text(
-                x + dx,
-                y + dy,
-                text=text,
+                x,
+                y,
+                text=main_text,
                 font=title_font,
-                fill=colour,
-                tags="title",
-            )
-        self.canvas.create_text(
-            x,
-            y,
-            text=text,
-            font=title_font,
-            fill="white",
-            tags="title",
+                fill="white",
+                tags="title_text",
+            ),
+            self.canvas.create_text(
+                x,
+                y + 20,
+                text=sub_text,
+                font=sub_font,
+                fill="white",
+                tags="title_text",
+            ),
+        ]
+        bbox = self.canvas.bbox(*text_ids)
+        bg_id = self.canvas.create_rectangle(
+            bbox, fill="black", outline="", tags="title_bg"
         )
-        self.canvas.create_text(
-            x,
-            y + 20,
-            text="by Karel Capek Robotics",
-            font=("Helvetica", 10),
-            fill="white",
-            tags="title",
-        )
+        for t_id in text_ids:
+            self.canvas.tag_raise(t_id, bg_id)
 
     def _draw_floor(self):
         """Add subtle white light near horizon and darker shadow toward bottom."""
@@ -390,6 +364,7 @@ class SplashScreen(tk.Toplevel):
 
     def _draw_gear(self):
         self.canvas.delete("gear")
+        self.canvas.delete("gear_glow")
         teeth = 8
         inner = 20
         outer = 30
@@ -401,7 +376,11 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        # Light outline keeps gear visible on dark background
+        # Draw expanding outlines for a simple glow effect
+        for width, colour in [(6, "#00ffff"), (4, "#66ffff")]:
+            self.canvas.create_polygon(
+                pts, outline=colour, fill="", width=width, tags="gear_glow"
+            )
         self.canvas.create_polygon(
             pts, outline="lightgray", fill="", width=2, tags="gear"
         )

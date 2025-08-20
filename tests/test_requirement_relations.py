@@ -48,6 +48,15 @@ def test_link_requirements_creates_bidirectional_relation():
     assert {"type": "satisfies", "id": "R1"} in global_requirements["R2"].get("relations", [])
 
 
+def test_link_requirements_respects_governance():
+    setup_toolbox()
+    global_requirements.clear()
+    global_requirements["R1"] = {"id": "R1", "req_type": "vehicle"}
+    global_requirements["R2"] = {"id": "R2", "req_type": "vehicle"}
+    link_requirements("R1", "derived from", "R2")
+    assert "relations" not in global_requirements["R1"]
+
+
 def test_non_requirement_work_product_ignored():
     SysMLRepository.reset_instance()
     repo = SysMLRepository.get_instance()

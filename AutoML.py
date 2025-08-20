@@ -364,7 +364,6 @@ import os
 import types
 os.environ["GS_EXECUTABLE"] = r"C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe"
 import networkx as nx
-import matplotlib.pyplot as plt
 # Import ReportLab for PDF export.
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
 from gui.style_editor import StyleEditor
@@ -494,6 +493,27 @@ class UserInfoDialog(simpledialog.Dialog):
     def apply(self):
         self.result = (self.name_var.get().strip(), self.email_var.get().strip())
 
+    def buttonbox(self):
+        box = ttk.Frame(self)
+        apply_purplish_button_style()
+        ttk.Button(
+            box,
+            text="OK",
+            width=10,
+            command=self.ok,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            box,
+            text="Cancel",
+            width=10,
+            command=self.cancel,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        box.pack()
+
 
 class UserSelectDialog(simpledialog.Dialog):
     """Prompt to select a user from a list."""
@@ -529,6 +549,27 @@ class UserSelectDialog(simpledialog.Dialog):
 
     def apply(self):
         self.result = (self.name_var.get(), self.email_var.get().strip())
+
+    def buttonbox(self):
+        box = ttk.Frame(self)
+        apply_purplish_button_style()
+        ttk.Button(
+            box,
+            text="OK",
+            width=10,
+            command=self.ok,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            box,
+            text="Cancel",
+            width=10,
+            command=self.cancel,
+            style="Purple.TButton",
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        box.pack()
 
 
 # Target PMHF limits per ASIL level (events per hour)
@@ -2118,11 +2159,6 @@ class AutoMLApp:
             "GSN Explorer",
             "manage_gsn",
         ),
-        "SPI Work Document": (
-            "Safety & Security Management",
-            "Safety Performance Indicators",
-            "show_safety_performance_indicators",
-        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2245,12 +2281,19 @@ class AutoMLApp:
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
         "Causal Bayesian Network Analysis": "Quantitative Analysis",
-        "SPI Work Document": "Quantitative Analysis",
         "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",
         "ODD": "Scenario Library",
     }
+
+    # Ensure all requirement work products activate the top-level Requirements
+    # menu.  Each specific requirement specification (e.g. vehicle, functional
+    # safety) is treated as a child of the generic "Requirements" category so
+    # that declaring any of them on a governance diagram enables the
+    # corresponding menu items.
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_PARENTS.setdefault(_wp, "Requirements")
 
     def __init__(self, root):
         self.root = root
@@ -2871,6 +2914,9 @@ class AutoMLApp:
         menubar.add_cascade(label="Search", menu=search_menu)
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Requirements", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Architecture Diagram", []).append((menubar, idx))
@@ -9944,13 +9990,17 @@ class AutoMLApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        entry_state: dict[tuple[tk.Menu, int], bool] = {}
         for wp, menus in getattr(self, "work_product_menus", {}).items():
-            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            is_enabled = wp in enabled
             for menu, idx in menus:
-                try:
-                    menu.entryconfig(idx, state=state)
-                except tk.TclError:
-                    pass
+                key = (menu, idx)
+                entry_state[key] = entry_state.get(key, False) or is_enabled
+        for (menu, idx), is_enabled in entry_state.items():
+            try:
+                menu.entryconfig(idx, state=tk.NORMAL if is_enabled else tk.DISABLED)
+            except tk.TclError:
+                pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -10149,17 +10199,21 @@ class AutoMLApp:
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            if tool_name and not any(
-                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
-                for wp in self.enabled_work_products
-            ):
-                lb = self.tool_listboxes.get(area)
-                if lb:
-                    for i in range(lb.size()):
-                        if lb.get(i) == tool_name:
-                            lb.delete(i)
-                            break
-                self.tool_actions.pop(tool_name, None)
+            if tool_name:
+                still_in_use = False
+                for wp in self.enabled_work_products:
+                    wp_info = self.WORK_PRODUCT_INFO.get(wp)
+                    if wp_info and wp_info[1] == tool_name:
+                        still_in_use = True
+                        break
+                if not still_in_use:
+                    lb = self.tool_listboxes.get(area)
+                    if lb:
+                        for i in range(lb.size()):
+                            if lb.get(i) == tool_name:
+                                lb.delete(i)
+                                break
+                    self.tool_actions.pop(tool_name, None)
         parent = self.WORK_PRODUCT_PARENTS.get(name)
         if parent and parent in self.enabled_work_products:
             if not any(
@@ -12739,7 +12793,6 @@ class AutoMLApp:
 
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree_frame = ttk.Frame(win)
-        tree_frame.pack(fill=tk.BOTH)
         style = ttk.Style(tree_frame)
         style.configure("ReqEditor.Treeview", rowheight=20)
         tree = ttk.Treeview(
@@ -13107,9 +13160,10 @@ class AutoMLApp:
         tk.Button(btn, text="Add", command=add_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Edit", command=edit_req).pack(side=tk.LEFT)
         tk.Button(btn, text="Delete", command=del_req).pack(side=tk.LEFT)
+        tk.Button(btn, text="Save CSV", command=save_csv).pack(side=tk.LEFT)
         tk.Button(btn, text="Link to Diagram...", command=link_to_diagram).pack(side=tk.LEFT)
         tk.Button(btn, text="Link Requirement...", command=link_requirement).pack(side=tk.LEFT)
-        tk.Button(btn, text="Save CSV", command=save_csv).pack(side=tk.LEFT)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
 
         refresh_tree()
 
@@ -18031,19 +18085,7 @@ class AutoMLApp:
 
     def open_metrics_tab(self):
         """Open a tab displaying project metrics."""
-        import importlib
-        from gui import messagebox
-
-        if importlib.util.find_spec("matplotlib") is None:
-            msg = ("Matplotlib is required to view metrics.\n"
-                   "Install it with 'pip install matplotlib'.")
-            messagebox.showerror("Metrics unavailable", msg)
-            return
-        try:
-            from gui.metrics_tab import MetricsTab
-        except Exception as exc:  # pragma: no cover - display error in GUI
-            messagebox.showerror("Metrics unavailable", str(exc))
-            return
+        from gui.metrics_tab import MetricsTab
 
         tab = self._new_tab("Metrics")
         MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
@@ -18105,7 +18147,7 @@ class AutoMLApp:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
+        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
     def ensure_fta_tab(self):
@@ -22031,7 +22073,7 @@ class PageDiagram:
         self.canvas.bind("<Button-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double_click)
+        self.canvas.bind("<Double-1>", self.on_canvas_double_click)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
 
     def on_right_mouse_press(self, event):
