@@ -1,3 +1,4 @@
+import csv
 import tkinter as tk
 from tkinter import ttk, simpledialog
 import tkinter.font as tkfont
@@ -320,7 +321,7 @@ class SafetyManagementWindow(tk.Frame):
         tree_frame = ttk.Frame(frame)
         style_name = "Requirements.Treeview"
         try:
-            configure_table_style(style_name, rowheight=80)
+            configure_table_style(style_name, rowheight=40)
             tree = ttk.Treeview(
                 tree_frame, columns=columns, show="headings", style=style_name
             )
@@ -369,6 +370,105 @@ class SafetyManagementWindow(tk.Frame):
         populate(ids)
         add_treeview_scrollbars(tree, tree_frame)
         tree_frame.pack(fill=tk.BOTH, expand=True)
+
+        def _selected_rid() -> str | None:
+            item = tree.focus()
+            if not item:
+                return None
+            try:
+                return tree.item(item, "values")[0]
+            except Exception:
+                return None
+
+        def _add() -> None:
+            text = simpledialog.askstring("Requirement", "Requirement text:")
+            if not text:
+                return
+            req_type = (
+                simpledialog.askstring(
+                    "Requirement", "Requirement type:", initialvalue="organizational"
+                )
+                or "organizational"
+            )
+            rid = self._add_requirement(text, req_type=req_type)
+            ids.append(rid)
+            populate(ids)
+
+        def _edit() -> None:
+            rid = _selected_rid()
+            if not rid:
+                return
+            req = global_requirements.get(rid, {})
+            text = simpledialog.askstring(
+                "Requirement", "Requirement text:", initialvalue=req.get("text", "")
+            )
+            if text is None:
+                return
+            req["text"] = text
+            req_type = simpledialog.askstring(
+                "Requirement", "Requirement type:", initialvalue=req.get("req_type", "")
+            )
+            if req_type:
+                req["req_type"] = req_type
+            populate(ids)
+
+        def _remove() -> None:
+            rid = _selected_rid()
+            if not rid:
+                return
+            if not messagebox.askyesno("Remove Requirement", f"Delete {rid}?"):
+                return
+            try:
+                ids.remove(rid)
+            except ValueError:
+                pass
+            global_requirements.pop(rid, None)
+            populate(ids)
+
+        def _save_csv() -> None:
+            path = simpledialog.askstring(
+                "Save CSV", "File path:", initialvalue="requirements.csv"
+            )
+            if not path:
+                return
+            try:
+                with open(path, "w", newline="") as fh:
+                    writer = csv.writer(fh)
+                    writer.writerow(columns)
+                    for rid in ids:
+                        req = global_requirements.get(rid, {})
+                        writer.writerow(
+                            [
+                                rid,
+                                req.get("req_type", ""),
+                                req.get("text", ""),
+                                req.get("phase") or "",
+                                req.get("status", ""),
+                            ]
+                        )
+                messagebox.showinfo(
+                    "Requirements", f"Saved {len(ids)} requirements to {path}"
+                )
+            except Exception as exc:
+                messagebox.showerror("Requirements", f"Failed to save CSV:\n{exc}")
+
+        if hasattr(ttk.Frame, "grid"):
+            btn_frame = ttk.Frame(frame)
+            btn_frame.pack(fill=tk.X, pady=4)
+            if hasattr(btn_frame, "configure"):
+                tk.Button(btn_frame, text="Add", command=_add).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Edit", command=_edit).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Remove", command=_remove).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Save CSV", command=_save_csv).pack(
+                    side=tk.LEFT, padx=2
+                )
+
         frame.refresh_table = populate
         return frame
 
