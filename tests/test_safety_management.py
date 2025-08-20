@@ -1989,6 +1989,47 @@ def test_folder_double_click_opens_safety_management_explorer():
     assert called["explorer"]
 
 
+def test_diagram_double_click_opens_directly():
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    diag = repo.create_diagram("Governance Diagram")
+    diag.name = "Gov1"
+
+    class DummyTree:
+        def __init__(self):
+            self._focus = "d"
+            self.items = {
+                "g": {"parent": "", "text": "Safety & Security Governance Diagrams", "tags": ()},
+                "p": {"parent": "g", "text": "Phase", "tags": ()},
+                "d": {"parent": "p", "text": "Gov1", "tags": ()},
+            }
+
+        def item(self, iid, option):
+            meta = self.items[iid]
+            return meta.get(option)
+
+        def parent(self, iid):
+            return self.items[iid]["parent"]
+
+        def focus(self, iid=None):
+            if iid is None:
+                return self._focus
+            self._focus = iid
+
+    app = AutoMLApp.__new__(AutoMLApp)
+    app.analysis_tree = DummyTree()
+    app.management_diagrams = [diag]
+
+    called = {"explorer": False, "opened": False}
+    app.manage_safety_management = lambda: called.__setitem__("explorer", True)
+    app.open_management_window = lambda idx: called.__setitem__("opened", idx == 0)
+
+    app.on_analysis_tree_double_click(None)
+
+    assert called["explorer"]
+    assert called["opened"]
+
+
 def test_add_work_product_uses_half_width(monkeypatch):
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()

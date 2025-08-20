@@ -9516,14 +9516,29 @@ class AutoMLApp:
         tags = self.analysis_tree.item(item, "tags")
         if len(tags) != 2:
             parent = item
+            in_gov = False
             while parent:
                 if (
                     self.analysis_tree.item(parent, "text")
                     == "Safety & Security Governance Diagrams"
                 ):
-                    self.manage_safety_management()
-                    return
+                    in_gov = True
+                    break
                 parent = self.analysis_tree.parent(parent)
+            if not in_gov:
+                return
+            self.manage_safety_management()
+            text = self.analysis_tree.item(item, "text")
+            idx = next(
+                (
+                    i
+                    for i, d in enumerate(getattr(self, "management_diagrams", []))
+                    if (d.name or d.diag_id) == text
+                ),
+                None,
+            )
+            if idx is not None:
+                self.open_management_window(idx)
             return
         kind, ident = tags[0], tags[1]
         if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
