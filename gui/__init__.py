@@ -6,43 +6,26 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .capsule_button import CapsuleButton, _interpolate_color  # noqa: F401
+from .capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
 
 
 class _StyledButton(CapsuleButton):
     """Base class adding optional gradient colouring support."""
 
     def __init__(self, *args, **kwargs):
-        self._gradient = kwargs.pop("gradient", None)
-        super().__init__(*args, **kwargs)
-
-    def _draw_gradient(self, w: int, h: int) -> None:  # type: ignore[override]
-        if not self._gradient:
-            return
-        colors = self._gradient
-        stops = [i / (len(colors) - 1) for i in range(len(colors))]
-        r = self._radius
-        for y in range(h):
-            t = y / (h - 1) if h > 1 else 0
-            for i in range(len(stops) - 1):
-                if stops[i] <= t <= stops[i + 1]:
-                    local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
-                    color = _interpolate_color(colors[i], colors[i + 1], local_t)
-                    break
-            dy = abs(y - h / 2)
-            x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5) if dy <= r else 0
-            self._gradient_items.append(
-                self.create_line(x_offset, y, w - x_offset, y, fill=color)
-            )
+        gradient = kwargs.pop("gradient", None)
+        hover_gradient = kwargs.pop("hover_gradient", None)
+        super().__init__(*args, gradient=gradient, hover_gradient=hover_gradient, **kwargs)
 
 
 class TranslucidButton(_StyledButton):
     """Capsule button with a subtle translucent palette."""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bg", "#ffffff")
-        kwargs.setdefault("hover_bg", "#f5f5f5")
-        kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
+        bg = kwargs.setdefault("bg", "#ffffff")
+        gradient = kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
+        kwargs.setdefault("hover_bg", _glow_color(bg))
+        kwargs.setdefault("hover_gradient", [_glow_color(c) for c in gradient])
         super().__init__(*args, **kwargs)
 
 
@@ -50,9 +33,10 @@ class PurpleButton(_StyledButton):
     """Capsule button variant with a translucent purple theme for dialogs."""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bg", "#f3eaff")
-        kwargs.setdefault("hover_bg", "#e6d9ff")
-        kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
+        bg = kwargs.setdefault("bg", "#f3eaff")
+        gradient = kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
+        kwargs.setdefault("hover_bg", _glow_color(bg))
+        kwargs.setdefault("hover_gradient", [_glow_color(c) for c in gradient])
         super().__init__(*args, **kwargs)
 
 
