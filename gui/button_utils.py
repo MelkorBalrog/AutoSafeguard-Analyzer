@@ -172,9 +172,18 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
 
     def _lb_on_motion(event: tk.Event) -> None:
         lb: tk.Listbox = event.widget  # type: ignore[assignment]
+        size = lb.size()
+        if size == 0:
+            return
         index = lb.nearest(event.y)
+        if index < 0 or index >= size:
+            prev = getattr(lb, "_hover_index", None)
+            if prev is not None and 0 <= prev < size:
+                lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
+                lb._hover_index = None  # type: ignore[attr-defined]
+            return
         prev = getattr(lb, "_hover_index", None)
-        if prev is not None and prev != index:
+        if prev is not None and prev != index and 0 <= prev < size:
             lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
         if getattr(lb, "_default_bg", None) is None:
             lb._default_bg = lb.itemcget(index, "background") or lb.cget("background")  # type: ignore[attr-defined]
