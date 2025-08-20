@@ -4220,9 +4220,9 @@ class SysMLDiagramWindow(tk.Frame):
                         return False, (
                             "No metamodel dependency between these work products"
                         )
-                    if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and not (
-                        sname == "ODD" and dname == "Scenario Library"
-                    ):
+                    if dname not in SAFETY_ANALYSIS_WORK_PRODUCTS and (
+                        sname, dname
+                    ) not in ALLOWED_USAGE:
                         return False, f"{conn_type} links must target a safety analysis work product"
                     if (
                         sname in SAFETY_ANALYSIS_WORK_PRODUCTS

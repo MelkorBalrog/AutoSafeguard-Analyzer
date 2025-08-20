@@ -221,6 +221,39 @@ class GovernanceRelationshipStereotypeTests(unittest.TestCase):
             GovernanceDiagramWindow.on_left_press(win, event2)
             self.assertEqual(repo.relationships, [])
 
+    def test_stpa_to_architecture_used_relationships(self):
+        repo = self.repo
+        e1 = repo.create_element("Block", name="E1")
+        e2 = repo.create_element("Block", name="E2")
+        diag = repo.create_diagram("Governance Diagram", name="Gov")
+        repo.add_element_to_diagram(diag.diag_id, e1.elem_id)
+        repo.add_element_to_diagram(diag.diag_id, e2.elem_id)
+        o1 = SysMLObject(
+            1,
+            "Work Product",
+            0,
+            0,
+            element_id=e1.elem_id,
+            properties={"name": "STPA"},
+        )
+        o2 = SysMLObject(
+            2,
+            "Work Product",
+            0,
+            100,
+            element_id=e2.elem_id,
+            properties={"name": "Architecture Diagram"},
+        )
+        diag.objects = [o1.__dict__, o2.__dict__]
+        for rel in ["Used By", "Used after Review", "Used after Approval"]:
+            repo.relationships.clear()
+            win = self._create_window(rel, o1, o2, diag)
+            event1 = types.SimpleNamespace(x=0, y=0, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event1)
+            event2 = types.SimpleNamespace(x=0, y=100, state=0)
+            GovernanceDiagramWindow.on_left_press(win, event2)
+            self.assertEqual(repo.relationships[0].stereotype, rel.lower())
+
     def test_used_relationship_validation(self):
         repo = self.repo
         diag = repo.create_diagram("Governance Diagram", name="Gov")

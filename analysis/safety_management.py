@@ -100,6 +100,7 @@ ALLOWED_USAGE.update(
         ("Reliability Analysis", "FMEA"),
         ("Reliability Analysis", "FMEDA"),
         ("GSN Argumentation", "Safety & Security Case"),
+        ("STPA", "Architecture Diagram"),
     }
 )
 
@@ -869,6 +870,8 @@ class SafetyManagementToolbox:
                     sname = id_to_name.get(conn.get("src"))
                     tname = id_to_name.get(conn.get("dst"))
                     if sname and tname:
+                        if sname == "STPA" and tname == "Architecture Diagram":
+                            sname, tname = tname, sname
                         if (
                             sname in SAFETY_ANALYSIS_WORK_PRODUCTS
                             and tname in SAFETY_ANALYSIS_WORK_PRODUCTS
