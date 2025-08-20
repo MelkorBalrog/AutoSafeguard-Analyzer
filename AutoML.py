@@ -2147,11 +2147,6 @@ class AutoMLApp:
             "GSN Explorer",
             "manage_gsn",
         ),
-        "SPI Work Document": (
-            "Safety & Security Management",
-            "Safety Performance Indicators",
-            "show_safety_performance_indicators",
-        ),
         "Requirement Specification": (
             "System Design (Item Definition)",
             "Requirements Editor",
@@ -2274,7 +2269,6 @@ class AutoMLApp:
         "Mission Profile": "Quantitative Analysis",
         "Reliability Analysis": "Quantitative Analysis",
         "Causal Bayesian Network Analysis": "Quantitative Analysis",
-        "SPI Work Document": "Quantitative Analysis",
         "FTA": "Process",
         "Safety & Security Case": "GSN",
         "GSN Argumentation": "GSN",

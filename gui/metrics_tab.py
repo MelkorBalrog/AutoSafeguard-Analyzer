@@ -12,7 +12,7 @@ class MetricsTab(tk.Frame):
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
-
+        
     def _draw_line_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")
         h = int(canvas["height"])
