@@ -15,6 +15,12 @@ def _sum_rgb(value):
     return sum(int(value[i : i + 2], 16) for i in (1, 3, 5))
 
 
+def _get_rgb(value):
+    if isinstance(value, tuple):
+        return value[:3]
+    return tuple(int(value[i : i + 2], 16) for i in (1, 3, 5))
+
+
 def test_add_hover_highlight_swaps_to_lighter_image():
     try:
         root = tk.Tk()
@@ -34,6 +40,9 @@ def test_add_hover_highlight_swaps_to_lighter_image():
     assert _sum_rgb(hover_img.get(0, 0)) > _sum_rgb(img.get(0, 0))
     # Bottom pixels receive an extra boost creating a light glow
     assert _sum_rgb(hover_img.get(0, 1)) > _sum_rgb(hover_img.get(0, 0))
+    # Hover image gains a subtle green tint
+    r, g, b = _get_rgb(hover_img.get(0, 0))
+    assert g > r and g > b
     root.destroy()
 
 

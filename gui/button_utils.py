@@ -5,6 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from .capsule_button import _lighten
+
 
 def set_uniform_button_width(widget: tk.Misc) -> None:
     """Ensure all ``ttk.Button`` children of *widget* share the same width.
@@ -35,29 +37,6 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
             btn.configure(width=max_width)
         except Exception:  # pragma: no cover - defensive
             pass
-
-
-def _lighten_color(color: str, factor: float = 1.2) -> str:
-    """Return *color* lightened by *factor* while clamping to valid range."""
-    r = int(color[1:3], 16)
-    g = int(color[3:5], 16)
-    b = int(color[5:7], 16)
-    r = min(int(r * factor), 255)
-    g = min(int(g * factor), 255)
-    b = min(int(b * factor), 255)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
-def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
-    """Blend *color* towards *overlay* by *alpha*."""
-    r = int(color[1:3], 16)
-    g = int(color[3:5], 16)
-    b = int(color[5:7], 16)
-    r = int(r + (overlay[0] - r) * alpha)
-    g = int(g + (overlay[1] - g) * alpha)
-    b = int(b + (overlay[2] - b) * alpha)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
 
 def _lighten_image(
     img: tk.PhotoImage,
@@ -91,12 +70,7 @@ def _lighten_image(
                 new_img.put(pixel, (x, y))
             else:
                 lf = factor * bottom_factor if y >= highlight_start else factor
-                light = _lighten_color(pixel, lf)
-                if y >= highlight_start:
-                    blend = _blend_with(light, (179, 255, 179), 0.3)
-                else:
-                    blend = _blend_with(light, (255, 255, 255), 0.3)
-                new_img.put(blend, (x, y))
+                new_img.put(_lighten(pixel, lf), (x, y))
     return new_img
 
 
