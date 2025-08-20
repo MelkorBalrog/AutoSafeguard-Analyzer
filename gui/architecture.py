@@ -165,7 +165,6 @@ WORK_PRODUCT_AREA_MAP = {
     "FTA": "Safety Analysis",
     "FMEA": "Safety Analysis",
     "FMEDA": "Safety Analysis",
-    "SPI Work Document": "Safety & Security Management",
     "Scenario Library": "Scenario",
     "ODD": "Scenario",
 }
@@ -12076,7 +12075,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "FTA",
                 "FMEA",
                 "FMEDA",
-                "SPI Work Document",
                 "Scenario Library",
                 "ODD",
             ]
@@ -12100,7 +12098,6 @@ class GovernanceDiagramWindow(SysMLDiagramWindow):
                 "FTA": "Safety Analysis",
                 "FMEA": "Safety Analysis",
                 "FMEDA": "Safety Analysis",
-                "SPI Work Document": "Safety & Security Management",
                 "Scenario Library": "Scenario",
                 "ODD": "Scenario",
             }

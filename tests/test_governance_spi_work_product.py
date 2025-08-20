@@ -9,7 +9,8 @@ from analysis import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
 
 
-def test_governance_spi_work_product_enablement(monkeypatch):
+def test_governance_spi_work_product_disabled(monkeypatch):
+    """SPI work product should not be offered on governance diagrams."""
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
     diag = repo.create_diagram("Governance Diagram", name="Gov1")
@@ -40,32 +41,20 @@ def test_governance_spi_work_product_enablement(monkeypatch):
 
     win.app = DummyApp()
 
-    class FirstDialog:
-        def __init__(self, parent, title, options):
-            if title == "Add Process Area":
-                self.selection = "System Design (Item Definition)"
-            else:
-                captured["initial_wp_options"] = options
-                self.selection = ""
-
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", FirstDialog)
-    win.add_work_product()
-    assert "SPI Work Document" not in captured.get("initial_wp_options", [])
-
-    class SecondDialog:
+    class DummyDialog:
         def __init__(self, parent, title, options):
             if title == "Add Process Area":
                 captured["area_options"] = options
                 self.selection = "Safety & Security Management"
             else:
                 captured["wp_options"] = options
-                self.selection = "SPI Work Document"
+                self.selection = ""
 
-    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", SecondDialog)
+    monkeypatch.setattr(GovernanceDiagramWindow, "_SelectDialog", DummyDialog)
     win.add_work_product()
 
     assert "Safety & Security Management" in captured["area_options"]
-    assert "SPI Work Document" in captured["wp_options"]
-    assert enable_calls == ["SPI Work Document"]
-    assert any(wp.analysis == "SPI Work Document" for wp in toolbox.work_products)
+    assert "SPI Work Document" not in captured.get("wp_options", [])
+    assert enable_calls == []
+    assert not any(wp.analysis == "SPI Work Document" for wp in toolbox.work_products)
     _sm.ACTIVE_TOOLBOX = prev_tb
