@@ -143,7 +143,7 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a multi-color gradient dominated by black."""
+        """Draw a multi-color background gradient."""
         # Color stops: violet sky -> magenta -> light green horizon -> dark ground
         stops = [
             (0.0, (138, 43, 226)),   # violet
@@ -168,7 +168,8 @@ class SplashScreen(tk.Toplevel):
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
-        # Add subtle lighting and shadow on the floor to avoid a flat black look
+    def _draw_floor(self):
+        """Overlay floor lighting and shadow for a horizon effect."""
         cx = self.canvas_size / 2
         cy = self.canvas_size
         radius = self.canvas_size * 0.9
