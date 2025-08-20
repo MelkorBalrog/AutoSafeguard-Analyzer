@@ -91,6 +91,9 @@ class ClosableNotebook(ttk.Notebook):
         self.bind("<ButtonPress-1>", self._on_press, True)
         self.bind("<B1-Motion>", self._on_motion)
         self.bind("<ButtonRelease-1>", self._on_release, True)
+        # Refresh the newly selected tab whenever focus changes
+        self.bind("<<NotebookTabChanged>>", self._on_tab_changed, True)
+        self.bind("<FocusIn>", self._on_focus_in, True)
 
     # ------------------------------------------------------------------
     # Backwards compatible helpers
@@ -113,6 +116,31 @@ class ClosableNotebook(ttk.Notebook):
 
     def _on_tab_motion(self, event: tk.Event) -> None:  # pragma: no cover - thin wrapper
         self._on_motion(event)
+
+    # ------------------------------------------------------------------
+    # Tab focus handling
+    # ------------------------------------------------------------------
+
+    def _on_tab_changed(self, _event: tk.Event) -> None:
+        self._refresh_current_tab()
+
+    def _on_focus_in(self, _event: tk.Event) -> None:
+        self._refresh_current_tab()
+
+    def _refresh_current_tab(self) -> None:
+        """Invoke a refresh method on the currently selected tab if available."""
+        current = self.select()
+        if not current:
+            return
+        try:
+            widget = self.nametowidget(current)
+        except Exception:
+            return
+        for name in ("refresh_from_repository", "populate"):
+            method = getattr(widget, name, None)
+            if callable(method):
+                method()
+                break
 
     def _create_close_image(self, size: int = 10) -> tk.PhotoImage:
         img = tk.PhotoImage(width=size, height=size)

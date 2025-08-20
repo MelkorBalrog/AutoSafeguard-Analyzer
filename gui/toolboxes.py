@@ -4189,7 +4189,7 @@ class RequirementsExplorerWindow(tk.Frame):
         tk.Button(filter_frame, text="Apply", command=self.refresh).grid(row=0, column=8, padx=5)
 
         self.columns = ("ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text")
-        configure_table_style("ReqExp.Treeview")
+        configure_table_style("ReqExp.Treeview", rowheight=80)
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -4215,6 +4215,7 @@ class RequirementsExplorerWindow(tk.Frame):
             show="headings",
             style="ReqExp.Treeview",
             edit_callback=self.on_cell_edit,
+            multiline_columns={"Text"},
             height=10,
             multiline_columns={"Text"},
         )

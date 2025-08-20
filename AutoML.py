@@ -228,7 +228,9 @@ import sys
 import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
+from gui.dialog_utils import askstring_fixed
 from gui import messagebox, logger, add_treeview_scrollbars
+from gui.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import (
@@ -12706,6 +12708,8 @@ class AutoMLApp:
 
     def show_requirements_editor(self):
         """Open an editor to manage global requirements."""
+        import textwrap
+
         self.update_requirement_statuses()
         if hasattr(self, "_req_tab") and self._req_tab.winfo_exists():
             self.doc_nb.select(self._req_tab)
@@ -12716,7 +12720,15 @@ class AutoMLApp:
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree_frame = ttk.Frame(win)
         tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        style = ttk.Style(tree_frame)
+        style.configure("ReqEditor.Treeview", rowheight=20)
+        tree = ttk.Treeview(
+            tree_frame,
+            columns=columns,
+            show="headings",
+            selectmode="browse",
+            style="ReqEditor.Treeview",
+        )
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
@@ -12749,12 +12761,15 @@ class AutoMLApp:
 
         def refresh_tree():
             tree.delete(*tree.get_children())
+            max_lines = 1
             for req in global_requirements.values():
                 rid = req.get("id", "")
                 trace = ", ".join(_get_requirement_allocations(rid))
                 links = ", ".join(
                     f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
                 )
+                text = textwrap.fill(req.get("text", ""), width=40)
+                max_lines = max(max_lines, text.count("\n") + 1)
                 tree.insert(
                     "",
                     "end",
@@ -12768,9 +12783,10 @@ class AutoMLApp:
                         req.get("parent_id", ""),
                         trace,
                         links,
-                        req.get("text", ""),
+                        text,
                     ],
                 )
+            style.configure("ReqEditor.Treeview", rowheight=20 * max_lines)
 
         class ReqDialog(simpledialog.Dialog):
             def __init__(self, parent, title, initial=None):
@@ -17922,17 +17938,20 @@ class AutoMLApp:
 
     def open_metrics_tab(self):
         """Open a tab displaying project metrics."""
+        import importlib
+        from gui import messagebox
+
+        if importlib.util.find_spec("matplotlib") is None:
+            msg = ("Matplotlib is required to view metrics.\n"
+                   "Install it with 'pip install matplotlib'.")
+            messagebox.showerror("Metrics unavailable", msg)
+            return
         try:
             from gui.metrics_tab import MetricsTab
         except Exception as exc:  # pragma: no cover - display error in GUI
-            from gui import messagebox
-            if isinstance(exc, ModuleNotFoundError) and "matplotlib" in str(exc):
-                msg = ("Matplotlib is required to view metrics.\n"
-                       "Install it with 'pip install matplotlib'.")
-            else:
-                msg = str(exc)
-            messagebox.showerror("Metrics unavailable", msg)
+            messagebox.showerror("Metrics unavailable", str(exc))
             return
+
         tab = self._new_tab("Metrics")
         MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
 
@@ -18807,7 +18826,12 @@ class AutoMLApp:
 
     def edit_description(self):
         if self.selected_node:
-            new_desc = simpledialog.askstring("Edit Description", "Enter new description:", initialvalue=self.selected_node.description)
+            new_desc = askstring_fixed(
+                simpledialog,
+                "Edit Description",
+                "Enter new description:",
+                initialvalue=self.selected_node.description,
+            )
             if new_desc is not None:
                 self.selected_node.description = new_desc
                 # Propagate the updated description across clones/original.
@@ -19786,7 +19810,6 @@ class AutoMLApp:
                     "Save Model", "cryptography package is required for encrypted save."
                 )
                 return
-        from tkinter import simpledialog
         import base64
         import gzip
         import hashlib
@@ -19814,13 +19837,15 @@ class AutoMLApp:
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
             else:
-                from tkinter import simpledialog
                 import base64
                 import gzip
                 import hashlib
 
-                password = simpledialog.askstring(
-                    "Password", "Enter encryption password:", show="*"
+                password = askstring_fixed(
+                    simpledialog,
+                    "Password",
+                    "Enter encryption password:",
+                    show="*",
                 )
                 if password is None:
                     return
@@ -19868,14 +19893,16 @@ class AutoMLApp:
                         "Load Model", "cryptography package is required for encrypted files."
                     )
                     return
-            from tkinter import simpledialog
             import base64
             import gzip
             import hashlib
             import json
 
-            password = simpledialog.askstring(
-                "Password", "Enter decryption password:", show="*"
+            password = askstring_fixed(
+                simpledialog,
+                "Password",
+                "Enter decryption password:",
+                show="*",
             )
             if password is None:
                 return
@@ -20757,7 +20784,11 @@ class AutoMLApp:
             name = simpledialog.askstring("Review Name", "Enter unique review name:")
             if not name:
                 return
-            description = simpledialog.askstring("Description", "Enter a short description:")
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
             if description is None:
                 description = ""
             if not moderators:
@@ -20812,7 +20843,11 @@ class AutoMLApp:
             name = simpledialog.askstring("Review Name", "Enter unique review name:")
             if not name:
                 return
-            description = simpledialog.askstring("Description", "Enter a short description:")
+            description = askstring_fixed(
+                simpledialog,
+                "Description",
+                "Enter a short description:",
+            )
             if description is None:
                 description = ""
             if not moderators:
@@ -22354,6 +22389,7 @@ def main():
     # Prevent the main window from being resized so small that
     # widgets and toolbars become unusable.
     root.minsize(1200, 700)
+    enable_listbox_hover_highlight(root)
     # Hide the main window while prompting for user info
     root.withdraw()
     # Show initialization splash screen
