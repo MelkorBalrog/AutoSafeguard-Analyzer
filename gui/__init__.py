@@ -6,7 +6,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .capsule_button import CapsuleButton, _interpolate_color  # noqa: F401
+from .capsule_button import CapsuleButton, _interpolate_color, _lighten  # noqa: F401
 
 
 class _StyledButton(CapsuleButton):
@@ -40,8 +40,8 @@ class TranslucidButton(_StyledButton):
     """Capsule button with a subtle translucent palette."""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bg", "#ffffff")
-        kwargs.setdefault("hover_bg", "#f5f5f5")
+        bg = kwargs.setdefault("bg", "#ffffff")
+        kwargs.setdefault("hover_bg", _lighten(bg))
         kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
         super().__init__(*args, **kwargs)
 
@@ -50,8 +50,8 @@ class PurpleButton(_StyledButton):
     """Capsule button variant with a translucent purple theme for dialogs."""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bg", "#f3eaff")
-        kwargs.setdefault("hover_bg", "#e6d9ff")
+        bg = kwargs.setdefault("bg", "#f3eaff")
+        kwargs.setdefault("hover_bg", _lighten(bg))
         kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
         super().__init__(*args, **kwargs)
 
