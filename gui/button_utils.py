@@ -1,4 +1,5 @@
 """Utility helpers for consistent button presentation across toolboxes."""
+
 from __future__ import annotations
 
 import tkinter as tk
@@ -47,10 +48,23 @@ def _lighten_color(color: str, factor: float = 1.2) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
-    """Return a new image with all non-black pixels lightened."""
+def _lighten_image(
+    img: tk.PhotoImage,
+    factor: float = 1.2,
+    *,
+    bottom_factor: float = 1.4,
+    bottom_ratio: float = 0.3,
+) -> tk.PhotoImage:
+    """Return a new image with all non-black pixels lightened.
+
+    A subtle "lighting" effect is added to the lower portion of the image by
+    applying a stronger lightening factor to the bottom *bottom_ratio* of
+    pixels.  This creates the impression of a light source shining on the base
+    of the button when hovered.
+    """
     w, h = img.width(), img.height()
     new_img = tk.PhotoImage(width=w, height=h)
+    highlight_start = int(h * (1 - bottom_ratio))
     for x in range(w):
         for y in range(h):
             pixel = img.get(x, y)
@@ -65,7 +79,8 @@ def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
             if pixel.lower() == "#000000":
                 new_img.put(pixel, (x, y))
             else:
-                new_img.put(_lighten_color(pixel, factor), (x, y))
+                lf = factor * bottom_factor if y >= highlight_start else factor
+                new_img.put(_lighten_color(pixel, lf), (x, y))
     return new_img
 
 
@@ -74,9 +89,9 @@ def add_hover_highlight(
 ) -> tk.PhotoImage:
     """Swap *button* image to a lighter variant on hover.
 
-    The returned :class:`tk.PhotoImage` is the generated hover image.  A
-    reference to both normal and hover images is stored on the button to avoid
-    them being garbage collected.
+    The returned :class:`tk.PhotoImage` is the generated hover image including a
+    subtle light glow toward the bottom edge.  A reference to both normal and
+    hover images is stored on the button to avoid them being garbage collected.
     """
 
     hover_img = _lighten_image(image, factor)
@@ -87,4 +102,3 @@ def add_hover_highlight(
     button.bind("<Enter>", lambda _e: button.configure(image=hover_img))
     button.bind("<Leave>", lambda _e: button.configure(image=image))
     return hover_img
-

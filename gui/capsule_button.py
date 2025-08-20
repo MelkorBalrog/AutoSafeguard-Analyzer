@@ -419,6 +419,16 @@ class CapsuleButton(tk.Canvas):
             self.create_line(r - 1, h + 1, w - r + 1, h + 1, fill=glow_color, width=2),
             self.create_line(w + 1, r, w + 1, h - r, fill=glow_color, width=2),
         ]
+        self._glow_items.append(
+            self.create_rectangle(
+                r,
+                h - 2,
+                w - r,
+                h,
+                outline="",
+                fill=glow_color,
+            )
+        )
 
     def _remove_glow(self) -> None:
         for item in self._glow_items:

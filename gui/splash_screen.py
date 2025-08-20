@@ -47,6 +47,7 @@ class SplashScreen(tk.Toplevel):
         )
         self.canvas.pack()
         self._draw_gradient()
+        self._draw_floor()
         self._center()
         # Initialize cube geometry
         self.angle = 0.0

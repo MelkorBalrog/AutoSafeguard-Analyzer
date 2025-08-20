@@ -24,7 +24,7 @@ def _is_ai_specific_relation(conn_type: str | None) -> bool:
         return False
     lowered = conn_type.lower()
     return conn_type in _AI_RELATIONS and any(
-        key in lowered for key in ("train", "curat")
+        re.search(rf"\b{key}\w*", lowered) for key in ("train", "curat")
     )
 
 # Map relationship labels or connection types to requirement actions.  Each
