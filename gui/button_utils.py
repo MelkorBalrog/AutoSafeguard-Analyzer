@@ -171,8 +171,11 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
     """
 
     def _lb_on_motion(event: tk.Event) -> None:
-        lb = event.widget
-        if not isinstance(lb, tk.Listbox):
+        lb_widget = event.widget
+        if isinstance(lb_widget, str) and hasattr(root, "nametowidget"):
+            lb_widget = root.nametowidget(lb_widget)
+        lb = lb_widget
+        if not hasattr(lb, "size"):
             return
         size = lb.size()
         if size == 0:
@@ -194,8 +197,11 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
         lb._hover_index = index  # type: ignore[attr-defined]
 
     def _lb_on_leave(event: tk.Event) -> None:
-        lb = event.widget
-        if not isinstance(lb, tk.Listbox):
+        lb_widget = event.widget
+        if isinstance(lb_widget, str) and hasattr(root, "nametowidget"):
+            lb_widget = root.nametowidget(lb_widget)
+        lb = lb_widget
+        if not hasattr(lb, "itemconfig"):
             return
         prev = getattr(lb, "_hover_index", None)
         if prev is not None:
