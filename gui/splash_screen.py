@@ -214,13 +214,14 @@ class SplashScreen(tk.Toplevel):
         x = self.canvas_size / 2
         y = self.canvas_size - 40
         text = "Automotive Modeling Language"
+        title_font = ("Helvetica", 12, "bold")
         # Offset coloured shadows for glow effect
         for dx, dy, colour in [(-2, -2, "#00ffff"), (2, 2, "#ff00ff")]:
             self.canvas.create_text(
                 x + dx,
                 y + dy,
                 text=text,
-                font=("Helvetica", 16, "bold"),
+                font=title_font,
                 fill=colour,
                 tags="title",
             )
@@ -228,7 +229,7 @@ class SplashScreen(tk.Toplevel):
             x,
             y,
             text=text,
-            font=("Helvetica", 16, "bold"),
+            font=title_font,
             fill="white",
             tags="title",
         )
