@@ -8,11 +8,13 @@ class MetricsTab(tk.Frame):
     def __init__(self, master, app):
         super().__init__(master)
         self.app = app
-        self.canvases = [tk.Canvas(self, width=300, height=200, bg="white") for _ in range(3)]
+        self.canvases = [
+            tk.Canvas(self, width=300, height=200, bg="white") for _ in range(3)
+        ]
         for c in self.canvases:
             c.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.update_plots()
-        
+
     @staticmethod
     def _line_chart_points(canvas: tk.Canvas, data):
         h = int(canvas["height"])
@@ -63,25 +65,6 @@ class MetricsTab(tk.Frame):
             canvas.create_line(*points, fill="blue")
         canvas.create_text(5, 5, anchor="nw", text="Requirements")
 
-    def _draw_line_chart(self, canvas: tk.Canvas, data):
-        self._line_chart_core(canvas, data)
-
-    @staticmethod
-    def _draw_line_chart_v1(_self, canvas: tk.Canvas, data):
-        MetricsTab._line_chart_core(canvas, data)
-
-    @staticmethod
-    def _draw_line_chart_v2(_self, canvas: tk.Canvas, data):
-        MetricsTab._line_chart_core(canvas, data)
-
-    @staticmethod
-    def _draw_line_chart_v3(_self, canvas: tk.Canvas, data):
-        MetricsTab._line_chart_core(canvas, data)
-
-    @staticmethod
-    def _draw_line_chart_v4(_self, canvas: tk.Canvas, data):
-        MetricsTab._line_chart_core(canvas, data)
-
     def _draw_bar_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")
         h = int(canvas["height"])
@@ -104,7 +87,10 @@ class MetricsTab(tk.Frame):
             req_history = [len(getattr(self.app, "requirements", []))]
         self._draw_line_chart(self.canvases[0], req_history)
 
-        statuses = Counter(getattr(r, "status", "unknown") for r in getattr(self.app, "requirements", []))
+        statuses = Counter(
+            getattr(r, "status", "unknown")
+            for r in getattr(self.app, "requirements", [])
+        )
         self._draw_bar_chart(self.canvases[1], statuses)
         self.canvases[1].create_text(5, 5, anchor="nw", text="Status")
 
