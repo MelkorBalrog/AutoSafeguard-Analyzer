@@ -6,34 +6,16 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from .capsule_button import CapsuleButton, _interpolate_color, _lighten  # noqa: F401
+from .capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
 
 
 class _StyledButton(CapsuleButton):
     """Base class adding optional gradient colouring support."""
 
     def __init__(self, *args, **kwargs):
-        self._gradient = kwargs.pop("gradient", None)
-        super().__init__(*args, **kwargs)
-
-    def _draw_gradient(self, w: int, h: int) -> None:  # type: ignore[override]
-        if not self._gradient:
-            return
-        colors = self._gradient
-        stops = [i / (len(colors) - 1) for i in range(len(colors))]
-        r = self._radius
-        for y in range(h):
-            t = y / (h - 1) if h > 1 else 0
-            for i in range(len(stops) - 1):
-                if stops[i] <= t <= stops[i + 1]:
-                    local_t = (t - stops[i]) / (stops[i + 1] - stops[i])
-                    color = _interpolate_color(colors[i], colors[i + 1], local_t)
-                    break
-            dy = abs(y - h / 2)
-            x_offset = int(r - (r ** 2 - dy ** 2) ** 0.5) if dy <= r else 0
-            self._gradient_items.append(
-                self.create_line(x_offset, y, w - x_offset, y, fill=color)
-            )
+        gradient = kwargs.pop("gradient", None)
+        hover_gradient = kwargs.pop("hover_gradient", None)
+        super().__init__(*args, gradient=gradient, hover_gradient=hover_gradient, **kwargs)
 
 
 class TranslucidButton(_StyledButton):
@@ -41,8 +23,9 @@ class TranslucidButton(_StyledButton):
 
     def __init__(self, *args, **kwargs):
         bg = kwargs.setdefault("bg", "#ffffff")
-        kwargs.setdefault("hover_bg", _lighten(bg))
-        kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
+        gradient = kwargs.setdefault("gradient", ["#ffffff", "#f7f7f7", "#ececec"])
+        kwargs.setdefault("hover_bg", _glow_color(bg))
+        kwargs.setdefault("hover_gradient", [_glow_color(c) for c in gradient])
         super().__init__(*args, **kwargs)
 
 
@@ -51,8 +34,9 @@ class PurpleButton(_StyledButton):
 
     def __init__(self, *args, **kwargs):
         bg = kwargs.setdefault("bg", "#f3eaff")
-        kwargs.setdefault("hover_bg", _lighten(bg))
-        kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
+        gradient = kwargs.setdefault("gradient", ["#f8f6ff", "#e7ddff", "#d9c2ff", "#f3eaff"])
+        kwargs.setdefault("hover_bg", _glow_color(bg))
+        kwargs.setdefault("hover_gradient", [_glow_color(c) for c in gradient])
         super().__init__(*args, **kwargs)
 
 
@@ -60,6 +44,58 @@ class PurpleButton(_StyledButton):
 # buttons explicitly use ``TranslucidButton`` for a lighter appearance.
 ttk.Button = CapsuleButton  # type: ignore[assignment]
 tk.Button = CapsuleButton  # type: ignore[assignment]
+
+
+def add_listbox_hover_highlight(lb: tk.Listbox) -> None:
+    """Highlight listbox rows on mouse hover.
+
+    The hovered item receives a light green background, reverting to the
+    widget's original ``bg`` (or ``selectbackground`` when selected) when the
+    pointer leaves.  This provides a subtle square shading from white to light
+    green, helping users track list items under the cursor.
+    """
+
+    default_bg = lb.cget("bg")
+
+    def _restore(index: int | None) -> None:
+        if index is None:
+            return
+        bg = default_bg
+        if index in lb.curselection():
+            bg = lb.cget("selectbackground")
+        try:
+            lb.itemconfig(index, background=bg)
+        except Exception:  # pragma: no cover - defensive for non-Tk dummies
+            pass
+
+    def _on_motion(event: object) -> None:
+        index = lb.nearest(getattr(event, "y", 0))
+        prev = getattr(lb, "_hover_index", None)
+        if prev != index:
+            _restore(prev)
+            try:
+                lb.itemconfig(index, background="#ccffcc")
+            except Exception:  # pragma: no cover
+                pass
+            lb._hover_index = index  # type: ignore[attr-defined]
+
+    def _on_leave(_event: object) -> None:
+        _restore(getattr(lb, "_hover_index", None))
+        lb._hover_index = None  # type: ignore[attr-defined]
+
+    lb.bind("<Motion>", _on_motion)
+    lb.bind("<Leave>", _on_leave)
+
+
+class HoverListbox(tk.Listbox):
+    """Listbox variant that applies hover highlighting automatically."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        add_listbox_hover_highlight(self)
+
+
+tk.Listbox = HoverListbox  # type: ignore[assignment]
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""

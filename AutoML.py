@@ -229,6 +229,7 @@ import json
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, scrolledtext
 from gui import messagebox, logger, add_treeview_scrollbars
+from gui.button_utils import enable_listbox_hover_highlight
 from gui.tooltip import ToolTip
 from gui.style_manager import StyleManager
 from gui.review_toolbox import (
@@ -22357,6 +22358,7 @@ def main():
     # Prevent the main window from being resized so small that
     # widgets and toolbars become unusable.
     root.minsize(1200, 700)
+    enable_listbox_hover_highlight(root)
     # Hide the main window while prompting for user info
     root.withdraw()
     # Show initialization splash screen

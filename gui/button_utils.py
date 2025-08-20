@@ -70,20 +70,43 @@ def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _blend_with(color: str, overlay: tuple[int, int, int], alpha: float) -> str:
+    """Blend *color* towards *overlay* by *alpha*."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = int(r + (overlay[0] - r) * alpha)
+    g = int(g + (overlay[1] - g) * alpha)
+    b = int(b + (overlay[2] - b) * alpha)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def _lighten_image(
     img: tk.PhotoImage,
     factor: float = 1.4,
     *,
     bottom_factor: float = 1.8,
     bottom_ratio: float = 0.3,
-    top_alpha: float = 0.5,
-    bottom_alpha: float = 0.5,
+    top_alpha: float = 0.7,
+    bottom_alpha: float = 0.9,
 ) -> tk.PhotoImage:
-    """Return a new image with all non-black pixels lightened.
+    """Return a new image with all pixels lightened.
 
-    The default factors intentionally apply a strong boost so the hover image is
-    visually distinct.  The bottom portion receives both a higher lightening
-    factor and a green-tinted blend, creating a pronounced glow effect.
+    Pixels are first blended towards either white (top) or light green (bottom)
+    to seed a visible glow.  The blended colour is then lightened by ``factor``
+    (with an extra ``bottom_factor`` boost for lower pixels) so the tint remains
+    bright.  Alpha values are preserved where present.
     """
     w, h = img.width(), img.height()
     new_img = tk.PhotoImage(width=w, height=h)
@@ -93,22 +116,28 @@ def _lighten_image(
             pixel = img.get(x, y)
             # ``PhotoImage.get`` may return a tuple or an empty string for
             # transparency.  Normalise to ``#rrggbb`` when a colour is present.
+            alpha_px = None
             if isinstance(pixel, tuple):
-                if len(pixel) == 4 and pixel[3] == 0:
-                    continue
+                if len(pixel) == 4:
+                    if pixel[3] == 0:
+                        continue
+                    alpha_px = pixel[3]
                 pixel = f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}"
             if not pixel:
                 continue
-            if pixel.lower() == "#000000":
-                new_img.put(pixel, (x, y))
+            lf = factor * bottom_factor if y >= highlight_start else factor
+            overlay = (179, 255, 179) if y >= highlight_start else (255, 255, 255)
+            alpha = bottom_alpha if y >= highlight_start else top_alpha
+
+            # Blend first to inject the glow colour, then lighten so the tint is
+            # preserved yet brighter.
+            blended = _blend_with(pixel, overlay, alpha)
+            light = _lighten_color(blended, lf)
+
+            if alpha_px is not None:
+                new_img.put(f"{light}{alpha_px:02x}", (x, y))
             else:
-                lf = factor * bottom_factor if y >= highlight_start else factor
-                light = _lighten_color(pixel, lf)
-                if y >= highlight_start:
-                    blend = _blend_with(light, (179, 255, 179), bottom_alpha)
-                else:
-                    blend = _blend_with(light, (255, 255, 255), top_alpha)
-                new_img.put(blend, (x, y))
+                new_img.put(light, (x, y))
     return new_img
 
 
@@ -130,3 +159,70 @@ def add_hover_highlight(
     button.bind("<Enter>", lambda _e: button.configure(image=hover_img))
     button.bind("<Leave>", lambda _e: button.configure(image=image))
     return hover_img
+
+
+def enable_listbox_hover_highlight(root: tk.Misc) -> None:
+    """Highlight listbox and treeview rows on mouse hover.
+
+    A gentle square shading from white to light green is applied to the row
+    currently under the cursor.  Bindings are attached at the class level so
+    the behaviour is enabled for all ``tk.Listbox`` and ``ttk.Treeview``
+    widgets created within *root*.
+    """
+
+    def _lb_on_motion(event: tk.Event) -> None:
+        lb: tk.Listbox = event.widget  # type: ignore[assignment]
+        index = lb.nearest(event.y)
+        prev = getattr(lb, "_hover_index", None)
+        if prev is not None and prev != index:
+            lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
+        if getattr(lb, "_default_bg", None) is None:
+            lb._default_bg = lb.itemcget(index, "background") or lb.cget("background")  # type: ignore[attr-defined]
+        hover = _blend_with(lb._default_bg, (204, 255, 204), 0.5)  # type: ignore[arg-type]
+        lb.itemconfig(index, background=hover)
+        lb._hover_index = index  # type: ignore[attr-defined]
+
+    def _lb_on_leave(event: tk.Event) -> None:
+        lb: tk.Listbox = event.widget  # type: ignore[assignment]
+        prev = getattr(lb, "_hover_index", None)
+        if prev is not None:
+            lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
+            lb._hover_index = None  # type: ignore[attr-defined]
+
+    def _tv_on_motion(event: tk.Event) -> None:
+        tree: ttk.Treeview = event.widget  # type: ignore[assignment]
+        item = tree.identify_row(event.y)
+        prev = getattr(tree, "_hover_item", None)
+        if prev and prev != item:
+            tags = list(tree.item(prev, "tags"))
+            if "hover" in tags:
+                tags.remove("hover")
+                tree.item(prev, tags=tags)
+        if item:
+            if not getattr(tree, "_hover_tagged", False):
+                style = ttk.Style(tree)
+                style_name = tree.cget("style") or "Treeview"
+                bg = style.lookup(style_name, "background") or "#ffffff"
+                hover = _blend_with(bg, (204, 255, 204), 0.5)  # type: ignore[arg-type]
+                tree.tag_configure("hover", background=hover)
+                tree._hover_tagged = True  # type: ignore[attr-defined]
+            tags = list(tree.item(item, "tags"))
+            if "hover" not in tags:
+                tags.append("hover")
+                tree.item(item, tags=tags)
+            tree._hover_item = item  # type: ignore[attr-defined]
+
+    def _tv_on_leave(event: tk.Event) -> None:
+        tree: ttk.Treeview = event.widget  # type: ignore[assignment]
+        prev = getattr(tree, "_hover_item", None)
+        if prev:
+            tags = list(tree.item(prev, "tags"))
+            if "hover" in tags:
+                tags.remove("hover")
+                tree.item(prev, tags=tags)
+            tree._hover_item = None  # type: ignore[attr-defined]
+
+    root.bind_class("Listbox", "<Motion>", _lb_on_motion, add="+")
+    root.bind_class("Listbox", "<Leave>", _lb_on_leave, add="+")
+    root.bind_class("Treeview", "<Motion>", _tv_on_motion, add="+")
+    root.bind_class("Treeview", "<Leave>", _tv_on_leave, add="+")
