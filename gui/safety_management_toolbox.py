@@ -492,7 +492,6 @@ class SafetyManagementWindow(tk.Frame):
                 tree.bind("<Button-2>", _popup)
                 tree.bind("<Control-Button-1>", _popup)
                 tree.bind("<Double-1>", _on_double_click, add="+")
-
         if hasattr(ttk.Frame, "grid"):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(fill=tk.X, pady=4)
