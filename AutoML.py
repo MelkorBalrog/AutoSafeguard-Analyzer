@@ -9512,7 +9512,14 @@ class AutoMLApp:
             self.open_page_diagram(node)
 
     def on_analysis_tree_double_click(self, event):
-        item = self.analysis_tree.focus()
+        item = (
+            self.analysis_tree.identify_row(event.y)
+            if event is not None
+            else self.analysis_tree.focus()
+        )
+        if not item:
+            return
+        self.analysis_tree.focus(item)
         tags = self.analysis_tree.item(item, "tags")
         if len(tags) != 2:
             parent = item
