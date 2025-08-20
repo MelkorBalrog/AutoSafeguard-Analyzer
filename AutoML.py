@@ -9985,13 +9985,17 @@ class AutoMLApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        entry_state: dict[tuple[tk.Menu, int], bool] = {}
         for wp, menus in getattr(self, "work_product_menus", {}).items():
-            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            is_enabled = wp in enabled
             for menu, idx in menus:
-                try:
-                    menu.entryconfig(idx, state=state)
-                except tk.TclError:
-                    pass
+                key = (menu, idx)
+                entry_state[key] = entry_state.get(key, False) or is_enabled
+        for (menu, idx), is_enabled in entry_state.items():
+            try:
+                menu.entryconfig(idx, state=tk.NORMAL if is_enabled else tk.DISABLED)
+            except tk.TclError:
+                pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
