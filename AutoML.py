@@ -4690,7 +4690,6 @@ class AutoMLApp:
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
         prop_win.title("Project Properties")
-        prop_win.geometry("420x380")
         prop_win.resizable(False, False)
         dialog_font = tkFont.Font(family="Arial", size=10)
 
@@ -4717,7 +4716,9 @@ class AutoMLApp:
         if smt:
             diagrams = smt.list_diagrams()
             all_frozen = diagrams and all(smt.diagram_frozen(d) for d in diagrams)
-        var_freeze = tk.BooleanVar(value=bool(all_frozen))
+        var_freeze = tk.BooleanVar(
+            value=self.project_properties.get("freeze_governance_diagrams", bool(all_frozen))
+        )
         ttk.Checkbutton(
             prop_win,
             text="Freeze Governance Diagrams",
@@ -4821,38 +4822,43 @@ class AutoMLApp:
             ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
             sev_vars[i] = var
 
-        def save_props():
+        def save_props() -> None:
             new_name = pdf_entry.get().strip()
-            if new_name:
-                self.project_properties["pdf_report_name"] = new_name
-                self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                self.project_properties["exposure_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-                }
-                self.project_properties["controllability_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-                }
-                self.project_properties["severity_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-                }
-                update_probability_tables(
-                    self.project_properties["exposure_probabilities"],
-                    self.project_properties["controllability_probabilities"],
-                    self.project_properties["severity_probabilities"],
-                )
-                if smt:
-                    smt.set_all_diagrams_frozen(var_freeze.get())
-                messagebox.showinfo(
-                    "Project Properties", "Project properties updated."
-                )
-            else:
+            if not new_name:
                 messagebox.showwarning(
                     "Project Properties", "PDF Report Name cannot be empty."
                 )
+                return
+
+            self.project_properties["pdf_report_name"] = new_name
+            self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
+            self.project_properties["exposure_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+            }
+            self.project_properties["controllability_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+            }
+            self.project_properties["severity_probabilities"] = {
+                lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+            }
+            self.project_properties["freeze_governance_diagrams"] = var_freeze.get()
+            update_probability_tables(
+                self.project_properties["exposure_probabilities"],
+                self.project_properties["controllability_probabilities"],
+                self.project_properties["severity_probabilities"],
+            )
+            if smt:
+                smt.set_all_diagrams_frozen(var_freeze.get())
+            messagebox.showinfo(
+                "Project Properties", "Project properties updated."
+            )
             prop_win.destroy()
 
-        save_btn = tk.Button(prop_win, text="Save", command=save_props, font=dialog_font)
-        save_btn.grid(row=6, column=0, columnspan=2, pady=10)
+        ttk.Button(prop_win, text="Save", command=save_props, width=10).grid(
+            row=6, column=0, columnspan=2, pady=10
+        )
+        prop_win.update_idletasks()
+        prop_win.minsize(prop_win.winfo_width(), prop_win.winfo_height())
         prop_win.transient(self.root)
         prop_win.grab_set()
         self.root.wait_window(prop_win)
