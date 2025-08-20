@@ -120,6 +120,9 @@ class EditableTreeview(ttk.Treeview):
     requirement_columns : dict[str, str]
         Mapping of column name to requirement type. When editing these columns
         a requirement selection dialog allowing multiple selections is shown.
+    multiline_columns : set[str]
+        Columns that should use a multi-line text editor instead of a single
+        line entry widget.
     """
     def __init__(
         self,
@@ -129,6 +132,7 @@ class EditableTreeview(ttk.Treeview):
         edit_callback=None,
         requirement_columns=None,
         requirement_target=None,
+        multiline_columns=None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)
@@ -136,6 +140,7 @@ class EditableTreeview(ttk.Treeview):
         self._edit_cb = edit_callback
         self._req_cols = requirement_columns or {}
         self._req_target = requirement_target
+        self._multiline_cols = set(multiline_columns or [])
         self._edit_widget = None
         self.bind("<Double-1>", self._begin_edit, add="+")
 
@@ -168,23 +173,46 @@ class EditableTreeview(ttk.Treeview):
             return
         x, y, w, h = self.bbox(rowid, col)
         opts = self._col_options.get(col_name)
-        var = tk.StringVar(value=value)
-        if opts:
-            widget = ttk.Combobox(self, textvariable=var, values=opts, state="readonly")
+        if col_name in self._multiline_cols:
+            widget = tk.Text(self)
+            widget.insert("1.0", value)
+            widget.place(x=x, y=y, width=w, height=h)
+            widget.focus_set()
+
+            def save(event=None):
+                new_val = widget.get("1.0", "end-1c")
+                self.set(rowid, col_name, new_val)
+                widget.destroy()
+                self._edit_widget = None
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, new_val)
+
+            widget.bind("<Control-Return>", save)
+            widget.bind("<FocusOut>", save)
+            self._edit_widget = widget
         else:
-            widget = tk.Entry(self, textvariable=var)
-        widget.place(x=x, y=y, width=w, height=h)
-        widget.focus_set()
-        def save(event=None):
-            self.set(rowid, col_name, var.get())
-            widget.destroy()
-            self._edit_widget = None
-            if self._edit_cb:
-                row_index = self.index(rowid)
-                self._edit_cb(row_index, col_name, var.get())
-        widget.bind("<Return>", save)
-        widget.bind("<FocusOut>", save)
-        self._edit_widget = widget
+            var = tk.StringVar(value=value)
+            if opts:
+                widget = ttk.Combobox(
+                    self, textvariable=var, values=opts, state="readonly"
+                )
+            else:
+                widget = tk.Entry(self, textvariable=var)
+            widget.place(x=x, y=y, width=w, height=h)
+            widget.focus_set()
+
+            def save(event=None):
+                self.set(rowid, col_name, var.get())
+                widget.destroy()
+                self._edit_widget = None
+                if self._edit_cb:
+                    row_index = self.index(rowid)
+                    self._edit_cb(row_index, col_name, var.get())
+
+            widget.bind("<Return>", save)
+            widget.bind("<FocusOut>", save)
+            self._edit_widget = widget
 def stripe_rows(tree: ttk.Treeview) -> None:
     """Apply alternating background colors to rows for visual separation."""
     tree.tag_configure("even", background="#f0f0f0")
@@ -4164,6 +4192,23 @@ class RequirementsExplorerWindow(tk.Frame):
         configure_table_style("ReqExp.Treeview")
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Button bar anchored to the bottom so it remains visible.
+        btnf = ttk.Frame(self)
+        btnf.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        ttk.Button(btnf, text="Add", command=self.add_requirement).pack(
+            side=tk.LEFT, padx=5
+        )
+        ttk.Button(btnf, text="Edit", command=self.edit_requirement).pack(
+            side=tk.LEFT, padx=5
+        )
+        ttk.Button(btnf, text="Delete", command=self.delete_requirement).pack(
+            side=tk.LEFT, padx=5
+        )
+        ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(
+            side=tk.RIGHT, padx=5
+        )
+
         self.tree = EditableTreeview(
             table_frame,
             columns=self.columns,
@@ -4171,6 +4216,7 @@ class RequirementsExplorerWindow(tk.Frame):
             style="ReqExp.Treeview",
             edit_callback=self.on_cell_edit,
             height=10,
+            multiline_columns={"Text"},
         )
         for c in self.columns:
             self.tree.heading(c, text=c)
@@ -4182,9 +4228,6 @@ class RequirementsExplorerWindow(tk.Frame):
                 width = 100
             self.tree.column(c, width=width)
         add_treeview_scrollbars(self.tree, table_frame)
-        btnf = ttk.Frame(self)
-        btnf.pack(pady=5)
-        ttk.Button(btnf, text="Export CSV", command=self.export_csv).pack(side=tk.LEFT, padx=5)
         self.refresh()
 
     def refresh(self):
@@ -4233,17 +4276,62 @@ class RequirementsExplorerWindow(tk.Frame):
             return
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Trace", "Text"])
+            w.writerow(["ID", "ASIL", "Type", "Status", "Parent", "Trace", "Links", "Text"])
             for iid in self.tree.get_children():
                 w.writerow(self.tree.item(iid, "values"))
         messagebox.showinfo("Export", "Requirements exported")
 
     def on_cell_edit(self, row: int, column: str, value: str) -> None:
         values = list(self.tree.item(self.tree.get_children()[row], "values"))
-        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":6}
+        idx_map = {"ID":0, "ASIL":1, "Type":2, "Status":3, "Parent":4, "Text":7}
         if column in idx_map:
             values[idx_map[column]] = value
             self.tree.item(self.tree.get_children()[row], values=values)
+
+            rid = values[0]
+            req = global_requirements.get(rid)
+            if req:
+                if column == "ID" and value != rid:
+                    global_requirements.pop(rid, None)
+                    req["id"] = value
+                    global_requirements[value] = req
+                elif column == "ASIL":
+                    req["asil"] = value
+                elif column == "Type":
+                    req["req_type"] = value
+                elif column == "Status":
+                    req["status"] = value
+                elif column == "Parent":
+                    req["parent_id"] = value
+                elif column == "Text":
+                    req["text"] = value
+
+    def add_requirement(self) -> None:
+        dlg = _RequirementDialog(self)
+        if getattr(dlg, "result", None):
+            req = dlg.result
+            global_requirements[req["id"]] = req
+            self.refresh()
+
+    def edit_requirement(self) -> None:
+        sel = self.tree.selection()
+        if not sel:
+            return
+        values = self.tree.item(sel[0], "values")
+        rid = values[0]
+        req = global_requirements.get(rid, {"id": rid, "text": values[7]})
+        dlg = _RequirementDialog(self, req)
+        if getattr(dlg, "result", None):
+            global_requirements.pop(rid, None)
+            new_req = dlg.result
+            global_requirements[new_req["id"]] = new_req
+            self.refresh()
+
+    def delete_requirement(self) -> None:
+        for item in self.tree.selection():
+            rid = self.tree.item(item, "values")[0]
+            global_requirements.pop(rid, None)
+            self.tree.delete(item)
 
     def _get_requirement_allocations(self, rid: str) -> list[str]:
         repo = SysMLRepository.get_instance()
