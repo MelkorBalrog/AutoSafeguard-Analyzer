@@ -281,6 +281,22 @@ NODE_CONNECTION_LIMITS: dict[str, int] = _CONFIG.get("node_connection_limits", {
 GUARD_NODES = set(_CONFIG.get("guard_nodes", []))
 
 
+def _connection_rule_allows(
+    diag_type: str, conn_type: str, src_type: str, dst_type: str
+) -> tuple[bool, str]:
+    """Return whether connection rules permit the given source and target."""
+    conn_rules = CONNECTION_RULES.get(diag_type, {}).get(conn_type)
+    if not conn_rules:
+        return True, ""
+    if diag_type == "Governance Diagram" and conn_type != "Flow":
+        src_type = _GOV_TYPE_ALIASES.get(src_type, src_type)
+        dst_type = _GOV_TYPE_ALIASES.get(dst_type, dst_type)
+    targets = conn_rules.get(src_type, set())
+    if dst_type not in targets:
+        return False, f"{conn_type} from {src_type} to {dst_type} is not allowed"
+    return True, ""
+
+
 def _relations_for(nodes: list[str]) -> list[str]:
     """Return connection labels relevant to ``nodes`` based on diagram rules."""
 
@@ -4089,19 +4105,11 @@ class SysMLDiagramWindow(tk.Frame):
                 return False, "Cannot connect an element to itself"
 
         # Config-driven source/target constraints
-        diag_rules = CONNECTION_RULES.get(diag_type, {})
-        conn_rules = diag_rules.get(conn_type)
-        if conn_rules:
-            src_type = src.obj_type
-            dst_type = dst.obj_type
-            if diag_type == "Governance Diagram" and conn_type != "Flow":
-                src_type = _GOV_TYPE_ALIASES.get(src_type, src_type)
-                dst_type = _GOV_TYPE_ALIASES.get(dst_type, dst_type)
-            targets = conn_rules.get(src_type, set())
-            if dst_type not in targets:
-                return False, (
-                    f"{conn_type} from {src_type} to {dst_type} is not allowed"
-                )
+        ok, msg = _connection_rule_allows(
+            diag_type, conn_type, src.obj_type, dst.obj_type
+        )
+        if not ok:
+            return False, msg
 
         if diag_type == "Block Diagram":
             if conn_type == "Generalization":
