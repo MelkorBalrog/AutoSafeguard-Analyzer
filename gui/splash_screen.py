@@ -195,7 +195,7 @@ class SplashScreen(tk.Toplevel):
         angle = math.radians(self.angle)
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
-        points = []
+        transformed = []
         for x, y, z in self.vertices:
             x1 = x * cos_a - z * sin_a
             z1 = x * sin_a + z * cos_a
@@ -242,8 +242,17 @@ class SplashScreen(tk.Toplevel):
                 y1,
                 x2,
                 y2,
-                fill="cyan",
+                fill=color,
                 width=2,
+                tags="cube",
+            )
+            self.canvas.create_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                fill="white",
+                width=1,
                 tags="cube",
             )
 
