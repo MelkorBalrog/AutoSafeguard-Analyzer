@@ -28,9 +28,14 @@ def _collect_button_styles(dialog_cls, monkeypatch):
     def fake_apply(style=None):
         applied["called"] += 1
 
+    import gui.mac_button_style as mbs
+
     monkeypatch.setattr(automl.ttk, "Button", DummyButton)
     monkeypatch.setattr(automl.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(mbs.ttk, "Button", DummyButton)
+    monkeypatch.setattr(mbs.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(automl, "apply_purplish_button_style", fake_apply)
+    monkeypatch.setattr(mbs, "apply_purplish_button_style", fake_apply)
 
     dlg = DummyDialog()
     dialog_cls.buttonbox(dlg)
@@ -45,5 +50,11 @@ def test_user_info_dialog_purplish_buttons(monkeypatch):
 
 def test_user_select_dialog_purplish_buttons(monkeypatch):
     styles, called = _collect_button_styles(automl.UserSelectDialog, monkeypatch)
+    assert styles == ["Purple.TButton", "Purple.TButton"]
+    assert called == 1
+
+
+def test_base_dialog_purplish_buttons(monkeypatch):
+    styles, called = _collect_button_styles(automl.simpledialog.Dialog, monkeypatch)
     assert styles == ["Purple.TButton", "Purple.TButton"]
     assert called == 1

@@ -55,6 +55,22 @@ class MetricsTab(tk.Frame):
     def _draw_line_chart_v4(_self, canvas: tk.Canvas, data):
         MetricsTab._line_chart_core(canvas, data)
 
+    @staticmethod
+    def _line_chart_core(canvas: tk.Canvas, data):
+        canvas.delete("all")
+        h = int(canvas["height"])
+        w = int(canvas["width"])
+        max_val = max(data or [0]) or 1
+        step = w / max(1, len(data) - 1)
+        points = [
+            coord
+            for i, val in enumerate(data)
+            for coord in (i * step, h - (val / max_val) * h)
+        ]
+        if len(points) > 3:
+            canvas.create_line(*points, fill="blue")
+        canvas.create_text(5, 5, anchor="nw", text="Requirements")
+
     def _draw_bar_chart(self, canvas: tk.Canvas, data):
         canvas.delete("all")
         h = int(canvas["height"])
