@@ -159,3 +159,70 @@ def add_hover_highlight(
     button.bind("<Enter>", lambda _e: button.configure(image=hover_img))
     button.bind("<Leave>", lambda _e: button.configure(image=image))
     return hover_img
+
+
+def enable_listbox_hover_highlight(root: tk.Misc) -> None:
+    """Highlight listbox and treeview rows on mouse hover.
+
+    A gentle square shading from white to light green is applied to the row
+    currently under the cursor.  Bindings are attached at the class level so
+    the behaviour is enabled for all ``tk.Listbox`` and ``ttk.Treeview``
+    widgets created within *root*.
+    """
+
+    def _lb_on_motion(event: tk.Event) -> None:
+        lb: tk.Listbox = event.widget  # type: ignore[assignment]
+        index = lb.nearest(event.y)
+        prev = getattr(lb, "_hover_index", None)
+        if prev is not None and prev != index:
+            lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
+        if getattr(lb, "_default_bg", None) is None:
+            lb._default_bg = lb.itemcget(index, "background") or lb.cget("background")  # type: ignore[attr-defined]
+        hover = _blend_with(lb._default_bg, (204, 255, 204), 0.5)  # type: ignore[arg-type]
+        lb.itemconfig(index, background=hover)
+        lb._hover_index = index  # type: ignore[attr-defined]
+
+    def _lb_on_leave(event: tk.Event) -> None:
+        lb: tk.Listbox = event.widget  # type: ignore[assignment]
+        prev = getattr(lb, "_hover_index", None)
+        if prev is not None:
+            lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
+            lb._hover_index = None  # type: ignore[attr-defined]
+
+    def _tv_on_motion(event: tk.Event) -> None:
+        tree: ttk.Treeview = event.widget  # type: ignore[assignment]
+        item = tree.identify_row(event.y)
+        prev = getattr(tree, "_hover_item", None)
+        if prev and prev != item:
+            tags = list(tree.item(prev, "tags"))
+            if "hover" in tags:
+                tags.remove("hover")
+                tree.item(prev, tags=tags)
+        if item:
+            if not getattr(tree, "_hover_tagged", False):
+                style = ttk.Style(tree)
+                style_name = tree.cget("style") or "Treeview"
+                bg = style.lookup(style_name, "background") or "#ffffff"
+                hover = _blend_with(bg, (204, 255, 204), 0.5)  # type: ignore[arg-type]
+                tree.tag_configure("hover", background=hover)
+                tree._hover_tagged = True  # type: ignore[attr-defined]
+            tags = list(tree.item(item, "tags"))
+            if "hover" not in tags:
+                tags.append("hover")
+                tree.item(item, tags=tags)
+            tree._hover_item = item  # type: ignore[attr-defined]
+
+    def _tv_on_leave(event: tk.Event) -> None:
+        tree: ttk.Treeview = event.widget  # type: ignore[assignment]
+        prev = getattr(tree, "_hover_item", None)
+        if prev:
+            tags = list(tree.item(prev, "tags"))
+            if "hover" in tags:
+                tags.remove("hover")
+                tree.item(prev, tags=tags)
+            tree._hover_item = None  # type: ignore[attr-defined]
+
+    root.bind_class("Listbox", "<Motion>", _lb_on_motion, add="+")
+    root.bind_class("Listbox", "<Leave>", _lb_on_leave, add="+")
+    root.bind_class("Treeview", "<Motion>", _tv_on_motion, add="+")
+    root.bind_class("Treeview", "<Leave>", _tv_on_leave, add="+")
