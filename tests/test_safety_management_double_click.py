@@ -3,6 +3,7 @@ import types
 from gui.safety_management_explorer import SafetyManagementExplorer
 from analysis.safety_management import SafetyManagementToolbox
 from sysml.sysml_repository import SysMLRepository
+from AutoML import AutoMLApp
 
 
 def test_double_click_opens_diagram_with_phase(monkeypatch):
@@ -55,3 +56,89 @@ def test_double_click_opens_diagram_with_phase(monkeypatch):
 
     explorer.open_item()
     assert calls == [diag_id]
+
+
+def test_analysis_tree_double_click_opens_diagram(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    repo.create_diagram("Governance Diagram", name="Gov")
+    app = AutoMLApp.__new__(AutoMLApp)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {
+                "root": {"text": "Safety & Security Governance Diagrams", "tags": (), "parent": ""},
+                "d1": {"text": "Gov", "tags": ("gov", "0"), "parent": "root"},
+            }
+            self._focus = "root"
+
+        def focus(self, item=None):
+            if item is None:
+                return self._focus
+            self._focus = item
+
+        def identify_row(self, _y):
+            return "d1"
+
+        def item(self, iid, opt):
+            return self.items[iid][opt]
+
+        def parent(self, iid):
+            return self.items[iid]["parent"]
+
+    app.analysis_tree = DummyTree()
+    called = {"open": None, "explorer": False}
+    app.open_management_window = lambda idx: called.__setitem__("open", idx)
+    app.manage_safety_management = lambda: called.__setitem__("explorer", True)
+
+    app.on_analysis_tree_double_click(types.SimpleNamespace(y=10))
+
+    assert called["open"] == 0
+    assert not called["explorer"]
+
+
+def test_analysis_tree_double_click_handles_extra_tags(monkeypatch):
+    SysMLRepository._instance = None
+    repo = SysMLRepository.get_instance()
+    repo.create_diagram("Governance Diagram", name="Gov")
+    app = AutoMLApp.__new__(AutoMLApp)
+
+    class DummyTree:
+        def __init__(self):
+            self.items = {
+                "root": {
+                    "text": "Safety & Security Governance Diagrams",
+                    "tags": (),
+                    "parent": "",
+                },
+                "d1": {
+                    "text": "Gov",
+                    "tags": ("gov", "0", "extra"),
+                    "parent": "root",
+                },
+            }
+            self._focus = "root"
+
+        def focus(self, item=None):
+            if item is None:
+                return self._focus
+            self._focus = item
+
+        def identify_row(self, _y):
+            return "d1"
+
+        def item(self, iid, opt):
+            return self.items[iid][opt]
+
+        def parent(self, iid):
+            return self.items[iid]["parent"]
+
+    app.analysis_tree = DummyTree()
+    called = {"open": None, "explorer": False}
+    app.open_management_window = lambda idx: called.__setitem__("open", idx)
+    app.manage_safety_management = lambda: called.__setitem__("explorer", True)
+
+    app.on_analysis_tree_double_click(types.SimpleNamespace(y=5))
+
+    assert called["open"] == 0
+    assert not called["explorer"]

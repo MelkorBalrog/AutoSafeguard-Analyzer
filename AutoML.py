@@ -9512,21 +9512,18 @@ class AutoMLApp:
             self.open_page_diagram(node)
 
     def on_analysis_tree_double_click(self, event):
-        item = self.analysis_tree.focus()
-        tags = self.analysis_tree.item(item, "tags")
-        if len(tags) != 2:
-            parent = item
-            while parent:
-                if (
-                    self.analysis_tree.item(parent, "text")
-                    == "Safety & Security Governance Diagrams"
-                ):
-                    self.manage_safety_management()
-                    return
-                parent = self.analysis_tree.parent(parent)
+        item = (
+            self.analysis_tree.identify_row(event.y)
+            if event is not None
+            else self.analysis_tree.focus()
+        )
+        if not item:
             return
-        kind, ident = tags[0], tags[1]
-        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"}:
+        self.analysis_tree.focus(item)
+        tags = self.analysis_tree.item(item, "tags")
+        kind = tags[0] if tags else None
+        ident = tags[1] if tags and len(tags) > 1 else None
+        if kind in {"fmea", "fmeda", "hazop", "hara", "stpa", "threat", "fi2tc", "tc2fi", "jrev", "gov"} and ident is not None:
             idx = int(ident)
             if kind == "fmea":
                 self.show_fmea_table(self.fmeas[idx])
@@ -9576,7 +9573,7 @@ class AutoMLApp:
                     self.open_review_toolbox()
             elif kind == "gov":
                 self.open_management_window(idx)
-        elif kind == "gsn":
+        elif kind == "gsn" and ident is not None:
             diag = getattr(self, "gsn_diagram_map", {}).get(ident)
             if diag:
                 self.open_gsn_diagram(diag)
@@ -9588,7 +9585,7 @@ class AutoMLApp:
             self.show_requirements_explorer()
         elif kind == "sg":
             self.show_product_goals_editor()
-        elif kind == "fta":
+        elif kind == "fta" and ident is not None:
             te = next((t for t in self.top_events if t.unique_id == int(ident)), None)
             if te:
                 self.ensure_fta_tab()
@@ -9600,12 +9597,20 @@ class AutoMLApp:
             self.show_safety_concept_editor()
         elif kind == "itemdef":
             self.show_item_definition_editor()
-        elif kind == "safetyconcept":
-            self.show_safety_concept_editor()
         elif kind == "arch":
             self.open_arch_window(ident)
         elif kind == "pkg":
             self.manage_architecture()
+        else:
+            parent = item
+            while parent:
+                if (
+                    self.analysis_tree.item(parent, "text")
+                    == "Safety & Security Governance Diagrams"
+                ):
+                    self.manage_safety_management()
+                    return
+                parent = self.analysis_tree.parent(parent)
 
     def on_analysis_tree_right_click(self, event):
         iid = self.analysis_tree.identify_row(event.y)
