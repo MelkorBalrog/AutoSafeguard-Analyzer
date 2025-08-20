@@ -15,9 +15,11 @@ def askstring_fixed(sd_module: simpledialog.__class__, title: str, prompt: str, 
     original = sd_module._QueryString
 
     class FixedQueryString(sd_module._QueryString):  # type: ignore[attr-defined]
-        def __init__(self, *a, **k):
-            super().__init__(*a, **k)
+        """Query dialog variant that disables window resizing."""
+
+        def body(self, master):  # type: ignore[override]
             self.resizable(False, False)
+            return super().body(master)
 
     sd_module._QueryString = FixedQueryString  # type: ignore[attr-defined]
     try:
