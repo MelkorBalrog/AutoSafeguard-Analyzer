@@ -155,6 +155,8 @@ class SplashScreen(tk.Toplevel):
             b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
+        horizon_y = int(self.canvas_size * 0.55)
+        self.canvas.create_line(0, horizon_y, self.canvas_size, horizon_y, fill="#222222")
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
@@ -184,7 +186,7 @@ class SplashScreen(tk.Toplevel):
         angle = math.radians(self.angle)
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
-        points = []
+        transformed = []
         for x, y, z in self.vertices:
             x1 = x * cos_a - z * sin_a
             z1 = x * sin_a + z * cos_a
@@ -218,7 +220,7 @@ class SplashScreen(tk.Toplevel):
                 y1,
                 x2,
                 y2,
-                fill="cyan",
+                fill=color,
                 width=2,
                 tags="cube",
             )
@@ -238,6 +240,7 @@ class SplashScreen(tk.Toplevel):
 
     def _draw_gear(self):
         self.canvas.delete("gear")
+        self.canvas.delete("gear_glow")
         teeth = 8
         inner = 20
         outer = 30
