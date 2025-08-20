@@ -4,6 +4,8 @@ import tkinter as tk
 import tkinter.font as tkfont
 from typing import Callable, Optional
 
+from .button_utils import _lighten_image
+
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
     value = value.lstrip('#')
@@ -38,42 +40,6 @@ def _interpolate_color(c1: str, c2: str, t: float) -> str:
     g = int(g1 + (g2 - g1) * t)
     b = int(b1 + (b2 - b1) * t)
     return _rgb_to_hex((r, g, b))
-
-
-def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
-    """Return a lightened copy of ``img`` while preserving transparency.
-
-    ``tk.PhotoImage`` provides no direct access to per-pixel alpha values, so
-    when Pillow is available the image is converted to an ``RGBA`` bitmap where
-    the colour channels are brightened and the original alpha channel is
-    reapplied.  If Pillow cannot be imported we fall back to a pure Tk based
-    implementation that skips pixels reported as transparent.
-    """
-
-    try:  # Prefer Pillow for correct alpha handling
-        from PIL import Image, ImageEnhance, ImageTk  # type: ignore
-
-        pil_img = ImageTk.getimage(img).convert("RGBA")
-        r, g, b, a = pil_img.split()
-        rgb = Image.merge("RGB", (r, g, b))
-        bright = ImageEnhance.Brightness(rgb).enhance(factor)
-        light = Image.merge("RGBA", (*bright.split(), a))
-        return ImageTk.PhotoImage(light)
-    except Exception:  # pragma: no cover - Pillow may be unavailable
-        w, h = img.width(), img.height()
-        new = tk.PhotoImage(width=w, height=h)
-        for x in range(w):
-            for y in range(h):
-                pixel = img.get(x, y)
-                if pixel in ("", "{}", None):
-                    # Leave fully transparent pixels untouched
-                    continue
-                if isinstance(pixel, tuple):
-                    color = _rgb_to_hex(pixel[:3])
-                else:
-                    color = pixel
-                new.put(_lighten(color, factor), (x, y))
-        return new
 
 
 class CapsuleButton(tk.Canvas):
