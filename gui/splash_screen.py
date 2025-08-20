@@ -134,24 +134,21 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a multi-color gradient dominated by black."""
-        # Color stops: violet -> magenta -> light green -> black
+        """Draw a horizon-like gradient to give a sense of depth."""
         stops = [
-            (0.0, (138, 43, 226)),   # violet
-            (0.3, (255, 0, 255)),    # magenta
-            (0.5, (144, 238, 144)),  # light green
-            (1.0, (0, 0, 0)),        # black
+            (0.0, (10, 10, 30)),     # deep sky
+            (0.5, (135, 206, 235)),  # bright horizon
+            (0.51, (222, 184, 135)), # immediate ground
+            (1.0, (0, 50, 0)),       # dark ground
         ]
         steps = self.canvas_size
         for i in range(steps):
             ratio = i / steps
-            # Find two surrounding color stops
             for idx in range(len(stops) - 1):
                 if stops[idx][0] <= ratio <= stops[idx + 1][0]:
                     left_pos, left_col = stops[idx]
                     right_pos, right_col = stops[idx + 1]
                     break
-            # Normalize ratio between the two stops
             local = (ratio - left_pos) / (right_pos - left_pos)
             r = int(left_col[0] + (right_col[0] - left_col[0]) * local)
             g = int(left_col[1] + (right_col[1] - left_col[1]) * local)
@@ -170,7 +167,6 @@ class SplashScreen(tk.Toplevel):
     def _draw_cube(self):
         self.canvas.delete("cube")
         self.canvas.delete("shadow")
-        # Simple oval shadow to give cube a floating appearance
         shadow_w = 80
         shadow_h = 20
         cx = self.canvas_size / 2
@@ -190,17 +186,33 @@ class SplashScreen(tk.Toplevel):
         sin_a = math.sin(angle)
         points = []
         for x, y, z in self.vertices:
-            # rotate around Y axis
             x1 = x * cos_a - z * sin_a
             z1 = x * sin_a + z * cos_a
-            # rotate around X axis for slight 3D
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
-            points.append(self._project(x1, y1, z2))
+            px, py = self._project(x1, y1, z2)
+            points.append((px, py, z2))
+        faces = [
+            (0, 1, 2, 3),
+            (4, 5, 6, 7),
+            (0, 1, 5, 4),
+            (2, 3, 7, 6),
+            (1, 2, 6, 5),
+            (0, 3, 7, 4),
+        ]
+        faces.sort(key=lambda f: sum(points[i][2] for i in f) / len(f))
+        for face in faces:
+            coords = [points[i][:2] for i in face]
+            self.canvas.create_polygon(
+                coords,
+                fill="cyan",
+                outline="",
+                tags="cube",
+                stipple="gray25",
+            )
         for i, j in self.edges:
-            x1, y1 = points[i]
-            x2, y2 = points[j]
-            # Bright cyan edges for visibility against black
+            x1, y1, _ = points[i]
+            x2, y2, _ = points[j]
             self.canvas.create_line(
                 x1,
                 y1,
@@ -210,6 +222,19 @@ class SplashScreen(tk.Toplevel):
                 width=2,
                 tags="cube",
             )
+        front = faces[-1]
+        x1, y1, _ = points[front[0]]
+        x3, y3, _ = points[front[2]]
+        self.canvas.create_line(
+            x1,
+            y1,
+            x3,
+            y3,
+            fill="white",
+            width=2,
+            tags="cube",
+            stipple="gray50",
+        )
 
     def _draw_gear(self):
         self.canvas.delete("gear")
@@ -224,9 +249,23 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        # Light outline keeps gear visible on dark background
+        glow_r = outer + 10
+        self.canvas.create_oval(
+            self.canvas_size / 2 - glow_r,
+            self.canvas_size / 2 - glow_r,
+            self.canvas_size / 2 + glow_r,
+            self.canvas_size / 2 + glow_r,
+            fill="yellow",
+            outline="",
+            tags="gear",
+            stipple="gray50",
+        )
         self.canvas.create_polygon(
-            pts, outline="lightgray", fill="", width=2, tags="gear"
+            pts,
+            outline="white",
+            fill="",
+            width=2,
+            tags="gear",
         )
 
     def _animate(self):
