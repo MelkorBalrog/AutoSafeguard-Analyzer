@@ -134,30 +134,29 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a multi-color gradient dominated by black."""
-        # Color stops: violet -> magenta -> light green -> black
+        """Draw a vertical gradient with a subtle horizon."""
         stops = [
-            (0.0, (138, 43, 226)),   # violet
-            (0.3, (255, 0, 255)),    # magenta
-            (0.5, (144, 238, 144)),  # light green
-            (1.0, (0, 0, 0)),        # black
+            (0.0, (10, 10, 50)),     # dark sky
+            (0.5, (135, 206, 235)),  # sky near horizon
+            (0.55, (255, 240, 200)), # horizon glow
+            (1.0, (0, 0, 0)),        # ground
         ]
         steps = self.canvas_size
         for i in range(steps):
             ratio = i / steps
-            # Find two surrounding color stops
             for idx in range(len(stops) - 1):
                 if stops[idx][0] <= ratio <= stops[idx + 1][0]:
                     left_pos, left_col = stops[idx]
                     right_pos, right_col = stops[idx + 1]
                     break
-            # Normalize ratio between the two stops
             local = (ratio - left_pos) / (right_pos - left_pos)
             r = int(left_col[0] + (right_col[0] - left_col[0]) * local)
             g = int(left_col[1] + (right_col[1] - left_col[1]) * local)
             b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
+        horizon_y = int(self.canvas_size * 0.55)
+        self.canvas.create_line(0, horizon_y, self.canvas_size, horizon_y, fill="#222222")
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
@@ -170,7 +169,6 @@ class SplashScreen(tk.Toplevel):
     def _draw_cube(self):
         self.canvas.delete("cube")
         self.canvas.delete("shadow")
-        # Simple oval shadow to give cube a floating appearance
         shadow_w = 80
         shadow_h = 20
         cx = self.canvas_size / 2
@@ -188,25 +186,51 @@ class SplashScreen(tk.Toplevel):
         angle = math.radians(self.angle)
         cos_a = math.cos(angle)
         sin_a = math.sin(angle)
-        points = []
+        transformed = []
         for x, y, z in self.vertices:
-            # rotate around Y axis
             x1 = x * cos_a - z * sin_a
             z1 = x * sin_a + z * cos_a
-            # rotate around X axis for slight 3D
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
-            points.append(self._project(x1, y1, z2))
+            px, py = self._project(x1, y1, z2)
+            transformed.append((px, py, z2))
+        faces = [
+            (0, 1, 2, 3),
+            (4, 5, 6, 7),
+            (0, 1, 5, 4),
+            (2, 3, 7, 6),
+            (1, 2, 6, 5),
+            (0, 3, 7, 4),
+        ]
+        faces.sort(key=lambda f: sum(transformed[i][2] for i in f) / len(f))
+        for face in faces:
+            coords = []
+            z_avg = 0
+            for idx in face:
+                x, y, z = transformed[idx]
+                coords.extend((x, y))
+                z_avg += z
+            z_avg /= len(face)
+            shade = int(80 + (z_avg + 1) * 40)
+            color = f"#{shade:02x}{shade:02x}ff"
+            self.canvas.create_polygon(
+                coords,
+                fill=color,
+                outline="",
+                stipple="gray25",
+                tags="cube",
+            )
         for i, j in self.edges:
-            x1, y1 = points[i]
-            x2, y2 = points[j]
-            # Bright cyan edges for visibility against black
+            x1, y1, z1 = transformed[i]
+            x2, y2, z2 = transformed[j]
+            brightness = (z1 + z2) / 2
+            color = "white" if brightness > 0 else "cyan"
             self.canvas.create_line(
                 x1,
                 y1,
                 x2,
                 y2,
-                fill="cyan",
+                fill=color,
                 width=2,
                 tags="cube",
             )
@@ -224,9 +248,18 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        # Light outline keeps gear visible on dark background
+        coords = [c for pt in pts for c in pt]
+        for w in (8, 6, 4):
+            self.canvas.create_polygon(
+                coords,
+                outline="#00ffff",
+                fill="",
+                width=w,
+                tags="gear",
+                stipple="gray50",
+            )
         self.canvas.create_polygon(
-            pts, outline="lightgray", fill="", width=2, tags="gear"
+            coords, outline="white", fill="", width=2, tags="gear"
         )
 
     def _animate(self):
