@@ -47,6 +47,7 @@ class SplashScreen(tk.Toplevel):
         )
         self.canvas.pack()
         self._draw_gradient()
+        self._draw_cloud()
         self._draw_floor()
         self._center()
         # Initialize cube geometry
@@ -168,22 +169,52 @@ class SplashScreen(tk.Toplevel):
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
 
+    def _draw_cloud(self):
+        """Draw a small turquoise-magenta-white cloud on the sky."""
+        cx, cy = 80, 80
+        ovals = [
+            (cx - 40, cy - 20, cx + 40, cy + 20),
+            (cx - 20, cy - 30, cx + 60, cy + 10),
+            (cx - 60, cy - 30, cx + 20, cy + 10),
+        ]
+        for x1, y1, x2, y2 in ovals:
+            self.canvas.create_oval(
+                x1, y1, x2, y2, fill="#40E0D0", outline="#FF00FF", width=2
+            )
+        # subtle white highlight
+        self.canvas.create_oval(
+            cx - 30,
+            cy - 20,
+            cx + 20,
+            cy + 10,
+            fill="white",
+            outline="",
+            stipple="gray50",
+        )
+
     def _draw_floor(self):
-        """Darken ground toward the viewer for a subtle horizon shadow."""
+        """Add subtle white light near horizon and darker shadow toward bottom."""
         horizon_ratio = 0.55
         horizon = int(self.canvas_size * horizon_ratio)
         steps = self.canvas_size - horizon
+        white_strength = 0.15
+        black_strength = 0.25
         for i in range(steps):
             ratio = i / steps
             # base gradient from light to dark green
             r = int(144 + (0 - 144) * ratio)
             g = int(238 + (100 - 238) * ratio)
             b = int(144 + (0 - 144) * ratio)
-            # additional shadow that intensifies toward bottom
-            shadow = 1 - 0.4 * (1 - ratio)
-            r = int(r * shadow)
-            g = int(g * shadow)
-            b = int(b * shadow)
+            # white glow near horizon
+            w = (1 - ratio) * white_strength
+            r = int(r + (255 - r) * w)
+            g = int(g + (255 - g) * w)
+            b = int(b + (255 - b) * w)
+            # black shadow near bottom
+            sh = ratio * black_strength
+            r = int(r * (1 - sh))
+            g = int(g * (1 - sh))
+            b = int(b * (1 - sh))
             color = f"#{r:02x}{g:02x}{b:02x}"
             y = horizon + i
             self.canvas.create_line(0, y, self.canvas_size, y, fill=color, tags="floor")
