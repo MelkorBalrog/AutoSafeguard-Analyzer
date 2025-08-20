@@ -183,25 +183,31 @@ def show_temporarily(duration=3000, lines: int | None = None):
         Time in milliseconds before hiding the log window.
     lines:
         If provided, explicitly size the log window for this many display lines
-        (plus an extra trailing blank).  When ``None`` the size is computed from
-        the most recently logged message which ensures correct sizing even when
-        other panes are pinned and affect widget width.
+        (plus an extra trailing blank).  When ``None`` the required pixel height
+        is calculated from the most recently logged message so that all of its
+        lines remain visible even when other panes alter the available width.
     """
     global _auto_hide_id
     if not log_frame:
         return
     show_log()
-    log_frame.update_idletasks()
+    log_widget.update_idletasks()
+    height = None
     if lines is None:
         try:
-            lines = log_widget.count(_last_msg_start, _last_msg_end, "displaylines")[0]
+            height = log_widget.count(_last_msg_start, _last_msg_end, "ypixels")[0]
         except Exception:
-            lines = None
-    if lines:
-        # Add one extra line to account for the newline appended after each
-        # message.  Without this the final line of a multi-line message may be
-        # obscured when the log is shown temporarily.
-        log_frame.configure(height=_line_height * (lines + 1))
+            try:
+                lines = log_widget.count(
+                    _last_msg_start, _last_msg_end, "displaylines"
+                )[0]
+                height = _line_height * lines
+            except Exception:
+                pass
+    else:
+        height = _line_height * (lines + 1)
+    if height:
+        log_frame.configure(height=height)
     if _auto_hide_id:
         log_frame.after_cancel(_auto_hide_id)
     _auto_hide_id = log_frame.after(duration, lambda: hide_log(animate=True))
@@ -239,13 +245,13 @@ def log_message(message: str, level: str = "INFO") -> int:
     tag = _LEVEL_TAGS.get(level.upper(), "info")
     start_index = log_widget.index("end-1c")
     log_widget.insert(tk.END, f"[{level}] {message}\n", tag)
-    end_index = log_widget.index("end-1c")
+    end_index = log_widget.index("end")
     _last_msg_start, _last_msg_end = start_index, end_index
     log_widget.see(tk.END)
     log_widget.configure(state="disabled")
     _update_line_numbers()
     try:
-        return log_widget.count(start_index, end_index, "displaylines")[0]
+        return log_widget.count(start_index, end_index, "displaylines")[0] - 1
     except Exception:
         # Fallback to a simple newline count if displaylines is unsupported
         return message.count("\n") + 1
