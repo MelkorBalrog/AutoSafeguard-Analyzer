@@ -34,3 +34,57 @@ def set_uniform_button_width(widget: tk.Misc) -> None:
             btn.configure(width=max_width)
         except Exception:  # pragma: no cover - defensive
             pass
+
+
+def _lighten_color(color: str, factor: float = 1.2) -> str:
+    """Return *color* lightened by *factor* while clamping to valid range."""
+    r = int(color[1:3], 16)
+    g = int(color[3:5], 16)
+    b = int(color[5:7], 16)
+    r = min(int(r * factor), 255)
+    g = min(int(g * factor), 255)
+    b = min(int(b * factor), 255)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _lighten_image(img: tk.PhotoImage, factor: float = 1.2) -> tk.PhotoImage:
+    """Return a new image with all non-black pixels lightened."""
+    w, h = img.width(), img.height()
+    new_img = tk.PhotoImage(width=w, height=h)
+    for x in range(w):
+        for y in range(h):
+            pixel = img.get(x, y)
+            # ``PhotoImage.get`` may return a tuple or an empty string for
+            # transparency.  Normalise to ``#rrggbb`` when a colour is present.
+            if isinstance(pixel, tuple):
+                if len(pixel) == 4 and pixel[3] == 0:
+                    continue
+                pixel = f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}"
+            if not pixel:
+                continue
+            if pixel.lower() == "#000000":
+                new_img.put(pixel, (x, y))
+            else:
+                new_img.put(_lighten_color(pixel, factor), (x, y))
+    return new_img
+
+
+def add_hover_highlight(
+    button: ttk.Button, image: tk.PhotoImage, factor: float = 1.2
+) -> tk.PhotoImage:
+    """Swap *button* image to a lighter variant on hover.
+
+    The returned :class:`tk.PhotoImage` is the generated hover image.  A
+    reference to both normal and hover images is stored on the button to avoid
+    them being garbage collected.
+    """
+
+    hover_img = _lighten_image(image, factor)
+    button.configure(image=image)
+    # Preserve references so Tk does not discard the images
+    button._normal_image = image  # type: ignore[attr-defined]
+    button._hover_image = hover_img  # type: ignore[attr-defined]
+    button.bind("<Enter>", lambda _e: button.configure(image=hover_img))
+    button.bind("<Leave>", lambda _e: button.configure(image=image))
+    return hover_img
+
