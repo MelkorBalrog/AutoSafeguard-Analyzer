@@ -234,9 +234,19 @@ class SplashScreen(tk.Toplevel):
                 width=2,
                 tags="cube",
             )
+            self.canvas.create_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                fill="white",
+                width=1,
+                tags="cube",
+            )
 
     def _draw_gear(self):
         self.canvas.delete("gear")
+        self.canvas.delete("gear_glow")
         teeth = 8
         inner = 20
         outer = 30
