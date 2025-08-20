@@ -134,12 +134,12 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a horizon-like gradient to give a sense of depth."""
+        """Draw a vertical gradient with a subtle horizon."""
         stops = [
-            (0.0, (10, 10, 30)),     # deep sky
-            (0.5, (135, 206, 235)),  # bright horizon
-            (0.51, (222, 184, 135)), # immediate ground
-            (1.0, (0, 50, 0)),       # dark ground
+            (0.0, (10, 10, 50)),     # dark sky
+            (0.5, (135, 206, 235)),  # sky near horizon
+            (0.55, (255, 240, 200)), # horizon glow
+            (1.0, (0, 0, 0)),        # ground
         ]
         steps = self.canvas_size
         for i in range(steps):
@@ -193,7 +193,7 @@ class SplashScreen(tk.Toplevel):
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
             px, py = self._project(x1, y1, z2)
-            points.append((px, py, z2))
+            transformed.append((px, py, z2))
         faces = [
             (0, 1, 2, 3),
             (4, 5, 6, 7),
@@ -202,19 +202,29 @@ class SplashScreen(tk.Toplevel):
             (1, 2, 6, 5),
             (0, 3, 7, 4),
         ]
-        faces.sort(key=lambda f: sum(points[i][2] for i in f) / len(f))
+        faces.sort(key=lambda f: sum(transformed[i][2] for i in f) / len(f))
         for face in faces:
-            coords = [points[i][:2] for i in face]
+            coords = []
+            z_avg = 0
+            for idx in face:
+                x, y, z = transformed[idx]
+                coords.extend((x, y))
+                z_avg += z
+            z_avg /= len(face)
+            shade = int(80 + (z_avg + 1) * 40)
+            color = f"#{shade:02x}{shade:02x}ff"
             self.canvas.create_polygon(
                 coords,
-                fill="cyan",
+                fill=color,
                 outline="",
-                tags="cube",
                 stipple="gray25",
+                tags="cube",
             )
         for i, j in self.edges:
-            x1, y1, _ = points[i]
-            x2, y2, _ = points[j]
+            x1, y1, z1 = transformed[i]
+            x2, y2, z2 = transformed[j]
+            brightness = (z1 + z2) / 2
+            color = "white" if brightness > 0 else "cyan"
             self.canvas.create_line(
                 x1,
                 y1,
@@ -224,19 +234,15 @@ class SplashScreen(tk.Toplevel):
                 width=2,
                 tags="cube",
             )
-        front = faces[-1]
-        x1, y1, _ = points[front[0]]
-        x3, y3, _ = points[front[2]]
-        self.canvas.create_line(
-            x1,
-            y1,
-            x3,
-            y3,
-            fill="white",
-            width=2,
-            tags="cube",
-            stipple="gray50",
-        )
+            self.canvas.create_line(
+                x1,
+                y1,
+                x2,
+                y2,
+                fill="white",
+                width=1,
+                tags="cube",
+            )
 
     def _draw_gear(self):
         self.canvas.delete("gear")
@@ -252,23 +258,18 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
-        glow_r = outer + 10
-        self.canvas.create_oval(
-            self.canvas_size / 2 - glow_r,
-            self.canvas_size / 2 - glow_r,
-            self.canvas_size / 2 + glow_r,
-            self.canvas_size / 2 + glow_r,
-            fill="yellow",
-            outline="",
-            tags="gear",
-            stipple="gray50",
-        )
+        coords = [c for pt in pts for c in pt]
+        for w in (8, 6, 4):
+            self.canvas.create_polygon(
+                coords,
+                outline="#00ffff",
+                fill="",
+                width=w,
+                tags="gear",
+                stipple="gray50",
+            )
         self.canvas.create_polygon(
-            pts,
-            outline="white",
-            fill="",
-            width=2,
-            tags="gear",
+            coords, outline="white", fill="", width=2, tags="gear"
         )
 
     def _animate(self):
