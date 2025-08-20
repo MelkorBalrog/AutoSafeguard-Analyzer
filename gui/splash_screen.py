@@ -13,7 +13,6 @@ class SplashScreen(tk.Toplevel):
         email: str = "email@example.com",
         linkedin: str = "https://www.linkedin.com/in/yourprofile",
         duration: int = 3000,
-        auto_start: bool = True,
     ):
         super().__init__(master)
         self.duration = duration
@@ -88,9 +87,8 @@ class SplashScreen(tk.Toplevel):
             fill="white",
         )
         # Start animation and fade-in effect
-        if auto_start:
-            self.after(10, self._animate)
-            self.after(10, self._fade_in)
+        self.after(10, self._animate)
+        self.after(10, self._fade_in)
 
     def _fade_in(self):
         if not getattr(self, "_alpha_supported", False):
@@ -136,34 +134,29 @@ class SplashScreen(tk.Toplevel):
         self.shadow.lower(self)
 
     def _draw_gradient(self):
-        """Draw a gradient with a horizon to give depth."""
-        def lerp(a: int, b: int, t: float) -> int:
-            return int(a + (b - a) * t)
-
+        """Draw a vertical gradient with a subtle horizon."""
+        stops = [
+            (0.0, (10, 10, 50)),     # dark sky
+            (0.5, (135, 206, 235)),  # sky near horizon
+            (0.55, (255, 240, 200)), # horizon glow
+            (1.0, (0, 0, 0)),        # ground
+        ]
         steps = self.canvas_size
-        horizon = int(steps * 0.6)
         for i in range(steps):
-            if i < horizon:
-                t = i / horizon
-                r = lerp(10, 135, t)
-                g = lerp(10, 206, t)
-                b = lerp(30, 235, t)
-            else:
-                t = (i - horizon) / (steps - horizon)
-                r = lerp(222, 0, t)
-                g = lerp(184, 0, t)
-                b = lerp(135, 0, t)
+            ratio = i / steps
+            for idx in range(len(stops) - 1):
+                if stops[idx][0] <= ratio <= stops[idx + 1][0]:
+                    left_pos, left_col = stops[idx]
+                    right_pos, right_col = stops[idx + 1]
+                    break
+            local = (ratio - left_pos) / (right_pos - left_pos)
+            r = int(left_col[0] + (right_col[0] - left_col[0]) * local)
+            g = int(left_col[1] + (right_col[1] - left_col[1]) * local)
+            b = int(left_col[2] + (right_col[2] - left_col[2]) * local)
             color = f"#{r:02x}{g:02x}{b:02x}"
             self.canvas.create_line(0, i, self.canvas_size, i, fill=color)
-        self.canvas.create_line(
-            0,
-            horizon,
-            self.canvas_size,
-            horizon,
-            fill="white",
-            width=2,
-            tags="horizon",
-        )
+        horizon_y = int(self.canvas_size * 0.55)
+        self.canvas.create_line(0, horizon_y, self.canvas_size, horizon_y, fill="#222222")
 
     def _project(self, x, y, z):
         """Project 3D point onto 2D canvas."""
@@ -176,8 +169,6 @@ class SplashScreen(tk.Toplevel):
     def _draw_cube(self):
         self.canvas.delete("cube")
         self.canvas.delete("shadow")
-        self.canvas.delete("cube_face")
-        # Simple oval shadow to give cube a floating appearance
         shadow_w = 80
         shadow_h = 20
         cx = self.canvas_size / 2
@@ -201,8 +192,8 @@ class SplashScreen(tk.Toplevel):
             z1 = x * sin_a + z * cos_a
             y1 = y * cos_a - z1 * sin_a
             z2 = y * sin_a + z1 * cos_a
-            points.append(self._project(x1, y1, z2))
-
+            px, py = self._project(x1, y1, z2)
+            transformed.append((px, py, z2))
         faces = [
             (0, 1, 2, 3),
             (4, 5, 6, 7),
@@ -211,32 +202,29 @@ class SplashScreen(tk.Toplevel):
             (1, 2, 6, 5),
             (0, 3, 7, 4),
         ]
+        faces.sort(key=lambda f: sum(transformed[i][2] for i in f) / len(f))
         for face in faces:
             coords = []
+            z_avg = 0
             for idx in face:
-                coords.extend(points[idx])
+                x, y, z = transformed[idx]
+                coords.extend((x, y))
+                z_avg += z
+            z_avg /= len(face)
+            shade = int(80 + (z_avg + 1) * 40)
+            color = f"#{shade:02x}{shade:02x}ff"
             self.canvas.create_polygon(
-                *coords,
-                fill="cyan",
+                coords,
+                fill=color,
                 outline="",
                 stipple="gray25",
-                tags=("cube_face", "cube"),
+                tags="cube",
             )
-        fx1, fy1 = points[4]
-        fx2, fy2 = points[6]
-        self.canvas.create_line(
-            fx1,
-            fy1,
-            fx2,
-            fy2,
-            fill="white",
-            width=2,
-            tags=("cube_shine", "cube"),
-            stipple="gray25",
-        )
         for i, j in self.edges:
-            x1, y1 = points[i]
-            x2, y2 = points[j]
+            x1, y1, z1 = transformed[i]
+            x2, y2, z2 = transformed[j]
+            brightness = (z1 + z2) / 2
+            color = "white" if brightness > 0 else "cyan"
             self.canvas.create_line(
                 x1,
                 y1,
@@ -270,19 +258,18 @@ class SplashScreen(tk.Toplevel):
             x = self.canvas_size / 2 + r * math.cos(theta)
             y = self.canvas_size / 2 + r * math.sin(theta)
             pts.append((x, y))
+        coords = [c for pt in pts for c in pt]
+        for w in (8, 6, 4):
+            self.canvas.create_polygon(
+                coords,
+                outline="#00ffff",
+                fill="",
+                width=w,
+                tags="gear",
+                stipple="gray50",
+            )
         self.canvas.create_polygon(
-            pts,
-            outline="#00ffff",
-            fill="",
-            width=6,
-            tags="gear_glow",
-        )
-        self.canvas.create_polygon(
-            pts,
-            outline="lightgray",
-            fill="",
-            width=2,
-            tags="gear",
+            coords, outline="white", fill="", width=2, tags="gear"
         )
 
     def _animate(self):
