@@ -99,6 +99,7 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
     monkeypatch.setattr(mb, "PurpleButton", DummyButton)
     monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: DummyFrame())
     monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: DummyLabel())
+    monkeypatch.setattr(mb.ttk, "Style", lambda *a, **k: type("S", (), {"configure": lambda *a, **k: None})())
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.tk, "_default_root", None)
     monkeypatch.setattr(
@@ -109,6 +110,94 @@ def test_create_dialog_uses_purple_button_style(monkeypatch):
 
     mb._create_dialog("Title", "Message", [("OK", True)])
     assert colors == [("#f3eaff", "#e6d9ff")]
+
+
+def test_create_dialog_applies_light_blue_background(monkeypatch):
+    calls = []
+
+    class DummyFrame:
+        def __init__(self, *a, **k):
+            calls.append(k.get("style"))
+
+        def pack(self, *a, **k):
+            pass
+
+    class DummyLabel:
+        def __init__(self, *a, **k):
+            calls.append(k.get("style"))
+
+        def pack(self, *a, **k):
+            pass
+
+    class DummyDialog:
+        def __init__(self, root):
+            pass
+
+        def title(self, *a):
+            pass
+
+        def resizable(self, *a, **k):
+            pass
+
+        def transient(self, *a, **k):
+            pass
+
+        def grab_set(self):
+            pass
+
+        def geometry(self, *a, **k):
+            pass
+
+        def update_idletasks(self):
+            pass
+
+        def attributes(self, *a, **k):
+            pass
+
+        def lift(self, *a, **k):
+            pass
+
+        def winfo_screenwidth(self):
+            return 1000
+
+        def winfo_screenheight(self):
+            return 800
+
+        def destroy(self):
+            pass
+
+        def protocol(self, *a, **k):
+            pass
+
+        def wait_window(self):
+            pass
+
+    class DummyStyle:
+        def __init__(self, master=None):
+            pass
+
+        def configure(self, name, **kw):
+            calls.append((name, kw))
+
+    monkeypatch.setattr(mb.tk, "_default_root", None)
+    monkeypatch.setattr(
+        mb.tk,
+        "Tk",
+        lambda: type("Root", (), {"withdraw": lambda self: None, "destroy": lambda self: None})(),
+    )
+    monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
+    monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: DummyFrame(*a, **k))
+    monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: DummyLabel(*a, **k))
+    monkeypatch.setattr(mb.ttk, "Style", DummyStyle)
+    monkeypatch.setattr(
+        mb,
+        "PurpleButton",
+        lambda *a, **k: type("DummyButton", (), {"pack": lambda *a, **k: None})(),
+    )
+
+    mb._create_dialog("Title", "Message", [("OK", True)])
+    assert ("Dialog.TFrame", {"background": mb.LIGHT_BLUE}) in calls
+    assert ("Dialog.TLabel", {"background": mb.LIGHT_BLUE}) in calls
 
 
 def test_create_dialog_keeps_existing_root(monkeypatch):
@@ -168,6 +257,7 @@ def test_create_dialog_keeps_existing_root(monkeypatch):
     monkeypatch.setattr(mb.tk, "Toplevel", lambda root: DummyDialog(root))
     monkeypatch.setattr(mb.ttk, "Frame", lambda *a, **k: type("F", (), {"pack": lambda *a, **k: None})())
     monkeypatch.setattr(mb.ttk, "Label", lambda *a, **k: type("L", (), {"pack": lambda *a, **k: None})())
+    monkeypatch.setattr(mb.ttk, "Style", lambda *a, **k: type("S", (), {"configure": lambda *a, **k: None})())
     monkeypatch.setattr(mb, "PurpleButton", lambda *a, **k: type("B", (), {"pack": lambda *a, **k: None})())
 
     mb._create_dialog("Title", "Message", [("OK", True)])

@@ -4,9 +4,51 @@ from __future__ import annotations
 """Shared GUI helpers and widget customizations."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 
 from .capsule_button import CapsuleButton, _interpolate_color, _glow_color  # noqa: F401
+
+
+LIGHT_BLUE = "#A9BCE2"
+
+# ---------------------------------------------------------------------------
+# Apply a consistent light blue background to all dialog windows
+# ---------------------------------------------------------------------------
+
+_orig_toplevel_init = tk.Toplevel.__init__
+
+
+def _themed_toplevel_init(self, *args, **kwargs):
+    _orig_toplevel_init(self, *args, **kwargs)
+    try:
+        self.configure(bg=LIGHT_BLUE)
+    except tk.TclError:
+        pass
+
+
+tk.Toplevel.__init__ = _themed_toplevel_init  # type: ignore[assignment]
+
+
+def _apply_bg(widget: tk.Misc) -> None:
+    """Recursively apply the dialog background colour to ``widget``."""
+
+    try:
+        widget.configure(bg=LIGHT_BLUE)
+    except Exception:
+        pass
+    for child in widget.winfo_children():
+        _apply_bg(child)
+
+
+_orig_dialog_init = simpledialog.Dialog.__init__
+
+
+def _themed_dialog_init(self, parent, title=None):  # type: ignore[override]
+    _orig_dialog_init(self, parent, title)
+    _apply_bg(self)
+
+
+simpledialog.Dialog.__init__ = _themed_dialog_init  # type: ignore[assignment]
 
 
 class _StyledButton(CapsuleButton):

@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from . import logger
-from . import PurpleButton
+from . import PurpleButton, LIGHT_BLUE
 
 
 def _log_and_return(title: str | None, message: str | None, level: str) -> str:
@@ -74,9 +74,13 @@ def _create_dialog(
     dialog.geometry(f"{width}x{height}+{x}+{y}")
     dialog.lift()
 
-    frame = ttk.Frame(dialog, padding=10)
+    style = ttk.Style(dialog)
+    style.configure("Dialog.TFrame", background=LIGHT_BLUE)
+    style.configure("Dialog.TLabel", background=LIGHT_BLUE)
+
+    frame = ttk.Frame(dialog, padding=10, style="Dialog.TFrame")
     frame.pack(fill="both", expand=True)
-    ttk.Label(frame, text=message or "").pack(pady=(0, 10))
+    ttk.Label(frame, text=message or "", style="Dialog.TLabel").pack(pady=(0, 10))
 
     result: object = None
 
