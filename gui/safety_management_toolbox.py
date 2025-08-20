@@ -452,6 +452,37 @@ class SafetyManagementWindow(tk.Frame):
             except Exception as exc:
                 messagebox.showerror("Requirements", f"Failed to save CSV:\n{exc}")
 
+        if hasattr(tree, "bind"):
+            try:
+                menu = tk.Menu(tree, tearoff=False)
+            except Exception:
+                menu = None
+            if menu:
+                menu.add_command(label="Add", command=_add)
+                menu.add_command(label="Edit", command=_edit)
+                menu.add_command(label="Remove", command=_remove)
+                menu.add_command(label="Save CSV", command=_save_csv)
+
+                def _popup(event: tk.Event) -> None:
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                    try:
+                        menu.tk_popup(event.x_root, event.y_root)
+                    finally:
+                        menu.grab_release()
+
+                def _on_double_click(event: tk.Event) -> None:
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                        _edit()
+
+                tree.bind("<Button-3>", _popup)
+                tree.bind("<Double-1>", _on_double_click)
+                
         if hasattr(ttk.Frame, "grid"):
             btn_frame = ttk.Frame(frame)
             btn_frame.pack(fill=tk.X, pady=4)
