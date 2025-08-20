@@ -12707,6 +12707,8 @@ class AutoMLApp:
 
     def show_requirements_editor(self):
         """Open an editor to manage global requirements."""
+        import textwrap
+
         self.update_requirement_statuses()
         if hasattr(self, "_req_tab") and self._req_tab.winfo_exists():
             self.doc_nb.select(self._req_tab)
@@ -12717,7 +12719,15 @@ class AutoMLApp:
         columns = ["ID", "ASIL", "CAL", "Type", "Status", "Parent", "Trace", "Links", "Text"]
         tree_frame = ttk.Frame(win)
         tree_frame.pack(fill=tk.BOTH, expand=True)
-        tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        style = ttk.Style(tree_frame)
+        style.configure("ReqEditor.Treeview", rowheight=20)
+        tree = ttk.Treeview(
+            tree_frame,
+            columns=columns,
+            show="headings",
+            selectmode="browse",
+            style="ReqEditor.Treeview",
+        )
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
@@ -12750,12 +12760,15 @@ class AutoMLApp:
 
         def refresh_tree():
             tree.delete(*tree.get_children())
+            max_lines = 1
             for req in global_requirements.values():
                 rid = req.get("id", "")
                 trace = ", ".join(_get_requirement_allocations(rid))
                 links = ", ".join(
                     f"{r.get('type')} {r.get('id')}" for r in req.get("relations", [])
                 )
+                text = textwrap.fill(req.get("text", ""), width=40)
+                max_lines = max(max_lines, text.count("\n") + 1)
                 tree.insert(
                     "",
                     "end",
@@ -12769,9 +12782,10 @@ class AutoMLApp:
                         req.get("parent_id", ""),
                         trace,
                         links,
-                        req.get("text", ""),
+                        text,
                     ],
                 )
+            style.configure("ReqEditor.Treeview", rowheight=20 * max_lines)
 
         class ReqDialog(simpledialog.Dialog):
             def __init__(self, parent, title, initial=None):
