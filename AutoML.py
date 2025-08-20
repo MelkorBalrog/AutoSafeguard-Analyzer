@@ -4687,6 +4687,72 @@ class AutoMLApp:
             )
         self.update_views()
 
+    def _build_probability_frame(
+        self,
+        parent,
+        title: str,
+        levels: range,
+        values: dict,
+        row: int,
+        dialog_font: tkFont.Font,
+    ) -> dict:
+        """Create a labelled frame of probability entries.
+
+        Returns a mapping of level -> ``StringVar`` for the entered values.
+        """
+        try:
+            frame = ttk.LabelFrame(parent, text=title, style="Toolbox.TLabelframe")
+        except TypeError:
+            frame = ttk.LabelFrame(parent, text=title)
+        frame.grid(row=row, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+
+        vars_dict: dict[int, tk.StringVar] = {}
+        for idx, lvl in enumerate(levels):
+            ttk.Label(frame, text=f"{lvl}:", font=dialog_font).grid(
+                row=0, column=idx * 2, padx=2, pady=2
+            )
+            var = tk.StringVar(value=str(values.get(lvl, 0.0)))
+            ttk.Entry(
+                frame,
+                textvariable=var,
+                width=8,
+                font=dialog_font,
+                validate="key",
+                validatecommand=(parent.register(self.validate_float), "%P"),
+            ).grid(row=0, column=idx * 2 + 1, padx=2, pady=2)
+            vars_dict[lvl] = var
+        return vars_dict
+
+    def _apply_project_properties(
+        self,
+        name: str,
+        detailed: bool,
+        exp_vars: dict,
+        ctrl_vars: dict,
+        sev_vars: dict,
+        smt,
+        freeze: bool,
+    ) -> None:
+        """Persist updated project properties and refresh probability tables."""
+        self.project_properties["pdf_report_name"] = name
+        self.project_properties["pdf_detailed_formulas"] = detailed
+        self.project_properties["exposure_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
+        }
+        self.project_properties["controllability_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
+        }
+        self.project_properties["severity_probabilities"] = {
+            lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
+        }
+        update_probability_tables(
+            self.project_properties["exposure_probabilities"],
+            self.project_properties["controllability_probabilities"],
+            self.project_properties["severity_probabilities"],
+        )
+        if smt:
+            smt.set_all_diagrams_frozen(freeze)
+
     def edit_project_properties(self):
         prop_win = tk.Toplevel(self.root)
         prop_win.title("Project Properties")
@@ -4724,135 +4790,55 @@ class AutoMLApp:
             variable=var_freeze,
         ).grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
-        # Probability mappings for validation target calculations
-        try:
-            exp_frame = ttk.LabelFrame(
-                prop_win,
-                text="Exposure Probabilities P(E|HB)",
-                style="Toolbox.TLabelframe",
-            )
-        except TypeError:
-            exp_frame = ttk.LabelFrame(
-                prop_win,
-                text="Exposure Probabilities P(E|HB)",
-            )
-        exp_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-        exp_vars = {}
-        for i in range(1, 5):
-            ttk.Label(exp_frame, text=f"{i}:", font=dialog_font).grid(
-                row=0, column=(i - 1) * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(
-                value=str(
-                    self.project_properties.get("exposure_probabilities", {}).get(i, 0.0)
-                )
-            )
-            ttk.Entry(
-                exp_frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(prop_win.register(self.validate_float), "%P"),
-            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
-            exp_vars[i] = var
-
-        try:
-            ctrl_frame = ttk.LabelFrame(
-                prop_win,
-                text="Controllability Probabilities P(C|E)",
-                style="Toolbox.TLabelframe",
-            )
-        except TypeError:
-            ctrl_frame = ttk.LabelFrame(
-                prop_win,
-                text="Controllability Probabilities P(C|E)",
-            )
-        ctrl_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-        ctrl_vars = {}
-        for i in range(1, 4):
-            ttk.Label(ctrl_frame, text=f"{i}:", font=dialog_font).grid(
-                row=0, column=(i - 1) * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(
-                value=str(
-                    self.project_properties.get("controllability_probabilities", {}).get(i, 0.0)
-                )
-            )
-            ttk.Entry(
-                ctrl_frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(prop_win.register(self.validate_float), "%P"),
-            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
-            ctrl_vars[i] = var
-
-        try:
-            sev_frame = ttk.LabelFrame(
-                prop_win,
-                text="Severity Probabilities P(S|C)",
-                style="Toolbox.TLabelframe",
-            )
-        except TypeError:
-            sev_frame = ttk.LabelFrame(
-                prop_win,
-                text="Severity Probabilities P(S|C)",
-            )
-        sev_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
-        sev_vars = {}
-        for i in range(1, 4):
-            ttk.Label(sev_frame, text=f"{i}:", font=dialog_font).grid(
-                row=0, column=(i - 1) * 2, padx=2, pady=2
-            )
-            var = tk.StringVar(
-                value=str(
-                    self.project_properties.get("severity_probabilities", {}).get(i, 0.0)
-                )
-            )
-            ttk.Entry(
-                sev_frame,
-                textvariable=var,
-                width=8,
-                font=dialog_font,
-                validate="key",
-                validatecommand=(prop_win.register(self.validate_float), "%P"),
-            ).grid(row=0, column=(i - 1) * 2 + 1, padx=2, pady=2)
-            sev_vars[i] = var
+        exp_vars = self._build_probability_frame(
+            prop_win,
+            "Exposure Probabilities P(E|HB)",
+            range(1, 5),
+            self.project_properties.get("exposure_probabilities", {}),
+            3,
+            dialog_font,
+        )
+        ctrl_vars = self._build_probability_frame(
+            prop_win,
+            "Controllability Probabilities P(C|E)",
+            range(1, 4),
+            self.project_properties.get("controllability_probabilities", {}),
+            4,
+            dialog_font,
+        )
+        sev_vars = self._build_probability_frame(
+            prop_win,
+            "Severity Probabilities P(S|C)",
+            range(1, 4),
+            self.project_properties.get("severity_probabilities", {}),
+            5,
+            dialog_font,
+        )
 
         def save_props():
             new_name = pdf_entry.get().strip()
-            if new_name:
-                self.project_properties["pdf_report_name"] = new_name
-                self.project_properties["pdf_detailed_formulas"] = var_detailed.get()
-                self.project_properties["exposure_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in exp_vars.items()
-                }
-                self.project_properties["controllability_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in ctrl_vars.items()
-                }
-                self.project_properties["severity_probabilities"] = {
-                    lvl: float(var.get() or 0.0) for lvl, var in sev_vars.items()
-                }
-                update_probability_tables(
-                    self.project_properties["exposure_probabilities"],
-                    self.project_properties["controllability_probabilities"],
-                    self.project_properties["severity_probabilities"],
-                )
-                if smt:
-                    smt.set_all_diagrams_frozen(var_freeze.get())
-                messagebox.showinfo(
-                    "Project Properties", "Project properties updated."
-                )
-            else:
+            if not new_name:
                 messagebox.showwarning(
                     "Project Properties", "PDF Report Name cannot be empty."
                 )
+                return
+            self._apply_project_properties(
+                new_name,
+                var_detailed.get(),
+                exp_vars,
+                ctrl_vars,
+                sev_vars,
+                smt,
+                var_freeze.get(),
+            )
+            messagebox.showinfo(
+                "Project Properties", "Project properties updated."
+            )
             prop_win.destroy()
 
-        save_btn = tk.Button(prop_win, text="Save", command=save_props, font=dialog_font)
-        save_btn.grid(row=6, column=0, columnspan=2, pady=10)
+        ttk.Button(prop_win, text="Save", command=save_props, font=dialog_font).grid(
+            row=6, column=0, columnspan=2, pady=10
+        )
         prop_win.transient(self.root)
         prop_win.grab_set()
         self.root.wait_window(prop_win)

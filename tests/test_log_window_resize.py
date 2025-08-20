@@ -53,3 +53,19 @@ def test_log_window_resizes_with_pinned_explorer():
     pixels = logger.log_widget.count("1.0", "end", "ypixels")[0]
     assert logger.log_frame.winfo_height() == pixels
     root.destroy()
+
+
+def test_log_window_resizes_with_pinned_explorer():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    app = AutoMLApp(root)
+    app.toggle_explorer_pin()
+    long_message = "Pinned panel message " * 40
+    messagebox.showinfo("Title", long_message)
+    root.update_idletasks()
+    display_lines = logger.log_widget.count("1.0", "end-1c", "displaylines")[0]
+    expected_height = logger._line_height * display_lines
+    assert logger.log_frame.winfo_height() == expected_height
+    root.destroy()
