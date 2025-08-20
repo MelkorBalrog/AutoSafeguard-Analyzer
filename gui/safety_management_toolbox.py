@@ -1,3 +1,4 @@
+import csv
 import tkinter as tk
 from tkinter import ttk, simpledialog
 import tkinter.font as tkfont
@@ -18,7 +19,6 @@ from gui.mac_button_style import apply_translucid_button_style
 from gui.icon_factory import create_icon
 from sysml.sysml_repository import SysMLRepository
 from gui.toolboxes import configure_table_style, _wrap_val
-from gui.mac_button_style import apply_translucid_button_style
 
 
 class SafetyManagementWindow(tk.Frame):
@@ -320,12 +320,13 @@ class SafetyManagementWindow(tk.Frame):
         tree_frame = ttk.Frame(frame)
         style_name = "Requirements.Treeview"
         try:
-            configure_table_style(style_name, rowheight=80)
+            configure_table_style(style_name)
             tree = ttk.Treeview(
                 tree_frame, columns=columns, show="headings", style=style_name
             )
         except Exception:
             tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        tree.configure(height=10)  # limit table height so buttons remain visible
         for c in columns:
             tree.heading(c, text=c)
 
@@ -368,7 +369,147 @@ class SafetyManagementWindow(tk.Frame):
 
         populate(ids)
         add_treeview_scrollbars(tree, tree_frame)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree_frame.pack(fill=tk.BOTH)  # don't expand so button bar has room
+
+        def _selected_rid() -> str | None:
+            item = tree.focus()
+            if not item:
+                return None
+            try:
+                return tree.item(item, "values")[0]
+            except Exception:
+                return None
+
+        def _add() -> None:
+            text = simpledialog.askstring("Requirement", "Requirement text:")
+            if not text:
+                return
+            req_type = (
+                simpledialog.askstring(
+                    "Requirement", "Requirement type:", initialvalue="organizational"
+                )
+                or "organizational"
+            )
+            rid = self._add_requirement(text, req_type=req_type)
+            ids.append(rid)
+            populate(ids)
+
+        def _edit() -> None:
+            rid = _selected_rid()
+            if not rid:
+                return
+            req = global_requirements.get(rid, {})
+            text = simpledialog.askstring(
+                "Requirement", "Requirement text:", initialvalue=req.get("text", "")
+            )
+            if text is None:
+                return
+            req["text"] = text
+            req_type = simpledialog.askstring(
+                "Requirement", "Requirement type:", initialvalue=req.get("req_type", "")
+            )
+            if req_type:
+                req["req_type"] = req_type
+            populate(ids)
+
+        def _remove() -> None:
+            rid = _selected_rid()
+            if not rid:
+                return
+            if not messagebox.askyesno("Remove Requirement", f"Delete {rid}?"):
+                return
+            try:
+                ids.remove(rid)
+            except ValueError:
+                pass
+            global_requirements.pop(rid, None)
+            populate(ids)
+
+        def _save_csv() -> None:
+            path = simpledialog.askstring(
+                "Save CSV", "File path:", initialvalue="requirements.csv"
+            )
+            if not path:
+                return
+            try:
+                with open(path, "w", newline="") as fh:
+                    writer = csv.writer(fh)
+                    writer.writerow(columns)
+                    for rid in ids:
+                        req = global_requirements.get(rid, {})
+                        writer.writerow(
+                            [
+                                rid,
+                                req.get("req_type", ""),
+                                req.get("text", ""),
+                                req.get("phase") or "",
+                                req.get("status", ""),
+                            ]
+                        )
+                messagebox.showinfo(
+                    "Requirements", f"Saved {len(ids)} requirements to {path}"
+                )
+            except Exception as exc:
+                messagebox.showerror("Requirements", f"Failed to save CSV:\n{exc}")
+
+        if hasattr(tree, "bind"):
+            try:
+                menu = tk.Menu(tree, tearoff=False)
+            except Exception:
+                menu = None
+            if menu:
+                menu.add_command(label="Add", command=_add)
+                menu.add_command(label="Edit", command=_edit)
+                menu.add_command(label="Remove", command=_remove)
+                menu.add_command(label="Save CSV", command=_save_csv)
+
+                def _popup(event: tk.Event) -> None:
+                    """Display the context menu at the cursor position.
+
+                    The menu should appear regardless of whether a row is
+                    under the cursor so users can access actions from any
+                    location within the table.  When a row is present, focus
+                    it to ensure subsequent actions operate on the expected
+                    requirement.
+                    """
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                    try:
+                        menu.tk_popup(event.x_root, event.y_root)
+                    finally:
+                        menu.grab_release()
+
+                def _on_double_click(event: tk.Event) -> None:
+                    row = tree.identify_row(event.y)
+                    if row:
+                        tree.selection_set(row)
+                        tree.focus(row)
+                        _edit()
+
+                tree.bind("<Button-3>", _popup)
+                tree.bind("<Button-2>", _popup)
+                tree.bind("<Control-Button-1>", _popup)
+                tree.bind("<Double-1>", _on_double_click, add="+")
+
+        if hasattr(ttk.Frame, "grid"):
+            btn_frame = ttk.Frame(frame)
+            btn_frame.pack(fill=tk.X, pady=4)
+            if hasattr(btn_frame, "configure"):
+                tk.Button(btn_frame, text="Add", command=_add).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Edit", command=_edit).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Remove", command=_remove).pack(
+                    side=tk.LEFT, padx=2
+                )
+                tk.Button(btn_frame, text="Save CSV", command=_save_csv).pack(
+                    side=tk.LEFT, padx=2
+                )
+
         frame.refresh_table = populate
         return frame
 
