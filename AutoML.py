@@ -17922,8 +17922,13 @@ class AutoMLApp:
 
     def open_metrics_tab(self):
         """Open a tab displaying project metrics."""
+        try:
+            from gui.metrics_tab import MetricsTab
+        except Exception as exc:  # pragma: no cover - display error in GUI
+            from gui import messagebox
+            messagebox.showerror("Metrics unavailable", str(exc))
+            return
         tab = self._new_tab("Metrics")
-        from gui.metrics_tab import MetricsTab
         MetricsTab(tab, self).pack(fill=tk.BOTH, expand=True)
 
     def apply_style(self, filename: str) -> None:
