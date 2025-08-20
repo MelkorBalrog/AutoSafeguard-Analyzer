@@ -11,3 +11,10 @@ def test_constrained_by_rules() -> None:
     rules = cfg["connection_rules"]["Governance Diagram"]["Constrained by"]
     assert set(rules["Organization"]) == {"Policy"}
     assert set(rules["Business Unit"]) == {"Principle"}
+    assert set(rules["Work Product"]) == {
+        "Guideline",
+        "Policy",
+        "Principle",
+        "Standard",
+        "Work Product",
+    }
