@@ -5,7 +5,7 @@ import tkinter as tk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from gui.capsule_button import CapsuleButton
+from gui.capsule_button import CapsuleButton, _lighten
 
 
 def test_glow_edges_only():
@@ -37,4 +37,24 @@ def test_glow_matches_button_width():
     x1, _y1, x2, _y2 = btn.coords(top_line)
     assert x1 == r - 1
     assert x2 == w - r + 1
+    root.destroy()
+
+def test_glow_bottom_highlight():
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Tk not available")
+    btn = CapsuleButton(root, text="Glow")
+    btn.pack()
+    root.update_idletasks()
+    btn._on_enter(type("E", (), {})())
+    rects = [i for i in btn._glow_items if btn.type(i) == "rectangle"]
+    assert rects, "bottom highlight not added"
+    rect_id = rects[0]
+    x1, y1, x2, y2 = btn.coords(rect_id)
+    h = int(btn["height"])
+    assert y2 == h
+    assert y2 - y1 <= 3
+    expected_color = _lighten(btn._normal_color, 1.6)
+    assert btn.itemcget(rect_id, "fill") == expected_color
     root.destroy()
