@@ -85,3 +85,72 @@ def test_nonrecoverable_fault_mitigates_and_notifies() -> None:
         manager.raise_errors()
     assert mitigated["called"]
     assert "degraded mode" in manager.notifications
+
+
+def test_polling_failed_recovery_triggers_mitigation() -> None:
+    manager = PollingDiagnosticsManager(interval=0.01)
+    manager.register_check(
+        "p1",
+        lambda: False,
+        recover=lambda: False,
+        mitigate=lambda: "fallback",
+        recoverable=True,
+    )
+    manager.start()
+    time.sleep(0.05)
+    manager.stop()
+    with pytest.raises(DiagnosticError):
+        manager.raise_errors()
+    assert "fallback" in manager.notifications
+
+
+def test_event_failed_recovery_triggers_mitigation() -> None:
+    manager = EventDiagnosticsManager()
+    manager.register_check(
+        "e1",
+        recover=lambda: False,
+        mitigate=lambda: "fallback",
+        recoverable=True,
+    )
+    manager.record_event("e1", False)
+    manager.process_events()
+    with pytest.raises(DiagnosticError):
+        manager.raise_errors()
+    assert "fallback" in manager.notifications
+
+
+def test_passive_failed_recovery_triggers_mitigation() -> None:
+    manager = PassiveDiagnosticsManager()
+
+    def check() -> bool:
+        return False
+
+    manager.run_check(
+        "s1",
+        check,
+        recover=lambda: False,
+        mitigate=lambda: "fallback",
+        recoverable=True,
+    )
+    with pytest.raises(DiagnosticError):
+        manager.raise_errors()
+    assert "fallback" in manager.notifications
+
+
+def test_async_failed_recovery_triggers_mitigation() -> None:
+    manager = AsyncDiagnosticsManager()
+
+    async def bad() -> bool:
+        return False
+
+    manager.register_check(
+        "a1",
+        bad,
+        recover=lambda: False,
+        mitigate=lambda: "fallback",
+        recoverable=True,
+    )
+    asyncio.run(manager.run_once())
+    with pytest.raises(DiagnosticError):
+        manager.raise_errors()
+    assert "fallback" in manager.notifications
