@@ -57,12 +57,15 @@ def test_governance_core_relations_and_externals(tmp_path, monkeypatch):
     # Governance core toolbox hides Work Product and Lifecycle Phase buttons
     # but should still expose all relationships between them.
     assert core["nodes"] == []
+    relations = core["relations"]
     assert {
         "Propagate",
         "Propagate by Review",
         "Propagate by Approval",
         "Re-use",
-    } <= set(core["relations"])
+        "Used By",
+    } <= set(relations)
+    assert relations.index("Used By") < relations.index("Used after Approval")
     orig_path = architecture._CONFIG_PATH
     cfg = load_json_with_comments(orig_path)
     new_cfg = json.loads(json.dumps(cfg))
