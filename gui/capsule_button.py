@@ -135,7 +135,7 @@ class CapsuleButton(tk.Canvas):
             self._state.add("disabled")
         self._command = command
         self._normal_color = bg
-        self._hover_color = hover_bg or _lighten(bg, 1.1)
+        self._hover_color = hover_bg or _lighten(bg, 1.5)
         self._pressed_color = _darken(bg, 0.8)
         self._current_color = self._normal_color
         self._radius = height // 2
@@ -545,7 +545,7 @@ class CapsuleButton(tk.Canvas):
     def _update_colors(self, bg: Optional[str], hover_bg: Optional[str]) -> None:
         if bg is not None:
             self._normal_color = bg
-            self._hover_color = hover_bg or _lighten(bg, 1.2)
+            self._hover_color = hover_bg or _lighten(bg, 1.5)
             self._pressed_color = _darken(bg, 0.8)
             self._set_color(self._normal_color)
         elif hover_bg is not None:
