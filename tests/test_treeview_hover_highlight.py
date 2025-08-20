@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import tkinter as tk
+from tkinter import ttk
 import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -13,29 +14,27 @@ def _rgb(value):
     return tuple(int(value[i:i+2], 16) for i in (1, 3, 5))
 
 
-def test_listbox_row_highlight_on_hover():
+def test_treeview_row_highlight_on_hover():
     try:
         root = tk.Tk()
     except tk.TclError:
         pytest.skip("Tk not available")
 
     enable_listbox_hover_highlight(root)
-    lb = tk.Listbox(root)
-    lb.insert("end", "a", "b")
-    lb.pack()
+    tree = ttk.Treeview(root, columns=("c",), show="headings")
+    tree.insert("", "end", iid="0", values=("a",))
+    tree.pack()
     root.update_idletasks()
 
-    orig = lb.itemcget(0, "background")
-    x, y, w, h = lb.bbox(0)
-    lb.event_generate("<Motion>", x=x + 1, y=y + 1)
+    x, y, w, h = tree.bbox("0")
+    tree.event_generate("<Motion>", x=x + 1, y=y + 1)
     root.update_idletasks()
-    hover = lb.itemcget(0, "background")
-    assert hover != orig
-    r, g, b = _rgb(hover)
+    assert tree.tag_has("hover", "0")
+    color = tree.tag_configure("hover", "background")[-1]
+    r, g, b = _rgb(color)
     assert g - max(r, b) >= 20
 
-    x2, y2, w2, h2 = lb.bbox(1)
-    lb.event_generate("<Motion>", x=x2 + 1, y=y2 + 1)
+    tree.event_generate("<Leave>")
     root.update_idletasks()
-    assert lb.itemcget(0, "background") == orig
+    assert not tree.tag_has("hover", "0")
     root.destroy()
