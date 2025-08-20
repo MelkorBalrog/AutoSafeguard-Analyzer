@@ -2841,6 +2841,12 @@ def link_requirements(src_id: str, relation: str, dst_id: str) -> None:
     dst = global_requirements.get(dst_id)
     if not src or not dst:
         return
+    from analysis import safety_management as _sm
+    toolbox = getattr(_sm, "ACTIVE_TOOLBOX", None)
+    if toolbox and not toolbox.can_link_requirements(
+        src.get("req_type", ""), dst.get("req_type", ""), relation
+    ):
+        return
     rel = {"type": relation, "id": dst_id}
     rels = src.setdefault("relations", [])
     if rel not in rels:

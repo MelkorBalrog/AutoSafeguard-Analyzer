@@ -2237,6 +2237,14 @@ class AutoMLApp:
         "ODD": "Scenario Library",
     }
 
+    # Ensure all requirement work products activate the top-level Requirements
+    # menu.  Each specific requirement specification (e.g. vehicle, functional
+    # safety) is treated as a child of the generic "Requirements" category so
+    # that declaring any of them on a governance diagram enables the
+    # corresponding menu items.
+    for _wp in REQUIREMENT_WORK_PRODUCTS:
+        WORK_PRODUCT_PARENTS.setdefault(_wp, "Requirements")
+
     def __init__(self, root):
         self.root = root
         self.top_events = []
@@ -2856,6 +2864,9 @@ class AutoMLApp:
         menubar.add_cascade(label="Search", menu=search_menu)
         menubar.add_cascade(label="View", menu=view_menu)
         menubar.add_cascade(label="Requirements", menu=requirements_menu)
+        idx = menubar.index("end")
+        self.work_product_menus.setdefault("Requirements", []).append((menubar, idx))
+        menubar.entryconfig(idx, state=tk.DISABLED)
         menubar.add_cascade(label="Architecture", menu=architecture_menu)
         idx = menubar.index("end")
         self.work_product_menus.setdefault("Architecture Diagram", []).append((menubar, idx))
@@ -9929,13 +9940,17 @@ class AutoMLApp:
                     lb.itemconfig(i, foreground="gray")
                 else:
                     lb.itemconfig(i, foreground="black")
+        entry_state: dict[tuple[tk.Menu, int], bool] = {}
         for wp, menus in getattr(self, "work_product_menus", {}).items():
-            state = tk.NORMAL if wp in enabled else tk.DISABLED
+            is_enabled = wp in enabled
             for menu, idx in menus:
-                try:
-                    menu.entryconfig(idx, state=state)
-                except tk.TclError:
-                    pass
+                key = (menu, idx)
+                entry_state[key] = entry_state.get(key, False) or is_enabled
+        for (menu, idx), is_enabled in entry_state.items():
+            try:
+                menu.entryconfig(idx, state=tk.NORMAL if is_enabled else tk.DISABLED)
+            except tk.TclError:
+                pass
 
     def on_lifecycle_selected(self, _event=None) -> None:
         phase = self.lifecycle_var.get()
@@ -10134,17 +10149,21 @@ class AutoMLApp:
         info = self.WORK_PRODUCT_INFO.get(name)
         if info:
             area, tool_name, _ = info
-            if tool_name and not any(
-                self.WORK_PRODUCT_INFO.get(wp)[1] == tool_name
-                for wp in self.enabled_work_products
-            ):
-                lb = self.tool_listboxes.get(area)
-                if lb:
-                    for i in range(lb.size()):
-                        if lb.get(i) == tool_name:
-                            lb.delete(i)
-                            break
-                self.tool_actions.pop(tool_name, None)
+            if tool_name:
+                still_in_use = False
+                for wp in self.enabled_work_products:
+                    wp_info = self.WORK_PRODUCT_INFO.get(wp)
+                    if wp_info and wp_info[1] == tool_name:
+                        still_in_use = True
+                        break
+                if not still_in_use:
+                    lb = self.tool_listboxes.get(area)
+                    if lb:
+                        for i in range(lb.size()):
+                            if lb.get(i) == tool_name:
+                                lb.delete(i)
+                                break
+                    self.tool_actions.pop(tool_name, None)
         parent = self.WORK_PRODUCT_PARENTS.get(name)
         if parent and parent in self.enabled_work_products:
             if not any(
