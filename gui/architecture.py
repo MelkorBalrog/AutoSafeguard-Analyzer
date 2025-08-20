@@ -13189,12 +13189,9 @@ class ArchitectureManagerDialog(tk.Frame):
             self.app.open_arch_window(diag_id)
             tab = self.app.diagram_tabs.get(diag_id)
             if tab and tab.winfo_exists():
-                stack = list(tab.winfo_children())
-                while stack:
-                    widget = stack.pop()
-                    if isinstance(widget, SysMLDiagramWindow):
-                        return widget
-                    stack.extend(getattr(widget, "winfo_children", lambda: [])())
+                for child in tab.winfo_children():
+                    if isinstance(child, SysMLDiagramWindow):
+                        return child
             return None
 
         master = self.master if self.master else self
