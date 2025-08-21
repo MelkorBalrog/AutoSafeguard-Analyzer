@@ -3725,6 +3725,15 @@
       ],
       "subject": "Service manager"
     },
+    "field monitoring requirements": {
+      "action": "define field monitoring requirements",
+      "relations": [
+        "Plans",
+        "Develops",
+        "Produces"
+      ],
+      "subject": "Safety manager"
+    },
     "operational safety requirements": {
       "action": "define operational safety requirements",
       "relations": [
