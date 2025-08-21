@@ -20283,9 +20283,39 @@ class AutoMLApp:
 
         self._reset_fta_state()
 
+    def _prompt_save_before_load_v1(self):
+        return messagebox.askyesnocancel(
+            "Load Model", "Save current project before loading?"
+        )
+
+    def _prompt_save_before_load_v2(self):
+        return messagebox.askyesnocancel(
+            "Load Model", "Would you like to save before loading a new project?"
+        )
+
+    def _prompt_save_before_load_v3(self):
+        message = "You have unsaved changes. Save before loading a project?"
+        return messagebox.askyesnocancel("Load Model", message)
+
+    def _prompt_save_before_load_v4(self):
+        opts = {
+            "title": "Load Model",
+            "message": "Save changes before loading another project?",
+        }
+        return messagebox.askyesnocancel(**opts)
+
+    def _prompt_save_before_load(self):
+        return self._prompt_save_before_load_v3()
+
     def load_model(self):
         import json
 
+        if getattr(self, "has_unsaved_changes", lambda: False)():
+            resp = self._prompt_save_before_load()
+            if resp is None:
+                return
+            if resp:
+                self.save_model()
         path = filedialog.askopenfilename(
             defaultextension=".autml",
             filetypes=[("AutoML Project", "*.autml"), ("JSON", "*.json")],
@@ -20363,7 +20393,6 @@ class AutoMLApp:
         self.apply_model_data(data)
         self.set_last_saved_state()
         self._loaded_model_paths.append(path)
-        self.clear_undo_history()
         return
 
     def _reregister_document(self, analysis: str, name: str) -> None:
