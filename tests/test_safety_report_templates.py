@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from config import load_report_template
 from gsn import GSNDiagram, GSNNode
@@ -112,7 +113,7 @@ def test_report_template_includes_operational_safety_and_decommissioning_section
     titles = {sec["title"] for sec in data["sections"]}
     assert {"Operational Safety Requirements", "Decommissioning Requirements"} <= titles
 
-    
+
 def test_safety_security_report_template_valid():
     data = _load("safety_security_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
@@ -158,6 +159,19 @@ def test_safety_security_management_template_valid():
         "Organizational Requirements",
         "Legal Requirements",
     } <= titles
+
+
+def test_diagram_rules_include_lifecycle_requirements():
+    path = BASE_DIR / "config" / "diagram_rules.json"
+    with path.open() as fh:
+        data = json.load(fh)
+    sequences = set(data.get("requirement_sequences", {}))
+    assert {
+        "production requirements",
+        "service requirements",
+        "decommissioning requirements",
+    } <= sequences
+
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")
