@@ -12852,7 +12852,7 @@ class AutoMLApp:
         win = self._safety_concept_tab
         ttk.Label(
             win,
-            text="Functional Safety Concept Description and Assumptions:",
+            text="Functional & Cybersecurity Concept Description and Assumptions:",
         ).pack(anchor="w")
         f_frame = ttk.Frame(win)
         f_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)

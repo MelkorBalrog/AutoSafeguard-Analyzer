@@ -28,22 +28,24 @@ def test_item_definition_template_valid():
     } <= titles
 
 
-def test_functional_safety_concept_template_valid():
-    data = _load("functional_safety_concept_template.json")
+def test_functional_cybersecurity_concept_template_valid():
+    data = _load("functional_cybersecurity_concept_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
         "Product Goals",
-        "Functional Safety Concept",
+        "Functional & Cybersecurity Concept",
         "ODD Library",
         "Scenario Library",
         "Internal Block Diagrams",
         "Fault Tree Analyses (FTA)",
         "Threat Analysis",
+        "Bayesian Network Analysis",
         "FI2TC Mapping",
         "TC2FI Mapping",
         "Triggering Conditions",
         "Functional Insufficiencies",
         "Functional Safety Requirements",
+        "Cybersecurity Requirements",
         "Requirements Allocation Matrix",
         "Traceability Matrix",
     } <= titles
@@ -64,7 +66,7 @@ def test_technical_cybersecurity_concept_template_valid():
         "AI Safety Requirements",
         "Technical Safety Requirements",
         "Requirements Allocation Matrix",
-        "Traceability to Functional Safety Concept",
+        "Traceability to Functional & Cybersecurity Concept",
         "PMHF Results",
         "SPFM Results",
         "LPFM Results",
