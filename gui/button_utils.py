@@ -218,6 +218,25 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
             lb.itemconfig(prev, background=getattr(lb, "_default_bg", "white"))
             lb._hover_index = None  # type: ignore[attr-defined]
 
+    def _lb_on_select(event: tk.Event) -> None:
+        lb = event.widget
+        if isinstance(lb, str):
+            resolver = getattr(root, "nametowidget", lambda name: name)
+            try:
+                lb = resolver(lb)
+            except Exception:
+                return
+        if not all(hasattr(lb, attr) for attr in ("curselection", "activate", "selection_clear", "selection_set")):
+            return
+        sels = lb.curselection()
+        if sels:
+            try:
+                lb.selection_clear(0, tk.END)
+                lb.selection_set(sels[0])
+                lb.activate(sels[0])
+            except Exception:
+                pass
+
     def _tv_on_motion(event: tk.Event) -> None:
         tree_widget = event.widget
         if isinstance(tree_widget, str):
@@ -259,7 +278,24 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
                 tree.item(prev, tags=tags)
         tree._hover_item = None  # type: ignore[attr-defined]
 
+    def _tv_on_select(event: tk.Event) -> None:
+        tree_widget = event.widget
+        if isinstance(tree_widget, str):
+            tree_widget = root.nametowidget(tree_widget)
+        tree: ttk.Treeview = tree_widget  # type: ignore[assignment]
+        if not all(hasattr(tree, attr) for attr in ("selection", "focus", "selection_set")):
+            return
+        sels = tree.selection()
+        if sels:
+            try:
+                tree.selection_set(sels[0])
+                tree.focus(sels[0])
+            except Exception:
+                pass
+
     root.bind_class("Listbox", "<Motion>", _lb_on_motion, add="+")
     root.bind_class("Listbox", "<Leave>", _lb_on_leave, add="+")
+    root.bind_class("Listbox", "<<ListboxSelect>>", _lb_on_select, add="+")
     root.bind_class("Treeview", "<Motion>", _tv_on_motion, add="+")
     root.bind_class("Treeview", "<Leave>", _tv_on_leave, add="+")
+    root.bind_class("Treeview", "<<TreeviewSelect>>", _tv_on_select, add="+")
