@@ -1,10 +1,71 @@
 {
   "elements": {
-    "sysml_diagrams": "sysml_diagrams",
-    "req_technical_safety": "req_technical_safety"
+    "internal_block_diagrams": "diagram:internal block",
+    "req_matrix": "req_matrix_alloc",
+    "req_technical_safety": "req_technical_safety",
+    "trace_matrix_fsc": "trace_matrix_fsc",
+    "fta_diagrams": "analysis:fault_tree",
+    "fmea_diagrams": "analysis:fmea",
+    "fmeda_diagrams": "analysis:fmeda",
+    "reliability_analysis": "analysis:reliability",
+    "mission_profile": "mission_profile",
+    "pmhf": "pmhf",
+    "spfm": "spfm",
+    "lpfm": "lpfm",
+    "dc": "dc"
   },
   "sections": [
-    {"title": "System Architecture", "content": "<sysml_diagrams>"},
-    {"title": "Technical Safety Requirements", "content": "<req_technical_safety>"}
+    {
+      "title": "Internal Block Diagrams",
+      "content": "<internal_block_diagrams>"
+    },
+    {
+      "title": "Fault Tree Analyses (FTA)",
+      "content": "<fta_diagrams>"
+    },
+    {
+      "title": "FMEA Analyses",
+      "content": "<fmea_diagrams>"
+    },
+    {
+      "title": "FMEDA Analyses",
+      "content": "<fmeda_diagrams>"
+    },
+    {
+      "title": "Reliability Analysis",
+      "content": "<reliability_analysis>"
+    },
+    {
+      "title": "Mission Profile",
+      "content": "<mission_profile>"
+    },
+    {
+      "title": "Technical Safety Requirements",
+      "content": "<req_technical_safety>"
+    },
+    {
+      "title": "Requirements Allocation Matrix",
+      "content": "<req_matrix>"
+    },
+    {
+      "title": "Traceability to Functional Safety Concept",
+      "content": "<trace_matrix_fsc>"
+    },
+    {
+      "title": "PMHF Results",
+      "content": "<pmhf>"
+    },
+    {
+      "title": "SPFM Results",
+      "content": "<spfm>"
+    },
+    {
+      "title": "LPFM Results",
+      "content": "<lpfm>"
+    },
+    {
+      "title": "Diagnostic Coverage Results",
+      "content": "<dc>"
+    }
   ]
 }
