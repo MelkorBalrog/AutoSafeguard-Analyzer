@@ -221,3 +221,13 @@ def test_layout_report_template_handles_images_and_links():
     items, _ = layout_report_template(data)
     types = [i["type"] for i in items]
     assert "image" in types and "link" in types
+
+
+def test_layout_report_template_supports_diagram_and_analysis_types():
+    data = {
+        "elements": {"bd": "diagram:block", "haz": "analysis:hazard"},
+        "sections": [{"title": "T", "content": "<bd><haz>"}],
+    }
+    items, _ = layout_report_template(data)
+    kinds = [i.get("kind") for i in items if i["type"] == "element"]
+    assert "diagram:block" in kinds and "analysis:hazard" in kinds

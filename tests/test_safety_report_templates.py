@@ -23,3 +23,9 @@ def test_functional_safety_concept_template_valid():
 def test_technical_safety_concept_template_valid():
     data = _load("technical_safety_concept_template.json")
     assert any("Technical Safety Requirements" in sec["title"] for sec in data["sections"])
+
+
+def test_pdf_report_template_includes_diagram_sections():
+    data = _load("report_template.json")
+    titles = [sec["title"] for sec in data["sections"]]
+    assert {"Block Diagrams", "State Diagrams", "Fault Tree Analyses", "Hazard Analyses"} <= set(titles)
