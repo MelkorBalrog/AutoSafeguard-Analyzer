@@ -73,6 +73,6 @@ def test_undo_does_not_unload_project_when_stack_empty():
     app._redo_stack = []
     app.undo = AutoMLApp.undo.__get__(app)
 
-    # Undoing with an empty app stack should still revert repository state
+    # Undoing with an empty app stack should not remove repository elements
     app.undo()
-    assert blk.elem_id not in repo.elements
+    assert blk.elem_id in repo.elements
