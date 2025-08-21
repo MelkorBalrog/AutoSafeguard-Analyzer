@@ -15,7 +15,6 @@
     "traceability": "traceability",
     "cut_sets": "cut_sets",
     "common_cause": "common_cause",
-    "sysml_diagrams": "sysml_diagrams",
     "req_vehicle": "req_vehicle",
     "req_operational": "req_operational",
     "req_functional_safety": "req_functional_safety",
@@ -32,8 +31,10 @@
     ,
     "block_diagrams": "diagram:block",
     "state_diagrams": "diagram:state",
-    "fault_tree_diagrams": "analysis:fault_tree",
-    "hazard_analysis_diagrams": "analysis:hazard"
+    "fta_diagrams": "analysis:fault_tree",
+    "hazard_analysis_diagrams": "analysis:hazard",
+    "fmea_diagrams": "analysis:fmea",
+    "fmeda_diagrams": "analysis:fmeda"
   },
   "sections": [
     {
@@ -57,10 +58,6 @@
       "content": "<page_diagrams>"
     },
     {
-      "title": "SysML Diagrams",
-      "content": "<sysml_diagrams>"
-    },
-    {
       "title": "Block Diagrams",
       "content": "<block_diagrams>"
     },
@@ -69,16 +66,28 @@
       "content": "<state_diagrams>"
     },
     {
-      "title": "Fault Tree Analyses",
-      "content": "<fault_tree_diagrams>"
+      "title": "Fault Tree Analyses (FTA)",
+      "content": "<fta_diagrams>"
     },
     {
       "title": "Hazard Analyses",
       "content": "<hazard_analysis_diagrams>"
     },
     {
-      "title": "Failure Tables",
-      "content": "<fmea_tables><fmeda_tables>"
+      "title": "FMEA Analyses",
+      "content": "<fmea_diagrams>"
+    },
+    {
+      "title": "FMEDA Analyses",
+      "content": "<fmeda_diagrams>"
+    },
+    {
+      "title": "FMEA Tables",
+      "content": "<fmea_tables>"
+    },
+    {
+      "title": "FMEDA Tables",
+      "content": "<fmeda_tables>"
     },
     {
       "title": "Traceability",

@@ -28,4 +28,11 @@ def test_technical_safety_concept_template_valid():
 def test_pdf_report_template_includes_diagram_sections():
     data = _load("report_template.json")
     titles = [sec["title"] for sec in data["sections"]]
-    assert {"Block Diagrams", "State Diagrams", "Fault Tree Analyses", "Hazard Analyses"} <= set(titles)
+    assert {
+        "Block Diagrams",
+        "State Diagrams",
+        "Fault Tree Analyses (FTA)",
+        "Hazard Analyses",
+        "FMEA Analyses",
+        "FMEDA Analyses",
+    } <= set(titles)

@@ -85,8 +85,16 @@ def test_generate_pdf_report_handles_diagram_and_analysis(tmp_path, monkeypatch)
     template_path.write_text(
         json.dumps(
             {
-                "elements": {"bd": "diagram:block", "haz": "analysis:hazard"},
-                "sections": [{"title": "T", "content": "<bd><haz>"}],
+                "elements": {
+                    "bd": "diagram:block",
+                    "haz": "analysis:hazard",
+                    "fta": "analysis:fault_tree",
+                    "fmea": "analysis:fmea",
+                    "fmeda": "analysis:fmeda",
+                },
+                "sections": [
+                    {"title": "T", "content": "<bd><haz><fta><fmea><fmeda>"}
+                ],
             }
         )
     )
