@@ -3806,15 +3806,10 @@ class SysMLDiagramWindow(tk.Frame):
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
         )
-        self.canvas.bind("<Delete>", self.delete_selected)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<Control-MouseWheel>", self.on_ctrl_mousewheel)
-        self.bind("<Control-c>", self.copy_selected)
-        self.bind("<Control-x>", self.cut_selected)
-        self.bind("<Control-v>", self.paste_selected)
-        if self.app:
-            self.bind("<Control-z>", lambda e: self.app.undo())
-            self.bind("<Control-y>", lambda e: self.app.redo())
+        # Copy, cut, paste, undo, and redo are bound globally on the application
+        # root to ensure each action fires only once. Only Delete remains here.
         self.bind("<Delete>", self.delete_selected)
         # Refresh from the repository whenever the window gains focus
         self.bind("<FocusIn>", self._on_focus_in)
