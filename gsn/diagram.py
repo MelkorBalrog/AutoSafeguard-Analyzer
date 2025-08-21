@@ -31,9 +31,23 @@ class GSNDiagram:
             self.nodes.append(self.root)
 
     # ------------------------------------------------------------------
+    def ensure_unique_name(self, name: str, self_node: GSNNode | None = None) -> str:
+        """Return a unique node name based on ``name`` within the diagram."""
+        if not name:
+            return name
+        existing = {n.user_name for n in self.nodes if n is not self_node and n.user_name}
+        base = name
+        suffix = 1
+        while name in existing:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        return name
+
     def add_node(self, node: GSNNode) -> None:
         """Register *node* with the diagram without connecting it."""
-        if node not in self.nodes:
+        if all(existing is not node for existing in self.nodes):
+            if getattr(node, "is_primary_instance", True):
+                node.user_name = self.ensure_unique_name(node.user_name, node)
             self.nodes.append(node)
 
     # ------------------------------------------------------------------
