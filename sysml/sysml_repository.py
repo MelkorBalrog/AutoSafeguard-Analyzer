@@ -167,7 +167,7 @@ class SysMLRepository:
                 obj.pop("y", None)
         return cleaned
 
-    def push_undo_state(self, strategy: str = "v4", sync_app: bool = True) -> None:
+    def push_undo_state(self, strategy: str = "v4") -> None:
         """Save the current repository state for undo.
 
         Four alternative strategies are provided and can be selected via the
@@ -193,15 +193,6 @@ class SysMLRepository:
             if len(self._undo_stack) > 50:
                 self._undo_stack.pop(0)
             self._redo_stack.clear()
-            if sync_app:
-                try:
-                    from AutoML import AutoMLApp
-
-                    app = getattr(AutoMLApp, "_instance", None)
-                    if app:
-                        app.push_undo_state(strategy=strategy, sync_repo=False)
-                except Exception:
-                    pass
 
     # ------------------------------------------------------------
     # Variants for push_undo_state
