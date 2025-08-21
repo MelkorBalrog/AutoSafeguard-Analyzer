@@ -4,6 +4,7 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase, add_treeview_scrollbars, TranslucidButton
+from gui.diagram_clipboard import DEFAULT_STRATEGY as _clipboard
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -3635,7 +3636,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset: tuple[float, float] | None = None
         self.dragging_conn_mid: tuple[float, float] | None = None
         self.dragging_conn_vec: tuple[float, float] | None = None
-        self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
         self.select_rect_start: tuple[float, float] | None = None
@@ -9289,43 +9289,85 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        if self.selected_obj:
-            import copy
-
-            self.clipboard = copy.deepcopy(self.selected_obj)
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            obj = self.selected_obj
+            if obj.obj_type == "Work Product":
+                boundary = self.find_boundary_for_obj(obj)
+                if boundary:
+                    _clipboard.copy([boundary, obj])
+                    return
+            _clipboard.copy(obj)
+        else:
+            messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.selected_obj:
-            import copy
-
-            self.clipboard = copy.deepcopy(self.selected_obj)
-            self.remove_object(self.selected_obj)
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            obj = self.selected_obj
+            if obj.obj_type == "Work Product":
+                boundary = self.find_boundary_for_obj(obj)
+                if boundary:
+                    children = [
+                        o
+                        for o in self.objects
+                        if o.properties.get("boundary") == str(boundary.obj_id)
+                        and o.obj_type == "Work Product"
+                    ]
+                    _clipboard.copy([boundary, *children])
+                    for o in children:
+                        self.remove_object(o)
+                    self.remove_object(boundary)
+                    self.selected_obj = None
+                    self._sync_to_repository()
+                    self.redraw()
+                    self.update_property_view()
+                    return
+            _clipboard.copy(obj)
+            self.remove_object(obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
+        else:
+            messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.clipboard:
-            import copy
-
-            new_obj = copy.deepcopy(self.clipboard)
-            new_obj.obj_id = _get_next_id()
-            new_obj.x += 20
-            new_obj.y += 20
-            if new_obj.obj_type == "System Boundary":
-                self.objects.insert(0, new_obj)
-            else:
-                self.objects.append(new_obj)
+        obj = _clipboard.paste()
+        if obj:
+            objs = obj if isinstance(obj, list) else [obj]
+            new_objs = []
+            id_map: dict[int, int] = {}
+            for o in objs:
+                old_id = o.obj_id
+                o.obj_id = _get_next_id()
+                id_map[old_id] = o.obj_id
+                o.x += 20
+                o.y += 20
+                new_objs.append(o)
+            for o in new_objs:
+                boundary_id = o.properties.get("boundary")
+                if boundary_id and int(boundary_id) in id_map:
+                    o.properties["boundary"] = str(id_map[int(boundary_id)])
+                if o.obj_type == "System Boundary":
+                    self.objects.insert(0, o)
+                else:
+                    self.objects.append(o)
             self.sort_objects()
             diag = self.repo.diagrams.get(self.diagram_id)
-            if diag and new_obj.element_id and new_obj.element_id not in diag.elements:
-                diag.elements.append(new_obj.element_id)
-            self.selected_obj = new_obj
+            if diag:
+                for o in new_objs:
+                    if o.element_id and o.element_id not in diag.elements:
+                        diag.elements.append(o.element_id)
+            self.selected_obj = new_objs[-1]
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
