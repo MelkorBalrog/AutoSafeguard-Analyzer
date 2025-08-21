@@ -19070,8 +19070,6 @@ class AutoMLApp:
 
     def push_undo_state(self, strategy: str = "v4") -> None:
         """Save the current model state for undo operations."""
-        repo = SysMLRepository.get_instance()
-        repo.push_undo_state(strategy=strategy)
 
         state = self.export_model_data(include_versions=False)
         stripped = self._strip_object_positions(state)
