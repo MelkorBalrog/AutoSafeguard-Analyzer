@@ -3,6 +3,8 @@
     "internal_block_diagrams": "diagram:internal block",
     "req_matrix": "req_matrix_alloc",
     "req_technical_safety": "req_technical_safety",
+    "req_cybersecurity": "req_cybersecurity",
+    "req_ai_safety": "req_ai_safety",
     "trace_matrix_fsc": "trace_matrix_fsc",
     "fta_diagrams": "analysis:fault_tree",
     "fmea_diagrams": "analysis:fmea",
@@ -45,6 +47,14 @@
       "content": "<functional_modifications>"
     },
     {
+      "title": "Cybersecurity Requirements",
+      "content": "<req_cybersecurity>"
+    },
+    {
+      "title": "AI Safety Requirements",
+      "content": "<req_ai_safety>"
+    },
+    {
       "title": "Technical Safety Requirements",
       "content": "<req_technical_safety>"
     },
@@ -53,7 +63,7 @@
       "content": "<req_matrix>"
     },
     {
-      "title": "Traceability to Functional Safety Concept",
+      "title": "Traceability to Functional & Cybersecurity Concept",
       "content": "<trace_matrix_fsc>"
     },
     {

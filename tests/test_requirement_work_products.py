@@ -42,7 +42,7 @@ def test_add_requirement_work_product(monkeypatch):
     added = []
     win.app = types.SimpleNamespace(enable_work_product=lambda name, *, refresh=True: added.append(name))
 
-    name = f"{_fmt(REQUIREMENT_TYPE_OPTIONS[2])} Requirement Specification"
+    name = f"{_fmt(REQUIREMENT_TYPE_OPTIONS[3])} Requirement Specification"
 
     class FakeDialog:
         def __init__(self, *args, **kwargs):

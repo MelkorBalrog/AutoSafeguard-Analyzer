@@ -9208,9 +9208,58 @@ class AutoMLApp:
                 items.append(Spacer(1, 12))
             return items
 
+        def _element_safety_security_reports():
+            items: list = []
+            library = getattr(self, "safety_case_library", None)
+            if library and getattr(library, "cases", None):
+                items.append(PageBreak())
+                items.append(Paragraph("Safety & Security Reports", pdf_styles["Heading2"]))
+                items.append(Spacer(1, 12))
+                data = [["Name"]]
+                for case in library.cases:
+                    data.append([case.name])
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                items.append(table)
+                items.append(Spacer(1, 12))
+            return items
+
+        def _element_spi_table():
+            items: list = []
+            tree = getattr(self, "_spi_tree", None)
+            if tree:
+                columns = list(tree["columns"])
+                data = [list(columns)]
+                for iid in tree.get_children(""):
+                    data.append(list(tree.item(iid, "values")))
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ]
+                    )
+                )
+                items.append(table)
+                items.append(Spacer(1, 12))
+            return items
+
         requirement_element_map = {
             "req_vehicle": ("vehicle", "Vehicle"),
             "req_operational": ("operational", "Operational"),
+            "req_operational_safety": ("operational safety", "Operational Safety"),
             "req_functional_safety": ("functional safety", "Functional Safety"),
             "req_technical_safety": ("technical safety", "Technical Safety"),
             "req_ai_safety": ("AI safety", "AI Safety"),
@@ -9218,6 +9267,8 @@ class AutoMLApp:
             "req_cybersecurity": ("cybersecurity", "Cybersecurity"),
             "req_production": ("production", "Production"),
             "req_service": ("service", "Service"),
+            "req_field_monitoring": ("field monitoring", "Field Monitoring"),
+            "req_decommissioning": ("decommissioning", "Decommissioning"),
             "req_product": ("product", "Product"),
             "req_legal": ("legal", "Legal"),
             "req_organizational": ("organizational", "Organizational"),
@@ -9319,6 +9370,10 @@ class AutoMLApp:
                 return _element_cut_sets()
             if kind == "common_cause":
                 return _element_common_cause()
+            if kind == "safety_security_reports":
+                return _element_safety_security_reports()
+            if kind == "spi_table":
+                return _element_spi_table()
             if kind == "activity_actions":
                 data = [["Action"], ["Start"], ["Stop"]]
                 table = Table(data, repeatRows=1)
@@ -12852,7 +12907,7 @@ class AutoMLApp:
         win = self._safety_concept_tab
         ttk.Label(
             win,
-            text="Functional Safety Concept Description and Assumptions:",
+            text="Functional & Cybersecurity Concept Description and Assumptions:",
         ).pack(anchor="w")
         f_frame = ttk.Frame(win)
         f_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12864,7 +12919,7 @@ class AutoMLApp:
 
         ttk.Label(
             win,
-            text="Technical Safety Concept Description & Assumptions:",
+            text="Technical & Cybersecurity Concept Description & Assumptions:",
         ).pack(anchor="w")
         t_frame = ttk.Frame(win)
         t_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -12873,11 +12928,6 @@ class AutoMLApp:
         self._tsc_text.configure(yscrollcommand=t_scroll.set)
         self._tsc_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         t_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        ttk.Label(
-            win,
-            text="Cybersecurity Concept Description & Assumptions:",
-        ).pack(anchor="w")
         c_frame = ttk.Frame(win)
         c_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self._csc_text = tk.Text(c_frame, height=8, wrap="word")

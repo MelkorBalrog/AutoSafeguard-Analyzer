@@ -1,7 +1,7 @@
 {
   "elements": {
-    "gsr_argument": "gsr_argument",
-    "safety_cases": "safety_cases",
+    "gsn_diagrams": "diagram:gsn",
+    "safety_security_reports": "safety_security_reports",
     "fta_diagrams": "analysis:fault_tree",
     "hazard_analysis_diagrams": "analysis:hazard",
     "fmea_diagrams": "analysis:fmea",
@@ -11,8 +11,8 @@
     "spi_table": "spi_table"
   },
   "sections": [
-    {"title": "GSR Argumentation", "content": "<gsr_argument>"},
-    {"title": "Related Safety Cases", "content": "<safety_cases>"},
+    {"title": "GSN Diagrams", "content": "<gsn_diagrams>"},
+    {"title": "Related Safety & Security Reports", "content": "<safety_security_reports>"},
     {"title": "SPI Table", "content": "<spi_table>"},
     {"title": "Work Products and Evidence", "content": "<work_products>"}
   ]
