@@ -9317,6 +9317,14 @@ class SysMLDiagramWindow(tk.Frame):
                             parent_name = parent.properties.get("name")
                 self.app.diagram_clipboard_parent_name = parent_name
             self.app.diagram_clipboard_type = diag.diag_type if diag else None
+            parent_name = None
+            if self.selected_obj.obj_type == "Work Product":
+                pid = self.selected_obj.properties.get("parent")
+                if pid:
+                    parent = self.get_object(int(pid))
+                    if parent and parent.obj_type == "System Boundary":
+                        parent_name = parent.properties.get("name")
+            self.app.diagram_clipboard_parent_name = parent_name
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
@@ -9368,7 +9376,6 @@ class SysMLDiagramWindow(tk.Frame):
                     )
                     return
             import copy
-
             clip = self.app.diagram_clipboard
             if isinstance(clip, list):
                 import copy as _copy

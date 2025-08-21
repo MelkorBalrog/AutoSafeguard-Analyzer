@@ -169,9 +169,9 @@ def test_diagram_rules_include_lifecycle_requirements():
     assert {
         "production requirements",
         "service requirements",
+        "operational safety requirements",
         "decommissioning requirements",
     } <= sequences
-
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")
