@@ -19092,14 +19092,10 @@ class AutoMLApp:
         state = self.export_model_data(include_versions=False)
         stripped = self._strip_object_positions(state)
 
-        if strategy == "v1":
-            changed = self._push_undo_state_v1(state, stripped)
-        elif strategy == "v2":
-            changed = self._push_undo_state_v2(state, stripped)
-        elif strategy == "v3":
-            changed = self._push_undo_state_v3(state, stripped)
-        else:  # v4
-            changed = self._push_undo_state_v4(state, stripped)
+        handler = getattr(
+            self, f"_push_undo_state_{strategy}", self._push_undo_state_v1
+        )
+        changed = handler(state, stripped)
 
         if changed and len(self._undo_stack) > 20:
             self._undo_stack.pop(0)
@@ -19170,14 +19166,8 @@ class AutoMLApp:
     def undo(self, strategy: str = "v4"):
         """Revert the repository and model data to the previous state."""
         repo = SysMLRepository.get_instance()
-        if strategy == "v1":
-            changed = self._undo_v1(repo)
-        elif strategy == "v2":
-            changed = self._undo_v2(repo)
-        elif strategy == "v3":
-            changed = self._undo_v3(repo)
-        else:
-            changed = self._undo_v4(repo)
+        handler = getattr(self, f"_undo_{strategy}", self._undo_v1)
+        changed = handler(repo)
         if not changed:
             return
         for tab in getattr(self, "diagram_tabs", {}).values():
@@ -19189,14 +19179,8 @@ class AutoMLApp:
     def redo(self, strategy: str = "v4"):
         """Restore the next state from the redo stack."""
         repo = SysMLRepository.get_instance()
-        if strategy == "v1":
-            changed = self._redo_v1(repo)
-        elif strategy == "v2":
-            changed = self._redo_v2(repo)
-        elif strategy == "v3":
-            changed = self._redo_v3(repo)
-        else:
-            changed = self._redo_v4(repo)
+        handler = getattr(self, f"_redo_{strategy}", self._redo_v1)
+        changed = handler(repo)
         if not changed:
             return
         for tab in getattr(self, "diagram_tabs", {}).values():
