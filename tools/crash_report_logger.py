@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import datetime
 import logging
+import os
 import sys
+import threading
 import traceback
 from pathlib import Path
 
@@ -66,6 +68,73 @@ class CrashLoggerV4:
         return log_path
 
 
+class _LoopWatchdog:
+    """Watchdog that terminates the process if not regularly fed."""
+
+    def __init__(self, timeout: float, handler):
+        self.timeout = timeout
+        self.handler = handler
+        self._timer: threading.Timer | None = None
+
+    def _trigger(self) -> None:
+        exc = TimeoutError("Watchdog timeout")
+        self.handler(TimeoutError, exc, None)
+        os._exit(1)
+
+    def _reset(self) -> None:
+        if self._timer is not None:
+            self._timer.cancel()
+        self._timer = threading.Timer(self.timeout, self._trigger)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def start(self) -> None:
+        self._reset()
+
+    def feed(self) -> None:
+        self._reset()
+
+
+def watchdog_v1(timeout: float = 5.0, path: Path | str | None = None) -> _LoopWatchdog:
+    """Watchdog using :func:`crash_handler_v1` for logging."""
+
+    path_obj = Path(path) if path else None
+    wd = _LoopWatchdog(timeout, lambda et, e, tb: crash_handler_v1(et, e, tb, path_obj))
+    wd.start()
+    return wd
+
+
+def watchdog_v2(timeout: float = 5.0, path: Path | str | None = None) -> _LoopWatchdog:
+    """Watchdog using :func:`crash_handler_v2` for logging."""
+
+    path_obj = Path(path) if path else None
+    wd = _LoopWatchdog(timeout, lambda et, e, tb: crash_handler_v2(et, e, tb, path_obj))
+    wd.start()
+    return wd
+
+
+def watchdog_v3(timeout: float = 5.0, path: Path | str | None = None) -> _LoopWatchdog:
+    """Watchdog using :func:`crash_handler_v3` for logging."""
+
+    path_obj = Path(path) if path else None
+    wd = _LoopWatchdog(timeout, lambda et, e, tb: crash_handler_v3(et, e, tb, path_obj))
+    wd.start()
+    return wd
+
+
+def watchdog_v4(timeout: float = 5.0, directory: Path | str = LOG_DIR) -> _LoopWatchdog:
+    """Watchdog using :class:`CrashLoggerV4` for unique log files."""
+
+    logger = CrashLoggerV4(directory)
+    wd = _LoopWatchdog(timeout, logger)
+    wd.start()
+    return wd
+
+
+# The most complete watchdog implementation
+watchdog_best = watchdog_v4
+
+
 def install_v1() -> None:
     sys.excepthook = crash_handler_v1
 
@@ -91,6 +160,12 @@ __all__ = [
     "CrashLoggerV3",
     "crash_handler_v3",
     "CrashLoggerV4",
+    "_LoopWatchdog",
+    "watchdog_v1",
+    "watchdog_v2",
+    "watchdog_v3",
+    "watchdog_v4",
+    "watchdog_best",
     "install_v1",
     "install_v2",
     "install_v3",
