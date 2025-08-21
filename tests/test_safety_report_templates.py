@@ -110,7 +110,6 @@ def test_safety_case_template_valid():
         "Work Products and Evidence",
     } <= titles
 
-
 def test_report_template_includes_trigger_and_insufficiency_sections():
     data = _load("report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
@@ -119,7 +118,6 @@ def test_report_template_includes_trigger_and_insufficiency_sections():
         "Functional Insufficiencies",
         "Functional Modifications",
     } <= titles
-
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")
