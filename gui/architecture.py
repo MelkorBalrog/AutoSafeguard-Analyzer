@@ -4,6 +4,7 @@ import tkinter.font as tkFont
 import textwrap
 from tkinter import ttk, simpledialog
 from gui import messagebox, format_name_with_phase, add_treeview_scrollbars, TranslucidButton
+from gui.diagram_clipboard import DEFAULT_STRATEGY as _clipboard
 try:  # Guard against environments where the tooltip module is unavailable
     from gui.tooltip import ToolTip
 except Exception:  # pragma: no cover - fallback for minimal installs
@@ -3635,7 +3636,6 @@ class SysMLDiagramWindow(tk.Frame):
         self.conn_drag_offset: tuple[float, float] | None = None
         self.dragging_conn_mid: tuple[float, float] | None = None
         self.dragging_conn_vec: tuple[float, float] | None = None
-        self.clipboard: SysMLObject | None = None
         self.resizing_obj: SysMLObject | None = None
         self.resize_edge: str | None = None
         self.select_rect_start: tuple[float, float] | None = None
@@ -9289,31 +9289,36 @@ class SysMLDiagramWindow(tk.Frame):
     # Clipboard operations
     # ------------------------------------------------------------
     def copy_selected(self, _event=None):
-        if self.selected_obj:
-            import copy
-
-            self.clipboard = copy.deepcopy(self.selected_obj)
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            _clipboard.copy(self.selected_obj)
+        else:
+            messagebox.showwarning("Copy", "Select a non-root node to copy.")
 
     def cut_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.selected_obj:
-            import copy
-
-            self.clipboard = copy.deepcopy(self.selected_obj)
+        if self.selected_obj and self.selected_obj.obj_type not in (
+            "System Boundary",
+            "Block Boundary",
+        ):
+            _clipboard.copy(self.selected_obj)
             self.remove_object(self.selected_obj)
             self.selected_obj = None
             self._sync_to_repository()
             self.redraw()
             self.update_property_view()
+        else:
+            messagebox.showwarning("Cut", "Select a non-root node to cut.")
 
     def paste_selected(self, _event=None):
         if self.repo.diagram_read_only(self.diagram_id):
             return
-        if self.clipboard:
-            import copy
-
-            new_obj = copy.deepcopy(self.clipboard)
+        obj = _clipboard.paste()
+        if obj:
+            new_obj = obj
             new_obj.obj_id = _get_next_id()
             new_obj.x += 20
             new_obj.y += 20
