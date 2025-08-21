@@ -1,6 +1,6 @@
 {
   "elements": {
-    "field_monitoring_requirements": "field_monitoring_requirements"
+    "field_monitoring_requirements": "req_field_monitoring"
   },
   "sections": [
     {"title": "Field Monitoring Requirements", "content": "<field_monitoring_requirements>"}

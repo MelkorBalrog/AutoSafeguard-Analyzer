@@ -118,7 +118,7 @@ def test_safety_security_report_template_valid():
     data = _load("safety_security_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
     assert {
-        "GSR Argumentation",
+        "GSN Diagrams",
         "Related Safety & Security Reports",
         "SPI Table",
         "Work Products and Evidence",
@@ -169,9 +169,10 @@ def test_diagram_rules_include_lifecycle_requirements():
     assert {
         "production requirements",
         "service requirements",
+        "field monitoring requirements",
+        "operational safety requirements",
         "decommissioning requirements",
     } <= sequences
-
 
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")
