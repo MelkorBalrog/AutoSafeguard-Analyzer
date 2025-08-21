@@ -124,6 +124,39 @@ class HoverListbox(tk.Listbox):
 
 tk.Listbox = HoverListbox  # type: ignore[assignment]
 
+# ---------------------------------------------------------------------------
+# Ensure listbox selection moves focus to the newly selected item
+# ---------------------------------------------------------------------------
+_orig_listbox_selection_set = tk.Listbox.selection_set
+
+
+def _listbox_selection_set_v1(self, first, last=None):
+    _orig_listbox_selection_set(self, first, last)
+
+
+def _listbox_selection_set_v2(self, first, last=None):
+    self.selection_clear(0, tk.END)
+    _orig_listbox_selection_set(self, first, last)
+
+
+def _listbox_selection_set_v3(self, first, last=None):
+    self.selection_clear(0, tk.END)
+    _orig_listbox_selection_set(self, first, last)
+    self.activate(first)
+
+
+def _listbox_selection_set_v4(self, first, last=None):
+    self.selection_clear(0, tk.END)
+    _orig_listbox_selection_set(self, first, last)
+    self.activate(first)
+    try:
+        self.focus_set()
+    except Exception:  # pragma: no cover - widget may not support focus_set
+        pass
+
+
+tk.Listbox.selection_set = _listbox_selection_set_v4
+
 
 def format_name_with_phase(name: str, phase: str | None) -> str:
     """Return ``name`` with ``" (phase)"`` appended when ``phase")" is set."""
@@ -202,3 +235,33 @@ def _sortable_heading(self, column, option=None, **kw):
 
 
 ttk.Treeview.heading = _sortable_heading
+
+# ---------------------------------------------------------------------------
+# Ensure Treeview selection moves focus to the newly selected item
+# ---------------------------------------------------------------------------
+_orig_treeview_selection_set = ttk.Treeview.selection_set
+
+
+def _treeview_selection_set_v1(self, *items):
+    _orig_treeview_selection_set(self, *items)
+
+
+def _treeview_selection_set_v2(self, *items):
+    _orig_treeview_selection_set(self, *items)
+    if items:
+        self.focus(items[0])
+
+
+def _treeview_selection_set_v3(self, *items):
+    _orig_treeview_selection_set(self, *items)
+    if items:
+        self.focus(items[-1])
+
+
+def _treeview_selection_set_v4(self, *items):
+    _orig_treeview_selection_set(self, *items)
+    if items:
+        self.focus(items[0])
+
+
+ttk.Treeview.selection_set = _treeview_selection_set_v4
