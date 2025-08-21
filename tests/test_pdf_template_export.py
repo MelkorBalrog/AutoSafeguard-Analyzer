@@ -77,3 +77,23 @@ def test_generate_pdf_report_exports_template(tmp_path, monkeypatch):
     app._generate_pdf_report()
 
     assert pdf_path.with_suffix(".json").exists()
+
+
+def test_generate_pdf_report_handles_diagram_and_analysis(tmp_path, monkeypatch):
+    pdf_path = tmp_path / "out.pdf"
+    template_path = tmp_path / "template.json"
+    template_path.write_text(
+        json.dumps(
+            {
+                "elements": {"bd": "diagram:block", "haz": "analysis:hazard"},
+                "sections": [{"title": "T", "content": "<bd><haz>"}],
+            }
+        )
+    )
+    monkeypatch.setattr(filedialog, "asksaveasfilename", lambda **k: str(pdf_path))
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **k: str(template_path))
+    monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: None)
+    app = type("A", (), {"project_properties": {}, "_generate_pdf_report": AutoMLApp._generate_pdf_report})()
+    app._generate_pdf_report()
+    assert pdf_path.with_suffix(".json").exists()

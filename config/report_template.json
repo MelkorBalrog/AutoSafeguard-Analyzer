@@ -29,6 +29,11 @@
     "req_legal": "req_legal",
     "req_organizational": "req_organizational",
     "req_spi": "req_spi"
+    ,
+    "block_diagrams": "diagram:block",
+    "state_diagrams": "diagram:state",
+    "fault_tree_diagrams": "analysis:fault_tree",
+    "hazard_analysis_diagrams": "analysis:hazard"
   },
   "sections": [
     {
@@ -54,6 +59,22 @@
     {
       "title": "SysML Diagrams",
       "content": "<sysml_diagrams>"
+    },
+    {
+      "title": "Block Diagrams",
+      "content": "<block_diagrams>"
+    },
+    {
+      "title": "State Diagrams",
+      "content": "<state_diagrams>"
+    },
+    {
+      "title": "Fault Tree Analyses",
+      "content": "<fault_tree_diagrams>"
+    },
+    {
+      "title": "Hazard Analyses",
+      "content": "<hazard_analysis_diagrams>"
     },
     {
       "title": "Failure Tables",
