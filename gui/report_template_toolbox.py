@@ -10,11 +10,6 @@ from config import load_report_template, validate_report_template
 from gui import messagebox
 from gui.mac_button_style import apply_translucid_button_style
 
-# Colours that mirror the dark theme used by the application log window
-DARK_BG = "#1e1e1e"
-DARK_FG = "#d4d4d4"
-LINK_COLOUR = "#569CD6"
-
 
 def layout_report_template(
     data: dict[str, Any], page_width: int = 595, margin: int = 40, line_height: int = 16
@@ -197,14 +192,7 @@ class SectionDialog(simpledialog.Dialog):
         self.title_var = tk.StringVar(value=self.section.get("title", ""))
         ttk.Entry(master, textvariable=self.title_var).grid(row=0, column=1, padx=4, pady=4, sticky="ew")
         tk.Label(master, text="Content:").grid(row=1, column=0, padx=4, pady=4, sticky="ne")
-        self.content_txt = tk.Text(
-            master,
-            width=40,
-            height=10,
-            background=DARK_BG,
-            foreground=DARK_FG,
-            insertbackground=DARK_FG,
-        )
+        self.content_txt = tk.Text(master, width=40, height=10)
         self.content_txt.insert("1.0", self.section.get("content", ""))
         self.content_txt.grid(row=1, column=1, padx=4, pady=4, sticky="nsew")
         tk.Label(
@@ -280,7 +268,7 @@ class ReportTemplateEditor(tk.Frame):
         preview_frame.rowconfigure(0, weight=1)
         preview_frame.columnconfigure(0, weight=1)
 
-        self.preview = tk.Canvas(preview_frame, background=DARK_BG)
+        self.preview = tk.Canvas(preview_frame, background="white")
         self.preview.grid(row=0, column=0, sticky="nsew")
         ybar2 = ttk.Scrollbar(preview_frame, orient="vertical", command=self.preview.yview)
         xbar2 = ttk.Scrollbar(preview_frame, orient="horizontal", command=self.preview.xview)
@@ -362,50 +350,24 @@ class ReportTemplateEditor(tk.Frame):
         items, height = layout_report_template(self.data)
         page_width = 595
         self.preview.config(scrollregion=(0, 0, page_width, height))
-        self.preview.create_rectangle(1, 1, page_width - 1, height - 1, outline=DARK_FG)
+        self.preview.create_rectangle(1, 1, page_width - 1, height - 1, outline="#ccc")
         font = tkFont.Font(family="Arial", size=10)
         bold = tkFont.Font(family="Arial", size=10, weight="bold")
         for item in items:
             if item["type"] == "title":
-                self.preview.create_text(
-                    item["x"],
-                    item["y"],
-                    text=item["text"],
-                    anchor="nw",
-                    font=bold,
-                    fill=DARK_FG,
-                )
+                self.preview.create_text(item["x"], item["y"], text=item["text"], anchor="nw", font=bold)
             elif item["type"] == "text":
-                self.preview.create_text(
-                    item["x"],
-                    item["y"],
-                    text=item["text"],
-                    anchor="nw",
-                    font=font,
-                    fill=DARK_FG,
-                )
+                self.preview.create_text(item["x"], item["y"], text=item["text"], anchor="nw", font=font)
             elif item["type"] == "element":
                 w, h = 200, 80
                 x, y = item["x"], item["y"]
-                self.preview.create_rectangle(x, y, x + w, y + h, outline=DARK_FG)
-                self.preview.create_text(
-                    x + w / 2,
-                    y + h / 2,
-                    text=item["name"],
-                    font=font,
-                    fill=DARK_FG,
-                )
+                self.preview.create_rectangle(x, y, x + w, y + h, outline="black")
+                self.preview.create_text(x + w / 2, y + h / 2, text=item["name"], font=font)
             elif item["type"] == "image":
                 w, h = 200, 80
                 x, y = item["x"], item["y"]
-                self.preview.create_rectangle(x, y, x + w, y + h, outline=DARK_FG)
-                self.preview.create_text(
-                    x + w / 2,
-                    y + h / 2,
-                    text="Image",
-                    font=font,
-                    fill=DARK_FG,
-                )
+                self.preview.create_rectangle(x, y, x + w, y + h, outline="black")
+                self.preview.create_text(x + w / 2, y + h / 2, text="Image", font=font)
             elif item["type"] == "link":
                 self.preview.create_text(
                     item["x"],
@@ -413,5 +375,5 @@ class ReportTemplateEditor(tk.Frame):
                     text=item["text"],
                     anchor="nw",
                     font=font,
-                    fill=LINK_COLOUR,
+                    fill="blue",
                 )
