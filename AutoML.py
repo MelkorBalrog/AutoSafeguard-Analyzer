@@ -20294,13 +20294,14 @@ class AutoMLApp:
         self._reset_on_load_v1()
         if hasattr(self, "doc_nb"):
             for tab_id in list(self.doc_nb.tabs()):
-                self.doc_nb._closing_tab = tab_id
-                self.doc_nb.event_generate("<<NotebookTabClosed>>")
-                if tab_id in self.doc_nb.tabs():
-                    try:
-                        self.doc_nb.forget(tab_id)
-                    except tk.TclError:
-                        pass
+                try:
+                    self.doc_nb.forget(tab_id)
+                except Exception:
+                    pass
+            if hasattr(self, "_tab_titles"):
+                self._tab_titles.clear()
+            if hasattr(self, "_doc_all_tabs"):
+                self._doc_all_tabs.clear()
 
     def _reset_on_load_v3(self):
         """Reset repositories and in-memory model data after v2 cleanup."""
@@ -20315,6 +20316,8 @@ class AutoMLApp:
         self.root_node = None
         self.selected_node = None
         self.page_history = []
+        self.clipboard_node = None
+        self.cut_mode = False
 
     def _reset_on_load_v4(self):
         """Perform full reset prior to loading a new project."""
