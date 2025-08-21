@@ -172,6 +172,7 @@ def test_diagram_rules_include_lifecycle_requirements():
         "decommissioning requirements",
     } <= sequences
 
+
 def test_safety_case_dynamic_sections():
     root = GSNNode("G", "Goal")
     diag = GSNDiagram(root)
