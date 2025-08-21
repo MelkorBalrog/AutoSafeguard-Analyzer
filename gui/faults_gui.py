@@ -512,7 +512,7 @@ class FaultsWindow(QMainWindow):
         self.table = QTableView()
         self.table.setAlternatingRowColors(True)
         self.table.setSortingEnabled(True)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.doubleClicked.connect(self.on_table_double_clicked)
         layout.addWidget(self.table)
 
