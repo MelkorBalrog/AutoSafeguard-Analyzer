@@ -76,6 +76,12 @@ class DummyCanvas:
         self.items[i] = {"type": "window"}
         return i
 
+    def canvasx(self, x):
+        return x
+
+    def canvasy(self, y):
+        return y
+
     def find_overlapping(self, *args, **kwargs):
         return list(self.items.keys())
 
@@ -261,6 +267,19 @@ def test_node_selectable_from_fill_area():
     win.canvas.find_overlapping = lambda *a, **k: [fill_id]
 
     assert win._find_node(0, 0) == "A"
+
+
+def test_click_selects_scrolled_node():
+    win, doc = _setup_window()
+    doc.network.add_node("A", cpd=0.5)
+    doc.positions["A"] = (150, 150)
+    doc.types["A"] = "variable"
+    win._draw_node("A", 150, 150, "variable")
+    win.canvas.canvasx = lambda x: x + 100
+    win.canvas.canvasy = lambda y: y + 100
+    event = types.SimpleNamespace(x=50, y=50)
+    CausalBayesianNetworkWindow.on_click(win, event)
+    assert win.drag_node == "A"
 
 
 def test_table_resizes_for_new_rows():

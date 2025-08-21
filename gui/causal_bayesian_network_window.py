@@ -271,6 +271,8 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
         if self.current_tool == "Variable":
             undo = getattr(self.app, "push_undo_state", None)
             if undo:
@@ -279,7 +281,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             if not name or name in doc.network.nodes:
                 self.select_tool("Select")
                 return
-            x, y = event.x, event.y
+            x, y = cx, cy
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
             doc.types[name] = "variable"
@@ -294,7 +296,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             undo = getattr(self.app, "push_undo_state", None)
             if undo:
                 undo()
-            x, y = event.x, event.y
+            x, y = cx, cy
             doc.network.add_node(name, cpd=0.5)
             doc.positions[name] = (x, y)
             kind = "trigger" if self.current_tool == "Triggering Condition" else "insufficiency"
@@ -315,7 +317,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             undo = getattr(self.app, "push_undo_state", None)
             if undo:
                 undo()
-            x, y = event.x, event.y
+            x, y = cx, cy
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
                     continue
@@ -335,7 +337,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             undo = getattr(self.app, "push_undo_state", None)
             if undo:
                 undo()
-            x, y = event.x, event.y
+            x, y = cx, cy
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
                     continue
@@ -353,7 +355,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             undo = getattr(self.app, "push_undo_state", None)
             if undo:
                 undo()
-            x, y = event.x, event.y
+            x, y = cx, cy
             for idx, name in enumerate(names):
                 if name in doc.network.nodes:
                     continue
@@ -363,14 +365,14 @@ class CausalBayesianNetworkWindow(tk.Frame):
                 doc.types[name] = "malfunction"
                 self._draw_node(name, nx, y, "malfunction")
         elif self.current_tool == "Relationship":
-            name = self._find_node(event.x, event.y)
+            name = self._find_node(cx, cy)
             if not name:
                 self.select_tool("Select")
                 return
             self.edge_start = name
             self._highlight_node(None)
         else:  # Select tool
-            name = self._find_node(event.x, event.y)
+            name = self._find_node(cx, cy)
             if name:
                 undo = getattr(self.app, "push_undo_state", None)
                 if undo:
@@ -380,7 +382,7 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._highlight_node(name)
             if name:
                 x, y = doc.positions.get(name, (0, 0))
-                self.drag_offset = (x - event.x, y - event.y)
+                self.drag_offset = (x - cx, y - cy)
 
     # ------------------------------------------------------------------
     def on_drag(self, event) -> None:
@@ -390,7 +392,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if self.current_tool == "Select" and self.drag_node:
             name = self.drag_node
             old_x, old_y = doc.positions.get(name, (0, 0))
-            x, y = event.x + self.drag_offset[0], event.y + self.drag_offset[1]
+            cx = self.canvas.canvasx(event.x)
+            cy = self.canvas.canvasy(event.y)
+            x, y = cx + self.drag_offset[0], cy + self.drag_offset[1]
             dx, dy = x - old_x, y - old_y
             doc.positions[name] = (x, y)
             oval_id, text_id, fill_tag = self.nodes[name]
@@ -416,14 +420,16 @@ class CausalBayesianNetworkWindow(tk.Frame):
             self._update_scroll_region()
         elif self.current_tool == "Relationship" and self.edge_start:
             x1, y1 = doc.positions.get(self.edge_start, (0, 0))
+            cx = self.canvas.canvasx(event.x)
+            cy = self.canvas.canvasy(event.y)
             if self.temp_edge_line is None:
                 self.temp_edge_line = self.canvas.create_line(
-                    x1, y1, event.x, event.y, dash=(2, 2)
+                    x1, y1, cx, cy, dash=(2, 2)
                 )
                 self.temp_edge_offset = 0
                 self._animate_temp_edge()
             else:
-                self.canvas.coords(self.temp_edge_line, x1, y1, event.x, event.y)
+                self.canvas.coords(self.temp_edge_line, x1, y1, cx, cy)
             self._update_scroll_region()
 
     # ------------------------------------------------------------------
@@ -434,7 +440,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         if self.current_tool == "Select":
             self.drag_node = None
         elif self.current_tool == "Relationship" and self.edge_start:
-            dst = self._find_node(event.x, event.y)
+            cx = self.canvas.canvasx(event.x)
+            cy = self.canvas.canvasy(event.y)
+            dst = self._find_node(cx, cy)
             src = self.edge_start
             if dst and dst != src:
                 kind_src = doc.types.get(src)
@@ -501,7 +509,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        name = self._find_node(event.x, event.y)
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        name = self._find_node(cx, cy)
         if not name:
             return
         undo = getattr(self.app, "push_undo_state", None)
@@ -911,7 +921,9 @@ class CausalBayesianNetworkWindow(tk.Frame):
         doc = getattr(self.app, "active_cbn", None)
         if not doc:
             return
-        name = self._find_node(event.x, event.y)
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        name = self._find_node(cx, cy)
         if not name:
             return
         menu = tk.Menu(self, tearoff=0)
