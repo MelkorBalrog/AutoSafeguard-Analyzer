@@ -259,18 +259,7 @@ def enable_listbox_hover_highlight(root: tk.Misc) -> None:
                 tree.item(prev, tags=tags)
         tree._hover_item = None  # type: ignore[attr-defined]
 
-    def _focus_widget(event: tk.Event) -> None:
-        widget = event.widget
-        if isinstance(widget, str):
-            widget = root.nametowidget(widget)
-        try:
-            widget.focus_set()
-        except Exception:
-            pass
-
     root.bind_class("Listbox", "<Motion>", _lb_on_motion, add="+")
     root.bind_class("Listbox", "<Leave>", _lb_on_leave, add="+")
     root.bind_class("Treeview", "<Motion>", _tv_on_motion, add="+")
     root.bind_class("Treeview", "<Leave>", _tv_on_leave, add="+")
-    root.bind_class("Listbox", "<Button-1>", _focus_widget, add="+")
-    root.bind_class("Treeview", "<Button-1>", _focus_widget, add="+")
