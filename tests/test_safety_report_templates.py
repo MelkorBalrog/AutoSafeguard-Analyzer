@@ -24,6 +24,7 @@ def test_item_definition_template_valid():
         "Internal Block Diagrams",
         "Product Requirements",
         "Vehicle Requirements",
+        "Operational Requirements",
         "Activity Actions",
     } <= titles
 
@@ -40,11 +41,13 @@ def test_functional_cybersecurity_concept_template_valid():
         "Fault Tree Analyses (FTA)",
         "Threat Analysis",
         "Bayesian Network Analysis",
+        "STPA Analyses",
         "FI2TC Mapping",
         "TC2FI Mapping",
         "Triggering Conditions",
         "Functional Insufficiencies",
         "Functional Safety Requirements",
+        "Operational Safety Requirements",
         "Cybersecurity Requirements",
         "Requirements Allocation Matrix",
         "Traceability Matrix",
@@ -104,6 +107,12 @@ def test_report_template_includes_odd_and_scenario_sections():
     assert {"ODD Library", "Scenario Library"} <= titles
 
 
+def test_report_template_includes_operational_safety_and_decommissioning_sections():
+    data = _load("report_template.json")
+    titles = {sec["title"] for sec in data["sections"]}
+    assert {"Operational Safety Requirements", "Decommissioning Requirements"} <= titles
+
+    
 def test_safety_security_report_template_valid():
     data = _load("safety_security_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
@@ -130,7 +139,7 @@ def test_production_service_decommissioning_template_valid():
     assert {
         "Production Requirements",
         "Service Requirements",
-        "Decommissioning Instructions",
+        "Decommissioning Requirements",
     } <= titles
 
 

@@ -9211,6 +9211,7 @@ class AutoMLApp:
         requirement_element_map = {
             "req_vehicle": ("vehicle", "Vehicle"),
             "req_operational": ("operational", "Operational"),
+            "req_operational_safety": ("operational safety", "Operational Safety"),
             "req_functional_safety": ("functional safety", "Functional Safety"),
             "req_technical_safety": ("technical safety", "Technical Safety"),
             "req_ai_safety": ("AI safety", "AI Safety"),
@@ -9218,6 +9219,7 @@ class AutoMLApp:
             "req_cybersecurity": ("cybersecurity", "Cybersecurity"),
             "req_production": ("production", "Production"),
             "req_service": ("service", "Service"),
+            "req_decommissioning": ("decommissioning", "Decommissioning"),
             "req_product": ("product", "Product"),
             "req_legal": ("legal", "Legal"),
             "req_organizational": ("organizational", "Organizational"),

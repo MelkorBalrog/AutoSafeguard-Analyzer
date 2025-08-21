@@ -21,6 +21,7 @@
     "common_cause": "common_cause",
     "req_vehicle": "req_vehicle",
     "req_operational": "req_operational",
+    "req_operational_safety": "req_operational_safety",
     "req_functional_safety": "req_functional_safety",
     "req_technical_safety": "req_technical_safety",
     "req_ai_safety": "req_ai_safety",
@@ -29,6 +30,7 @@
     "req_cybersecurity": "req_cybersecurity",
     "req_production": "req_production",
     "req_service": "req_service",
+    "req_decommissioning": "req_decommissioning",
     "req_product": "req_product",
     "req_legal": "req_legal",
     "req_organizational": "req_organizational",
@@ -172,6 +174,10 @@
       "content": "<req_operational>"
     },
     {
+      "title": "Operational Safety Requirements",
+      "content": "<req_operational_safety>"
+    },
+    {
       "title": "Functional Safety Requirements",
       "content": "<req_functional_safety>"
     },
@@ -202,6 +208,10 @@
     {
       "title": "Service Requirements",
       "content": "<req_service>"
+    },
+    {
+      "title": "Decommissioning Requirements",
+      "content": "<req_decommissioning>"
     },
     {
       "title": "Product Requirements",
