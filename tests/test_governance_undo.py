@@ -1,7 +1,6 @@
 import os
 import sys
 import types
-import pytest
 
 # Ensure repository root is on the Python path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -18,7 +17,6 @@ from gui.architecture import GovernanceDiagramWindow, SysMLObject
 from sysml.sysml_repository import SysMLRepository
 
 
-@pytest.mark.skip("undo/redo behavior unchanged in this revision")
 def test_governance_diagram_undo_redo_work_product():
     SysMLRepository._instance = None
     repo = SysMLRepository.get_instance()
