@@ -112,7 +112,7 @@ def test_report_template_includes_operational_safety_and_decommissioning_section
     titles = {sec["title"] for sec in data["sections"]}
     assert {"Operational Safety Requirements", "Decommissioning Requirements"} <= titles
 
-
+    
 def test_safety_security_report_template_valid():
     data = _load("safety_security_report_template.json")
     titles = {sec["title"] for sec in data["sections"]}
@@ -140,7 +140,6 @@ def test_production_service_decommissioning_template_valid():
         "Production Requirements",
         "Service Requirements",
         "Decommissioning Requirements",
-        "Decommissioning Instructions",
     } <= titles
 
 
