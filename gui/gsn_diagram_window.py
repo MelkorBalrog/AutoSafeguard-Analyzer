@@ -218,8 +218,6 @@ class GSNDiagramWindow(tk.Frame):
         self._selected_connection: Optional[tuple[GSNNode, GSNNode]] = None
         self._drag_node: Optional[GSNNode] = None
         self._drag_offset = (0, 0)
-        self._drag_state_saved = False
-        self._drag_moved = False
         self._connect_mode: Optional[str] = None
         self._connect_parent: Optional[GSNNode] = None
         self.zoom = 1.0
@@ -411,13 +409,14 @@ class GSNDiagramWindow(tk.Frame):
                 app.selected_node = None
             self.refresh()
             return
+        undo = getattr(app, "push_undo_state", None)
+        if undo:
+            undo()
         self.selected_node = node
         self._selected_connection = None
         self._drag_node = node
         sx, sy = node.x * self.zoom, node.y * self.zoom
         self._drag_offset = (cx - sx, cy - sy)
-        self._drag_state_saved = False
-        self._drag_moved = False
         if app:
             app.selected_node = node
         self.refresh()
@@ -469,12 +468,6 @@ class GSNDiagramWindow(tk.Frame):
             return
         if not self._drag_node:
             return
-        if not getattr(self, "_drag_state_saved", False):
-            app = getattr(self, "app", None)
-            undo = getattr(app, "push_undo_state", None)
-            if undo:
-                undo()
-            self._drag_state_saved = True
         nx = (cx - self._drag_offset[0]) / self.zoom
         ny = (cy - self._drag_offset[1]) / self.zoom
         dx = nx - self._drag_node.x
@@ -482,7 +475,6 @@ class GSNDiagramWindow(tk.Frame):
         # Move the dragged node along with all of its children so the
         # relative layout of the subtree remains intact.
         self._move_subtree(self._drag_node, dx, dy)
-        self._drag_moved = True
         self.refresh()
 
     def _on_release(self, event):  # pragma: no cover - requires tkinter
@@ -518,8 +510,6 @@ class GSNDiagramWindow(tk.Frame):
             self.refresh()
             return
         self._drag_node = None
-        self._drag_state_saved = False
-        self._drag_moved = False
 
     def _animate_temp_connection(self):  # pragma: no cover - requires tkinter
         find = getattr(self.canvas, "find_withtag", None)
