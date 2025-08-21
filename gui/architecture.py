@@ -5097,10 +5097,10 @@ class SysMLDiagramWindow(tk.Frame):
                     ):
                         offx = float(o.properties.get("px", o.x - old_x))
                         offy = float(o.properties.get("py", o.y - old_y))
+                        o.properties.setdefault("px", str(offx))
+                        o.properties.setdefault("py", str(offy))
                         o.x = self.selected_obj.x + offx
                         o.y = self.selected_obj.y + offy
-                        o.properties["px"] = str(offx)
-                        o.properties["py"] = str(offy)
                     elif o.properties.get("boundary") == str(self.selected_obj.obj_id):
                         offx = float(o.properties.get("px", o.x - old_x))
                         offy = float(o.properties.get("py", o.y - old_y))
